@@ -22,8 +22,8 @@ const BottomNav = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pb-safe">
-      <div className="mx-4 mb-4 flex items-center gap-2 rounded-full bg-nav px-4 py-3 nav-shadow">
+    <nav className="flex-shrink-0 flex justify-center py-3 z-50">
+      <div className="mx-4 flex items-center gap-2 rounded-full bg-nav px-4 py-3 nav-shadow">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           

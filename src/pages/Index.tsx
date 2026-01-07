@@ -4,7 +4,6 @@ import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import FilterChip from '@/components/FilterChip';
 import SwipeCard from '@/components/SwipeCard';
-import SwipeActions from '@/components/SwipeActions';
 import { mockListings } from '@/data/mockListings';
 import { Listing } from '@/types/listing';
 import { toast } from 'sonner';
@@ -15,14 +14,12 @@ const Index = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [filters, setFilters] = useState<string[]>(['White t-shirt']);
   const [savedListings, setSavedListings] = useState<Listing[]>([]);
-  const [lastAction, setLastAction] = useState<{ listing: Listing; action: 'left' | 'right' } | null>(null);
 
   const currentListings = listings.slice(currentIndex, currentIndex + 3);
 
   const handleSwipeLeft = useCallback(() => {
     if (currentIndex < listings.length) {
       const skippedListing = listings[currentIndex];
-      setLastAction({ listing: skippedListing, action: 'left' });
       setCurrentIndex((prev) => prev + 1);
       toast('Skipped', { description: skippedListing.title });
     }
@@ -32,22 +29,10 @@ const Index = () => {
     if (currentIndex < listings.length) {
       const savedListing = listings[currentIndex];
       setSavedListings((prev) => [...prev, savedListing]);
-      setLastAction({ listing: savedListing, action: 'right' });
       setCurrentIndex((prev) => prev + 1);
       toast.success('Saved!', { description: `${savedListing.title} added to favorites` });
     }
   }, [currentIndex, listings]);
-
-  const handleUndo = useCallback(() => {
-    if (lastAction && currentIndex > 0) {
-      setCurrentIndex((prev) => prev - 1);
-      if (lastAction.action === 'right') {
-        setSavedListings((prev) => prev.filter((l) => l.id !== lastAction.listing.id));
-      }
-      setLastAction(null);
-      toast('Undone!');
-    }
-  }, [lastAction, currentIndex]);
 
   const handleCardClick = (listing: Listing) => {
     navigate(`/listing/${listing.id}`, { state: { listing } });
@@ -66,20 +51,20 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
       <Header onSearchClick={handleSearchClick} onFilterClick={handleFilterClick} />
       
       {/* Active Filters */}
       {filters.length > 0 && (
-        <div className="flex flex-wrap gap-2 px-6 pb-4">
+        <div className="flex flex-wrap gap-2 px-6 pb-2 flex-shrink-0">
           {filters.map((filter) => (
             <FilterChip key={filter} label={filter} onRemove={() => removeFilter(filter)} />
           ))}
         </div>
       )}
       
-      {/* Card Stack */}
-      <div className="relative mx-auto h-[520px] max-w-sm px-8 sm:px-6">
+      {/* Card Stack - fills remaining space with padding for nav */}
+      <div className="relative flex-1 mx-auto w-full max-w-sm px-8 sm:px-6 pb-4 min-h-0">
         {currentListings.length > 0 ? (
           currentListings.map((listing, index) => (
             <SwipeCard
@@ -99,16 +84,6 @@ const Index = () => {
           </div>
         )}
       </div>
-      
-      {/* Swipe Actions */}
-      {currentListings.length > 0 && (
-        <SwipeActions
-          onSwipeLeft={handleSwipeLeft}
-          onSwipeRight={handleSwipeRight}
-          onUndo={handleUndo}
-          canUndo={!!lastAction}
-        />
-      )}
       
       <BottomNav />
     </div>
