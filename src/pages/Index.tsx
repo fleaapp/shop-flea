@@ -79,7 +79,7 @@ const Index = () => {
       )}
       
       {/* Card Stack */}
-      <div className="relative mx-auto h-[520px] max-w-sm px-6">
+      <div className="relative mx-auto h-[520px] max-w-sm px-8 sm:px-6">
         {currentListings.length > 0 ? (
           currentListings.map((listing, index) => (
             <SwipeCard

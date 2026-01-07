@@ -42,7 +42,7 @@ const SwipeCard = ({ listing, onSwipeLeft, onSwipeRight, onClick, isTop, index }
   return (
     <motion.div
       ref={cardRef}
-      className="absolute left-0 right-0 mx-auto w-full max-w-sm cursor-grab active:cursor-grabbing"
+      className="absolute left-0 right-0 mx-auto w-[calc(100%-16px)] max-w-sm cursor-grab active:cursor-grabbing"
       style={{
         x: isTop ? x : 0,
         rotate: isTop ? rotate : 0,
