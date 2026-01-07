@@ -36,20 +36,20 @@ const SwipeCard = ({ listing, onSwipeLeft, onSwipeRight, onClick, isTop, index }
     }
   };
 
-  const stackOffset = index * 8;
-  const stackScale = 1 - index * 0.03;
+  const stackOffset = index * 4;
+  const stackRotation = index * 3; // Slight rotation for stacked effect
+  const stackTranslateX = index * 12; // Offset to the right
 
   return (
     <motion.div
       ref={cardRef}
       className="absolute left-0 right-0 mx-auto w-[calc(100%-16px)] max-w-sm cursor-grab active:cursor-grabbing"
       style={{
-        x: isTop ? x : 0,
-        rotate: isTop ? rotate : 0,
+        x: isTop ? x : stackTranslateX,
+        rotate: isTop ? rotate : stackRotation,
         opacity: isTop ? opacity : 1,
         zIndex: 10 - index,
         top: stackOffset,
-        scale: stackScale,
       }}
       drag={isTop ? 'x' : false}
       dragConstraints={{ left: 0, right: 0 }}
@@ -65,9 +65,9 @@ const SwipeCard = ({ listing, onSwipeLeft, onSwipeRight, onClick, isTop, index }
       transition={{ duration: 0.3 }}
       onClick={isTop ? onClick : undefined}
     >
-      <div className="overflow-hidden rounded-3xl bg-card card-shadow">
-        {/* Image */}
-        <div className="relative aspect-[3/4] overflow-hidden">
+      <div className="overflow-hidden rounded-3xl bg-card p-3 card-shadow">
+        {/* Image with white border effect */}
+        <div className="relative aspect-[3/4] overflow-hidden rounded-2xl">
           <img
             src={listing.image}
             alt={listing.title}
@@ -100,7 +100,7 @@ const SwipeCard = ({ listing, onSwipeLeft, onSwipeRight, onClick, isTop, index }
         </div>
         
         {/* Content */}
-        <div className="p-5">
+        <div className="px-2 pt-4 pb-2">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <h3 className="text-xl font-semibold text-foreground">{listing.title}</h3>
