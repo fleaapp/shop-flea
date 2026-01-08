@@ -63,26 +63,28 @@ const Index = () => {
         </div>
       )}
       
-      {/* Card Stack - fills remaining space with padding for nav */}
-      <div className="relative flex-1 mx-auto w-full max-w-sm px-8 sm:px-6 pb-4 min-h-0">
-        {currentListings.length > 0 ? (
-          currentListings.map((listing, index) => (
-            <SwipeCard
-              key={listing.id}
-              listing={listing}
-              onSwipeLeft={handleSwipeLeft}
-              onSwipeRight={handleSwipeRight}
-              onClick={() => handleCardClick(listing)}
-              isTop={index === 0}
-              index={index}
-            />
-          )).reverse()
-        ) : (
-          <div className="flex h-full flex-col items-center justify-center text-center">
-            <p className="text-lg font-medium text-muted-foreground">No more listings!</p>
-            <p className="mt-2 text-sm text-muted-foreground">Check back later for new items</p>
-          </div>
-        )}
+      {/* Card Stack - centered with space for fixed nav */}
+      <div className="flex-1 flex items-center justify-center pb-24 min-h-0">
+        <div className="relative w-full max-w-xs h-[65vh] max-h-[500px] px-6">
+          {currentListings.length > 0 ? (
+            currentListings.map((listing, index) => (
+              <SwipeCard
+                key={listing.id}
+                listing={listing}
+                onSwipeLeft={handleSwipeLeft}
+                onSwipeRight={handleSwipeRight}
+                onClick={() => handleCardClick(listing)}
+                isTop={index === 0}
+                index={index}
+              />
+            )).reverse()
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center text-center">
+              <p className="text-lg font-medium text-muted-foreground">No more listings!</p>
+              <p className="mt-2 text-sm text-muted-foreground">Check back later for new items</p>
+            </div>
+          )}
+        </div>
       </div>
       
       <BottomNav />
