@@ -4,6 +4,8 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
+@import url("https://fonts.googleapis.com/css2?family=Poppins&display=swap");
+
 @layer base {
   :root {
     --background: 40 33% 94%;
@@ -15,7 +17,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 20% 20%;
 
-    --primary: 152 52% 78%;
+    --primary: 111 95% 92%;
     --primary-foreground: 220 20% 20%;
 
     --secondary: 40 20% 88%;
@@ -24,7 +26,7 @@
     --muted: 40 15% 90%;
     --muted-foreground: 220 10% 50%;
 
-    --accent: 152 52% 78%;
+    --accent: 111 95% 92%;
     --accent-foreground: 220 20% 20%;
 
     --destructive: 0 84% 60%;
@@ -104,11 +106,11 @@
   .card-shadow {
     box-shadow: var(--shadow-card);
   }
-  
+
   .card-shadow-hover {
     box-shadow: var(--shadow-card-hover);
   }
-  
+
   .nav-shadow {
     box-shadow: var(--shadow-nav);
   }
