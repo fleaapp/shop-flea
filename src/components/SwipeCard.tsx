@@ -103,9 +103,9 @@ const SwipeCard = ({ listing, onSwipeLeft, onSwipeRight, onClick, isTop, index }
         {/* Content - fixed height */}
         <div className="px-3 pt-4 pb-3 flex-shrink-0">
           <div className="flex items-start justify-between">
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 mr-4">
               <h3 className="text-xl font-semibold text-foreground truncate">{listing.title}</h3>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
                 {listing.tags.map((tag) => (
                   <ListingTag key={tag} label={tag} />
                 ))}
