@@ -64,8 +64,8 @@ const Index = () => {
       )}
       
       {/* Card Stack - centered with space for fixed nav */}
-      <div className="flex-1 flex items-center justify-center pb-24 min-h-0">
-        <div className="relative w-full max-w-xs h-[65vh] max-h-[500px] px-6">
+      <div className="flex-1 flex items-center justify-center pb-20 min-h-0">
+        <div className="relative w-full max-w-sm h-[72vh] max-h-[600px] px-4">
           {currentListings.length > 0 ? (
             currentListings.map((listing, index) => (
               <SwipeCard
