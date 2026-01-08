@@ -43,14 +43,13 @@ const SwipeCard = ({ listing, onSwipeLeft, onSwipeRight, onClick, isTop, index }
   return (
     <motion.div
       ref={cardRef}
-      className="absolute inset-x-0 top-0 mx-auto w-full h-full cursor-grab active:cursor-grabbing"
+      className="absolute inset-x-0 top-0 mx-auto w-[calc(100%-16px)] max-w-sm cursor-grab active:cursor-grabbing h-[calc(100%-8px)]"
       style={{
-        x: isTop ? x : 0,
+        x: isTop ? x : stackTranslateX,
         rotate: isTop ? rotate : stackRotation,
         opacity: isTop ? opacity : 1,
         zIndex: 10 - index,
-        top: stackOffset,
-        right: isTop ? undefined : -stackTranslateX,
+        marginTop: stackOffset,
       }}
       drag={isTop ? 'x' : false}
       dragConstraints={{ left: 0, right: 0 }}
@@ -66,7 +65,7 @@ const SwipeCard = ({ listing, onSwipeLeft, onSwipeRight, onClick, isTop, index }
       transition={{ duration: 0.3 }}
       onClick={isTop ? onClick : undefined}
     >
-      <div className="flex h-full flex-col overflow-hidden rounded-3xl bg-card p-4 card-shadow">
+      <div className="flex h-full flex-col overflow-hidden rounded-3xl bg-card p-3 card-shadow">
         {/* Image with white border effect - takes remaining space */}
         <div className="relative flex-1 min-h-0 overflow-hidden rounded-2xl">
           <img
@@ -101,20 +100,20 @@ const SwipeCard = ({ listing, onSwipeLeft, onSwipeRight, onClick, isTop, index }
         </div>
         
         {/* Content - fixed height */}
-        <div className="px-3 pt-4 pb-3 flex-shrink-0">
+        <div className="px-2 pt-3 pb-1 flex-shrink-0">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <h3 className="text-xl font-semibold text-foreground truncate">{listing.title}</h3>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <h3 className="text-lg font-semibold text-foreground truncate">{listing.title}</h3>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {listing.tags.map((tag) => (
                   <ListingTag key={tag} label={tag} />
                 ))}
               </div>
             </div>
             
-            <div className="text-right flex-shrink-0 ml-4">
-              <p className="text-2xl font-bold text-foreground">${listing.price}</p>
-              <p className="text-sm text-muted-foreground">+ ${listing.shippingPrice} shipping</p>
+            <div className="text-right flex-shrink-0 ml-3">
+              <p className="text-xl font-bold text-foreground">${listing.price}</p>
+              <p className="text-xs text-muted-foreground">+ ${listing.shippingPrice} shipping</p>
             </div>
           </div>
         </div>
