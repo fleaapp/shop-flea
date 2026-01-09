@@ -89,9 +89,10 @@ export default {
   				DEFAULT: 'hsl(var(--charcoal))',
   				light: 'hsl(var(--charcoal-light))'
   			},
-  			nav: 'hsl(var(--nav-bg))',
-  			tag: 'hsl(var(--tag-bg))',
-  			price: 'hsl(var(--price-green))'
+			nav: 'hsl(var(--nav-bg))',
+			tag: 'hsl(var(--tag-bg))',
+			price: 'hsl(var(--price-green))',
+			'filter-chip': 'hsl(var(--filter-chip-selected))'
   		},
   		borderRadius: {
   			lg: 'var(--radius)',

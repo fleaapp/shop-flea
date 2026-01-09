@@ -48,6 +48,7 @@
     --tag-bg: 40 15% 92%;
     --nav-bg: 220 15% 20%;
     --price-green: 152 60% 35%;
+    --filter-chip-selected: 230 70% 85%;
 
     /* Shadows */
     --shadow-card: 0 8px 30px -8px hsl(220 15% 25% / 0.15);

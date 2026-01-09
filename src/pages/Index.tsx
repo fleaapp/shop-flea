@@ -4,6 +4,7 @@ import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import FilterChip from '@/components/FilterChip';
 import SwipeCard from '@/components/SwipeCard';
+import FilterSheet, { FilterState } from '@/components/FilterSheet';
 import { mockListings } from '@/data/mockListings';
 import { Listing } from '@/types/listing';
 import { toast } from 'sonner';
@@ -14,6 +15,7 @@ const Index = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [filters, setFilters] = useState<string[]>(['White t-shirt']);
   const [savedListings, setSavedListings] = useState<Listing[]>([]);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   const currentListings = listings.slice(currentIndex, currentIndex + 3);
 
@@ -47,7 +49,17 @@ const Index = () => {
   };
 
   const handleFilterClick = () => {
-    toast('Filters coming soon!');
+    setFilterSheetOpen(true);
+  };
+
+  const handleApplyFilters = (filterState: FilterState) => {
+    const activeFilters: string[] = [];
+    if (filterState.category) activeFilters.push(filterState.category);
+    if (filterState.size) activeFilters.push(filterState.size);
+    if (filterState.condition) activeFilters.push(filterState.condition);
+    if (filterState.gender) activeFilters.push(filterState.gender);
+    setFilters(activeFilters);
+    toast.success('Filters applied!');
   };
 
   return (
@@ -87,6 +99,11 @@ const Index = () => {
         </div>
       </div>
       
+      <FilterSheet 
+        open={filterSheetOpen} 
+        onOpenChange={setFilterSheetOpen}
+        onApplyFilters={handleApplyFilters}
+      />
       <BottomNav />
     </div>
   );
