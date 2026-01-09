@@ -13,7 +13,7 @@ const Index = () => {
   const navigate = useNavigate();
   const [listings, setListings] = useState<Listing[]>(mockListings);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [filters, setFilters] = useState<string[]>(['White t-shirt']);
+  const [filters, setFilters] = useState<string[]>([]);
   const [savedListings, setSavedListings] = useState<Listing[]>([]);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
