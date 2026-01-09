@@ -5,6 +5,7 @@ import BottomNav from '@/components/BottomNav';
 import FilterChip from '@/components/FilterChip';
 import SwipeCard from '@/components/SwipeCard';
 import FilterSheet, { FilterState } from '@/components/FilterSheet';
+import SearchSheet from '@/components/SearchSheet';
 import { mockListings } from '@/data/mockListings';
 import { Listing } from '@/types/listing';
 import { toast } from 'sonner';
@@ -16,6 +17,7 @@ const Index = () => {
   const [filters, setFilters] = useState<string[]>([]);
   const [savedListings, setSavedListings] = useState<Listing[]>([]);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [searchSheetOpen, setSearchSheetOpen] = useState(false);
 
   const currentListings = listings.slice(currentIndex, currentIndex + 3);
 
@@ -45,7 +47,15 @@ const Index = () => {
   };
 
   const handleSearchClick = () => {
-    toast('Search coming soon!');
+    setSearchSheetOpen(true);
+  };
+
+  const handleSearch = (query: string) => {
+    setFilters(prev => {
+      if (prev.includes(query)) return prev;
+      return [...prev, query];
+    });
+    toast.success(`Searching for "${query}"`);
   };
 
   const handleFilterClick = () => {
@@ -103,6 +113,11 @@ const Index = () => {
         open={filterSheetOpen} 
         onOpenChange={setFilterSheetOpen}
         onApplyFilters={handleApplyFilters}
+      />
+      <SearchSheet
+        open={searchSheetOpen}
+        onOpenChange={setSearchSheetOpen}
+        onSearch={handleSearch}
       />
       <BottomNav />
     </div>
