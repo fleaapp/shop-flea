@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ImagePlus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'];
 const categories = ['Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories', 'Bags', 'Other'];
@@ -15,11 +17,17 @@ const colours = ['Black', 'White', 'Grey', 'Navy', 'Blue', 'Red', 'Pink', 'Green
 const styles = ['Casual', 'Formal', 'Streetwear', 'Vintage', 'Sporty', 'Bohemian', 'Minimalist', 'Other'];
 const genders = ['Women', 'Men', 'Unisex'];
 
+interface ImageFile {
+  file: File;
+  preview: string;
+}
+
 const CreateListing = () => {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [images, setImages] = useState<string[]>([]);
+  const [imageFiles, setImageFiles] = useState<ImageFile[]>([]);
   
   const [productName, setProductName] = useState('');
   const [size, setSize] = useState('');
@@ -33,21 +41,24 @@ const CreateListing = () => {
   const [shippingPrice, setShippingPrice] = useState('');
   const [description, setDescription] = useState('');
 
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      toast.error('Please sign in to create a listing');
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    const remainingSlots = 5 - images.length;
+    const remainingSlots = 5 - imageFiles.length;
     const filesToProcess = Array.from(files).slice(0, remainingSlots);
 
     filesToProcess.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setImages((prev) => [...prev, event.target!.result as string]);
-        }
-      };
-      reader.readAsDataURL(file);
+      const preview = URL.createObjectURL(file);
+      setImageFiles((prev) => [...prev, { file, preview }]);
     });
 
     // Reset file input
@@ -61,33 +72,111 @@ const CreateListing = () => {
   };
 
   const removeImage = (index: number) => {
-    setImages(images.filter((_, i) => i !== index));
+    setImageFiles((prev) => {
+      const removed = prev[index];
+      URL.revokeObjectURL(removed.preview);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const uploadImages = async (): Promise<string[]> => {
+    if (!user) return [];
+    
+    const uploadedUrls: string[] = [];
+    
+    for (const imageFile of imageFiles) {
+      const fileExt = imageFile.file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      const { error } = await supabase.storage
+        .from('listings')
+        .upload(fileName, imageFile.file);
+      
+      if (error) {
+        console.error('Upload error:', error);
+        throw new Error('Failed to upload image');
+      }
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('listings')
+        .getPublicUrl(fileName);
+      
+      uploadedUrls.push(publicUrl);
+    }
+    
+    return uploadedUrls;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      toast.error('Please sign in to create a listing');
+      navigate('/auth');
+      return;
+    }
     
     if (!productName || !size || !brand || !category || !condition || !itemPrice) {
       toast.error('Please fill in all required fields');
       return;
     }
     
-    if (images.length === 0) {
+    if (imageFiles.length === 0) {
       toast.error('Please add at least one image');
       return;
     }
     
     setIsLoading(true);
     
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Upload images to storage
+      const imageUrls = await uploadImages();
+      
+      // Create the listing
+      const { error } = await supabase
+        .from('listings')
+        .insert({
+          user_id: user.id,
+          title: productName,
+          description: description || null,
+          brand,
+          size,
+          category,
+          condition,
+          colour: colour || null,
+          style: style || null,
+          gender: gender || null,
+          price: parseFloat(itemPrice),
+          shipping_price: shippingPrice ? parseFloat(shippingPrice) : 0,
+          images: imageUrls,
+          tags: [brand, category].filter(Boolean),
+          status: 'active',
+        });
+      
+      if (error) {
+        throw error;
+      }
+      
       toast.success('Listing posted!');
-      navigate('/');
-    }, 1500);
+      navigate('/profile');
+    } catch (error) {
+      console.error('Error creating listing:', error);
+      toast.error('Failed to create listing. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const inputStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 placeholder:text-muted-foreground/60 focus-visible:ring-muted-foreground/50";
   const selectStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 [&>span]:text-muted-foreground/60 focus:ring-muted-foreground/50";
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -122,16 +211,16 @@ const CreateListing = () => {
           className="w-full h-32 rounded-2xl bg-muted/50 border border-muted-foreground/20 flex flex-col items-center justify-center gap-2"
         >
           <ImagePlus className="h-8 w-8 text-muted-foreground/60" />
-          <span className="text-sm text-muted-foreground/60">Add photos</span>
+          <span className="text-sm text-muted-foreground/60">Add photos ({imageFiles.length}/5)</span>
         </button>
 
         {/* Image Thumbnails */}
-        {images.length > 0 && (
+        {imageFiles.length > 0 && (
           <div className="flex gap-3 overflow-x-auto pb-2">
-            {images.map((img, index) => (
+            {imageFiles.map((img, index) => (
               <div key={index} className="relative flex-shrink-0">
                 <img
-                  src={img}
+                  src={img.preview}
                   alt={`Upload ${index + 1}`}
                   className="h-16 w-16 rounded-lg object-cover"
                 />
