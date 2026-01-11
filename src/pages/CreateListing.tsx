@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ImagePlus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,6 @@ import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
 
 const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'];
-const brands = ['Nike', 'Adidas', 'Zara', 'H&M', 'Uniqlo', 'Levi\'s', 'Gap', 'Other'];
 const categories = ['Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories', 'Bags', 'Other'];
 const conditions = ['New with tags', 'Like new', 'Good', 'Fair'];
 const colours = ['Black', 'White', 'Grey', 'Navy', 'Blue', 'Red', 'Pink', 'Green', 'Brown', 'Beige', 'Multi'];
@@ -18,6 +17,7 @@ const genders = ['Women', 'Men', 'Unisex'];
 
 const CreateListing = () => {
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   
@@ -33,10 +33,31 @@ const CreateListing = () => {
   const [shippingPrice, setShippingPrice] = useState('');
   const [description, setDescription] = useState('');
 
-  const handleImageUpload = () => {
-    if (images.length < 5) {
-      setImages([...images, `https://picsum.photos/400?random=${Date.now()}`]);
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const remainingSlots = 5 - images.length;
+    const filesToProcess = Array.from(files).slice(0, remainingSlots);
+
+    filesToProcess.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setImages((prev) => [...prev, event.target!.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
   };
 
   const removeImage = (index: number) => {
@@ -65,11 +86,21 @@ const CreateListing = () => {
     }, 1500);
   };
 
-  const inputStyles = "h-14 rounded-2xl bg-muted/50 border-0 placeholder:text-muted-foreground/60";
-  const selectStyles = "h-14 rounded-2xl bg-muted/50 border-0 [&>span]:text-muted-foreground/60";
+  const inputStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 placeholder:text-muted-foreground/60 focus-visible:ring-muted-foreground/50";
+  const selectStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 [&>span]:text-muted-foreground/60 focus:ring-muted-foreground/50";
 
   return (
     <div className="min-h-screen bg-background pb-24">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleImageUpload}
+        className="hidden"
+      />
+
       {/* Header */}
       <header className="flex items-center gap-4 px-4 py-4">
         <Button
@@ -87,8 +118,8 @@ const CreateListing = () => {
         {/* Photo Upload Area */}
         <button
           type="button"
-          onClick={handleImageUpload}
-          className="w-full h-32 rounded-2xl bg-muted/50 flex flex-col items-center justify-center gap-2"
+          onClick={triggerFileInput}
+          className="w-full h-32 rounded-2xl bg-muted/50 border border-muted-foreground/20 flex flex-col items-center justify-center gap-2"
         >
           <ImagePlus className="h-8 w-8 text-muted-foreground/60" />
           <span className="text-sm text-muted-foreground/60">Add photos</span>
@@ -136,17 +167,13 @@ const CreateListing = () => {
           </SelectContent>
         </Select>
 
-        {/* Brand */}
-        <Select value={brand} onValueChange={setBrand}>
-          <SelectTrigger className={selectStyles}>
-            <SelectValue placeholder="Brand" />
-          </SelectTrigger>
-          <SelectContent>
-            {brands.map((b) => (
-              <SelectItem key={b} value={b.toLowerCase()}>{b}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Brand - Text Input */}
+        <Input
+          placeholder="Brand"
+          value={brand}
+          onChange={(e) => setBrand(e.target.value)}
+          className={inputStyles}
+        />
         
         {/* Category */}
         <Select value={category} onValueChange={setCategory}>
@@ -231,7 +258,7 @@ const CreateListing = () => {
           placeholder="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="min-h-[120px] rounded-2xl bg-muted/50 border-0 resize-none placeholder:text-muted-foreground/60"
+          className="min-h-[120px] rounded-2xl bg-muted/50 border border-muted-foreground/20 resize-none placeholder:text-muted-foreground/60 focus-visible:ring-muted-foreground/50"
         />
         
         {/* Submit Button */}
