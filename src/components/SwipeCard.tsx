@@ -2,33 +2,48 @@ import { useState, useRef } from 'react';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { Listing } from '@/types/listing';
 import ListingTag from './ListingTag';
-import { Heart } from 'lucide-react';
+import { Heart, ShoppingCart } from 'lucide-react';
+
 interface SwipeCardProps {
   listing: Listing;
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
+  onSwipeUp: () => void;
   onClick: () => void;
   isTop: boolean;
   index: number;
 }
+
 const SwipeCard = ({
   listing,
   onSwipeLeft,
   onSwipeRight,
+  onSwipeUp,
   onClick,
   isTop,
   index
 }: SwipeCardProps) => {
-  const [exitDirection, setExitDirection] = useState<'left' | 'right' | null>(null);
+  const [exitDirection, setExitDirection] = useState<'left' | 'right' | 'up' | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  
   const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  
   const rotate = useTransform(x, [-200, 200], [-15, 15]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
+  
   const likeOpacity = useTransform(x, [0, 100], [0, 1]);
   const nopeOpacity = useTransform(x, [-100, 0], [1, 0]);
+  const cartOpacity = useTransform(y, [-100, 0], [1, 0]);
+
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const threshold = 100;
-    if (info.offset.x > threshold) {
+    
+    // Check vertical swipe first (up takes priority)
+    if (info.offset.y < -threshold && Math.abs(info.offset.y) > Math.abs(info.offset.x)) {
+      setExitDirection('up');
+      onSwipeUp();
+    } else if (info.offset.x > threshold) {
       setExitDirection('right');
       onSwipeRight();
     } else if (info.offset.x < -threshold) {
@@ -36,51 +51,72 @@ const SwipeCard = ({
       onSwipeLeft();
     }
   };
-  const stackOffset = index * 4;
-  const stackRotation = index * 3; // Slight rotation for stacked effect
-  const stackTranslateX = index * 12; // Offset to the right
 
-  return <motion.div ref={cardRef} className="absolute inset-x-0 top-0 mx-auto w-[calc(100%-16px)] max-w-sm cursor-grab active:cursor-grabbing h-[calc(100%-8px)]" style={{
-    x: isTop ? x : stackTranslateX,
-    rotate: isTop ? rotate : stackRotation,
-    opacity: isTop ? opacity : 1,
-    zIndex: 10 - index,
-    marginTop: stackOffset
-  }} drag={isTop ? 'x' : false} dragConstraints={{
-    left: 0,
-    right: 0
-  }} dragElastic={0.9} onDragEnd={handleDragEnd} animate={exitDirection === 'left' ? {
-    x: -500,
-    rotate: -30,
-    opacity: 0
-  } : exitDirection === 'right' ? {
-    x: 500,
-    rotate: 30,
-    opacity: 0
-  } : {}} transition={{
-    duration: 0.3
-  }} onClick={isTop ? onClick : undefined}>
+  const stackOffset = index * 4;
+  const stackRotation = index * 3;
+  const stackTranslateX = index * 12;
+
+  return (
+    <motion.div
+      ref={cardRef}
+      className="absolute inset-x-0 top-0 mx-auto w-[calc(100%-16px)] max-w-sm cursor-grab active:cursor-grabbing h-[calc(100%-8px)]"
+      style={{
+        x: isTop ? x : stackTranslateX,
+        y: isTop ? y : 0,
+        rotate: isTop ? rotate : stackRotation,
+        opacity: isTop ? opacity : 1,
+        zIndex: 10 - index,
+        marginTop: stackOffset
+      }}
+      drag={isTop ? true : false}
+      dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+      dragElastic={0.9}
+      onDragEnd={handleDragEnd}
+      animate={
+        exitDirection === 'left'
+          ? { x: -500, rotate: -30, opacity: 0 }
+          : exitDirection === 'right'
+          ? { x: 500, rotate: 30, opacity: 0 }
+          : exitDirection === 'up'
+          ? { y: -500, opacity: 0 }
+          : {}
+      }
+      transition={{ duration: 0.3 }}
+      onClick={isTop ? onClick : undefined}
+    >
       <div className="flex h-full flex-col overflow-hidden rounded-3xl bg-card p-3 card-shadow py-[10px] px-[10px]">
         {/* Image with white border effect - takes remaining space */}
         <div className="relative flex-1 min-h-0 overflow-hidden rounded-2xl">
           <img src={listing.image} alt={listing.title} className="h-full w-full object-cover" draggable={false} />
           
-          {/* Like/Nope indicators */}
-          {isTop && <>
-              <motion.div style={{
-            opacity: likeOpacity
-          }} className="absolute inset-0 flex items-center justify-center bg-green-500/20">
+          {/* Like/Nope/Cart indicators */}
+          {isTop && (
+            <>
+              <motion.div
+                style={{ opacity: likeOpacity }}
+                className="absolute inset-0 flex items-center justify-center bg-green-500/20"
+              >
                 <div className="rounded-xl border-4 border-green-500 px-8 py-4">
                   <Heart className="h-16 w-16 text-green-500" fill="currentColor" />
                 </div>
               </motion.div>
               
-              <motion.div style={{
-            opacity: nopeOpacity
-          }} className="absolute inset-0 flex items-center justify-center bg-red-500/20">
-                
+              <motion.div
+                style={{ opacity: nopeOpacity }}
+                className="absolute inset-0 flex items-center justify-center bg-red-500/20"
+              >
               </motion.div>
-            </>}
+              
+              <motion.div
+                style={{ opacity: cartOpacity }}
+                className="absolute inset-0 flex items-center justify-center bg-primary/20"
+              >
+                <div className="rounded-xl border-4 border-primary px-8 py-4">
+                  <ShoppingCart className="h-16 w-16 text-primary" fill="currentColor" />
+                </div>
+              </motion.div>
+            </>
+          )}
         </div>
         
         {/* Content - fixed height */}
@@ -101,6 +137,8 @@ const SwipeCard = ({
           </div>
         </div>
       </div>
-    </motion.div>;
+    </motion.div>
+  );
 };
+
 export default SwipeCard;
