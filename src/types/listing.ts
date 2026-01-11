@@ -6,6 +6,8 @@ export interface Listing {
   description: string;
   image: string;
   category: string;
+  size: string;
+  brand: string;
   tags: string[];
   sellerId: string;
   sellerName: string;

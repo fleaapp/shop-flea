@@ -80,6 +80,8 @@ const ListingDetails = () => {
         
         {/* Tags */}
         <div className="mt-4 flex flex-wrap gap-2">
+          <ListingTag label={listing.size} />
+          <ListingTag label={listing.brand} />
           {listing.tags.map((tag) => (
             <ListingTag key={tag} label={tag} />
           ))}
