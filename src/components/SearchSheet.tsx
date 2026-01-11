@@ -66,10 +66,10 @@ const SearchSheet = ({ open, onOpenChange, onSearch }: SearchSheetProps) => {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="!inset-0 h-[100dvh] max-h-[100dvh] rounded-none bg-background p-0 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]"
+        className="!inset-0 h-[100dvh] max-h-[100dvh] rounded-none bg-background p-0 flex flex-col overflow-hidden"
       >
-        {/* Sticky top area (always visible while typing) */}
-        <div className="sticky top-0 z-10 bg-background pt-[env(safe-area-inset-top)]">
+        {/* Top (always visible) */}
+        <div className="shrink-0 bg-background pt-[env(safe-area-inset-top,12px)]">
           {/* Header */}
           <div className="flex items-center gap-4 px-6 py-4">
             <button onClick={() => onOpenChange(false)} className="p-1">
@@ -105,7 +105,8 @@ const SearchSheet = ({ open, onOpenChange, onSearch }: SearchSheetProps) => {
           </div>
         </div>
 
-        <div className="px-6 pb-[calc(env(safe-area-inset-bottom)+24px)]">
+        {/* Scroll area */}
+        <div className="flex-1 overflow-y-auto overscroll-contain px-6 pb-[calc(env(safe-area-inset-bottom)+24px)] [-webkit-overflow-scrolling:touch]">
           {/* Search Results */}
           {query && (
             <div className="mb-6">
