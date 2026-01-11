@@ -26,7 +26,7 @@ const Profile = () => {
       {/* Header with Plus icon */}
       <header className="flex items-center px-4 py-4">
         <button
-          onClick={() => navigate('/create-listing')}
+          onClick={() => navigate('/create')}
           className="flex h-10 w-10 items-center justify-center"
         >
           <Plus className="h-6 w-6 text-foreground" />
