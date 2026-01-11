@@ -1,9 +1,15 @@
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CreditCard, Truck } from 'lucide-react';
+import { ExternalLink, Check, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Listing } from '@/types/listing';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+
+type PaymentMethod = 'card' | 'paypal' | 'applepay';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -11,6 +17,16 @@ const Checkout = () => {
   const { removeFromCart } = useCart();
   
   const items: Listing[] = location.state?.items || [];
+  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('card');
+  const [selectedCard, setSelectedCard] = useState<string | null>('saved-1');
+  const [showNewCard, setShowNewCard] = useState(false);
+  const [saveCard, setSaveCard] = useState(true);
+  
+  // Form state
+  const [cardHolder, setCardHolder] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [expiry, setExpiry] = useState('');
   
   if (items.length === 0) {
     return (
@@ -23,12 +39,11 @@ const Checkout = () => {
     );
   }
 
-  const subtotal = items.reduce((sum, item) => sum + item.price, 0);
-  const shipping = items.reduce((sum, item) => sum + item.shippingPrice, 0);
-  const total = subtotal + shipping;
+  const subtotal = items.reduce((sum, item) => sum + item.price + item.shippingPrice, 0);
+  const sellerFee = subtotal * 0.04;
+  const total = subtotal + sellerFee;
 
   const handlePlaceOrder = () => {
-    // Remove items from cart
     items.forEach((item) => removeFromCart(item.id));
     
     toast.success('Order placed successfully!', {
@@ -38,94 +53,232 @@ const Checkout = () => {
     navigate('/cart');
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="flex items-center gap-4 px-4 py-4 border-b border-border">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate(-1)}
-          className="h-10 w-10 rounded-full"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-xl font-bold text-foreground">Checkout</h1>
-      </header>
+  // Mock saved cards
+  const savedCards = [
+    { id: 'saved-1', lastFour: '9876' },
+  ];
 
-      <div className="p-4 space-y-6">
-        {/* Order Items */}
-        <div className="space-y-3">
-          <h2 className="font-semibold text-foreground">Order Summary</h2>
+  return (
+    <div className="min-h-screen bg-muted/50">
+      {/* Drag handle */}
+      <div className="flex justify-center pt-4 pb-2">
+        <div className="h-1.5 w-12 rounded-full bg-muted-foreground/30" />
+      </div>
+      
+      {/* Title */}
+      <h1 className="text-center text-xl font-bold text-foreground pb-4">Checkout</h1>
+
+      {/* Order Summary Card */}
+      <div className="mx-4 rounded-2xl bg-card overflow-hidden card-shadow">
+        {/* Header */}
+        <div className="bg-muted px-4 py-2">
+          <span className="text-sm text-muted-foreground">Order Summary</span>
+        </div>
+        
+        {/* Items */}
+        <div className="p-4 space-y-4">
           {items.map((item) => (
-            <div key={item.id} className="flex gap-3 rounded-xl bg-card p-3 card-shadow">
+            <div key={item.id} className="flex gap-4">
               <img
                 src={item.image}
                 alt={item.title}
-                className="h-16 w-16 rounded-lg object-cover"
+                className="h-20 w-20 rounded-xl object-cover"
               />
-              <div className="flex-1">
-                <h3 className="font-medium text-foreground">{item.title}</h3>
-                <p className="text-sm text-muted-foreground">from {item.sellerName}</p>
-              </div>
-              <div className="text-right">
-                <p className="font-semibold text-foreground">${item.price}</p>
-                <p className="text-xs text-muted-foreground">+ ${item.shippingPrice}</p>
+              <div className="flex-1 flex flex-col">
+                <h3 className="font-semibold text-foreground">{item.title}</h3>
+                <div className="flex-1" />
+                <div className="text-right">
+                  <p className="text-xl font-bold text-foreground">${item.price}</p>
+                  <p className="text-sm text-muted-foreground">+ ${item.shippingPrice} shipping</p>
+                </div>
               </div>
             </div>
           ))}
         </div>
-
-        {/* Shipping Info */}
-        <div className="rounded-xl bg-card p-4 card-shadow">
-          <div className="flex items-center gap-3 mb-3">
-            <Truck className="h-5 w-5 text-muted-foreground" />
-            <h2 className="font-semibold text-foreground">Shipping Address</h2>
-          </div>
-          <p className="text-muted-foreground text-sm">
-            Add your shipping address to complete the order
-          </p>
-          <Button variant="outline" className="mt-3 w-full rounded-xl">
-            Add Address
-          </Button>
+        
+        {/* Seller fee */}
+        <div className="px-4 py-3 border-t border-border flex justify-between text-sm">
+          <span className="text-muted-foreground">4% seller fee</span>
+          <span className="text-foreground">− ${sellerFee.toFixed(2)}</span>
         </div>
-
-        {/* Payment Method */}
-        <div className="rounded-xl bg-card p-4 card-shadow">
-          <div className="flex items-center gap-3 mb-3">
-            <CreditCard className="h-5 w-5 text-muted-foreground" />
-            <h2 className="font-semibold text-foreground">Payment Method</h2>
-          </div>
-          <p className="text-muted-foreground text-sm">
-            Add a payment method to complete the order
-          </p>
-          <Button variant="outline" className="mt-3 w-full rounded-xl">
-            Add Payment
-          </Button>
+        
+        {/* Total */}
+        <div className="bg-charcoal px-4 py-3 flex justify-center">
+          <span className="text-white font-medium">Total payment: ${total.toFixed(2)}</span>
         </div>
+      </div>
 
-        {/* Order Total */}
-        <div className="rounded-xl bg-card p-4 card-shadow space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Subtotal</span>
-            <span className="text-foreground">${subtotal.toFixed(2)}</span>
+      {/* Shipping Details */}
+      <div className="mx-4 mt-4 rounded-2xl bg-card overflow-hidden card-shadow">
+        <div className="bg-muted px-4 py-2">
+          <span className="text-sm text-muted-foreground">Shipping details</span>
+        </div>
+        <div className="p-4 flex items-center justify-between">
+          <div>
+            <p className="font-semibold text-foreground">Charlie Smith</p>
+            <p className="text-sm text-muted-foreground">123 Smile road, Melbourne, 3100</p>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Shipping</span>
-            <span className="text-foreground">${shipping.toFixed(2)}</span>
+          <button className="p-2 text-muted-foreground hover:text-foreground">
+            <ExternalLink className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Payment Method */}
+      <div className="mx-4 mt-6">
+        <h2 className="font-semibold text-foreground mb-3">Payment method</h2>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setSelectedPayment('card')}
+            className={cn(
+              'flex items-center justify-center h-14 w-16 rounded-xl border-2 transition-all',
+              selectedPayment === 'card' 
+                ? 'border-charcoal bg-card' 
+                : 'border-border bg-card'
+            )}
+          >
+            <div className="flex">
+              <div className="h-6 w-6 rounded-full bg-red-500 -mr-2" />
+              <div className="h-6 w-6 rounded-full bg-orange-400" />
+            </div>
+          </button>
+          
+          <button
+            onClick={() => setSelectedPayment('paypal')}
+            className={cn(
+              'flex items-center justify-center h-14 w-16 rounded-xl border-2 transition-all',
+              selectedPayment === 'paypal' 
+                ? 'border-charcoal bg-card' 
+                : 'border-border bg-card'
+            )}
+          >
+            <span className="text-sm font-bold text-blue-600">PayPal</span>
+          </button>
+          
+          <button
+            onClick={() => setSelectedPayment('applepay')}
+            className={cn(
+              'flex items-center justify-center h-14 w-16 rounded-xl border-2 transition-all',
+              selectedPayment === 'applepay' 
+                ? 'border-charcoal bg-card' 
+                : 'border-border bg-card'
+            )}
+          >
+            <span className="text-sm font-semibold text-foreground"> Pay</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Saved Cards */}
+      {selectedPayment === 'card' && !showNewCard && (
+        <div className="mx-4 mt-6">
+          <h2 className="font-semibold text-foreground mb-3">Saved cards</h2>
+          <div className="space-y-3">
+            {savedCards.map((card) => (
+              <button
+                key={card.id}
+                onClick={() => setSelectedCard(card.id)}
+                className={cn(
+                  'w-full flex items-center gap-3 p-4 rounded-2xl border-2 transition-all',
+                  selectedCard === card.id 
+                    ? 'border-charcoal bg-card' 
+                    : 'border-border bg-card'
+                )}
+              >
+                <div className="flex">
+                  <div className="h-6 w-6 rounded-full bg-red-500 -mr-2" />
+                  <div className="h-6 w-6 rounded-full bg-orange-400" />
+                </div>
+                <span className="flex-1 text-left text-foreground">Ending in {card.lastFour}.</span>
+                <div className={cn(
+                  'h-5 w-5 rounded-full border-2 flex items-center justify-center',
+                  selectedCard === card.id ? 'border-charcoal bg-charcoal' : 'border-muted-foreground/30'
+                )}>
+                  {selectedCard === card.id && <div className="h-2 w-2 rounded-full bg-white" />}
+                </div>
+              </button>
+            ))}
           </div>
-          <div className="border-t border-border pt-2 flex justify-between font-semibold">
-            <span className="text-foreground">Total</span>
-            <span className="text-foreground">${total.toFixed(2)}</span>
+          
+          <button
+            onClick={() => {
+              setShowNewCard(true);
+              setSelectedCard(null);
+            }}
+            className="mt-4 w-full text-center text-sm font-medium text-foreground hover:text-muted-foreground"
+          >
+            + Add new card
+          </button>
+        </div>
+      )}
+
+      {/* New Card Form */}
+      {selectedPayment === 'card' && showNewCard && (
+        <div className="mx-4 mt-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">Card holder name</label>
+            <Input
+              value={cardHolder}
+              onChange={(e) => setCardHolder(e.target.value)}
+              className="h-12 rounded-xl bg-card border-border focus-visible:ring-muted-foreground/50"
+              placeholder="Name on card"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">Card number</label>
+            <Input
+              value={cardNumber}
+              onChange={(e) => setCardNumber(e.target.value)}
+              className="h-12 rounded-xl bg-card border-border focus-visible:ring-muted-foreground/50"
+              placeholder="1234 5678 9012 3456"
+              maxLength={19}
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">CVV</label>
+              <Input
+                value={cvv}
+                onChange={(e) => setCvv(e.target.value)}
+                className="h-12 rounded-xl bg-card border-border focus-visible:ring-muted-foreground/50"
+                placeholder="123"
+                maxLength={4}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Expiry</label>
+              <Input
+                value={expiry}
+                onChange={(e) => setExpiry(e.target.value)}
+                className="h-12 rounded-xl bg-card border-border focus-visible:ring-muted-foreground/50"
+                placeholder="MM/YY"
+                maxLength={5}
+              />
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3 pt-2">
+            <Checkbox
+              id="save-card"
+              checked={saveCard}
+              onCheckedChange={(checked) => setSaveCard(checked as boolean)}
+            />
+            <label htmlFor="save-card" className="text-sm text-muted-foreground">
+              Save card information.
+            </label>
           </div>
         </div>
+      )}
 
-        {/* Place Order Button */}
+      {/* Confirm Button */}
+      <div className="mx-4 mt-8 pb-8">
         <Button
           onClick={handlePlaceOrder}
-          className="w-full h-14 rounded-2xl bg-charcoal text-white hover:bg-charcoal-light text-base font-medium"
+          className="w-full h-12 rounded-full bg-charcoal text-white hover:bg-charcoal-light font-medium"
         >
-          Place Order - ${total.toFixed(2)}
+          Confirm order
         </Button>
       </div>
     </div>
