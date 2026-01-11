@@ -64,9 +64,9 @@ const SearchSheet = ({ open, onOpenChange, onSearch }: SearchSheetProps) => {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-full rounded-t-none bg-background p-0 flex flex-col">
+      <SheetContent side="bottom" className="h-full rounded-t-none bg-background p-0 flex flex-col pt-safe">
         {/* Header */}
-        <div className="flex items-center gap-4 px-6 py-4 flex-shrink-0">
+        <div className="flex items-center gap-4 px-6 py-4 pt-12 flex-shrink-0">
           <button onClick={() => onOpenChange(false)} className="p-1">
             <ArrowLeft className="h-6 w-6 text-foreground" />
           </button>
