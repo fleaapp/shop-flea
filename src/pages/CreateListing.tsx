@@ -236,22 +236,28 @@ const CreateListing = () => {
         </Select>
         
         {/* Item Price */}
-        <Input
-          type="number"
-          placeholder="Item price"
-          value={itemPrice}
-          onChange={(e) => setItemPrice(e.target.value)}
-          className={inputStyles}
-        />
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60 font-medium">$</span>
+          <Input
+            type="number"
+            placeholder="Item price"
+            value={itemPrice}
+            onChange={(e) => setItemPrice(e.target.value)}
+            className={`${inputStyles} pl-8`}
+          />
+        </div>
 
         {/* Shipping Price */}
-        <Input
-          type="number"
-          placeholder="Shipping price"
-          value={shippingPrice}
-          onChange={(e) => setShippingPrice(e.target.value)}
-          className={inputStyles}
-        />
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60 font-medium">$</span>
+          <Input
+            type="number"
+            placeholder="Shipping price"
+            value={shippingPrice}
+            onChange={(e) => setShippingPrice(e.target.value)}
+            className={`${inputStyles} pl-8`}
+          />
+        </div>
         
         {/* Description */}
         <Textarea
