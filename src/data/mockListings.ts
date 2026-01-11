@@ -12,6 +12,7 @@ export const mockListings: Listing[] = [
     shippingPrice: 10,
     description: 'Beautiful light wash denim jacket in excellent condition. Perfect for spring and fall. Fits true to size.',
     image: jacketImg,
+    images: [jacketImg, sweaterImg, bagImg],
     category: 'Clothing',
     size: 'Size 8',
     brand: 'Levi\'s',
@@ -30,6 +31,7 @@ export const mockListings: Listing[] = [
     shippingPrice: 8,
     description: 'Vintage red leather crossbody bag. Some minor wear but overall great condition. Perfect statement piece.',
     image: bagImg,
+    images: [bagImg, jacketImg, sneakersImg],
     category: 'Accessories',
     size: 'One Size',
     brand: 'Coach',
@@ -48,6 +50,7 @@ export const mockListings: Listing[] = [
     shippingPrice: 12,
     description: 'Classic white sneakers, barely worn. Size 10. Great for everyday wear.',
     image: sneakersImg,
+    images: [sneakersImg, sweaterImg, bagImg],
     category: 'Shoes',
     size: 'Size 10',
     brand: 'Nike',
@@ -66,6 +69,7 @@ export const mockListings: Listing[] = [
     shippingPrice: 7,
     description: 'Cozy oversized knit sweater in cream color. Perfect for layering. One size fits most.',
     image: sweaterImg,
+    images: [sweaterImg, jacketImg, bagImg],
     category: 'Clothing',
     size: 'One Size',
     brand: 'Zara',
@@ -78,3 +82,4 @@ export const mockListings: Listing[] = [
     condition: 'new',
   },
 ];
+

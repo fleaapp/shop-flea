@@ -5,6 +5,8 @@ export interface Listing {
   shippingPrice: number;
   description: string;
   image: string;
+  /** Optional gallery images for the detail view (swipeable). */
+  images?: string[];
   category: string;
   size: string;
   brand: string;
@@ -16,6 +18,7 @@ export interface Listing {
   createdAt: Date;
   condition: 'new' | 'like-new' | 'good' | 'fair';
 }
+
 
 export interface User {
   id: string;
