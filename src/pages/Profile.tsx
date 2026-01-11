@@ -1,4 +1,4 @@
-import { Plus, Star, ExternalLink } from 'lucide-react';
+import { Plus, Star, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import BottomNav from '@/components/BottomNav';
@@ -82,12 +82,45 @@ const Profile = () => {
         ) : displayListings.length > 0 ? (
           <div className="flex gap-4 pb-4" style={{ width: 'max-content' }}>
             {displayListings.map((listing) => (
-              <div key={listing.id} className="relative w-64 flex-shrink-0 overflow-hidden rounded-2xl bg-card card-shadow">
-                <button onClick={() => navigate(`/listing/${listing.id}`)} className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-card/80 backdrop-blur-sm">
-                  <ExternalLink className="h-4 w-4 text-foreground" />
+              <div key={listing.id} className="relative w-64 flex-shrink-0 overflow-hidden rounded-3xl bg-card p-2.5 card-shadow">
+                {/* Edit button */}
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/listing/${listing.id}/edit`);
+                  }} 
+                  className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-card/80 backdrop-blur-sm"
+                >
+                  <Pencil className="h-4 w-4 text-foreground" />
                 </button>
-                <div className="aspect-[3/4] w-full">
+                
+                {/* Image */}
+                <div 
+                  className="aspect-[3/4] w-full overflow-hidden rounded-2xl cursor-pointer"
+                  onClick={() => navigate(`/listing/${listing.id}`)}
+                >
                   <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
+                </div>
+                
+                {/* Content */}
+                <div className="px-2 pt-3 pb-1">
+                  <div className="flex items-end justify-between">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base font-semibold text-foreground truncate">{listing.title}</h3>
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                          {listing.size}
+                        </span>
+                        <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                          {listing.brand}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0 ml-3">
+                      <p className="text-lg font-bold text-foreground">${listing.price}</p>
+                      <p className="text-xs text-muted-foreground">+ ${listing.shipping_price || 0} shipping</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
