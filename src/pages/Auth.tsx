@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Eye, EyeOff, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,9 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
 
 const Auth = () => {
   const navigate = useNavigate();
+  const { user, signIn, signUp, loading: authLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -19,6 +21,13 @@ const Auth = () => {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && !authLoading) {
+      navigate('/');
+    }
+  }, [user, authLoading, navigate]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginEmail || !loginPassword) {
@@ -26,12 +35,16 @@ const Auth = () => {
       return;
     }
     setIsLoading(true);
-    // Simulate login
-    setTimeout(() => {
+    
+    const { error } = await signIn(loginEmail, loginPassword);
+    
+    if (error) {
+      toast.error(error.message || 'Failed to sign in');
       setIsLoading(false);
+    } else {
       toast.success('Welcome back!');
       navigate('/');
-    }, 1000);
+    }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -45,13 +58,25 @@ const Auth = () => {
       return;
     }
     setIsLoading(true);
-    // Simulate signup
-    setTimeout(() => {
+    
+    const { error } = await signUp(signupEmail, signupPassword, signupName);
+    
+    if (error) {
+      toast.error(error.message || 'Failed to create account');
       setIsLoading(false);
+    } else {
       toast.success('Account created!');
       navigate('/');
-    }, 1000);
+    }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background px-6 py-4">
@@ -138,11 +163,11 @@ const Auth = () => {
         <TabsContent value="signup" className="mt-6">
           <form onSubmit={handleSignup} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="signup-name">Name</Label>
+              <Label htmlFor="signup-name">Username</Label>
               <Input
                 id="signup-name"
                 type="text"
-                placeholder="Your name"
+                placeholder="@username"
                 value={signupName}
                 onChange={(e) => setSignupName(e.target.value)}
                 className="h-14 rounded-xl"
