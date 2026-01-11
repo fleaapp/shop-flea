@@ -1,45 +1,39 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Camera, X } from 'lucide-react';
+import { ArrowLeft, ImagePlus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
 
-const categories = [
-  'Clothing',
-  'Shoes',
-  'Accessories',
-  'Electronics',
-  'Home & Garden',
-  'Sports',
-  'Books',
-  'Other',
-];
-
-const conditions = [
-  { value: 'new', label: 'New with tags' },
-  { value: 'like-new', label: 'Like new' },
-  { value: 'good', label: 'Good condition' },
-  { value: 'fair', label: 'Fair condition' },
-];
+const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'];
+const brands = ['Nike', 'Adidas', 'Zara', 'H&M', 'Uniqlo', 'Levi\'s', 'Gap', 'Other'];
+const categories = ['Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories', 'Bags', 'Other'];
+const conditions = ['New with tags', 'Like new', 'Good', 'Fair'];
+const colours = ['Black', 'White', 'Grey', 'Navy', 'Blue', 'Red', 'Pink', 'Green', 'Brown', 'Beige', 'Multi'];
+const styles = ['Casual', 'Formal', 'Streetwear', 'Vintage', 'Sporty', 'Bohemian', 'Minimalist', 'Other'];
+const genders = ['Women', 'Men', 'Unisex'];
 
 const CreateListing = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('');
+  const [productName, setProductName] = useState('');
+  const [size, setSize] = useState('');
+  const [brand, setBrand] = useState('');
   const [category, setCategory] = useState('');
   const [condition, setCondition] = useState('');
+  const [colour, setColour] = useState('');
+  const [style, setStyle] = useState('');
+  const [gender, setGender] = useState('');
+  const [itemPrice, setItemPrice] = useState('');
+  const [shippingPrice, setShippingPrice] = useState('');
+  const [description, setDescription] = useState('');
 
   const handleImageUpload = () => {
-    // Simulate adding a placeholder image
     if (images.length < 5) {
       setImages([...images, `https://picsum.photos/400?random=${Date.now()}`]);
     }
@@ -52,8 +46,8 @@ const CreateListing = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title || !description || !price || !category || !condition) {
-      toast.error('Please fill in all fields');
+    if (!productName || !size || !brand || !category || !condition || !itemPrice) {
+      toast.error('Please fill in all required fields');
       return;
     }
     
@@ -64,13 +58,15 @@ const CreateListing = () => {
     
     setIsLoading(true);
     
-    // Simulate creating listing
     setTimeout(() => {
       setIsLoading(false);
-      toast.success('Listing created!');
+      toast.success('Listing posted!');
       navigate('/');
     }, 1500);
   };
+
+  const inputStyles = "h-14 rounded-2xl bg-muted/50 border-0 placeholder:text-muted-foreground/60";
+  const selectStyles = "h-14 rounded-2xl bg-muted/50 border-0 [&>span]:text-muted-foreground/60";
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -84,128 +80,170 @@ const CreateListing = () => {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-xl font-bold text-foreground">Create Listing</h1>
+        <h1 className="text-xl font-bold text-foreground">Add new listing</h1>
       </header>
       
-      <form onSubmit={handleSubmit} className="px-4 space-y-6">
-        {/* Image Upload */}
-        <div>
-          <Label className="text-base">Photos</Label>
-          <p className="text-sm text-muted-foreground mb-3">Add up to 5 photos</p>
-          
+      <form onSubmit={handleSubmit} className="px-4 space-y-4">
+        {/* Photo Upload Area */}
+        <button
+          type="button"
+          onClick={handleImageUpload}
+          className="w-full h-32 rounded-2xl bg-muted/50 flex flex-col items-center justify-center gap-2"
+        >
+          <ImagePlus className="h-8 w-8 text-muted-foreground/60" />
+          <span className="text-sm text-muted-foreground/60">Add photos</span>
+        </button>
+
+        {/* Image Thumbnails */}
+        {images.length > 0 && (
           <div className="flex gap-3 overflow-x-auto pb-2">
             {images.map((img, index) => (
               <div key={index} className="relative flex-shrink-0">
                 <img
                   src={img}
                   alt={`Upload ${index + 1}`}
-                  className="h-24 w-24 rounded-xl object-cover"
+                  className="h-16 w-16 rounded-lg object-cover"
                 />
                 <button
                   type="button"
                   onClick={() => removeImage(index)}
-                  className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground"
+                  className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-foreground/80 text-background"
                 >
                   <X className="h-3 w-3" />
                 </button>
               </div>
             ))}
-            
-            {images.length < 5 && (
-              <button
-                type="button"
-                onClick={handleImageUpload}
-                className="flex h-24 w-24 flex-shrink-0 flex-col items-center justify-center rounded-xl border-2 border-dashed border-border hover:border-primary transition-colors"
-              >
-                <Camera className="h-6 w-6 text-muted-foreground" />
-                <span className="mt-1 text-xs text-muted-foreground">Add</span>
-              </button>
-            )}
           </div>
-        </div>
+        )}
         
-        {/* Title */}
-        <div className="space-y-2">
-          <Label htmlFor="title">Title</Label>
-          <Input
-            id="title"
-            placeholder="What are you selling?"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="h-14 rounded-xl"
-          />
-        </div>
+        {/* Product Name */}
+        <Input
+          placeholder="Product name"
+          value={productName}
+          onChange={(e) => setProductName(e.target.value)}
+          className={inputStyles}
+        />
         
-        {/* Description */}
-        <div className="space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <Textarea
-            id="description"
-            placeholder="Describe your item..."
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="min-h-[120px] rounded-xl resize-none"
-          />
-        </div>
-        
-        {/* Price */}
-        <div className="space-y-2">
-          <Label htmlFor="price">Price</Label>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-            <Input
-              id="price"
-              type="number"
-              placeholder="0.00"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              className="h-14 rounded-xl pl-8"
-            />
-          </div>
-        </div>
+        {/* Size */}
+        <Select value={size} onValueChange={setSize}>
+          <SelectTrigger className={selectStyles}>
+            <SelectValue placeholder="Size" />
+          </SelectTrigger>
+          <SelectContent>
+            {sizes.map((s) => (
+              <SelectItem key={s} value={s.toLowerCase()}>{s}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Brand */}
+        <Select value={brand} onValueChange={setBrand}>
+          <SelectTrigger className={selectStyles}>
+            <SelectValue placeholder="Brand" />
+          </SelectTrigger>
+          <SelectContent>
+            {brands.map((b) => (
+              <SelectItem key={b} value={b.toLowerCase()}>{b}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         
         {/* Category */}
-        <div className="space-y-2">
-          <Label>Category</Label>
-          <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="h-14 rounded-xl">
-              <SelectValue placeholder="Select a category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((cat) => (
-                <SelectItem key={cat} value={cat.toLowerCase()}>
-                  {cat}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Select value={category} onValueChange={setCategory}>
+          <SelectTrigger className={selectStyles}>
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            {categories.map((c) => (
+              <SelectItem key={c} value={c.toLowerCase()}>{c}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         
         {/* Condition */}
-        <div className="space-y-2">
-          <Label>Condition</Label>
-          <Select value={condition} onValueChange={setCondition}>
-            <SelectTrigger className="h-14 rounded-xl">
-              <SelectValue placeholder="Select condition" />
-            </SelectTrigger>
-            <SelectContent>
-              {conditions.map((cond) => (
-                <SelectItem key={cond.value} value={cond.value}>
-                  {cond.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Select value={condition} onValueChange={setCondition}>
+          <SelectTrigger className={selectStyles}>
+            <SelectValue placeholder="Condition" />
+          </SelectTrigger>
+          <SelectContent>
+            {conditions.map((c) => (
+              <SelectItem key={c} value={c.toLowerCase()}>{c}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Colour */}
+        <Select value={colour} onValueChange={setColour}>
+          <SelectTrigger className={selectStyles}>
+            <SelectValue placeholder="Colour" />
+          </SelectTrigger>
+          <SelectContent>
+            {colours.map((c) => (
+              <SelectItem key={c} value={c.toLowerCase()}>{c}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Style */}
+        <Select value={style} onValueChange={setStyle}>
+          <SelectTrigger className={selectStyles}>
+            <SelectValue placeholder="Style" />
+          </SelectTrigger>
+          <SelectContent>
+            {styles.map((s) => (
+              <SelectItem key={s} value={s.toLowerCase()}>{s}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Gender */}
+        <Select value={gender} onValueChange={setGender}>
+          <SelectTrigger className={selectStyles}>
+            <SelectValue placeholder="Gender" />
+          </SelectTrigger>
+          <SelectContent>
+            {genders.map((g) => (
+              <SelectItem key={g} value={g.toLowerCase()}>{g}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         
-        {/* Submit */}
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className="h-14 w-full rounded-xl bg-primary text-base font-medium text-primary-foreground hover:bg-mint-dark"
-        >
-          {isLoading ? 'Publishing...' : 'Publish Listing'}
-        </Button>
+        {/* Item Price */}
+        <Input
+          type="number"
+          placeholder="Item price"
+          value={itemPrice}
+          onChange={(e) => setItemPrice(e.target.value)}
+          className={inputStyles}
+        />
+
+        {/* Shipping Price */}
+        <Input
+          type="number"
+          placeholder="Shipping price"
+          value={shippingPrice}
+          onChange={(e) => setShippingPrice(e.target.value)}
+          className={inputStyles}
+        />
+        
+        {/* Description */}
+        <Textarea
+          placeholder="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="min-h-[120px] rounded-2xl bg-muted/50 border-0 resize-none placeholder:text-muted-foreground/60"
+        />
+        
+        {/* Submit Button */}
+        <div className="flex justify-center pt-4 pb-8">
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="h-12 px-8 rounded-full bg-foreground text-background font-medium hover:bg-foreground/90"
+          >
+            {isLoading ? 'Posting...' : 'Post listing'}
+          </Button>
+        </div>
       </form>
       
       <BottomNav />
