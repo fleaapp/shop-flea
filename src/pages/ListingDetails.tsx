@@ -108,18 +108,16 @@ const ListingDetails = () => {
               {/* Description */}
               <p className="mt-6 text-muted-foreground leading-relaxed">{listing.description}</p>
 
-              {/* Location */}
-              <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4" />
-                <span>{listing.location}</span>
-              </div>
-
               {/* Seller Info */}
               <div className="mt-6 flex items-center gap-3 rounded-2xl bg-card p-4 card-shadow">
                 <img src={listing.sellerAvatar} alt={listing.sellerName} className="h-12 w-12 rounded-full bg-muted" loading="lazy" />
                 <div className="flex-1">
                   <p className="font-medium text-foreground">{listing.sellerName}</p>
                   <p className="text-sm text-muted-foreground">Seller</p>
+                </div>
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <MapPin className="h-4 w-4" />
+                  <span>{listing.location}</span>
                 </div>
               </div>
 
