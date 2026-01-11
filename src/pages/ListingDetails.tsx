@@ -68,11 +68,7 @@ const ListingDetails = () => {
         <DrawerContent className="mt-0 h-[95dvh] max-h-[95dvh] overflow-hidden rounded-t-3xl bg-background">
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-8 pt-2">
             {/* Header */}
-            <div className="flex items-center justify-end">
-              <Button variant="ghost" size="icon" onClick={handleShare} className="h-10 w-10 rounded-full">
-                
-              </Button>
-            </div>
+            
 
             {/* Image Gallery (swipe) */}
             <div className="relative overflow-hidden rounded-3xl">
