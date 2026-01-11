@@ -66,7 +66,7 @@ const ListingDetails = () => {
       <Drawer open={open} onOpenChange={isOpen => !isOpen && handleClose()}>
         {/* Use dvh so mobile browsers don't "crop" the top due to URL bar/vh quirks */}
         <DrawerContent className="mt-0 h-[95dvh] max-h-[95dvh] overflow-hidden rounded-t-3xl bg-background">
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-8 pt-2">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-8 pt-1">
             {/* Header */}
             
 
