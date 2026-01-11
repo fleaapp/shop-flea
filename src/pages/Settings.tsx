@@ -4,10 +4,21 @@ import { Switch } from '@/components/ui/switch';
 import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 
 const Settings = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { clearDiscarded } = useDiscardedListings();
+
+  const handleRefreshDiscarded = async () => {
+    const success = await clearDiscarded();
+    if (success) {
+      toast.success('Discarded listings refreshed! You can browse them again.');
+    } else {
+      toast.error('Failed to refresh discarded listings');
+    }
+  };
 
   const settingsGroups = [
     {
@@ -20,7 +31,7 @@ const Settings = () => {
       title: 'Account',
       items: [
         { icon: <User className="h-5 w-5" />, label: 'Edit Profile' },
-        { icon: <RefreshCw className="h-5 w-5" />, label: 'Refresh Discarded Listings' },
+        { icon: <RefreshCw className="h-5 w-5" />, label: 'Refresh Discarded Listings', action: handleRefreshDiscarded },
         { icon: <Lock className="h-5 w-5" />, label: 'Privacy & Security' },
       ],
     },
@@ -66,6 +77,8 @@ const Settings = () => {
                       await signOut();
                       toast.success('Logged out');
                       navigate('/auth');
+                    } else if (item.action) {
+                      await item.action();
                     } else if (!item.toggle) {
                       toast(`${item.label} clicked`);
                     }
