@@ -102,16 +102,16 @@ const CreateListing = () => {
       />
 
       {/* Header */}
-      <header className="flex items-center gap-4 px-4 py-4">
+      <header className="relative flex items-center justify-center px-4 py-4">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => navigate(-1)}
-          className="h-10 w-10 rounded-full"
+          className="absolute left-4 h-10 w-10 rounded-full"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-xl font-bold text-foreground">Add new listing</h1>
+        <h1 className="text-xl font-bold text-foreground">Add New Listing</h1>
       </header>
       
       <form onSubmit={handleSubmit} className="px-4 space-y-4">
