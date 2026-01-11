@@ -9,6 +9,16 @@ import SearchSheet from '@/components/SearchSheet';
 import { mockListings } from '@/data/mockListings';
 import { Listing } from '@/types/listing';
 import { toast } from 'sonner';
+import { ChevronDown } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+const sizeOptions = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+const brandOptions = ['Nike', 'Adidas', 'Zara', 'H&M', 'Uniqlo', 'Gucci'];
 
 const Index = () => {
   const navigate = useNavigate();
@@ -18,6 +28,10 @@ const Index = () => {
   const [savedListings, setSavedListings] = useState<Listing[]>([]);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [searchSheetOpen, setSearchSheetOpen] = useState(false);
+  
+  // Quick filters state
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
 
   const currentListings = listings.slice(currentIndex, currentIndex + 3);
 
@@ -44,6 +58,9 @@ const Index = () => {
 
   const removeFilter = (filter: string) => {
     setFilters((prev) => prev.filter((f) => f !== filter));
+    // Also clear quick filters if they match
+    if (sizeOptions.includes(filter)) setSelectedSize(null);
+    if (brandOptions.includes(filter)) setSelectedBrand(null);
   };
 
   const handleSearchClick = () => {
@@ -65,21 +82,103 @@ const Index = () => {
   const handleApplyFilters = (filterState: FilterState) => {
     const activeFilters: string[] = [];
     if (filterState.category) activeFilters.push(filterState.category);
-    if (filterState.size) activeFilters.push(filterState.size);
+    if (filterState.size) activeFilters.push(filterState.size.toUpperCase());
     if (filterState.condition) activeFilters.push(filterState.condition);
     if (filterState.gender) activeFilters.push(filterState.gender);
     setFilters(activeFilters);
+    
+    // Sync quick filters
+    if (filterState.size) {
+      setSelectedSize(filterState.size.toUpperCase());
+    }
     toast.success('Filters applied!');
+  };
+
+  const handleSizeSelect = (size: string) => {
+    if (selectedSize === size) {
+      setSelectedSize(null);
+      setFilters(prev => prev.filter(f => f !== size));
+    } else {
+      if (selectedSize) {
+        setFilters(prev => prev.filter(f => f !== selectedSize));
+      }
+      setSelectedSize(size);
+      setFilters(prev => [...prev.filter(f => !sizeOptions.includes(f)), size]);
+    }
+  };
+
+  const handleBrandSelect = (brand: string) => {
+    if (selectedBrand === brand) {
+      setSelectedBrand(null);
+      setFilters(prev => prev.filter(f => f !== brand));
+    } else {
+      if (selectedBrand) {
+        setFilters(prev => prev.filter(f => f !== selectedBrand));
+      }
+      setSelectedBrand(brand);
+      setFilters(prev => [...prev.filter(f => !brandOptions.includes(f)), brand]);
+    }
   };
 
   return (
     <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
       <Header onSearchClick={handleSearchClick} onFilterClick={handleFilterClick} />
       
-      {/* Active Filters */}
-      {filters.length > 0 && (
+      {/* Quick Filters - Size and Brand only */}
+      <div className="flex gap-2 px-6 pb-2 flex-shrink-0">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className={`flex items-center gap-1 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              selectedSize 
+                ? 'bg-charcoal text-white' 
+                : 'bg-card text-foreground card-shadow'
+            }`}>
+              {selectedSize || 'Size'}
+              <ChevronDown className="h-4 w-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="rounded-xl">
+            {sizeOptions.map((size) => (
+              <DropdownMenuItem 
+                key={size} 
+                onClick={() => handleSizeSelect(size)}
+                className={selectedSize === size ? 'bg-muted' : ''}
+              >
+                {size}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className={`flex items-center gap-1 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              selectedBrand 
+                ? 'bg-charcoal text-white' 
+                : 'bg-card text-foreground card-shadow'
+            }`}>
+              {selectedBrand || 'Brand'}
+              <ChevronDown className="h-4 w-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="rounded-xl">
+            {brandOptions.map((brand) => (
+              <DropdownMenuItem 
+                key={brand} 
+                onClick={() => handleBrandSelect(brand)}
+                className={selectedBrand === brand ? 'bg-muted' : ''}
+              >
+                {brand}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Active Filters from FilterSheet (excluding quick filter duplicates) */}
+      {filters.filter(f => !sizeOptions.includes(f) && !brandOptions.includes(f)).length > 0 && (
         <div className="flex flex-wrap gap-2 px-6 pb-2 flex-shrink-0">
-          {filters.map((filter) => (
+          {filters.filter(f => !sizeOptions.includes(f) && !brandOptions.includes(f)).map((filter) => (
             <FilterChip key={filter} label={filter} onRemove={() => removeFilter(filter)} />
           ))}
         </div>
