@@ -100,7 +100,7 @@ const ListingDetails = () => {
               <h1 className="text-2xl font-bold text-foreground">{listing.title}</h1>
 
               {/* Description */}
-              <p className="mt-4 text-muted-foreground leading-relaxed px-0">{listing.description}</p>
+              <p className="mt-4 text-muted-foreground leading-relaxed">{listing.description}</p>
 
               {/* Price */}
               <div className="mt-4">

@@ -11,7 +11,7 @@ const ListingTag = ({ label, variant = 'default' }: ListingTagProps) => {
       className={cn(
         'inline-flex items-center rounded-full px-3 py-1 text-xs font-medium',
         variant === 'default' 
-          ? 'bg-charcoal text-cream' 
+          ? 'bg-tag text-charcoal-light' 
           : 'bg-primary text-primary-foreground'
       )}
     >
