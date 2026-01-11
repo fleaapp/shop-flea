@@ -96,17 +96,17 @@ const ListingDetails = () => {
 
             {/* Content */}
             <div className="pt-4">
-              {/* Title and Price */}
-              <div className="flex items-start justify-between">
-                <h1 className="text-2xl font-bold text-foreground">{listing.title}</h1>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-foreground">${listing.price}</p>
-                  <p className="text-sm text-muted-foreground">+ ${listing.shippingPrice} shipping</p>
-                </div>
-              </div>
+              {/* Title */}
+              <h1 className="text-2xl font-bold text-foreground">{listing.title}</h1>
 
               {/* Description */}
-              <p className="mt-6 text-muted-foreground leading-relaxed">{listing.description}</p>
+              <p className="mt-4 text-muted-foreground leading-relaxed">{listing.description}</p>
+
+              {/* Price */}
+              <div className="mt-4">
+                <p className="text-2xl font-bold text-foreground">${listing.price}</p>
+                <p className="text-sm text-muted-foreground">+ ${listing.shippingPrice} shipping</p>
+              </div>
 
               {/* Seller Info */}
               <div className="mt-6 flex items-center gap-3 rounded-2xl bg-card p-4 card-shadow">
