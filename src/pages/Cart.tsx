@@ -53,9 +53,9 @@ const Cart = () => {
           variant="ghost"
           size="icon"
           onClick={() => navigate('/favorites')}
-          className="absolute right-4 top-8 h-10 w-10 rounded-full"
+          className="absolute right-4 top-8 h-12 w-12 rounded-full"
         >
-          <Star className="h-5 w-5" />
+          <Star className="h-6 w-6" />
         </Button>
 
         {/* Tab switcher */}

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -77,16 +77,16 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
   );
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[90vh] rounded-t-3xl bg-background p-0 flex flex-col">
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="max-h-[90vh] rounded-t-3xl bg-background">
         {/* Handle bar */}
         <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
           <div className="w-12 h-1 bg-muted-foreground/30 rounded-full" />
         </div>
         
-        <SheetHeader className="px-6 pb-4 flex-shrink-0">
-          <SheetTitle className="text-center text-xl font-semibold">Filter</SheetTitle>
-        </SheetHeader>
+        <div className="px-6 pb-4 flex-shrink-0">
+          <h2 className="text-center text-xl font-semibold">Filter</h2>
+        </div>
 
         <div className="flex-1 overflow-y-auto px-6 pb-28" style={{ overscrollBehavior: 'contain' }}>
           {/* Preferences Toggle */}
@@ -224,7 +224,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
         </div>
 
         {/* Bottom Buttons */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 bg-background border-t border-border flex gap-4">
+        <div className="p-6 bg-background border-t border-border flex gap-4">
           <Button
             variant="outline"
             onClick={handleReset}
@@ -239,8 +239,8 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
             Show Results
           </Button>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   );
 };
 
