@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, Globe } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
+import fleaLogoAuth from '@/assets/flea-logo-auth.jpeg';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -20,7 +21,7 @@ const Auth = () => {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupUsername, setSignupUsername] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
-  const [signupCountry, setSignupCountry] = useState('');
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
 
   // Redirect if already logged in
   useEffect(() => {
@@ -56,6 +57,10 @@ const Auth = () => {
     }
     if (signupPassword.length < 6) {
       toast.error('Password must be at least 6 characters');
+      return;
+    }
+    if (signupPassword !== signupConfirmPassword) {
+      toast.error('Passwords do not match');
       return;
     }
     setIsLoading(true);
@@ -97,9 +102,11 @@ const Auth = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-8 py-12">
         {/* Logo */}
-        <h1 className="text-5xl font-extrabold italic tracking-tight text-foreground mb-10">
-          FLEA
-        </h1>
+        <img 
+          src={fleaLogoAuth} 
+          alt="FLEA" 
+          className="h-20 mb-10 object-contain"
+        />
         
         {/* Tab Toggle */}
         <div className="flex bg-foreground rounded-full p-1 mb-8">
@@ -217,12 +224,12 @@ const Auth = () => {
               </div>
               
               <div className="relative">
-                <Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
-                  type="text"
-                  placeholder="Country"
-                  value={signupCountry}
-                  onChange={(e) => setSignupCountry(e.target.value)}
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Confirm password"
+                  value={signupConfirmPassword}
+                  onChange={(e) => setSignupConfirmPassword(e.target.value)}
                   className="h-14 pl-12 rounded-xl bg-card border-border"
                 />
               </div>
