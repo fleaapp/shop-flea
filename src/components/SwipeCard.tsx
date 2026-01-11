@@ -85,7 +85,7 @@ const SwipeCard = ({
         
         {/* Content - fixed height */}
         <div className="px-2 pt-3 pb-1 flex-shrink-0">
-          <div className="flex items-start justify-between">
+          <div className="flex items-end justify-between">
             <div className="flex-1 min-w-0">
               <h3 className="text-lg font-semibold text-foreground truncate">{listing.title}</h3>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
