@@ -2,30 +2,21 @@ import { useState, useEffect, useRef } from 'react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Search, X, Clock } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Listing } from '@/types/listing';
 
 interface SearchSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSearch: (query: string) => void;
+  listings: Listing[];
 }
 
-const searchSuggestions = [
-  'cardigan', 'skirt', 'shorts', 'sneakers', 'jeans', 'shirt', 'jacket', 'sweater'
-];
-
-const userSuggestions = [
-  { username: 'redsparrow', avatar: '' },
-  { username: 'reddog', avatar: '' },
-  { username: 'red123', avatar: '' },
-];
-
-const SearchSheet = ({ open, onOpenChange, onSearch }: SearchSheetProps) => {
+const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
     const saved = localStorage.getItem('recentSearches');
-    return saved ? JSON.parse(saved) : ['Red cardigan', 'Wide leg jeans', 'Blue t-shirt', 'Mini dress'];
+    return saved ? JSON.parse(saved) : [];
   });
 
   useEffect(() => {
@@ -52,24 +43,22 @@ const SearchSheet = ({ open, onOpenChange, onSearch }: SearchSheetProps) => {
 
   const clearQuery = () => setQuery('');
 
-  const filteredSuggestions = query
-    ? searchSuggestions.filter(s => 
-        s.toLowerCase().includes(query.toLowerCase()) || 
-        query.toLowerCase().includes(s.toLowerCase().split(' ')[0])
+  // Filter listings based on query
+  const filteredListings = query
+    ? listings.filter(listing => 
+        listing.title.toLowerCase().includes(query.toLowerCase()) ||
+        listing.category.toLowerCase().includes(query.toLowerCase()) ||
+        listing.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
       )
-    : [];
-
-  const filteredUsers = query
-    ? userSuggestions.filter(u => u.username.toLowerCase().includes(query.toLowerCase()))
     : [];
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
+        hideClose
         onOpenAutoFocus={(e) => {
           e.preventDefault();
-          // Avoid the browser scrolling the sheet when focusing (common on mobile)
           inputRef.current?.focus({ preventScroll: true });
         }}
         className="!inset-0 h-[100dvh] max-h-[100dvh] rounded-none bg-background p-0 flex flex-col overflow-hidden"
@@ -97,7 +86,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch }: SearchSheetProps) => {
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch(query)}
                 placeholder="Search..."
-                className="pl-12 pr-12 h-12 bg-card border-0 rounded-xl text-base"
+                className="pl-12 pr-12 h-12 bg-card border border-border rounded-xl text-base"
               />
               {query && (
                 <button
@@ -118,62 +107,30 @@ const SearchSheet = ({ open, onOpenChange, onSearch }: SearchSheetProps) => {
             <div className="mb-6">
               <h3 className="text-sm font-medium text-foreground mb-3">Search results</h3>
               <div className="bg-card rounded-2xl p-4">
-                {/* Item suggestions */}
-                {filteredSuggestions.length > 0 || query ? (
+                {filteredListings.length > 0 ? (
                   <div className="space-y-3">
-                    {(filteredSuggestions.length > 0 ? filteredSuggestions : searchSuggestions).map((suggestion) => (
+                    {filteredListings.slice(0, 8).map((listing) => (
                       <button
-                        key={suggestion}
-                        onClick={() => handleSearch(`${query} ${suggestion}`)}
-                        className="block w-full text-left py-1"
+                        key={listing.id}
+                        onClick={() => handleSearch(listing.title)}
+                        className="block w-full text-left py-2"
                       >
-                        <span className="font-semibold text-foreground">{query}</span>
-                        <span className="text-muted-foreground"> {suggestion}</span>
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={listing.image}
+                            alt={listing.title}
+                            className="w-10 h-10 rounded-lg object-cover"
+                          />
+                          <div>
+                            <span className="font-medium text-foreground">{listing.title}</span>
+                            <p className="text-sm text-muted-foreground">${listing.price}</p>
+                          </div>
+                        </div>
                       </button>
                     ))}
                   </div>
-                ) : null}
-
-                {/* User suggestions */}
-                {filteredUsers.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-border space-y-3">
-                    {filteredUsers.map((user) => (
-                      <button
-                        key={user.username}
-                        onClick={() => handleSearch(`@${user.username}`)}
-                        className="flex items-center gap-3 w-full text-left py-1"
-                      >
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.avatar} />
-                          <AvatarFallback className="bg-muted text-xs">
-                            {user.username.slice(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-foreground">@{user.username}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Show users even without specific filter when query exists */}
-                {query && filteredUsers.length === 0 && (
-                  <div className="mt-4 pt-4 border-t border-border space-y-3">
-                    {userSuggestions.map((user) => (
-                      <button
-                        key={user.username}
-                        onClick={() => handleSearch(`@${user.username}`)}
-                        className="flex items-center gap-3 w-full text-left py-1"
-                      >
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.avatar} />
-                          <AvatarFallback className="bg-muted text-xs">
-                            {user.username.slice(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-foreground">@{user.username}</span>
-                      </button>
-                    ))}
-                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm py-2">No results found for "{query}"</p>
                 )}
               </div>
             </div>
@@ -205,6 +162,14 @@ const SearchSheet = ({ open, onOpenChange, onSearch }: SearchSheetProps) => {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Empty state when no recent searches and no query */}
+          {!query && recentSearches.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Search className="h-12 w-12 text-muted-foreground/50 mb-4" />
+              <p className="text-muted-foreground">Start typing to search listings</p>
             </div>
           )}
         </div>
