@@ -1,57 +1,85 @@
-import { Settings as SettingsIcon, RefreshCw, MessageCircleQuestion, ShieldCheck, FileText, Info, LogOut, User } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Moon, Bell, Lock, HelpCircle, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
 
 const Settings = () => {
   const navigate = useNavigate();
 
-  const settingsItems = [
-    { icon: <User className="h-5 w-5" />, label: 'Edit profile', action: () => navigate('/profile') },
-    { icon: <RefreshCw className="h-5 w-5" />, label: 'Refresh discarded listings', action: () => toast('Discarded listings refreshed') },
-    { icon: <MessageCircleQuestion className="h-5 w-5" />, label: 'Support', action: () => toast('Opening support...') },
-    { icon: <ShieldCheck className="h-5 w-5" />, label: 'Privacy policy', action: () => toast('Opening privacy policy...') },
-    { icon: <FileText className="h-5 w-5" />, label: 'Terms & conditions', action: () => toast('Opening terms...') },
-    { icon: <Info className="h-5 w-5" />, label: 'FAQ', action: () => toast('Opening FAQ...') },
+  const settingsGroups = [
+    {
+      title: 'Preferences',
+      items: [
+        { icon: <Bell className="h-5 w-5" />, label: 'Push Notifications', toggle: true },
+        { icon: <Moon className="h-5 w-5" />, label: 'Dark Mode', toggle: true },
+      ],
+    },
+    {
+      title: 'Account',
+      items: [
+        { icon: <Lock className="h-5 w-5" />, label: 'Privacy & Security' },
+      ],
+    },
+    {
+      title: 'Support',
+      items: [
+        { icon: <HelpCircle className="h-5 w-5" />, label: 'Help Center' },
+        { icon: <Info className="h-5 w-5" />, label: 'About Flea' },
+      ],
+    },
   ];
-
-  const handleLogout = () => {
-    toast('Logged out successfully');
-    navigate('/auth');
-  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <header className="flex items-center justify-center gap-2 px-4 py-6">
-        <SettingsIcon className="h-6 w-6 text-foreground" />
+      <header className="flex items-center gap-4 px-4 py-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(-1)}
+          className="h-10 w-10 rounded-full"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
         <h1 className="text-xl font-bold text-foreground">Settings</h1>
       </header>
       
-      {/* Settings Items */}
-      <div className="px-4 space-y-3">
-        {settingsItems.map((item) => (
-          <button
-            key={item.label}
-            onClick={item.action}
-            className="w-full flex items-center gap-4 rounded-2xl bg-card p-4 card-shadow text-left"
-          >
-            <div className="text-foreground">{item.icon}</div>
-            <span className="font-medium text-foreground">{item.label}</span>
-          </button>
+      {/* Settings Groups */}
+      <div className="px-4 space-y-6">
+        {settingsGroups.map((group) => (
+          <div key={group.title}>
+            <h2 className="mb-3 text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              {group.title}
+            </h2>
+            
+            <div className="space-y-2">
+              {group.items.map((item) => (
+                <div
+                  key={item.label}
+                  className="flex items-center justify-between rounded-2xl bg-card p-4 card-shadow"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="text-muted-foreground">{item.icon}</div>
+                    <span className="font-medium text-foreground">{item.label}</span>
+                  </div>
+                  
+                  {item.toggle ? (
+                    <Switch onCheckedChange={() => toast(`${item.label} toggled`)} />
+                  ) : (
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
       
-      {/* Logout Button */}
-      <div className="mt-8 px-4 flex justify-center">
-        <Button
-          onClick={handleLogout}
-          className="rounded-full px-8 bg-muted-foreground hover:bg-muted-foreground/80 text-white"
-        >
-          <LogOut className="h-4 w-4 mr-2" />
-          Logout
-        </Button>
+      {/* Version */}
+      <div className="mt-8 text-center">
+        <p className="text-sm text-muted-foreground">Version 1.0.0</p>
       </div>
       
       <BottomNav />
