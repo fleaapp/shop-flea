@@ -8,10 +8,12 @@ import FilterSheet, { FilterState } from '@/components/FilterSheet';
 import SearchSheet from '@/components/SearchSheet';
 import { mockListings } from '@/data/mockListings';
 import { Listing } from '@/types/listing';
+import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
 
 const Index = () => {
   const navigate = useNavigate();
+  const { addToCart } = useCart();
   const [listings, setListings] = useState<Listing[]>(mockListings);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [filters, setFilters] = useState<string[]>([]);
@@ -41,10 +43,11 @@ const Index = () => {
   const handleSwipeUp = useCallback(() => {
     if (currentIndex < listings.length) {
       const cartListing = listings[currentIndex];
+      addToCart(cartListing);
       setCurrentIndex((prev) => prev + 1);
       toast.success('Added to cart!', { description: `${cartListing.title} - $${cartListing.price}` });
     }
-  }, [currentIndex, listings]);
+  }, [currentIndex, listings, addToCart]);
 
   const handleCardClick = (listing: Listing) => {
     navigate(`/listing/${listing.id}`, { state: { listing } });

@@ -1,6 +1,7 @@
 import { Settings, User, Home, ShoppingCart, Bell } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useCart } from '@/context/CartContext';
 
 interface NavItem {
   icon: React.ReactNode;
@@ -12,12 +13,13 @@ interface NavItem {
 const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { cartItems } = useCart();
 
   const navItems: NavItem[] = [
     { icon: <Settings className="h-5 w-5" />, label: 'Settings', path: '/settings' },
     { icon: <User className="h-5 w-5" />, label: 'Profile', path: '/profile' },
     { icon: <Home className="h-5 w-5" />, label: 'Home', path: '/' },
-    { icon: <ShoppingCart className="h-5 w-5" />, label: 'Cart', path: '/favorites', badge: 1 },
+    { icon: <ShoppingCart className="h-5 w-5" />, label: 'Cart', path: '/cart', badge: cartItems.length || undefined },
     { icon: <Bell className="h-5 w-5" />, label: 'Alerts', path: '/notifications' },
   ];
 
