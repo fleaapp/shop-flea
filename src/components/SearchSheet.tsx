@@ -64,42 +64,48 @@ const SearchSheet = ({ open, onOpenChange, onSearch }: SearchSheetProps) => {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="!inset-0 h-full rounded-none bg-background p-0 flex flex-col">
-        {/* Header - fixed at top with safe area */}
-        <div className="flex items-center gap-4 px-6 py-4 pt-[env(safe-area-inset-top,12px)] flex-shrink-0 sticky top-0 bg-background z-10">
-          <button onClick={() => onOpenChange(false)} className="p-1">
-            <ArrowLeft className="h-6 w-6 text-foreground" />
-          </button>
-          <div className="flex items-center gap-2 flex-1 justify-center -ml-7">
-            <Search className="h-5 w-5 text-foreground" />
-            <span className="text-lg font-semibold">Search</span>
+      <SheetContent
+        side="bottom"
+        className="!inset-0 h-[100dvh] max-h-[100dvh] rounded-none bg-background p-0 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]"
+      >
+        {/* Sticky top area (always visible while typing) */}
+        <div className="sticky top-0 z-10 bg-background pt-[env(safe-area-inset-top)]">
+          {/* Header */}
+          <div className="flex items-center gap-4 px-6 py-4">
+            <button onClick={() => onOpenChange(false)} className="p-1">
+              <ArrowLeft className="h-6 w-6 text-foreground" />
+            </button>
+            <div className="flex items-center gap-2 flex-1 justify-center -ml-7">
+              <Search className="h-5 w-5 text-foreground" />
+              <span className="text-lg font-semibold">Search</span>
+            </div>
+          </div>
+
+          {/* Search Input */}
+          <div className="px-6 pb-4">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch(query)}
+                placeholder="Search..."
+                className="pl-12 pr-12 h-12 bg-card border-0 rounded-xl text-base"
+                autoFocus
+              />
+              {query && (
+                <button
+                  onClick={clearQuery}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full bg-muted"
+                >
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Search Input */}
-        <div className="px-6 pb-4 flex-shrink-0">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch(query)}
-              placeholder="Search..."
-              className="pl-12 pr-12 h-12 bg-card border-0 rounded-xl text-base"
-              autoFocus
-            />
-            {query && (
-              <button 
-                onClick={clearQuery}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full bg-muted"
-              >
-                <X className="h-4 w-4 text-muted-foreground" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-6 pb-6">
+        <div className="px-6 pb-[calc(env(safe-area-inset-bottom)+24px)]">
           {/* Search Results */}
           {query && (
             <div className="mb-6">
