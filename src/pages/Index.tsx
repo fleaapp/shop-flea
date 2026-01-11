@@ -118,6 +118,7 @@ const Index = () => {
         open={searchSheetOpen}
         onOpenChange={setSearchSheetOpen}
         onSearch={handleSearch}
+        listings={mockListings}
       />
       <BottomNav />
     </div>
