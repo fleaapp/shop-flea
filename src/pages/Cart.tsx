@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, ClipboardList, Check } from 'lucide-react';
+import { ShoppingCart, ClipboardList, Check, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
 import { useCart } from '@/context/CartContext';
@@ -46,13 +46,24 @@ const Cart = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Tab Header */}
-      <div className="flex justify-center pt-8 pb-6">
+      {/* Header with Wishlist Button */}
+      <div className="relative flex justify-center pt-8 pb-6">
+        {/* Wishlist button - top right */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate('/favorites')}
+          className="absolute right-4 top-8 h-10 w-10 rounded-full"
+        >
+          <Star className="h-5 w-5" />
+        </Button>
+
+        {/* Tab switcher */}
         <div className="flex items-center rounded-full bg-muted p-1">
           <button
             onClick={() => setActiveTab('cart')}
             className={cn(
-              'flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-medium transition-all',
+              'flex items-center justify-center gap-2 rounded-full w-28 py-2.5 text-sm font-medium transition-all',
               activeTab === 'cart'
                 ? 'bg-card text-foreground shadow-sm'
                 : 'text-muted-foreground'
@@ -64,7 +75,7 @@ const Cart = () => {
           <button
             onClick={() => setActiveTab('orders')}
             className={cn(
-              'flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-medium transition-all',
+              'flex items-center justify-center gap-2 rounded-full w-28 py-2.5 text-sm font-medium transition-all',
               activeTab === 'orders'
                 ? 'bg-card text-foreground shadow-sm'
                 : 'text-muted-foreground'
