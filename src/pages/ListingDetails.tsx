@@ -1,21 +1,30 @@
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Heart, MessageCircle, MapPin, Share2 } from 'lucide-react';
+import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
-import { Listing } from '@/types/listing';
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel';
 import ListingTag from '@/components/ListingTag';
-import { toast } from 'sonner';
 import { mockListings } from '@/data/mockListings';
-import { useEffect, useState } from 'react';
+import { Listing } from '@/types/listing';
 
 const ListingDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
+
   const [open, setOpen] = useState(true);
-  
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+
   // Get listing from state or find from mock data
-  const listing: Listing = location.state?.listing || mockListings.find(l => l.id === id);
+  const listing: Listing = location.state?.listing || mockListings.find((l) => l.id === id);
+
+  const images = listing?.images?.length ? listing.images : listing ? [listing.image] : [];
 
   const handleClose = () => {
     setOpen(false);
@@ -24,8 +33,29 @@ const ListingDetails = () => {
 
   useEffect(() => {
     setOpen(true);
+    setActiveImageIndex(0);
+
+    // Ensure the drawer content always starts at the top (prevents "cut off" opening).
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: 0 });
+    });
   }, [id]);
-  
+
+  useEffect(() => {
+    if (!carouselApi) return;
+
+    const onSelect = () => {
+      setActiveImageIndex(carouselApi.selectedScrollSnap());
+    };
+
+    onSelect();
+    carouselApi.on('select', onSelect);
+
+    return () => {
+      carouselApi.off('select', onSelect);
+    };
+  }, [carouselApi]);
+
   if (!listing) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -49,29 +79,40 @@ const ListingDetails = () => {
   return (
     <div className="min-h-screen bg-background">
       <Drawer open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-        <DrawerContent className="max-h-[95vh] bg-background rounded-t-3xl">
-          <div className="overflow-y-auto px-4 pb-8 pt-2">
+        {/* Use dvh so mobile browsers don't "crop" the top due to URL bar/vh quirks */}
+        <DrawerContent className="mt-0 h-[95dvh] max-h-[95dvh] overflow-hidden rounded-t-3xl bg-background">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-8 pt-2">
             {/* Header */}
             <div className="flex items-center justify-end pb-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleShare}
-                className="h-10 w-10 rounded-full"
-              >
+              <Button variant="ghost" size="icon" onClick={handleShare} className="h-10 w-10 rounded-full">
                 <Share2 className="h-5 w-5" />
               </Button>
             </div>
-            
-            {/* Image */}
-            <div className="overflow-hidden rounded-3xl">
-              <img
-                src={listing.image}
-                alt={listing.title}
-                className="aspect-square w-full object-cover"
-              />
+
+            {/* Image Gallery (swipe) */}
+            <div className="relative overflow-hidden rounded-3xl">
+              <Carousel setApi={setCarouselApi} opts={{ loop: images.length > 1 }} className="w-full">
+                <CarouselContent className="ml-0">
+                  {images.map((src, index) => (
+                    <CarouselItem key={`${listing.id}-img-${index}`} className="pl-0">
+                      <img
+                        src={src}
+                        alt={`${listing.title} photo ${index + 1}`}
+                        className="aspect-square w-full object-cover"
+                        loading={index === 0 ? 'eager' : 'lazy'}
+                      />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+              </Carousel>
+
+              {images.length > 1 && (
+                <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-background/70 px-2 py-1 text-xs text-foreground">
+                  {activeImageIndex + 1}/{images.length}
+                </div>
+              )}
             </div>
-            
+
             {/* Content */}
             <div className="pt-6">
               {/* Title and Price */}
@@ -82,7 +123,7 @@ const ListingDetails = () => {
                   <p className="text-sm text-muted-foreground">+ ${listing.shippingPrice} shipping</p>
                 </div>
               </div>
-              
+
               {/* Tags */}
               <div className="mt-4 flex flex-wrap gap-2">
                 <ListingTag label={listing.size} />
@@ -91,29 +132,30 @@ const ListingDetails = () => {
                   <ListingTag key={tag} label={tag} />
                 ))}
               </div>
-              
+
               {/* Description */}
               <p className="mt-6 text-muted-foreground leading-relaxed">{listing.description}</p>
-              
+
               {/* Location */}
               <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4" />
                 <span>{listing.location}</span>
               </div>
-              
+
               {/* Seller Info */}
               <div className="mt-6 flex items-center gap-3 rounded-2xl bg-card p-4 card-shadow">
                 <img
                   src={listing.sellerAvatar}
                   alt={listing.sellerName}
                   className="h-12 w-12 rounded-full bg-muted"
+                  loading="lazy"
                 />
                 <div className="flex-1">
                   <p className="font-medium text-foreground">{listing.sellerName}</p>
                   <p className="text-sm text-muted-foreground">Seller</p>
                 </div>
               </div>
-              
+
               {/* Actions */}
               <div className="mt-6 grid grid-cols-2 gap-4">
                 <Button
@@ -124,7 +166,7 @@ const ListingDetails = () => {
                   <MessageCircle className="mr-2 h-5 w-5" />
                   Message
                 </Button>
-                
+
                 <Button
                   onClick={handleSave}
                   className="h-14 rounded-2xl bg-primary text-base font-medium text-primary-foreground hover:bg-mint-dark"
