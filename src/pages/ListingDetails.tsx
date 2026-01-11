@@ -104,8 +104,8 @@ const ListingDetails = () => {
 
               {/* Price */}
               <div className="mt-4">
-                <p className="text-2xl font-bold text-foreground">${listing.price}</p>
-                <p className="text-sm text-muted-foreground">+ ${listing.shippingPrice} shipping</p>
+                <p className="text-2xl font-bold text-foreground text-right">${listing.price}</p>
+                <p className="text-sm text-muted-foreground text-right">+ ${listing.shippingPrice} shipping</p>
               </div>
 
               {/* Seller Info */}
