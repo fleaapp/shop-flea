@@ -87,8 +87,15 @@ const ListingDetails = () => {
                 </div>}
             </div>
 
+            {/* Tags */}
+            <div className="mt-4 flex-wrap gap-2 flex flex-row">
+              <ListingTag label={listing.size} />
+              <ListingTag label={listing.brand} />
+              {listing.tags.map(tag => <ListingTag key={tag} label={tag} />)}
+            </div>
+
             {/* Content */}
-            <div className="pt-6">
+            <div className="pt-4">
               {/* Title and Price */}
               <div className="flex items-start justify-between">
                 <h1 className="text-2xl font-bold text-foreground">{listing.title}</h1>
@@ -96,13 +103,6 @@ const ListingDetails = () => {
                   <p className="text-2xl font-bold text-foreground">${listing.price}</p>
                   <p className="text-sm text-muted-foreground">+ ${listing.shippingPrice} shipping</p>
                 </div>
-              </div>
-
-              {/* Tags */}
-              <div className="mt-4 flex-wrap gap-2 flex flex-row">
-                <ListingTag label={listing.size} />
-                <ListingTag label={listing.brand} />
-                {listing.tags.map(tag => <ListingTag key={tag} label={tag} />)}
               </div>
 
               {/* Description */}
