@@ -86,7 +86,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch(query)}
                 placeholder="Search..."
-                className="pl-12 pr-12 h-12 bg-card border border-border rounded-xl text-base"
+                className="pl-12 pr-12 h-12 bg-card border border-muted-foreground/30 rounded-xl text-base focus-visible:ring-muted-foreground/50"
               />
               {query && (
                 <button
