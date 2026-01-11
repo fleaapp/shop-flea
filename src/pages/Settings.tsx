@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
 import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
 
 const Settings = () => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
 
   const settingsGroups = [
     {
@@ -59,9 +61,11 @@ const Settings = () => {
                 <div
                   key={item.label}
                   className={`flex items-center justify-between rounded-2xl bg-card p-4 card-shadow cursor-pointer ${item.danger ? 'text-destructive' : ''}`}
-                  onClick={() => {
+                  onClick={async () => {
                     if (item.label === 'Logout') {
-                      toast('Logged out');
+                      await signOut();
+                      toast.success('Logged out');
+                      navigate('/auth');
                     } else if (!item.toggle) {
                       toast(`${item.label} clicked`);
                     }
