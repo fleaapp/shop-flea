@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ExternalLink } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -23,12 +23,19 @@ const Checkout = () => {
   const [selectedCard, setSelectedCard] = useState<string | null>('saved-1');
   const [showNewCard, setShowNewCard] = useState(false);
   const [saveCard, setSaveCard] = useState(true);
+  const [shippingExpanded, setShippingExpanded] = useState(false);
   
   // Form state
   const [cardHolder, setCardHolder] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [cvv, setCvv] = useState('');
   const [expiry, setExpiry] = useState('');
+  
+  // Shipping details state
+  const [shippingName, setShippingName] = useState('Charlie Smith');
+  const [shippingAddress, setShippingAddress] = useState('123 Smile road');
+  const [shippingCity, setShippingCity] = useState('Melbourne');
+  const [shippingPostcode, setShippingPostcode] = useState('3100');
 
   const handleClose = () => {
     setOpen(false);
@@ -119,15 +126,63 @@ const Checkout = () => {
               <div className="bg-muted px-4 py-2">
                 <span className="text-sm text-muted-foreground">Shipping details</span>
               </div>
-              <div className="p-4 flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-foreground">Charlie Smith</p>
-                  <p className="text-sm text-muted-foreground">123 Smile road, Melbourne, 3100</p>
+              <button 
+                onClick={() => setShippingExpanded(!shippingExpanded)}
+                className="w-full p-4 flex items-center justify-between"
+              >
+                <div className="text-left">
+                  <p className="font-semibold text-foreground">{shippingName}</p>
+                  <p className="text-sm text-muted-foreground">{shippingAddress}, {shippingCity}, {shippingPostcode}</p>
                 </div>
-                <button className="p-2 text-muted-foreground hover:text-foreground">
-                  <ExternalLink className="h-5 w-5" />
-                </button>
-              </div>
+                <ChevronDown className={cn(
+                  "h-5 w-5 text-muted-foreground transition-transform duration-200",
+                  shippingExpanded && "rotate-180"
+                )} />
+              </button>
+              
+              {/* Expandable Edit Form */}
+              {shippingExpanded && (
+                <div className="px-4 pb-4 space-y-3 border-t border-border pt-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">Full name</label>
+                    <Input
+                      value={shippingName}
+                      onChange={(e) => setShippingName(e.target.value)}
+                      className="h-11 rounded-xl bg-background border-border"
+                      placeholder="Your name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">Street address</label>
+                    <Input
+                      value={shippingAddress}
+                      onChange={(e) => setShippingAddress(e.target.value)}
+                      className="h-11 rounded-xl bg-background border-border"
+                      placeholder="Street address"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">City</label>
+                      <Input
+                        value={shippingCity}
+                        onChange={(e) => setShippingCity(e.target.value)}
+                        className="h-11 rounded-xl bg-background border-border"
+                        placeholder="City"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">Postcode</label>
+                      <Input
+                        value={shippingPostcode}
+                        onChange={(e) => setShippingPostcode(e.target.value)}
+                        className="h-11 rounded-xl bg-background border-border"
+                        placeholder="Postcode"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Payment Method */}
