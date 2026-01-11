@@ -38,6 +38,14 @@ const Index = () => {
     }
   }, [currentIndex, listings]);
 
+  const handleSwipeUp = useCallback(() => {
+    if (currentIndex < listings.length) {
+      const cartListing = listings[currentIndex];
+      setCurrentIndex((prev) => prev + 1);
+      toast.success('Added to cart!', { description: `${cartListing.title} - $${cartListing.price}` });
+    }
+  }, [currentIndex, listings]);
+
   const handleCardClick = (listing: Listing) => {
     navigate(`/listing/${listing.id}`, { state: { listing } });
   };
@@ -95,6 +103,7 @@ const Index = () => {
                 listing={listing}
                 onSwipeLeft={handleSwipeLeft}
                 onSwipeRight={handleSwipeRight}
+                onSwipeUp={handleSwipeUp}
                 onClick={() => handleCardClick(listing)}
                 isTop={index === 0}
                 index={index}
