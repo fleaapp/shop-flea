@@ -26,12 +26,8 @@ const Cart = () => {
   };
 
   const handleCheckout = (itemIds: string[]) => {
-    toast.success('Checkout started!', {
-      description: `Processing ${itemIds.length} item(s)`,
-    });
-    // Remove items from cart after checkout
-    itemIds.forEach((id) => removeFromCart(id));
-    setSelectedItems(new Set());
+    const checkoutItems = cartItems.filter((item) => itemIds.includes(item.id));
+    navigate('/checkout', { state: { items: checkoutItems } });
   };
 
   const handleCheckoutSelected = () => {
