@@ -1,6 +1,6 @@
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import fleaLogo from '@/assets/flea-logo.jpeg';
+import fleaLogo from '@/assets/flea-logo.png';
 
 interface HeaderProps {
   onSearchClick?: () => void;
