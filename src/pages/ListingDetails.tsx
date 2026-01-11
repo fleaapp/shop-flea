@@ -115,7 +115,7 @@ const ListingDetails = () => {
                   <p className="font-medium text-foreground">{listing.sellerName}</p>
                   <p className="text-sm text-muted-foreground">Seller</p>
                 </div>
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground mr-2">
                   <MapPin className="h-4 w-4" />
                   <span>{listing.location}</span>
                 </div>
