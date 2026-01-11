@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Search, X, Clock } from 'lucide-react';
@@ -21,6 +21,7 @@ const userSuggestions = [
 ];
 
 const SearchSheet = ({ open, onOpenChange, onSearch }: SearchSheetProps) => {
+  const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
     const saved = localStorage.getItem('recentSearches');
@@ -66,6 +67,11 @@ const SearchSheet = ({ open, onOpenChange, onSearch }: SearchSheetProps) => {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          // Avoid the browser scrolling the sheet when focusing (common on mobile)
+          inputRef.current?.focus({ preventScroll: true });
+        }}
         className="!inset-0 h-[100dvh] max-h-[100dvh] rounded-none bg-background p-0 flex flex-col overflow-hidden"
       >
         {/* Top (always visible) */}
@@ -86,12 +92,12 @@ const SearchSheet = ({ open, onOpenChange, onSearch }: SearchSheetProps) => {
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
+                ref={inputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch(query)}
                 placeholder="Search..."
                 className="pl-12 pr-12 h-12 bg-card border-0 rounded-xl text-base"
-                autoFocus
               />
               {query && (
                 <button
