@@ -50,9 +50,9 @@ const ListingDetails = () => {
     <div className="min-h-screen bg-background">
       <Drawer open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
         <DrawerContent className="max-h-[95vh] bg-background rounded-t-3xl">
-          <div className="overflow-y-auto px-4 pb-8">
+          <div className="overflow-y-auto px-4 pb-8 pt-2">
             {/* Header */}
-            <div className="flex items-center justify-end py-4">
+            <div className="flex items-center justify-end pb-2">
               <Button
                 variant="ghost"
                 size="icon"
