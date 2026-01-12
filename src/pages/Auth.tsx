@@ -116,7 +116,7 @@ const Auth = () => {
         <img 
           src={fleaLogoAuth} 
           alt="FLEA" 
-          className="h-12 mb-6 object-contain"
+          className="h-12 mb-6 -mt-12 object-contain"
         />
         
         {/* Tab Toggle */}
