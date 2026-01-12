@@ -93,12 +93,11 @@ const Favorites = () => {
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : displayListings.length > 0 ? (
-          <div className="space-y-6 py-4">
+          <div className="flex gap-4 overflow-x-auto py-4 snap-x snap-mandatory scrollbar-hide">
             {displayListings.map((listing) => (
-              <WishlistCard
-                key={listing.id}
-                listing={listing}
-              />
+              <div key={listing.id} className="flex-shrink-0 snap-center">
+                <WishlistCard listing={listing} />
+              </div>
             ))}
           </div>
         ) : (
