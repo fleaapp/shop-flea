@@ -1,12 +1,14 @@
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
 
-type OrderStatus = 'awaiting' | 'shipped' | 'delivered';
+type SaleStatus = 'awaiting' | 'shipped' | 'delivered';
 
-interface OrderItem {
+interface SaleItem {
   id: string;
   title: string;
   image: string;
@@ -14,16 +16,16 @@ interface OrderItem {
   shippingPrice: number;
 }
 
-interface OrderDetails {
+interface SaleDetails {
   id: string;
   orderNumber: string;
   date: string;
-  status: OrderStatus;
-  seller: {
+  status: SaleStatus;
+  buyer: {
     username: string;
     avatar: string;
   };
-  items: OrderItem[];
+  items: SaleItem[];
   shippingDetails: {
     name: string;
     address: string;
@@ -34,14 +36,14 @@ interface OrderDetails {
   };
 }
 
-interface OrderDetailsSheetProps {
-  order: OrderDetails | null;
+interface SalesDetailsSheetProps {
+  sale: SaleDetails | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onMarkDelivered?: () => void;
+  onMarkShipped?: (trackingDetails: { serviceProvider: string; trackingNumber: string }) => void;
 }
 
-const getStatusBadge = (status: OrderStatus) => {
+const getStatusBadge = (status: SaleStatus) => {
   switch (status) {
     case 'awaiting':
       return {
@@ -67,27 +69,34 @@ const SectionHeader = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
-const OrderDetailsSheet = ({
-  order,
+const SalesDetailsSheet = ({
+  sale,
   open,
   onOpenChange,
-  onMarkDelivered,
-}: OrderDetailsSheetProps) => {
-  if (!order) return null;
+  onMarkShipped,
+}: SalesDetailsSheetProps) => {
+  const [serviceProvider, setServiceProvider] = useState(sale?.trackingDetails.serviceProvider || '');
+  const [trackingNumber, setTrackingNumber] = useState(sale?.trackingDetails.trackingNumber || '');
 
-  const subtotal = order.items.reduce((acc, item) => acc + item.price + item.shippingPrice, 0);
-  const buyerFee = subtotal * 0.04;
-  const total = subtotal + buyerFee;
-  const statusBadge = getStatusBadge(order.status);
+  if (!sale) return null;
+
+  const subtotal = sale.items.reduce((acc, item) => acc + item.price + item.shippingPrice, 0);
+  const sellerFee = subtotal * 0.04;
+  const youReceived = subtotal - sellerFee;
+  const statusBadge = getStatusBadge(sale.status);
+
+  const handleMarkShipped = () => {
+    onMarkShipped?.({ serviceProvider, trackingNumber });
+  };
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[90vh]">
         <div className="overflow-y-auto">
           <DrawerHeader className="text-center pb-4">
-            <DrawerTitle className="text-xl font-semibold">Order details</DrawerTitle>
+            <DrawerTitle className="text-xl font-semibold">Sale details</DrawerTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Order #{order.orderNumber} • {order.date}
+              Order #{sale.orderNumber} • {sale.date}
             </p>
             <div className="flex justify-center mt-1 mb-2">
               <Badge
@@ -100,15 +109,15 @@ const OrderDetailsSheet = ({
           </DrawerHeader>
 
           <div className="px-4 pb-8 space-y-4">
-            {/* Seller Section */}
+            {/* Buyer Section */}
             <div className="rounded-xl bg-card overflow-hidden">
-              <SectionHeader>Seller</SectionHeader>
+              <SectionHeader>Buyer</SectionHeader>
               <div className="flex items-center gap-3 p-4">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={order.seller.avatar} alt={order.seller.username} />
-                  <AvatarFallback>{order.seller.username.charAt(0).toUpperCase()}</AvatarFallback>
+                  <AvatarImage src={sale.buyer.avatar} alt={sale.buyer.username} />
+                  <AvatarFallback>{sale.buyer.username.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
-                <span className="font-medium">@{order.seller.username}</span>
+                <span className="font-medium">@{sale.buyer.username}</span>
               </div>
             </div>
 
@@ -117,7 +126,7 @@ const OrderDetailsSheet = ({
               <SectionHeader>Order Summary</SectionHeader>
               <div>
                 <div className="px-4 py-4 space-y-4">
-                  {order.items.map((item) => (
+                  {sale.items.map((item) => (
                     <div key={item.id} className="flex gap-4">
                       <img
                         src={item.image}
@@ -137,13 +146,13 @@ const OrderDetailsSheet = ({
 
                 {/* Fee line - full width divider */}
                 <div className="flex justify-between text-sm px-4 py-3 border-t border-border">
-                  <span className="text-muted-foreground">4% buyer fee</span>
-                  <span className="text-muted-foreground">+ ${buyerFee.toFixed(2)}</span>
+                  <span className="text-muted-foreground">4% seller fee</span>
+                  <span className="text-muted-foreground">- ${sellerFee.toFixed(2)}</span>
                 </div>
 
                 {/* Total - full width bar */}
                 <div className="flex items-center justify-center bg-charcoal text-white py-3 px-4">
-                  <span className="font-medium">Total amount paid: ${total.toFixed(2)}</span>
+                  <span className="font-medium">You received: ${youReceived.toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -154,38 +163,48 @@ const OrderDetailsSheet = ({
               <div className="p-4 space-y-3">
                 <div>
                   <p className="font-semibold text-foreground">Name:</p>
-                  <p className="text-muted-foreground">{order.shippingDetails.name}</p>
+                  <p className="text-muted-foreground">{sale.shippingDetails.name}</p>
                 </div>
                 <div>
                   <p className="font-semibold text-foreground">Shipping address:</p>
-                  <p className="text-muted-foreground">{order.shippingDetails.address}</p>
+                  <p className="text-muted-foreground">{sale.shippingDetails.address}</p>
                 </div>
               </div>
             </div>
 
-            {/* Tracking Details Section */}
+            {/* Tracking Details Section - Editable */}
             <div className="rounded-xl bg-card overflow-hidden">
               <SectionHeader>Tracking Details</SectionHeader>
               <div className="p-4 space-y-3">
                 <div>
-                  <p className="font-semibold text-foreground">Service Provider:</p>
-                  <p className="text-muted-foreground">{order.trackingDetails.serviceProvider}</p>
+                  <p className="font-semibold text-foreground mb-1.5">Service Provider:</p>
+                  <Input
+                    value={serviceProvider}
+                    onChange={(e) => setServiceProvider(e.target.value)}
+                    placeholder="e.g. Royal Mail, DPD, Evri"
+                    className="bg-background"
+                  />
                 </div>
                 <div>
-                  <p className="font-semibold text-foreground">Tracking number:</p>
-                  <p className="text-muted-foreground">{order.trackingDetails.trackingNumber}</p>
+                  <p className="font-semibold text-foreground mb-1.5">Tracking number:</p>
+                  <Input
+                    value={trackingNumber}
+                    onChange={(e) => setTrackingNumber(e.target.value)}
+                    placeholder="Enter tracking number"
+                    className="bg-background"
+                  />
                 </div>
               </div>
             </div>
 
             {/* Actions */}
-            {order.status !== 'delivered' && (
+            {sale.status !== 'delivered' && (
               <div className="flex flex-col items-center space-y-3 pt-4">
                 <Button
-                  onClick={onMarkDelivered}
+                  onClick={handleMarkShipped}
                   className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
                 >
-                  Mark as delivered
+                  Mark as shipped
                 </Button>
                 <button className="text-center text-sm text-foreground underline">
                   Need help?
@@ -199,5 +218,5 @@ const OrderDetailsSheet = ({
   );
 };
 
-export default OrderDetailsSheet;
-export type { OrderDetails, OrderItem, OrderStatus };
+export default SalesDetailsSheet;
+export type { SaleDetails, SaleItem, SaleStatus };
