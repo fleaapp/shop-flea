@@ -102,14 +102,14 @@ const Auth = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-primary flex items-center justify-center">
+      <div className="fixed inset-0 bg-primary flex items-center justify-center overflow-hidden">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-foreground"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-primary flex flex-col">
+    <div className="fixed inset-0 bg-primary flex flex-col overflow-hidden">
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-10">
         {/* Logo */}
