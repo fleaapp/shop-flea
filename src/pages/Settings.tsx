@@ -53,7 +53,7 @@ const Settings = () => {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <header className="px-4 py-4">
+      <header className="sticky top-0 z-40 bg-background px-4 py-4">
         <h1 className="text-xl font-bold text-foreground text-center">Settings</h1>
       </header>
       
