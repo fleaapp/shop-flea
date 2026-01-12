@@ -16,12 +16,12 @@ const GENDERS = ['Men', 'Women', 'Unisex'];
 
 const EditProfile = () => {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState(''); // Without @ prefix
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [pauseSelling, setPauseSelling] = useState(false);
   const [preferredSizes, setPreferredSizes] = useState<string[]>([]);
@@ -30,6 +30,8 @@ const EditProfile = () => {
   const [uploading, setUploading] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [hasOutstandingOrders, setHasOutstandingOrders] = useState(false);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [originalUsername, setOriginalUsername] = useState('');
 
   // Load profile data
   useEffect(() => {
@@ -43,7 +45,10 @@ const EditProfile = () => {
         .maybeSingle();
       
       if (data) {
-        setUsername(data.username || '');
+        // Remove @ prefix for editing
+        const cleanUsername = (data.username || '').replace(/^@/, '');
+        setUsername(cleanUsername);
+        setOriginalUsername(cleanUsername);
         setAvatarUrl(data.avatar_url);
         // Cast to access new columns that TypeScript doesn't know about yet
         const profileData = data as any;
@@ -95,15 +100,54 @@ const EditProfile = () => {
     }
   };
 
+  const checkUsernameAvailability = async (newUsername: string): Promise<boolean> => {
+    if (!newUsername.trim()) {
+      setUsernameError('Username is required');
+      return false;
+    }
+    
+    // If username hasn't changed, it's valid
+    if (newUsername === originalUsername) {
+      setUsernameError(null);
+      return true;
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('username', `@${newUsername}`)
+      .maybeSingle();
+
+    if (error) {
+      setUsernameError('Error checking username');
+      return false;
+    }
+
+    if (data) {
+      setUsernameError('Username is already taken');
+      return false;
+    }
+
+    setUsernameError(null);
+    return true;
+  };
+
   const handleSave = async () => {
     if (!user) return;
     
     setIsLoading(true);
     try {
+      // Check username availability
+      const isAvailable = await checkUsernameAvailability(username);
+      if (!isAvailable) {
+        setIsLoading(false);
+        return;
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({
-          username,
+          username: `@${username}`,
           avatar_url: avatarUrl,
           first_name: firstName,
           last_name: lastName,
@@ -114,6 +158,10 @@ const EditProfile = () => {
         .eq('user_id', user.id);
 
       if (error) throw error;
+      
+      // Refresh the profile in AuthContext so other screens update
+      await refreshProfile();
+      
       toast.success('Profile updated');
       navigate('/settings');
     } catch (error) {
@@ -229,12 +277,28 @@ const EditProfile = () => {
 
           <div>
             <Label className="text-sm font-medium text-foreground mb-2 block">Username</Label>
-            <Input
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="h-12 rounded-2xl bg-card border-0 card-shadow"
-            />
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground font-medium">@</span>
+              <Input
+                placeholder="username"
+                value={username}
+                onChange={(e) => {
+                  // Remove any @ symbols the user might type
+                  const value = e.target.value.replace(/@/g, '');
+                  setUsername(value);
+                  setUsernameError(null);
+                }}
+                onBlur={() => {
+                  if (username && username !== originalUsername) {
+                    checkUsernameAvailability(username);
+                  }
+                }}
+                className="h-12 rounded-2xl bg-card border-0 card-shadow pl-8"
+              />
+            </div>
+            {usernameError && (
+              <p className="text-xs text-destructive mt-1">{usernameError}</p>
+            )}
           </div>
 
           <div>
