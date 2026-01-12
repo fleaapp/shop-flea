@@ -6,8 +6,10 @@ import BottomNav from '@/components/BottomNav';
 import WishlistCard from '@/components/WishlistCard';
 import FilterSheet, { FilterState } from '@/components/FilterSheet';
 import { useFavoriteListings } from '@/hooks/useFavoriteListings';
+import { useFavorites } from '@/hooks/useFavorites';
 import { Listing } from '@/types/listing';
 import { DbListing, ListingFilters } from '@/hooks/useListings';
+import { toast } from '@/hooks/use-toast';
 
 // Convert DbListing to Listing display type
 const toDisplayListing = (dbListing: DbListing): Listing => {
@@ -45,12 +47,22 @@ const Favorites = () => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<ListingFilters>({});
   
-  const { listings, loading } = useFavoriteListings(appliedFilters);
+  const { listings, loading, refetch } = useFavoriteListings(appliedFilters);
+  const { removeFavorite } = useFavorites();
 
   const displayListings = useMemo(() => 
     listings.map(toDisplayListing), 
     [listings]
   );
+
+  const handleRemoveFavorite = useCallback(async (listingId: string) => {
+    await removeFavorite(listingId);
+    toast({
+      title: "Removed from wishlist",
+      description: "Item has been removed from your wishlist",
+    });
+    refetch();
+  }, [removeFavorite, refetch]);
 
   const handleApplyFilters = useCallback((filters: FilterState) => {
     const newFilters: ListingFilters = {};
@@ -100,7 +112,10 @@ const Favorites = () => {
             <style>{`.flex::-webkit-scrollbar { display: none; }`}</style>
             {displayListings.map((listing) => (
               <div key={listing.id} className="flex-shrink-0 snap-center">
-                <WishlistCard listing={listing} />
+                <WishlistCard 
+                  listing={listing} 
+                  onRemove={() => handleRemoveFavorite(listing.id)}
+                />
               </div>
             ))}
           </div>
