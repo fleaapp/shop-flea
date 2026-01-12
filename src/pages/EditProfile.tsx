@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { compressImage } from '@/utils/imageCompression';
 
 const SIZES = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'];
 const GENDERS = ['Men', 'Women', 'Unisex'];
@@ -78,12 +79,18 @@ const EditProfile = () => {
 
     setUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/avatar.${fileExt}`;
+      // Compress avatar image - smaller for profile pics
+      const compressedFile = await compressImage(file, {
+        maxWidth: 400,
+        maxHeight: 400,
+        quality: 0.85,
+      });
+      
+      const filePath = `${user.id}/avatar.jpg`;
 
       const { error: uploadError } = await supabase.storage
         .from('listings')
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, compressedFile, { upsert: true });
 
       if (uploadError) throw uploadError;
 
@@ -91,7 +98,8 @@ const EditProfile = () => {
         .from('listings')
         .getPublicUrl(filePath);
 
-      setAvatarUrl(publicUrl);
+      // Add cache buster to force refresh
+      setAvatarUrl(`${publicUrl}?t=${Date.now()}`);
       toast.success('Avatar uploaded');
     } catch (error) {
       toast.error('Failed to upload avatar');
