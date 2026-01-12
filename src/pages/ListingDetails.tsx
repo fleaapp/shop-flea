@@ -160,7 +160,7 @@ const ListingDetails = () => {
             </div>
 
             {/* Tags */}
-            <div className="mt-4 flex-wrap gap-2 flex flex-row">
+            <div className="mt-4 gap-2 flex flex-row overflow-x-auto scrollbar-hide">
               <ListingTag label={['xs', 's', 'm', 'l', 'xl', 'xxl', 'one size'].includes(listing.size.toLowerCase()) ? listing.size.toUpperCase() : listing.size.charAt(0).toUpperCase() + listing.size.slice(1)} variant="muted" />
               <ListingTag label={listing.brand.charAt(0).toUpperCase() + listing.brand.slice(1)} variant="muted" />
               <ListingTag label={listing.condition.charAt(0).toUpperCase() + listing.condition.slice(1)} variant="muted" />
