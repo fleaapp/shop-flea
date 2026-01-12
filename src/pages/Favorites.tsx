@@ -68,32 +68,36 @@ const Favorites = () => {
   const hasFilters = Object.keys(appliedFilters).length > 0;
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 py-4">
-        <div className="w-10" /> {/* Spacer for centering */}
+    <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
+      {/* Sticky Header */}
+      <header className="flex items-center justify-between px-6 py-4 flex-shrink-0">
+        <div className="w-12" /> {/* Spacer for centering */}
         <div className="flex items-center gap-2">
           <Heart className="h-5 w-5 text-destructive" fill="currentColor" />
           <h1 className="text-xl font-bold text-foreground">Wishlist</h1>
         </div>
         <Button
-          variant="ghost"
+          variant="outline"
           size="icon"
           onClick={() => setFilterOpen(true)}
-          className={`h-10 w-10 rounded-full ${hasFilters ? 'bg-primary text-primary-foreground' : ''}`}
+          className={`h-12 w-12 rounded-xl border-2 border-border bg-card hover:bg-secondary ${hasFilters ? 'bg-primary text-primary-foreground border-primary' : ''}`}
         >
           <SlidersHorizontal className="h-5 w-5" />
         </Button>
       </header>
       
-      {/* Listings Grid */}
-      <div className="px-4">
+      {/* Listings Horizontal Scroll - centered first card */}
+      <div className="flex-1 flex items-center pb-24 min-h-0 overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-20">
+          <div className="flex items-center justify-center w-full">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : displayListings.length > 0 ? (
-          <div className="flex gap-4 overflow-x-auto py-4 snap-x snap-mandatory scrollbar-hide">
+          <div 
+            className="flex gap-4 overflow-x-auto snap-x snap-mandatory h-full items-center px-[calc(50vw-170px)]"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            <style>{`.flex::-webkit-scrollbar { display: none; }`}</style>
             {displayListings.map((listing) => (
               <div key={listing.id} className="flex-shrink-0 snap-center">
                 <WishlistCard listing={listing} />
@@ -101,7 +105,7 @@ const Favorites = () => {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="flex flex-col items-center justify-center w-full text-center px-4">
             <Heart className="h-16 w-16 text-muted-foreground/30 mb-4" />
             <p className="text-lg font-medium text-muted-foreground">
               {hasFilters ? 'No items match your filters' : 'No saved items yet'}
