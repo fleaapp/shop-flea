@@ -150,10 +150,17 @@ const Index = () => {
       
       {/* Active Filters */}
       {filters.length > 0 && (
-        <div className="flex flex-wrap gap-2 px-6 pb-2 flex-shrink-0">
-          {filters.map((filter) => (
-            <FilterChip key={filter} label={filter} onRemove={() => removeFilter(filter)} />
-          ))}
+        <div className="flex gap-2 px-6 pb-2 flex-shrink-0 overflow-x-auto scrollbar-hide">
+          {filters.map((filter) => {
+            // Capitalize sizes (XS, S, M, L, XL, XXL) and first letter of other filters
+            const sizes = ['xs', 's', 'm', 'l', 'xl', 'xxl', 'one size'];
+            const displayLabel = sizes.includes(filter.toLowerCase())
+              ? filter.toUpperCase()
+              : filter.charAt(0).toUpperCase() + filter.slice(1);
+            return (
+              <FilterChip key={filter} label={displayLabel} onRemove={() => removeFilter(filter)} />
+            );
+          })}
         </div>
       )}
       
