@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import Header from '@/components/Header';
@@ -40,8 +40,8 @@ const Index = () => {
   const { addToCart, isInCart } = useCart();
   const { addFavorite, favoriteIds } = useFavorites();
   const { addDiscarded, discardedIds } = useDiscardedListings();
-  
-  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const [optimisticallyHiddenIds, setOptimisticallyHiddenIds] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState<string[]>([]);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [searchSheetOpen, setSearchSheetOpen] = useState(false);
@@ -74,40 +74,49 @@ const Index = () => {
     return dbListings.filter(listing => 
       !discardedIds.has(listing.id) && 
       !favoriteIds.has(listing.id) && 
-      !isInCart(listing.id)
+      !isInCart(listing.id) &&
+      !optimisticallyHiddenIds.has(listing.id)
     );
-  }, [dbListings, discardedIds, favoriteIds, isInCart]);
+  }, [dbListings, discardedIds, favoriteIds, isInCart, optimisticallyHiddenIds]);
 
-  // Reset currentIndex when discardedIds is cleared (e.g., after refreshing discarded listings)
-  useEffect(() => {
-    setCurrentIndex(0);
-  }, [discardedIds.size]);
+  const currentListings = availableListings.slice(0, 3);
 
-  const currentListings = availableListings.slice(currentIndex, currentIndex + 3);
-
-  const handleSwipeLeft = useCallback(async () => {
-    if (currentIndex < availableListings.length) {
-      const skippedListing = availableListings[currentIndex];
-      await addDiscarded(skippedListing.id);
-      setCurrentIndex((prev) => prev + 1);
+  const handleSwipeLeft = useCallback(async (listingId: string) => {
+    // Optimistic UI: hide immediately so the deck doesn't "skip".
+    setOptimisticallyHiddenIds(prev => new Set([...prev, listingId]));
+    const success = await addDiscarded(listingId);
+    if (!success) {
+      setOptimisticallyHiddenIds(prev => {
+        const next = new Set(prev);
+        next.delete(listingId);
+        return next;
+      });
     }
-  }, [currentIndex, availableListings, addDiscarded]);
+  }, [addDiscarded]);
 
-  const handleSwipeRight = useCallback(async () => {
-    if (currentIndex < availableListings.length) {
-      const savedListing = availableListings[currentIndex];
-      await addFavorite(savedListing.id);
-      setCurrentIndex((prev) => prev + 1);
+  const handleSwipeRight = useCallback(async (listingId: string) => {
+    setOptimisticallyHiddenIds(prev => new Set([...prev, listingId]));
+    const success = await addFavorite(listingId);
+    if (!success) {
+      setOptimisticallyHiddenIds(prev => {
+        const next = new Set(prev);
+        next.delete(listingId);
+        return next;
+      });
     }
-  }, [currentIndex, availableListings, addFavorite]);
+  }, [addFavorite]);
 
-  const handleSwipeUp = useCallback(() => {
-    if (currentIndex < availableListings.length) {
-      const cartListing = availableListings[currentIndex];
-      addToCart(toDisplayListing(cartListing));
-      setCurrentIndex((prev) => prev + 1);
+  const handleSwipeUp = useCallback(async (listing: DbListing) => {
+    setOptimisticallyHiddenIds(prev => new Set([...prev, listing.id]));
+    const success = await addToCart(toDisplayListing(listing));
+    if (!success) {
+      setOptimisticallyHiddenIds(prev => {
+        const next = new Set(prev);
+        next.delete(listing.id);
+        return next;
+      });
     }
-  }, [currentIndex, availableListings, addToCart]);
+  }, [addToCart]);
 
   const handleCardClick = (listing: DbListing) => {
     navigate(`/listing/${listing.id}`);
@@ -139,7 +148,6 @@ const Index = () => {
     if (filterState.condition) activeFilters.push(filterState.condition);
     if (filterState.gender) activeFilters.push(filterState.gender);
     setFilters(activeFilters);
-    setCurrentIndex(0); // Reset to first card when filters change
     toast.success('Filters applied!');
   };
 
@@ -175,19 +183,19 @@ const Index = () => {
               <p className="mt-4 text-sm text-muted-foreground">Loading listings...</p>
             </div>
           ) : currentListings.length > 0 ? (
-            <AnimatePresence mode="popLayout">
+            <AnimatePresence initial={false}>
               {currentListings.map((dbListing, index) => (
                 <SwipeCard
                   key={dbListing.id}
                   listing={toDisplayListing(dbListing)}
-                  onSwipeLeft={handleSwipeLeft}
-                  onSwipeRight={handleSwipeRight}
-                  onSwipeUp={handleSwipeUp}
+                  onSwipeLeft={() => handleSwipeLeft(dbListing.id)}
+                  onSwipeRight={() => handleSwipeRight(dbListing.id)}
+                  onSwipeUp={() => handleSwipeUp(dbListing)}
                   onClick={() => handleCardClick(dbListing)}
                   isTop={index === 0}
                   index={index}
                 />
-              )).reverse()}
+              ))}
             </AnimatePresence>
           ) : (
             <div className="flex h-full flex-col items-center justify-center text-center">
