@@ -66,10 +66,13 @@ const Checkout = () => {
   }];
   return <div className="min-h-screen bg-background">
       <Drawer open={open} onOpenChange={isOpen => !isOpen && handleClose()}>
-        <DrawerContent className="max-h-[95vh] bg-background">
-          <div className="overflow-y-auto px-4 pb-8">
-            {/* Title */}
+        <DrawerContent className="max-h-[85vh] bg-background">
+          {/* Sticky Header */}
+          <div className="sticky top-0 z-10 bg-background">
             <h1 className="text-center text-xl font-bold text-foreground py-4">Checkout</h1>
+          </div>
+          
+          <div className="overflow-y-auto px-4 pb-8">
 
             {/* Order Summary Card */}
             <div className="rounded-2xl bg-card overflow-hidden card-shadow">
