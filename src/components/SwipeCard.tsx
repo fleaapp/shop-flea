@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { Listing } from '@/types/listing';
 import ListingTag from './ListingTag';
@@ -9,6 +9,7 @@ interface SwipeCardProps {
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
   onSwipeUp: () => void;
+  onExitComplete?: () => void;
   onClick: () => void;
   isTop: boolean;
   index: number;
@@ -19,11 +20,13 @@ const SwipeCard = ({
   onSwipeLeft,
   onSwipeRight,
   onSwipeUp,
+  onExitComplete,
   onClick,
   isTop,
   index
 }: SwipeCardProps) => {
   const [exitDirection, setExitDirection] = useState<'left' | 'right' | 'up' | null>(null);
+  const exitNotifiedRef = useRef(false);
   const cardRef = useRef<HTMLDivElement>(null);
   
   const x = useMotionValue(0);
@@ -34,13 +37,19 @@ const SwipeCard = ({
   const nopeOpacity = useTransform(x, [-100, 0], [1, 0]);
   const cartOpacity = useTransform(y, [-100, 0], [1, 0]);
 
-  // When a card becomes the top card, reset exit state and motion values
+  // When a card becomes the top card, reset drag offsets.
   useEffect(() => {
     if (isTop && exitDirection === null) {
       x.set(0);
       y.set(0);
     }
   }, [isTop, exitDirection, x, y]);
+
+  useEffect(() => {
+    if (exitDirection) {
+      exitNotifiedRef.current = false;
+    }
+  }, [exitDirection]);
 
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const threshold = 100;
@@ -62,30 +71,18 @@ const SwipeCard = ({
   const stackRotation = index * 3;
   const stackTranslateX = index * 12;
 
-  // Only the top card should have exit animation applied
   const getAnimateProps = () => {
-    if (exitDirection === 'left') {
-      return { x: -500, rotate: -30, opacity: 0 };
-    }
-    if (exitDirection === 'right') {
-      return { x: 500, rotate: 30, opacity: 0 };
-    }
-    if (exitDirection === 'up') {
-      return { y: -500, opacity: 0 };
-    }
-    
-    // Non-exiting cards: position based on their stack index
+    if (exitDirection === 'left') return { x: -500, rotate: -30, opacity: 0 };
+    if (exitDirection === 'right') return { x: 500, rotate: 30, opacity: 0 };
+    if (exitDirection === 'up') return { y: -500, opacity: 0 };
+
+    // Stacked cards: keep them positioned behind the top card.
     if (!isTop) {
-      return {
-        x: stackTranslateX,
-        y: 0,
-        rotate: stackRotation,
-        opacity: 1,
-      };
+      return { x: stackTranslateX, y: 0, rotate: stackRotation, opacity: 1 };
     }
-    
-    // Top card at rest
-    return { x: 0, y: 0, rotate: 0, opacity: 1 };
+
+    // Top card: motion values drive x/y/rotate while dragging.
+    return {};
   };
 
   return (
@@ -104,7 +101,12 @@ const SwipeCard = ({
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       dragElastic={0.9}
       onDragEnd={handleDragEnd}
-      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+      transition={{ duration: 0.22 }}
+      onAnimationComplete={() => {
+        if (!exitDirection || exitNotifiedRef.current) return;
+        exitNotifiedRef.current = true;
+        onExitComplete?.();
+      }}
       onClick={isTop && !exitDirection ? onClick : undefined}
     >
       <div className="flex h-full flex-col overflow-hidden rounded-3xl bg-card p-3 card-shadow py-[10px] px-[10px]">
