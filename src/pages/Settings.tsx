@@ -44,27 +44,27 @@ const Settings = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-20 sm:pb-24">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background px-4 py-4">
-        <h1 className="text-xl font-bold text-foreground text-center">Settings</h1>
+      <header className="sticky top-0 z-40 bg-background px-3 sm:px-4 py-3 sm:py-4">
+        <h1 className="text-lg sm:text-xl font-bold text-foreground text-center">Settings</h1>
       </header>
       
       {/* Settings Groups */}
-      <div className="px-4 space-y-6">
+      <div className="px-3 sm:px-4 space-y-4 sm:space-y-6">
         {settingsGroups.map((group, idx) => (
           <div key={group.title || idx}>
             {group.title && (
-              <h2 className="mb-3 text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              <h2 className="mb-2 sm:mb-3 text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wide">
                 {group.title}
               </h2>
             )}
             
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               {group.items.map((item) => (
                 <div
                   key={item.label}
-                  className={`flex items-center justify-between rounded-2xl bg-card p-4 card-shadow cursor-pointer ${item.danger ? 'text-destructive' : ''}`}
+                  className={`flex items-center justify-between rounded-2xl bg-card p-3 sm:p-4 card-shadow cursor-pointer ${item.danger ? 'text-destructive' : ''}`}
                   onClick={async () => {
                     if (item.label === 'Logout') {
                       await signOut();
@@ -79,9 +79,9 @@ const Settings = () => {
                     }
                   }}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <div className={item.danger ? 'text-destructive' : 'text-muted-foreground'}>{item.icon}</div>
-                    <span className={`font-medium ${item.danger ? 'text-destructive' : 'text-foreground'}`}>{item.label}</span>
+                    <span className={`text-sm sm:text-base font-medium ${item.danger ? 'text-destructive' : 'text-foreground'}`}>{item.label}</span>
                   </div>
                   
                   {!item.danger && (
@@ -95,8 +95,8 @@ const Settings = () => {
       </div>
       
       {/* Version */}
-      <div className="mt-8 text-center">
-        <p className="text-sm text-muted-foreground">Version 1.0.0</p>
+      <div className="mt-6 sm:mt-8 text-center">
+        <p className="text-xs sm:text-sm text-muted-foreground">Version 1.0.0</p>
       </div>
       
       <BottomNav />

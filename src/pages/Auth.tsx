@@ -110,22 +110,22 @@ const Auth = () => {
   return (
     <div className="fixed inset-0 bg-primary flex flex-col overflow-hidden">
       {/* Logo - positioned at top */}
-      <div className="absolute top-20 left-0 right-0 flex justify-center">
+      <div className="absolute top-12 sm:top-20 left-0 right-0 flex justify-center">
         <img 
           src={fleaLogoAuth} 
           alt="FLEA" 
-          className="h-12 object-contain"
+          className="h-10 sm:h-12 object-contain"
         />
       </div>
       
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-10">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-8 sm:py-10">
         
         {/* Tab Toggle */}
-        <div className="flex bg-[#423D3D] rounded-full p-1 mb-6">
+        <div className="flex bg-[#423D3D] rounded-full p-1 mb-4 sm:mb-6">
           <button
             onClick={() => setActiveTab('login')}
-            className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
+            className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
               activeTab === 'login'
                 ? 'bg-primary text-foreground'
                 : 'text-card'
@@ -135,7 +135,7 @@ const Auth = () => {
           </button>
           <button
             onClick={() => setActiveTab('signup')}
-            className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
+            className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
               activeTab === 'signup'
                 ? 'bg-primary text-foreground'
                 : 'text-card'
@@ -146,7 +146,7 @@ const Auth = () => {
         </div>
         
         {/* Forms */}
-        <div className="w-full max-w-[260px]">
+        <div className="w-full max-w-[min(260px,85vw)]">
           {activeTab === 'login' ? (
             <form onSubmit={handleLogin} className="space-y-2.5">
               <div className="relative">

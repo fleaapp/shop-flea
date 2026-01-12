@@ -48,11 +48,11 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false }: Wishli
   return (
     <>
       <div 
-        className="w-full max-w-[340px] mx-auto cursor-pointer"
+        className="w-full max-w-[min(340px,85vw)] mx-auto cursor-pointer"
         style={{ height: 'min(68vh, 520px)' }}
         onClick={handleCardClick}
       >
-        <div className="flex h-full flex-col overflow-hidden rounded-3xl bg-card p-3 card-shadow py-[10px] px-[10px]">
+        <div className="flex h-full flex-col overflow-hidden rounded-3xl bg-card p-2 sm:p-3 card-shadow">
           {/* Image with white border effect - takes remaining space */}
           <div className="relative flex-1 min-h-0 overflow-hidden rounded-2xl">
             <img 
@@ -92,19 +92,19 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false }: Wishli
           </div>
           
           {/* Content - fixed height, matching SwipeCard exactly */}
-          <div className="px-2 pt-3 pb-1 flex-shrink-0">
+          <div className="px-1.5 sm:px-2 pt-2 sm:pt-3 pb-1 flex-shrink-0">
             <div className="flex items-end justify-between">
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-semibold text-foreground truncate">{listing.title}</h3>
-                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                <h3 className="text-base sm:text-lg font-semibold text-foreground truncate">{listing.title}</h3>
+                <div className="mt-1 sm:mt-1.5 flex flex-wrap gap-1 sm:gap-1.5">
                   <ListingTag label={listing.size} isSize />
                   <ListingTag label={listing.brand} />
                 </div>
               </div>
               
-              <div className="text-right flex-shrink-0 ml-3">
-                <p className="text-xl font-bold text-foreground">${listing.price}</p>
-                <p className="text-xs text-muted-foreground">+ ${listing.shippingPrice} shipping</p>
+              <div className="text-right flex-shrink-0 ml-2 sm:ml-3">
+                <p className="text-lg sm:text-xl font-bold text-foreground">${listing.price}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">+ ${listing.shippingPrice} shipping</p>
               </div>
             </div>
           </div>
