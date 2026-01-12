@@ -40,7 +40,6 @@ const Index = () => {
   const { addFavorite, favoriteIds } = useFavorites();
   const { addDiscarded, discardedIds } = useDiscardedListings();
 
-  const [deckIndex, setDeckIndex] = useState(0);
   const [pendingExitId, setPendingExitId] = useState<string | null>(null);
   const [filters, setFilters] = useState<string[]>([]);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
@@ -84,40 +83,30 @@ const Index = () => {
     });
   }, [dbListings, discardedIds, favoriteIds, isInCart, pendingExitId]);
 
-  const currentListings = availableListings.slice(deckIndex, deckIndex + 3);
+  const currentListings = availableListings.slice(0, 3);
 
   const handleSwipeLeft = useCallback(async (listingId: string) => {
     if (pendingExitId) return;
 
     setPendingExitId(listingId);
-    const success = await addDiscarded(listingId);
-    if (!success) {
-      setPendingExitId(null);
-    }
+    await addDiscarded(listingId);
   }, [addDiscarded, pendingExitId]);
 
   const handleSwipeRight = useCallback(async (listingId: string) => {
     if (pendingExitId) return;
 
     setPendingExitId(listingId);
-    const success = await addFavorite(listingId);
-    if (!success) {
-      setPendingExitId(null);
-    }
+    await addFavorite(listingId);
   }, [addFavorite, pendingExitId]);
 
   const handleSwipeUp = useCallback(async (listing: DbListing) => {
     if (pendingExitId) return;
 
     setPendingExitId(listing.id);
-    const success = await addToCart(toDisplayListing(listing));
-    if (!success) {
-      setPendingExitId(null);
-    }
+    await addToCart(toDisplayListing(listing));
   }, [addToCart, pendingExitId]);
 
   const handleTopExitComplete = useCallback(() => {
-    setDeckIndex((prev) => prev + 1);
     setPendingExitId(null);
   }, []);
 
@@ -151,7 +140,6 @@ const Index = () => {
     if (filterState.condition) activeFilters.push(filterState.condition);
     if (filterState.gender) activeFilters.push(filterState.gender);
     setFilters(activeFilters);
-    setDeckIndex(0);
     setPendingExitId(null);
     toast.success('Filters applied!');
   };
