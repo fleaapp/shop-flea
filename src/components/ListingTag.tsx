@@ -9,7 +9,7 @@ const ListingTag = ({ label, variant = 'default' }: ListingTagProps) => {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-3 py-1 text-xs font-medium',
+        'inline-flex items-center rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap',
         variant === 'default' && 'bg-tag text-charcoal-light',
         variant === 'highlight' && 'bg-primary text-primary-foreground',
         variant === 'muted' && 'bg-muted-foreground/20 text-muted-foreground'
