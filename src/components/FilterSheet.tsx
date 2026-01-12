@@ -24,7 +24,7 @@ export interface FilterState {
 
 const sizeOptions = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'];
 const categoryOptions = ['Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories', 'Bags', 'Other'];
-const conditionOptions = ['New with tags', 'Like new', 'Good', 'Fair'];
+const conditionOptions = ['New', 'Like new', 'Good', 'Fair'];
 const colourOptions = ['Black', 'White', 'Grey', 'Navy', 'Blue', 'Red', 'Pink', 'Green', 'Brown', 'Beige', 'Multi'];
 const styleOptions = ['Casual', 'Formal', 'Streetwear', 'Vintage', 'Sporty', 'Bohemian', 'Minimalist', 'Other'];
 const genderOptions = ['Women', 'Men', 'Unisex'];

@@ -12,7 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'];
 const categories = ['Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories', 'Bags', 'Other'];
-const conditions = ['New with tags', 'Like new', 'Good', 'Fair'];
+const conditions = ['New', 'Like new', 'Good', 'Fair'];
 const colours = ['Black', 'White', 'Grey', 'Navy', 'Blue', 'Red', 'Pink', 'Green', 'Brown', 'Beige', 'Multi'];
 const styles = ['Casual', 'Formal', 'Streetwear', 'Vintage', 'Sporty', 'Bohemian', 'Minimalist', 'Other'];
 const genders = ['Women', 'Men', 'Unisex'];
