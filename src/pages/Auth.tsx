@@ -114,6 +114,10 @@ const Auth = () => {
         <img 
           src={fleaLogoAuth} 
           alt="FLEA" 
+          width={232}
+          height={84}
+          loading="eager"
+          fetchPriority="high"
           className="h-12 max-[375px]:h-10 object-contain"
         />
       </div>
