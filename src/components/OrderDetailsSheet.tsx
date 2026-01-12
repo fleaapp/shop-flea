@@ -61,7 +61,7 @@ const getStatusBadge = (status: OrderStatus) => {
 };
 
 const SectionHeader = ({ children }: { children: React.ReactNode }) => (
-  <div className="bg-muted px-4 py-2 text-sm font-medium text-muted-foreground">
+  <div className="bg-muted-foreground/20 px-4 py-2 text-sm font-medium text-muted-foreground">
     {children}
   </div>
 );
