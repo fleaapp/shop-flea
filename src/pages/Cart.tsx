@@ -148,13 +148,13 @@ const Cart = () => {
   };
 
   const handleSwipeLeft = async (itemId: string) => {
-    removeFromCart(itemId);
+    await removeFromCart(itemId);
     await addDiscarded(itemId);
     toast.success('Removed from cart');
   };
 
   const handleSwipeRight = async (itemId: string) => {
-    removeFromCart(itemId);
+    await removeFromCart(itemId);
     await addFavorite(itemId);
     toast.success('Moved to wishlist');
   };

@@ -1,59 +1,182 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 import { Listing } from '@/types/listing';
-
-const CART_STORAGE_KEY = 'flea-cart-items';
 
 interface CartContextType {
   cartItems: Listing[];
-  addToCart: (listing: Listing) => void;
-  removeFromCart: (id: string) => void;
+  cartIds: Set<string>;
+  loading: boolean;
+  addToCart: (listing: Listing) => Promise<boolean>;
+  removeFromCart: (id: string) => Promise<boolean>;
   isInCart: (id: string) => boolean;
-  clearCart: () => void;
+  clearCart: () => Promise<boolean>;
+  refetch: () => Promise<void>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const [cartItems, setCartItems] = useState<Listing[]>(() => {
-    // Initialize from localStorage
-    try {
-      const stored = localStorage.getItem(CART_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
+  const { user } = useAuth();
+  const [cartItems, setCartItems] = useState<Listing[]>([]);
+  const [cartIds, setCartIds] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(false);
 
-  // Persist to localStorage whenever cart changes
-  useEffect(() => {
-    try {
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
-    } catch (error) {
-      console.error('Failed to save cart to localStorage:', error);
+  const fetchCart = useCallback(async () => {
+    if (!user) {
+      setCartItems([]);
+      setCartIds(new Set());
+      return;
     }
-  }, [cartItems]);
 
-  const addToCart = (listing: Listing) => {
-    setCartItems((prev) => {
-      if (prev.find((item) => item.id === listing.id)) return prev;
-      return [...prev, listing];
+    setLoading(true);
+
+    // Fetch cart item IDs
+    const { data: cartData, error: cartError } = await supabase
+      .from('cart_items')
+      .select('listing_id')
+      .eq('user_id', user.id);
+
+    if (cartError || !cartData || cartData.length === 0) {
+      setCartItems([]);
+      setCartIds(new Set());
+      setLoading(false);
+      return;
+    }
+
+    const listingIds = cartData.map(c => c.listing_id);
+    setCartIds(new Set(listingIds));
+
+    // Fetch full listing data
+    const { data: listingsData, error: listingsError } = await supabase
+      .from('listings')
+      .select('*')
+      .in('id', listingIds);
+
+    if (listingsError || !listingsData) {
+      setCartItems([]);
+      setLoading(false);
+      return;
+    }
+
+    // Fetch seller profiles
+    const userIds = [...new Set(listingsData.map(l => l.user_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, username, avatar_url, rating')
+      .in('user_id', userIds);
+
+    const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+    // Transform to Listing type
+    const transformedListings: Listing[] = listingsData.map(listing => {
+      const seller = profileMap.get(listing.user_id);
+      return {
+        id: listing.id,
+        title: listing.title,
+        brand: listing.brand,
+        size: listing.size,
+        price: Number(listing.price),
+        shippingPrice: listing.shipping_price ? Number(listing.shipping_price) : 0,
+        image: listing.images?.[0] || '',
+        images: listing.images || [],
+        sellerId: listing.user_id,
+        sellerName: seller?.username || 'Unknown',
+        sellerAvatar: seller?.avatar_url || '',
+        condition: listing.condition as Listing['condition'],
+        category: listing.category,
+        description: listing.description || '',
+        tags: listing.tags || [],
+        location: '',
+        createdAt: new Date(listing.created_at),
+      };
     });
-  };
 
-  const removeFromCart = (id: string) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
-  };
+    setCartItems(transformedListings);
+    setLoading(false);
+  }, [user]);
 
-  const isInCart = (id: string) => {
-    return cartItems.some((item) => item.id === id);
-  };
+  useEffect(() => {
+    fetchCart();
+  }, [fetchCart]);
 
-  const clearCart = () => {
+  const addToCart = useCallback(async (listing: Listing): Promise<boolean> => {
+    if (!user) return false;
+
+    const { error } = await supabase
+      .from('cart_items')
+      .insert({ user_id: user.id, listing_id: listing.id });
+
+    if (error) {
+      if (error.code === '23505') {
+        // Already in cart
+        return true;
+      }
+      console.error('Failed to add to cart:', error);
+      return false;
+    }
+
+    setCartItems(prev => [...prev, listing]);
+    setCartIds(prev => new Set([...prev, listing.id]));
+    return true;
+  }, [user]);
+
+  const removeFromCart = useCallback(async (id: string): Promise<boolean> => {
+    if (!user) return false;
+
+    const { error } = await supabase
+      .from('cart_items')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('listing_id', id);
+
+    if (error) {
+      console.error('Failed to remove from cart:', error);
+      return false;
+    }
+
+    setCartItems(prev => prev.filter(item => item.id !== id));
+    setCartIds(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    return true;
+  }, [user]);
+
+  const clearCart = useCallback(async (): Promise<boolean> => {
+    if (!user) return false;
+
+    const { error } = await supabase
+      .from('cart_items')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Failed to clear cart:', error);
+      return false;
+    }
+
     setCartItems([]);
-  };
+    setCartIds(new Set());
+    return true;
+  }, [user]);
+
+  const isInCart = useCallback((id: string) => {
+    return cartIds.has(id);
+  }, [cartIds]);
 
   return (
-    <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, isInCart, clearCart }}>
+    <CartContext.Provider value={{ 
+      cartItems, 
+      cartIds,
+      loading,
+      addToCart, 
+      removeFromCart, 
+      isInCart, 
+      clearCart,
+      refetch: fetchCart,
+    }}>
       {children}
     </CartContext.Provider>
   );
