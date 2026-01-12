@@ -79,6 +79,9 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[90vh] rounded-t-3xl bg-background">
+        {/* Drawer handle */}
+        <div className="mx-auto my-3 h-1.5 w-[80px] rounded-full bg-muted flex-shrink-0" />
+        
         <div className="px-6 pb-4 flex-shrink-0">
           <h2 className="text-center text-xl font-semibold">Filter</h2>
         </div>
@@ -90,7 +93,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
             <Switch
               checked={filters.preferences}
               onCheckedChange={(checked) => setFilters({ ...filters, preferences: checked })}
-              className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted-foreground/30 [&>span]:bg-[#ddfed7]"
+              className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-charcoal [&>span]:data-[state=checked]:bg-[#ddfed7] [&>span]:data-[state=unchecked]:bg-charcoal"
             />
           </div>
 
@@ -212,7 +215,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
                     type="number"
                     value={filters.priceRange[0] || ''}
                     onChange={(e) => setFilters({ ...filters, priceRange: [Number(e.target.value) || 0, filters.priceRange[1]] })}
-                    className="pl-7 bg-card border-0 h-12 rounded-xl"
+                    className="pl-7 bg-card border-0 h-12 rounded-xl focus-visible:ring-[#ddfed7]"
                     placeholder="0"
                     min={0}
                   />
@@ -226,7 +229,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
                     type="number"
                     value={filters.priceRange[1] || ''}
                     onChange={(e) => setFilters({ ...filters, priceRange: [filters.priceRange[0], Number(e.target.value) || 0] })}
-                    className="pl-7 bg-card border-0 h-12 rounded-xl"
+                    className="pl-7 bg-card border-0 h-12 rounded-xl focus-visible:ring-[#ddfed7]"
                     placeholder="1000"
                     min={0}
                   />
