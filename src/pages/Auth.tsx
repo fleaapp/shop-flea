@@ -55,8 +55,19 @@ const Auth = () => {
       toast.error('Please fill in all required fields');
       return;
     }
-    if (signupPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
+    // Password validation: min 8 chars, 1 number, 1 symbol
+    const hasNumber = /\d/.test(signupPassword);
+    const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(signupPassword);
+    if (signupPassword.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+    if (!hasNumber) {
+      toast.error('Password must include at least 1 number');
+      return;
+    }
+    if (!hasSymbol) {
+      toast.error('Password must include at least 1 symbol');
       return;
     }
     if (signupPassword !== signupConfirmPassword) {
@@ -105,7 +116,7 @@ const Auth = () => {
         <img 
           src={fleaLogoAuth} 
           alt="FLEA" 
-          className="h-16 mb-8 object-contain"
+          className="h-12 mb-6 object-contain"
         />
         
         {/* Tab Toggle */}
@@ -133,33 +144,33 @@ const Auth = () => {
         </div>
         
         {/* Forms */}
-        <div className="w-full max-w-xs">
+        <div className="w-full max-w-[260px]">
           {activeTab === 'login' ? (
-            <form onSubmit={handleLogin} className="space-y-3">
+            <form onSubmit={handleLogin} className="space-y-2.5">
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/60" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="email"
                   placeholder="Enter your email"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  className="h-11 pl-10 rounded-xl bg-card border-2 border-foreground text-foreground placeholder:text-muted-foreground"
+                  className="h-10 pl-9 rounded-lg bg-card border border-muted-foreground/40 text-foreground placeholder:text-muted-foreground text-sm"
                 />
               </div>
               
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/60" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Enter your password"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  className="h-11 pl-10 pr-10 rounded-xl bg-card border-2 border-foreground text-foreground placeholder:text-muted-foreground"
+                  className="h-10 pl-9 pr-9 rounded-lg bg-card border border-muted-foreground/40 text-foreground placeholder:text-muted-foreground text-sm"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-foreground/60"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -171,74 +182,81 @@ const Auth = () => {
                 </button>
               </div>
               
-              <div className="pt-2">
+              <div className="pt-1">
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="h-10 w-auto px-10 mx-auto flex rounded-full bg-foreground text-card text-sm font-medium hover:bg-foreground/90"
+                  className="h-9 w-auto px-8 mx-auto flex rounded-full bg-foreground text-card text-sm font-medium hover:bg-foreground/90"
                 >
                   {isLoading ? 'Signing in...' : 'Login'}
                 </Button>
               </div>
             </form>
           ) : (
-            <form onSubmit={handleSignup} className="space-y-3">
+            <form onSubmit={handleSignup} className="space-y-2.5">
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/60" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="email"
                   placeholder="Email"
                   value={signupEmail}
                   onChange={(e) => setSignupEmail(e.target.value)}
-                  className="h-11 pl-10 rounded-xl bg-card border-2 border-foreground text-foreground placeholder:text-muted-foreground"
+                  className="h-10 pl-9 rounded-lg bg-card border border-muted-foreground/40 text-foreground placeholder:text-muted-foreground text-sm"
                 />
               </div>
               
               <div className="relative">
-                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/60" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="text"
                   placeholder="Username"
                   value={signupUsername}
                   onChange={(e) => setSignupUsername(e.target.value)}
-                  className="h-11 pl-10 rounded-xl bg-card border-2 border-foreground text-foreground placeholder:text-muted-foreground"
+                  className="h-10 pl-9 rounded-lg bg-card border border-muted-foreground/40 text-foreground placeholder:text-muted-foreground text-sm"
                 />
               </div>
               
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/60" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Password"
                   value={signupPassword}
                   onChange={(e) => setSignupPassword(e.target.value)}
-                  className="h-11 pl-10 pr-10 rounded-xl bg-card border-2 border-foreground text-foreground placeholder:text-muted-foreground"
+                  className="h-10 pl-9 pr-9 rounded-lg bg-card border border-muted-foreground/40 text-foreground placeholder:text-muted-foreground text-sm"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-foreground/60"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
               
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/60" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Confirm password"
                   value={signupConfirmPassword}
                   onChange={(e) => setSignupConfirmPassword(e.target.value)}
-                  className="h-11 pl-10 rounded-xl bg-card border-2 border-foreground text-foreground placeholder:text-muted-foreground"
+                  className="h-10 pl-9 pr-9 rounded-lg bg-card border border-muted-foreground/40 text-foreground placeholder:text-muted-foreground text-sm"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
               
-              <div className="pt-3">
+              <div className="pt-2">
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="h-10 w-auto px-10 mx-auto flex rounded-full bg-foreground text-card text-sm font-medium hover:bg-foreground/90"
+                  className="h-9 w-auto px-8 mx-auto flex rounded-full bg-foreground text-card text-sm font-medium hover:bg-foreground/90"
                 >
                   {isLoading ? 'Creating account...' : 'Sign up'}
                 </Button>
