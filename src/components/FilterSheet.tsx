@@ -67,9 +67,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
     <button
       onClick={onClick}
       className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-        selected 
-          ? 'bg-[#ddfed7] text-foreground' 
-          : 'bg-card text-foreground'
+        selected ? 'bg-primary text-foreground' : 'bg-card text-foreground'
       }`}
     >
       {label}
@@ -78,7 +76,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[90vh] rounded-t-3xl bg-background">
+      <DrawerContent className="max-h-[90vh] rounded-t-3xl border-0 bg-background">
         <div className="px-6 pb-4 flex-shrink-0">
           <h2 className="text-center text-xl font-semibold">Filter</h2>
         </div>
@@ -90,7 +88,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
             <Switch
               checked={filters.preferences}
               onCheckedChange={(checked) => setFilters({ ...filters, preferences: checked })}
-              className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted-foreground/30 [&>span]:data-[state=checked]:bg-[#ddfed7] [&>span]:data-[state=unchecked]:bg-charcoal"
+              className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-input [&>span]:data-[state=checked]:bg-primary [&>span]:data-[state=unchecked]:bg-charcoal"
             />
           </div>
 
@@ -212,7 +210,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
                     type="number"
                     value={filters.priceRange[0] || ''}
                     onChange={(e) => setFilters({ ...filters, priceRange: [Number(e.target.value) || 0, filters.priceRange[1]] })}
-                    className="pl-7 bg-card border-0 h-12 rounded-xl focus-visible:ring-[#ddfed7]"
+                    className="pl-7 bg-card border-0 h-12 rounded-xl focus-visible:ring-primary"
                     placeholder="0"
                     min={0}
                   />
@@ -226,7 +224,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
                     type="number"
                     value={filters.priceRange[1] || ''}
                     onChange={(e) => setFilters({ ...filters, priceRange: [filters.priceRange[0], Number(e.target.value) || 0] })}
-                    className="pl-7 bg-card border-0 h-12 rounded-xl focus-visible:ring-[#ddfed7]"
+                    className="pl-7 bg-card border-0 h-12 rounded-xl focus-visible:ring-primary"
                     placeholder="1000"
                     min={0}
                   />
