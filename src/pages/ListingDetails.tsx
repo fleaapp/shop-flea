@@ -255,30 +255,28 @@ const ListingDetails = () => {
           </div>
 
           {/* Sticky Footer Actions */}
-          <div className="sticky bottom-0 left-0 right-0 flex gap-3 bg-background px-4 py-4 border-t border-border">
+          <div className="sticky bottom-0 left-0 right-0 flex gap-3 bg-background px-4 py-4 border-t border-border justify-center">
             <Button
               variant="outline"
               onClick={handleDiscard}
-              className="h-14 w-14 rounded-2xl border-2 flex-shrink-0"
+              className="h-14 w-14 rounded-2xl border-2 text-2xl"
             >
-              <X className="h-6 w-6" />
+              ❌
             </Button>
 
             <Button
               variant="outline"
               onClick={handleAddToWishlist}
-              className="h-14 flex-1 rounded-2xl border-2 text-base font-medium"
+              className="h-14 w-14 rounded-2xl border-2 text-2xl"
             >
-              <Heart className={`mr-2 h-5 w-5 ${isFavorite(listing.id) ? 'fill-current' : ''}`} />
-              Wishlist
+              💌
             </Button>
 
             <Button
               onClick={handleAddToCart}
-              className="h-14 flex-1 rounded-2xl bg-primary text-base font-medium text-primary-foreground hover:bg-mint-dark"
+              className="h-14 w-14 rounded-2xl bg-primary text-2xl hover:bg-mint-dark"
             >
-              <ShoppingCart className="mr-2 h-5 w-5" />
-              Add to Cart
+              🛒
             </Button>
           </div>
         </DrawerContent>
