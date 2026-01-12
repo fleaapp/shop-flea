@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Heart, MessageCircle, MapPin } from 'lucide-react';
+import { Heart, ShoppingCart, X, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel';
 import ListingTag from '@/components/ListingTag';
 import { supabase } from '@/integrations/supabase/client';
+import { useFavorites } from '@/hooks/useFavorites';
+import { useCart } from '@/context/CartContext';
+import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 
 interface DbListing {
   id: string;
@@ -122,12 +125,53 @@ const ListingDetails = () => {
   const sellerAvatar = seller?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${listing.id}`;
   const sellerLocation = seller?.location || 'Unknown';
 
-  const handleSave = () => {
-    toast.success('Saved to favorites!');
+  const { addFavorite, isFavorite } = useFavorites();
+  const { addToCart, isInCart } = useCart();
+  const { addDiscarded } = useDiscardedListings();
+
+  const handleAddToWishlist = async () => {
+    if (isFavorite(listing.id)) {
+      toast.info('Already in wishlist');
+      return;
+    }
+    const success = await addFavorite(listing.id);
+    if (success) {
+      toast.success('Added to wishlist!');
+    }
   };
 
-  const handleMessage = () => {
-    toast('Messaging coming soon!');
+  const handleAddToCart = () => {
+    if (isInCart(listing.id)) {
+      toast.info('Already in cart');
+      return;
+    }
+    // Convert DB listing to Listing type for cart
+    addToCart({
+      id: listing.id,
+      title: listing.title,
+      price: listing.price,
+      shippingPrice: listing.shipping_price || 0,
+      description: listing.description || '',
+      image: listing.images?.[0] || '',
+      images: listing.images,
+      category: listing.category,
+      size: listing.size,
+      brand: listing.brand,
+      tags: listing.tags || [],
+      sellerId: listing.user_id,
+      sellerName: seller?.username || 'Unknown',
+      sellerAvatar: sellerAvatar,
+      location: sellerLocation,
+      createdAt: new Date(),
+      condition: listing.condition as 'new' | 'like-new' | 'good' | 'fair',
+    });
+    toast.success('Added to cart!');
+  };
+
+  const handleDiscard = async () => {
+    await addDiscarded(listing.id);
+    toast.success('Item discarded');
+    handleClose();
   };
 
   return (
@@ -204,26 +248,35 @@ const ListingDetails = () => {
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="mt-6 grid grid-cols-2 gap-4">
-                <Button
-                  variant="outline"
-                  onClick={handleMessage}
-                  className="h-14 rounded-2xl border-2 text-base font-medium"
-                >
-                  <MessageCircle className="mr-2 h-5 w-5" />
-                  Message
-                </Button>
-
-                <Button
-                  onClick={handleSave}
-                  className="h-14 rounded-2xl bg-primary text-base font-medium text-primary-foreground hover:bg-mint-dark"
-                >
-                  <Heart className="mr-2 h-5 w-5" />
-                  Save
-                </Button>
-              </div>
             </div>
+          </div>
+
+          {/* Sticky Footer Actions */}
+          <div className="sticky bottom-0 left-0 right-0 flex gap-3 bg-background px-4 py-4 border-t border-border">
+            <Button
+              variant="outline"
+              onClick={handleDiscard}
+              className="h-14 w-14 rounded-2xl border-2 flex-shrink-0"
+            >
+              <X className="h-6 w-6" />
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={handleAddToWishlist}
+              className="h-14 flex-1 rounded-2xl border-2 text-base font-medium"
+            >
+              <Heart className={`mr-2 h-5 w-5 ${isFavorite(listing.id) ? 'fill-current' : ''}`} />
+              Wishlist
+            </Button>
+
+            <Button
+              onClick={handleAddToCart}
+              className="h-14 flex-1 rounded-2xl bg-primary text-base font-medium text-primary-foreground hover:bg-mint-dark"
+            >
+              <ShoppingCart className="mr-2 h-5 w-5" />
+              Add to Cart
+            </Button>
           </div>
         </DrawerContent>
       </Drawer>
