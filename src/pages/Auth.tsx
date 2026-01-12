@@ -111,12 +111,12 @@ const Auth = () => {
   return (
     <div className="fixed inset-0 bg-primary flex flex-col overflow-hidden">
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-10">
+      <div className="flex-1 flex flex-col items-center justify-start px-6 pt-16">
         {/* Logo */}
         <img 
           src={fleaLogoAuth} 
           alt="FLEA" 
-          className="h-12 mb-6 -mt-24 object-contain"
+          className="h-12 mb-8 object-contain"
         />
         
         {/* Tab Toggle */}
