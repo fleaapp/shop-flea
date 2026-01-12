@@ -225,26 +225,29 @@ const ListingDetails = () => {
                 <p className="mt-4 text-muted-foreground leading-relaxed">{listing.description}</p>
               )}
 
-              {/* Price */}
-              <div className="mt-4">
-                <p className="text-2xl font-bold text-foreground text-right">${listing.price}</p>
-                <p className="text-sm text-muted-foreground text-right">+ ${listing.shipping_price || 0} shipping</p>
-              </div>
-
-              {/* Seller Info */}
-              <div className="mt-6 flex items-center gap-3 rounded-2xl bg-card p-4 card-shadow">
-                <img
-                  src={sellerAvatar}
-                  alt={sellerName}
-                  className="h-12 w-12 rounded-full bg-muted"
-                  loading="lazy"
-                />
-                <div className="flex-1">
-                  <p className="font-medium text-foreground">{sellerName}</p>
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    <span>{sellerLocation}</span>
+              {/* Seller Info + Price Row */}
+              <div className="mt-6 flex items-center gap-3">
+                {/* Seller Card */}
+                <div className="flex items-center gap-3 rounded-2xl bg-card p-3 card-shadow flex-1">
+                  <img
+                    src={sellerAvatar}
+                    alt={sellerName}
+                    className="h-10 w-10 rounded-full bg-muted"
+                    loading="lazy"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-foreground truncate">{sellerName}</p>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <MapPin className="h-3 w-3 flex-shrink-0" />
+                      <span className="truncate">{sellerLocation}</span>
+                    </div>
                   </div>
+                </div>
+
+                {/* Price */}
+                <div className="text-right flex-shrink-0">
+                  <p className="text-2xl font-bold text-foreground">${listing.price}</p>
+                  <p className="text-xs text-muted-foreground">+ ${listing.shipping_price || 0} shipping</p>
                 </div>
               </div>
 
