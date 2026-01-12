@@ -34,14 +34,13 @@ const SwipeCard = ({
   const nopeOpacity = useTransform(x, [-100, 0], [1, 0]);
   const cartOpacity = useTransform(y, [-100, 0], [1, 0]);
 
-  // When a stacked card becomes the top card, force-reset transforms to avoid flicker/glitch.
+  // When a card becomes the top card, reset exit state and motion values
   useEffect(() => {
-    if (isTop) {
-      setExitDirection(null);
+    if (isTop && exitDirection === null) {
       x.set(0);
       y.set(0);
     }
-  }, [isTop, x, y]);
+  }, [isTop, exitDirection, x, y]);
 
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const threshold = 100;
@@ -65,15 +64,6 @@ const SwipeCard = ({
 
   // Only the top card should have exit animation applied
   const getAnimateProps = () => {
-    if (!isTop) {
-      return {
-        x: stackTranslateX,
-        y: 0,
-        rotate: stackRotation,
-        opacity: 1,
-      };
-    }
-    
     if (exitDirection === 'left') {
       return { x: -500, rotate: -30, opacity: 0 };
     }
@@ -84,7 +74,18 @@ const SwipeCard = ({
       return { y: -500, opacity: 0 };
     }
     
-    return {};
+    // Non-exiting cards: position based on their stack index
+    if (!isTop) {
+      return {
+        x: stackTranslateX,
+        y: 0,
+        rotate: stackRotation,
+        opacity: 1,
+      };
+    }
+    
+    // Top card at rest
+    return { x: 0, y: 0, rotate: 0, opacity: 1 };
   };
 
   return (
@@ -92,19 +93,18 @@ const SwipeCard = ({
       ref={cardRef}
       className="absolute inset-x-0 top-0 mx-auto w-[calc(100%-16px)] max-w-sm cursor-grab active:cursor-grabbing h-[calc(100%-8px)]"
       style={{
-        x: isTop ? x : undefined,
-        y: isTop ? y : undefined,
-        rotate: isTop ? rotate : undefined,
+        x: isTop && !exitDirection ? x : undefined,
+        y: isTop && !exitDirection ? y : undefined,
+        rotate: isTop && !exitDirection ? rotate : undefined,
         zIndex: 10 - index,
         marginTop: stackOffset
       }}
-      initial={!isTop ? { x: stackTranslateX, rotate: stackRotation, opacity: 1 } : undefined}
       animate={getAnimateProps()}
       drag={isTop && !exitDirection}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       dragElastic={0.9}
       onDragEnd={handleDragEnd}
-      transition={{ duration: 0.22 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
       onClick={isTop && !exitDirection ? onClick : undefined}
     >
       <div className="flex h-full flex-col overflow-hidden rounded-3xl bg-card p-3 card-shadow py-[10px] px-[10px]">
