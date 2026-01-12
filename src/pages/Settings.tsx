@@ -1,6 +1,5 @@
-import { ChevronRight, Bell, Lock, HelpCircle, Info, User, RefreshCw, LogOut } from 'lucide-react';
+import { ChevronRight, Lock, HelpCircle, Info, User, RefreshCw, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Switch } from '@/components/ui/switch';
 import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
@@ -21,12 +20,6 @@ const Settings = () => {
   };
 
   const settingsGroups = [
-    {
-      title: 'Preferences',
-      items: [
-        { icon: <Bell className="h-5 w-5" />, label: 'Push Notifications', toggle: true },
-      ],
-    },
     {
       title: 'Account',
       items: [
@@ -91,11 +84,9 @@ const Settings = () => {
                     <span className={`font-medium ${item.danger ? 'text-destructive' : 'text-foreground'}`}>{item.label}</span>
                   </div>
                   
-                  {item.toggle ? (
-                    <Switch onCheckedChange={() => toast(`${item.label} toggled`)} />
-                  ) : !item.danger ? (
+                  {!item.danger && (
                     <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                  ) : null}
+                  )}
                 </div>
               ))}
             </div>
