@@ -17,6 +17,7 @@ export interface Listing {
   location: string;
   createdAt: Date;
   condition: 'new' | 'like-new' | 'good' | 'fair';
+  status?: string;
 }
 
 
