@@ -46,44 +46,46 @@ const Cart = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Header with Wishlist Button */}
-      <div className="relative flex justify-center pt-8 pb-6">
-        {/* Wishlist button - top right */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate('/favorites')}
-          className="absolute right-4 top-8 h-12 w-12 rounded-full"
-        >
-          <Star className="h-6 w-6" />
-        </Button>
+      {/* Sticky Header with Wishlist Button */}
+      <div className="sticky top-0 z-40 bg-background">
+        <div className="relative flex justify-center pt-8 pb-6">
+          {/* Wishlist button - top right with mint/lime background */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/favorites')}
+            className="absolute right-4 top-8 h-12 w-12 rounded-full bg-mint text-charcoal hover:bg-mint/90"
+          >
+            <Star className="h-6 w-6" />
+          </Button>
 
-        {/* Tab switcher */}
-        <div className="flex items-center rounded-full bg-muted p-1">
-          <button
-            onClick={() => setActiveTab('cart')}
-            className={cn(
-              'flex items-center justify-center gap-2 rounded-full w-28 py-2.5 text-sm font-medium transition-all',
-              activeTab === 'cart'
-                ? 'bg-card text-foreground shadow-sm'
-                : 'text-muted-foreground'
-            )}
-          >
-            <ShoppingCart className="h-4 w-4" />
-            Cart
-          </button>
-          <button
-            onClick={() => setActiveTab('orders')}
-            className={cn(
-              'flex items-center justify-center gap-2 rounded-full w-28 py-2.5 text-sm font-medium transition-all',
-              activeTab === 'orders'
-                ? 'bg-card text-foreground shadow-sm'
-                : 'text-muted-foreground'
-            )}
-          >
-            <ClipboardList className="h-4 w-4" />
-            Orders
-          </button>
+          {/* Tab switcher */}
+          <div className="flex items-center rounded-full bg-muted p-1">
+            <button
+              onClick={() => setActiveTab('cart')}
+              className={cn(
+                'flex items-center justify-center gap-2 rounded-full w-28 py-2.5 text-sm font-medium transition-all',
+                activeTab === 'cart'
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground'
+              )}
+            >
+              <ShoppingCart className="h-4 w-4" />
+              Cart
+            </button>
+            <button
+              onClick={() => setActiveTab('orders')}
+              className={cn(
+                'flex items-center justify-center gap-2 rounded-full w-28 py-2.5 text-sm font-medium transition-all',
+                activeTab === 'orders'
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground'
+              )}
+            >
+              <ClipboardList className="h-4 w-4" />
+              Orders
+            </button>
+          </div>
         </div>
       </div>
 
