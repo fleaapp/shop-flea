@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { Listing } from '@/types/listing';
 import ListingTag from './ListingTag';
@@ -33,6 +33,15 @@ const SwipeCard = ({
   const likeOpacity = useTransform(x, [0, 100], [0, 1]);
   const nopeOpacity = useTransform(x, [-100, 0], [1, 0]);
   const cartOpacity = useTransform(y, [-100, 0], [1, 0]);
+
+  // When a stacked card becomes the top card, force-reset transforms to avoid flicker/glitch.
+  useEffect(() => {
+    if (isTop) {
+      setExitDirection(null);
+      x.set(0);
+      y.set(0);
+    }
+  }, [isTop, x, y]);
 
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const threshold = 100;
@@ -95,7 +104,7 @@ const SwipeCard = ({
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       dragElastic={0.9}
       onDragEnd={handleDragEnd}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.22 }}
       onClick={isTop && !exitDirection ? onClick : undefined}
     >
       <div className="flex h-full flex-col overflow-hidden rounded-3xl bg-card p-3 card-shadow py-[10px] px-[10px]">
