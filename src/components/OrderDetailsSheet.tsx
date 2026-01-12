@@ -83,12 +83,12 @@ const OrderDetailsSheet = ({
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[90vh]">
         <div className="overflow-y-auto">
-          <DrawerHeader className="text-center pb-4">
+          <DrawerHeader className="text-center pb-4 pt-0 space-y-1">
             <DrawerTitle className="text-xl font-semibold">Order details</DrawerTitle>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground">
               Order #{order.orderNumber} • {order.date}
             </p>
-            <div className="flex justify-center mt-3">
+            <div className="flex justify-center pt-1">
               <span
                 className={cn(
                   'rounded-full px-4 py-1.5 text-sm font-medium',
