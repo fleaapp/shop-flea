@@ -228,7 +228,7 @@ const ListingDetails = () => {
               {/* Seller Info + Price Row */}
               <div className="mt-6 flex items-center justify-between gap-3">
                 {/* Seller Card */}
-                <div className="flex items-center gap-2 rounded-2xl bg-card p-2.5 pr-4 card-shadow">
+                <div className="flex items-center gap-2 rounded-2xl bg-card p-2.5 pr-6 card-shadow">
                   <img
                     src={sellerAvatar}
                     alt={sellerName}
