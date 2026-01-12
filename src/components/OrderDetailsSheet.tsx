@@ -182,14 +182,14 @@ const OrderDetailsSheet = ({
 
             {/* Actions */}
             {order.status !== 'delivered' && (
-              <div className="space-y-3 pt-4">
+              <div className="flex flex-col items-center space-y-3 pt-4">
                 <Button
                   onClick={onMarkDelivered}
                   className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
                 >
                   Mark as delivered
                 </Button>
-                <button className="w-full text-center text-sm text-foreground underline">
+                <button className="text-center text-sm text-foreground underline">
                   Need help?
                 </button>
               </div>
