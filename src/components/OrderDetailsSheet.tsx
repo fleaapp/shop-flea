@@ -143,10 +143,7 @@ const OrderDetailsSheet = ({
                 </div>
 
                 {/* Total - full width bar */}
-                <div className="flex items-center justify-center gap-2 bg-charcoal text-white py-3 px-4">
-                  <span className="bg-[#635bff] text-white text-xs font-bold px-2 py-0.5 rounded">
-                    stripe
-                  </span>
+                <div className="flex items-center justify-center bg-charcoal text-white py-3 px-4">
                   <span className="font-medium">Total amount paid: ${total.toFixed(2)}</span>
                 </div>
               </div>
