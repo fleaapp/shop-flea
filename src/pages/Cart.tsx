@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, ClipboardList, Star, ChevronRight } from 'lucide-react';
+import { ShoppingCart, ClipboardList, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
 import { useCart } from '@/context/CartContext';
@@ -260,14 +260,14 @@ const Cart = () => {
       {/* Sticky Header with Wishlist Button */}
       <div className="sticky top-0 z-40 bg-background">
         <div className="relative flex justify-center pt-8 pb-6">
-          {/* Wishlist button - charcoal background with lime star */}
+          {/* Wishlist button - charcoal background with heart envelope emoji */}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate('/favorites')}
-            className="absolute right-4 top-8 h-12 w-12 rounded-full bg-charcoal text-mint hover:bg-charcoal-light"
+            className="absolute right-4 top-8 h-12 w-12 rounded-full bg-charcoal text-mint hover:bg-charcoal-light text-xl"
           >
-            <Star className="h-6 w-6" />
+            💌
           </Button>
 
           {/* Tab switcher */}
