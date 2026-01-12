@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/context/CartContext';
@@ -18,18 +19,25 @@ const BottomNav = () => {
   const { cartItems } = useCart();
   const { user } = useAuth();
 
+  // Avoid refetching this on every route change; avatar rarely changes.
   const { data: profile } = useQuery({
-    queryKey: ['profile', user?.id],
+    queryKey: ['profile-avatar', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('avatar_url')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
+      if (error) return null;
       return data;
     },
     enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: 0,
   });
 
   const ProfileIcon = () => (
@@ -42,13 +50,13 @@ const BottomNav = () => {
     </div>
   );
 
-  const navItems: NavItem[] = [
+  const navItems: NavItem[] = useMemo(() => [
     { icon: <span className="text-lg">⚙️</span>, label: 'Settings', path: '/settings' },
     { icon: <ProfileIcon />, label: 'Profile', path: '/profile' },
     { icon: <span className="text-lg">🏠</span>, label: 'Home', path: '/' },
     { icon: <span className="text-lg">🛒</span>, label: 'Cart', path: '/cart', badge: cartItems.length || undefined },
     { icon: <span className="text-lg">🔔</span>, label: 'Alerts', path: '/notifications' },
-  ];
+  ], [cartItems.length, profile?.avatar_url]);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 flex justify-center py-3 z-50 pointer-events-none">
@@ -61,7 +69,7 @@ const BottomNav = () => {
               key={item.path}
               onClick={() => navigate(item.path)}
               className={cn(
-                'relative flex items-center gap-2 rounded-full px-4 py-2 transition-all duration-300',
+                'relative flex items-center gap-2 rounded-full px-4 py-2 transition-colors duration-150',
                 isActive 
                   ? 'bg-primary text-primary-foreground font-medium' 
                   : 'text-muted-foreground hover:text-card'
