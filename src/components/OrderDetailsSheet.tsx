@@ -185,7 +185,7 @@ const OrderDetailsSheet = ({
               <div className="space-y-3 pt-4">
                 <Button
                   onClick={onMarkDelivered}
-                  className="w-full rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12"
+                  className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
                 >
                   Mark as delivered
                 </Button>
