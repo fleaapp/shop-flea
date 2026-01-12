@@ -167,16 +167,16 @@ const Cart = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-20 sm:pb-24">
       {/* Sticky Header with Wishlist Button */}
       <div className="sticky top-0 z-40 bg-background">
-        <div className="relative flex justify-center pt-8 pb-6">
+        <div className="relative flex justify-center pt-6 sm:pt-8 pb-4 sm:pb-6">
           {/* Wishlist button - charcoal background with heart envelope emoji */}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate('/favorites')}
-            className="absolute right-4 top-8 h-12 w-12 rounded-full bg-charcoal text-mint hover:bg-charcoal-light text-xl"
+            className="absolute right-3 sm:right-4 top-6 sm:top-8 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-charcoal text-mint hover:bg-charcoal-light text-lg sm:text-xl"
           >
             💌
           </Button>
@@ -186,25 +186,25 @@ const Cart = () => {
             <button
               onClick={() => setActiveTab('cart')}
               className={cn(
-                'flex items-center justify-center gap-2 rounded-full w-28 py-2.5 text-sm font-medium transition-all',
+                'flex items-center justify-center gap-1.5 sm:gap-2 rounded-full w-24 sm:w-28 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all',
                 activeTab === 'cart'
                   ? 'bg-card text-foreground shadow-sm'
                   : 'text-muted-foreground'
               )}
             >
-              <span className="text-base">🛒</span>
+              <span className="text-sm sm:text-base">🛒</span>
               Cart
             </button>
             <button
               onClick={() => setActiveTab('orders')}
               className={cn(
-                'flex items-center justify-center gap-2 rounded-full w-28 py-2.5 text-sm font-medium transition-all',
+                'flex items-center justify-center gap-1.5 sm:gap-2 rounded-full w-24 sm:w-28 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all',
                 activeTab === 'orders'
                   ? 'bg-card text-foreground shadow-sm'
                   : 'text-muted-foreground'
               )}
             >
-              <span className="text-base">🧾</span>
+              <span className="text-sm sm:text-base">🧾</span>
               Orders
             </button>
           </div>
@@ -212,7 +212,7 @@ const Cart = () => {
       </div>
 
       {activeTab === 'cart' ? (
-        <div className="px-4 space-y-4">
+        <div className="px-3 sm:px-4 space-y-3 sm:space-y-4">
           {cartItems.length > 0 ? (
             <>
               {Object.entries(itemsBySeller).map(([sellerId, items]) => {
@@ -250,10 +250,10 @@ const Cart = () => {
 
               {/* Checkout selected button */}
               {selectedItems.size > 1 && (
-                <div className="fixed bottom-24 left-4 right-4 z-40">
+                <div className="fixed bottom-20 sm:bottom-24 left-3 sm:left-4 right-3 sm:right-4 z-40">
                   <Button
                     onClick={handleCheckoutSelected}
-                    className="w-full rounded-2xl bg-primary text-primary-foreground h-14 text-base font-medium"
+                    className="w-full rounded-2xl bg-primary text-primary-foreground h-12 sm:h-14 text-sm sm:text-base font-medium"
                   >
                     Checkout {selectedItems.size} selected items
                   </Button>
@@ -275,7 +275,7 @@ const Cart = () => {
           )}
         </div>
       ) : (
-        <div className="px-4 space-y-6">
+        <div className="px-3 sm:px-4 space-y-4 sm:space-y-6">
           {loadingBuyerOrders ? (
             <div className="flex justify-center py-10">
               <p className="text-muted-foreground">Loading orders...</p>
