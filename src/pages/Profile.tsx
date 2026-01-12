@@ -74,15 +74,15 @@ const Profile = () => {
         </div>
       </div>
 
-      <div className="mt-6 flex-1 overflow-x-auto overflow-y-hidden px-4">
+      <div className="mt-6 flex-1 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
           </div>
         ) : displayListings.length > 0 ? (
-          <div className="flex gap-4 pb-4 justify-center" style={{ width: 'max-content', minWidth: '100%' }}>
+          <div className="flex gap-4 pb-4" style={{ paddingLeft: 'calc(50% - 128px)', paddingRight: 'calc(50% - 128px)' }}>
             {displayListings.map((listing) => (
-              <div key={listing.id} className="relative w-64 flex-shrink-0 overflow-hidden rounded-3xl bg-card p-2.5 card-shadow">
+              <div key={listing.id} className="relative w-64 flex-shrink-0 overflow-hidden rounded-3xl bg-card p-2.5 card-shadow snap-center">
                 {/* Edit button */}
                 <button 
                   onClick={(e) => {
