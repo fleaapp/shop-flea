@@ -168,8 +168,8 @@ const Index = () => {
       )}
       
       {/* Card Stack - centered with space for fixed nav */}
-      <div className="flex-1 flex items-center justify-center pb-20 sm:pb-24 min-h-0">
-        <div className="relative w-full max-w-[min(340px,85vw)] h-[min(68vh,520px)] px-3 sm:px-5">
+      <div className="flex-1 flex items-center justify-center pb-24 min-h-0">
+        <div className="relative w-full max-w-[min(340px,85vw)] h-[min(68vh,520px)] px-5 max-[375px]:px-3">
           {loading ? (
             <div className="flex h-full flex-col items-center justify-center text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>

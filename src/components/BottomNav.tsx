@@ -59,8 +59,8 @@ const BottomNav = () => {
   ], [cartItems.length, profile?.avatar_url]);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 flex justify-center py-2 sm:py-3 z-50 pointer-events-none">
-      <div className="mx-2 sm:mx-4 flex items-center gap-1 sm:gap-2 rounded-full bg-nav px-3 sm:px-4 py-2.5 sm:py-3 nav-shadow pointer-events-auto">
+    <nav className="fixed bottom-0 left-0 right-0 flex justify-center py-3 max-[375px]:py-2 z-50 pointer-events-none">
+      <div className="mx-4 max-[375px]:mx-2 flex items-center gap-2 max-[375px]:gap-1 rounded-full bg-nav px-4 max-[375px]:px-3 py-3 max-[375px]:py-2.5 nav-shadow pointer-events-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           
@@ -69,7 +69,7 @@ const BottomNav = () => {
               key={item.path}
               onClick={() => navigate(item.path)}
               className={cn(
-                'relative flex items-center gap-1.5 sm:gap-2 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 transition-colors duration-150',
+                'relative flex items-center gap-2 max-[375px]:gap-1.5 rounded-full px-4 max-[375px]:px-3 py-2 max-[375px]:py-1.5 transition-colors duration-150',
                 isActive 
                   ? 'bg-primary text-primary-foreground font-medium' 
                   : 'text-muted-foreground hover:text-card'
@@ -77,7 +77,7 @@ const BottomNav = () => {
             >
               {item.icon}
               {isActive && (
-                <span className="text-xs sm:text-sm">{item.label}</span>
+                <span className="text-sm max-[375px]:text-xs">{item.label}</span>
               )}
               {item.badge && !isActive && (
                 <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">

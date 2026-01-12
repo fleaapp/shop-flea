@@ -167,16 +167,16 @@ const Cart = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20 sm:pb-24">
+    <div className="min-h-screen bg-background pb-24 max-[375px]:pb-20">
       {/* Sticky Header with Wishlist Button */}
       <div className="sticky top-0 z-40 bg-background">
-        <div className="relative flex justify-center pt-6 sm:pt-8 pb-4 sm:pb-6">
+        <div className="relative flex justify-center pt-8 max-[375px]:pt-6 pb-6 max-[375px]:pb-4">
           {/* Wishlist button - charcoal background with heart envelope emoji */}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate('/favorites')}
-            className="absolute right-3 sm:right-4 top-6 sm:top-8 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-charcoal text-mint hover:bg-charcoal-light text-lg sm:text-xl"
+            className="absolute right-4 max-[375px]:right-3 top-8 max-[375px]:top-6 h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-full bg-charcoal text-mint hover:bg-charcoal-light text-xl max-[375px]:text-lg"
           >
             💌
           </Button>
@@ -186,25 +186,25 @@ const Cart = () => {
             <button
               onClick={() => setActiveTab('cart')}
               className={cn(
-                'flex items-center justify-center gap-1.5 sm:gap-2 rounded-full w-24 sm:w-28 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all',
+                'flex items-center justify-center gap-2 max-[375px]:gap-1.5 rounded-full w-28 max-[375px]:w-24 py-2.5 max-[375px]:py-2 text-sm max-[375px]:text-xs font-medium transition-all',
                 activeTab === 'cart'
                   ? 'bg-card text-foreground shadow-sm'
                   : 'text-muted-foreground'
               )}
             >
-              <span className="text-sm sm:text-base">🛒</span>
+              <span className="text-base max-[375px]:text-sm">🛒</span>
               Cart
             </button>
             <button
               onClick={() => setActiveTab('orders')}
               className={cn(
-                'flex items-center justify-center gap-1.5 sm:gap-2 rounded-full w-24 sm:w-28 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all',
+                'flex items-center justify-center gap-2 max-[375px]:gap-1.5 rounded-full w-28 max-[375px]:w-24 py-2.5 max-[375px]:py-2 text-sm max-[375px]:text-xs font-medium transition-all',
                 activeTab === 'orders'
                   ? 'bg-card text-foreground shadow-sm'
                   : 'text-muted-foreground'
               )}
             >
-              <span className="text-sm sm:text-base">🧾</span>
+              <span className="text-base max-[375px]:text-sm">🧾</span>
               Orders
             </button>
           </div>
@@ -212,7 +212,7 @@ const Cart = () => {
       </div>
 
       {activeTab === 'cart' ? (
-        <div className="px-3 sm:px-4 space-y-3 sm:space-y-4">
+        <div className="px-4 max-[375px]:px-3 space-y-4 max-[375px]:space-y-3">
           {cartItems.length > 0 ? (
             <>
               {Object.entries(itemsBySeller).map(([sellerId, items]) => {
@@ -250,10 +250,10 @@ const Cart = () => {
 
               {/* Checkout selected button */}
               {selectedItems.size > 1 && (
-                <div className="fixed bottom-20 sm:bottom-24 left-3 sm:left-4 right-3 sm:right-4 z-40">
+                <div className="fixed bottom-24 max-[375px]:bottom-20 left-4 max-[375px]:left-3 right-4 max-[375px]:right-3 z-40">
                   <Button
                     onClick={handleCheckoutSelected}
-                    className="w-full rounded-2xl bg-primary text-primary-foreground h-12 sm:h-14 text-sm sm:text-base font-medium"
+                    className="w-full rounded-2xl bg-primary text-primary-foreground h-14 max-[375px]:h-12 text-base max-[375px]:text-sm font-medium"
                   >
                     Checkout {selectedItems.size} selected items
                   </Button>
@@ -275,7 +275,7 @@ const Cart = () => {
           )}
         </div>
       ) : (
-        <div className="px-3 sm:px-4 space-y-4 sm:space-y-6">
+        <div className="px-4 max-[375px]:px-3 space-y-6 max-[375px]:space-y-4">
           {loadingBuyerOrders ? (
             <div className="flex justify-center py-10">
               <p className="text-muted-foreground">Loading orders...</p>

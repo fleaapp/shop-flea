@@ -75,15 +75,15 @@ const Profile = () => {
         </div>
       </div>
 
-      <div className="mt-4 sm:mt-6 flex-1 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <div className="mt-6 max-[375px]:mt-4 flex-1 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
           </div>
         ) : displayListings.length > 0 ? (
-          <div className="flex gap-3 sm:gap-4 pb-4" style={{ paddingLeft: 'calc(50% - min(128px, 35vw))', paddingRight: 'calc(50% - min(128px, 35vw))' }}>
+          <div className="flex gap-4 max-[375px]:gap-3 pb-4" style={{ paddingLeft: 'calc(50% - min(128px, 35vw))', paddingRight: 'calc(50% - min(128px, 35vw))' }}>
             {displayListings.map((listing) => (
-              <div key={listing.id} className="relative w-56 sm:w-64 flex-shrink-0 overflow-hidden rounded-3xl bg-card p-2 sm:p-2.5 card-shadow snap-center">
+              <div key={listing.id} className="relative w-64 max-[375px]:w-56 flex-shrink-0 overflow-hidden rounded-3xl bg-card p-2.5 max-[375px]:p-2 card-shadow snap-center">
                 {/* Edit button */}
                 <button 
                   onClick={(e) => {
@@ -104,22 +104,22 @@ const Profile = () => {
                 </div>
                 
                 {/* Content */}
-                <div className="px-1.5 sm:px-2 pt-2 sm:pt-3 pb-1">
+                <div className="px-2 max-[375px]:px-1.5 pt-3 max-[375px]:pt-2 pb-1">
                   <div className="flex items-end justify-between">
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm sm:text-base font-semibold text-foreground truncate">{listing.title}</h3>
-                      <div className="mt-1 sm:mt-1.5 flex flex-wrap gap-1 sm:gap-1.5">
-                        <span className="rounded-full bg-muted px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-xs font-medium text-muted-foreground">
+                      <h3 className="text-base max-[375px]:text-sm font-semibold text-foreground truncate">{listing.title}</h3>
+                      <div className="mt-1.5 max-[375px]:mt-1 flex flex-wrap gap-1.5 max-[375px]:gap-1">
+                        <span className="rounded-full bg-muted px-2.5 max-[375px]:px-2 py-0.5 text-xs max-[375px]:text-[10px] font-medium text-muted-foreground">
                           {formatTagLabel(listing.size, true)}
                         </span>
-                        <span className="rounded-full bg-muted px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-xs font-medium text-muted-foreground">
+                        <span className="rounded-full bg-muted px-2.5 max-[375px]:px-2 py-0.5 text-xs max-[375px]:text-[10px] font-medium text-muted-foreground">
                           {listing.brand}
                         </span>
                       </div>
                     </div>
-                    <div className="text-right flex-shrink-0 ml-2 sm:ml-3">
-                      <p className="text-base sm:text-lg font-bold text-foreground">${listing.price}</p>
-                      <p className="text-[10px] sm:text-xs text-muted-foreground">+ ${listing.shipping_price || 0} shipping</p>
+                    <div className="text-right flex-shrink-0 ml-3 max-[375px]:ml-2">
+                      <p className="text-lg max-[375px]:text-base font-bold text-foreground">${listing.price}</p>
+                      <p className="text-xs max-[375px]:text-[10px] text-muted-foreground">+ ${listing.shipping_price || 0} shipping</p>
                     </div>
                   </div>
                 </div>
