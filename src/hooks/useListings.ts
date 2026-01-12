@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-
 export interface DbListing {
   id: string;
   user_id: string;
@@ -41,6 +40,7 @@ export interface ListingFilters {
 }
 
 export const useListings = (filters?: ListingFilters) => {
+  const { user } = useAuth();
   const [listings, setListings] = useState<DbListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +55,11 @@ export const useListings = (filters?: ListingFilters) => {
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(100); // Limit to prevent DoS via large result sets
+
+    // Exclude current user's own listings
+    if (user) {
+      query = query.neq('user_id', user.id);
+    }
 
     // Apply filters
     if (filters?.category) {
@@ -109,7 +114,7 @@ export const useListings = (filters?: ListingFilters) => {
       setListings([]);
     }
     setLoading(false);
-  }, [filters?.category, filters?.size, filters?.condition, filters?.gender, filters?.minPrice, filters?.maxPrice, filters?.search]);
+  }, [user, filters?.category, filters?.size, filters?.condition, filters?.gender, filters?.minPrice, filters?.maxPrice, filters?.search]);
 
   useEffect(() => {
     fetchListings();
