@@ -260,8 +260,13 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          first_name: string | null
           id: string
+          last_name: string | null
           location: string | null
+          pause_selling: boolean
+          preferred_gender: string | null
+          preferred_sizes: string[] | null
           rating: number | null
           total_reviews: number | null
           updated_at: string
@@ -271,8 +276,13 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           location?: string | null
+          pause_selling?: boolean
+          preferred_gender?: string | null
+          preferred_sizes?: string[] | null
           rating?: number | null
           total_reviews?: number | null
           updated_at?: string
@@ -282,8 +292,13 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           location?: string | null
+          pause_selling?: boolean
+          preferred_gender?: string | null
+          preferred_sizes?: string[] | null
           rating?: number | null
           total_reviews?: number | null
           updated_at?: string

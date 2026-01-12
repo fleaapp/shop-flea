@@ -77,6 +77,8 @@ const Settings = () => {
                       await signOut();
                       toast.success('Logged out');
                       navigate('/auth');
+                    } else if (item.label === 'Edit Profile') {
+                      navigate('/settings/profile');
                     } else if (item.action) {
                       await item.action();
                     } else if (!item.toggle) {
