@@ -127,7 +127,7 @@ const CartItemRow = ({
           "flex flex-1 flex-col justify-between h-24",
           isSold && "opacity-50"
         )}>
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between pt-1">
             <h3 className="font-semibold text-foreground">{item.title}</h3>
             {showSellerAvatar && (
               <img
