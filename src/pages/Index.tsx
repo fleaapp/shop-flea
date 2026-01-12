@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import FilterChip from '@/components/FilterChip';
@@ -174,18 +175,20 @@ const Index = () => {
               <p className="mt-4 text-sm text-muted-foreground">Loading listings...</p>
             </div>
           ) : currentListings.length > 0 ? (
-            currentListings.map((dbListing, index) => (
-              <SwipeCard
-                key={dbListing.id}
-                listing={toDisplayListing(dbListing)}
-                onSwipeLeft={handleSwipeLeft}
-                onSwipeRight={handleSwipeRight}
-                onSwipeUp={handleSwipeUp}
-                onClick={() => handleCardClick(dbListing)}
-                isTop={index === 0}
-                index={index}
-              />
-            )).reverse()
+            <AnimatePresence mode="popLayout">
+              {currentListings.map((dbListing, index) => (
+                <SwipeCard
+                  key={dbListing.id}
+                  listing={toDisplayListing(dbListing)}
+                  onSwipeLeft={handleSwipeLeft}
+                  onSwipeRight={handleSwipeRight}
+                  onSwipeUp={handleSwipeUp}
+                  onClick={() => handleCardClick(dbListing)}
+                  isTop={index === 0}
+                  index={index}
+                />
+              )).reverse()}
+            </AnimatePresence>
           ) : (
             <div className="flex h-full flex-col items-center justify-center text-center">
               <p className="text-lg font-medium text-muted-foreground">No more listings!</p>

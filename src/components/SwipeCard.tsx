@@ -30,8 +30,6 @@ const SwipeCard = ({
   const y = useMotionValue(0);
   
   const rotate = useTransform(x, [-200, 200], [-15, 15]);
-  const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
-  
   const likeOpacity = useTransform(x, [0, 100], [0, 1]);
   const nopeOpacity = useTransform(x, [-100, 0], [1, 0]);
   const cartOpacity = useTransform(y, [-100, 0], [1, 0]);
@@ -56,33 +54,49 @@ const SwipeCard = ({
   const stackRotation = index * 3;
   const stackTranslateX = index * 12;
 
+  // Only the top card should have exit animation applied
+  const getAnimateProps = () => {
+    if (!isTop) {
+      return {
+        x: stackTranslateX,
+        y: 0,
+        rotate: stackRotation,
+        opacity: 1,
+      };
+    }
+    
+    if (exitDirection === 'left') {
+      return { x: -500, rotate: -30, opacity: 0 };
+    }
+    if (exitDirection === 'right') {
+      return { x: 500, rotate: 30, opacity: 0 };
+    }
+    if (exitDirection === 'up') {
+      return { y: -500, opacity: 0 };
+    }
+    
+    return {};
+  };
+
   return (
     <motion.div
       ref={cardRef}
       className="absolute inset-x-0 top-0 mx-auto w-[calc(100%-16px)] max-w-sm cursor-grab active:cursor-grabbing h-[calc(100%-8px)]"
       style={{
-        x: isTop ? x : stackTranslateX,
-        y: isTop ? y : 0,
-        rotate: isTop ? rotate : stackRotation,
-        opacity: isTop ? opacity : 1,
+        x: isTop ? x : undefined,
+        y: isTop ? y : undefined,
+        rotate: isTop ? rotate : undefined,
         zIndex: 10 - index,
         marginTop: stackOffset
       }}
-      drag={isTop ? true : false}
+      initial={!isTop ? { x: stackTranslateX, rotate: stackRotation, opacity: 1 } : undefined}
+      animate={getAnimateProps()}
+      drag={isTop && !exitDirection}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       dragElastic={0.9}
       onDragEnd={handleDragEnd}
-      animate={
-        exitDirection === 'left'
-          ? { x: -500, rotate: -30, opacity: 0 }
-          : exitDirection === 'right'
-          ? { x: 500, rotate: 30, opacity: 0 }
-          : exitDirection === 'up'
-          ? { y: -500, opacity: 0 }
-          : {}
-      }
       transition={{ duration: 0.3 }}
-      onClick={isTop ? onClick : undefined}
+      onClick={isTop && !exitDirection ? onClick : undefined}
     >
       <div className="flex h-full flex-col overflow-hidden rounded-3xl bg-card p-3 card-shadow py-[10px] px-[10px]">
         {/* Image with white border effect - takes remaining space */}
