@@ -57,18 +57,18 @@ const Profile = () => {
         </div>
       </div>
 
-      <div className="mt-6 flex justify-center items-center gap-3">
+      <div className="mt-6 flex justify-center items-center gap-2">
         <button 
           onClick={() => navigate('/create')} 
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-foreground"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground"
         >
-          <Plus className="h-5 w-5 text-card" />
+          <Plus className="h-5 w-5" />
         </button>
-        <div className="flex rounded-full bg-card p-1 card-shadow">
-          <button onClick={() => setActiveTab('listings')} className={`rounded-full px-6 py-2 text-sm font-medium transition-all ${activeTab === 'listings' ? 'bg-charcoal text-white' : 'text-muted-foreground hover:text-foreground'}`}>
+        <div className="flex rounded-full bg-nav p-1 nav-shadow">
+          <button onClick={() => setActiveTab('listings')} className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${activeTab === 'listings' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-card'}`}>
             Listings
           </button>
-          <button onClick={() => setActiveTab('sold')} className={`rounded-full px-6 py-2 text-sm font-medium transition-all ${activeTab === 'sold' ? 'bg-charcoal text-white' : 'text-muted-foreground hover:text-foreground'}`}>
+          <button onClick={() => setActiveTab('sold')} className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${activeTab === 'sold' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-card'}`}>
             Sold
           </button>
         </div>
