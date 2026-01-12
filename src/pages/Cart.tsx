@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, ClipboardList, Star } from 'lucide-react';
+import { ShoppingCart, ClipboardList, Star, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
 import { useCart } from '@/context/CartContext';
@@ -9,6 +9,107 @@ import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import CartItemRow from '@/components/CartItemRow';
+import listingJacket from '@/assets/listing-jacket.jpg';
+import listingSneakers from '@/assets/listing-sneakers.jpg';
+import listingSweater from '@/assets/listing-sweater.jpg';
+import listingBag from '@/assets/listing-bag.jpg';
+
+type OrderNotification = {
+  id: string;
+  username: string;
+  productImage: string;
+  userAvatar: string;
+  time: string;
+  status: 'awaiting' | 'shipped' | 'delivered';
+};
+
+const mockOrders: OrderNotification[] = [
+  {
+    id: '1',
+    username: 'vintage_seller',
+    productImage: listingJacket,
+    userAvatar: 'https://i.pravatar.cc/40?img=14',
+    time: '2 hours ago',
+    status: 'awaiting',
+  },
+  {
+    id: '2',
+    username: 'style_closet',
+    productImage: listingSweater,
+    userAvatar: 'https://i.pravatar.cc/40?img=15',
+    time: '1 day ago',
+    status: 'awaiting',
+  },
+  {
+    id: '3',
+    username: 'fashion_finds',
+    productImage: listingSneakers,
+    userAvatar: 'https://i.pravatar.cc/40?img=16',
+    time: '3 days ago',
+    status: 'shipped',
+  },
+  {
+    id: '4',
+    username: 'thrift_treasures',
+    productImage: listingBag,
+    userAvatar: 'https://i.pravatar.cc/40?img=17',
+    time: '15/1/2025',
+    status: 'shipped',
+  },
+  {
+    id: '5',
+    username: 'eco_wardrobe',
+    productImage: listingJacket,
+    userAvatar: 'https://i.pravatar.cc/40?img=18',
+    time: '10/1/2025',
+    status: 'delivered',
+  },
+  {
+    id: '6',
+    username: 'preloved_gems',
+    productImage: listingSweater,
+    userAvatar: 'https://i.pravatar.cc/40?img=19',
+    time: '5/1/2025',
+    status: 'delivered',
+  },
+];
+
+const getOrderStatusBadge = (status: OrderNotification['status']) => {
+  switch (status) {
+    case 'awaiting':
+      return {
+        label: 'Awaiting shipping',
+        className: 'bg-accent text-accent-foreground',
+      };
+    case 'shipped':
+      return {
+        label: 'Shipped',
+        className: 'bg-muted text-muted-foreground',
+      };
+    case 'delivered':
+      return {
+        label: 'Delivered',
+        className: 'bg-muted text-muted-foreground',
+      };
+  }
+};
+
+const ProductThumbnail = ({
+  image,
+  avatar,
+}: {
+  image: string;
+  avatar: string;
+}) => (
+  <div className="relative h-20 w-20 flex-shrink-0">
+    <img src={image} alt="Product" className="h-full w-full rounded-xl object-cover" />
+    <img
+      src={avatar}
+      alt="User"
+      className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full border-2 border-card object-cover"
+    />
+  </div>
+);
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -177,12 +278,108 @@ const Cart = () => {
           )}
         </div>
       ) : (
-        <div className="px-4">
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <ClipboardList className="h-16 w-16 text-muted-foreground/50 mb-4" />
-            <p className="text-lg font-medium text-muted-foreground">No orders yet</p>
-            <p className="mt-2 text-sm text-muted-foreground">Your purchase history will appear here</p>
-          </div>
+        <div className="px-4 space-y-6">
+          {/* Awaiting Shipping */}
+          {mockOrders.filter((o) => o.status === 'awaiting').length > 0 && (
+            <div>
+              <h2 className="mb-3 text-base font-semibold text-foreground">Awaiting shipping</h2>
+              <div className="space-y-3">
+                {mockOrders
+                  .filter((o) => o.status === 'awaiting')
+                  .map((order) => (
+                    <div
+                      key={order.id}
+                      className="flex items-center gap-4 rounded-2xl bg-card p-4 card-shadow cursor-pointer"
+                    >
+                      <ProductThumbnail image={order.productImage} avatar={order.userAvatar} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground">
+                          From <span className="font-semibold">@{order.username}.</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground">{order.time}</p>
+                        <span
+                          className={cn(
+                            'mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium',
+                            getOrderStatusBadge(order.status).className
+                          )}
+                        >
+                          {getOrderStatusBadge(order.status).label}
+                        </span>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Shipped */}
+          {mockOrders.filter((o) => o.status === 'shipped').length > 0 && (
+            <div>
+              <h2 className="mb-3 text-base font-semibold text-foreground">Shipped</h2>
+              <div className="space-y-3">
+                {mockOrders
+                  .filter((o) => o.status === 'shipped')
+                  .map((order) => (
+                    <div
+                      key={order.id}
+                      className="flex items-center gap-4 rounded-2xl bg-card p-4 cursor-pointer"
+                    >
+                      <ProductThumbnail image={order.productImage} avatar={order.userAvatar} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground">
+                          From <span className="font-semibold">@{order.username}.</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground">{order.time}</p>
+                        <span
+                          className={cn(
+                            'mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium',
+                            getOrderStatusBadge(order.status).className
+                          )}
+                        >
+                          {getOrderStatusBadge(order.status).label}
+                        </span>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Delivered */}
+          {mockOrders.filter((o) => o.status === 'delivered').length > 0 && (
+            <div>
+              <h2 className="mb-3 text-base font-semibold text-foreground">Delivered</h2>
+              <div className="space-y-3">
+                {mockOrders
+                  .filter((o) => o.status === 'delivered')
+                  .map((order) => (
+                    <div
+                      key={order.id}
+                      className="flex items-center gap-4 rounded-2xl bg-card p-4 cursor-pointer"
+                    >
+                      <ProductThumbnail image={order.productImage} avatar={order.userAvatar} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground">
+                          From <span className="font-semibold">@{order.username}.</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground">{order.time}</p>
+                        <span
+                          className={cn(
+                            'mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium',
+                            getOrderStatusBadge(order.status).className
+                          )}
+                        >
+                          {getOrderStatusBadge(order.status).label}
+                        </span>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
