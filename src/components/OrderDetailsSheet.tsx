@@ -117,7 +117,7 @@ const OrderDetailsSheet = ({
             <div className="rounded-xl bg-card overflow-hidden">
               <SectionHeader>Order Summary</SectionHeader>
               <div>
-                <div className="px-4 pt-4 space-y-4">
+                <div className="px-4 py-4 space-y-4">
                   {order.items.map((item) => (
                     <div key={item.id} className="flex gap-4">
                       <img
