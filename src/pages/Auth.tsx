@@ -154,7 +154,7 @@ const Auth = () => {
                   placeholder="Enter your email"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  className="h-10 pl-9 rounded-lg bg-card border border-muted-foreground/40 text-foreground placeholder:text-muted-foreground text-sm"
+                  className="h-10 pl-9 rounded-lg bg-card border border-foreground text-foreground placeholder:text-muted-foreground text-sm focus-visible:ring-muted-foreground/50 focus-visible:ring-offset-0"
                 />
               </div>
               
@@ -165,7 +165,7 @@ const Auth = () => {
                   placeholder="Enter your password"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  className="h-10 pl-9 pr-9 rounded-lg bg-card border border-muted-foreground/40 text-foreground placeholder:text-muted-foreground text-sm"
+                  className="h-10 pl-9 pr-9 rounded-lg bg-card border border-foreground text-foreground placeholder:text-muted-foreground text-sm focus-visible:ring-muted-foreground/50 focus-visible:ring-offset-0"
                 />
                 <button
                   type="button"
@@ -201,7 +201,7 @@ const Auth = () => {
                   placeholder="Email"
                   value={signupEmail}
                   onChange={(e) => setSignupEmail(e.target.value)}
-                  className="h-10 pl-9 rounded-lg bg-card border border-muted-foreground/40 text-foreground placeholder:text-muted-foreground text-sm"
+                  className="h-10 pl-9 rounded-lg bg-card border border-foreground text-foreground placeholder:text-muted-foreground text-sm focus-visible:ring-muted-foreground/50 focus-visible:ring-offset-0"
                 />
               </div>
               
@@ -212,7 +212,7 @@ const Auth = () => {
                   placeholder="Username"
                   value={signupUsername}
                   onChange={(e) => setSignupUsername(e.target.value)}
-                  className="h-10 pl-9 rounded-lg bg-card border border-muted-foreground/40 text-foreground placeholder:text-muted-foreground text-sm"
+                  className="h-10 pl-9 rounded-lg bg-card border border-foreground text-foreground placeholder:text-muted-foreground text-sm focus-visible:ring-muted-foreground/50 focus-visible:ring-offset-0"
                 />
               </div>
               
@@ -223,7 +223,7 @@ const Auth = () => {
                   placeholder="Password"
                   value={signupPassword}
                   onChange={(e) => setSignupPassword(e.target.value)}
-                  className="h-10 pl-9 pr-9 rounded-lg bg-card border border-muted-foreground/40 text-foreground placeholder:text-muted-foreground text-sm"
+                  className="h-10 pl-9 pr-9 rounded-lg bg-card border border-foreground text-foreground placeholder:text-muted-foreground text-sm focus-visible:ring-muted-foreground/50 focus-visible:ring-offset-0"
                 />
                 <button
                   type="button"
@@ -241,7 +241,7 @@ const Auth = () => {
                   placeholder="Confirm password"
                   value={signupConfirmPassword}
                   onChange={(e) => setSignupConfirmPassword(e.target.value)}
-                  className="h-10 pl-9 pr-9 rounded-lg bg-card border border-muted-foreground/40 text-foreground placeholder:text-muted-foreground text-sm"
+                  className="h-10 pl-9 pr-9 rounded-lg bg-card border border-foreground text-foreground placeholder:text-muted-foreground text-sm focus-visible:ring-muted-foreground/50 focus-visible:ring-offset-0"
                 />
                 <button
                   type="button"
