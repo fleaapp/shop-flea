@@ -89,7 +89,6 @@ const Index = () => {
       const skippedListing = availableListings[currentIndex];
       await addDiscarded(skippedListing.id);
       setCurrentIndex((prev) => prev + 1);
-      toast('Skipped', { description: skippedListing.title });
     }
   }, [currentIndex, availableListings, addDiscarded]);
 
@@ -98,7 +97,6 @@ const Index = () => {
       const savedListing = availableListings[currentIndex];
       await addFavorite(savedListing.id);
       setCurrentIndex((prev) => prev + 1);
-      toast.success('Saved!', { description: `${savedListing.title} added to favorites` });
     }
   }, [currentIndex, availableListings, addFavorite]);
 
@@ -107,7 +105,6 @@ const Index = () => {
       const cartListing = availableListings[currentIndex];
       addToCart(toDisplayListing(cartListing));
       setCurrentIndex((prev) => prev + 1);
-      toast.success('Added to cart!', { description: `${cartListing.title} - $${cartListing.price}` });
     }
   }, [currentIndex, availableListings, addToCart]);
 
