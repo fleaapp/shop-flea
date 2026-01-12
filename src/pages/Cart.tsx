@@ -6,152 +6,14 @@ import BottomNav from '@/components/BottomNav';
 import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
+import { useOrders, Order } from '@/hooks/useOrders';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import CartItemRow from '@/components/CartItemRow';
-import OrderDetailsSheet, { OrderDetails } from '@/components/OrderDetailsSheet';
-import listingJacket from '@/assets/listing-jacket.jpg';
-import listingSneakers from '@/assets/listing-sneakers.jpg';
-import listingSweater from '@/assets/listing-sweater.jpg';
-import listingBag from '@/assets/listing-bag.jpg';
+import OrderDetailsSheet from '@/components/OrderDetailsSheet';
+import { formatDistanceToNow } from 'date-fns';
 
-type OrderNotification = {
-  id: string;
-  username: string;
-  productImage: string;
-  userAvatar: string;
-  time: string;
-  status: 'awaiting' | 'shipped' | 'delivered';
-};
-
-// Extended mock orders with full details for the drawer
-const mockOrderDetails: Record<string, OrderDetails> = {
-  '1': {
-    id: '1',
-    orderNumber: '2357',
-    date: '12/2/2025',
-    status: 'awaiting',
-    seller: { username: 'vintage_seller', avatar: 'https://i.pravatar.cc/40?img=14' },
-    items: [
-      { id: '1a', title: 'Vintage Leather Jacket', image: listingJacket, price: 45, shippingPrice: 10 },
-    ],
-    shippingDetails: { name: 'Sarah Hearn', address: '123 Smile road, Melbourne, 3100' },
-    trackingDetails: { serviceProvider: 'Awaiting shipping', trackingNumber: 'Awaiting shipping' },
-  },
-  '2': {
-    id: '2',
-    orderNumber: '2358',
-    date: '11/2/2025',
-    status: 'awaiting',
-    seller: { username: 'style_closet', avatar: 'https://i.pravatar.cc/40?img=15' },
-    items: [
-      { id: '2a', title: 'Cozy Knit Sweater', image: listingSweater, price: 32, shippingPrice: 8 },
-    ],
-    shippingDetails: { name: 'Sarah Hearn', address: '123 Smile road, Melbourne, 3100' },
-    trackingDetails: { serviceProvider: 'Awaiting shipping', trackingNumber: 'Awaiting shipping' },
-  },
-  '3': {
-    id: '3',
-    orderNumber: '2359',
-    date: '8/2/2025',
-    status: 'shipped',
-    seller: { username: 'fashion_finds', avatar: 'https://i.pravatar.cc/40?img=16' },
-    items: [
-      { id: '3a', title: 'Nike Sneakers', image: listingSneakers, price: 22, shippingPrice: 10 },
-    ],
-    shippingDetails: { name: 'Sarah Hearn', address: '123 Smile road, Melbourne, 3100' },
-    trackingDetails: { serviceProvider: 'Australia Post', trackingNumber: 'AP123456789AU' },
-  },
-  '4': {
-    id: '4',
-    orderNumber: '2360',
-    date: '15/1/2025',
-    status: 'shipped',
-    seller: { username: 'thrift_treasures', avatar: 'https://i.pravatar.cc/40?img=17' },
-    items: [
-      { id: '4a', title: 'Designer Bag', image: listingBag, price: 55, shippingPrice: 12 },
-    ],
-    shippingDetails: { name: 'Sarah Hearn', address: '123 Smile road, Melbourne, 3100' },
-    trackingDetails: { serviceProvider: 'Sendle', trackingNumber: 'SEN987654321' },
-  },
-  '5': {
-    id: '5',
-    orderNumber: '2361',
-    date: '10/1/2025',
-    status: 'delivered',
-    seller: { username: 'eco_wardrobe', avatar: 'https://i.pravatar.cc/40?img=18' },
-    items: [
-      { id: '5a', title: 'Vintage Leather Jacket', image: listingJacket, price: 45, shippingPrice: 10 },
-    ],
-    shippingDetails: { name: 'Sarah Hearn', address: '123 Smile road, Melbourne, 3100' },
-    trackingDetails: { serviceProvider: 'Australia Post', trackingNumber: 'AP111222333AU' },
-  },
-  '6': {
-    id: '6',
-    orderNumber: '2362',
-    date: '5/1/2025',
-    status: 'delivered',
-    seller: { username: 'preloved_gems', avatar: 'https://i.pravatar.cc/40?img=19' },
-    items: [
-      { id: '6a', title: 'Cozy Knit Sweater', image: listingSweater, price: 32, shippingPrice: 8 },
-    ],
-    shippingDetails: { name: 'Sarah Hearn', address: '123 Smile road, Melbourne, 3100' },
-    trackingDetails: { serviceProvider: 'Sendle', trackingNumber: 'SEN444555666' },
-  },
-};
-
-const mockOrders: OrderNotification[] = [
-  {
-    id: '1',
-    username: 'vintage_seller',
-    productImage: listingJacket,
-    userAvatar: 'https://i.pravatar.cc/40?img=14',
-    time: '2 hours ago',
-    status: 'awaiting',
-  },
-  {
-    id: '2',
-    username: 'style_closet',
-    productImage: listingSweater,
-    userAvatar: 'https://i.pravatar.cc/40?img=15',
-    time: '1 day ago',
-    status: 'awaiting',
-  },
-  {
-    id: '3',
-    username: 'fashion_finds',
-    productImage: listingSneakers,
-    userAvatar: 'https://i.pravatar.cc/40?img=16',
-    time: '3 days ago',
-    status: 'shipped',
-  },
-  {
-    id: '4',
-    username: 'thrift_treasures',
-    productImage: listingBag,
-    userAvatar: 'https://i.pravatar.cc/40?img=17',
-    time: '15/1/2025',
-    status: 'shipped',
-  },
-  {
-    id: '5',
-    username: 'eco_wardrobe',
-    productImage: listingJacket,
-    userAvatar: 'https://i.pravatar.cc/40?img=18',
-    time: '10/1/2025',
-    status: 'delivered',
-  },
-  {
-    id: '6',
-    username: 'preloved_gems',
-    productImage: listingSweater,
-    userAvatar: 'https://i.pravatar.cc/40?img=19',
-    time: '5/1/2025',
-    status: 'delivered',
-  },
-];
-
-const getOrderStatusBadge = (status: OrderNotification['status']) => {
+const getOrderStatusBadge = (status: Order['status']) => {
   switch (status) {
     case 'awaiting':
       return {
@@ -193,17 +55,20 @@ const Cart = () => {
   const { cartItems, removeFromCart } = useCart();
   const { addFavorite } = useFavorites();
   const { addDiscarded } = useDiscardedListings();
+  const { buyerOrders, loadingBuyerOrders, markAsDelivered } = useOrders();
   const [activeTab, setActiveTab] = useState<'cart' | 'orders'>('cart');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  const handleOrderClick = (orderId: string) => {
-    setSelectedOrderId(orderId);
+  const handleOrderClick = (order: Order) => {
+    setSelectedOrder(order);
   };
 
   const handleMarkDelivered = () => {
-    toast.success('Order marked as delivered');
-    setSelectedOrderId(null);
+    if (selectedOrder) {
+      markAsDelivered.mutate(selectedOrder.id);
+      setSelectedOrder(null);
+    }
   };
 
   // Use actual listing status from database
@@ -254,6 +119,52 @@ const Cart = () => {
     acc[item.sellerId].push(item);
     return acc;
   }, {} as Record<string, typeof cartItemsWithStatus>);
+
+  // Filter orders by status
+  const awaitingOrders = buyerOrders.filter((o) => o.status === 'awaiting');
+  const shippedOrders = buyerOrders.filter((o) => o.status === 'shipped');
+  const deliveredOrders = buyerOrders.filter((o) => o.status === 'delivered');
+
+  const formatOrderTime = (dateString: string) => {
+    try {
+      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+    } catch {
+      return dateString;
+    }
+  };
+
+  const OrderCard = ({ order, showShadow = false }: { order: Order; showShadow?: boolean }) => {
+    const sellerUsername = order.seller_profile?.username || 'Unknown';
+    const sellerAvatar = order.seller_profile?.avatar_url || '';
+    const productImage = order.listing?.images?.[0] || '';
+
+    return (
+      <div
+        onClick={() => handleOrderClick(order)}
+        className={cn(
+          "flex items-center gap-4 rounded-2xl bg-card p-4 cursor-pointer",
+          showShadow && "card-shadow"
+        )}
+      >
+        <ProductThumbnail image={productImage} avatar={sellerAvatar} />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-foreground">
+            From <span className="font-semibold">@{sellerUsername}.</span>
+          </p>
+          <p className="text-xs text-muted-foreground">{formatOrderTime(order.created_at)}</p>
+          <span
+            className={cn(
+              'mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium',
+              getOrderStatusBadge(order.status).className
+            )}
+          >
+            {getOrderStatusBadge(order.status).label}
+          </span>
+        </div>
+        <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -307,7 +218,6 @@ const Cart = () => {
               {Object.entries(itemsBySeller).map(([sellerId, items]) => {
                 // Check if all items in this seller group are sold
                 const allSold = items.every(item => item.status === 'sold');
-                const hasAnySold = items.some(item => item.status === 'sold');
                 
                 return (
                   <div key={sellerId} className="rounded-2xl bg-card overflow-hidden card-shadow">
@@ -366,118 +276,63 @@ const Cart = () => {
         </div>
       ) : (
         <div className="px-4 space-y-6">
-          {/* Awaiting Shipping */}
-          {mockOrders.filter((o) => o.status === 'awaiting').length > 0 && (
-            <div>
-              <h2 className="mb-3 text-base font-semibold text-foreground">Awaiting shipping</h2>
-              <div className="space-y-3">
-                {mockOrders
-                  .filter((o) => o.status === 'awaiting')
-                  .map((order) => (
-                    <div
-                      key={order.id}
-                      onClick={() => handleOrderClick(order.id)}
-                      className="flex items-center gap-4 rounded-2xl bg-card p-4 card-shadow cursor-pointer"
-                    >
-                      <ProductThumbnail image={order.productImage} avatar={order.userAvatar} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground">
-                          From <span className="font-semibold">@{order.username}.</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground">{order.time}</p>
-                        <span
-                          className={cn(
-                            'mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium',
-                            getOrderStatusBadge(order.status).className
-                          )}
-                        >
-                          {getOrderStatusBadge(order.status).label}
-                        </span>
-                      </div>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    </div>
-                  ))}
-              </div>
+          {loadingBuyerOrders ? (
+            <div className="flex justify-center py-10">
+              <p className="text-muted-foreground">Loading orders...</p>
             </div>
-          )}
+          ) : buyerOrders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <ClipboardList className="h-16 w-16 text-muted-foreground/50 mb-4" />
+              <p className="text-lg font-medium text-muted-foreground">No orders yet</p>
+              <p className="mt-2 text-sm text-muted-foreground">Your purchases will appear here</p>
+            </div>
+          ) : (
+            <>
+              {/* Awaiting Shipping */}
+              {awaitingOrders.length > 0 && (
+                <div>
+                  <h2 className="mb-3 text-base font-semibold text-foreground">Awaiting shipping</h2>
+                  <div className="space-y-3">
+                    {awaitingOrders.map((order) => (
+                      <OrderCard key={order.id} order={order} showShadow />
+                    ))}
+                  </div>
+                </div>
+              )}
 
-          {/* Shipped */}
-          {mockOrders.filter((o) => o.status === 'shipped').length > 0 && (
-            <div>
-              <h2 className="mb-3 text-base font-semibold text-foreground">Shipped</h2>
-              <div className="space-y-3">
-                {mockOrders
-                  .filter((o) => o.status === 'shipped')
-                  .map((order) => (
-                    <div
-                      key={order.id}
-                      onClick={() => handleOrderClick(order.id)}
-                      className="flex items-center gap-4 rounded-2xl bg-card p-4 cursor-pointer"
-                    >
-                      <ProductThumbnail image={order.productImage} avatar={order.userAvatar} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground">
-                          From <span className="font-semibold">@{order.username}.</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground">{order.time}</p>
-                        <span
-                          className={cn(
-                            'mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium',
-                            getOrderStatusBadge(order.status).className
-                          )}
-                        >
-                          {getOrderStatusBadge(order.status).label}
-                        </span>
-                      </div>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
+              {/* Shipped */}
+              {shippedOrders.length > 0 && (
+                <div>
+                  <h2 className="mb-3 text-base font-semibold text-foreground">Shipped</h2>
+                  <div className="space-y-3">
+                    {shippedOrders.map((order) => (
+                      <OrderCard key={order.id} order={order} />
+                    ))}
+                  </div>
+                </div>
+              )}
 
-          {/* Delivered */}
-          {mockOrders.filter((o) => o.status === 'delivered').length > 0 && (
-            <div>
-              <h2 className="mb-3 text-base font-semibold text-foreground">Delivered</h2>
-              <div className="space-y-3">
-                {mockOrders
-                  .filter((o) => o.status === 'delivered')
-                  .map((order) => (
-                    <div
-                      key={order.id}
-                      onClick={() => handleOrderClick(order.id)}
-                      className="flex items-center gap-4 rounded-2xl bg-card p-4 cursor-pointer"
-                    >
-                      <ProductThumbnail image={order.productImage} avatar={order.userAvatar} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground">
-                          From <span className="font-semibold">@{order.username}.</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground">{order.time}</p>
-                        <span
-                          className={cn(
-                            'mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium',
-                            getOrderStatusBadge(order.status).className
-                          )}
-                        >
-                          {getOrderStatusBadge(order.status).label}
-                        </span>
-                      </div>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    </div>
-                  ))}
-              </div>
-            </div>
+              {/* Delivered */}
+              {deliveredOrders.length > 0 && (
+                <div>
+                  <h2 className="mb-3 text-base font-semibold text-foreground">Delivered</h2>
+                  <div className="space-y-3">
+                    {deliveredOrders.map((order) => (
+                      <OrderCard key={order.id} order={order} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
 
       {/* Order Details Drawer */}
       <OrderDetailsSheet
-        order={selectedOrderId ? mockOrderDetails[selectedOrderId] : null}
-        open={!!selectedOrderId}
-        onOpenChange={(open) => !open && setSelectedOrderId(null)}
+        order={selectedOrder}
+        open={!!selectedOrder}
+        onOpenChange={(open) => !open && setSelectedOrder(null)}
         onMarkDelivered={handleMarkDelivered}
       />
 
