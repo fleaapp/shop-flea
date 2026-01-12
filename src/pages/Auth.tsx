@@ -312,7 +312,7 @@ const Auth = () => {
       </div>
       
       {/* Footer */}
-      <div className="pb-8 text-center">
+      <div className="absolute bottom-6 left-0 right-0 text-center">
         <p className="text-sm text-foreground">
           <button className="hover:underline">Terms & Conditions</button>
           <span className="mx-2">|</span>
