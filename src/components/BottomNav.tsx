@@ -1,7 +1,9 @@
-import { Settings, User, Home, ShoppingCart, Bell } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
 interface NavItem {
   icon: React.ReactNode;
@@ -14,13 +16,38 @@ const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { cartItems } = useCart();
+  const { user } = useAuth();
+
+  const { data: profile } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('avatar_url')
+        .eq('user_id', user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  const ProfileIcon = () => (
+    <div className="h-5 w-5 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+      {profile?.avatar_url ? (
+        <img src={profile.avatar_url} alt="Profile" className="h-full w-full object-cover" />
+      ) : (
+        <span className="text-sm">👤</span>
+      )}
+    </div>
+  );
 
   const navItems: NavItem[] = [
-    { icon: <Settings className="h-5 w-5" />, label: 'Settings', path: '/settings' },
-    { icon: <User className="h-5 w-5" />, label: 'Profile', path: '/profile' },
-    { icon: <Home className="h-5 w-5" />, label: 'Home', path: '/' },
-    { icon: <ShoppingCart className="h-5 w-5" />, label: 'Cart', path: '/cart', badge: cartItems.length || undefined },
-    { icon: <Bell className="h-5 w-5" />, label: 'Alerts', path: '/notifications' },
+    { icon: <span className="text-lg">⚙️</span>, label: 'Settings', path: '/settings' },
+    { icon: <ProfileIcon />, label: 'Profile', path: '/profile' },
+    { icon: <span className="text-lg">🏠</span>, label: 'Home', path: '/' },
+    { icon: <span className="text-lg">🛒</span>, label: 'Cart', path: '/cart', badge: cartItems.length || undefined },
+    { icon: <span className="text-lg">🔔</span>, label: 'Alerts', path: '/notifications' },
   ];
 
   return (
