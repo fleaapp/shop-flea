@@ -41,13 +41,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <header className="flex items-center px-4 py-4">
-        <button onClick={() => navigate('/create')} className="flex h-10 w-10 items-center justify-center">
-          <Plus className="h-6 w-6 text-foreground" />
-        </button>
-      </header>
-
-      <div className="flex flex-col items-center px-4 pt-2">
+      <div className="flex flex-col items-center px-4 pt-6">
         <div className="relative">
           <div className="h-20 w-20 rounded-full bg-muted p-1" style={{
             background: 'linear-gradient(135deg, hsl(var(--muted)) 0%, hsl(var(--border)) 100%)',
@@ -63,7 +57,13 @@ const Profile = () => {
         </div>
       </div>
 
-      <div className="mt-6 flex justify-center">
+      <div className="mt-6 flex justify-center items-center gap-3">
+        <button 
+          onClick={() => navigate('/create')} 
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-foreground"
+        >
+          <Plus className="h-5 w-5 text-card" />
+        </button>
         <div className="flex rounded-full bg-card p-1 card-shadow">
           <button onClick={() => setActiveTab('listings')} className={`rounded-full px-6 py-2 text-sm font-medium transition-all ${activeTab === 'listings' ? 'bg-charcoal text-white' : 'text-muted-foreground hover:text-foreground'}`}>
             Listings
