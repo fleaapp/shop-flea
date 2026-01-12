@@ -1,17 +1,28 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, ClipboardList, Check, Star } from 'lucide-react';
+import { ShoppingCart, ClipboardList, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
 import { useCart } from '@/context/CartContext';
+import { useFavorites } from '@/hooks/useFavorites';
+import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import CartItemRow from '@/components/CartItemRow';
 
 const Cart = () => {
   const navigate = useNavigate();
   const { cartItems, removeFromCart } = useCart();
+  const { addFavorite } = useFavorites();
+  const { addDiscarded } = useDiscardedListings();
   const [activeTab, setActiveTab] = useState<'cart' | 'orders'>('cart');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+
+  // Mock: Mark one item as sold for demo purposes
+  const cartItemsWithStatus = cartItems.map((item, index) => ({
+    ...item,
+    status: index === 0 && cartItems.length > 1 ? 'sold' : 'active',
+  }));
 
   const toggleSelect = (id: string) => {
     setSelectedItems((prev) => {
@@ -35,14 +46,26 @@ const Cart = () => {
     handleCheckout(Array.from(selectedItems));
   };
 
+  const handleSwipeLeft = async (itemId: string) => {
+    removeFromCart(itemId);
+    await addDiscarded(itemId);
+    toast.success('Removed from cart');
+  };
+
+  const handleSwipeRight = async (itemId: string) => {
+    removeFromCart(itemId);
+    await addFavorite(itemId);
+    toast.success('Moved to wishlist');
+  };
+
   // Group items by seller for combined checkout
-  const itemsBySeller = cartItems.reduce((acc, item) => {
+  const itemsBySeller = cartItemsWithStatus.reduce((acc, item) => {
     if (!acc[item.sellerId]) {
       acc[item.sellerId] = [];
     }
     acc[item.sellerId].push(item);
     return acc;
-  }, {} as Record<string, typeof cartItems>);
+  }, {} as Record<string, typeof cartItemsWithStatus>);
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -93,71 +116,39 @@ const Cart = () => {
         <div className="px-4 space-y-4">
           {cartItems.length > 0 ? (
             <>
-              {Object.entries(itemsBySeller).map(([sellerId, items]) => (
-                <div key={sellerId} className="rounded-2xl bg-card overflow-hidden card-shadow">
-                  {/* Item rows within the same seller card */}
-                  {items.map((item, index) => {
-                    const isSelected = selectedItems.has(item.id);
-                    const isLast = index === items.length - 1;
-
-                    return (
-                      <div 
+              {Object.entries(itemsBySeller).map(([sellerId, items]) => {
+                // Check if all items in this seller group are sold
+                const allSold = items.every(item => item.status === 'sold');
+                const hasAnySold = items.some(item => item.status === 'sold');
+                
+                return (
+                  <div key={sellerId} className="rounded-2xl bg-card overflow-hidden card-shadow">
+                    {/* Item rows within the same seller card */}
+                    {items.map((item, index) => (
+                      <CartItemRow
                         key={item.id}
-                        className={cn(
-                          "flex gap-4 p-4",
-                          !isLast && "border-b border-border"
-                        )}
+                        item={item}
+                        isSelected={selectedItems.has(item.id)}
+                        isLast={index === items.length - 1 && allSold}
+                        showSellerAvatar={index === 0}
+                        onToggleSelect={() => toggleSelect(item.id)}
+                        onSwipeLeft={() => handleSwipeLeft(item.id)}
+                        onSwipeRight={() => handleSwipeRight(item.id)}
+                      />
+                    ))}
+
+                    {/* Checkout button - only show if not all items are sold */}
+                    {!allSold && (
+                      <Button
+                        onClick={() => handleCheckout(items.filter(i => i.status !== 'sold').map(i => i.id))}
+                        className="w-full rounded-none rounded-b-2xl bg-charcoal text-white hover:bg-charcoal-light h-12"
                       >
-                        {/* Image with selection checkbox */}
-                        <div
-                          className="relative h-24 w-24 flex-shrink-0 cursor-pointer"
-                          onClick={() => toggleSelect(item.id)}
-                        >
-                          <img
-                            src={item.image}
-                            alt={item.title}
-                            className="h-full w-full rounded-xl object-cover"
-                          />
-                          {isSelected && (
-                            <div className="absolute top-2 left-2 flex h-5 w-5 items-center justify-center rounded bg-charcoal">
-                              <Check className="h-3 w-3 text-white" />
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex flex-1 flex-col justify-center">
-                          <div className="flex items-start justify-between">
-                            <h3 className="font-semibold text-foreground">{item.title}</h3>
-                            {/* Only show seller avatar on first item in group */}
-                            {index === 0 && (
-                              <img
-                                src={item.sellerAvatar}
-                                alt={item.sellerName}
-                                className="h-8 w-8 rounded-full bg-muted"
-                              />
-                            )}
-                          </div>
-                          <p className="text-lg font-bold text-foreground mt-1">
-                            ${item.price}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            + ${item.shippingPrice} shipping
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {/* Checkout button at bottom of seller group */}
-                  <Button
-                    onClick={() => handleCheckout(items.map(i => i.id))}
-                    className="w-full rounded-none rounded-b-2xl bg-charcoal text-white hover:bg-charcoal-light h-12"
-                  >
-                    Checkout
-                  </Button>
-                </div>
-              ))}
+                        Checkout
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
 
               {/* Checkout selected button */}
               {selectedItems.size > 1 && (
