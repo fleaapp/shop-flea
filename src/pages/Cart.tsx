@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, ClipboardList, ChevronRight } from 'lucide-react';
+import { ShoppingCart, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
 import { useCart } from '@/context/CartContext';
@@ -192,7 +192,7 @@ const Cart = () => {
                   : 'text-muted-foreground'
               )}
             >
-              <ShoppingCart className="h-4 w-4" />
+              <span className="text-base">🛒</span>
               Cart
             </button>
             <button
@@ -204,7 +204,7 @@ const Cart = () => {
                   : 'text-muted-foreground'
               )}
             >
-              <ClipboardList className="h-4 w-4" />
+              <span className="text-base">🧾</span>
               Orders
             </button>
           </div>
@@ -282,7 +282,7 @@ const Cart = () => {
             </div>
           ) : buyerOrders.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <ClipboardList className="h-16 w-16 text-muted-foreground/50 mb-4" />
+              <span className="text-6xl opacity-50 mb-4">🧾</span>
               <p className="text-lg font-medium text-muted-foreground">No orders yet</p>
               <p className="mt-2 text-sm text-muted-foreground">Your purchases will appear here</p>
             </div>
