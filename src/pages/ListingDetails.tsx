@@ -241,11 +241,10 @@ const ListingDetails = () => {
                 />
                 <div className="flex-1">
                   <p className="font-medium text-foreground">{sellerName}</p>
-                  <p className="text-sm text-muted-foreground">Seller</p>
-                </div>
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground mr-2">
-                  <MapPin className="h-4 w-4" />
-                  <span>{sellerLocation}</span>
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4" />
+                    <span>{sellerLocation}</span>
+                  </div>
                 </div>
               </div>
 
