@@ -258,23 +258,24 @@ const ListingDetails = () => {
           <div className="sticky bottom-0 left-0 right-0 flex gap-3 bg-background px-4 py-4 border-t border-border justify-center">
             <Button
               variant="outline"
-              onClick={handleDiscard}
-              className="h-14 w-14 rounded-2xl border-2 text-2xl"
+              onClick={() => { handleDiscard(); }}
+              className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]"
             >
               ❌
             </Button>
 
             <Button
               variant="outline"
-              onClick={handleAddToWishlist}
-              className="h-14 w-14 rounded-2xl border-2 text-2xl bg-[#29303d] text-white hover:bg-primary hover:text-foreground"
+              onClick={() => { handleAddToWishlist(); handleClose(); }}
+              className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]"
             >
               💌
             </Button>
 
             <Button
-              onClick={handleAddToCart}
-              className="h-14 w-14 rounded-2xl border-2 bg-primary text-2xl hover:bg-[#29303d] hover:text-white"
+              variant="outline"
+              onClick={() => { handleAddToCart(); handleClose(); }}
+              className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]"
             >
               🛒
             </Button>
