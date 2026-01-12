@@ -96,7 +96,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
           <div className="py-3">
             <label className="text-base font-medium mb-2 block">Category</label>
             <Select value={filters.category} onValueChange={(val) => setFilters({ ...filters, category: val })}>
-              <SelectTrigger className="w-full bg-card border-0 h-12 rounded-xl">
+              <SelectTrigger className="w-full bg-card border-0 h-12 rounded-xl focus:ring-[#ddfed7]">
                 <SelectValue placeholder="Select Category" />
               </SelectTrigger>
               <SelectContent>
@@ -114,7 +114,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
           <div className="py-3">
             <label className="text-base font-medium mb-2 block">Size</label>
             <Select value={filters.size} onValueChange={(val) => setFilters({ ...filters, size: val })}>
-              <SelectTrigger className="w-full bg-card border-0 h-12 rounded-xl">
+              <SelectTrigger className="w-full bg-card border-0 h-12 rounded-xl focus:ring-[#ddfed7]">
                 <SelectValue placeholder="Select Size" />
               </SelectTrigger>
               <SelectContent>
@@ -162,7 +162,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
           <div className="py-3">
             <label className="text-base font-medium mb-2 block">Colour</label>
             <Select value={filters.colour} onValueChange={(val) => setFilters({ ...filters, colour: val })}>
-              <SelectTrigger className="w-full bg-card border-0 h-12 rounded-xl">
+              <SelectTrigger className="w-full bg-card border-0 h-12 rounded-xl focus:ring-[#ddfed7]">
                 <SelectValue placeholder="Select Colour" />
               </SelectTrigger>
               <SelectContent>
@@ -184,7 +184,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
           <div className="py-3">
             <label className="text-base font-medium mb-2 block">Style</label>
             <Select value={filters.style} onValueChange={(val) => setFilters({ ...filters, style: val })}>
-              <SelectTrigger className="w-full bg-card border-0 h-12 rounded-xl">
+              <SelectTrigger className="w-full bg-card border-0 h-12 rounded-xl focus:ring-[#ddfed7]">
                 <SelectValue placeholder="Select Style" />
               </SelectTrigger>
               <SelectContent>
@@ -210,7 +210,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
                     type="number"
                     value={filters.priceRange[0] || ''}
                     onChange={(e) => setFilters({ ...filters, priceRange: [Number(e.target.value) || 0, filters.priceRange[1]] })}
-                    className="pl-7 bg-card border-0 h-12 rounded-xl focus-visible:ring-primary"
+                    className="pl-7 bg-card border-0 h-12 rounded-xl focus-visible:ring-[#ddfed7]"
                     placeholder="0"
                     min={0}
                   />
@@ -224,7 +224,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
                     type="number"
                     value={filters.priceRange[1] || ''}
                     onChange={(e) => setFilters({ ...filters, priceRange: [filters.priceRange[0], Number(e.target.value) || 0] })}
-                    className="pl-7 bg-card border-0 h-12 rounded-xl focus-visible:ring-primary"
+                    className="pl-7 bg-card border-0 h-12 rounded-xl focus-visible:ring-[#ddfed7]"
                     placeholder="1000"
                     min={0}
                   />
