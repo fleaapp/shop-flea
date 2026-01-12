@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Search, X, Clock } from 'lucide-react';
+import { ArrowLeft, X, Clock } from 'lucide-react';
 import { Listing } from '@/types/listing';
 
 interface SearchSheetProps {
@@ -143,7 +143,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
               <ArrowLeft className="h-6 w-6 text-foreground" />
             </button>
             <div className="flex items-center gap-2 flex-1 justify-center -ml-7">
-              <Search className="h-5 w-5 text-foreground" />
+              <span className="text-lg">🔍</span>
               <span className="text-lg font-semibold">Search</span>
             </div>
           </div>
@@ -151,7 +151,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
           {/* Search Input */}
           <div className="px-6 pb-4">
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg">🔍</span>
               <Input
                 ref={inputRef}
                 value={query}
@@ -236,7 +236,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
           {/* Empty state when no recent searches and no query */}
           {!query && recentSearches.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Search className="h-12 w-12 text-muted-foreground/50 mb-4" />
+              <span className="text-5xl opacity-50 mb-4">🔍</span>
               <p className="text-muted-foreground">Start typing to search listings</p>
             </div>
           )}
