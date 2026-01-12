@@ -206,10 +206,10 @@ const Cart = () => {
     setSelectedOrderId(null);
   };
 
-  // Mock: Mark one item as sold for demo purposes
-  const cartItemsWithStatus = cartItems.map((item, index) => ({
+  // Use actual listing status from database
+  const cartItemsWithStatus = cartItems.map((item) => ({
     ...item,
-    status: index === 0 && cartItems.length > 1 ? 'sold' : 'active',
+    status: item.status || 'active',
   }));
 
   const toggleSelect = (id: string) => {
