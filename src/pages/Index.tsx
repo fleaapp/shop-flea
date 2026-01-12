@@ -125,7 +125,6 @@ const Index = () => {
       if (prev.includes(query)) return prev;
       return [...prev, query];
     });
-    toast.success(`Searching for "${query}"`);
   };
 
   const handleFilterClick = () => {
