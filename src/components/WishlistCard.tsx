@@ -86,16 +86,19 @@ const WishlistCard = ({ listing, onRemove }: WishlistCardProps) => {
       </div>
 
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove from wishlist?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to remove "{listing.title}" from your wishlist?
+        <AlertDialogContent className="max-w-[280px] rounded-2xl p-5">
+          <AlertDialogHeader className="space-y-2">
+            <AlertDialogTitle className="text-base">Remove from wishlist?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              Remove "{listing.title}" from your wishlist?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmRemove} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+          <AlertDialogFooter className="flex-row gap-2 sm:flex-row">
+            <AlertDialogCancel className="flex-1 mt-0 h-9 rounded-lg text-sm">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmRemove} 
+              className="flex-1 h-9 rounded-lg text-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Remove
             </AlertDialogAction>
           </AlertDialogFooter>
