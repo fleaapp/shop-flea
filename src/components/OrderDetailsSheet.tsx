@@ -90,10 +90,7 @@ const OrderDetailsSheet = ({
               Order #{order.orderNumber} • {order.date}
             </p>
             <div className="flex justify-center mt-1 mb-2">
-              <Badge
-                variant={statusBadge.variant}
-                className="text-md px-3 py-1.5"
-              >
+              <Badge variant={statusBadge.variant}>
                 {statusBadge.label}
               </Badge>
             </div>
