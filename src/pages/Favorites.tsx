@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SlidersHorizontal } from 'lucide-react';
+import { Heart, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
 import WishlistCard from '@/components/WishlistCard';
@@ -13,11 +13,7 @@ import { DbListing, ListingFilters } from '@/hooks/useListings';
 import { toast } from '@/hooks/use-toast';
 
 // Convert DbListing to Listing display type
-interface DisplayListing extends Listing {
-  isSold: boolean;
-}
-
-const toDisplayListing = (dbListing: DbListing): DisplayListing => {
+const toDisplayListing = (dbListing: DbListing): Listing => {
   const conditionMap: Record<string, 'new' | 'like-new' | 'good' | 'fair'> = {
     'new': 'new',
     'like-new': 'like-new',
@@ -44,7 +40,6 @@ const toDisplayListing = (dbListing: DbListing): DisplayListing => {
     category: dbListing.category || '',
     tags: dbListing.tags || [],
     createdAt: new Date(dbListing.created_at),
-    isSold: dbListing.status === 'sold',
   };
 };
 
@@ -100,7 +95,7 @@ const Favorites = () => {
       <header className="flex items-center justify-between px-6 py-4 flex-shrink-0">
         <div className="w-12" /> {/* Spacer for centering */}
         <div className="flex items-center gap-2">
-          <span className="text-xl">💌</span>
+          <Heart className="h-5 w-5 text-destructive" fill="currentColor" />
           <h1 className="text-xl font-bold text-foreground">Wishlist</h1>
         </div>
         <Button
@@ -131,14 +126,13 @@ const Favorites = () => {
                   listing={listing} 
                   onRemove={() => handleRemoveFavorite(listing.id)}
                   onAddToCart={() => handleAddToCart(listing)}
-                  isSold={listing.isSold}
                 />
               </div>
             ))}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center w-full text-center px-4">
-            <span className="text-6xl mb-4">💌</span>
+            <Heart className="h-16 w-16 text-muted-foreground/30 mb-4" />
             <p className="text-lg font-medium text-muted-foreground">
               {hasFilters ? 'No items match your filters' : 'No saved items yet'}
             </p>

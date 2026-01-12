@@ -37,8 +37,7 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
       .select('*')
       .in('id', favoriteIds)
       .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(100); // Limit to prevent DoS via large result sets
+      .order('created_at', { ascending: false });
 
     // Apply filters
     if (filters?.category) {
@@ -67,29 +66,19 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
 
     if (error) {
       setListings([]);
-    } else if (data && data.length > 0) {
-      // Get unique user_ids and fetch all profiles in a single query
-      const uniqueUserIds = [...new Set(data.map(listing => listing.user_id))];
-      
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('user_id, username, avatar_url, location, rating')
-        .in('user_id', uniqueUserIds);
-      
-      // Create a map for quick profile lookup
-      const profilesMap = new Map(
-        (profilesData || []).map(profile => [profile.user_id, profile])
-      );
-      
-      // Merge listings with profiles
-      const listingsWithProfiles = data.map(listing => ({
-        ...listing,
-        profiles: profilesMap.get(listing.user_id) || null,
-      }));
-      
-      setListings(listingsWithProfiles);
     } else {
-      setListings([]);
+      // Fetch profiles for each listing
+      const listingsWithProfiles = await Promise.all(
+        (data || []).map(async (listing) => {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('username, avatar_url, location, rating')
+            .eq('user_id', listing.user_id)
+            .maybeSingle();
+          return { ...listing, profiles: profileData };
+        })
+      );
+      setListings(listingsWithProfiles);
     }
     setLoading(false);
   }, [user, filters?.category, filters?.size, filters?.condition, filters?.gender, filters?.minPrice, filters?.maxPrice, filters?.search]);

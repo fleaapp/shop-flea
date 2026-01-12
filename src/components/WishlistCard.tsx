@@ -19,15 +19,14 @@ interface WishlistCardProps {
   listing: Listing;
   onRemove?: () => void;
   onAddToCart?: () => void;
-  isSold?: boolean;
 }
 
-const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false }: WishlistCardProps) => {
+const WishlistCard = ({ listing, onRemove, onAddToCart }: WishlistCardProps) => {
   const navigate = useNavigate();
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleCardClick = () => {
-    navigate(`/listing/${listing.id}`, { state: { listing, isSold } });
+    navigate(`/listing/${listing.id}`, { state: { listing } });
   };
 
   const handleRemoveClick = (e: React.MouseEvent) => {
@@ -58,37 +57,28 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false }: Wishli
             <img 
               src={listing.image} 
               alt={listing.title} 
-              className={`h-full w-full object-cover ${isSold ? 'blur-[2px]' : ''}`}
+              className="h-full w-full object-cover" 
             />
-            
-            {/* Sold overlay */}
-            {isSold && (
-              <div className="absolute inset-0 flex items-center justify-center bg-charcoal/70">
-                <span className="text-2xl font-bold text-white tracking-wider">SOLD</span>
-              </div>
-            )}
             
             {/* Remove button - top left */}
             <Button
               variant="ghost"
               size="icon"
               onClick={handleRemoveClick}
-              className="absolute top-2 left-2 h-9 w-9 rounded-full bg-card/90 backdrop-blur-sm text-muted-foreground hover:text-destructive hover:bg-card z-10"
+              className="absolute top-2 left-2 h-9 w-9 rounded-full bg-card/90 backdrop-blur-sm text-muted-foreground hover:text-destructive hover:bg-card"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
             
-            {/* Add to cart button - top right (hide if sold) */}
-            {!isSold && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleAddToCart}
-                className="absolute top-2 right-2 h-9 w-9 rounded-full bg-card/90 backdrop-blur-sm text-muted-foreground hover:text-primary hover:bg-card"
-              >
-                <ShoppingCart className="h-4 w-4" />
-              </Button>
-            )}
+            {/* Add to cart button - top right */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleAddToCart}
+              className="absolute top-2 right-2 h-9 w-9 rounded-full bg-card/90 backdrop-blur-sm text-muted-foreground hover:text-primary hover:bg-card"
+            >
+              <ShoppingCart className="h-4 w-4" />
+            </Button>
           </div>
           
           {/* Content - fixed height, matching SwipeCard exactly */}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { MapPin } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Heart, ShoppingCart, X, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
@@ -37,7 +37,6 @@ interface SellerProfile {
 
 const ListingDetails = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { id } = useParams();
   const [open, setOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -46,9 +45,6 @@ const ListingDetails = () => {
   const [listing, setListing] = useState<DbListing | null>(null);
   const [seller, setSeller] = useState<SellerProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  // Check if listing is sold (passed from navigation state)
-  const isSold = location.state?.isSold || false;
 
   // All hooks must be called before any conditional returns
   const { addFavorite, isFavorite } = useFavorites();
@@ -262,31 +258,26 @@ const ListingDetails = () => {
           <div className="sticky bottom-0 left-0 right-0 flex gap-3 bg-background px-4 py-4 border-t border-border justify-center">
             <Button
               variant="outline"
-              onClick={() => { handleDiscard(); }}
-              className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]"
+              onClick={handleDiscard}
+              className="h-14 w-14 rounded-2xl border-2 text-2xl"
             >
               ❌
             </Button>
 
-            {!isSold && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => { handleAddToWishlist(); handleClose(); }}
-                  className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]"
-                >
-                  💌
-                </Button>
+            <Button
+              variant="outline"
+              onClick={handleAddToWishlist}
+              className="h-14 w-14 rounded-2xl border-2 text-2xl bg-[#29303d] text-white hover:bg-primary hover:text-foreground"
+            >
+              💌
+            </Button>
 
-                <Button
-                  variant="outline"
-                  onClick={() => { handleAddToCart(); handleClose(); }}
-                  className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]"
-                >
-                  🛒
-                </Button>
-              </>
-            )}
+            <Button
+              onClick={handleAddToCart}
+              className="h-14 w-14 rounded-2xl border-2 bg-primary text-2xl hover:bg-[#29303d] hover:text-white"
+            >
+              🛒
+            </Button>
           </div>
         </DrawerContent>
       </Drawer>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, ClipboardList, ChevronRight } from 'lucide-react';
+import { ShoppingCart, ClipboardList, Star, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
 import { useCart } from '@/context/CartContext';
@@ -9,7 +9,6 @@ import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import CartItemRow from '@/components/CartItemRow';
-import OrderDetailsSheet, { OrderDetails } from '@/components/OrderDetailsSheet';
 import listingJacket from '@/assets/listing-jacket.jpg';
 import listingSneakers from '@/assets/listing-sneakers.jpg';
 import listingSweater from '@/assets/listing-sweater.jpg';
@@ -22,82 +21,6 @@ type OrderNotification = {
   userAvatar: string;
   time: string;
   status: 'awaiting' | 'shipped' | 'delivered';
-};
-
-// Extended mock orders with full details for the drawer
-const mockOrderDetails: Record<string, OrderDetails> = {
-  '1': {
-    id: '1',
-    orderNumber: '2357',
-    date: '12/2/2025',
-    status: 'awaiting',
-    seller: { username: 'vintage_seller', avatar: 'https://i.pravatar.cc/40?img=14' },
-    items: [
-      { id: '1a', title: 'Vintage Leather Jacket', image: listingJacket, price: 45, shippingPrice: 10 },
-    ],
-    shippingDetails: { name: 'Sarah Hearn', address: '123 Smile road, Melbourne, 3100' },
-    trackingDetails: { serviceProvider: 'Awaiting shipping', trackingNumber: 'Awaiting shipping' },
-  },
-  '2': {
-    id: '2',
-    orderNumber: '2358',
-    date: '11/2/2025',
-    status: 'awaiting',
-    seller: { username: 'style_closet', avatar: 'https://i.pravatar.cc/40?img=15' },
-    items: [
-      { id: '2a', title: 'Cozy Knit Sweater', image: listingSweater, price: 32, shippingPrice: 8 },
-    ],
-    shippingDetails: { name: 'Sarah Hearn', address: '123 Smile road, Melbourne, 3100' },
-    trackingDetails: { serviceProvider: 'Awaiting shipping', trackingNumber: 'Awaiting shipping' },
-  },
-  '3': {
-    id: '3',
-    orderNumber: '2359',
-    date: '8/2/2025',
-    status: 'shipped',
-    seller: { username: 'fashion_finds', avatar: 'https://i.pravatar.cc/40?img=16' },
-    items: [
-      { id: '3a', title: 'Nike Sneakers', image: listingSneakers, price: 22, shippingPrice: 10 },
-    ],
-    shippingDetails: { name: 'Sarah Hearn', address: '123 Smile road, Melbourne, 3100' },
-    trackingDetails: { serviceProvider: 'Australia Post', trackingNumber: 'AP123456789AU' },
-  },
-  '4': {
-    id: '4',
-    orderNumber: '2360',
-    date: '15/1/2025',
-    status: 'shipped',
-    seller: { username: 'thrift_treasures', avatar: 'https://i.pravatar.cc/40?img=17' },
-    items: [
-      { id: '4a', title: 'Designer Bag', image: listingBag, price: 55, shippingPrice: 12 },
-    ],
-    shippingDetails: { name: 'Sarah Hearn', address: '123 Smile road, Melbourne, 3100' },
-    trackingDetails: { serviceProvider: 'Sendle', trackingNumber: 'SEN987654321' },
-  },
-  '5': {
-    id: '5',
-    orderNumber: '2361',
-    date: '10/1/2025',
-    status: 'delivered',
-    seller: { username: 'eco_wardrobe', avatar: 'https://i.pravatar.cc/40?img=18' },
-    items: [
-      { id: '5a', title: 'Vintage Leather Jacket', image: listingJacket, price: 45, shippingPrice: 10 },
-    ],
-    shippingDetails: { name: 'Sarah Hearn', address: '123 Smile road, Melbourne, 3100' },
-    trackingDetails: { serviceProvider: 'Australia Post', trackingNumber: 'AP111222333AU' },
-  },
-  '6': {
-    id: '6',
-    orderNumber: '2362',
-    date: '5/1/2025',
-    status: 'delivered',
-    seller: { username: 'preloved_gems', avatar: 'https://i.pravatar.cc/40?img=19' },
-    items: [
-      { id: '6a', title: 'Cozy Knit Sweater', image: listingSweater, price: 32, shippingPrice: 8 },
-    ],
-    shippingDetails: { name: 'Sarah Hearn', address: '123 Smile road, Melbourne, 3100' },
-    trackingDetails: { serviceProvider: 'Sendle', trackingNumber: 'SEN444555666' },
-  },
 };
 
 const mockOrders: OrderNotification[] = [
@@ -195,21 +118,11 @@ const Cart = () => {
   const { addDiscarded } = useDiscardedListings();
   const [activeTab, setActiveTab] = useState<'cart' | 'orders'>('cart');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
-  const handleOrderClick = (orderId: string) => {
-    setSelectedOrderId(orderId);
-  };
-
-  const handleMarkDelivered = () => {
-    toast.success('Order marked as delivered');
-    setSelectedOrderId(null);
-  };
-
-  // Use actual listing status from database
-  const cartItemsWithStatus = cartItems.map((item) => ({
+  // Mock: Mark one item as sold for demo purposes
+  const cartItemsWithStatus = cartItems.map((item, index) => ({
     ...item,
-    status: item.status || 'active',
+    status: index === 0 && cartItems.length > 1 ? 'sold' : 'active',
   }));
 
   const toggleSelect = (id: string) => {
@@ -260,14 +173,14 @@ const Cart = () => {
       {/* Sticky Header with Wishlist Button */}
       <div className="sticky top-0 z-40 bg-background">
         <div className="relative flex justify-center pt-8 pb-6">
-          {/* Wishlist button - charcoal background with heart envelope emoji */}
+          {/* Wishlist button - charcoal background with lime star */}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate('/favorites')}
-            className="absolute right-4 top-8 h-12 w-12 rounded-full bg-charcoal text-mint hover:bg-charcoal-light text-xl"
+            className="absolute right-4 top-8 h-12 w-12 rounded-full bg-charcoal text-mint hover:bg-charcoal-light"
           >
-            💌
+            <Star className="h-6 w-6" />
           </Button>
 
           {/* Tab switcher */}
@@ -376,7 +289,6 @@ const Cart = () => {
                   .map((order) => (
                     <div
                       key={order.id}
-                      onClick={() => handleOrderClick(order.id)}
                       className="flex items-center gap-4 rounded-2xl bg-card p-4 card-shadow cursor-pointer"
                     >
                       <ProductThumbnail image={order.productImage} avatar={order.userAvatar} />
@@ -411,7 +323,6 @@ const Cart = () => {
                   .map((order) => (
                     <div
                       key={order.id}
-                      onClick={() => handleOrderClick(order.id)}
                       className="flex items-center gap-4 rounded-2xl bg-card p-4 cursor-pointer"
                     >
                       <ProductThumbnail image={order.productImage} avatar={order.userAvatar} />
@@ -446,7 +357,6 @@ const Cart = () => {
                   .map((order) => (
                     <div
                       key={order.id}
-                      onClick={() => handleOrderClick(order.id)}
                       className="flex items-center gap-4 rounded-2xl bg-card p-4 cursor-pointer"
                     >
                       <ProductThumbnail image={order.productImage} avatar={order.userAvatar} />
@@ -472,14 +382,6 @@ const Cart = () => {
           )}
         </div>
       )}
-
-      {/* Order Details Drawer */}
-      <OrderDetailsSheet
-        order={selectedOrderId ? mockOrderDetails[selectedOrderId] : null}
-        open={!!selectedOrderId}
-        onOpenChange={(open) => !open && setSelectedOrderId(null)}
-        onMarkDelivered={handleMarkDelivered}
-      />
 
       <BottomNav />
     </div>
