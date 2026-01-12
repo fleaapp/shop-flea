@@ -40,7 +40,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="h-screen bg-background pb-24 overflow-hidden flex flex-col">
       <div className="flex flex-col items-center px-4 pt-6">
         <div className="relative">
           <div className="h-20 w-20 rounded-full bg-muted p-1" style={{
@@ -74,13 +74,13 @@ const Profile = () => {
         </div>
       </div>
 
-      <div className="mt-6 overflow-x-auto px-4">
+      <div className="mt-6 flex-1 overflow-x-auto overflow-y-hidden px-4">
         {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
           </div>
         ) : displayListings.length > 0 ? (
-          <div className="flex gap-4 pb-4" style={{ width: 'max-content' }}>
+          <div className="flex gap-4 pb-4 justify-center" style={{ width: 'max-content', minWidth: '100%' }}>
             {displayListings.map((listing) => (
               <div key={listing.id} className="relative w-64 flex-shrink-0 overflow-hidden rounded-3xl bg-card p-2.5 card-shadow">
                 {/* Edit button */}
