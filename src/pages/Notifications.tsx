@@ -202,12 +202,12 @@ const Notifications = () => {
                 <div className="space-y-3">
                   {unreadNotifications.map(notification => <div key={notification.id} className="flex gap-4 rounded-2xl bg-card p-4 card-shadow cursor-pointer">
                       <ProductThumbnail image={notification.productImage} avatar={notification.userAvatar} />
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 flex flex-col justify-between">
                         <p className="text-sm text-foreground">
                           <span className="font-semibold">@{notification.username}</span>{' '}
                           {getActivityMessage(notification.type)}
                         </p>
-                        <p className="mt-1 text-xs text-muted-foreground text-right">
+                        <p className="text-xs text-muted-foreground text-right mt-auto">
                           {notification.time}
                         </p>
                       </div>
@@ -221,12 +221,12 @@ const Notifications = () => {
                 <div className="space-y-3">
                   {readNotifications.map(notification => <div key={notification.id} className="flex gap-4 rounded-2xl bg-card p-4 cursor-pointer opacity-80">
                       <ProductThumbnail image={notification.productImage} avatar={notification.userAvatar} />
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 flex flex-col justify-between">
                         <p className="text-sm text-muted-foreground">
                           <span className="font-semibold text-foreground">@{notification.username}</span>{' '}
                           {getActivityMessage(notification.type)}
                         </p>
-                        <p className="mt-1 text-xs text-muted-foreground text-right">
+                        <p className="text-xs text-muted-foreground text-right mt-auto">
                           {notification.time}
                         </p>
                       </div>
