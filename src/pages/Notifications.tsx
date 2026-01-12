@@ -171,28 +171,25 @@ const Notifications = () => {
   const unreadCount = unreadNotifications.length;
   const awaitingCount = awaitingShipping.length;
   return <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
-      <header className="px-4 pt-8 pb-6">
-        
-      </header>
-
-      {/* Tab Switcher */}
-      <div className="flex justify-center pb-6">
-        <div className="flex items-center rounded-full bg-muted p-1">
-          <button onClick={() => setActiveTab('activity')} className={cn('relative flex items-center justify-center gap-2 rounded-full w-28 py-2.5 text-sm font-medium transition-all', activeTab === 'activity' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground')}>
-            <Bell className="h-4 w-4" />
-            Activity
-            {activeTab !== 'activity' && unreadCount > 0 && <span className="absolute -top-1 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                {unreadCount}
-              </span>}
-          </button>
-          <button onClick={() => setActiveTab('sales')} className={cn('relative flex items-center justify-center gap-2 rounded-full w-28 py-2.5 text-sm font-medium transition-all', activeTab === 'sales' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground')}>
-            <PartyPopper className="h-4 w-4" />
-            Sales
-            {activeTab !== 'sales' && awaitingCount > 0 && <span className="absolute -top-1 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                {awaitingCount}
-              </span>}
-          </button>
+      {/* Sticky Header with Tab Switcher */}
+      <div className="sticky top-0 z-40 bg-background">
+        <div className="flex justify-center pt-8 pb-6">
+          <div className="flex items-center rounded-full bg-muted p-1">
+            <button onClick={() => setActiveTab('activity')} className={cn('relative flex items-center justify-center gap-2 rounded-full w-28 py-2.5 text-sm font-medium transition-all', activeTab === 'activity' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground')}>
+              <Bell className="h-4 w-4" />
+              Activity
+              {activeTab !== 'activity' && unreadCount > 0 && <span className="absolute -top-1 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                  {unreadCount}
+                </span>}
+            </button>
+            <button onClick={() => setActiveTab('sales')} className={cn('relative flex items-center justify-center gap-2 rounded-full w-28 py-2.5 text-sm font-medium transition-all', activeTab === 'sales' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground')}>
+              <PartyPopper className="h-4 w-4" />
+              Sales
+              {activeTab !== 'sales' && awaitingCount > 0 && <span className="absolute -top-1 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                  {awaitingCount}
+                </span>}
+            </button>
+          </div>
         </div>
       </div>
 
