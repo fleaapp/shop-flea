@@ -9,7 +9,7 @@ import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-
+import { compressImage } from '@/utils/imageCompression';
 const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'];
 const categories = ['Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories', 'Bags', 'Other'];
 const conditions = ['New', 'Like new', 'Good', 'Fair'];
@@ -49,17 +49,30 @@ const CreateListing = () => {
     }
   }, [user, authLoading, navigate]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
     const remainingSlots = 5 - imageFiles.length;
     const filesToProcess = Array.from(files).slice(0, remainingSlots);
 
-    filesToProcess.forEach((file) => {
-      const preview = URL.createObjectURL(file);
-      setImageFiles((prev) => [...prev, { file, preview }]);
-    });
+    // Compress each image before adding
+    for (const file of filesToProcess) {
+      try {
+        const compressedFile = await compressImage(file, {
+          maxWidth: 1200,
+          maxHeight: 1200,
+          quality: 0.8,
+        });
+        const preview = URL.createObjectURL(compressedFile);
+        setImageFiles((prev) => [...prev, { file: compressedFile, preview }]);
+      } catch (error) {
+        console.error('Failed to compress image:', error);
+        // Fallback to original file if compression fails
+        const preview = URL.createObjectURL(file);
+        setImageFiles((prev) => [...prev, { file, preview }]);
+      }
+    }
 
     // Reset file input
     if (fileInputRef.current) {
