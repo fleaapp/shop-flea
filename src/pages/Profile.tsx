@@ -44,10 +44,7 @@ const Profile = () => {
     <div className="fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col" style={{ touchAction: 'pan-x', overscrollBehavior: 'none' }}>
       <div className="flex flex-col items-center px-4 pt-6">
         <div className="relative">
-          <div className="h-20 w-20 rounded-full bg-muted p-1" style={{
-            background: 'linear-gradient(135deg, hsl(var(--muted)) 0%, hsl(var(--border)) 100%)',
-            clipPath: 'polygon(50% 0%, 61% 3%, 70% 7%, 78% 13%, 85% 20%, 90% 28%, 93% 37%, 95% 47%, 95% 57%, 93% 67%, 88% 76%, 82% 84%, 74% 90%, 65% 95%, 55% 98%, 45% 98%, 35% 95%, 26% 90%, 18% 84%, 12% 76%, 7% 67%, 5% 57%, 5% 47%, 7% 37%, 10% 28%, 15% 20%, 22% 13%, 30% 7%, 39% 3%, 50% 0%)'
-          }}>
+          <div className="h-20 w-20 rounded-full p-0.5 bg-gradient-to-br from-muted to-border">
             <img src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} alt="Profile" className="h-full w-full rounded-full bg-card object-cover" />
           </div>
         </div>
