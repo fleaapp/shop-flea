@@ -49,12 +49,12 @@ const Cart = () => {
       {/* Sticky Header with Wishlist Button */}
       <div className="sticky top-0 z-40 bg-background">
         <div className="relative flex justify-center pt-8 pb-6">
-          {/* Wishlist button - top right with mint/lime background */}
+          {/* Wishlist button - charcoal background with lime star */}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate('/favorites')}
-            className="absolute right-4 top-8 h-12 w-12 rounded-full bg-mint text-charcoal hover:bg-mint/90"
+            className="absolute right-4 top-8 h-12 w-12 rounded-full bg-charcoal text-mint hover:bg-charcoal-light"
           >
             <Star className="h-6 w-6" />
           </Button>
@@ -94,78 +94,68 @@ const Cart = () => {
           {cartItems.length > 0 ? (
             <>
               {Object.entries(itemsBySeller).map(([sellerId, items]) => (
-                <div key={sellerId} className="space-y-3">
+                <div key={sellerId} className="rounded-2xl bg-card overflow-hidden card-shadow">
+                  {/* Item rows within the same seller card */}
                   {items.map((item, index) => {
                     const isSelected = selectedItems.has(item.id);
-                    const isLastInGroup = index === items.length - 1;
-                    const showGroupCheckout = isLastInGroup && items.length > 1 && 
-                      items.every(i => selectedItems.has(i.id));
+                    const isLast = index === items.length - 1;
 
                     return (
-                      <div key={item.id}>
+                      <div 
+                        key={item.id}
+                        className={cn(
+                          "flex gap-4 p-4",
+                          !isLast && "border-b border-border"
+                        )}
+                      >
+                        {/* Image with selection checkbox */}
                         <div
-                          className="rounded-2xl bg-card overflow-hidden card-shadow"
+                          className="relative h-24 w-24 flex-shrink-0 cursor-pointer"
+                          onClick={() => toggleSelect(item.id)}
                         >
-                          <div className="flex gap-4 p-4">
-                            {/* Image with selection checkbox */}
-                            <div
-                              className="relative h-24 w-24 flex-shrink-0 cursor-pointer"
-                              onClick={() => toggleSelect(item.id)}
-                            >
-                              <img
-                                src={item.image}
-                                alt={item.title}
-                                className="h-full w-full rounded-xl object-cover"
-                              />
-                              {isSelected && (
-                                <div className="absolute top-2 left-2 flex h-5 w-5 items-center justify-center rounded bg-charcoal">
-                                  <Check className="h-3 w-3 text-white" />
-                                </div>
-                              )}
+                          <img
+                            src={item.image}
+                            alt={item.title}
+                            className="h-full w-full rounded-xl object-cover"
+                          />
+                          {isSelected && (
+                            <div className="absolute top-2 left-2 flex h-5 w-5 items-center justify-center rounded bg-charcoal">
+                              <Check className="h-3 w-3 text-white" />
                             </div>
-
-                            {/* Content */}
-                            <div className="flex flex-1 flex-col justify-center">
-                              <div className="flex items-start justify-between">
-                                <h3 className="font-semibold text-foreground">{item.title}</h3>
-                                <img
-                                  src={item.sellerAvatar}
-                                  alt={item.sellerName}
-                                  className="h-8 w-8 rounded-full bg-muted"
-                                />
-                              </div>
-                              <p className="text-lg font-bold text-foreground mt-1">
-                                ${item.price}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                + ${item.shippingPrice} shipping
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Checkout button */}
-                          {!showGroupCheckout && (
-                            <Button
-                              onClick={() => handleCheckout([item.id])}
-                              className="w-full rounded-none rounded-b-2xl bg-charcoal text-white hover:bg-charcoal-light h-12"
-                            >
-                              Checkout
-                            </Button>
                           )}
                         </div>
 
-                        {/* Group checkout for multiple items from same seller */}
-                        {showGroupCheckout && (
-                          <Button
-                            onClick={() => handleCheckout(items.map(i => i.id))}
-                            className="w-full mt-3 rounded-2xl bg-charcoal text-white hover:bg-charcoal-light h-12"
-                          >
-                            Checkout {items.length} items from {item.sellerName}
-                          </Button>
-                        )}
+                        {/* Content */}
+                        <div className="flex flex-1 flex-col justify-center">
+                          <div className="flex items-start justify-between">
+                            <h3 className="font-semibold text-foreground">{item.title}</h3>
+                            {/* Only show seller avatar on first item in group */}
+                            {index === 0 && (
+                              <img
+                                src={item.sellerAvatar}
+                                alt={item.sellerName}
+                                className="h-8 w-8 rounded-full bg-muted"
+                              />
+                            )}
+                          </div>
+                          <p className="text-lg font-bold text-foreground mt-1">
+                            ${item.price}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            + ${item.shippingPrice} shipping
+                          </p>
+                        </div>
                       </div>
                     );
                   })}
+
+                  {/* Checkout button at bottom of seller group */}
+                  <Button
+                    onClick={() => handleCheckout(items.map(i => i.id))}
+                    className="w-full rounded-none rounded-b-2xl bg-charcoal text-white hover:bg-charcoal-light h-12"
+                  >
+                    Checkout
+                  </Button>
                 </div>
               ))}
 
