@@ -161,13 +161,13 @@ const ListingDetails = () => {
 
             {/* Tags */}
             <div className="mt-4 flex-wrap gap-2 flex flex-row">
-              <ListingTag label={listing.size} variant="muted" />
-              <ListingTag label={listing.brand} variant="muted" />
-              <ListingTag label={listing.condition} variant="muted" />
-              {listing.gender && <ListingTag label={listing.gender} variant="muted" />}
-              {listing.colour && <ListingTag label={listing.colour} variant="muted" />}
-              {listing.style && <ListingTag label={listing.style} variant="muted" />}
-              <ListingTag label={listing.category} variant="muted" />
+              <ListingTag label={['xs', 's', 'm', 'l', 'xl', 'xxl', 'one size'].includes(listing.size.toLowerCase()) ? listing.size.toUpperCase() : listing.size.charAt(0).toUpperCase() + listing.size.slice(1)} variant="muted" />
+              <ListingTag label={listing.brand.charAt(0).toUpperCase() + listing.brand.slice(1)} variant="muted" />
+              <ListingTag label={listing.condition.charAt(0).toUpperCase() + listing.condition.slice(1)} variant="muted" />
+              {listing.gender && <ListingTag label={listing.gender.charAt(0).toUpperCase() + listing.gender.slice(1)} variant="muted" />}
+              {listing.colour && <ListingTag label={listing.colour.charAt(0).toUpperCase() + listing.colour.slice(1)} variant="muted" />}
+              {listing.style && <ListingTag label={listing.style.charAt(0).toUpperCase() + listing.style.slice(1)} variant="muted" />}
+              <ListingTag label={listing.category.charAt(0).toUpperCase() + listing.category.slice(1)} variant="muted" />
             </div>
 
             {/* Content */}
