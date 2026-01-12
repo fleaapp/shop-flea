@@ -19,24 +19,19 @@ const WishlistCard = ({ listing, onAddToCart, onRemove }: WishlistCardProps) => 
 
   return (
     <div 
-      className="flex flex-col overflow-hidden rounded-3xl bg-card p-3 card-shadow cursor-pointer"
+      className="flex flex-col overflow-hidden rounded-3xl bg-card p-[10px] card-shadow cursor-pointer"
       onClick={handleCardClick}
     >
-      {/* Image with price tag */}
-      <div className="relative aspect-[4/5] overflow-hidden rounded-2xl">
+      {/* Image - matching SwipeCard style */}
+      <div className="relative h-64 overflow-hidden rounded-2xl">
         <img 
           src={listing.image} 
           alt={listing.title} 
           className="h-full w-full object-cover" 
         />
-        
-        {/* Price tag */}
-        <div className="absolute top-3 left-3 bg-card rounded-full px-3 py-1.5 shadow-md">
-          <span className="font-bold text-foreground">${listing.price}</span>
-        </div>
       </div>
       
-      {/* Footer with actions */}
+      {/* Content footer - matching SwipeCard exactly */}
       <div className="px-2 pt-3 pb-1">
         <div className="flex items-end justify-between">
           <div className="flex-1 min-w-0">
@@ -46,17 +41,22 @@ const WishlistCard = ({ listing, onAddToCart, onRemove }: WishlistCardProps) => 
               <ListingTag label={listing.brand} />
             </div>
           </div>
+          
+          <div className="text-right flex-shrink-0 ml-3">
+            <p className="text-xl font-bold text-foreground">${listing.price}</p>
+            <p className="text-xs text-muted-foreground">+ ${listing.shippingPrice} shipping</p>
+          </div>
         </div>
         
         {/* Action buttons */}
-        <div className="flex items-center justify-center gap-2 mt-4">
+        <div className="flex items-center justify-center gap-2 mt-3">
           <Button
             variant="outline"
             onClick={(e) => {
               e.stopPropagation();
               onAddToCart();
             }}
-            className="flex-1 h-10 rounded-full bg-card border-border font-medium"
+            className="flex-1 h-9 rounded-full bg-card border-border font-medium text-sm"
           >
             <ShoppingCart className="h-4 w-4 mr-2" />
             Add to cart
@@ -68,7 +68,7 @@ const WishlistCard = ({ listing, onAddToCart, onRemove }: WishlistCardProps) => 
               e.stopPropagation();
               onRemove();
             }}
-            className="h-10 w-10 rounded-full bg-muted text-muted-foreground hover:text-destructive"
+            className="h-9 w-9 rounded-full bg-muted text-muted-foreground hover:text-destructive"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
