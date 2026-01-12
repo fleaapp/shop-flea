@@ -3,85 +3,9 @@ import { ChevronRight } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
 import { useOrders, Order } from '@/hooks/useOrders';
+import { useNotifications, getNotificationMessage, getNotificationEmoji, Notification } from '@/hooks/useNotifications';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-
-type ActivityNotification = {
-  id: string;
-  type: 'comment' | 'reply' | 'review';
-  username: string;
-  productImage: string;
-  userAvatar: string;
-  time: string;
-  read: boolean;
-};
-
-// Keep activity notifications as mock data for now
-import listingJacket from '@/assets/listing-jacket.jpg';
-import listingSneakers from '@/assets/listing-sneakers.jpg';
-import listingSweater from '@/assets/listing-sweater.jpg';
-import listingBag from '@/assets/listing-bag.jpg';
-
-const activityNotifications: ActivityNotification[] = [{
-  id: '1',
-  type: 'comment',
-  username: 'sarah_m',
-  productImage: listingJacket,
-  userAvatar: 'https://i.pravatar.cc/40?img=1',
-  time: '24 minutes ago',
-  read: false
-}, {
-  id: '2',
-  type: 'reply',
-  username: 'mike_jones',
-  productImage: listingSweater,
-  userAvatar: 'https://i.pravatar.cc/40?img=2',
-  time: '2 hours ago',
-  read: false
-}, {
-  id: '3',
-  type: 'review',
-  username: 'emma_style',
-  productImage: listingSneakers,
-  userAvatar: 'https://i.pravatar.cc/40?img=3',
-  time: '10 hours ago',
-  read: false
-}, {
-  id: '4',
-  type: 'comment',
-  username: 'alex_vintage',
-  productImage: listingSneakers,
-  userAvatar: 'https://i.pravatar.cc/40?img=4',
-  time: '25/2/2025',
-  read: true
-}, {
-  id: '5',
-  type: 'reply',
-  username: 'fashion_lover',
-  productImage: listingBag,
-  userAvatar: 'https://i.pravatar.cc/40?img=5',
-  time: '17/12/2024',
-  read: true
-}, {
-  id: '6',
-  type: 'review',
-  username: 'closet_clean',
-  productImage: listingJacket,
-  userAvatar: 'https://i.pravatar.cc/40?img=6',
-  time: '5/4/2024',
-  read: true
-}];
-
-const getActivityMessage = (type: ActivityNotification['type']) => {
-  switch (type) {
-    case 'comment':
-      return 'commented on your listing.';
-    case 'reply':
-      return 'replied to your comment on their listing.';
-    case 'review':
-      return 'left you a review.';
-  }
-};
 
 const getStatusBadge = (status: Order['status']) => {
   switch (status) {
@@ -108,12 +32,18 @@ const ProductThumbnail = ({
   avatar
 }: {
   image: string;
-  avatar: string;
+  avatar?: string;
 }) => (
   <div className="relative h-20 w-20 flex-shrink-0">
     <img src={image} alt="Product" className="h-full w-full rounded-xl object-cover" />
-    <img src={avatar} alt="User" className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full border-2 border-card object-cover" />
+    {avatar && (
+      <img src={avatar} alt="User" className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full border-2 border-card object-cover" />
+    )}
   </div>
+);
+
+const UnreadIndicator = () => (
+  <div className="w-2.5 h-2.5 rounded-full bg-[hsl(82,84%,55%)] flex-shrink-0" />
 );
 
 const Notifications = () => {
@@ -121,21 +51,25 @@ const Notifications = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
   const { sellerOrders, loadingSellerOrders, markAsShipped } = useOrders();
-
-  const unreadNotifications = activityNotifications.filter(n => !n.read);
-  const readNotifications = activityNotifications.filter(n => n.read);
+  const { notifications, isLoading: loadingNotifications, unreadCount, markAsRead } = useNotifications();
   
   // Filter sales by status
   const awaitingShipping = sellerOrders.filter(o => o.status === 'awaiting');
   const shipped = sellerOrders.filter(o => o.status === 'shipped');
   const delivered = sellerOrders.filter(o => o.status === 'delivered');
   
-  const unreadCount = unreadNotifications.length;
   const awaitingCount = awaitingShipping.length;
 
   const handleSaleClick = (order: Order) => {
     setSelectedOrder(order);
     setSaleSheetOpen(true);
+  };
+
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.is_read) {
+      markAsRead.mutate(notification.id);
+    }
+    // Future: Navigate to related content based on type
   };
 
   const handleMarkShipped = (trackingDetails: { serviceProvider: string; trackingNumber: string }) => {
@@ -150,7 +84,7 @@ const Notifications = () => {
     }
   };
 
-  const formatOrderTime = (dateString: string) => {
+  const formatTime = (dateString: string) => {
     try {
       return formatDistanceToNow(new Date(dateString), { addSuffix: true });
     } catch {
@@ -176,12 +110,42 @@ const Notifications = () => {
           <p className="text-sm text-foreground">
             Sold to <span className="font-semibold">@{buyerUsername}.</span>
           </p>
-          <p className="text-xs text-muted-foreground">{formatOrderTime(order.created_at)}</p>
+          <p className="text-xs text-muted-foreground">{formatTime(order.created_at)}</p>
           <span className={cn('mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium', getStatusBadge(order.status).className)}>
             {getStatusBadge(order.status).label}
           </span>
         </div>
         <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+      </div>
+    );
+  };
+
+  const NotificationCard = ({ notification }: { notification: Notification }) => {
+    const listingImage = notification.listing?.images?.[0] || '';
+    const userAvatar = notification.related_user?.avatar_url || undefined;
+    const username = notification.related_user?.username;
+    const emoji = getNotificationEmoji(notification.type as any);
+    const message = getNotificationMessage(notification.type as any, username);
+
+    return (
+      <div 
+        onClick={() => handleNotificationClick(notification)}
+        className="flex items-center gap-4 rounded-2xl bg-card p-4 cursor-pointer"
+      >
+        {listingImage ? (
+          <ProductThumbnail image={listingImage} avatar={userAvatar} />
+        ) : (
+          <div className="h-20 w-20 flex-shrink-0 rounded-xl bg-muted flex items-center justify-center">
+            <span className="text-3xl">{emoji}</span>
+          </div>
+        )}
+        <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
+          <p className="text-sm text-foreground">{message}</p>
+          <p className="text-xs text-muted-foreground text-right mt-2">
+            {formatTime(notification.created_at)}
+          </p>
+        </div>
+        {!notification.is_read && <UnreadIndicator />}
       </div>
     );
   };
@@ -227,53 +191,23 @@ const Notifications = () => {
       </div>
 
       {/* Content */}
-      <div className="px-4 space-y-6">
+      <div className="px-4 space-y-3">
         {activeTab === 'activity' ? (
           <>
-            {/* Unread Section */}
-            {unreadNotifications.length > 0 && (
-              <div>
-                <h2 className="mb-3 text-base font-semibold text-foreground">Unread</h2>
-                <div className="space-y-3">
-                  {unreadNotifications.map(notification => (
-                    <div key={notification.id} className="flex gap-4 rounded-2xl bg-card p-4 card-shadow cursor-pointer">
-                      <ProductThumbnail image={notification.productImage} avatar={notification.userAvatar} />
-                      <div className="flex-1 min-w-0 flex flex-col justify-between">
-                        <p className="text-sm text-foreground">
-                          <span className="font-semibold">@{notification.username}</span>{' '}
-                          {getActivityMessage(notification.type)}
-                        </p>
-                        <p className="text-xs text-muted-foreground text-right mt-auto">
-                          {notification.time}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            {loadingNotifications ? (
+              <div className="flex justify-center py-10">
+                <p className="text-muted-foreground">Loading notifications...</p>
               </div>
-            )}
-
-            {/* Read Section */}
-            {readNotifications.length > 0 && (
-              <div>
-                <h2 className="mb-3 text-base font-semibold text-foreground">Read</h2>
-                <div className="space-y-3">
-                  {readNotifications.map(notification => (
-                    <div key={notification.id} className="flex gap-4 rounded-2xl bg-card p-4 cursor-pointer opacity-80">
-                      <ProductThumbnail image={notification.productImage} avatar={notification.userAvatar} />
-                      <div className="flex-1 min-w-0 flex flex-col justify-between">
-                        <p className="text-sm text-muted-foreground">
-                          <span className="font-semibold text-foreground">@{notification.username}</span>{' '}
-                          {getActivityMessage(notification.type)}
-                        </p>
-                        <p className="text-xs text-muted-foreground text-right mt-auto">
-                          {notification.time}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            ) : notifications.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <span className="text-6xl opacity-50 mb-4">🔔</span>
+                <p className="text-lg font-medium text-muted-foreground">No notifications yet</p>
+                <p className="mt-2 text-sm text-muted-foreground">Your activity will appear here</p>
               </div>
+            ) : (
+              notifications.map(notification => (
+                <NotificationCard key={notification.id} notification={notification} />
+              ))
             )}
           </>
         ) : (
