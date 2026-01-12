@@ -57,12 +57,8 @@ const Favorites = () => {
   const { removeFavorite } = useFavorites();
   const { addToCart } = useCart();
 
-  // Mock: Mark first listing as sold for demo purposes
   const displayListings = useMemo(() => 
-    listings.map((listing, index) => ({
-      ...toDisplayListing(listing),
-      isSold: index === 0, // First item is sold for demo
-    })), 
+    listings.map(toDisplayListing), 
     [listings]
   );
 
