@@ -1,6 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import FilterChip from '@/components/FilterChip';
@@ -183,7 +182,7 @@ const Index = () => {
               <p className="mt-4 text-sm text-muted-foreground">Loading listings...</p>
             </div>
           ) : currentListings.length > 0 ? (
-            <AnimatePresence initial={false}>
+            <>
               {currentListings.map((dbListing, index) => (
                 <SwipeCard
                   key={dbListing.id}
@@ -196,7 +195,7 @@ const Index = () => {
                   index={index}
                 />
               ))}
-            </AnimatePresence>
+            </>
           ) : (
             <div className="flex h-full flex-col items-center justify-center text-center">
               <p className="text-lg font-medium text-muted-foreground">No more listings!</p>
