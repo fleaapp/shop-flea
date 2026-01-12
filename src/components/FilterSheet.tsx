@@ -27,14 +27,14 @@ const genderOptions = ['Female', 'Male', 'Unisex'];
 
 const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) => {
   const [filters, setFilters] = useState<FilterState>({
-    preferences: true,
+    preferences: false,
     category: '',
     size: '',
-    condition: 'Excellent',
-    gender: 'Female',
+    condition: '',
+    gender: '',
     colour: '',
     style: '',
-    priceRange: [0, 67],
+    priceRange: [0, 1000],
   });
 
   const handleReset = () => {
@@ -68,7 +68,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
       onClick={onClick}
       className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
         selected 
-          ? 'bg-filter-chip text-foreground' 
+          ? 'bg-muted-foreground/30 text-foreground' 
           : 'bg-card text-foreground'
       }`}
     >
@@ -79,12 +79,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[90vh] rounded-t-3xl bg-background">
-        {/* Handle bar */}
-        <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
-          <div className="w-12 h-1 bg-muted-foreground/30 rounded-full" />
-        </div>
-        
-        <div className="px-6 pb-4 flex-shrink-0">
+        <div className="px-6 pb-4 pt-2 flex-shrink-0">
           <h2 className="text-center text-xl font-semibold">Filter</h2>
         </div>
 
@@ -95,6 +90,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
             <Switch
               checked={filters.preferences}
               onCheckedChange={(checked) => setFilters({ ...filters, preferences: checked })}
+              className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted-foreground/30 [&>span]:data-[state=checked]:bg-mint"
             />
           </div>
 
