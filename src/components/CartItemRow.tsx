@@ -124,7 +124,7 @@ const CartItemRow = ({
 
         {/* Content */}
         <div className={cn(
-          "flex flex-1 flex-col justify-center",
+          "flex flex-1 flex-col justify-between h-24",
           isSold && "opacity-50"
         )}>
           <div className="flex items-start justify-between">
@@ -137,12 +137,14 @@ const CartItemRow = ({
               />
             )}
           </div>
-          <p className="text-lg font-bold text-foreground">
-            ${item.price}
-          </p>
-          <p className="text-sm text-muted-foreground -mt-0.5">
-            + ${item.shippingPrice} shipping
-          </p>
+          <div>
+            <p className="text-lg font-bold text-foreground leading-tight">
+              ${item.price}
+            </p>
+            <p className="text-sm text-muted-foreground leading-tight">
+              + ${item.shippingPrice} shipping
+            </p>
+          </div>
         </div>
       </motion.div>
     </div>
