@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
@@ -76,6 +76,11 @@ const Index = () => {
       !isInCart(listing.id)
     );
   }, [dbListings, discardedIds, favoriteIds, isInCart]);
+
+  // Reset currentIndex when discardedIds is cleared (e.g., after refreshing discarded listings)
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [discardedIds.size]);
 
   const currentListings = availableListings.slice(currentIndex, currentIndex + 3);
 
