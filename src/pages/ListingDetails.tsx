@@ -21,6 +21,7 @@ interface DbListing {
   condition: string;
   colour: string | null;
   style: string | null;
+  gender: string | null;
   category: string;
   user_id: string;
 }
@@ -162,9 +163,11 @@ const ListingDetails = () => {
             <div className="mt-4 flex-wrap gap-2 flex flex-row">
               <ListingTag label={listing.size} variant="muted" />
               <ListingTag label={listing.brand} variant="muted" />
-              {listing.tags?.map(tag => (
-                <ListingTag key={tag} label={tag} variant="muted" />
-              ))}
+              <ListingTag label={listing.condition} variant="muted" />
+              {listing.gender && <ListingTag label={listing.gender} variant="muted" />}
+              {listing.colour && <ListingTag label={listing.colour} variant="muted" />}
+              {listing.style && <ListingTag label={listing.style} variant="muted" />}
+              <ListingTag label={listing.category} variant="muted" />
             </div>
 
             {/* Content */}
