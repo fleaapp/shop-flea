@@ -200,6 +200,62 @@ export type Database = {
           },
         ]
       }
+      orders: {
+        Row: {
+          buyer_id: string
+          created_at: string
+          delivered_at: string | null
+          id: string
+          listing_id: string
+          price: number
+          seller_id: string
+          shipped_at: string | null
+          shipping_price: number
+          status: string
+          tracking_number: string | null
+          tracking_provider: string | null
+          updated_at: string
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          listing_id: string
+          price: number
+          seller_id: string
+          shipped_at?: string | null
+          shipping_price?: number
+          status?: string
+          tracking_number?: string | null
+          tracking_provider?: string | null
+          updated_at?: string
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          listing_id?: string
+          price?: number
+          seller_id?: string
+          shipped_at?: string | null
+          shipping_price?: number
+          status?: string
+          tracking_number?: string | null
+          tracking_provider?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

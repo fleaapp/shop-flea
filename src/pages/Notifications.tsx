@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { Bell, PartyPopper, ChevronRight } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
-import SalesDetailsSheet, { SaleDetails } from '@/components/SalesDetailsSheet';
+import SalesDetailsSheet from '@/components/SalesDetailsSheet';
+import { useOrders, Order } from '@/hooks/useOrders';
 import { cn } from '@/lib/utils';
-import listingJacket from '@/assets/listing-jacket.jpg';
-import listingSneakers from '@/assets/listing-sneakers.jpg';
-import listingSweater from '@/assets/listing-sweater.jpg';
-import listingBag from '@/assets/listing-bag.jpg';
+import { formatDistanceToNow } from 'date-fns';
 
 type ActivityNotification = {
   id: string;
@@ -18,14 +16,11 @@ type ActivityNotification = {
   read: boolean;
 };
 
-type SaleNotification = {
-  id: string;
-  username: string;
-  productImage: string;
-  userAvatar: string;
-  time: string;
-  status: 'awaiting' | 'shipped' | 'delivered';
-};
+// Keep activity notifications as mock data for now
+import listingJacket from '@/assets/listing-jacket.jpg';
+import listingSneakers from '@/assets/listing-sneakers.jpg';
+import listingSweater from '@/assets/listing-sweater.jpg';
+import listingBag from '@/assets/listing-bag.jpg';
 
 const activityNotifications: ActivityNotification[] = [{
   id: '1',
@@ -77,57 +72,6 @@ const activityNotifications: ActivityNotification[] = [{
   read: true
 }];
 
-const salesNotifications: SaleNotification[] = [{
-  id: '1',
-  username: 'buyer_jane',
-  productImage: listingJacket,
-  userAvatar: 'https://i.pravatar.cc/40?img=7',
-  time: '24 minutes ago',
-  status: 'awaiting'
-}, {
-  id: '2',
-  username: 'style_hunter',
-  productImage: listingSweater,
-  userAvatar: 'https://i.pravatar.cc/40?img=8',
-  time: '2 hours ago',
-  status: 'awaiting'
-}, {
-  id: '3',
-  username: 'thrift_queen',
-  productImage: listingSneakers,
-  userAvatar: 'https://i.pravatar.cc/40?img=9',
-  time: '10 hours ago',
-  status: 'awaiting'
-}, {
-  id: '4',
-  username: 'vintage_vibes',
-  productImage: listingSneakers,
-  userAvatar: 'https://i.pravatar.cc/40?img=10',
-  time: '10/2/2025',
-  status: 'shipped'
-}, {
-  id: '5',
-  username: 'eco_fashion',
-  productImage: listingBag,
-  userAvatar: 'https://i.pravatar.cc/40?img=11',
-  time: '10/2/2025',
-  status: 'shipped'
-}, {
-  id: '6',
-  username: 'deal_seeker',
-  productImage: listingJacket,
-  userAvatar: 'https://i.pravatar.cc/40?img=12',
-  time: '10/2/2025',
-  status: 'delivered'
-}, {
-  id: '7',
-  username: 'preloved_pro',
-  productImage: listingSweater,
-  userAvatar: 'https://i.pravatar.cc/40?img=13',
-  time: '10/2/2025',
-  status: 'delivered'
-}];
-
 const getActivityMessage = (type: ActivityNotification['type']) => {
   switch (type) {
     case 'comment':
@@ -139,7 +83,7 @@ const getActivityMessage = (type: ActivityNotification['type']) => {
   }
 };
 
-const getStatusBadge = (status: SaleNotification['status']) => {
+const getStatusBadge = (status: Order['status']) => {
   switch (status) {
     case 'awaiting':
       return {
@@ -172,79 +116,75 @@ const ProductThumbnail = ({
   </div>
 );
 
-// Convert SaleNotification to SaleDetails for the sheet
-const convertToSaleDetails = (sale: SaleNotification): SaleDetails => ({
-  id: sale.id,
-  orderNumber: `${1000 + parseInt(sale.id)}`,
-  date: sale.time,
-  status: sale.status,
-  buyer: {
-    username: sale.username,
-    avatar: sale.userAvatar,
-  },
-  items: [
-    {
-      id: '1',
-      title: 'Vintage Item',
-      image: sale.productImage,
-      price: 45,
-      shippingPrice: 5,
-    },
-  ],
-  shippingDetails: {
-    name: 'Jane Smith',
-    address: '123 Fashion St, London, UK, SW1A 1AA',
-  },
-  trackingDetails: {
-    serviceProvider: '',
-    trackingNumber: '',
-  },
-});
-
 const Notifications = () => {
   const [activeTab, setActiveTab] = useState<'activity' | 'sales'>('activity');
-  const [selectedSale, setSelectedSale] = useState<SaleDetails | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
+  const { sellerOrders, loadingSellerOrders, markAsShipped } = useOrders();
 
   const unreadNotifications = activityNotifications.filter(n => !n.read);
   const readNotifications = activityNotifications.filter(n => n.read);
-  const awaitingShipping = salesNotifications.filter(n => n.status === 'awaiting');
-  const shipped = salesNotifications.filter(n => n.status === 'shipped');
-  const delivered = salesNotifications.filter(n => n.status === 'delivered');
+  
+  // Filter sales by status
+  const awaitingShipping = sellerOrders.filter(o => o.status === 'awaiting');
+  const shipped = sellerOrders.filter(o => o.status === 'shipped');
+  const delivered = sellerOrders.filter(o => o.status === 'delivered');
+  
   const unreadCount = unreadNotifications.length;
   const awaitingCount = awaitingShipping.length;
 
-  const handleSaleClick = (sale: SaleNotification) => {
-    setSelectedSale(convertToSaleDetails(sale));
+  const handleSaleClick = (order: Order) => {
+    setSelectedOrder(order);
     setSaleSheetOpen(true);
   };
 
   const handleMarkShipped = (trackingDetails: { serviceProvider: string; trackingNumber: string }) => {
-    console.log('Mark as shipped with tracking:', trackingDetails);
-    setSaleSheetOpen(false);
+    if (selectedOrder) {
+      markAsShipped.mutate({
+        orderId: selectedOrder.id,
+        trackingProvider: trackingDetails.serviceProvider,
+        trackingNumber: trackingDetails.trackingNumber,
+      });
+      setSaleSheetOpen(false);
+      setSelectedOrder(null);
+    }
   };
 
-  const SaleCard = ({ sale, showShadow = false }: { sale: SaleNotification; showShadow?: boolean }) => (
-    <div 
-      onClick={() => handleSaleClick(sale)}
-      className={cn(
-        "flex items-center gap-4 rounded-2xl bg-card p-4 cursor-pointer",
-        showShadow && "card-shadow"
-      )}
-    >
-      <ProductThumbnail image={sale.productImage} avatar={sale.userAvatar} />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm text-foreground">
-          Sold to <span className="font-semibold">@{sale.username}.</span>
-        </p>
-        <p className="text-xs text-muted-foreground">{sale.time}</p>
-        <span className={cn('mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium', getStatusBadge(sale.status).className)}>
-          {getStatusBadge(sale.status).label}
-        </span>
+  const formatOrderTime = (dateString: string) => {
+    try {
+      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+    } catch {
+      return dateString;
+    }
+  };
+
+  const SaleCard = ({ order, showShadow = false }: { order: Order; showShadow?: boolean }) => {
+    const buyerUsername = order.buyer_profile?.username || 'Unknown';
+    const buyerAvatar = order.buyer_profile?.avatar_url || '';
+    const productImage = order.listing?.images?.[0] || '';
+
+    return (
+      <div 
+        onClick={() => handleSaleClick(order)}
+        className={cn(
+          "flex items-center gap-4 rounded-2xl bg-card p-4 cursor-pointer",
+          showShadow && "card-shadow"
+        )}
+      >
+        <ProductThumbnail image={productImage} avatar={buyerAvatar} />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-foreground">
+            Sold to <span className="font-semibold">@{buyerUsername}.</span>
+          </p>
+          <p className="text-xs text-muted-foreground">{formatOrderTime(order.created_at)}</p>
+          <span className={cn('mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium', getStatusBadge(order.status).className)}>
+            {getStatusBadge(order.status).label}
+          </span>
+        </div>
+        <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
       </div>
-      <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -338,40 +278,54 @@ const Notifications = () => {
           </>
         ) : (
           <>
-            {/* Awaiting Shipping */}
-            {awaitingShipping.length > 0 && (
-              <div>
-                <h2 className="mb-3 text-base font-semibold text-foreground">Awaiting shipping</h2>
-                <div className="space-y-3">
-                  {awaitingShipping.map(sale => (
-                    <SaleCard key={sale.id} sale={sale} showShadow />
-                  ))}
-                </div>
+            {loadingSellerOrders ? (
+              <div className="flex justify-center py-10">
+                <p className="text-muted-foreground">Loading sales...</p>
               </div>
-            )}
+            ) : sellerOrders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <PartyPopper className="h-16 w-16 text-muted-foreground/50 mb-4" />
+                <p className="text-lg font-medium text-muted-foreground">No sales yet</p>
+                <p className="mt-2 text-sm text-muted-foreground">Your sales will appear here</p>
+              </div>
+            ) : (
+              <>
+                {/* Awaiting Shipping */}
+                {awaitingShipping.length > 0 && (
+                  <div>
+                    <h2 className="mb-3 text-base font-semibold text-foreground">Awaiting shipping</h2>
+                    <div className="space-y-3">
+                      {awaitingShipping.map(order => (
+                        <SaleCard key={order.id} order={order} showShadow />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-            {/* Shipped */}
-            {shipped.length > 0 && (
-              <div>
-                <h2 className="mb-3 text-base font-semibold text-foreground">Shipped</h2>
-                <div className="space-y-3">
-                  {shipped.map(sale => (
-                    <SaleCard key={sale.id} sale={sale} />
-                  ))}
-                </div>
-              </div>
-            )}
+                {/* Shipped */}
+                {shipped.length > 0 && (
+                  <div>
+                    <h2 className="mb-3 text-base font-semibold text-foreground">Shipped</h2>
+                    <div className="space-y-3">
+                      {shipped.map(order => (
+                        <SaleCard key={order.id} order={order} />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-            {/* Delivered */}
-            {delivered.length > 0 && (
-              <div>
-                <h2 className="mb-3 text-base font-semibold text-foreground">Delivered</h2>
-                <div className="space-y-3">
-                  {delivered.map(sale => (
-                    <SaleCard key={sale.id} sale={sale} />
-                  ))}
-                </div>
-              </div>
+                {/* Delivered */}
+                {delivered.length > 0 && (
+                  <div>
+                    <h2 className="mb-3 text-base font-semibold text-foreground">Delivered</h2>
+                    <div className="space-y-3">
+                      {delivered.map(order => (
+                        <SaleCard key={order.id} order={order} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
@@ -379,7 +333,7 @@ const Notifications = () => {
 
       {/* Sales Details Sheet */}
       <SalesDetailsSheet
-        sale={selectedSale}
+        order={selectedOrder}
         open={saleSheetOpen}
         onOpenChange={setSaleSheetOpen}
         onMarkShipped={handleMarkShipped}
