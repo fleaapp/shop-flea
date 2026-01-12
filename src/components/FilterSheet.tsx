@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface FilterSheetProps {
   open: boolean;
@@ -68,7 +68,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
       onClick={onClick}
       className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
         selected 
-          ? 'bg-muted-foreground/30 text-foreground' 
+          ? 'bg-[#ddfed7] text-foreground' 
           : 'bg-card text-foreground'
       }`}
     >
@@ -79,7 +79,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[90vh] rounded-t-3xl bg-background">
-        <div className="px-6 pb-4 pt-2 flex-shrink-0">
+        <div className="px-6 pb-4 flex-shrink-0">
           <h2 className="text-center text-xl font-semibold">Filter</h2>
         </div>
 
@@ -90,7 +90,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
             <Switch
               checked={filters.preferences}
               onCheckedChange={(checked) => setFilters({ ...filters, preferences: checked })}
-              className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted-foreground/30 [&>span]:data-[state=checked]:bg-mint"
+              className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted-foreground/30 [&>span]:bg-[#ddfed7]"
             />
           </div>
 
@@ -202,20 +202,37 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
 
           {/* Price */}
           <div className="py-3">
-            <label className="text-base font-medium mb-4 block">Price</label>
-            <div className="flex justify-between text-sm text-muted-foreground mb-2">
-              <span>$0</span>
-              <span>${filters.priceRange[1]}</span>
-              <span>$1K+</span>
+            <label className="text-base font-medium mb-2 block">Price</label>
+            <div className="flex gap-4 items-center">
+              <div className="flex-1">
+                <label className="text-xs text-muted-foreground mb-1 block">Minimum</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <Input
+                    type="number"
+                    value={filters.priceRange[0] || ''}
+                    onChange={(e) => setFilters({ ...filters, priceRange: [Number(e.target.value) || 0, filters.priceRange[1]] })}
+                    className="pl-7 bg-card border-0 h-12 rounded-xl"
+                    placeholder="0"
+                    min={0}
+                  />
+                </div>
+              </div>
+              <div className="flex-1">
+                <label className="text-xs text-muted-foreground mb-1 block">Maximum</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <Input
+                    type="number"
+                    value={filters.priceRange[1] || ''}
+                    onChange={(e) => setFilters({ ...filters, priceRange: [filters.priceRange[0], Number(e.target.value) || 0] })}
+                    className="pl-7 bg-card border-0 h-12 rounded-xl"
+                    placeholder="1000"
+                    min={0}
+                  />
+                </div>
+              </div>
             </div>
-            <Slider
-              value={filters.priceRange}
-              onValueChange={(val) => setFilters({ ...filters, priceRange: val as [number, number] })}
-              max={1000}
-              min={0}
-              step={1}
-              className="w-full"
-            />
           </div>
         </div>
 
