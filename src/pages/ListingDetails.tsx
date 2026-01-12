@@ -267,14 +267,14 @@ const ListingDetails = () => {
             <Button
               variant="outline"
               onClick={handleAddToWishlist}
-              className="h-14 w-14 rounded-2xl border-2 text-2xl"
+              className="h-14 w-14 rounded-2xl border-2 text-2xl bg-[#29303d] text-white hover:bg-primary hover:text-foreground"
             >
               💌
             </Button>
 
             <Button
               onClick={handleAddToCart}
-              className="h-14 w-14 rounded-2xl bg-primary text-2xl hover:bg-mint-dark"
+              className="h-14 w-14 rounded-2xl border-2 bg-primary text-2xl hover:bg-[#29303d] hover:text-white"
             >
               🛒
             </Button>
