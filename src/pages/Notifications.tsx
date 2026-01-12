@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, PartyPopper, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
 import { useOrders, Order } from '@/hooks/useOrders';
@@ -199,7 +199,7 @@ const Notifications = () => {
                 activeTab === 'activity' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
               )}
             >
-              <Bell className="h-4 w-4" />
+              <span className="text-base">🔔</span>
               Activity
               {activeTab !== 'activity' && unreadCount > 0 && (
                 <span className="absolute -top-1 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
@@ -214,7 +214,7 @@ const Notifications = () => {
                 activeTab === 'sales' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
               )}
             >
-              <PartyPopper className="h-4 w-4" />
+              <span className="text-base">💸</span>
               Sales
               {activeTab !== 'sales' && awaitingCount > 0 && (
                 <span className="absolute -top-1 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
@@ -284,7 +284,7 @@ const Notifications = () => {
               </div>
             ) : sellerOrders.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
-                <PartyPopper className="h-16 w-16 text-muted-foreground/50 mb-4" />
+                <span className="text-6xl opacity-50 mb-4">💸</span>
                 <p className="text-lg font-medium text-muted-foreground">No sales yet</p>
                 <p className="mt-2 text-sm text-muted-foreground">Your sales will appear here</p>
               </div>
