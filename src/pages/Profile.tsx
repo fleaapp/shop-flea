@@ -40,7 +40,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="h-screen bg-background pb-24 overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col" style={{ touchAction: 'pan-x', overscrollBehavior: 'none' }}>
       <div className="flex flex-col items-center px-4 pt-6">
         <div className="relative">
           <div className="h-20 w-20 rounded-full bg-muted p-1" style={{
