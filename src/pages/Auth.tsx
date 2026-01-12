@@ -44,7 +44,6 @@ const Auth = () => {
       toast.error(error.message || 'Failed to sign in');
       setIsLoading(false);
     } else {
-      toast.success('Welcome back!');
       navigate('/');
     }
   };
