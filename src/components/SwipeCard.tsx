@@ -125,7 +125,7 @@ const SwipeCard = ({
             <div className="flex-1 min-w-0">
               <h3 className="text-lg font-semibold text-foreground truncate">{listing.title}</h3>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
-                <ListingTag label={listing.size} />
+                <ListingTag label={listing.size} isSize />
                 <ListingTag label={listing.brand} />
               </div>
             </div>

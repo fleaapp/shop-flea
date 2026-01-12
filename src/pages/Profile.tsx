@@ -4,6 +4,7 @@ import { useState } from 'react';
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/context/AuthContext';
 import { useUserListings } from '@/hooks/useListings';
+import { formatTagLabel } from '@/components/ListingTag';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -109,7 +110,7 @@ const Profile = () => {
                       <h3 className="text-base font-semibold text-foreground truncate">{listing.title}</h3>
                       <div className="mt-1.5 flex flex-wrap gap-1.5">
                         <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                          {listing.size}
+                          {formatTagLabel(listing.size, true)}
                         </span>
                         <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
                           {listing.brand}
