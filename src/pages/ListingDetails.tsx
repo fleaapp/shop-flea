@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Heart, ShoppingCart, X, MapPin } from 'lucide-react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
@@ -37,6 +37,7 @@ interface SellerProfile {
 
 const ListingDetails = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
   const [open, setOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -45,6 +46,9 @@ const ListingDetails = () => {
   const [listing, setListing] = useState<DbListing | null>(null);
   const [seller, setSeller] = useState<SellerProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Check if listing is sold (passed from navigation state)
+  const isSold = location.state?.isSold || false;
 
   // All hooks must be called before any conditional returns
   const { addFavorite, isFavorite } = useFavorites();
@@ -264,21 +268,25 @@ const ListingDetails = () => {
               ❌
             </Button>
 
-            <Button
-              variant="outline"
-              onClick={() => { handleAddToWishlist(); handleClose(); }}
-              className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]"
-            >
-              💌
-            </Button>
+            {!isSold && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => { handleAddToWishlist(); handleClose(); }}
+                  className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]"
+                >
+                  💌
+                </Button>
 
-            <Button
-              variant="outline"
-              onClick={() => { handleAddToCart(); handleClose(); }}
-              className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]"
-            >
-              🛒
-            </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => { handleAddToCart(); handleClose(); }}
+                  className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]"
+                >
+                  🛒
+                </Button>
+              </>
+            )}
           </div>
         </DrawerContent>
       </Drawer>
