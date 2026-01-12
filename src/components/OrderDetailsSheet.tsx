@@ -88,7 +88,7 @@ const OrderDetailsSheet = ({
             <p className="text-sm text-muted-foreground mt-1">
               Order #{order.orderNumber} • {order.date}
             </p>
-            <div className="flex justify-center mt-1.5">
+            <div className="flex justify-center mt-1 mb-2">
               <span
                 className={cn(
                   'rounded-full px-4 py-1.5 text-sm font-medium',
