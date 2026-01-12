@@ -6,11 +6,8 @@ import BottomNav from '@/components/BottomNav';
 import WishlistCard from '@/components/WishlistCard';
 import FilterSheet, { FilterState } from '@/components/FilterSheet';
 import { useFavoriteListings } from '@/hooks/useFavoriteListings';
-import { useFavorites } from '@/hooks/useFavorites';
-import { useCart } from '@/context/CartContext';
 import { Listing } from '@/types/listing';
 import { DbListing, ListingFilters } from '@/hooks/useListings';
-import { toast } from 'sonner';
 
 // Convert DbListing to Listing display type
 const toDisplayListing = (dbListing: DbListing): Listing => {
@@ -48,9 +45,7 @@ const Favorites = () => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<ListingFilters>({});
   
-  const { listings, loading, refetch } = useFavoriteListings(appliedFilters);
-  const { removeFavorite } = useFavorites();
-  const { addToCart } = useCart();
+  const { listings, loading } = useFavoriteListings(appliedFilters);
 
   const displayListings = useMemo(() => 
     listings.map(toDisplayListing), 
@@ -69,19 +64,6 @@ const Favorites = () => {
     
     setAppliedFilters(newFilters);
   }, []);
-
-  const handleAddToCart = useCallback((listing: Listing) => {
-    addToCart(listing);
-    toast.success('Added to cart');
-  }, [addToCart]);
-
-  const handleRemove = useCallback(async (listingId: string) => {
-    const success = await removeFavorite(listingId);
-    if (success) {
-      toast.success('Removed from wishlist');
-      refetch();
-    }
-  }, [removeFavorite, refetch]);
 
   const hasFilters = Object.keys(appliedFilters).length > 0;
 
@@ -111,13 +93,11 @@ const Favorites = () => {
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : displayListings.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-6 py-4">
             {displayListings.map((listing) => (
               <WishlistCard
                 key={listing.id}
                 listing={listing}
-                onAddToCart={() => handleAddToCart(listing)}
-                onRemove={() => handleRemove(listing.id)}
               />
             ))}
           </div>
