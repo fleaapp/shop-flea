@@ -134,7 +134,7 @@ const ListingDetails = () => {
     <div className="min-h-screen bg-background">
       <Drawer open={open} onOpenChange={isOpen => !isOpen && handleClose()}>
         <DrawerContent className="mt-0 h-[95dvh] max-h-[95dvh] overflow-hidden rounded-t-3xl bg-background">
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-8 pt-1">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-8">
             {/* Image Gallery (swipe) */}
             <div className="relative overflow-hidden rounded-3xl">
               <Carousel setApi={setCarouselApi} opts={{ loop: images.length > 1 }} className="w-full">
