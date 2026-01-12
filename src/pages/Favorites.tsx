@@ -114,14 +114,14 @@ const Favorites = () => {
       </header>
       
       {/* Listings Horizontal Scroll - centered first card */}
-      <div className="flex-1 flex items-center pb-20 sm:pb-24 min-h-0 overflow-hidden">
+      <div className="flex-1 flex items-center pb-24 max-[375px]:pb-20 min-h-0 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center w-full">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : displayListings.length > 0 ? (
           <div 
-            className="flex gap-3 sm:gap-4 overflow-x-auto snap-x snap-mandatory h-full items-center px-[calc(50vw-min(170px,42vw))]"
+            className="flex gap-4 max-[375px]:gap-3 overflow-x-auto snap-x snap-mandatory h-full items-center px-[calc(50vw-min(170px,42vw))]"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             <style>{`.flex::-webkit-scrollbar { display: none; }`}</style>

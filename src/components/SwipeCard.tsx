@@ -88,7 +88,7 @@ const SwipeCard = ({
   return (
     <motion.div
       ref={cardRef}
-      className="absolute inset-x-0 top-0 mx-auto w-[calc(100%-8px)] sm:w-[calc(100%-16px)] max-w-sm cursor-grab active:cursor-grabbing h-[calc(100%-8px)]"
+      className="absolute inset-x-0 top-0 mx-auto w-[calc(100%-16px)] max-[375px]:w-[calc(100%-8px)] max-w-sm cursor-grab active:cursor-grabbing h-[calc(100%-8px)]"
       style={{
         x: isTop && !exitDirection ? x : undefined,
         y: isTop && !exitDirection ? y : undefined,
@@ -109,7 +109,7 @@ const SwipeCard = ({
       }}
       onClick={isTop && !exitDirection ? onClick : undefined}
     >
-      <div className="flex h-full flex-col overflow-hidden rounded-3xl bg-card p-2 sm:p-3 card-shadow">
+      <div className="flex h-full flex-col overflow-hidden rounded-3xl bg-card p-3 max-[375px]:p-2 card-shadow">
         {/* Image with white border effect - takes remaining space */}
         <div className="relative flex-1 min-h-0 overflow-hidden rounded-2xl">
           <img src={listing.image} alt={listing.title} className="h-full w-full object-cover" draggable={false} />
@@ -145,19 +145,19 @@ const SwipeCard = ({
         </div>
         
         {/* Content - fixed height */}
-        <div className="px-1.5 sm:px-2 pt-2 sm:pt-3 pb-1 flex-shrink-0">
+        <div className="px-2 max-[375px]:px-1.5 pt-3 max-[375px]:pt-2 pb-1 flex-shrink-0">
           <div className="flex items-end justify-between">
             <div className="flex-1 min-w-0">
-              <h3 className="text-base sm:text-lg font-semibold text-foreground truncate">{listing.title}</h3>
-              <div className="mt-1 sm:mt-1.5 flex flex-wrap gap-1 sm:gap-1.5">
+              <h3 className="text-lg max-[375px]:text-base font-semibold text-foreground truncate">{listing.title}</h3>
+              <div className="mt-1.5 max-[375px]:mt-1 flex flex-wrap gap-1.5 max-[375px]:gap-1">
                 <ListingTag label={listing.size} isSize />
                 <ListingTag label={listing.brand} />
               </div>
             </div>
             
-            <div className="text-right flex-shrink-0 ml-2 sm:ml-3">
-              <p className="text-lg sm:text-xl font-bold text-foreground">${listing.price}</p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">+ ${listing.shippingPrice} shipping</p>
+            <div className="text-right flex-shrink-0 ml-3 max-[375px]:ml-2">
+              <p className="text-xl max-[375px]:text-lg font-bold text-foreground">${listing.price}</p>
+              <p className="text-xs max-[375px]:text-[10px] text-muted-foreground">+ ${listing.shippingPrice} shipping</p>
             </div>
           </div>
         </div>
