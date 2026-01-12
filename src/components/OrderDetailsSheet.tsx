@@ -56,7 +56,7 @@ const getStatusBadge = (status: OrderStatus) => {
     case 'delivered':
       return {
         label: 'Delivered',
-        variant: 'success' as const,
+        variant: 'secondary' as const,
       };
   }
 };
