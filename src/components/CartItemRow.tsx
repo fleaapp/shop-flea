@@ -137,7 +137,7 @@ const CartItemRow = ({
               />
             )}
           </div>
-          <div>
+          <div className="pb-1">
             <p className="text-lg font-bold text-foreground leading-tight">
               ${item.price}
             </p>
