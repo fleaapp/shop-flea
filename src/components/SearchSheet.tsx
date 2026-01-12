@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Search, X, Clock } from 'lucide-react';
@@ -10,6 +10,25 @@ interface SearchSheetProps {
   onSearch: (query: string) => void;
   listings: Listing[];
 }
+
+// Common clothing categories for suggestions
+const SUGGESTION_CATEGORIES = [
+  'cardigan',
+  'skirt',
+  'shorts',
+  'sneakers',
+  'jeans',
+  'shirt',
+  'jacket',
+  'sweater',
+  'dress',
+  't-shirt',
+  'pants',
+  'coat',
+  'hoodie',
+  'blouse',
+  'top',
+];
 
 const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -43,14 +62,67 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
 
   const clearQuery = () => setQuery('');
 
-  // Filter listings based on query
-  const filteredListings = query
-    ? listings.filter(listing => 
-        listing.title.toLowerCase().includes(query.toLowerCase()) ||
-        listing.category.toLowerCase().includes(query.toLowerCase()) ||
-        listing.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
-      )
-    : [];
+  // Generate search suggestions based on query
+  const suggestions = useMemo(() => {
+    if (!query.trim()) return [];
+    
+    const lowerQuery = query.toLowerCase().trim();
+    const results: string[] = [];
+    
+    // Generate suggestions by combining query with common categories
+    SUGGESTION_CATEGORIES.forEach(category => {
+      // If query matches the start of a category, suggest it
+      if (category.startsWith(lowerQuery)) {
+        results.push(category.charAt(0).toUpperCase() + category.slice(1));
+      }
+      // Otherwise, combine query with category (e.g., "Red cardigan")
+      else if (!category.includes(lowerQuery)) {
+        const suggestion = `${query.trim()} ${category}`;
+        // Check if any listings might match this combination
+        const hasMatch = listings.some(listing => {
+          const searchText = `${listing.title} ${listing.category} ${listing.tags.join(' ')}`.toLowerCase();
+          return searchText.includes(lowerQuery) || 
+                 searchText.includes(category);
+        });
+        if (hasMatch || results.length < 8) {
+          results.push(suggestion);
+        }
+      }
+    });
+    
+    // Also add exact matches from listing categories and colors
+    const uniqueCategories = [...new Set(listings.map(l => l.category))];
+    uniqueCategories.forEach(cat => {
+      if (cat.toLowerCase().includes(lowerQuery) && !results.some(r => r.toLowerCase() === cat.toLowerCase())) {
+        results.unshift(cat);
+      }
+    });
+    
+    return results.slice(0, 8);
+  }, [query, listings]);
+
+  // Helper to render suggestion with query highlighted
+  const renderSuggestion = (suggestion: string) => {
+    const lowerSuggestion = suggestion.toLowerCase();
+    const lowerQuery = query.toLowerCase().trim();
+    const index = lowerSuggestion.indexOf(lowerQuery);
+    
+    if (index === -1) {
+      return <span className="text-muted-foreground">{suggestion}</span>;
+    }
+    
+    const before = suggestion.slice(0, index);
+    const match = suggestion.slice(index, index + query.trim().length);
+    const after = suggestion.slice(index + query.trim().length);
+    
+    return (
+      <>
+        {before && <span className="text-muted-foreground">{before}</span>}
+        <span className="text-foreground font-semibold">{match}</span>
+        {after && <span className="text-muted-foreground">{after}</span>}
+      </>
+    );
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -102,36 +174,32 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
 
         {/* Scroll area */}
         <div className="flex-1 overflow-y-auto overscroll-contain px-6 pb-[calc(env(safe-area-inset-bottom)+24px)] [-webkit-overflow-scrolling:touch]">
-          {/* Search Results */}
-          {query && (
+          {/* Search Suggestions */}
+          {query && suggestions.length > 0 && (
             <div className="mb-6">
               <h3 className="text-sm font-medium text-foreground mb-3">Search results</h3>
               <div className="bg-card rounded-2xl p-4">
-                {filteredListings.length > 0 ? (
-                  <div className="space-y-3">
-                    {filteredListings.slice(0, 8).map((listing) => (
-                      <button
-                        key={listing.id}
-                        onClick={() => handleSearch(listing.title)}
-                        className="block w-full text-left py-2"
-                      >
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={listing.image}
-                            alt={listing.title}
-                            className="w-10 h-10 rounded-lg object-cover"
-                          />
-                          <div>
-                            <span className="font-medium text-foreground">{listing.title}</span>
-                            <p className="text-sm text-muted-foreground">${listing.price}</p>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm py-2">No results found for "{query}"</p>
-                )}
+                <div className="space-y-1">
+                  {suggestions.map((suggestion, index) => (
+                    <button
+                      key={`${suggestion}-${index}`}
+                      onClick={() => handleSearch(suggestion)}
+                      className="block w-full text-left py-2.5"
+                    >
+                      {renderSuggestion(suggestion)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* No suggestions message */}
+          {query && suggestions.length === 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-foreground mb-3">Search results</h3>
+              <div className="bg-card rounded-2xl p-4">
+                <p className="text-muted-foreground text-sm py-2">No suggestions for "{query}"</p>
               </div>
             </div>
           )}
