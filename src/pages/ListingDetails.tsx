@@ -46,6 +46,11 @@ const ListingDetails = () => {
   const [seller, setSeller] = useState<SellerProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // All hooks must be called before any conditional returns
+  const { addFavorite, isFavorite } = useFavorites();
+  const { addToCart, isInCart } = useCart();
+  const { addDiscarded } = useDiscardedListings();
+
   useEffect(() => {
     const fetchListing = async () => {
       if (!id) return;
@@ -124,10 +129,6 @@ const ListingDetails = () => {
   const sellerName = seller?.username || '@user';
   const sellerAvatar = seller?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${listing.id}`;
   const sellerLocation = seller?.location || 'Unknown';
-
-  const { addFavorite, isFavorite } = useFavorites();
-  const { addToCart, isInCart } = useCart();
-  const { addDiscarded } = useDiscardedListings();
 
   const handleAddToWishlist = async () => {
     if (isFavorite(listing.id)) {
