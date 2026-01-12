@@ -7,6 +7,7 @@ import WishlistCard from '@/components/WishlistCard';
 import FilterSheet, { FilterState } from '@/components/FilterSheet';
 import { useFavoriteListings } from '@/hooks/useFavoriteListings';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useCart } from '@/context/CartContext';
 import { Listing } from '@/types/listing';
 import { DbListing, ListingFilters } from '@/hooks/useListings';
 import { toast } from '@/hooks/use-toast';
@@ -49,6 +50,7 @@ const Favorites = () => {
   
   const { listings, loading, refetch } = useFavoriteListings(appliedFilters);
   const { removeFavorite } = useFavorites();
+  const { addToCart } = useCart();
 
   const displayListings = useMemo(() => 
     listings.map(toDisplayListing), 
@@ -63,6 +65,14 @@ const Favorites = () => {
     });
     refetch();
   }, [removeFavorite, refetch]);
+
+  const handleAddToCart = useCallback((listing: Listing) => {
+    addToCart(listing);
+    toast({
+      title: "Added to cart",
+      description: `${listing.title} has been added to your cart`,
+    });
+  }, [addToCart]);
 
   const handleApplyFilters = useCallback((filters: FilterState) => {
     const newFilters: ListingFilters = {};
@@ -115,6 +125,7 @@ const Favorites = () => {
                 <WishlistCard 
                   listing={listing} 
                   onRemove={() => handleRemoveFavorite(listing.id)}
+                  onAddToCart={() => handleAddToCart(listing)}
                 />
               </div>
             ))}

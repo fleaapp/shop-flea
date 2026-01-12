@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2 } from 'lucide-react';
+import { Trash2, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -18,9 +18,10 @@ import { Listing } from '@/types/listing';
 interface WishlistCardProps {
   listing: Listing;
   onRemove?: () => void;
+  onAddToCart?: () => void;
 }
 
-const WishlistCard = ({ listing, onRemove }: WishlistCardProps) => {
+const WishlistCard = ({ listing, onRemove, onAddToCart }: WishlistCardProps) => {
   const navigate = useNavigate();
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -36,6 +37,11 @@ const WishlistCard = ({ listing, onRemove }: WishlistCardProps) => {
   const handleConfirmRemove = () => {
     setShowConfirm(false);
     onRemove?.();
+  };
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onAddToCart?.();
   };
 
   return (
@@ -54,7 +60,7 @@ const WishlistCard = ({ listing, onRemove }: WishlistCardProps) => {
               className="h-full w-full object-cover" 
             />
             
-            {/* Remove button */}
+            {/* Remove button - top left */}
             <Button
               variant="ghost"
               size="icon"
@@ -62,6 +68,16 @@ const WishlistCard = ({ listing, onRemove }: WishlistCardProps) => {
               className="absolute top-2 left-2 h-9 w-9 rounded-full bg-card/90 backdrop-blur-sm text-muted-foreground hover:text-destructive hover:bg-card"
             >
               <Trash2 className="h-4 w-4" />
+            </Button>
+            
+            {/* Add to cart button - top right */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleAddToCart}
+              className="absolute top-2 right-2 h-9 w-9 rounded-full bg-card/90 backdrop-blur-sm text-muted-foreground hover:text-primary hover:bg-card"
+            >
+              <ShoppingCart className="h-4 w-4" />
             </Button>
           </div>
           
