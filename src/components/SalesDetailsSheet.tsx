@@ -48,12 +48,12 @@ const getStatusBadge = (status: SaleStatus) => {
     case 'awaiting':
       return {
         label: 'Awaiting shipping',
-        variant: 'outline' as const,
+        variant: 'success' as const,
       };
     case 'shipped':
       return {
         label: 'Shipped',
-        variant: 'outline' as const,
+        variant: 'secondary' as const,
       };
     case 'delivered':
       return {
