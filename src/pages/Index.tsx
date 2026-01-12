@@ -40,7 +40,8 @@ const Index = () => {
   const { addFavorite, favoriteIds } = useFavorites();
   const { addDiscarded, discardedIds } = useDiscardedListings();
 
-  const [optimisticallyHiddenIds, setOptimisticallyHiddenIds] = useState<Set<string>>(new Set());
+  const [deckIndex, setDeckIndex] = useState(0);
+  const [pendingExitId, setPendingExitId] = useState<string | null>(null);
   const [filters, setFilters] = useState<string[]>([]);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [searchSheetOpen, setSearchSheetOpen] = useState(false);
@@ -68,54 +69,57 @@ const Index = () => {
 
   const { listings: dbListings, loading } = useListings(listingFilters);
 
-  // Filter out listings that are discarded, favorited, or in cart
+  // Filter out listings that are discarded, favorited, or in cart.
+  // IMPORTANT: while the top card is animating out, keep it in the stack so
+  // the two cards behind don't collapse/disappear.
   const availableListings = useMemo(() => {
-    return dbListings.filter(listing => 
-      !discardedIds.has(listing.id) && 
-      !favoriteIds.has(listing.id) && 
-      !isInCart(listing.id) &&
-      !optimisticallyHiddenIds.has(listing.id)
-    );
-  }, [dbListings, discardedIds, favoriteIds, isInCart, optimisticallyHiddenIds]);
+    return dbListings.filter((listing) => {
+      if (pendingExitId && listing.id === pendingExitId) return true;
 
-  const currentListings = availableListings.slice(0, 3);
+      return (
+        !discardedIds.has(listing.id) &&
+        !favoriteIds.has(listing.id) &&
+        !isInCart(listing.id)
+      );
+    });
+  }, [dbListings, discardedIds, favoriteIds, isInCart, pendingExitId]);
+
+  const currentListings = availableListings.slice(deckIndex, deckIndex + 3);
 
   const handleSwipeLeft = useCallback(async (listingId: string) => {
-    // Optimistic UI: hide immediately so the deck doesn't "skip".
-    setOptimisticallyHiddenIds(prev => new Set([...prev, listingId]));
+    if (pendingExitId) return;
+
+    setPendingExitId(listingId);
     const success = await addDiscarded(listingId);
     if (!success) {
-      setOptimisticallyHiddenIds(prev => {
-        const next = new Set(prev);
-        next.delete(listingId);
-        return next;
-      });
+      setPendingExitId(null);
     }
-  }, [addDiscarded]);
+  }, [addDiscarded, pendingExitId]);
 
   const handleSwipeRight = useCallback(async (listingId: string) => {
-    setOptimisticallyHiddenIds(prev => new Set([...prev, listingId]));
+    if (pendingExitId) return;
+
+    setPendingExitId(listingId);
     const success = await addFavorite(listingId);
     if (!success) {
-      setOptimisticallyHiddenIds(prev => {
-        const next = new Set(prev);
-        next.delete(listingId);
-        return next;
-      });
+      setPendingExitId(null);
     }
-  }, [addFavorite]);
+  }, [addFavorite, pendingExitId]);
 
   const handleSwipeUp = useCallback(async (listing: DbListing) => {
-    setOptimisticallyHiddenIds(prev => new Set([...prev, listing.id]));
+    if (pendingExitId) return;
+
+    setPendingExitId(listing.id);
     const success = await addToCart(toDisplayListing(listing));
     if (!success) {
-      setOptimisticallyHiddenIds(prev => {
-        const next = new Set(prev);
-        next.delete(listing.id);
-        return next;
-      });
+      setPendingExitId(null);
     }
-  }, [addToCart]);
+  }, [addToCart, pendingExitId]);
+
+  const handleTopExitComplete = useCallback(() => {
+    setDeckIndex((prev) => prev + 1);
+    setPendingExitId(null);
+  }, []);
 
   const handleCardClick = (listing: DbListing) => {
     navigate(`/listing/${listing.id}`);
@@ -147,6 +151,8 @@ const Index = () => {
     if (filterState.condition) activeFilters.push(filterState.condition);
     if (filterState.gender) activeFilters.push(filterState.gender);
     setFilters(activeFilters);
+    setDeckIndex(0);
+    setPendingExitId(null);
     toast.success('Filters applied!');
   };
 
@@ -190,6 +196,7 @@ const Index = () => {
                   onSwipeLeft={() => handleSwipeLeft(dbListing.id)}
                   onSwipeRight={() => handleSwipeRight(dbListing.id)}
                   onSwipeUp={() => handleSwipeUp(dbListing)}
+                  onExitComplete={index === 0 ? handleTopExitComplete : undefined}
                   onClick={() => handleCardClick(dbListing)}
                   isTop={index === 0}
                   index={index}
