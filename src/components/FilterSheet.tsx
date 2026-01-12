@@ -22,8 +22,12 @@ export interface FilterState {
   priceRange: [number, number];
 }
 
-const conditionOptions = ['Fair', 'Good', 'Excellent', 'New'];
-const genderOptions = ['Female', 'Male', 'Unisex'];
+const sizeOptions = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'];
+const categoryOptions = ['Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories', 'Bags', 'Other'];
+const conditionOptions = ['New with tags', 'Like new', 'Good', 'Fair'];
+const colourOptions = ['Black', 'White', 'Grey', 'Navy', 'Blue', 'Red', 'Pink', 'Green', 'Brown', 'Beige', 'Multi'];
+const styleOptions = ['Casual', 'Formal', 'Streetwear', 'Vintage', 'Sporty', 'Bohemian', 'Minimalist', 'Other'];
+const genderOptions = ['Women', 'Men', 'Unisex'];
 
 const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) => {
   const [filters, setFilters] = useState<FilterState>({
@@ -100,12 +104,9 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
                 <SelectValue placeholder="Select Category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="tops">Tops</SelectItem>
-                <SelectItem value="bottoms">Bottoms</SelectItem>
-                <SelectItem value="dresses">Dresses</SelectItem>
-                <SelectItem value="outerwear">Outerwear</SelectItem>
-                <SelectItem value="shoes">Shoes</SelectItem>
-                <SelectItem value="accessories">Accessories</SelectItem>
+                {categoryOptions.map((c) => (
+                  <SelectItem key={c} value={c.toLowerCase()}>{c}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -118,12 +119,9 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
                 <SelectValue placeholder="Select Size" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="xs">XS</SelectItem>
-                <SelectItem value="s">S</SelectItem>
-                <SelectItem value="m">M</SelectItem>
-                <SelectItem value="l">L</SelectItem>
-                <SelectItem value="xl">XL</SelectItem>
-                <SelectItem value="xxl">XXL</SelectItem>
+                {sizeOptions.map((s) => (
+                  <SelectItem key={s} value={s.toLowerCase()}>{s}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -166,16 +164,9 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
                 <SelectValue placeholder="Select Colour" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="black">Black</SelectItem>
-                <SelectItem value="white">White</SelectItem>
-                <SelectItem value="grey">Grey</SelectItem>
-                <SelectItem value="navy">Navy</SelectItem>
-                <SelectItem value="brown">Brown</SelectItem>
-                <SelectItem value="beige">Beige</SelectItem>
-                <SelectItem value="pink">Pink</SelectItem>
-                <SelectItem value="red">Red</SelectItem>
-                <SelectItem value="blue">Blue</SelectItem>
-                <SelectItem value="green">Green</SelectItem>
+                {colourOptions.map((c) => (
+                  <SelectItem key={c} value={c.toLowerCase()}>{c}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -188,12 +179,9 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
                 <SelectValue placeholder="Select Style" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="casual">Casual</SelectItem>
-                <SelectItem value="formal">Formal</SelectItem>
-                <SelectItem value="streetwear">Streetwear</SelectItem>
-                <SelectItem value="vintage">Vintage</SelectItem>
-                <SelectItem value="minimalist">Minimalist</SelectItem>
-                <SelectItem value="bohemian">Bohemian</SelectItem>
+                {styleOptions.map((s) => (
+                  <SelectItem key={s} value={s.toLowerCase()}>{s}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
