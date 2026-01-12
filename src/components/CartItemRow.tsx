@@ -39,8 +39,6 @@ const CartItemRow = ({
   const rightIconScale = useTransform(x, [0, 50, SWIPE_THRESHOLD], [0, 0.8, 1]);
 
   const handleDragEnd = (_: any, info: PanInfo) => {
-    if (isSold) return;
-    
     if (info.offset.x < -SWIPE_THRESHOLD) {
       setIsRemoving(true);
       setTimeout(() => {
@@ -53,51 +51,6 @@ const CartItemRow = ({
       }, 200);
     }
   };
-
-  if (isSold) {
-    return (
-      <div
-        className={cn(
-          "relative flex gap-4 p-4",
-          !isLast && "border-b border-border"
-        )}
-      >
-        {/* Blur overlay for sold items */}
-        <div className="absolute inset-0 bg-background/60 backdrop-blur-sm z-10 flex items-center justify-center rounded-t-2xl">
-          <span className="text-2xl font-bold text-destructive tracking-wider">SOLD</span>
-        </div>
-        
-        {/* Image */}
-        <div className="relative h-24 w-24 flex-shrink-0">
-          <img
-            src={item.image}
-            alt={item.title}
-            className="h-full w-full rounded-xl object-cover opacity-50"
-          />
-        </div>
-
-        {/* Content */}
-        <div className="flex flex-1 flex-col justify-center opacity-50">
-          <div className="flex items-start justify-between">
-            <h3 className="font-semibold text-foreground">{item.title}</h3>
-            {showSellerAvatar && (
-              <img
-                src={item.sellerAvatar}
-                alt={item.sellerName}
-                className="h-8 w-8 rounded-full bg-muted"
-              />
-            )}
-          </div>
-          <p className="text-lg font-bold text-foreground mt-0.5">
-            ${item.price}
-          </p>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            + ${item.shippingPrice} shipping
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div
@@ -134,19 +87,35 @@ const CartItemRow = ({
         style={{ x }}
         animate={isRemoving ? { x: x.get() < 0 ? -400 : 400, opacity: 0 } : {}}
         transition={{ duration: 0.2 }}
-        className="flex gap-4 p-4 bg-card relative z-10 cursor-grab active:cursor-grabbing"
+        className={cn(
+          "flex gap-4 p-4 bg-card relative z-10 cursor-grab active:cursor-grabbing",
+          isSold && "relative"
+        )}
       >
+        {/* Sold overlay */}
+        {isSold && (
+          <div className="absolute inset-0 bg-charcoal/70 backdrop-blur-sm z-20 flex items-center justify-center">
+            <span className="text-2xl font-bold text-white tracking-wider">SOLD</span>
+          </div>
+        )}
+
         {/* Image with selection checkbox */}
         <div
-          className="relative h-24 w-24 flex-shrink-0 cursor-pointer"
-          onClick={onToggleSelect}
+          className={cn(
+            "relative h-24 w-24 flex-shrink-0",
+            !isSold && "cursor-pointer"
+          )}
+          onClick={() => !isSold && onToggleSelect()}
         >
           <img
             src={item.image}
             alt={item.title}
-            className="h-full w-full rounded-xl object-cover"
+            className={cn(
+              "h-full w-full rounded-xl object-cover",
+              isSold && "opacity-50"
+            )}
           />
-          {isSelected && (
+          {isSelected && !isSold && (
             <div className="absolute top-2 left-2 flex h-5 w-5 items-center justify-center rounded bg-charcoal">
               <Check className="h-3 w-3 text-white" />
             </div>
@@ -154,7 +123,10 @@ const CartItemRow = ({
         </div>
 
         {/* Content */}
-        <div className="flex flex-1 flex-col justify-center">
+        <div className={cn(
+          "flex flex-1 flex-col justify-center",
+          isSold && "opacity-50"
+        )}>
           <div className="flex items-start justify-between">
             <h3 className="font-semibold text-foreground">{item.title}</h3>
             {showSellerAvatar && (
@@ -165,10 +137,10 @@ const CartItemRow = ({
               />
             )}
           </div>
-          <p className="text-lg font-bold text-foreground mt-0.5">
+          <p className="text-lg font-bold text-foreground">
             ${item.price}
           </p>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <p className="text-sm text-muted-foreground -mt-0.5">
             + ${item.shippingPrice} shipping
           </p>
         </div>
