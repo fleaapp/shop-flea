@@ -226,26 +226,26 @@ const ListingDetails = () => {
               )}
 
               {/* Seller Info + Price Row */}
-              <div className="mt-6 flex items-center gap-3">
+              <div className="mt-6 flex items-center justify-between gap-3">
                 {/* Seller Card */}
-                <div className="flex items-center gap-3 rounded-2xl bg-card p-3 card-shadow flex-1">
+                <div className="flex items-center gap-2 rounded-2xl bg-card p-2.5 pr-4 card-shadow">
                   <img
                     src={sellerAvatar}
                     alt={sellerName}
-                    className="h-10 w-10 rounded-full bg-muted"
+                    className="h-9 w-9 rounded-full bg-muted flex-shrink-0"
                     loading="lazy"
                   />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground truncate">{sellerName}</p>
+                  <div>
+                    <p className="font-medium text-foreground text-sm">{sellerName}</p>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <MapPin className="h-3 w-3 flex-shrink-0" />
-                      <span className="truncate">{sellerLocation}</span>
+                      <span>{sellerLocation}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Price */}
-                <div className="text-right flex-shrink-0">
+                <div className="text-right">
                   <p className="text-2xl font-bold text-foreground">${listing.price}</p>
                   <p className="text-xs text-muted-foreground">+ ${listing.shipping_price || 0} shipping</p>
                 </div>
