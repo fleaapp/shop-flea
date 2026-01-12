@@ -116,32 +116,34 @@ const OrderDetailsSheet = ({
             {/* Order Summary Section */}
             <div className="rounded-xl bg-card overflow-hidden">
               <SectionHeader>Order Summary</SectionHeader>
-              <div className="p-4 space-y-4">
-                {order.items.map((item) => (
-                  <div key={item.id} className="flex gap-4">
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      className="h-20 w-20 rounded-xl object-cover bg-muted"
-                    />
-                    <div className="flex-1 flex flex-col justify-between">
-                      <h3 className="font-semibold text-foreground">{item.title}</h3>
-                      <div className="text-right">
-                        <p className="text-lg font-semibold">${item.price}</p>
-                        <p className="text-sm text-muted-foreground">+ ${item.shippingPrice} shipping</p>
+              <div className="space-y-4">
+                <div className="px-4 pt-4 space-y-4">
+                  {order.items.map((item) => (
+                    <div key={item.id} className="flex gap-4">
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="h-20 w-20 rounded-xl object-cover bg-muted"
+                      />
+                      <div className="flex-1 flex flex-col justify-between">
+                        <h3 className="font-semibold text-foreground">{item.title}</h3>
+                        <div className="text-right">
+                          <p className="text-lg font-semibold">${item.price}</p>
+                          <p className="text-sm text-muted-foreground">+ ${item.shippingPrice} shipping</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
 
-                {/* Fee line */}
-                <div className="flex justify-between text-sm pt-2 border-t border-border">
+                {/* Fee line - full width divider */}
+                <div className="flex justify-between text-sm px-4 py-3 border-t border-border">
                   <span className="text-muted-foreground">4% buyer fee</span>
                   <span className="text-muted-foreground">+ ${buyerFee.toFixed(2)}</span>
                 </div>
 
-                {/* Total */}
-                <div className="flex items-center justify-center gap-2 bg-charcoal text-white rounded-xl py-3 px-4">
+                {/* Total - full width bar */}
+                <div className="flex items-center justify-center gap-2 bg-charcoal text-white py-3 px-4">
                   <span className="bg-[#635bff] text-white text-xs font-bold px-2 py-0.5 rounded">
                     stripe
                   </span>
