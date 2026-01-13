@@ -80,43 +80,43 @@ const Profile = () => {
         ) : displayListings.length > 0 ? (
           <div className="flex gap-4 max-[430px]:gap-3 max-[375px]:gap-2.5 pb-2 max-[430px]:pb-1" style={{ paddingLeft: 'calc(50% - min(128px, 35vw))', paddingRight: 'calc(50% - min(128px, 35vw))' }}>
             {displayListings.map((listing) => (
-              <div key={listing.id} className="relative w-64 max-[430px]:w-56 max-[393px]:w-52 max-[375px]:w-48 flex-shrink-0 overflow-hidden rounded-3xl bg-card p-2.5 max-[430px]:p-2 max-[375px]:p-1.5 card-shadow snap-center">
+              <div key={listing.id} className="relative w-64 max-[430px]:w-56 max-[393px]:w-52 max-[375px]:w-44 flex-shrink-0 overflow-hidden rounded-3xl max-[375px]:rounded-2xl bg-card p-2.5 max-[430px]:p-2 max-[375px]:p-1.5 card-shadow snap-center">
                 {/* Edit button */}
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
                     navigate(`/listing/${listing.id}/edit`);
                   }} 
-                  className="absolute right-4 max-[430px]:right-3 top-4 max-[430px]:top-3 z-10 flex h-8 w-8 max-[430px]:h-7 max-[430px]:w-7 items-center justify-center rounded-lg bg-card/80 backdrop-blur-sm"
+                  className="absolute right-4 max-[430px]:right-3 max-[375px]:right-2.5 top-4 max-[430px]:top-3 max-[375px]:top-2.5 z-10 flex h-8 w-8 max-[430px]:h-7 max-[430px]:w-7 max-[375px]:h-6 max-[375px]:w-6 items-center justify-center rounded-lg max-[375px]:rounded-md bg-card/80 backdrop-blur-sm"
                 >
-                  <Pencil className="h-4 w-4 max-[430px]:h-3.5 max-[430px]:w-3.5 text-foreground" />
+                  <Pencil className="h-4 w-4 max-[430px]:h-3.5 max-[430px]:w-3.5 max-[375px]:h-3 max-[375px]:w-3 text-foreground" />
                 </button>
                 
                 {/* Image */}
                 <div 
-                  className="aspect-[3/4] max-[430px]:aspect-[4/5] max-[393px]:aspect-[5/6] max-[375px]:aspect-[6/7] w-full overflow-hidden rounded-2xl cursor-pointer"
+                  className="aspect-[3/4] max-[430px]:aspect-[4/5] max-[393px]:aspect-[5/6] max-[375px]:aspect-[1/1] w-full overflow-hidden rounded-2xl max-[375px]:rounded-xl cursor-pointer"
                   onClick={() => navigate(`/listing/${listing.id}`)}
                 >
                   <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
                 </div>
                 
                 {/* Content */}
-                <div className="px-2 max-[375px]:px-1.5 pt-3 max-[375px]:pt-2 pb-1">
+                <div className="px-2 max-[375px]:px-1 pt-3 max-[393px]:pt-2 max-[375px]:pt-1.5 pb-1 max-[375px]:pb-0.5">
                   <div className="flex items-end justify-between">
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-base max-[375px]:text-sm font-semibold text-foreground truncate">{listing.title}</h3>
-                      <div className="mt-1.5 max-[375px]:mt-1 flex flex-wrap gap-1.5 max-[375px]:gap-1">
-                        <span className="rounded-full bg-muted px-2.5 max-[375px]:px-2 py-0.5 text-xs max-[375px]:text-[10px] font-medium text-muted-foreground">
+                      <h3 className="text-base max-[393px]:text-sm max-[375px]:text-xs font-semibold text-foreground truncate">{listing.title}</h3>
+                      <div className="mt-1.5 max-[393px]:mt-1 max-[375px]:mt-0.5 flex flex-wrap gap-1.5 max-[375px]:gap-1">
+                        <span className="rounded-full bg-muted px-2.5 max-[393px]:px-2 max-[375px]:px-1.5 py-0.5 text-xs max-[375px]:text-[9px] font-medium text-muted-foreground">
                           {formatTagLabel(listing.size, true)}
                         </span>
-                        <span className="rounded-full bg-muted px-2.5 max-[375px]:px-2 py-0.5 text-xs max-[375px]:text-[10px] font-medium text-muted-foreground">
+                        <span className="rounded-full bg-muted px-2.5 max-[393px]:px-2 max-[375px]:px-1.5 py-0.5 text-xs max-[375px]:text-[9px] font-medium text-muted-foreground">
                           {listing.brand}
                         </span>
                       </div>
                     </div>
-                    <div className="text-right flex-shrink-0 ml-3 max-[375px]:ml-2">
-                      <p className="text-lg max-[375px]:text-base font-bold text-foreground">${listing.price}</p>
-                      <p className="text-xs max-[375px]:text-[10px] text-muted-foreground">+ ${listing.shipping_price || 0} shipping</p>
+                    <div className="text-right flex-shrink-0 ml-3 max-[393px]:ml-2 max-[375px]:ml-1.5">
+                      <p className="text-lg max-[393px]:text-base max-[375px]:text-sm font-bold text-foreground">${listing.price}</p>
+                      <p className="text-xs max-[375px]:text-[9px] text-muted-foreground">+ ${listing.shipping_price || 0} ship</p>
                     </div>
                   </div>
                 </div>
