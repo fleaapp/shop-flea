@@ -537,7 +537,7 @@ const EditListing = () => {
             onClick={handleMarkAsSold}
             disabled={isMarkingSold}
             className="h-12 px-6 rounded-full font-medium"
-            style={{ backgroundColor: '#423D3D', color: '#ddfed7' }}
+            style={{ backgroundColor: '#29303d', color: '#ddfed7' }}
           >
             {isMarkingSold ? 'Marking...' : 'Mark as sold'}
           </Button>
@@ -546,7 +546,7 @@ const EditListing = () => {
             type="submit"
             disabled={isLoading}
             className="h-12 px-6 rounded-full font-medium"
-            style={{ backgroundColor: '#ddfed7', color: '#423D3D' }}
+            style={{ backgroundColor: '#ddfed7', color: '#29303d' }}
           >
             {isLoading ? 'Updating...' : 'Update'}
           </Button>
