@@ -47,11 +47,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     const listingIds = cartData.map(c => c.listing_id);
     setCartIds(new Set(listingIds));
 
-    // Fetch full listing data
+    // Fetch full listing data (include sold items to show with SOLD overlay)
     const { data: listingsData, error: listingsError } = await supabase
       .from('listings')
       .select('*')
-      .in('id', listingIds);
+      .in('id', listingIds)
+      .in('status', ['active', 'sold']);
 
     if (listingsError || !listingsData) {
       setCartItems([]);
@@ -89,6 +90,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         tags: listing.tags || [],
         location: '',
         createdAt: new Date(listing.created_at),
+        status: listing.status,
       };
     });
 
