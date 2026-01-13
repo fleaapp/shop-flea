@@ -140,7 +140,7 @@ const Notifications = () => {
           </div>
         )}
         <div className="flex-1 min-w-0 flex flex-col justify-between h-20">
-          <p className="text-sm font-semibold text-foreground">{message}</p>
+          <p className="text-sm font-semibold text-foreground pt-2">{message}</p>
           <p className="text-xs text-muted-foreground text-right">
             {formatTime(notification.created_at)}
           </p>
