@@ -232,7 +232,13 @@ const ListingDetails = () => {
               {/* Seller Info + Price Row */}
               <div className="mt-6 flex items-center justify-between gap-3">
                 {/* Seller Card */}
-                <div className="flex items-center gap-2 rounded-2xl bg-card p-2.5 pr-6 card-shadow">
+                <div 
+                  className="flex items-center gap-2 rounded-2xl bg-card p-2.5 pr-6 card-shadow cursor-pointer active:scale-[0.98] transition-transform"
+                  onClick={() => {
+                    setOpen(false);
+                    setTimeout(() => navigate(`/seller/${listing.user_id}`), 300);
+                  }}
+                >
                   <img
                     src={sellerAvatar}
                     alt={sellerName}
