@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { Listing } from '@/types/listing';
 import ListingTag from './ListingTag';
-import { Heart, ShoppingCart } from 'lucide-react';
 
 interface SwipeCardProps {
   listing: Listing;
@@ -115,30 +114,27 @@ const SwipeCard = ({
           <img src={listing.image} alt={listing.title} className="h-full w-full object-cover" draggable={false} />
           
           {/* Like/Nope/Cart indicators */}
-          {isTop && (
+{isTop && (
             <>
               <motion.div
                 style={{ opacity: likeOpacity }}
-                className="absolute inset-0 flex items-center justify-center bg-green-500/20"
+                className="absolute inset-0 flex items-center justify-center"
               >
-                <div className="rounded-xl border-4 border-green-500 px-8 py-4">
-                  <Heart className="h-16 w-16 text-green-500" fill="currentColor" />
-                </div>
+                <span className="text-7xl">💌</span>
               </motion.div>
               
               <motion.div
                 style={{ opacity: nopeOpacity }}
-                className="absolute inset-0 flex items-center justify-center bg-red-500/20"
+                className="absolute inset-0 flex items-center justify-center"
               >
+                <span className="text-7xl">👎</span>
               </motion.div>
               
               <motion.div
                 style={{ opacity: cartOpacity }}
-                className="absolute inset-0 flex items-center justify-center bg-primary/20"
+                className="absolute inset-0 flex items-center justify-center"
               >
-                <div className="rounded-xl border-4 border-primary px-8 py-4">
-                  <ShoppingCart className="h-16 w-16 text-primary" fill="currentColor" />
-                </div>
+                <span className="text-7xl">🛒</span>
               </motion.div>
             </>
           )}
