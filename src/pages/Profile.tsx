@@ -1,4 +1,4 @@
-import { Plus, Star, Pencil } from 'lucide-react';
+import { Plus, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import BottomNav from '@/components/BottomNav';
@@ -49,9 +49,11 @@ const Profile = () => {
           </div>
         </div>
         <h2 className="mt-3 text-lg max-[430px]:text-base font-semibold text-foreground">{profile?.username || '@user'}</h2>
-        <div className="mt-2 flex items-center gap-1 rounded-full bg-card px-3 py-1 card-shadow">
-          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-          <span className="text-sm font-medium text-foreground">{profile?.rating || 0}/5</span>
+        <div className="mt-2 flex items-center gap-1.5 rounded-full bg-card px-3 py-1 card-shadow">
+          <span className="text-sm">⭐</span>
+          <span className="text-sm font-medium text-foreground">
+            {profile?.rating && profile.rating > 0 ? `${profile.rating}/5` : 'No reviews'}
+          </span>
         </div>
       </div>
 
@@ -62,11 +64,11 @@ const Profile = () => {
         >
           <Plus className="h-5 w-5" />
         </button>
-        <div className="flex rounded-full bg-nav p-1 nav-shadow">
-          <button onClick={() => setActiveTab('listings')} className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${activeTab === 'listings' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-card'}`}>
+        <div className="flex items-center rounded-full bg-muted p-1">
+          <button onClick={() => setActiveTab('listings')} className={`rounded-full w-24 py-2.5 text-sm font-medium transition-all ${activeTab === 'listings' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
             Listings
           </button>
-          <button onClick={() => setActiveTab('sold')} className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${activeTab === 'sold' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-card'}`}>
+          <button onClick={() => setActiveTab('sold')} className={`rounded-full w-24 py-2.5 text-sm font-medium transition-all ${activeTab === 'sold' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
             Sold
           </button>
         </div>
