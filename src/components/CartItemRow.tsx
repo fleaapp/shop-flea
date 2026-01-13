@@ -10,9 +10,11 @@ interface CartItemRowProps {
   isSelected: boolean;
   isLast: boolean;
   showSellerAvatar: boolean;
+  showCheckbox: boolean;
   onToggleSelect: () => void;
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
+  onCardClick: () => void;
 }
 
 const SWIPE_THRESHOLD = 100;
@@ -22,9 +24,11 @@ const CartItemRow = ({
   isSelected,
   isLast,
   showSellerAvatar,
+  showCheckbox,
   onToggleSelect,
   onSwipeLeft,
   onSwipeRight,
+  onCardClick,
 }: CartItemRowProps) => {
   const navigate = useNavigate();
   const [isRemoving, setIsRemoving] = useState(false);
@@ -101,13 +105,32 @@ const CartItemRow = ({
           </div>
         )}
 
-        {/* Image with selection checkbox */}
+        {/* Checkbox - only shown for sellers with multiple items */}
+        {showCheckbox && (
+          <div
+            className="flex items-center justify-center h-24 pl-1"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleSelect();
+            }}
+          >
+            <div className={cn(
+              "flex h-6 w-6 items-center justify-center rounded border-2 transition-colors",
+              isSelected 
+                ? "bg-charcoal border-charcoal" 
+                : "bg-transparent border-muted-foreground/40"
+            )}>
+              {isSelected && <Check className="h-4 w-4 text-white" />}
+            </div>
+          </div>
+        )}
+
+        {/* Image - tappable to open listing details */}
         <div
           className={cn(
-            "relative h-24 w-24 flex-shrink-0",
-            !isSold && "cursor-pointer"
+            "relative h-24 w-24 flex-shrink-0 cursor-pointer"
           )}
-          onClick={() => !isSold && onToggleSelect()}
+          onClick={() => !isSold && onCardClick()}
         >
           <img
             src={item.image}
@@ -117,11 +140,6 @@ const CartItemRow = ({
               isSold && "opacity-50"
             )}
           />
-          {isSelected && !isSold && (
-            <div className="absolute top-2 left-2 flex h-5 w-5 items-center justify-center rounded bg-charcoal">
-              <Check className="h-3 w-3 text-white" />
-            </div>
-          )}
         </div>
 
         {/* Content */}
