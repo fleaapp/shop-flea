@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { Check, Heart, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -25,6 +26,7 @@ const CartItemRow = ({
   onSwipeLeft,
   onSwipeRight,
 }: CartItemRowProps) => {
+  const navigate = useNavigate();
   const [isRemoving, setIsRemoving] = useState(false);
   const x = useMotionValue(0);
   
@@ -133,7 +135,11 @@ const CartItemRow = ({
               <img
                 src={item.sellerAvatar}
                 alt={item.sellerName}
-                className="h-8 w-8 rounded-full bg-muted"
+                className="h-8 w-8 rounded-full bg-muted cursor-pointer active:scale-95 transition-transform"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/seller/${item.sellerId}`);
+                }}
               />
             )}
           </div>
