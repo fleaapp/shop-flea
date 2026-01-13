@@ -72,15 +72,15 @@ const Profile = () => {
         </div>
       </div>
 
-      <div className="mt-6 max-[430px]:mt-5 max-[375px]:mt-4 flex-1 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <div className="mt-6 max-[430px]:mt-4 max-[393px]:mt-3 max-[375px]:mt-2 flex-1 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
           </div>
         ) : displayListings.length > 0 ? (
-          <div className="flex gap-4 max-[430px]:gap-3 max-[375px]:gap-2.5 pb-4" style={{ paddingLeft: 'calc(50% - min(128px, 35vw))', paddingRight: 'calc(50% - min(128px, 35vw))' }}>
+          <div className="flex gap-4 max-[430px]:gap-3 max-[375px]:gap-2.5 pb-2 max-[430px]:pb-1" style={{ paddingLeft: 'calc(50% - min(128px, 35vw))', paddingRight: 'calc(50% - min(128px, 35vw))' }}>
             {displayListings.map((listing) => (
-              <div key={listing.id} className="relative w-64 max-[430px]:w-56 max-[375px]:w-48 flex-shrink-0 overflow-hidden rounded-3xl bg-card p-2.5 max-[430px]:p-2 max-[375px]:p-1.5 card-shadow snap-center">
+              <div key={listing.id} className="relative w-64 max-[430px]:w-56 max-[393px]:w-52 max-[375px]:w-48 flex-shrink-0 overflow-hidden rounded-3xl bg-card p-2.5 max-[430px]:p-2 max-[375px]:p-1.5 card-shadow snap-center">
                 {/* Edit button */}
                 <button 
                   onClick={(e) => {
@@ -94,7 +94,7 @@ const Profile = () => {
                 
                 {/* Image */}
                 <div 
-                  className="aspect-[3/4] max-[430px]:aspect-[4/5] max-[375px]:aspect-[5/6] w-full overflow-hidden rounded-2xl cursor-pointer"
+                  className="aspect-[3/4] max-[430px]:aspect-[4/5] max-[393px]:aspect-[5/6] max-[375px]:aspect-[6/7] w-full overflow-hidden rounded-2xl cursor-pointer"
                   onClick={() => navigate(`/listing/${listing.id}`)}
                 >
                   <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
