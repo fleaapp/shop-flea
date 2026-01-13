@@ -72,7 +72,7 @@ const Profile = () => {
         </div>
       </div>
 
-      <div className="mt-5 max-[430px]:mt-4 max-[393px]:mt-3 max-[375px]:mt-2 flex-1 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <div className="mt-6 max-[430px]:mt-4 max-[393px]:mt-3 max-[375px]:mt-2 flex-1 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
