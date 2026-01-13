@@ -32,6 +32,7 @@ const EditListing = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isMarkingSold, setIsMarkingSold] = useState(false);
   
   // New images to upload
   const [newImageFiles, setNewImageFiles] = useState<ImageFile[]>([]);
@@ -263,6 +264,31 @@ const EditListing = () => {
     }
   };
 
+  const handleMarkAsSold = async () => {
+    if (!id) return;
+    
+    setIsMarkingSold(true);
+    
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .update({ status: 'sold' })
+        .eq('id', id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success('Listing marked as sold');
+      navigate('/profile');
+    } catch (error) {
+      console.error('Error marking listing as sold:', error);
+      toast.error('Failed to mark listing as sold');
+    } finally {
+      setIsMarkingSold(false);
+    }
+  };
+
   const inputStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 placeholder:text-muted-foreground/60 focus-visible:ring-muted-foreground/50";
   const selectStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 [&>span]:text-muted-foreground/60 focus:ring-muted-foreground/50";
 
@@ -470,10 +496,11 @@ const EditListing = () => {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="min-h-[120px] rounded-2xl bg-muted/50 border border-muted-foreground/20 resize-none placeholder:text-muted-foreground/60 focus-visible:ring-muted-foreground/50"
+          style={{ textTransform: 'none' }}
         />
         
         {/* Action Buttons */}
-        <div className="flex items-center justify-center gap-4 pt-4 pb-8">
+        <div className="flex items-center justify-center gap-3 pt-4 pb-8">
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
@@ -506,11 +533,22 @@ const EditListing = () => {
           </AlertDialog>
           
           <Button
+            type="button"
+            onClick={handleMarkAsSold}
+            disabled={isMarkingSold}
+            className="h-12 px-6 rounded-full font-medium"
+            style={{ backgroundColor: '#423D3D', color: '#ddfed7' }}
+          >
+            {isMarkingSold ? 'Marking...' : 'Mark as sold'}
+          </Button>
+          
+          <Button
             type="submit"
             disabled={isLoading}
-            className="h-12 px-8 rounded-full bg-foreground text-background font-medium hover:bg-foreground/90"
+            className="h-12 px-6 rounded-full font-medium"
+            style={{ backgroundColor: '#ddfed7', color: '#423D3D' }}
           >
-            {isLoading ? 'Updating...' : 'Update listing'}
+            {isLoading ? 'Updating...' : 'Update'}
           </Button>
         </div>
       </form>
