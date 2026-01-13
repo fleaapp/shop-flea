@@ -55,7 +55,7 @@ const Profile = () => {
         </div>
       </div>
 
-      <div className="mt-6 flex justify-center items-center gap-2">
+      <div className="mt-5 max-[430px]:mt-4 max-[393px]:mt-3 max-[375px]:mt-2 flex justify-center items-center gap-2">
         <button 
           onClick={() => navigate('/create')} 
           className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground"
@@ -72,13 +72,13 @@ const Profile = () => {
         </div>
       </div>
 
-      <div className="mt-6 max-[430px]:mt-5 max-[393px]:mt-3 max-[375px]:mt-2 flex-1 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <div className="mt-5 max-[430px]:mt-4 max-[393px]:mt-3 max-[375px]:mt-2 flex-1 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
           </div>
         ) : displayListings.length > 0 ? (
-          <div className="flex gap-4 max-[430px]:gap-3 max-[375px]:gap-2.5 pb-4 max-[430px]:pb-3 max-[375px]:pb-1" style={{ paddingLeft: 'calc(50% - min(128px, 35vw))', paddingRight: 'calc(50% - min(128px, 35vw))' }}>
+          <div className="flex gap-4 max-[430px]:gap-3 max-[375px]:gap-2.5 pb-6 max-[430px]:pb-4 max-[393px]:pb-3 max-[375px]:pb-2" style={{ paddingLeft: 'calc(50% - min(128px, 35vw))', paddingRight: 'calc(50% - min(128px, 35vw))' }}>
             {displayListings.map((listing) => (
               <div key={listing.id} className="relative w-64 max-[430px]:w-60 max-[393px]:w-52 max-[375px]:w-44 flex-shrink-0 overflow-hidden rounded-3xl max-[375px]:rounded-2xl bg-card p-2.5 max-[430px]:p-2 max-[375px]:p-1.5 card-shadow snap-center">
                 {/* Edit button */}
