@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,9 @@ import { cn } from '@/lib/utils';
 import CartItemRow from '@/components/CartItemRow';
 import OrderDetailsSheet from '@/components/OrderDetailsSheet';
 import { formatDistanceToNow } from 'date-fns';
+import { Listing } from '@/types/listing';
+import { Drawer, DrawerContent } from '@/components/ui/drawer';
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel';
 
 const getOrderStatusBadge = (status: Order['status']) => {
   switch (status) {
@@ -59,6 +62,7 @@ const Cart = () => {
   const [activeTab, setActiveTab] = useState<'cart' | 'orders'>('cart');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedListing, setSelectedListing] = useState<(Listing & { status?: string }) | null>(null);
 
   const handleOrderClick = (order: Order) => {
     setSelectedOrder(order);
@@ -77,16 +81,27 @@ const Cart = () => {
     status: item.status || 'active',
   }));
 
-  const toggleSelect = (id: string) => {
+  const toggleSelect = (id: string, sellerId: string) => {
     setSelectedItems((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(id)) {
         newSet.delete(id);
       } else {
+        // Clear selections from other sellers first
+        const sellerItems = itemsBySeller[sellerId]?.map(i => i.id) || [];
+        for (const itemId of prev) {
+          if (!sellerItems.includes(itemId)) {
+            newSet.delete(itemId);
+          }
+        }
         newSet.add(id);
       }
       return newSet;
     });
+  };
+
+  const handleListingClick = (item: Listing & { status?: string }) => {
+    setSelectedListing(item);
   };
 
   const handleCheckout = (itemIds: string[]) => {
@@ -111,7 +126,7 @@ const Cart = () => {
     toast.success('Moved to wishlist');
   };
 
-  // Group items by seller for combined checkout
+  // Group items by seller for combined checkout - moved before toggleSelect for proper usage
   const itemsBySeller = cartItemsWithStatus.reduce((acc, item) => {
     if (!acc[item.sellerId]) {
       acc[item.sellerId] = [];
@@ -119,6 +134,13 @@ const Cart = () => {
     acc[item.sellerId].push(item);
     return acc;
   }, {} as Record<string, typeof cartItemsWithStatus>);
+
+  // Check which sellers have multiple items (for checkbox visibility)
+  const sellersWithMultipleItems = new Set(
+    Object.entries(itemsBySeller)
+      .filter(([_, items]) => items.filter(i => i.status !== 'sold').length > 1)
+      .map(([sellerId]) => sellerId)
+  );
 
   // Filter orders by status
   const awaitingOrders = buyerOrders.filter((o) => o.status === 'awaiting');
@@ -229,36 +251,39 @@ const Cart = () => {
                         isSelected={selectedItems.has(item.id)}
                         isLast={index === items.length - 1 && allSold}
                         showSellerAvatar={index === 0}
-                        onToggleSelect={() => toggleSelect(item.id)}
+                        showCheckbox={sellersWithMultipleItems.has(sellerId) && item.status !== 'sold'}
+                        onToggleSelect={() => toggleSelect(item.id, sellerId)}
                         onSwipeLeft={() => handleSwipeLeft(item.id)}
                         onSwipeRight={() => handleSwipeRight(item.id)}
+                        onCardClick={() => handleListingClick(item)}
                       />
                     ))}
 
                     {/* Checkout button - only show if not all items are sold */}
                     {!allSold && (
                       <Button
-                        onClick={() => handleCheckout(items.filter(i => i.status !== 'sold').map(i => i.id))}
+                        onClick={() => {
+                          // If user has selected items from this seller, checkout those
+                          const selectedFromSeller = items.filter(i => selectedItems.has(i.id) && i.status !== 'sold');
+                          if (selectedFromSeller.length > 0) {
+                            handleCheckout(selectedFromSeller.map(i => i.id));
+                          } else {
+                            // Otherwise checkout all non-sold items from this seller
+                            handleCheckout(items.filter(i => i.status !== 'sold').map(i => i.id));
+                          }
+                        }}
                         className="w-full rounded-none rounded-b-2xl bg-charcoal text-white hover:bg-charcoal-light h-12"
                       >
-                        Checkout
+                        {selectedItems.size > 0 && items.some(i => selectedItems.has(i.id)) 
+                          ? `Checkout ${items.filter(i => selectedItems.has(i.id) && i.status !== 'sold').length} selected`
+                          : 'Checkout'
+                        }
                       </Button>
                     )}
                   </div>
                 );
               })}
 
-              {/* Checkout selected button */}
-              {selectedItems.size > 1 && (
-                <div className="fixed bottom-24 max-[375px]:bottom-20 left-4 max-[375px]:left-3 right-4 max-[375px]:right-3 z-40">
-                  <Button
-                    onClick={handleCheckoutSelected}
-                    className="w-full rounded-2xl bg-primary text-primary-foreground h-14 max-[375px]:h-12 text-base max-[375px]:text-sm font-medium"
-                  >
-                    Checkout {selectedItems.size} selected items
-                  </Button>
-                </div>
-              )}
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -336,8 +361,163 @@ const Cart = () => {
         onMarkDelivered={handleMarkDelivered}
       />
 
+      {/* Listing Details Drawer */}
+      {selectedListing && (
+        <CartListingDetailsDrawer
+          listing={selectedListing}
+          open={!!selectedListing}
+          onOpenChange={(open) => !open && setSelectedListing(null)}
+        />
+      )}
+
       <BottomNav />
     </div>
+  );
+};
+
+// Inline listing details drawer for cart items
+const CartListingDetailsDrawer = ({
+  listing,
+  open,
+  onOpenChange,
+}: {
+  listing: Listing & { status?: string };
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) => {
+  const navigate = useNavigate();
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  const { addFavorite, isFavorite } = useFavorites();
+  const { removeFromCart } = useCart();
+  const { addDiscarded } = useDiscardedListings();
+
+  const isSold = listing.status === 'sold';
+  const images = listing.images?.length ? listing.images : [listing.image];
+
+  useEffect(() => {
+    if (!carouselApi) return;
+    const onSelect = () => setActiveImageIndex(carouselApi.selectedScrollSnap());
+    onSelect();
+    carouselApi.on('select', onSelect);
+    return () => {
+      carouselApi.off('select', onSelect);
+    };
+  }, [carouselApi]);
+
+  const handleAddToWishlist = async () => {
+    if (isFavorite(listing.id)) {
+      toast.info('Already in wishlist');
+      return;
+    }
+    await removeFromCart(listing.id);
+    await addFavorite(listing.id);
+    toast.success('Moved to wishlist!');
+    onOpenChange(false);
+  };
+
+  const handleDiscard = async () => {
+    await removeFromCart(listing.id);
+    await addDiscarded(listing.id);
+    toast.success('Item discarded');
+    onOpenChange(false);
+  };
+
+  return (
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="mt-0 h-[95dvh] max-h-[95dvh] overflow-hidden rounded-t-3xl bg-background">
+        <div className="flex-1 overflow-y-auto px-4 pb-8">
+          {/* Image Gallery */}
+          <div className="relative overflow-hidden rounded-3xl">
+            <Carousel setApi={setCarouselApi} opts={{ loop: images.length > 1 }} className="w-full">
+              <CarouselContent className="ml-0">
+                {images.map((src: string, index: number) => (
+                  <CarouselItem key={`${listing.id}-img-${index}`} className="pl-0">
+                    <img
+                      src={src}
+                      alt={`${listing.title} photo ${index + 1}`}
+                      className="aspect-square w-full object-cover"
+                      loading={index === 0 ? 'eager' : 'lazy'}
+                    />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
+            {images.length > 1 && (
+              <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-background/70 px-2 py-1 text-xs text-foreground">
+                {activeImageIndex + 1}/{images.length}
+              </div>
+            )}
+          </div>
+
+          {/* Tags */}
+          <div className="mt-4 gap-2 flex flex-row overflow-x-auto scrollbar-hide">
+            <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground uppercase">{listing.size}</span>
+            <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground capitalize">{listing.brand}</span>
+            <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground capitalize">{listing.condition}</span>
+            <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground capitalize">{listing.category}</span>
+          </div>
+
+          {/* Content */}
+          <div className="pt-4">
+            <h1 className="text-2xl font-bold text-foreground">{listing.title}</h1>
+            {listing.description && (
+              <p className="mt-4 text-muted-foreground leading-relaxed">{listing.description}</p>
+            )}
+
+            {/* Seller Info + Price Row */}
+            <div className="mt-6 flex items-center justify-between gap-3">
+              <div 
+                className="flex items-center gap-2 rounded-2xl bg-card p-2.5 pr-6 card-shadow cursor-pointer active:scale-[0.98] transition-transform"
+                onClick={() => {
+                  onOpenChange(false);
+                  setTimeout(() => navigate(`/seller/${listing.sellerId}`), 300);
+                }}
+              >
+                <img
+                  src={listing.sellerAvatar}
+                  alt={listing.sellerName}
+                  className="h-9 w-9 rounded-full bg-muted flex-shrink-0"
+                  loading="lazy"
+                />
+                <div>
+                  <p className="font-medium text-foreground text-sm">{listing.sellerName}</p>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <span>{listing.location || 'Unknown'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-right">
+                <p className="text-2xl font-bold text-foreground">${listing.price}</p>
+                <p className="text-xs text-muted-foreground">+ ${listing.shippingPrice || 0} shipping</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sticky Footer Actions */}
+        <div className="sticky bottom-0 left-0 right-0 flex gap-3 bg-background px-4 py-4 border-t border-border justify-center">
+          <Button
+            variant="outline"
+            onClick={handleDiscard}
+            className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]"
+          >
+            ❌
+          </Button>
+
+          {!isSold && (
+            <Button
+              variant="outline"
+              onClick={handleAddToWishlist}
+              className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]"
+            >
+              💌
+            </Button>
+          )}
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 };
 
