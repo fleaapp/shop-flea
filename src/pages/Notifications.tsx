@@ -130,7 +130,7 @@ const Notifications = () => {
     return (
       <div 
         onClick={() => handleNotificationClick(notification)}
-        className="flex items-center gap-4 rounded-2xl bg-card p-4 cursor-pointer"
+        className="flex items-start gap-4 rounded-2xl bg-card p-4 cursor-pointer"
       >
         {listingImage ? (
           <ProductThumbnail image={listingImage} avatar={userAvatar} />
@@ -139,9 +139,9 @@ const Notifications = () => {
             <span className="text-3xl">{emoji}</span>
           </div>
         )}
-        <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
-          <p className="text-sm text-foreground">{message}</p>
-          <p className="text-xs text-muted-foreground text-right mt-2">
+        <div className="flex-1 min-w-0 flex flex-col justify-between h-20">
+          <p className="text-sm font-semibold text-foreground">{message}</p>
+          <p className="text-xs text-muted-foreground text-right">
             {formatTime(notification.created_at)}
           </p>
         </div>
