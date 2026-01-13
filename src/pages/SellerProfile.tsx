@@ -196,34 +196,6 @@ const SellerProfile = () => {
           <div className="flex gap-4 max-[430px]:gap-3 max-[375px]:gap-2.5" style={{ paddingLeft: 'calc(50% - min(128px, 35vw))', paddingRight: 'calc(50% - min(128px, 35vw))' }}>
             {displayListings.map((listing) => (
               <div key={listing.id} className="relative w-64 max-[430px]:w-60 max-[393px]:w-52 max-[375px]:w-44 flex-shrink-0 overflow-hidden rounded-3xl max-[375px]:rounded-2xl bg-card p-2.5 max-[430px]:p-2 max-[375px]:p-1.5 card-shadow snap-center">
-                {/* Wishlist button - only on listings tab */}
-                {activeTab === 'listings' && (
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAddToWishlist(listing.id);
-                    }} 
-                    className={`absolute left-4 max-[430px]:left-3 max-[375px]:left-2.5 top-4 max-[430px]:top-3 max-[375px]:top-2.5 z-10 flex h-8 w-8 max-[430px]:h-7 max-[430px]:w-7 max-[375px]:h-6 max-[375px]:w-6 items-center justify-center rounded-lg max-[375px]:rounded-md bg-card/80 backdrop-blur-sm ${isFavorite(listing.id) ? 'opacity-50' : ''}`}
-                    disabled={isFavorite(listing.id)}
-                  >
-                    <span className="text-base max-[430px]:text-sm max-[375px]:text-xs">💌</span>
-                  </button>
-                )}
-                
-                {/* Add to Cart button - only on listings tab */}
-                {activeTab === 'listings' && (
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAddToCart(listing);
-                    }} 
-                    className={`absolute right-4 max-[430px]:right-3 max-[375px]:right-2.5 top-4 max-[430px]:top-3 max-[375px]:top-2.5 z-10 flex h-8 w-8 max-[430px]:h-7 max-[430px]:w-7 max-[375px]:h-6 max-[375px]:w-6 items-center justify-center rounded-lg max-[375px]:rounded-md bg-card/80 backdrop-blur-sm ${isInCart(listing.id) ? 'opacity-50' : ''}`}
-                    disabled={isInCart(listing.id)}
-                  >
-                    <span className="text-base max-[430px]:text-sm max-[375px]:text-xs">🛒</span>
-                  </button>
-                )}
-                
                 {/* Image */}
                 <div 
                   className="aspect-[3/4] max-[430px]:aspect-[3/4] max-[393px]:aspect-[4/5] max-[375px]:aspect-[1/1] w-full overflow-hidden rounded-2xl max-[375px]:rounded-xl cursor-pointer"
