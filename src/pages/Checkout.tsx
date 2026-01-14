@@ -7,16 +7,20 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Listing } from '@/types/listing';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 type PaymentMethod = 'card' | 'paypal' | 'applepay';
 const Checkout = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const {
     removeFromCart
   } = useCart();
   const items: Listing[] = location.state?.items || [];
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [open, setOpen] = useState(true);
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('card');
   const [selectedCard, setSelectedCard] = useState<string | null>('saved-1');
@@ -50,13 +54,49 @@ const Checkout = () => {
   const subtotal = items.reduce((sum, item) => sum + item.price + item.shippingPrice, 0);
   const sellerFee = subtotal * 0.04;
   const total = subtotal + sellerFee;
-  const handlePlaceOrder = () => {
-    items.forEach(item => removeFromCart(item.id));
-    toast.success('Order placed successfully!', {
-      description: `Your order of $${total.toFixed(2)} is being processed`
-    });
-    setOpen(false);
-    setTimeout(() => navigate('/cart'), 300);
+  
+  const handlePlaceOrder = async () => {
+    if (!user) {
+      toast.error('You must be logged in to place an order');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Create order records for each item
+      const orderPromises = items.map(async (item) => {
+        const { error } = await supabase.from('orders').insert({
+          listing_id: item.id,
+          buyer_id: user.id,
+          seller_id: item.sellerId,
+          price: item.price,
+          shipping_price: item.shippingPrice,
+          status: 'awaiting',
+        });
+        
+        if (error) throw error;
+        
+        // Update listing status to sold
+        await supabase.from('listings').update({ status: 'sold' }).eq('id', item.id);
+      });
+      
+      await Promise.all(orderPromises);
+      
+      // Remove items from cart
+      items.forEach(item => removeFromCart(item.id));
+      
+      toast.success('Order placed successfully!', {
+        description: `Your order of $${total.toFixed(2)} is being processed`
+      });
+      setOpen(false);
+      setTimeout(() => navigate('/orders'), 300);
+    } catch (error) {
+      console.error('Error placing order:', error);
+      toast.error('Failed to place order. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Mock saved cards
