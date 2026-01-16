@@ -1,4 +1,4 @@
-import { useMemo, forwardRef } from 'react';
+import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/context/CartContext';
@@ -13,7 +13,7 @@ interface NavItem {
   badge?: number;
 }
 
-const BottomNav = forwardRef<HTMLElement>((_, ref) => {
+const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { cartItems } = useCart();
@@ -40,7 +40,7 @@ const BottomNav = forwardRef<HTMLElement>((_, ref) => {
     retry: 0,
   });
 
-  const ProfileIcon = () => (
+  const profileIcon = (
     <div className="h-5 w-5 rounded-full overflow-hidden bg-muted flex items-center justify-center">
       {profile?.avatar_url ? (
         <img src={profile.avatar_url} alt="Profile" className="h-full w-full object-cover" />
@@ -52,14 +52,14 @@ const BottomNav = forwardRef<HTMLElement>((_, ref) => {
 
   const navItems: NavItem[] = useMemo(() => [
     { icon: <span className="text-lg">⚙️</span>, label: 'Settings', path: '/settings' },
-    { icon: <ProfileIcon />, label: 'Profile', path: '/profile' },
+    { icon: profileIcon, label: 'Profile', path: '/profile' },
     { icon: <span className="text-lg">🏠</span>, label: 'Home', path: '/' },
     { icon: <span className="text-lg">🛒</span>, label: 'Cart', path: '/cart', badge: cartItems.length || undefined },
     { icon: <span className="text-lg">🔔</span>, label: 'Alerts', path: '/notifications' },
-  ], [cartItems.length, profile?.avatar_url]);
+  ], [cartItems.length, profile?.avatar_url, profileIcon]);
 
   return (
-    <nav ref={ref} className="fixed bottom-0 left-0 right-0 flex justify-center py-3 max-[375px]:py-2 z-50 pointer-events-none">
+    <nav className="fixed bottom-0 left-0 right-0 flex justify-center py-3 max-[375px]:py-2 z-50 pointer-events-none">
       <div className="mx-4 max-[375px]:mx-2 flex items-center gap-2 max-[375px]:gap-1 rounded-full bg-nav px-4 max-[375px]:px-3 py-3 max-[375px]:py-2.5 nav-shadow pointer-events-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -90,8 +90,6 @@ const BottomNav = forwardRef<HTMLElement>((_, ref) => {
       </div>
     </nav>
   );
-});
-
-BottomNav.displayName = 'BottomNav';
+};
 
 export default BottomNav;
