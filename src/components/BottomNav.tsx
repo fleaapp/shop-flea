@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, forwardRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/context/CartContext';
@@ -13,7 +13,7 @@ interface NavItem {
   badge?: number;
 }
 
-const BottomNav = () => {
+const BottomNav = forwardRef<HTMLElement>((_, ref) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { cartItems } = useCart();
@@ -59,7 +59,7 @@ const BottomNav = () => {
   ], [cartItems.length, profile?.avatar_url]);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 flex justify-center py-3 max-[375px]:py-2 z-50 pointer-events-none">
+    <nav ref={ref} className="fixed bottom-0 left-0 right-0 flex justify-center py-3 max-[375px]:py-2 z-50 pointer-events-none">
       <div className="mx-4 max-[375px]:mx-2 flex items-center gap-2 max-[375px]:gap-1 rounded-full bg-nav px-4 max-[375px]:px-3 py-3 max-[375px]:py-2.5 nav-shadow pointer-events-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -90,6 +90,8 @@ const BottomNav = () => {
       </div>
     </nav>
   );
-};
+});
+
+BottomNav.displayName = 'BottomNav';
 
 export default BottomNav;
