@@ -114,7 +114,7 @@ const Favorites = () => {
       </header>
       
       {/* Listings Horizontal Scroll - centered first card */}
-      <div className="flex-1 flex items-center pb-24 max-[375px]:pb-20 min-h-0 overflow-hidden">
+      <div className="flex-1 flex items-center pb-24 max-[393px]:pb-20 max-[375px]:pb-16 min-h-0 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center w-full">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
