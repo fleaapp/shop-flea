@@ -205,7 +205,7 @@ const SellerProfile = () => {
                 </div>
                 
                 {/* Content */}
-                <div className="px-2 max-[393px]:px-1.5 max-[375px]:px-1 pt-3 max-[393px]:pt-1.5 max-[375px]:pt-1.5 pb-1 max-[393px]:pb-0.5 max-[375px]:pb-0.5">
+                <div className="px-2 max-[393px]:px-1.5 max-[375px]:px-1 pt-3 max-[393px]:pt-1.5 max-[375px]:pt-1.5 pb-2.5 max-[393px]:pb-2 max-[375px]:pb-1.5">
                   <div className="flex items-end justify-between">
                     <div className="flex-1 min-w-0">
                       <h3 className="text-base max-[393px]:text-sm max-[375px]:text-xs font-semibold text-foreground truncate">{listing.title}</h3>
