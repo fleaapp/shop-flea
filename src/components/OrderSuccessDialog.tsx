@@ -46,7 +46,7 @@ const OrderSuccessDialog = ({ open, onClose }: OrderSuccessDialogProps) => {
         {/* Close button anchored near bottom (responsive) */}
         <button
           onClick={onClose}
-          className="mb-12 max-[413px]:mb-10 text-white/80 hover:text-white transition-colors pointer-events-auto z-10"
+          className="mb-12 max-[413px]:mb-14 text-white/80 hover:text-white transition-colors pointer-events-auto z-10"
           aria-label="Close"
         >
           <X className="h-7 w-7 sm:h-8 sm:w-8" />
