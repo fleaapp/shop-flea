@@ -153,14 +153,19 @@ const Notifications = () => {
         className="relative flex items-start gap-4 rounded-2xl bg-card p-4 cursor-pointer"
       >
         <ProductThumbnail image={listingImage} avatar={userAvatar} fallbackEmoji={emoji} />
-        <div className="flex-1 min-w-0 flex flex-col justify-between h-20 pr-6">
+
+        <div className="flex-1 min-w-0 pb-5 pr-10">
           <p className="text-sm font-semibold text-foreground pt-2">{message}</p>
-          <p className="text-xs text-muted-foreground text-right">
+        </div>
+
+        <div className="absolute bottom-4 right-4">
+          <p className="text-xs text-muted-foreground">
             {formatTime(notification.created_at)}
           </p>
         </div>
+
         {!notification.is_read && (
-          <div className="absolute top-4 right-4">
+          <div className="absolute right-4 top-1/2 -translate-y-1/2">
             <UnreadIndicator />
           </div>
         )}
