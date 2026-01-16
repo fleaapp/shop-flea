@@ -57,9 +57,16 @@ const Checkout = () => {
   const sellerFee = subtotal * 0.04;
   const total = subtotal + sellerFee;
   
+  const isShippingComplete = shippingName.trim() && shippingAddress.trim() && shippingCity.trim() && shippingPostcode.trim();
+  
   const handlePlaceOrder = async () => {
     if (!user) {
       toast.error('You must be logged in to place an order');
+      return;
+    }
+    
+    if (!isShippingComplete) {
+      toast.error('Please fill in all shipping details');
       return;
     }
     
@@ -256,7 +263,7 @@ const Checkout = () => {
             <div className="mt-8">
               <Button 
                 onClick={handlePlaceOrder} 
-                disabled={isSubmitting}
+                disabled={isSubmitting || !isShippingComplete}
                 className="w-full h-12 rounded-full bg-charcoal text-white hover:bg-charcoal-light font-medium disabled:opacity-50"
               >
                 {isSubmitting ? 'Placing order...' : 'Confirm order'}
