@@ -26,15 +26,15 @@ const OrderSuccessDialog = ({ open, onClose }: OrderSuccessDialogProps) => {
   const shouldNudgeCloseForIOS18 = (() => {
     if (iosMajorVersion !== 18 || typeof window === 'undefined') return false;
 
-    // Use screen dimensions (stable across Safari chrome show/hide) to target iPhone 12–15 sizes.
     const screenW = Math.min(window.screen.width, window.screen.height);
     const screenH = Math.max(window.screen.width, window.screen.height);
 
-    return screenW <= 430 && screenH <= 932;
+    // iPhone 12 mini → 15 Pro Max (CSS px): ~360–430w, ~780–932h
+    return screenW <= 430 && screenH >= 780 && screenH <= 932;
   })();
 
   const closeButtonStyle = shouldNudgeCloseForIOS18
-    ? { marginBottom: 'calc(5rem + env(safe-area-inset-bottom))' }
+    ? { marginBottom: 'calc(6rem + env(safe-area-inset-bottom))' }
     : undefined;
 
   useEffect(() => {
@@ -69,7 +69,7 @@ const OrderSuccessDialog = ({ open, onClose }: OrderSuccessDialogProps) => {
         <button
           onClick={onClose}
           style={closeButtonStyle}
-          className="mb-12 max-[413px]:mb-6 text-white/80 hover:text-white transition-colors pointer-events-auto z-10"
+          className="mb-12 max-[413px]:mb-14 text-white/80 hover:text-white transition-colors pointer-events-auto z-10"
           aria-label="Close"
         >
           <X className="h-7 w-7 sm:h-8 sm:w-8" />
