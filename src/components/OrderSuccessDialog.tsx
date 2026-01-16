@@ -33,10 +33,10 @@ const OrderSuccessDialog = ({ open, onClose }: OrderSuccessDialogProps) => {
         {/* Close button above receipt - with pointer-events enabled */}
         <button
           onClick={onClose}
-          className="mb-4 max-[430px]:mb-6 bg-black/60 hover:bg-black/80 rounded-full p-2 text-white transition-colors pointer-events-auto z-10"
+          className="mb-4 max-[430px]:mb-6 text-white/80 hover:text-white transition-colors pointer-events-auto z-10"
           aria-label="Close"
         >
-          <X className="h-6 w-6 sm:h-7 sm:w-7" strokeWidth={2.5} />
+          <X className="h-7 w-7 sm:h-8 sm:w-8" />
         </button>
         
         {/* Receipt Image with slight tilt */}
