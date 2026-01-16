@@ -112,6 +112,20 @@ const OrderDetailsSheet = ({
               </div>
             </div>
 
+            {/* Shipping Address Section */}
+            <div className="rounded-xl bg-card overflow-hidden">
+              <SectionHeader>Shipping Address</SectionHeader>
+              <div className="p-4 space-y-1">
+                <p className="font-medium text-foreground">
+                  {order.shipping_first_name} {order.shipping_last_name}
+                </p>
+                <p className="text-muted-foreground">{order.shipping_address}</p>
+                <p className="text-muted-foreground">
+                  {order.shipping_city}, {order.shipping_state} {order.shipping_postcode}
+                </p>
+              </div>
+            </div>
+
             {/* Tracking Details Section */}
             <div className="rounded-xl bg-card overflow-hidden">
               <SectionHeader>Tracking Details</SectionHeader>
@@ -131,20 +145,20 @@ const OrderDetailsSheet = ({
               </div>
             </div>
 
-            {/* Actions - Only show Mark as delivered for shipped orders */}
-            {order.status === 'shipped' && (
-              <div className="flex flex-col items-center space-y-3 pt-4">
+            {/* Actions - Show for shipped orders OR as help link for awaiting/delivered */}
+            <div className="flex flex-col items-center space-y-3 pt-4">
+              {order.status === 'shipped' && (
                 <Button
                   onClick={onMarkDelivered}
                   className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
                 >
                   Mark as delivered
                 </Button>
-                <button className="text-center text-sm text-foreground underline">
-                  Need help?
-                </button>
-              </div>
-            )}
+              )}
+              <button className="text-center text-sm text-foreground underline">
+                Need help?
+              </button>
+            </div>
           </div>
         </div>
       </DrawerContent>
