@@ -165,7 +165,7 @@ const Notifications = () => {
         </div>
 
         {!notification.is_read && (
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+          <div className="absolute top-4 right-4">
             <UnreadIndicator />
           </div>
         )}
