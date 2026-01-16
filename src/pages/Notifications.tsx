@@ -29,13 +29,33 @@ const getStatusBadge = (status: Order['status']) => {
 
 const ProductThumbnail = ({
   image,
-  avatar
+  avatar,
+  fallbackEmoji
 }: {
   image: string;
   avatar?: string;
+  fallbackEmoji?: string;
 }) => (
   <div className="relative h-20 w-20 flex-shrink-0">
-    <img src={image} alt="Product" className="h-full w-full rounded-xl object-cover" />
+    {image ? (
+      <img 
+        src={image} 
+        alt="Product" 
+        className="h-full w-full rounded-xl object-cover" 
+        onError={(e) => {
+          e.currentTarget.style.display = 'none';
+          e.currentTarget.parentElement?.classList.add('bg-muted', 'flex', 'items-center', 'justify-center', 'rounded-xl');
+          const emoji = document.createElement('span');
+          emoji.className = 'text-3xl';
+          emoji.textContent = fallbackEmoji || '📦';
+          e.currentTarget.parentElement?.appendChild(emoji);
+        }}
+      />
+    ) : (
+      <div className="h-full w-full rounded-xl bg-muted flex items-center justify-center">
+        <span className="text-3xl">{fallbackEmoji || '📦'}</span>
+      </div>
+    )}
     {avatar && (
       <img src={avatar} alt="User" className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full border-2 border-card object-cover" />
     )}
@@ -132,18 +152,14 @@ const Notifications = () => {
         onClick={() => handleNotificationClick(notification)}
         className="flex items-start gap-4 rounded-2xl bg-card p-4 cursor-pointer"
       >
-        {listingImage ? (
-          <ProductThumbnail image={listingImage} avatar={userAvatar} />
-        ) : (
-          <div className="h-20 w-20 flex-shrink-0 rounded-xl bg-muted flex items-center justify-center">
-            <span className="text-3xl">{emoji}</span>
-          </div>
-        )}
+        <ProductThumbnail image={listingImage} avatar={userAvatar} fallbackEmoji={emoji} />
         <div className="flex-1 min-w-0 flex flex-col justify-between h-20">
           <p className="text-sm font-semibold text-foreground pt-2">{message}</p>
-          <p className="text-xs text-muted-foreground text-right">
-            {formatTime(notification.created_at)}
-          </p>
+          <div className="flex justify-end">
+            <p className="text-xs text-muted-foreground">
+              {formatTime(notification.created_at)}
+            </p>
+          </div>
         </div>
         {!notification.is_read && <UnreadIndicator />}
       </div>
