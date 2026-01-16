@@ -37,9 +37,11 @@ const Checkout = () => {
   const [expiry, setExpiry] = useState('');
 
   // Shipping details state
-  const [shippingName, setShippingName] = useState('');
+  const [shippingFirstName, setShippingFirstName] = useState('');
+  const [shippingLastName, setShippingLastName] = useState('');
   const [shippingAddress, setShippingAddress] = useState('');
   const [shippingCity, setShippingCity] = useState('');
+  const [shippingState, setShippingState] = useState('');
   const [shippingPostcode, setShippingPostcode] = useState('');
   const handleClose = () => {
     setOpen(false);
@@ -57,7 +59,7 @@ const Checkout = () => {
   const sellerFee = subtotal * 0.04;
   const total = subtotal + sellerFee;
   
-  const isShippingComplete = shippingName.trim() && shippingAddress.trim() && shippingCity.trim() && shippingPostcode.trim();
+  const isShippingComplete = shippingFirstName.trim() && shippingLastName.trim() && shippingAddress.trim() && shippingCity.trim() && shippingState.trim() && shippingPostcode.trim();
   
   const handlePlaceOrder = async () => {
     if (!user) {
@@ -162,9 +164,15 @@ const Checkout = () => {
               
               {/* Show input fields directly for first-time users (no saved data) */}
               <div className="p-4 space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Full name</label>
-                  <Input value={shippingName} onChange={e => setShippingName(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="First name, Last name" />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">First name</label>
+                    <Input value={shippingFirstName} onChange={e => setShippingFirstName(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="First name" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">Last name</label>
+                    <Input value={shippingLastName} onChange={e => setShippingLastName(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Last name" />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">Street address</label>
@@ -176,9 +184,13 @@ const Checkout = () => {
                     <Input value={shippingCity} onChange={e => setShippingCity(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="City" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">Postcode</label>
-                    <Input value={shippingPostcode} onChange={e => setShippingPostcode(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Postcode" />
+                    <label className="block text-sm font-medium text-foreground mb-1">State</label>
+                    <Input value={shippingState} onChange={e => setShippingState(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="State" />
                   </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Postcode</label>
+                  <Input value={shippingPostcode} onChange={e => setShippingPostcode(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Postcode" />
                 </div>
               </div>
             </div>
