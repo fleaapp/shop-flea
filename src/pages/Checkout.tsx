@@ -85,6 +85,12 @@ const Checkout = () => {
           price: item.price,
           shipping_price: item.shippingPrice,
           status: 'awaiting',
+          shipping_first_name: shippingFirstName.trim(),
+          shipping_last_name: shippingLastName.trim(),
+          shipping_address: shippingAddress.trim(),
+          shipping_city: shippingCity.trim(),
+          shipping_state: shippingState,
+          shipping_postcode: shippingPostcode.trim(),
         });
         
         if (error) throw error;

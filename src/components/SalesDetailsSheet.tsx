@@ -107,6 +107,20 @@ const SalesDetailsSheet = ({
               </div>
             </div>
 
+            {/* Shipping Address Section - Where to ship */}
+            <div className="rounded-xl bg-card overflow-hidden">
+              <SectionHeader>Ship To</SectionHeader>
+              <div className="p-4 space-y-1">
+                <p className="font-medium text-foreground">
+                  {order.shipping_first_name} {order.shipping_last_name}
+                </p>
+                <p className="text-muted-foreground">{order.shipping_address}</p>
+                <p className="text-muted-foreground">
+                  {order.shipping_city}, {order.shipping_state} {order.shipping_postcode}
+                </p>
+              </div>
+            </div>
+
             {/* Order Summary Section */}
             <div className="rounded-xl bg-card overflow-hidden">
               <SectionHeader>Order Summary</SectionHeader>

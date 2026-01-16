@@ -210,7 +210,13 @@ export type Database = {
           price: number
           seller_id: string
           shipped_at: string | null
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_first_name: string | null
+          shipping_last_name: string | null
+          shipping_postcode: string | null
           shipping_price: number
+          shipping_state: string | null
           status: string
           tracking_number: string | null
           tracking_provider: string | null
@@ -225,7 +231,13 @@ export type Database = {
           price: number
           seller_id: string
           shipped_at?: string | null
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_first_name?: string | null
+          shipping_last_name?: string | null
+          shipping_postcode?: string | null
           shipping_price?: number
+          shipping_state?: string | null
           status?: string
           tracking_number?: string | null
           tracking_provider?: string | null
@@ -240,7 +252,13 @@ export type Database = {
           price?: number
           seller_id?: string
           shipped_at?: string | null
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_first_name?: string | null
+          shipping_last_name?: string | null
+          shipping_postcode?: string | null
           shipping_price?: number
+          shipping_state?: string | null
           status?: string
           tracking_number?: string | null
           tracking_provider?: string | null

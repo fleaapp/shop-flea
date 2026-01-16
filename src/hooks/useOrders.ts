@@ -19,6 +19,13 @@ export interface Order {
   updated_at: string;
   shipped_at: string | null;
   delivered_at: string | null;
+  // Shipping address fields
+  shipping_first_name: string | null;
+  shipping_last_name: string | null;
+  shipping_address: string | null;
+  shipping_city: string | null;
+  shipping_state: string | null;
+  shipping_postcode: string | null;
   // Joined data
   listing?: {
     id: string;
