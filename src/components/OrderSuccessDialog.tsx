@@ -15,6 +15,24 @@ interface OrderSuccessDialogProps {
 const OrderSuccessDialog = ({ open, onClose }: OrderSuccessDialogProps) => {
   const [imageLoaded, setImageLoaded] = useState(false);
 
+  // iOS 18 (Safari) can report a different visible viewport height due to browser chrome;
+  // we nudge the close button up only there, and only for iPhone 12–15-ish viewports.
+  const iosMajorVersion = (() => {
+    if (typeof navigator === 'undefined') return null;
+    const match = navigator.userAgent.match(/OS (\d+)[._]\d+/);
+    return match ? Number(match[1]) : null;
+  })();
+
+  const shouldNudgeCloseForIOS18 =
+    iosMajorVersion === 18 &&
+    typeof window !== 'undefined' &&
+    window.innerWidth <= 430 &&
+    window.innerHeight <= 932;
+
+  const closeButtonStyle = shouldNudgeCloseForIOS18
+    ? { marginBottom: 'calc(3rem + env(safe-area-inset-bottom))' }
+    : undefined;
+
   useEffect(() => {
     // Check if already cached
     if (preloadImage.complete) {
@@ -46,7 +64,8 @@ const OrderSuccessDialog = ({ open, onClose }: OrderSuccessDialogProps) => {
         {/* Close button anchored near bottom (responsive) */}
         <button
           onClick={onClose}
-          className="mb-12 max-[413px]:mb-14 text-white/80 hover:text-white transition-colors pointer-events-auto z-10"
+          style={closeButtonStyle}
+          className="mb-12 max-[413px]:mb-6 text-white/80 hover:text-white transition-colors pointer-events-auto z-10"
           aria-label="Close"
         >
           <X className="h-7 w-7 sm:h-8 sm:w-8" />
