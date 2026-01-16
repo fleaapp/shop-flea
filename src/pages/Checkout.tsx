@@ -185,6 +185,10 @@ const Checkout = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">Postcode</label>
+                    <Input value={shippingPostcode} onChange={e => setShippingPostcode(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Postcode" />
+                  </div>
+                  <div>
                     <label className="block text-sm font-medium text-foreground mb-1">State</label>
                     <Select value={shippingState} onValueChange={setShippingState}>
                       <SelectTrigger className="h-11 rounded-xl bg-background border-border">
@@ -201,10 +205,6 @@ const Checkout = () => {
                         <SelectItem value="NT">NT</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">Postcode</label>
-                    <Input value={shippingPostcode} onChange={e => setShippingPostcode(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Postcode" />
                   </div>
                 </div>
               </div>
