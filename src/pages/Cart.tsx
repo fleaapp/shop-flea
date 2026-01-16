@@ -155,7 +155,7 @@ const Cart = () => {
     }
   };
 
-  const OrderCard = ({ order, showShadow = false }: { order: Order; showShadow?: boolean }) => {
+  const renderOrderCard = (order: Order, showShadow = false) => {
     const rawUsername = order.seller_profile?.username || 'Unknown';
     const sellerUsername = rawUsername.startsWith('@') ? rawUsername.slice(1) : rawUsername;
     const sellerAvatar = order.seller_profile?.avatar_url || '';
@@ -163,6 +163,7 @@ const Cart = () => {
 
     return (
       <div
+        key={order.id}
         onClick={() => handleOrderClick(order)}
         className={cn(
           "flex items-center gap-4 rounded-2xl bg-card p-4 cursor-pointer",
@@ -319,9 +320,7 @@ const Cart = () => {
                 <div>
                   <h2 className="mb-3 text-base font-semibold text-foreground">Awaiting shipping</h2>
                   <div className="space-y-3">
-                    {awaitingOrders.map((order) => (
-                      <OrderCard key={order.id} order={order} showShadow />
-                    ))}
+                    {awaitingOrders.map((order) => renderOrderCard(order, true))}
                   </div>
                 </div>
               )}
@@ -331,9 +330,7 @@ const Cart = () => {
                 <div>
                   <h2 className="mb-3 text-base font-semibold text-foreground">Shipped</h2>
                   <div className="space-y-3">
-                    {shippedOrders.map((order) => (
-                      <OrderCard key={order.id} order={order} />
-                    ))}
+                    {shippedOrders.map((order) => renderOrderCard(order, false))}
                   </div>
                 </div>
               )}
@@ -343,9 +340,7 @@ const Cart = () => {
                 <div>
                   <h2 className="mb-3 text-base font-semibold text-foreground">Delivered</h2>
                   <div className="space-y-3">
-                    {deliveredOrders.map((order) => (
-                      <OrderCard key={order.id} order={order} />
-                    ))}
+                    {deliveredOrders.map((order) => renderOrderCard(order, false))}
                   </div>
                 </div>
               )}
