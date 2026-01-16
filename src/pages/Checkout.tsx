@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -28,7 +28,7 @@ const Checkout = () => {
   const [selectedCard, setSelectedCard] = useState<string | null>('saved-1');
   const [showNewCard, setShowNewCard] = useState(false);
   const [saveCard, setSaveCard] = useState(true);
-  const [shippingExpanded, setShippingExpanded] = useState(false);
+  
 
   // Form state
   const [cardHolder, setCardHolder] = useState('');
@@ -152,39 +152,28 @@ const Checkout = () => {
               <div className="px-4 py-2 bg-zinc-300">
                 <span className="text-sm text-secondary-foreground">Shipping details</span>
               </div>
-              <button onClick={() => setShippingExpanded(!shippingExpanded)} className="w-full p-4 flex items-center justify-between">
-                <div className="text-left">
-                  <p className="font-semibold text-foreground">{shippingName || 'First name, Last name'}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {shippingAddress || shippingCity || shippingPostcode 
-                      ? `${shippingAddress}${shippingAddress && shippingCity ? ', ' : ''}${shippingCity}${(shippingAddress || shippingCity) && shippingPostcode ? ', ' : ''}${shippingPostcode}`
-                      : 'Address, City, Postcode'}
-                  </p>
-                </div>
-                <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform duration-200", shippingExpanded && "rotate-180")} />
-              </button>
               
-              {/* Expandable Edit Form */}
-              {shippingExpanded && <div className="px-4 pb-4 space-y-3 border-t border-border pt-4">
+              {/* Show input fields directly for first-time users (no saved data) */}
+              <div className="p-4 space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Full name</label>
+                  <Input value={shippingName} onChange={e => setShippingName(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="First name, Last name" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Street address</label>
+                  <Input value={shippingAddress} onChange={e => setShippingAddress(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Street address" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">Full name</label>
-                    <Input value={shippingName} onChange={e => setShippingName(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Your name" />
+                    <label className="block text-sm font-medium text-foreground mb-1">City</label>
+                    <Input value={shippingCity} onChange={e => setShippingCity(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="City" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">Street address</label>
-                    <Input value={shippingAddress} onChange={e => setShippingAddress(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Street address" />
+                    <label className="block text-sm font-medium text-foreground mb-1">Postcode</label>
+                    <Input value={shippingPostcode} onChange={e => setShippingPostcode(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Postcode" />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">City</label>
-                      <Input value={shippingCity} onChange={e => setShippingCity(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="City" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">Postcode</label>
-                      <Input value={shippingPostcode} onChange={e => setShippingPostcode(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Postcode" />
-                    </div>
-                  </div>
-                </div>}
+                </div>
+              </div>
             </div>
 
             {/* Payment Method */}
