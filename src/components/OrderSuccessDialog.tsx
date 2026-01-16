@@ -27,7 +27,7 @@ const OrderSuccessDialog = ({ open, onClose }: OrderSuccessDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent 
-        className="bg-transparent border-none shadow-none p-0 max-w-[280px] sm:max-w-[320px] md:max-w-[360px] w-[75vw] flex flex-col items-center justify-center"
+        className="bg-transparent border-none shadow-none p-0 max-w-[280px] sm:max-w-[320px] md:max-w-[360px] w-[75vw] flex flex-col items-center justify-center mt-12 max-[430px]:mt-8"
         hideCloseButton
       >
         {/* Receipt Image with slight tilt */}
@@ -42,7 +42,7 @@ const OrderSuccessDialog = ({ open, onClose }: OrderSuccessDialogProps) => {
         {/* Close button below receipt */}
         <button
           onClick={onClose}
-          className="mt-6 text-white/80 hover:text-white transition-colors pointer-events-auto z-10"
+          className="mt-6 max-[430px]:mt-4 text-white/80 hover:text-white transition-colors pointer-events-auto z-10"
           aria-label="Close"
         >
           <X className="h-7 w-7 sm:h-8 sm:w-8" />
