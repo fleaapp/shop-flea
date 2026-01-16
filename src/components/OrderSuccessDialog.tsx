@@ -23,14 +23,18 @@ const OrderSuccessDialog = ({ open, onClose }: OrderSuccessDialogProps) => {
     return match ? Number(match[1]) : null;
   })();
 
-  const shouldNudgeCloseForIOS18 =
-    iosMajorVersion === 18 &&
-    typeof window !== 'undefined' &&
-    window.innerWidth <= 430 &&
-    window.innerHeight <= 932;
+  const shouldNudgeCloseForIOS18 = (() => {
+    if (iosMajorVersion !== 18 || typeof window === 'undefined') return false;
+
+    // Use screen dimensions (stable across Safari chrome show/hide) to target iPhone 12–15 sizes.
+    const screenW = Math.min(window.screen.width, window.screen.height);
+    const screenH = Math.max(window.screen.width, window.screen.height);
+
+    return screenW <= 430 && screenH <= 932;
+  })();
 
   const closeButtonStyle = shouldNudgeCloseForIOS18
-    ? { marginBottom: 'calc(3rem + env(safe-area-inset-bottom))' }
+    ? { marginBottom: 'calc(5rem + env(safe-area-inset-bottom))' }
     : undefined;
 
   useEffect(() => {
