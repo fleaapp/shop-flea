@@ -72,7 +72,8 @@ const SalesDetailsSheet = ({
     onMarkShipped?.({ serviceProvider: serviceProvider.trim(), trackingNumber: trackingNumber.trim() });
   };
 
-  const buyerUsername = order.buyer_profile?.username || 'Unknown';
+  const rawBuyerUsername = order.buyer_profile?.username || 'Unknown';
+  const buyerUsername = rawBuyerUsername.startsWith('@') ? rawBuyerUsername.slice(1) : rawBuyerUsername;
   const buyerAvatar = order.buyer_profile?.avatar_url || '';
   const listingTitle = order.listing?.title || 'Item';
   const listingImage = order.listing?.images?.[0] || '';
