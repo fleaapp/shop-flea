@@ -37,10 +37,10 @@ const Checkout = () => {
   const [expiry, setExpiry] = useState('');
 
   // Shipping details state
-  const [shippingName, setShippingName] = useState('Charlie Smith');
-  const [shippingAddress, setShippingAddress] = useState('123 Smile road');
-  const [shippingCity, setShippingCity] = useState('Melbourne');
-  const [shippingPostcode, setShippingPostcode] = useState('3100');
+  const [shippingName, setShippingName] = useState('');
+  const [shippingAddress, setShippingAddress] = useState('');
+  const [shippingCity, setShippingCity] = useState('');
+  const [shippingPostcode, setShippingPostcode] = useState('');
   const handleClose = () => {
     setOpen(false);
     setTimeout(() => navigate(-1), 300);
@@ -154,8 +154,12 @@ const Checkout = () => {
               </div>
               <button onClick={() => setShippingExpanded(!shippingExpanded)} className="w-full p-4 flex items-center justify-between">
                 <div className="text-left">
-                  <p className="font-semibold text-foreground">{shippingName}</p>
-                  <p className="text-sm text-muted-foreground">{shippingAddress}, {shippingCity}, {shippingPostcode}</p>
+                  <p className="font-semibold text-foreground">{shippingName || 'First name, Last name'}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {shippingAddress || shippingCity || shippingPostcode 
+                      ? `${shippingAddress}${shippingAddress && shippingCity ? ', ' : ''}${shippingCity}${(shippingAddress || shippingCity) && shippingPostcode ? ', ' : ''}${shippingPostcode}`
+                      : 'Address, City, Postcode'}
+                  </p>
                 </div>
                 <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform duration-200", shippingExpanded && "rotate-180")} />
               </button>
