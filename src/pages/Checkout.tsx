@@ -88,9 +88,8 @@ const Checkout = () => {
       // Remove items from cart
       items.forEach(item => removeFromCart(item.id));
       
-      // Close the checkout drawer and show success dialog
-      setOpen(false);
-      setTimeout(() => setShowOrderSuccess(true), 300);
+      // Show success dialog over the checkout drawer (don't close it)
+      setShowOrderSuccess(true);
     } catch (error) {
       console.error('Error placing order:', error);
       toast.error('Failed to place order. Please try again.');
@@ -279,7 +278,8 @@ const Checkout = () => {
         open={showOrderSuccess} 
         onClose={() => {
           setShowOrderSuccess(false);
-          navigate('/');
+          setOpen(false);
+          setTimeout(() => navigate('/'), 300);
         }} 
       />
     </div>;
