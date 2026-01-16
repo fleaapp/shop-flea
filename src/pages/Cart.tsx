@@ -159,6 +159,7 @@ const Cart = () => {
     const rawUsername = order.seller_profile?.username || 'Unknown';
     const sellerUsername = rawUsername.startsWith('@') ? rawUsername.slice(1) : rawUsername;
     const sellerAvatar = order.seller_profile?.avatar_url || '';
+    const productImage = order.listing?.images?.[0] || '';
 
     return (
       <div
