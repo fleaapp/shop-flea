@@ -113,7 +113,8 @@ const Notifications = () => {
   };
 
   const SaleCard = ({ order, showShadow = false }: { order: Order; showShadow?: boolean }) => {
-    const buyerUsername = order.buyer_profile?.username || 'Unknown';
+    const rawBuyerUsername = order.buyer_profile?.username || 'Unknown';
+    const buyerUsername = rawBuyerUsername.startsWith('@') ? rawBuyerUsername.slice(1) : rawBuyerUsername;
     const buyerAvatar = order.buyer_profile?.avatar_url || '';
     const productImage = order.listing?.images?.[0] || '';
 
