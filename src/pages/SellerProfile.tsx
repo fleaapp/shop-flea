@@ -205,22 +205,22 @@ const SellerProfile = () => {
                 </div>
                 
                 {/* Content */}
-                <div className="px-2 max-[375px]:px-1 pt-3 max-[393px]:pt-2 max-[375px]:pt-1.5 pb-1 max-[375px]:pb-0.5">
+                <div className="px-2 max-[393px]:px-1.5 max-[375px]:px-1 pt-3 max-[393px]:pt-1.5 max-[375px]:pt-1.5 pb-1 max-[393px]:pb-0.5 max-[375px]:pb-0.5">
                   <div className="flex items-end justify-between">
                     <div className="flex-1 min-w-0">
                       <h3 className="text-base max-[393px]:text-sm max-[375px]:text-xs font-semibold text-foreground truncate">{listing.title}</h3>
-                      <div className="mt-1.5 max-[393px]:mt-1 max-[375px]:mt-0.5 flex flex-wrap gap-1.5 max-[375px]:gap-1">
-                        <span className="rounded-full bg-muted px-2.5 max-[393px]:px-2 max-[375px]:px-1.5 py-0.5 text-xs max-[375px]:text-[9px] font-medium text-muted-foreground">
+                      <div className="mt-1.5 max-[393px]:mt-0.5 max-[375px]:mt-0.5 flex flex-nowrap gap-1.5 max-[393px]:gap-1 max-[375px]:gap-1">
+                        <span className="rounded-full bg-muted px-2.5 max-[393px]:px-1.5 max-[375px]:px-1.5 py-0.5 text-xs max-[393px]:text-[10px] max-[375px]:text-[9px] font-medium text-muted-foreground whitespace-nowrap">
                           {formatTagLabel(listing.size, true)}
                         </span>
-                        <span className="rounded-full bg-muted px-2.5 max-[393px]:px-2 max-[375px]:px-1.5 py-0.5 text-xs max-[375px]:text-[9px] font-medium text-muted-foreground">
+                        <span className="rounded-full bg-muted px-2.5 max-[393px]:px-1.5 max-[375px]:px-1.5 py-0.5 text-xs max-[393px]:text-[10px] max-[375px]:text-[9px] font-medium text-muted-foreground truncate">
                           {listing.brand}
                         </span>
                       </div>
                     </div>
-                    <div className="text-right flex-shrink-0 ml-3 max-[393px]:ml-2 max-[375px]:ml-1.5">
+                    <div className="text-right flex-shrink-0 ml-3 max-[393px]:ml-1.5 max-[375px]:ml-1.5">
                       <p className="text-lg max-[393px]:text-base max-[375px]:text-sm font-bold text-foreground">${listing.price}</p>
-                      <p className="text-xs max-[375px]:text-[9px] text-muted-foreground">+ ${listing.shipping_price || 0} shipping</p>
+                      <p className="text-xs max-[393px]:text-[10px] max-[375px]:text-[9px] text-muted-foreground whitespace-nowrap">+ ${listing.shipping_price || 0} ship</p>
                     </div>
                   </div>
                 </div>
