@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Listing } from '@/types/listing';
 import { useCart } from '@/context/CartContext';
@@ -178,19 +179,33 @@ const Checkout = () => {
                   <label className="block text-sm font-medium text-foreground mb-1">Street address</label>
                   <Input value={shippingAddress} onChange={e => setShippingAddress(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Street address" />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">City</label>
+                  <Input value={shippingCity} onChange={e => setShippingCity(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="City" />
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">City</label>
-                    <Input value={shippingCity} onChange={e => setShippingCity(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="City" />
+                    <label className="block text-sm font-medium text-foreground mb-1">State</label>
+                    <Select value={shippingState} onValueChange={setShippingState}>
+                      <SelectTrigger className="h-11 rounded-xl bg-background border-border">
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border-border z-50">
+                        <SelectItem value="NSW">NSW</SelectItem>
+                        <SelectItem value="VIC">VIC</SelectItem>
+                        <SelectItem value="QLD">QLD</SelectItem>
+                        <SelectItem value="WA">WA</SelectItem>
+                        <SelectItem value="SA">SA</SelectItem>
+                        <SelectItem value="TAS">TAS</SelectItem>
+                        <SelectItem value="ACT">ACT</SelectItem>
+                        <SelectItem value="NT">NT</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">State</label>
-                    <Input value={shippingState} onChange={e => setShippingState(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="State" />
+                    <label className="block text-sm font-medium text-foreground mb-1">Postcode</label>
+                    <Input value={shippingPostcode} onChange={e => setShippingPostcode(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Postcode" />
                   </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Postcode</label>
-                  <Input value={shippingPostcode} onChange={e => setShippingPostcode(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Postcode" />
                 </div>
               </div>
             </div>
