@@ -262,8 +262,12 @@ const Checkout = () => {
 
             {/* Confirm Button */}
             <div className="mt-8">
-              <Button onClick={handlePlaceOrder} className="w-full h-12 rounded-full bg-charcoal text-white hover:bg-charcoal-light font-medium">
-                Confirm order
+              <Button 
+                onClick={handlePlaceOrder} 
+                disabled={isSubmitting}
+                className="w-full h-12 rounded-full bg-charcoal text-white hover:bg-charcoal-light font-medium disabled:opacity-50"
+              >
+                {isSubmitting ? 'Placing order...' : 'Confirm order'}
               </Button>
             </div>
           </div>
