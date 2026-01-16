@@ -150,18 +150,20 @@ const Notifications = () => {
     return (
       <div 
         onClick={() => handleNotificationClick(notification)}
-        className="flex items-start gap-4 rounded-2xl bg-card p-4 cursor-pointer"
+        className="relative flex items-start gap-4 rounded-2xl bg-card p-4 cursor-pointer"
       >
         <ProductThumbnail image={listingImage} avatar={userAvatar} fallbackEmoji={emoji} />
-        <div className="flex-1 min-w-0 flex flex-col justify-between h-20">
+        <div className="flex-1 min-w-0 flex flex-col justify-between h-20 pr-6">
           <p className="text-sm font-semibold text-foreground pt-2">{message}</p>
-          <div className="flex justify-end">
-            <p className="text-xs text-muted-foreground">
-              {formatTime(notification.created_at)}
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground text-right">
+            {formatTime(notification.created_at)}
+          </p>
         </div>
-        {!notification.is_read && <UnreadIndicator />}
+        {!notification.is_read && (
+          <div className="absolute top-4 right-4">
+            <UnreadIndicator />
+          </div>
+        )}
       </div>
     );
   };
