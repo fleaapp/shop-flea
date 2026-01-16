@@ -48,8 +48,7 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false }: Wishli
   return (
     <>
       <div 
-        className="w-full max-w-[min(340px,85vw)] mx-auto cursor-pointer"
-        style={{ height: 'min(68vh, 520px)' }}
+        className="w-full max-w-[min(340px,85vw)] max-[393px]:max-w-[min(300px,80vw)] max-[375px]:max-w-[min(280px,78vw)] mx-auto cursor-pointer h-[min(68vh,520px)] max-[393px]:h-[min(58vh,440px)] max-[375px]:h-[min(55vh,400px)]"
         onClick={handleCardClick}
       >
         <div className="flex h-full flex-col overflow-hidden rounded-3xl bg-card p-3 max-[375px]:p-2 card-shadow">
