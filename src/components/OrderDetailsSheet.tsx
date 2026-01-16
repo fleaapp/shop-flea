@@ -43,7 +43,8 @@ const OrderDetailsSheet = ({
   const statusBadge = getStatusBadge(order.status);
   const formattedDate = format(new Date(order.created_at), 'dd/MM/yyyy');
 
-  const sellerUsername = order.seller_profile?.username || 'Unknown';
+  const rawUsername = order.seller_profile?.username || 'Unknown';
+  const sellerUsername = rawUsername.startsWith('@') ? rawUsername.slice(1) : rawUsername;
   const sellerAvatar = order.seller_profile?.avatar_url || '';
   const listingTitle = order.listing?.title || 'Item';
   const listingImage = order.listing?.images?.[0] || '';
