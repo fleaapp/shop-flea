@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import OrderSuccessDialog from '@/components/OrderSuccessDialog';
 type PaymentMethod = 'card' | 'paypal' | 'applepay';
 const Checkout = () => {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ const Checkout = () => {
   const items: Listing[] = location.state?.items || [];
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [open, setOpen] = useState(true);
+  const [showOrderSuccess, setShowOrderSuccess] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('card');
   const [selectedCard, setSelectedCard] = useState<string | null>('saved-1');
   const [showNewCard, setShowNewCard] = useState(false);
@@ -86,11 +88,9 @@ const Checkout = () => {
       // Remove items from cart
       items.forEach(item => removeFromCart(item.id));
       
-      toast.success('Order placed successfully!', {
-        description: `Your order of $${total.toFixed(2)} is being processed`
-      });
+      // Close the checkout drawer and show success dialog
       setOpen(false);
-      setTimeout(() => navigate('/orders'), 300);
+      setTimeout(() => setShowOrderSuccess(true), 300);
     } catch (error) {
       console.error('Error placing order:', error);
       toast.error('Failed to place order. Please try again.');
@@ -273,6 +273,15 @@ const Checkout = () => {
           </div>
         </DrawerContent>
       </Drawer>
+      
+      {/* Order Success Dialog */}
+      <OrderSuccessDialog 
+        open={showOrderSuccess} 
+        onClose={() => {
+          setShowOrderSuccess(false);
+          navigate('/');
+        }} 
+      />
     </div>;
 };
 export default Checkout;
