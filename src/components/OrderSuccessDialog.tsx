@@ -11,7 +11,7 @@ const OrderSuccessDialog = ({ open, onClose }: OrderSuccessDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent 
-        className="bg-transparent border-none shadow-none p-0 max-w-[280px] sm:max-w-[320px] md:max-w-[360px] w-[75vw] flex flex-col items-center [&>div]:bg-black/40 [&>div]:backdrop-blur-md"
+        className="bg-transparent border-none shadow-none p-0 max-w-[280px] sm:max-w-[320px] md:max-w-[360px] w-[75vw] flex flex-col items-center"
         hideCloseButton
       >
         {/* Receipt Image with slight tilt */}
