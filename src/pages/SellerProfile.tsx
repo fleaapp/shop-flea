@@ -7,6 +7,7 @@ import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/hooks/useFavorites';
 import { toast } from 'sonner';
 import { Listing } from '@/types/listing';
+import ReviewsDrawer from '@/components/ReviewsDrawer';
 
 interface SellerProfile {
   user_id: string;
@@ -41,6 +42,7 @@ const SellerProfile = () => {
   const [soldListings, setSoldListings] = useState<DbListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [listingsLoading, setListingsLoading] = useState(true);
+  const [reviewsOpen, setReviewsOpen] = useState(false);
   
   const { addToCart, isInCart } = useCart();
   const { addFavorite, isFavorite } = useFavorites();
@@ -168,12 +170,15 @@ const SellerProfile = () => {
           </div>
         </div>
         <h2 className="mt-3 text-lg max-[430px]:text-base font-semibold text-foreground">{sellerProfile.username || '@seller'}</h2>
-        <div className="mt-2 flex items-center gap-1.5 rounded-full bg-card px-3 py-1 card-shadow">
+        <button
+          onClick={() => setReviewsOpen(true)}
+          className="mt-2 flex items-center gap-1.5 rounded-full bg-card px-3 py-1 card-shadow hover:bg-muted transition-colors"
+        >
           <span className="text-sm">⭐</span>
           <span className="text-sm font-medium text-foreground">
             {sellerProfile.rating && sellerProfile.rating > 0 ? `${sellerProfile.rating}/5` : 'No reviews'}
           </span>
-        </div>
+        </button>
       </div>
 
       <div className="mt-5 max-[430px]:mt-4 max-[393px]:mt-3 max-[375px]:mt-2 flex justify-center items-center">
@@ -233,6 +238,13 @@ const SellerProfile = () => {
           </div>
         )}
       </div>
+
+      <ReviewsDrawer
+        userId={sellerProfile.user_id}
+        username={sellerProfile.username}
+        open={reviewsOpen}
+        onOpenChange={setReviewsOpen}
+      />
 
       <BottomNav />
     </div>

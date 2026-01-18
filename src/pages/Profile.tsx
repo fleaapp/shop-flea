@@ -7,6 +7,7 @@ import { useUserListings } from '@/hooks/useListings';
 import { formatTagLabel } from '@/components/ListingTag';
 import { useOrders, Order, OrderGroup } from '@/hooks/useOrders';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
+import ReviewsDrawer from '@/components/ReviewsDrawer';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState<'listings' | 'sold'>('listings');
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [salesSheetOpen, setSalesSheetOpen] = useState(false);
+  const [reviewsOpen, setReviewsOpen] = useState(false);
   
   const { listings: activeListings, loading: activeLoading } = useUserListings('active');
   const { listings: soldListings, loading: soldLoading } = useUserListings('sold');
@@ -121,12 +123,15 @@ const Profile = () => {
           </div>
         </div>
         <h2 className="mt-3 text-lg max-[430px]:text-base font-semibold text-foreground">{profile?.username || '@user'}</h2>
-        <div className="mt-2 flex items-center gap-1.5 rounded-full bg-card px-3 py-1 card-shadow">
+        <button
+          onClick={() => setReviewsOpen(true)}
+          className="mt-2 flex items-center gap-1.5 rounded-full bg-card px-3 py-1 card-shadow hover:bg-muted transition-colors"
+        >
           <span className="text-sm">⭐</span>
           <span className="text-sm font-medium text-foreground">
             {profile?.rating && profile.rating > 0 ? `${profile.rating}/5` : 'No reviews'}
           </span>
-        </div>
+        </button>
       </div>
 
       <div className="mt-5 max-[430px]:mt-4 max-[393px]:mt-3 max-[375px]:mt-2 flex justify-center items-center gap-2">
@@ -217,6 +222,15 @@ const Profile = () => {
         }}
         onMarkShipped={handleMarkShipped}
       />
+
+      {user && (
+        <ReviewsDrawer
+          userId={user.id}
+          username={profile?.username || '@user'}
+          open={reviewsOpen}
+          onOpenChange={setReviewsOpen}
+        />
+      )}
 
       <BottomNav />
     </div>

@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
 import { Order, OrderStatus } from '@/hooks/useOrders';
 import { format } from 'date-fns';
+import { useExistingReview } from '@/hooks/useReviews';
+import WriteReviewDrawer from '@/components/WriteReviewDrawer';
 
 interface SalesDetailsSheetProps {
   orders: Order[] | null;
@@ -40,6 +42,10 @@ const SalesDetailsSheet = ({
   const [serviceProvider, setServiceProvider] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [validationError, setValidationError] = useState('');
+  const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
+  
+  const primaryOrder = orders?.[0];
+  const { data: existingReview } = useExistingReview(primaryOrder?.id);
 
   // Reset form when order changes
   useEffect(() => {
@@ -219,7 +225,7 @@ const SalesDetailsSheet = ({
               </div>
             </div>
 
-            {/* Actions - Only show Mark as shipped for awaiting status */}
+            {/* Actions */}
             {primaryOrder.status === 'awaiting' && (
               <div className="flex flex-col items-center space-y-3 pt-4">
                 <Button
@@ -233,9 +239,28 @@ const SalesDetailsSheet = ({
                 </button>
               </div>
             )}
+            {primaryOrder.status === 'delivered' && !existingReview && (
+              <div className="flex flex-col items-center space-y-3 pt-4">
+                <Button
+                  onClick={() => setReviewDrawerOpen(true)}
+                  className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
+                >
+                  Review Buyer
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </DrawerContent>
+
+      <WriteReviewDrawer
+        orderId={primaryOrder.id}
+        reviewedUserId={primaryOrder.buyer_id}
+        reviewedUsername={buyerUsername}
+        reviewType="buyer"
+        open={reviewDrawerOpen}
+        onOpenChange={setReviewDrawerOpen}
+      />
     </Drawer>
   );
 };
