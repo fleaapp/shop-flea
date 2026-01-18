@@ -46,9 +46,16 @@ const Profile = () => {
 
     const statusLabel = order.status === 'shipped' ? 'Shipped' : 'Delivered';
     return (
-      <div className="absolute left-1/2 -translate-x-1/2 bottom-3 max-[430px]:bottom-2.5 max-[375px]:bottom-2 z-10 rounded-full bg-muted text-muted-foreground text-xs font-medium px-4 py-2 max-[375px]:px-3 max-[375px]:py-1.5 max-[375px]:text-[10px]">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setSelectedOrder(order);
+          setSalesSheetOpen(true);
+        }}
+        className="absolute left-1/2 -translate-x-1/2 bottom-3 max-[430px]:bottom-2.5 max-[375px]:bottom-2 z-10 rounded-full bg-muted text-muted-foreground text-xs font-medium px-4 py-2 max-[375px]:px-3 max-[375px]:py-1.5 max-[375px]:text-[10px] whitespace-nowrap"
+      >
         {statusLabel}
-      </div>
+      </button>
     );
   };
 
