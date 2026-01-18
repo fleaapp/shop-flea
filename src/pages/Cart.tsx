@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,9 +13,6 @@ import CartItemRow from '@/components/CartItemRow';
 import OrderDetailsSheet from '@/components/OrderDetailsSheet';
 import { formatDistanceToNow } from 'date-fns';
 import { Listing } from '@/types/listing';
-import { Drawer, DrawerContent } from '@/components/ui/drawer';
-import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel';
-import ListingComments from '@/components/ListingComments';
 
 const getOrderStatusBadge = (status: Order['status']) => {
   switch (status) {
@@ -63,7 +60,6 @@ const Cart = () => {
   const [activeTab, setActiveTab] = useState<'cart' | 'orders'>('cart');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
-  const [selectedListing, setSelectedListing] = useState<(Listing & { status?: string }) | null>(null);
 
   const handleOrderClick = (group: OrderGroup) => {
     setSelectedOrderGroup(group);
@@ -107,7 +103,7 @@ const Cart = () => {
   };
 
   const handleListingClick = (item: Listing & { status?: string }) => {
-    setSelectedListing(item);
+    navigate(`/listing/${item.id}`);
   };
 
   const handleCheckout = (itemIds: string[]) => {
@@ -374,168 +370,8 @@ const Cart = () => {
         onMarkDelivered={handleMarkDelivered}
       />
 
-      {/* Listing Details Drawer */}
-      {selectedListing && (
-        <CartListingDetailsDrawer
-          listing={selectedListing}
-          open={!!selectedListing}
-          onOpenChange={(open) => !open && setSelectedListing(null)}
-        />
-      )}
-
       <BottomNav />
     </div>
-  );
-};
-
-// Inline listing details drawer for cart items
-const CartListingDetailsDrawer = ({
-  listing,
-  open,
-  onOpenChange,
-}: {
-  listing: Listing & { status?: string };
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) => {
-  const navigate = useNavigate();
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
-  const { addFavorite, isFavorite } = useFavorites();
-  const { removeFromCart } = useCart();
-  const { addDiscarded } = useDiscardedListings();
-
-  const isSold = listing.status === 'sold';
-  const images = listing.images?.length ? listing.images : [listing.image];
-
-  useEffect(() => {
-    if (!carouselApi) return;
-    const onSelect = () => setActiveImageIndex(carouselApi.selectedScrollSnap());
-    onSelect();
-    carouselApi.on('select', onSelect);
-    return () => {
-      carouselApi.off('select', onSelect);
-    };
-  }, [carouselApi]);
-
-  const handleAddToWishlist = async () => {
-    if (isFavorite(listing.id)) {
-      toast.info('Already in wishlist');
-      return;
-    }
-    await removeFromCart(listing.id);
-    await addFavorite(listing.id);
-    toast.success('Moved to wishlist!');
-    onOpenChange(false);
-  };
-
-  const handleDiscard = async () => {
-    await removeFromCart(listing.id);
-    await addDiscarded(listing.id);
-    toast.success('Item discarded');
-    onOpenChange(false);
-  };
-
-  return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="mt-0 h-[95dvh] max-h-[95dvh] overflow-hidden rounded-t-3xl bg-background">
-        <div className="flex-1 overflow-y-auto px-4 pb-8">
-          {/* Image Gallery */}
-          <div className="relative overflow-hidden rounded-3xl">
-            <Carousel setApi={setCarouselApi} opts={{ loop: images.length > 1 }} className="w-full">
-              <CarouselContent className="ml-0">
-                {images.map((src: string, index: number) => (
-                  <CarouselItem key={`${listing.id}-img-${index}`} className="pl-0">
-                    <img
-                      src={src}
-                      alt={`${listing.title} photo ${index + 1}`}
-                      className="aspect-square w-full object-cover"
-                      loading={index === 0 ? 'eager' : 'lazy'}
-                    />
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-            </Carousel>
-            {images.length > 1 && (
-              <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-background/70 px-2 py-1 text-xs text-foreground">
-                {activeImageIndex + 1}/{images.length}
-              </div>
-            )}
-          </div>
-
-          {/* Tags */}
-          <div className="mt-4 gap-2 flex flex-row overflow-x-auto scrollbar-hide">
-            <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground uppercase">{listing.size}</span>
-            <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground capitalize">{listing.brand}</span>
-            <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground capitalize">{listing.condition}</span>
-            <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground capitalize">{listing.category}</span>
-          </div>
-
-          {/* Content */}
-          <div className="pt-4">
-            <h1 className="text-2xl font-bold text-foreground">{listing.title}</h1>
-            {listing.description && (
-              <p className="mt-4 text-muted-foreground leading-relaxed">{listing.description}</p>
-            )}
-
-            {/* Seller Info + Price Row */}
-            <div className="mt-6 flex items-center justify-between gap-3">
-              <div 
-                className="flex items-center gap-2 rounded-2xl bg-card p-2.5 pr-6 card-shadow cursor-pointer active:scale-[0.98] transition-transform"
-                onClick={() => {
-                  onOpenChange(false);
-                  setTimeout(() => navigate(`/seller/${listing.sellerId}`), 300);
-                }}
-              >
-                <img
-                  src={listing.sellerAvatar}
-                  alt={listing.sellerName}
-                  className="h-9 w-9 rounded-full bg-muted flex-shrink-0"
-                  loading="lazy"
-                />
-                <div>
-                  <p className="font-medium text-foreground text-sm">{listing.sellerName}</p>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <span>{listing.location || 'Unknown'}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-right">
-                <p className="text-2xl font-bold text-foreground">${listing.price}</p>
-                <p className="text-xs text-muted-foreground">+ ${listing.shippingPrice || 0} shipping</p>
-              </div>
-            </div>
-
-            {/* Comments Section */}
-            <div className="mt-6">
-              <ListingComments listingId={listing.id} sellerId={listing.sellerId} />
-            </div>
-          </div>
-        </div>
-
-        {/* Sticky Footer Actions */}
-        <div className="sticky bottom-0 left-0 right-0 flex gap-3 bg-background px-4 py-4 border-t border-border justify-center">
-          <Button
-            variant="outline"
-            onClick={handleDiscard}
-            className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]"
-          >
-            ❌
-          </Button>
-
-          {!isSold && (
-            <Button
-              variant="outline"
-              onClick={handleAddToWishlist}
-              className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]"
-            >
-              💌
-            </Button>
-          )}
-        </div>
-      </DrawerContent>
-    </Drawer>
   );
 };
 
