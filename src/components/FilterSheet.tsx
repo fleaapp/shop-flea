@@ -9,6 +9,7 @@ interface FilterSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onApplyFilters: (filters: FilterState) => void;
+  showHideSoldItems?: boolean;
 }
 
 export interface FilterState {
@@ -30,7 +31,7 @@ const colourOptions = ['Black', 'White', 'Grey', 'Navy', 'Blue', 'Red', 'Pink', 
 const styleOptions = ['Casual', 'Formal', 'Streetwear', 'Vintage', 'Sporty', 'Bohemian', 'Minimalist', 'Other'];
 const genderOptions = ['Women', 'Men', 'Unisex'];
 
-const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) => {
+const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = false }: FilterSheetProps) => {
   const [filters, setFilters] = useState<FilterState>({
     preferences: false,
     hideSoldItems: false,
@@ -89,18 +90,20 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters }: FilterSheetProps) =
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 pb-28" style={{ overscrollBehavior: 'contain' }}>
-          {/* Hide Sold Items Toggle */}
-          <div className="flex items-center justify-between py-4">
-            <span className="text-lg font-medium">Hide sold items</span>
-            <Switch
-              checked={filters.hideSoldItems}
-              onCheckedChange={(checked) => setFilters({ ...filters, hideSoldItems: checked })}
-              className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-input [&>span]:data-[state=checked]:bg-primary [&>span]:data-[state=unchecked]:bg-charcoal"
-            />
-          </div>
+          {/* Hide Sold Items Toggle - Only shown on Wishlist */}
+          {showHideSoldItems && (
+            <div className="flex items-center justify-between py-4">
+              <span className="text-lg font-medium">Hide sold items</span>
+              <Switch
+                checked={filters.hideSoldItems}
+                onCheckedChange={(checked) => setFilters({ ...filters, hideSoldItems: checked })}
+                className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-input [&>span]:data-[state=checked]:bg-primary [&>span]:data-[state=unchecked]:bg-charcoal"
+              />
+            </div>
+          )}
 
           {/* Preferences Toggle */}
-          <div className="flex items-center justify-between py-4 border-t border-border">
+          <div className={`flex items-center justify-between py-4 ${showHideSoldItems ? 'border-t border-border' : ''}`}>
             <span className="text-lg font-medium">Preferences</span>
             <Switch
               checked={filters.preferences}
