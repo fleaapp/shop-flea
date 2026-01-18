@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Order, OrderStatus } from '@/hooks/useOrders';
 import { format } from 'date-fns';
+import { useExistingReview } from '@/hooks/useReviews';
+import WriteReviewDrawer from '@/components/WriteReviewDrawer';
 
 interface OrderDetailsSheetProps {
   orders: Order[] | null;
@@ -35,9 +38,12 @@ const OrderDetailsSheet = ({
   onOpenChange,
   onMarkDelivered,
 }: OrderDetailsSheetProps) => {
+  const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
+  
+  const primaryOrder = orders?.[0];
+  const { data: existingReview } = useExistingReview(primaryOrder?.id);
+  
   if (!orders || orders.length === 0) return null;
-
-  const primaryOrder = orders[0];
 
   const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
   const buyerFee = subtotal * 0.04;
@@ -158,7 +164,7 @@ const OrderDetailsSheet = ({
               </div>
             </div>
 
-            {/* Actions - Show for shipped orders OR as help link for awaiting/delivered */}
+            {/* Actions */}
             <div className="flex flex-col items-center space-y-3 pt-4">
               {primaryOrder.status === 'shipped' && (
                 <Button
@@ -168,6 +174,14 @@ const OrderDetailsSheet = ({
                   Mark as delivered
                 </Button>
               )}
+              {primaryOrder.status === 'delivered' && !existingReview && (
+                <Button
+                  onClick={() => setReviewDrawerOpen(true)}
+                  className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
+                >
+                  Review Seller
+                </Button>
+              )}
               <button className="text-center text-sm text-foreground underline">
                 Need help?
               </button>
@@ -175,6 +189,15 @@ const OrderDetailsSheet = ({
           </div>
         </div>
       </DrawerContent>
+
+      <WriteReviewDrawer
+        orderId={primaryOrder.id}
+        reviewedUserId={primaryOrder.seller_id}
+        reviewedUsername={sellerUsername}
+        reviewType="seller"
+        open={reviewDrawerOpen}
+        onOpenChange={setReviewDrawerOpen}
+      />
     </Drawer>
   );
 };
