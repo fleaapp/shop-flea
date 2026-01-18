@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
@@ -67,6 +68,7 @@ const UnreadIndicator = () => (
 );
 
 const Notifications = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'activity' | 'sales'>('activity');
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
@@ -89,7 +91,11 @@ const Notifications = () => {
     if (!notification.is_read) {
       markAsRead.mutate(notification.id);
     }
-    // Future: Navigate to related content based on type
+    
+    // Navigate based on notification type
+    if (notification.related_listing_id) {
+      navigate(`/listing/${notification.related_listing_id}`);
+    }
   };
 
   const handleMarkShipped = (trackingDetails: { serviceProvider: string; trackingNumber: string }) => {
