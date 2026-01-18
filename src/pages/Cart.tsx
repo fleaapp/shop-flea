@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
 import { useCart } from '@/context/CartContext';
@@ -301,8 +301,8 @@ const Cart = () => {
 
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <ShoppingCart className="h-16 w-16 text-muted-foreground/50 mb-4" />
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+              <span className="text-6xl opacity-50 mb-4">🛒</span>
               <p className="text-lg font-medium text-muted-foreground">Your cart is empty</p>
               <p className="mt-2 text-sm text-muted-foreground">Swipe up on items to add them</p>
               <Button
@@ -321,7 +321,7 @@ const Cart = () => {
               <p className="text-muted-foreground">Loading orders...</p>
             </div>
           ) : buyerOrderGroups.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
               <span className="text-6xl opacity-50 mb-4">🧾</span>
               <p className="text-lg font-medium text-muted-foreground">No orders yet</p>
               <p className="mt-2 text-sm text-muted-foreground">Your purchases will appear here</p>

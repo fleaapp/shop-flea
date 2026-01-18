@@ -242,7 +242,7 @@ const Notifications = () => {
                 <p className="text-muted-foreground">Loading notifications...</p>
               </div>
             ) : notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
                 <span className="text-6xl opacity-50 mb-4">🔔</span>
                 <p className="text-lg font-medium text-muted-foreground">No notifications yet</p>
                 <p className="mt-2 text-sm text-muted-foreground">Your activity will appear here</p>
@@ -260,7 +260,7 @@ const Notifications = () => {
                 <p className="text-muted-foreground">Loading sales...</p>
               </div>
             ) : sellerOrderGroups.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
                 <span className="text-6xl opacity-50 mb-4">💸</span>
                 <p className="text-lg font-medium text-muted-foreground">No sales yet</p>
                 <p className="mt-2 text-sm text-muted-foreground">Your sales will appear here</p>
