@@ -152,6 +152,9 @@ const Cart = () => {
   const shippedOrders = buyerOrderGroups.filter((g) => g.status === 'shipped');
   const deliveredOrders = buyerOrderGroups.filter((g) => g.status === 'delivered');
 
+  // Orders badge: awaiting + shipped (not delivered)
+  const ordersBadgeCount = awaitingOrders.length + shippedOrders.length;
+
   const formatOrderTime = (dateString: string) => {
     try {
       return formatDistanceToNow(new Date(dateString), { addSuffix: true });
@@ -230,7 +233,7 @@ const Cart = () => {
             <button
               onClick={() => setActiveTab('orders')}
               className={cn(
-                'flex items-center justify-center gap-2 max-[375px]:gap-1.5 rounded-full w-28 max-[375px]:w-24 py-2.5 max-[375px]:py-2 text-sm max-[375px]:text-xs font-medium transition-all',
+                'relative flex items-center justify-center gap-2 max-[375px]:gap-1.5 rounded-full w-28 max-[375px]:w-24 py-2.5 max-[375px]:py-2 text-sm max-[375px]:text-xs font-medium transition-all',
                 activeTab === 'orders'
                   ? 'bg-card text-foreground shadow-sm'
                   : 'text-muted-foreground'
@@ -238,6 +241,11 @@ const Cart = () => {
             >
               <span className="text-base max-[375px]:text-sm">🧾</span>
               Orders
+              {activeTab !== 'orders' && ordersBadgeCount > 0 && (
+                <span className="absolute -top-1 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                  {ordersBadgeCount}
+                </span>
+              )}
             </button>
           </div>
         </div>
