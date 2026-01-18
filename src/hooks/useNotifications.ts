@@ -10,7 +10,9 @@ export type NotificationType =
   | 'new_review'
   | 'item_sold'
   | 'order_shipped'
-  | 'order_delivered';
+  | 'order_delivered'
+  | 'new_comment'
+  | 'comment_reply';
 
 export interface Notification {
   id: string;
@@ -133,7 +135,14 @@ export const useNotifications = () => {
   };
 };
 
-export const getNotificationMessage = (type: string, username?: string): string => {
+export const getNotificationMessage = (type: string, username?: string, message?: string | null): string => {
+  // For comment notifications, use the message from the database which includes context
+  if ((type === 'new_comment' || type === 'comment_reply') && message) {
+    return message;
+  }
+  
+  const displayUsername = username?.startsWith('@') ? username : username ? `@${username}` : undefined;
+  
   switch (type) {
     case 'price_drop_cart':
       return 'Price dropped on an item in your cart!';
@@ -144,13 +153,17 @@ export const getNotificationMessage = (type: string, username?: string): string 
     case 'wishlist_item_sold':
       return 'An item in your wishlist was sold.';
     case 'new_review':
-      return username ? `@${username} left you a review.` : 'You received a new review.';
+      return displayUsername ? `${displayUsername} left you a review.` : 'You received a new review.';
     case 'item_sold':
-      return username ? `Sold to @${username}!` : 'Your item was sold!';
+      return displayUsername ? `Sold to ${displayUsername}!` : 'Your item was sold!';
     case 'order_shipped':
       return 'Your order has been shipped!';
     case 'order_delivered':
       return 'Your order has been delivered!';
+    case 'new_comment':
+      return displayUsername ? `${displayUsername} commented on your listing.` : 'Someone commented on your listing.';
+    case 'comment_reply':
+      return displayUsername ? `${displayUsername} replied to your comment.` : 'Someone replied to your comment.';
     default:
       return 'New notification';
   }
@@ -172,6 +185,10 @@ export const getNotificationEmoji = (type: string): string => {
       return '📦';
     case 'order_delivered':
       return '✅';
+    case 'new_comment':
+      return '💬';
+    case 'comment_reply':
+      return '↩️';
     default:
       return '🔔';
   }
