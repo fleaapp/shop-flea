@@ -123,9 +123,11 @@ const Notifications = () => {
 
   const SaleCard = ({ group, showShadow = false }: { group: OrderGroup; showShadow?: boolean }) => {
     const primaryOrder = group.orders[0];
+    const rawBuyerUsername = primaryOrder.buyer_profile?.username || 'Unknown';
     const buyerUsername = rawBuyerUsername.startsWith('@') ? rawBuyerUsername.slice(1) : rawBuyerUsername;
-    const buyerAvatar = order.buyer_profile?.avatar_url || '';
-    const productImage = order.listing?.images?.[0] || '';
+    const buyerAvatar = primaryOrder.buyer_profile?.avatar_url || '';
+    const productImage = primaryOrder.listing?.images?.[0] || '';
+    const itemCount = group.orders.length;
 
     return (
       <div 
