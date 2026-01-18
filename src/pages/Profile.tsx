@@ -37,7 +37,7 @@ const Profile = () => {
             setSelectedOrder(order);
             setSalesSheetOpen(true);
           }}
-          className="absolute left-1/2 -translate-x-1/2 top-4 max-[430px]:top-3 max-[375px]:top-2.5 z-10 rounded-full bg-charcoal text-white text-xs font-medium px-4 py-1.5 max-[375px]:px-3 max-[375px]:py-1 max-[375px]:text-[10px]"
+          className="absolute left-1/2 -translate-x-1/2 bottom-3 max-[430px]:bottom-2.5 max-[375px]:bottom-2 z-10 rounded-full bg-charcoal text-white text-xs font-medium px-4 py-2 max-[375px]:px-3 max-[375px]:py-1.5 max-[375px]:text-[10px]"
         >
           Mark as shipped
         </button>
@@ -46,7 +46,7 @@ const Profile = () => {
 
     const statusLabel = order.status === 'shipped' ? 'Shipped' : 'Delivered';
     return (
-      <div className="absolute left-1/2 -translate-x-1/2 top-4 max-[430px]:top-3 max-[375px]:top-2.5 z-10 rounded-full bg-muted text-muted-foreground text-xs font-medium px-4 py-1.5 max-[375px]:px-3 max-[375px]:py-1 max-[375px]:text-[10px]">
+      <div className="absolute left-1/2 -translate-x-1/2 bottom-3 max-[430px]:bottom-2.5 max-[375px]:bottom-2 z-10 rounded-full bg-muted text-muted-foreground text-xs font-medium px-4 py-2 max-[375px]:px-3 max-[375px]:py-1.5 max-[375px]:text-[10px]">
         {statusLabel}
       </div>
     );
@@ -142,15 +142,14 @@ const Profile = () => {
                   </button>
                 )}
 
-                {/* Shipping status button - only show for sold items */}
-                {activeTab === 'sold' && getOrderStatusButton(listing.id)}
-                
                 {/* Image */}
                 <div 
-                  className="aspect-[3/4] max-[430px]:aspect-[3/4] max-[393px]:aspect-[4/5] max-[375px]:aspect-[1/1] w-full overflow-hidden rounded-2xl max-[375px]:rounded-xl cursor-pointer"
+                  className="relative aspect-[3/4] max-[430px]:aspect-[3/4] max-[393px]:aspect-[4/5] max-[375px]:aspect-[1/1] w-full overflow-hidden rounded-2xl max-[375px]:rounded-xl cursor-pointer"
                   onClick={() => navigate(`/listing/${listing.id}`)}
                 >
                   <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
+                  {/* Shipping status button - only show for sold items */}
+                  {activeTab === 'sold' && getOrderStatusButton(listing.id)}
                 </div>
                 
                 {/* Content */}
