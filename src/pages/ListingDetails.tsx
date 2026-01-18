@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { MapPin } from 'lucide-react';
+import { MapPin, MoreVertical, Flag, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel';
@@ -233,6 +239,52 @@ const ListingDetails = () => {
                   ))}
                 </CarouselContent>
               </Carousel>
+
+              {/* 3-dot menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="absolute top-3 right-3 h-8 w-8 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center hover:bg-background/90 transition-colors">
+                    <MoreVertical className="h-4 w-4 text-foreground" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44 bg-background border border-border rounded-xl shadow-lg z-50">
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      toast.info('Listing reported. We will review it shortly.');
+                    }}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <Flag className="h-4 w-4" />
+                    Report listing
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={async () => {
+                      const shareUrl = `${window.location.origin}/listing/${listing.id}`;
+                      if (navigator.share) {
+                        try {
+                          await navigator.share({
+                            title: listing.title,
+                            text: `Check out this listing: ${listing.title}`,
+                            url: shareUrl,
+                          });
+                        } catch (err) {
+                          if ((err as Error).name !== 'AbortError') {
+                            await navigator.clipboard.writeText(shareUrl);
+                            toast.success('Link copied to clipboard!');
+                          }
+                        }
+                      } else {
+                        await navigator.clipboard.writeText(shareUrl);
+                        toast.success('Link copied to clipboard!');
+                      }
+                    }}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <Share2 className="h-4 w-4" />
+                    Share listing
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               {images.length > 1 && (
                 <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-background/70 px-2 py-1 text-xs text-foreground">
