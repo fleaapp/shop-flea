@@ -5,19 +5,19 @@ import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/context/AuthContext';
 import { useUserListings } from '@/hooks/useListings';
 import { formatTagLabel } from '@/components/ListingTag';
-import { useOrders, Order } from '@/hooks/useOrders';
+import { useOrders, Order, OrderGroup } from '@/hooks/useOrders';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
 
 const Profile = () => {
   const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<'listings' | 'sold'>('listings');
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [salesSheetOpen, setSalesSheetOpen] = useState(false);
   
   const { listings: activeListings, loading: activeLoading } = useUserListings('active');
   const { listings: soldListings, loading: soldLoading } = useUserListings('sold');
-  const { sellerOrders, markAsShipped } = useOrders();
+  const { sellerOrders, sellerOrderGroups, markAsShipped } = useOrders();
 
   const displayListings = activeTab === 'listings' ? activeListings : soldListings;
   const isLoading = activeTab === 'listings' ? activeLoading : soldLoading;
@@ -25,16 +25,25 @@ const Profile = () => {
   // Create a map of listing_id to order for quick lookup
   const ordersByListingId = new Map(sellerOrders.map(order => [order.listing_id, order]));
 
+  // Create a map of listing_id to order group for quick lookup
+  const orderGroupByListingId = new Map<string, OrderGroup>();
+  for (const group of sellerOrderGroups) {
+    for (const order of group.orders) {
+      orderGroupByListingId.set(order.listing_id, group);
+    }
+  }
+
   const getOrderStatusButton = (listingId: string) => {
     const order = ordersByListingId.get(listingId);
-    if (!order) return null;
+    const group = orderGroupByListingId.get(listingId);
+    if (!order || !group) return null;
 
     if (order.status === 'awaiting') {
       return (
         <button
           onClick={(e) => {
             e.stopPropagation();
-            setSelectedOrder(order);
+            setSelectedOrderGroup(group);
             setSalesSheetOpen(true);
           }}
           className="absolute left-1/2 -translate-x-1/2 bottom-3 max-[430px]:bottom-2.5 max-[375px]:bottom-2 z-10 rounded-full bg-[#ddfed7] text-charcoal text-xs font-medium px-4 py-2 max-[375px]:px-3 max-[375px]:py-1.5 max-[375px]:text-[10px] whitespace-nowrap"
@@ -49,7 +58,7 @@ const Profile = () => {
       <button
         onClick={(e) => {
           e.stopPropagation();
-          setSelectedOrder(order);
+          setSelectedOrderGroup(group);
           setSalesSheetOpen(true);
         }}
         className="absolute left-1/2 -translate-x-1/2 bottom-3 max-[430px]:bottom-2.5 max-[375px]:bottom-2 z-10 rounded-full bg-muted text-muted-foreground text-xs font-medium px-4 py-2 max-[375px]:px-3 max-[375px]:py-1.5 max-[375px]:text-[10px] whitespace-nowrap"
@@ -60,14 +69,24 @@ const Profile = () => {
   };
 
   const handleMarkShipped = (trackingDetails: { serviceProvider: string; trackingNumber: string }) => {
-    if (selectedOrder) {
+    if (!selectedOrderGroup) return;
+
+    if (selectedOrderGroup.order_group_id) {
       markAsShipped.mutate({
-        orderId: selectedOrder.id,
+        orderGroupId: selectedOrderGroup.order_group_id,
         trackingProvider: trackingDetails.serviceProvider,
         trackingNumber: trackingDetails.trackingNumber,
       });
-      setSalesSheetOpen(false);
+    } else {
+      markAsShipped.mutate({
+        orderId: selectedOrderGroup.orders[0].id,
+        trackingProvider: trackingDetails.serviceProvider,
+        trackingNumber: trackingDetails.trackingNumber,
+      });
     }
+
+    setSalesSheetOpen(false);
+    setSelectedOrderGroup(null);
   };
 
   if (authLoading) {
@@ -190,11 +209,11 @@ const Profile = () => {
       </div>
 
       <SalesDetailsSheet
-        orders={selectedOrder ? [selectedOrder] : null}
+        orders={selectedOrderGroup?.orders ?? null}
         open={salesSheetOpen}
         onOpenChange={(open) => {
           setSalesSheetOpen(open);
-          if (!open) setSelectedOrder(null);
+          if (!open) setSelectedOrderGroup(null);
         }}
         onMarkShipped={handleMarkShipped}
       />
