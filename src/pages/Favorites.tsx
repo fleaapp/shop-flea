@@ -52,15 +52,16 @@ const Favorites = () => {
   const navigate = useNavigate();
   const [filterOpen, setFilterOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<ListingFilters>({});
+  const [hideSoldItems, setHideSoldItems] = useState(false);
   
   const { listings, loading, refetch } = useFavoriteListings(appliedFilters);
   const { removeFavorite } = useFavorites();
-  const { addToCart } = useCart();
+  const { addToCart, isInCart } = useCart();
 
-  const displayListings = useMemo(() => 
-    listings.map(toDisplayListing), 
-    [listings]
-  );
+  const displayListings = useMemo(() => {
+    const mapped = listings.map(toDisplayListing);
+    return hideSoldItems ? mapped.filter(l => !l.isSold) : mapped;
+  }, [listings, hideSoldItems]);
 
   const handleRemoveFavorite = useCallback(async (listingId: string) => {
     await removeFavorite(listingId);
@@ -89,10 +90,11 @@ const Favorites = () => {
     if (filters.priceRange[0] > 0) newFilters.minPrice = filters.priceRange[0];
     if (filters.priceRange[1] < 1000) newFilters.maxPrice = filters.priceRange[1];
     
+    setHideSoldItems(filters.hideSoldItems);
     setAppliedFilters(newFilters);
   }, []);
 
-  const hasFilters = Object.keys(appliedFilters).length > 0;
+  const hasFilters = Object.keys(appliedFilters).length > 0 || hideSoldItems;
 
   return (
     <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
@@ -132,6 +134,7 @@ const Favorites = () => {
                   onRemove={() => handleRemoveFavorite(listing.id)}
                   onAddToCart={() => handleAddToCart(listing)}
                   isSold={listing.isSold}
+                  isInCart={isInCart(listing.id)}
                 />
               </div>
             ))}

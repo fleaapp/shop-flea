@@ -20,9 +20,10 @@ interface WishlistCardProps {
   onRemove?: () => void;
   onAddToCart?: () => void;
   isSold?: boolean;
+  isInCart?: boolean;
 }
 
-const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false }: WishlistCardProps) => {
+const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isInCart = false }: WishlistCardProps) => {
   const navigate = useNavigate();
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -83,7 +84,11 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false }: Wishli
                 variant="ghost"
                 size="icon"
                 onClick={handleAddToCart}
-                className="absolute top-2 right-2 h-9 w-9 rounded-full bg-card/90 backdrop-blur-sm text-muted-foreground hover:text-primary hover:bg-card"
+                className={`absolute top-2 right-2 h-9 w-9 rounded-full backdrop-blur-sm hover:bg-card ${
+                  isInCart 
+                    ? 'bg-[#ddfed7] text-foreground' 
+                    : 'bg-card/90 text-muted-foreground hover:text-primary'
+                }`}
               >
                 <ShoppingCart className="h-4 w-4" />
               </Button>
