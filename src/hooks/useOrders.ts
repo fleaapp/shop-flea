@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -7,6 +8,7 @@ export type OrderStatus = 'awaiting' | 'shipped' | 'delivered';
 
 export interface Order {
   id: string;
+  order_group_id: string | null;
   listing_id: string;
   buyer_id: string;
   seller_id: string;
@@ -41,6 +43,86 @@ export interface Order {
     avatar_url: string | null;
   };
 }
+
+export interface OrderGroup {
+  /**
+   * If `order_group_id` is null, we fall back to the order's own id so legacy
+   * orders still show up as single-item groups.
+   */
+  id: string;
+  order_group_id: string | null;
+  status: OrderStatus;
+  created_at: string;
+  buyer_id: string;
+  seller_id: string;
+  tracking_provider: string | null;
+  tracking_number: string | null;
+  shipped_at: string | null;
+  delivered_at: string | null;
+  shipping_first_name: string | null;
+  shipping_last_name: string | null;
+  shipping_address: string | null;
+  shipping_city: string | null;
+  shipping_state: string | null;
+  shipping_postcode: string | null;
+  buyer_profile?: Order['buyer_profile'];
+  seller_profile?: Order['seller_profile'];
+  orders: Order[];
+}
+
+const getGroupStatus = (orders: Order[]): OrderStatus => {
+  if (orders.some((o) => o.status === 'awaiting')) return 'awaiting';
+  if (orders.some((o) => o.status === 'shipped')) return 'shipped';
+  return 'delivered';
+};
+
+const groupOrders = (orders: Order[]): OrderGroup[] => {
+  const groups = new Map<string, OrderGroup>();
+
+  for (const order of orders) {
+    const key = order.order_group_id ?? order.id;
+    const existing = groups.get(key);
+
+    if (!existing) {
+      groups.set(key, {
+        id: key,
+        order_group_id: order.order_group_id ?? null,
+        status: order.status,
+        created_at: order.created_at,
+        buyer_id: order.buyer_id,
+        seller_id: order.seller_id,
+        tracking_provider: order.tracking_provider,
+        tracking_number: order.tracking_number,
+        shipped_at: order.shipped_at,
+        delivered_at: order.delivered_at,
+        shipping_first_name: order.shipping_first_name,
+        shipping_last_name: order.shipping_last_name,
+        shipping_address: order.shipping_address,
+        shipping_city: order.shipping_city,
+        shipping_state: order.shipping_state,
+        shipping_postcode: order.shipping_postcode,
+        buyer_profile: order.buyer_profile,
+        seller_profile: order.seller_profile,
+        orders: [order],
+      });
+
+      continue;
+    }
+
+    existing.orders.push(order);
+    existing.status = getGroupStatus(existing.orders);
+
+    // Keep the first non-null tracking values (should be consistent within a group)
+    existing.tracking_provider = existing.tracking_provider ?? order.tracking_provider;
+    existing.tracking_number = existing.tracking_number ?? order.tracking_number;
+    existing.shipped_at = existing.shipped_at ?? order.shipped_at;
+    existing.delivered_at = existing.delivered_at ?? order.delivered_at;
+  }
+
+  return Array.from(groups.values()).sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+};
 
 export function useOrders() {
   const { user } = useAuth();
@@ -120,18 +202,27 @@ export function useOrders() {
     enabled: !!user?.id,
   });
 
+
+  const buyerOrderGroups = useMemo(() => groupOrders(buyerOrders), [buyerOrders]);
+  const sellerOrderGroups = useMemo(() => groupOrders(sellerOrders), [sellerOrders]);
+
   // Mark order as shipped (seller action)
   const markAsShipped = useMutation({
-    mutationFn: async ({ 
-      orderId, 
-      trackingProvider, 
-      trackingNumber 
-    }: { 
-      orderId: string; 
-      trackingProvider: string; 
+    mutationFn: async ({
+      orderId,
+      orderGroupId,
+      trackingProvider,
+      trackingNumber,
+    }: {
+      orderId?: string;
+      orderGroupId?: string;
+      trackingProvider: string;
       trackingNumber: string;
     }) => {
-      const { error } = await supabase
+      if (!user?.id) throw new Error('Not authenticated');
+      if (!orderId && !orderGroupId) throw new Error('orderId or orderGroupId is required');
+
+      let query = supabase
         .from('orders')
         .update({
           status: 'shipped',
@@ -139,9 +230,11 @@ export function useOrders() {
           tracking_number: trackingNumber,
           shipped_at: new Date().toISOString(),
         })
-        .eq('id', orderId)
-        .eq('seller_id', user?.id);
+        .eq('seller_id', user.id);
 
+      query = orderGroupId ? query.eq('order_group_id', orderGroupId) : query.eq('id', orderId!);
+
+      const { error } = await query;
       if (error) throw error;
     },
     onSuccess: () => {
@@ -156,16 +249,25 @@ export function useOrders() {
 
   // Mark order as delivered (buyer action)
   const markAsDelivered = useMutation({
-    mutationFn: async (orderId: string) => {
-      const { error } = await supabase
+    mutationFn: async (input: string | { orderId?: string; orderGroupId?: string }) => {
+      if (!user?.id) throw new Error('Not authenticated');
+
+      const orderId = typeof input === 'string' ? input : input.orderId;
+      const orderGroupId = typeof input === 'string' ? undefined : input.orderGroupId;
+
+      if (!orderId && !orderGroupId) throw new Error('orderId or orderGroupId is required');
+
+      let query = supabase
         .from('orders')
         .update({
           status: 'delivered',
           delivered_at: new Date().toISOString(),
         })
-        .eq('id', orderId)
-        .eq('buyer_id', user?.id);
+        .eq('buyer_id', user.id);
 
+      query = orderGroupId ? query.eq('order_group_id', orderGroupId) : query.eq('id', orderId!);
+
+      const { error } = await query;
       if (error) throw error;
     },
     onSuccess: () => {
@@ -181,6 +283,8 @@ export function useOrders() {
   return {
     buyerOrders,
     sellerOrders,
+    buyerOrderGroups,
+    sellerOrderGroups,
     loadingBuyerOrders,
     loadingSellerOrders,
     markAsShipped,

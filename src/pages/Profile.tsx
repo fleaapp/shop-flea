@@ -190,9 +190,12 @@ const Profile = () => {
       </div>
 
       <SalesDetailsSheet
-        order={selectedOrder}
+        orders={selectedOrder ? [selectedOrder] : null}
         open={salesSheetOpen}
-        onOpenChange={setSalesSheetOpen}
+        onOpenChange={(open) => {
+          setSalesSheetOpen(open);
+          if (!open) setSelectedOrder(null);
+        }}
         onMarkShipped={handleMarkShipped}
       />
 

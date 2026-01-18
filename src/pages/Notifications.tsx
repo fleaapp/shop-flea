@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
-import { useOrders, Order } from '@/hooks/useOrders';
+import { useOrders, Order, OrderGroup } from '@/hooks/useOrders';
 import { useNotifications, getNotificationMessage, getNotificationEmoji, Notification } from '@/hooks/useNotifications';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -68,20 +68,20 @@ const UnreadIndicator = () => (
 
 const Notifications = () => {
   const [activeTab, setActiveTab] = useState<'activity' | 'sales'>('activity');
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
-  const { sellerOrders, loadingSellerOrders, markAsShipped } = useOrders();
+  const { sellerOrderGroups, loadingSellerOrders, markAsShipped } = useOrders();
   const { notifications, isLoading: loadingNotifications, unreadCount, markAsRead } = useNotifications();
   
   // Filter sales by status
-  const awaitingShipping = sellerOrders.filter(o => o.status === 'awaiting');
-  const shipped = sellerOrders.filter(o => o.status === 'shipped');
-  const delivered = sellerOrders.filter(o => o.status === 'delivered');
+  const awaitingShipping = sellerOrderGroups.filter(g => g.status === 'awaiting');
+  const shipped = sellerOrderGroups.filter(g => g.status === 'shipped');
+  const delivered = sellerOrderGroups.filter(g => g.status === 'delivered');
   
   const awaitingCount = awaitingShipping.length;
 
-  const handleSaleClick = (order: Order) => {
-    setSelectedOrder(order);
+  const handleSaleClick = (group: OrderGroup) => {
+    setSelectedGroup(group);
     setSaleSheetOpen(true);
   };
 
@@ -93,15 +93,24 @@ const Notifications = () => {
   };
 
   const handleMarkShipped = (trackingDetails: { serviceProvider: string; trackingNumber: string }) => {
-    if (selectedOrder) {
+    if (!selectedGroup) return;
+
+    if (selectedGroup.order_group_id) {
       markAsShipped.mutate({
-        orderId: selectedOrder.id,
+        orderGroupId: selectedGroup.order_group_id,
         trackingProvider: trackingDetails.serviceProvider,
         trackingNumber: trackingDetails.trackingNumber,
       });
-      setSaleSheetOpen(false);
-      setSelectedOrder(null);
+    } else {
+      markAsShipped.mutate({
+        orderId: selectedGroup.orders[0].id,
+        trackingProvider: trackingDetails.serviceProvider,
+        trackingNumber: trackingDetails.trackingNumber,
+      });
     }
+
+    setSaleSheetOpen(false);
+    setSelectedGroup(null);
   };
 
   const formatTime = (dateString: string) => {
@@ -112,15 +121,15 @@ const Notifications = () => {
     }
   };
 
-  const SaleCard = ({ order, showShadow = false }: { order: Order; showShadow?: boolean }) => {
-    const rawBuyerUsername = order.buyer_profile?.username || 'Unknown';
+  const SaleCard = ({ group, showShadow = false }: { group: OrderGroup; showShadow?: boolean }) => {
+    const primaryOrder = group.orders[0];
     const buyerUsername = rawBuyerUsername.startsWith('@') ? rawBuyerUsername.slice(1) : rawBuyerUsername;
     const buyerAvatar = order.buyer_profile?.avatar_url || '';
     const productImage = order.listing?.images?.[0] || '';
 
     return (
       <div 
-        onClick={() => handleSaleClick(order)}
+        onClick={() => handleSaleClick(group)}
         className={cn(
           "flex items-center gap-4 rounded-2xl bg-card p-4 cursor-pointer",
           showShadow && "card-shadow"
@@ -129,11 +138,12 @@ const Notifications = () => {
         <ProductThumbnail image={productImage} avatar={buyerAvatar} />
         <div className="flex-1 min-w-0">
           <p className="text-sm text-foreground">
-            Sold to <span className="font-semibold">@{buyerUsername}.</span>
+            Sold to <span className="font-semibold">@{buyerUsername}</span>
+            {itemCount > 1 ? <span className="text-muted-foreground"> • {itemCount} items</span> : null}.
           </p>
-          <p className="text-xs text-muted-foreground">{formatTime(order.created_at)}</p>
-          <span className={cn('mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium', getStatusBadge(order.status).className)}>
-            {getStatusBadge(order.status).label}
+          <p className="text-xs text-muted-foreground">{formatTime(group.created_at)}</p>
+          <span className={cn('mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium', getStatusBadge(group.status).className)}>
+            {getStatusBadge(group.status).label}
           </span>
         </div>
         <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
@@ -240,7 +250,7 @@ const Notifications = () => {
               <div className="flex justify-center py-10">
                 <p className="text-muted-foreground">Loading sales...</p>
               </div>
-            ) : sellerOrders.length === 0 ? (
+            ) : sellerOrderGroups.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <span className="text-6xl opacity-50 mb-4">💸</span>
                 <p className="text-lg font-medium text-muted-foreground">No sales yet</p>
@@ -253,8 +263,8 @@ const Notifications = () => {
                   <div>
                     <h2 className="mb-3 text-base font-semibold text-foreground">Awaiting shipping</h2>
                     <div className="space-y-3">
-                      {awaitingShipping.map(order => (
-                        <SaleCard key={order.id} order={order} showShadow />
+                      {awaitingShipping.map(group => (
+                        <SaleCard key={group.id} group={group} showShadow />
                       ))}
                     </div>
                   </div>
@@ -265,8 +275,8 @@ const Notifications = () => {
                   <div>
                     <h2 className="mb-3 text-base font-semibold text-foreground">Shipped</h2>
                     <div className="space-y-3">
-                      {shipped.map(order => (
-                        <SaleCard key={order.id} order={order} />
+                      {shipped.map(group => (
+                        <SaleCard key={group.id} group={group} />
                       ))}
                     </div>
                   </div>
@@ -277,8 +287,8 @@ const Notifications = () => {
                   <div>
                     <h2 className="mb-3 text-base font-semibold text-foreground">Delivered</h2>
                     <div className="space-y-3">
-                      {delivered.map(order => (
-                        <SaleCard key={order.id} order={order} />
+                      {delivered.map(group => (
+                        <SaleCard key={group.id} group={group} />
                       ))}
                     </div>
                   </div>
@@ -291,9 +301,12 @@ const Notifications = () => {
 
       {/* Sales Details Sheet */}
       <SalesDetailsSheet
-        order={selectedOrder}
+        orders={selectedGroup?.orders ?? null}
         open={saleSheetOpen}
-        onOpenChange={setSaleSheetOpen}
+        onOpenChange={(open) => {
+          setSaleSheetOpen(open);
+          if (!open) setSelectedGroup(null);
+        }}
         onMarkShipped={handleMarkShipped}
       />
 

@@ -76,9 +76,13 @@ const Checkout = () => {
     setIsSubmitting(true);
     
     try {
+      // A single id to group all items bought together in this checkout
+      const orderGroupId = crypto.randomUUID();
+
       // Create order records for each item
       const orderPromises = items.map(async (item) => {
         const { error } = await supabase.from('orders').insert({
+          order_group_id: orderGroupId,
           listing_id: item.id,
           buyer_id: user.id,
           seller_id: item.sellerId,
@@ -92,9 +96,9 @@ const Checkout = () => {
           shipping_state: shippingState,
           shipping_postcode: shippingPostcode.trim(),
         });
-        
+
         if (error) throw error;
-        
+
         // Update listing status to sold
         await supabase.from('listings').update({ status: 'sold' }).eq('id', item.id);
       });
