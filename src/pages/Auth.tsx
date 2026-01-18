@@ -4,6 +4,7 @@ import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
 import fleaLogoAuth from '@/assets/flea-logo-auth.jpeg';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,7 +23,7 @@ const Auth = () => {
   const [signupUsername, setSignupUsername] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
-
+  const [passwordFocused, setPasswordFocused] = useState(false);
   // Redirect if already logged in
   useEffect(() => {
     if (user && !authLoading) {
@@ -234,26 +235,43 @@ const Auth = () => {
                 />
               </div>
               
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Password"
-                  value={signupPassword}
-                  onChange={(e) => setSignupPassword(e.target.value)}
-                  className="h-10 pl-9 pr-9 rounded-lg bg-card border border-foreground text-foreground placeholder:text-muted-foreground text-sm focus-visible:ring-muted-foreground/50 focus-visible:ring-offset-0"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              <Popover open={passwordFocused}>
+                <PopoverTrigger asChild>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Password"
+                      value={signupPassword}
+                      onChange={(e) => setSignupPassword(e.target.value)}
+                      onFocus={() => setPasswordFocused(true)}
+                      onBlur={() => setPasswordFocused(false)}
+                      className="h-10 pl-9 pr-9 rounded-lg bg-card border border-foreground text-foreground placeholder:text-muted-foreground text-sm focus-visible:ring-muted-foreground/50 focus-visible:ring-offset-0"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </PopoverTrigger>
+                <PopoverContent 
+                  side="top" 
+                  align="center" 
+                  className="w-auto px-3 py-2 text-xs bg-foreground text-card border-none shadow-lg"
+                  onOpenAutoFocus={(e) => e.preventDefault()}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              <p className="text-[10px] text-muted-foreground px-1 -mt-1">
-                8+ characters, 1 capital, 1 number, 1 symbol
-              </p>
+                  <p className="font-medium">Password must include:</p>
+                  <ul className="mt-1 space-y-0.5 text-card/80">
+                    <li>• 8+ characters</li>
+                    <li>• 1 capital letter</li>
+                    <li>• 1 number</li>
+                    <li>• 1 symbol</li>
+                  </ul>
+                </PopoverContent>
+              </Popover>
               
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
