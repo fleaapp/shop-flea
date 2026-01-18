@@ -66,6 +66,8 @@ const ListingDetails = () => {
   
   // Check if listing is sold (passed from navigation state)
   const isSold = location.state?.isSold || false;
+  // Check if we came from the favorites/wishlist page
+  const fromWishlist = location.state?.fromWishlist || false;
 
   // All hooks must be called before any conditional returns
   const { addFavorite, removeFavorite, isFavorite } = useFavorites();
@@ -213,8 +215,16 @@ const ListingDetails = () => {
   };
 
   const handleDiscard = async () => {
-    await addDiscarded(listing.id);
-    toast.success('Item discarded');
+    // If the item is in the wishlist, remove it from wishlist instead of just discarding
+    if (isFavorite(listing.id)) {
+      const success = await removeFavorite(listing.id);
+      if (success) {
+        toast.success('Removed from wishlist');
+      }
+    } else {
+      await addDiscarded(listing.id);
+      toast.success('Item discarded');
+    }
     handleClose();
   };
 

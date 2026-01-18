@@ -28,7 +28,7 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isInCart
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleCardClick = () => {
-    navigate(`/listing/${listing.id}`, { state: { listing, isSold } });
+    navigate(`/listing/${listing.id}`, { state: { listing, isSold, fromWishlist: true } });
   };
 
   const handleRemoveClick = (e: React.MouseEvent) => {
