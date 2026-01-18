@@ -65,8 +65,6 @@ const SalesDetailsSheet = ({
 
   if (!orders || orders.length === 0) return null;
 
-  const primaryOrder = orders[0];
-
   const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
   const sellerFee = subtotal * 0.04;
   const youReceived = subtotal - sellerFee;
