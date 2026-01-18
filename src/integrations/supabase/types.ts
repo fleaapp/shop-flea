@@ -207,6 +207,7 @@ export type Database = {
           delivered_at: string | null
           id: string
           listing_id: string
+          order_group_id: string | null
           price: number
           seller_id: string
           shipped_at: string | null
@@ -228,6 +229,7 @@ export type Database = {
           delivered_at?: string | null
           id?: string
           listing_id: string
+          order_group_id?: string | null
           price: number
           seller_id: string
           shipped_at?: string | null
@@ -249,6 +251,7 @@ export type Database = {
           delivered_at?: string | null
           id?: string
           listing_id?: string
+          order_group_id?: string | null
           price?: number
           seller_id?: string
           shipped_at?: string | null
