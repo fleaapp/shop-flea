@@ -5,6 +5,16 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import ListingTag from '@/components/ListingTag';
 import ListingComments from '@/components/ListingComments';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,9 +62,13 @@ const ListingDetails = () => {
   const isSold = location.state?.isSold || false;
 
   // All hooks must be called before any conditional returns
-  const { addFavorite, isFavorite } = useFavorites();
-  const { addToCart, isInCart } = useCart();
+  const { addFavorite, removeFavorite, isFavorite } = useFavorites();
+  const { addToCart, removeFromCart, isInCart } = useCart();
   const { addDiscarded } = useDiscardedListings();
+
+  // Confirmation dialog states
+  const [showRemoveFromCartDialog, setShowRemoveFromCartDialog] = useState(false);
+  const [showRemoveFromWishlistDialog, setShowRemoveFromWishlistDialog] = useState(false);
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -135,20 +149,29 @@ const ListingDetails = () => {
   const sellerAvatar = seller?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${listing.id}`;
   const sellerLocation = seller?.location || 'Unknown';
 
-  const handleAddToWishlist = async () => {
+  const handleWishlistClick = async () => {
     if (isFavorite(listing.id)) {
-      toast.info('Already in wishlist');
+      setShowRemoveFromWishlistDialog(true);
       return;
     }
     const success = await addFavorite(listing.id);
     if (success) {
       toast.success('Added to wishlist!');
+      handleClose();
     }
   };
 
-  const handleAddToCart = () => {
+  const handleRemoveFromWishlist = async () => {
+    const success = await removeFavorite(listing.id);
+    if (success) {
+      toast.success('Removed from wishlist');
+    }
+    setShowRemoveFromWishlistDialog(false);
+  };
+
+  const handleCartClick = () => {
     if (isInCart(listing.id)) {
-      toast.info('Already in cart');
+      setShowRemoveFromCartDialog(true);
       return;
     }
     // Convert DB listing to Listing type for cart
@@ -172,6 +195,15 @@ const ListingDetails = () => {
       condition: listing.condition as 'new' | 'like-new' | 'good' | 'fair',
     });
     toast.success('Added to cart!');
+    handleClose();
+  };
+
+  const handleRemoveFromCart = async () => {
+    const success = await removeFromCart(listing.id);
+    if (success) {
+      toast.success('Removed from cart');
+    }
+    setShowRemoveFromCartDialog(false);
   };
 
   const handleDiscard = async () => {
@@ -272,7 +304,7 @@ const ListingDetails = () => {
           <div className="sticky bottom-0 left-0 right-0 flex gap-3 bg-background px-4 py-4 border-t border-border justify-center">
             <Button
               variant="outline"
-              onClick={() => { handleDiscard(); }}
+              onClick={handleDiscard}
               className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]"
             >
               ❌
@@ -282,22 +314,66 @@ const ListingDetails = () => {
               <>
                 <Button
                   variant="outline"
-                  onClick={() => { handleAddToWishlist(); handleClose(); }}
-                  className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]"
+                  onClick={handleWishlistClick}
+                  className={`h-14 w-14 rounded-2xl border-2 text-2xl transition-colors ${
+                    isFavorite(listing.id) 
+                      ? 'bg-[#ddfed7] border-[#ddfed7]' 
+                      : 'bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]'
+                  }`}
                 >
                   💌
                 </Button>
 
                 <Button
                   variant="outline"
-                  onClick={() => { handleAddToCart(); handleClose(); }}
-                  className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]"
+                  onClick={handleCartClick}
+                  className={`h-14 w-14 rounded-2xl border-2 text-2xl transition-colors ${
+                    isInCart(listing.id) 
+                      ? 'bg-[#ddfed7] border-[#ddfed7]' 
+                      : 'bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]'
+                  }`}
                 >
                   🛒
                 </Button>
               </>
             )}
           </div>
+
+          {/* Remove from Wishlist Confirmation */}
+          <AlertDialog open={showRemoveFromWishlistDialog} onOpenChange={setShowRemoveFromWishlistDialog}>
+            <AlertDialogContent className="max-w-[280px] rounded-2xl">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remove from Wishlist?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This item will be removed from your wishlist.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-row gap-2">
+                <AlertDialogCancel className="flex-1 mt-0">Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleRemoveFromWishlist} className="flex-1 bg-destructive hover:bg-destructive/90">
+                  Remove
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Remove from Cart Confirmation */}
+          <AlertDialog open={showRemoveFromCartDialog} onOpenChange={setShowRemoveFromCartDialog}>
+            <AlertDialogContent className="max-w-[280px] rounded-2xl">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remove from Cart?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This item will be removed from your cart.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-row gap-2">
+                <AlertDialogCancel className="flex-1 mt-0">Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleRemoveFromCart} className="flex-1 bg-destructive hover:bg-destructive/90">
+                  Remove
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </DrawerContent>
       </Drawer>
     </div>
