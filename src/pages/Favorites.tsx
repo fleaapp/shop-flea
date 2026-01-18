@@ -162,6 +162,7 @@ const Favorites = () => {
         open={filterOpen}
         onOpenChange={setFilterOpen}
         onApplyFilters={handleApplyFilters}
+        showHideSoldItems
       />
       
       <BottomNav />
