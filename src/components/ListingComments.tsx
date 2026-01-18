@@ -45,6 +45,20 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  // Always fetch comment count (for badge visibility when collapsed)
+  const { data: commentCount = 0 } = useQuery({
+    queryKey: ['listing-comments-count', listingId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('listing_comments')
+        .select('*', { count: 'exact', head: true })
+        .eq('listing_id', listingId);
+
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
   const { data: comments = [], isLoading } = useQuery({
     queryKey: ['listing-comments', listingId],
     queryFn: async () => {
@@ -99,6 +113,7 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['listing-comments', listingId] });
+      queryClient.invalidateQueries({ queryKey: ['listing-comments-count', listingId] });
       setNewComment('');
       setReplyingTo(null);
       toast.success(replyingTo ? 'Reply added!' : 'Comment added!');
@@ -119,6 +134,7 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['listing-comments', listingId] });
+      queryClient.invalidateQueries({ queryKey: ['listing-comments-count', listingId] });
       toast.success('Comment deleted');
     },
     onError: () => {
@@ -225,8 +241,8 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
             variant="outline"
             className="w-full flex items-center justify-between rounded-2xl border-2 bg-card px-4 py-3 h-auto"
           >
-            <span className="font-medium">
-              💬 Comments {comments.length > 0 && `(${comments.length})`}
+            <span className="font-bold">
+              💬 Comments {commentCount > 0 && `(${commentCount})`}
             </span>
             {isOpen ? (
               <ChevronUp className="h-5 w-5 text-muted-foreground" />
