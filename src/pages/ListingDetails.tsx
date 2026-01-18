@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel';
 import ListingTag from '@/components/ListingTag';
+import ListingComments from '@/components/ListingComments';
 import { supabase } from '@/integrations/supabase/client';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useCart } from '@/context/CartContext';
@@ -260,6 +261,9 @@ const ListingDetails = () => {
                   <p className="text-xs text-muted-foreground">+ ${listing.shipping_price || 0} shipping</p>
                 </div>
               </div>
+
+              {/* Comments Section */}
+              <ListingComments listingId={listing.id} />
 
             </div>
           </div>
