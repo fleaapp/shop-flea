@@ -251,6 +251,9 @@ const Auth = () => {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              <p className="text-[10px] text-muted-foreground px-1 -mt-1">
+                8+ characters, 1 capital, 1 number, 1 symbol
+              </p>
               
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
