@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { useNotifications } from '@/hooks/useNotifications';
+import { useOrders } from '@/hooks/useOrders';
 
 interface NavItem {
   icon: React.ReactNode;
@@ -16,8 +17,27 @@ interface NavItem {
 const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { cartItems } = useCart();
   const { user } = useAuth();
+  const { unreadCount: activityUnreadCount } = useNotifications();
+  const { buyerOrders, sellerOrders } = useOrders();
+
+  // Orders badge: awaiting + shipped orders (buyer perspective)
+  const ordersBadge = useMemo(() => {
+    const count = buyerOrders.filter(o => o.status === 'awaiting' || o.status === 'shipped').length;
+    return count || undefined;
+  }, [buyerOrders]);
+
+  // Sales badge: new orders (awaiting) only for seller
+  const salesBadge = useMemo(() => {
+    const count = sellerOrders.filter(o => o.status === 'awaiting').length;
+    return count || undefined;
+  }, [sellerOrders]);
+
+  // Alerts badge: Activity notifications + Sales notifications
+  const alertsBadge = useMemo(() => {
+    const total = activityUnreadCount + (salesBadge || 0);
+    return total || undefined;
+  }, [activityUnreadCount, salesBadge]);
 
   const { data: profile } = useQuery({
     queryKey: ['profile-avatar', user?.id],
@@ -53,9 +73,9 @@ const BottomNav = () => {
     { icon: <span className="text-lg">⚙️</span>, label: 'Settings', path: '/settings' },
     { icon: profileIcon, label: 'Profile', path: '/profile' },
     { icon: <span className="text-lg">🏠</span>, label: 'Home', path: '/' },
-    { icon: <span className="text-lg">🛒</span>, label: 'Cart', path: '/cart', badge: cartItems.length || undefined },
-    { icon: <span className="text-lg">🔔</span>, label: 'Alerts', path: '/notifications' },
-  ], [cartItems.length, profile?.avatar_url, profileIcon]);
+    { icon: <span className="text-lg">🛒</span>, label: 'Cart', path: '/cart', badge: ordersBadge },
+    { icon: <span className="text-lg">🔔</span>, label: 'Alerts', path: '/notifications', badge: alertsBadge },
+  ], [profile?.avatar_url, profileIcon, ordersBadge, alertsBadge]);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 flex justify-center py-3 max-[375px]:py-2 z-50 pointer-events-none">
