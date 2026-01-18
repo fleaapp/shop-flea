@@ -41,7 +41,14 @@ const Auth = () => {
     const { error } = await signIn(loginEmail, loginPassword);
     
     if (error) {
-      toast.error(error.message || 'Failed to sign in');
+      // Handle specific error cases for better UX
+      if (error.message?.includes('Invalid login credentials')) {
+        toast.error('Incorrect email or password');
+      } else if (error.message?.includes('Email not confirmed')) {
+        toast.error('Please verify your email before logging in');
+      } else {
+        toast.error(error.message || 'Failed to sign in');
+      }
       setIsLoading(false);
     } else {
       navigate('/');
@@ -54,11 +61,16 @@ const Auth = () => {
       toast.error('Please fill in all required fields');
       return;
     }
-    // Password validation: min 8 chars, 1 number, 1 symbol
+    // Password validation: min 8 chars, 1 capital letter, 1 number, 1 symbol
+    const hasCapital = /[A-Z]/.test(signupPassword);
     const hasNumber = /\d/.test(signupPassword);
-    const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(signupPassword);
+    const hasSymbol = /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;'/`~]/.test(signupPassword);
     if (signupPassword.length < 8) {
       toast.error('Password must be at least 8 characters');
+      return;
+    }
+    if (!hasCapital) {
+      toast.error('Password must include at least 1 capital letter');
       return;
     }
     if (!hasNumber) {
