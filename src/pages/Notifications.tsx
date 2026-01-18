@@ -80,7 +80,8 @@ const Notifications = () => {
   const shipped = sellerOrderGroups.filter(g => g.status === 'shipped');
   const delivered = sellerOrderGroups.filter(g => g.status === 'delivered');
   
-  const awaitingCount = awaitingShipping.length;
+  // Sales badge: awaiting + shipped (not delivered)
+  const salesBadgeCount = awaitingShipping.length + shipped.length;
 
   const handleSaleClick = (group: OrderGroup) => {
     setSelectedGroup(group);
@@ -222,9 +223,9 @@ const Notifications = () => {
             >
               <span className="text-base">💸</span>
               Sales
-              {activeTab !== 'sales' && awaitingCount > 0 && (
+              {activeTab !== 'sales' && salesBadgeCount > 0 && (
                 <span className="absolute -top-1 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                  {awaitingCount}
+                  {salesBadgeCount}
                 </span>
               )}
             </button>
