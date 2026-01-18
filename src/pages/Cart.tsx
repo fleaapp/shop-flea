@@ -15,6 +15,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Listing } from '@/types/listing';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel';
+import ListingComments from '@/components/ListingComments';
 
 const getOrderStatusBadge = (status: Order['status']) => {
   switch (status) {
@@ -504,6 +505,11 @@ const CartListingDetailsDrawer = ({
                 <p className="text-2xl font-bold text-foreground">${listing.price}</p>
                 <p className="text-xs text-muted-foreground">+ ${listing.shippingPrice || 0} shipping</p>
               </div>
+            </div>
+
+            {/* Comments Section */}
+            <div className="mt-6">
+              <ListingComments listingId={listing.id} sellerId={listing.sellerId} />
             </div>
           </div>
         </div>
