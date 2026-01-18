@@ -6,7 +6,7 @@ import BottomNav from '@/components/BottomNav';
 import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
-import { useOrders, Order } from '@/hooks/useOrders';
+import { useOrders, Order, OrderGroup } from '@/hooks/useOrders';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import CartItemRow from '@/components/CartItemRow';
@@ -58,21 +58,26 @@ const Cart = () => {
   const { cartItems, removeFromCart } = useCart();
   const { addFavorite } = useFavorites();
   const { addDiscarded } = useDiscardedListings();
-  const { buyerOrders, loadingBuyerOrders, markAsDelivered } = useOrders();
+  const { buyerOrderGroups, loadingBuyerOrders, markAsDelivered } = useOrders();
   const [activeTab, setActiveTab] = useState<'cart' | 'orders'>('cart');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [selectedListing, setSelectedListing] = useState<(Listing & { status?: string }) | null>(null);
 
-  const handleOrderClick = (order: Order) => {
-    setSelectedOrder(order);
+  const handleOrderClick = (group: OrderGroup) => {
+    setSelectedOrderGroup(group);
   };
 
   const handleMarkDelivered = () => {
-    if (selectedOrder) {
-      markAsDelivered.mutate(selectedOrder.id);
-      setSelectedOrder(null);
+    if (!selectedOrderGroup) return;
+
+    if (selectedOrderGroup.order_group_id) {
+      markAsDelivered.mutate({ orderGroupId: selectedOrderGroup.order_group_id });
+    } else {
+      markAsDelivered.mutate(selectedOrderGroup.orders[0].id);
     }
+
+    setSelectedOrderGroup(null);
   };
 
   // Use actual listing status from database
@@ -142,10 +147,10 @@ const Cart = () => {
       .map(([sellerId]) => sellerId)
   );
 
-  // Filter orders by status
-  const awaitingOrders = buyerOrders.filter((o) => o.status === 'awaiting');
-  const shippedOrders = buyerOrders.filter((o) => o.status === 'shipped');
-  const deliveredOrders = buyerOrders.filter((o) => o.status === 'delivered');
+  // Filter order groups by status
+  const awaitingOrders = buyerOrderGroups.filter((g) => g.status === 'awaiting');
+  const shippedOrders = buyerOrderGroups.filter((g) => g.status === 'shipped');
+  const deliveredOrders = buyerOrderGroups.filter((g) => g.status === 'delivered');
 
   const formatOrderTime = (dateString: string) => {
     try {
@@ -155,16 +160,18 @@ const Cart = () => {
     }
   };
 
-  const renderOrderCard = (order: Order, showShadow = false) => {
-    const rawUsername = order.seller_profile?.username || 'Unknown';
+  const renderOrderCard = (group: OrderGroup, showShadow = false) => {
+    const primaryOrder = group.orders[0];
+    const rawUsername = primaryOrder.seller_profile?.username || 'Unknown';
     const sellerUsername = rawUsername.startsWith('@') ? rawUsername.slice(1) : rawUsername;
-    const sellerAvatar = order.seller_profile?.avatar_url || '';
-    const productImage = order.listing?.images?.[0] || '';
+    const sellerAvatar = primaryOrder.seller_profile?.avatar_url || '';
+    const productImage = primaryOrder.listing?.images?.[0] || '';
+    const itemCount = group.orders.length;
 
     return (
       <div
-        key={order.id}
-        onClick={() => handleOrderClick(order)}
+        key={group.id}
+        onClick={() => handleOrderClick(group)}
         className={cn(
           "flex items-center gap-4 rounded-2xl bg-card p-4 cursor-pointer",
           showShadow && "card-shadow"
@@ -173,16 +180,17 @@ const Cart = () => {
         <ProductThumbnail image={productImage} avatar={sellerAvatar} />
         <div className="flex-1 min-w-0">
           <p className="text-sm text-foreground">
-            From <span className="font-semibold">@{sellerUsername}.</span>
+            From <span className="font-semibold">@{sellerUsername}</span>
+            {itemCount > 1 ? <span className="text-muted-foreground"> • {itemCount} items</span> : null}.
           </p>
-          <p className="text-xs text-muted-foreground">{formatOrderTime(order.created_at)}</p>
+          <p className="text-xs text-muted-foreground">{formatOrderTime(group.created_at)}</p>
           <span
             className={cn(
               'mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium',
-              getOrderStatusBadge(order.status).className
+              getOrderStatusBadge(group.status).className
             )}
           >
-            {getOrderStatusBadge(order.status).label}
+            {getOrderStatusBadge(group.status).label}
           </span>
         </div>
         <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
@@ -307,7 +315,7 @@ const Cart = () => {
             <div className="flex justify-center py-10">
               <p className="text-muted-foreground">Loading orders...</p>
             </div>
-          ) : buyerOrders.length === 0 ? (
+          ) : buyerOrderGroups.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <span className="text-6xl opacity-50 mb-4">🧾</span>
               <p className="text-lg font-medium text-muted-foreground">No orders yet</p>
@@ -351,9 +359,9 @@ const Cart = () => {
 
       {/* Order Details Drawer */}
       <OrderDetailsSheet
-        order={selectedOrder}
-        open={!!selectedOrder}
-        onOpenChange={(open) => !open && setSelectedOrder(null)}
+        orders={selectedOrderGroup?.orders ?? null}
+        open={!!selectedOrderGroup}
+        onOpenChange={(open) => !open && setSelectedOrderGroup(null)}
         onMarkDelivered={handleMarkDelivered}
       />
 

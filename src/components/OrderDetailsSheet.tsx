@@ -6,7 +6,7 @@ import { Order, OrderStatus } from '@/hooks/useOrders';
 import { format } from 'date-fns';
 
 interface OrderDetailsSheetProps {
-  order: Order | null;
+  orders: Order[] | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onMarkDelivered?: () => void;
@@ -30,24 +30,26 @@ const SectionHeader = ({ children }: { children: React.ReactNode }) => (
 );
 
 const OrderDetailsSheet = ({
-  order,
+  orders,
   open,
   onOpenChange,
   onMarkDelivered,
 }: OrderDetailsSheetProps) => {
-  if (!order) return null;
+  if (!orders || orders.length === 0) return null;
 
-  const subtotal = order.price + order.shipping_price;
+  const primaryOrder = orders[0];
+
+  const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
   const buyerFee = subtotal * 0.04;
   const total = subtotal + buyerFee;
-  const statusBadge = getStatusBadge(order.status);
-  const formattedDate = format(new Date(order.created_at), 'dd/MM/yyyy');
+  const statusBadge = getStatusBadge(primaryOrder.status);
+  const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
 
-  const rawUsername = order.seller_profile?.username || 'Unknown';
+  const rawUsername = primaryOrder.seller_profile?.username || 'Unknown';
   const sellerUsername = rawUsername.startsWith('@') ? rawUsername.slice(1) : rawUsername;
-  const sellerAvatar = order.seller_profile?.avatar_url || '';
-  const listingTitle = order.listing?.title || 'Item';
-  const listingImage = order.listing?.images?.[0] || '';
+  const sellerAvatar = primaryOrder.seller_profile?.avatar_url || '';
+
+  const displayId = (primaryOrder.order_group_id || primaryOrder.id).slice(0, 8).toUpperCase();
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -55,9 +57,9 @@ const OrderDetailsSheet = ({
         <div className="overflow-y-auto">
           <DrawerHeader className="text-center pb-4">
             <DrawerTitle className="text-xl font-semibold">Order details</DrawerTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Order #{order.id.slice(0, 8).toUpperCase()} • {formattedDate}
-            </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Order #{displayId} • {formattedDate}
+              </p>
             <div className="flex justify-center mt-1 mb-2">
               <Badge variant={statusBadge.variant}>
                 {statusBadge.label}
@@ -83,20 +85,27 @@ const OrderDetailsSheet = ({
               <SectionHeader>Order Summary</SectionHeader>
               <div>
                 <div className="px-4 py-4 space-y-4">
-                  <div className="flex gap-4">
-                    <img
-                      src={listingImage}
-                      alt={listingTitle}
-                      className="h-20 w-20 rounded-xl object-cover bg-muted"
-                    />
-                    <div className="flex-1 flex flex-col justify-between">
-                      <h3 className="font-semibold text-foreground">{listingTitle}</h3>
-                      <div className="text-right">
-                        <p className="text-lg font-semibold">${order.price}</p>
-                        <p className="text-sm text-muted-foreground">+ ${order.shipping_price} shipping</p>
+                  {orders.map((o) => {
+                    const listingTitle = o.listing?.title || 'Item';
+                    const listingImage = o.listing?.images?.[0] || '';
+
+                    return (
+                      <div key={o.id} className="flex gap-4">
+                        <img
+                          src={listingImage}
+                          alt={listingTitle}
+                          className="h-20 w-20 rounded-xl object-cover bg-muted"
+                        />
+                        <div className="flex-1 flex flex-col justify-between">
+                          <h3 className="font-semibold text-foreground">{listingTitle}</h3>
+                          <div className="text-right">
+                            <p className="text-lg font-semibold">${o.price}</p>
+                            <p className="text-sm text-muted-foreground">+ ${o.shipping_price} shipping</p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    );
+                  })}
                 </div>
 
                 {/* Fee line */}
@@ -117,11 +126,11 @@ const OrderDetailsSheet = ({
               <SectionHeader>Shipping Address</SectionHeader>
               <div className="p-4 space-y-1">
                 <p className="font-medium text-foreground">
-                  {order.shipping_first_name} {order.shipping_last_name}
+                  {primaryOrder.shipping_first_name} {primaryOrder.shipping_last_name}
                 </p>
-                <p className="text-muted-foreground">{order.shipping_address}</p>
+                <p className="text-muted-foreground">{primaryOrder.shipping_address}</p>
                 <p className="text-muted-foreground">
-                  {order.shipping_city}, {order.shipping_state} {order.shipping_postcode}
+                  {primaryOrder.shipping_city}, {primaryOrder.shipping_state} {primaryOrder.shipping_postcode}
                 </p>
               </div>
             </div>
@@ -133,13 +142,17 @@ const OrderDetailsSheet = ({
                 <div>
                   <p className="font-semibold text-foreground">Service Provider:</p>
                   <p className="text-muted-foreground">
-                    {order.status === 'awaiting' ? 'Awaiting shipping' : (order.tracking_provider || 'N/A')}
+                    {primaryOrder.status === 'awaiting'
+                      ? 'Awaiting shipping'
+                      : (primaryOrder.tracking_provider || 'N/A')}
                   </p>
                 </div>
                 <div>
                   <p className="font-semibold text-foreground">Tracking number:</p>
                   <p className="text-muted-foreground">
-                    {order.status === 'awaiting' ? 'Awaiting shipping' : (order.tracking_number || 'N/A')}
+                    {primaryOrder.status === 'awaiting'
+                      ? 'Awaiting shipping'
+                      : (primaryOrder.tracking_number || 'N/A')}
                   </p>
                 </div>
               </div>
@@ -147,7 +160,7 @@ const OrderDetailsSheet = ({
 
             {/* Actions - Show for shipped orders OR as help link for awaiting/delivered */}
             <div className="flex flex-col items-center space-y-3 pt-4">
-              {order.status === 'shipped' && (
+              {primaryOrder.status === 'shipped' && (
                 <Button
                   onClick={onMarkDelivered}
                   className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
