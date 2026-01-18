@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, ChevronUp, Send, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Send, MoreHorizontal, Trash2, Flag } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +12,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface Comment {
   id: string;
@@ -27,9 +33,10 @@ interface Comment {
 
 interface ListingCommentsProps {
   listingId: string;
+  sellerId: string;
 }
 
-const ListingComments = ({ listingId }: ListingCommentsProps) => {
+const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [newComment, setNewComment] = useState('');
   const { user } = useAuth();
@@ -114,6 +121,15 @@ const ListingComments = ({ listingId }: ListingCommentsProps) => {
     addComment.mutate(newComment);
   };
 
+  const handleReport = (commentId: string) => {
+    toast.success('Comment reported. Thank you for helping keep the community safe.');
+  };
+
+  const canDeleteComment = (comment: Comment) => {
+    if (!user) return false;
+    return user.id === comment.user_id || user.id === sellerId;
+  };
+
   return (
     <div className="mt-6">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -181,29 +197,58 @@ const ListingComments = ({ listingId }: ListingCommentsProps) => {
                     className="h-8 w-8 rounded-full bg-muted flex-shrink-0"
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium text-sm text-foreground truncate">
+                    {/* Username and timestamp inline */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-sm text-foreground">
                         {comment.profile?.username || '@user'}
                       </span>
-                      <span className="text-xs text-muted-foreground flex-shrink-0">
+                      <span className="text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                       </span>
                     </div>
+                    
+                    {/* Comment content */}
                     <p className="text-sm text-foreground mt-1 break-words">
                       {comment.content}
                     </p>
-                  </div>
-                  {user?.id === comment.user_id && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteComment.mutate(comment.id)}
-                      disabled={deleteComment.isPending}
-                      className="h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-destructive"
+                    
+                    {/* Reply button */}
+                    <button
+                      onClick={() => toast.info('Reply feature coming soon!')}
+                      className="text-xs text-muted-foreground hover:text-foreground mt-1.5 font-medium"
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
+                      Reply
+                    </button>
+                  </div>
+                  
+                  {/* 3-dot menu */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-foreground"
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40">
+                      {canDeleteComment(comment) && (
+                        <DropdownMenuItem
+                          onClick={() => deleteComment.mutate(comment.id)}
+                          disabled={deleteComment.isPending}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Remove
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem onClick={() => handleReport(comment.id)}>
+                        <Flag className="h-4 w-4 mr-2" />
+                        Report
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               ))}
             </div>

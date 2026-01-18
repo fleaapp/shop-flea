@@ -263,7 +263,7 @@ const ListingDetails = () => {
               </div>
 
               {/* Comments Section */}
-              <ListingComments listingId={listing.id} />
+              <ListingComments listingId={listing.id} sellerId={listing.user_id} />
 
             </div>
           </div>
