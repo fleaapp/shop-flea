@@ -158,7 +158,7 @@ const Notifications = () => {
     const userAvatar = notification.related_user?.avatar_url || undefined;
     const username = notification.related_user?.username;
     const emoji = getNotificationEmoji(notification.type as any);
-    const message = getNotificationMessage(notification.type as any, username);
+    const message = getNotificationMessage(notification.type as any, username, notification.message);
 
     return (
       <div 
