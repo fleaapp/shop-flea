@@ -5,17 +5,63 @@ import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/context/AuthContext';
 import { useUserListings } from '@/hooks/useListings';
 import { formatTagLabel } from '@/components/ListingTag';
+import { useOrders, Order } from '@/hooks/useOrders';
+import SalesDetailsSheet from '@/components/SalesDetailsSheet';
 
 const Profile = () => {
   const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<'listings' | 'sold'>('listings');
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [salesSheetOpen, setSalesSheetOpen] = useState(false);
   
   const { listings: activeListings, loading: activeLoading } = useUserListings('active');
   const { listings: soldListings, loading: soldLoading } = useUserListings('sold');
+  const { sellerOrders, markAsShipped } = useOrders();
 
   const displayListings = activeTab === 'listings' ? activeListings : soldListings;
   const isLoading = activeTab === 'listings' ? activeLoading : soldLoading;
+
+  // Create a map of listing_id to order for quick lookup
+  const ordersByListingId = new Map(sellerOrders.map(order => [order.listing_id, order]));
+
+  const getOrderStatusButton = (listingId: string) => {
+    const order = ordersByListingId.get(listingId);
+    if (!order) return null;
+
+    if (order.status === 'awaiting') {
+      return (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedOrder(order);
+            setSalesSheetOpen(true);
+          }}
+          className="absolute left-1/2 -translate-x-1/2 top-4 max-[430px]:top-3 max-[375px]:top-2.5 z-10 rounded-full bg-charcoal text-white text-xs font-medium px-4 py-1.5 max-[375px]:px-3 max-[375px]:py-1 max-[375px]:text-[10px]"
+        >
+          Mark as shipped
+        </button>
+      );
+    }
+
+    const statusLabel = order.status === 'shipped' ? 'Shipped' : 'Delivered';
+    return (
+      <div className="absolute left-1/2 -translate-x-1/2 top-4 max-[430px]:top-3 max-[375px]:top-2.5 z-10 rounded-full bg-muted text-muted-foreground text-xs font-medium px-4 py-1.5 max-[375px]:px-3 max-[375px]:py-1 max-[375px]:text-[10px]">
+        {statusLabel}
+      </div>
+    );
+  };
+
+  const handleMarkShipped = (trackingDetails: { serviceProvider: string; trackingNumber: string }) => {
+    if (selectedOrder) {
+      markAsShipped.mutate({
+        orderId: selectedOrder.id,
+        trackingProvider: trackingDetails.serviceProvider,
+        trackingNumber: trackingDetails.trackingNumber,
+      });
+      setSalesSheetOpen(false);
+    }
+  };
 
   if (authLoading) {
     return (
@@ -83,16 +129,21 @@ const Profile = () => {
           <div className="flex gap-4 max-[430px]:gap-3 max-[375px]:gap-2.5" style={{ paddingLeft: 'calc(50% - min(128px, 35vw))', paddingRight: 'calc(50% - min(128px, 35vw))' }}>
             {displayListings.map((listing) => (
               <div key={listing.id} className="relative w-64 max-[430px]:w-60 max-[393px]:w-52 max-[375px]:w-44 flex-shrink-0 overflow-hidden rounded-3xl max-[375px]:rounded-2xl bg-card p-2.5 max-[430px]:p-2 max-[375px]:p-1.5 card-shadow snap-center">
-                {/* Edit button */}
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/listing/${listing.id}/edit`);
-                  }} 
-                  className="absolute right-4 max-[430px]:right-3 max-[375px]:right-2.5 top-4 max-[430px]:top-3 max-[375px]:top-2.5 z-10 flex h-8 w-8 max-[430px]:h-7 max-[430px]:w-7 max-[375px]:h-6 max-[375px]:w-6 items-center justify-center rounded-lg max-[375px]:rounded-md bg-card/80 backdrop-blur-sm"
-                >
-                  <Pencil className="h-4 w-4 max-[430px]:h-3.5 max-[430px]:w-3.5 max-[375px]:h-3 max-[375px]:w-3 text-foreground" />
-                </button>
+                {/* Edit button - only show for active listings */}
+                {activeTab === 'listings' && (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/listing/${listing.id}/edit`);
+                    }} 
+                    className="absolute right-4 max-[430px]:right-3 max-[375px]:right-2.5 top-4 max-[430px]:top-3 max-[375px]:top-2.5 z-10 flex h-8 w-8 max-[430px]:h-7 max-[430px]:w-7 max-[375px]:h-6 max-[375px]:w-6 items-center justify-center rounded-lg max-[375px]:rounded-md bg-card/80 backdrop-blur-sm"
+                  >
+                    <Pencil className="h-4 w-4 max-[430px]:h-3.5 max-[430px]:w-3.5 max-[375px]:h-3 max-[375px]:w-3 text-foreground" />
+                  </button>
+                )}
+
+                {/* Shipping status button - only show for sold items */}
+                {activeTab === 'sold' && getOrderStatusButton(listing.id)}
                 
                 {/* Image */}
                 <div 
@@ -131,6 +182,13 @@ const Profile = () => {
           </div>
         )}
       </div>
+
+      <SalesDetailsSheet
+        order={selectedOrder}
+        open={salesSheetOpen}
+        onOpenChange={setSalesSheetOpen}
+        onMarkShipped={handleMarkShipped}
+      />
 
       <BottomNav />
     </div>
