@@ -317,8 +317,8 @@ const Cart = () => {
       ) : (
         <div className="px-4 max-[375px]:px-3 space-y-6 max-[375px]:space-y-4">
           {loadingBuyerOrders ? (
-            <div className="flex justify-center py-10">
-              <p className="text-muted-foreground">Loading orders...</p>
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+              <span className="text-5xl mb-4">⏳</span>
             </div>
           ) : buyerOrderGroups.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
