@@ -4,6 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Order, OrderStatus } from '@/hooks/useOrders';
 import { format } from 'date-fns';
 import { useExistingReview } from '@/hooks/useReviews';
@@ -39,6 +40,7 @@ const SalesDetailsSheet = ({
   onOpenChange,
   onMarkShipped,
 }: SalesDetailsSheetProps) => {
+  const navigate = useNavigate();
   const [serviceProvider, setServiceProvider] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [validationError, setValidationError] = useState('');
@@ -116,7 +118,13 @@ const SalesDetailsSheet = ({
             {/* Buyer Section */}
             <div className="rounded-xl bg-card overflow-hidden">
               <SectionHeader>Buyer</SectionHeader>
-              <div className="flex items-center gap-3 p-4">
+              <div
+                className="flex items-center gap-3 p-4 cursor-pointer active:bg-muted/50 transition-colors"
+                onClick={() => {
+                  onOpenChange(false);
+                  setTimeout(() => navigate(`/seller/${primaryOrder.buyer_id}`), 300);
+                }}
+              >
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={buyerAvatar} alt={buyerUsername} />
                   <AvatarFallback>{buyerUsername.charAt(0).toUpperCase()}</AvatarFallback>

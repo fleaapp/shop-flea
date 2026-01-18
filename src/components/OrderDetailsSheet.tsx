@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -38,6 +39,7 @@ const OrderDetailsSheet = ({
   onOpenChange,
   onMarkDelivered,
 }: OrderDetailsSheetProps) => {
+  const navigate = useNavigate();
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
   
   const primaryOrder = orders?.[0];
@@ -77,7 +79,13 @@ const OrderDetailsSheet = ({
             {/* Seller Section */}
             <div className="rounded-xl bg-card overflow-hidden">
               <SectionHeader>Seller</SectionHeader>
-              <div className="flex items-center gap-3 p-4">
+              <div
+                className="flex items-center gap-3 p-4 cursor-pointer active:bg-muted/50 transition-colors"
+                onClick={() => {
+                  onOpenChange(false);
+                  setTimeout(() => navigate(`/seller/${primaryOrder.seller_id}`), 300);
+                }}
+              >
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={sellerAvatar} alt={sellerUsername} />
                   <AvatarFallback>{sellerUsername.charAt(0).toUpperCase()}</AvatarFallback>
