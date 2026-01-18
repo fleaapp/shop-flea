@@ -294,7 +294,7 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
           {/* Comments List */}
           {isLoading ? (
             <div className="flex justify-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary"></div>
+              <span className="text-4xl">⏳</span>
             </div>
           ) : comments.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">

@@ -238,8 +238,8 @@ const Notifications = () => {
         {activeTab === 'activity' ? (
           <>
             {loadingNotifications ? (
-              <div className="flex justify-center py-10">
-                <p className="text-muted-foreground">Loading notifications...</p>
+              <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+                <span className="text-5xl mb-4">⏳</span>
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
@@ -256,8 +256,8 @@ const Notifications = () => {
         ) : (
           <>
             {loadingSellerOrders ? (
-              <div className="flex justify-center py-10">
-                <p className="text-muted-foreground">Loading sales...</p>
+              <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+                <span className="text-5xl mb-4">⏳</span>
               </div>
             ) : sellerOrderGroups.length === 0 ? (
               <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">

@@ -115,7 +115,7 @@ const Auth = () => {
   if (authLoading) {
     return (
       <div className="fixed inset-0 bg-primary flex items-center justify-center overflow-hidden">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-foreground"></div>
+        <span className="text-5xl">⏳</span>
       </div>
     );
   }

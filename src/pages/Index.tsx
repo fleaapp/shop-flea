@@ -172,8 +172,7 @@ const Index = () => {
         <div className="relative w-full max-w-[min(340px,85vw)] h-[min(68vh,520px)] max-[393px]:h-[min(58vh,440px)] max-[375px]:h-[min(55vh,400px)] px-5 max-[375px]:px-3">
           {loading ? (
             <div className="flex h-full flex-col items-center justify-center text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-              <p className="mt-4 text-sm text-muted-foreground">Loading listings...</p>
+              <span className="text-5xl">⏳</span>
             </div>
           ) : currentListings.length > 0 ? (
             <>
