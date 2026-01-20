@@ -5,10 +5,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatTagLabel } from '@/components/ListingTag';
 import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { Listing } from '@/types/listing';
 import ReviewsDrawer from '@/components/ReviewsDrawer';
-
+import { ArrowLeft, MoreVertical } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 interface SellerProfile {
   user_id: string;
   username: string;
@@ -43,15 +50,20 @@ const SellerProfile = () => {
   const [loading, setLoading] = useState(true);
   const [listingsLoading, setListingsLoading] = useState(true);
   const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [hasOutstandingOrder, setHasOutstandingOrder] = useState(false);
   
   const { addToCart, isInCart } = useCart();
   const { addFavorite, isFavorite } = useFavorites();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (sellerId) {
       fetchSellerData();
+      if (user) {
+        checkOutstandingOrders();
+      }
     }
-  }, [sellerId]);
+  }, [sellerId, user]);
 
   const fetchSellerData = async () => {
     if (!sellerId) return;
@@ -98,6 +110,32 @@ const SellerProfile = () => {
     }
 
     setListingsLoading(false);
+  };
+
+  const checkOutstandingOrders = async () => {
+    if (!sellerId || !user) return;
+
+    // Check for orders where current user is buyer and seller is the profile user, or vice versa
+    // Outstanding orders are those that are not 'delivered' or 'cancelled'
+    const { data: orders } = await supabase
+      .from('orders')
+      .select('id, status')
+      .or(`and(buyer_id.eq.${user.id},seller_id.eq.${sellerId}),and(buyer_id.eq.${sellerId},seller_id.eq.${user.id})`)
+      .not('status', 'in', '("delivered","cancelled")');
+
+    setHasOutstandingOrder(orders && orders.length > 0);
+  };
+
+  const handleReportUser = () => {
+    toast.success('User reported');
+  };
+
+  const handleBlockUser = () => {
+    if (hasOutstandingOrder) {
+      toast.error('Cannot block user with outstanding orders');
+      return;
+    }
+    toast.success('User blocked');
   };
 
   const displayListings = activeTab === 'listings' ? activeListings : soldListings;
@@ -163,7 +201,37 @@ const SellerProfile = () => {
 
   return (
     <div className="fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col" style={{ touchAction: 'pan-x', overscrollBehavior: 'none' }}>
-      <div className="flex flex-col items-center px-4 pt-6">
+      {/* Header with back button and menu */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-2">
+        <button
+          onClick={() => navigate(-1)}
+          className="h-10 w-10 flex items-center justify-center rounded-full bg-card card-shadow"
+        >
+          <ArrowLeft className="h-5 w-5 text-foreground" />
+        </button>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="h-10 w-10 flex items-center justify-center rounded-full bg-card card-shadow">
+              <MoreVertical className="h-5 w-5 text-foreground" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={handleReportUser}>
+              Report user
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={handleBlockUser}
+              disabled={hasOutstandingOrder}
+              className={hasOutstandingOrder ? 'opacity-50 cursor-not-allowed' : ''}
+            >
+              Block user
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <div className="flex flex-col items-center px-4 pt-2">
         <div className="relative">
           <div className="h-20 w-20 max-[430px]:h-16 max-[430px]:w-16 max-[375px]:h-14 max-[375px]:w-14 rounded-full p-0.5 bg-gradient-to-br from-muted to-border">
             <img src={sellerProfile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${sellerProfile.user_id}`} alt="Profile" className="h-full w-full rounded-full bg-card object-cover" />
