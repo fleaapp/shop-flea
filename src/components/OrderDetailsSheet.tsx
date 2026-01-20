@@ -90,7 +90,7 @@ const OrderDetailsSheet = ({
                   <AvatarImage src={sellerAvatar} alt={sellerUsername} />
                   <AvatarFallback>{sellerUsername.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
-                <span className="font-medium">@{sellerUsername}</span>
+                <span className="font-bold underline">@{sellerUsername}</span>
               </div>
             </div>
 

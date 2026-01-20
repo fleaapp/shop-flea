@@ -341,7 +341,7 @@ const ListingDetails = () => {
                     loading="lazy"
                   />
                   <div>
-                    <p className="font-medium text-foreground text-sm">{sellerName}</p>
+                    <p className="font-bold text-foreground text-sm underline">{sellerName}</p>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <MapPin className="h-3 w-3 flex-shrink-0" />
                       <span>{sellerLocation}</span>
