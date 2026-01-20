@@ -129,7 +129,7 @@ const SalesDetailsSheet = ({
                   <AvatarImage src={buyerAvatar} alt={buyerUsername} />
                   <AvatarFallback>{buyerUsername.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
-                <span className="font-medium">@{buyerUsername}</span>
+                <span className="font-bold underline">@{buyerUsername}</span>
               </div>
             </div>
 

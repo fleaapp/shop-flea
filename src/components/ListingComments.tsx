@@ -178,7 +178,7 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
       <div className="flex-1 min-w-0">
         {/* Username and timestamp inline */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={`font-semibold text-foreground ${isReply ? 'text-xs' : 'text-sm'}`}>
+          <span className={`font-bold text-foreground underline ${isReply ? 'text-xs' : 'text-sm'}`}>
             {comment.profile?.username || '@user'}
           </span>
           <span className={`text-muted-foreground ${isReply ? 'text-[10px]' : 'text-xs'}`}>
