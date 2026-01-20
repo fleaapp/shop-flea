@@ -127,7 +127,7 @@ const SwipeCard = ({
                 style={{ opacity: nopeOpacity }}
                 className="absolute inset-0 flex items-center justify-center"
               >
-                <span className="text-7xl">👎</span>
+                <span className="text-7xl">❌</span>
               </motion.div>
               
               <motion.div
