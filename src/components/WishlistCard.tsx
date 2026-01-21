@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -73,9 +72,9 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isInCart
               variant="ghost"
               size="icon"
               onClick={handleRemoveClick}
-              className="absolute top-2 left-2 h-9 w-9 rounded-full bg-card/90 backdrop-blur-sm text-muted-foreground hover:text-destructive hover:bg-card z-10"
+              className="absolute top-2 left-2 h-9 w-9 rounded-full bg-card/90 backdrop-blur-sm hover:bg-card z-10 text-base"
             >
-              <Trash2 className="h-4 w-4" />
+              ❌
             </Button>
             
             {/* Add to cart button - top right (hide if sold) */}
@@ -84,13 +83,13 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isInCart
                 variant="ghost"
                 size="icon"
                 onClick={handleAddToCart}
-                className={`absolute top-2 right-2 h-9 w-9 rounded-full backdrop-blur-sm hover:bg-card ${
+                className={`absolute top-2 right-2 h-9 w-9 rounded-full backdrop-blur-sm hover:bg-card text-base ${
                   isInCart 
-                    ? 'bg-[#ddfed7] text-foreground' 
-                    : 'bg-card/90 text-muted-foreground hover:text-primary'
+                    ? 'bg-[#ddfed7]' 
+                    : 'bg-card/90'
                 }`}
               >
-                <ShoppingCart className="h-4 w-4" />
+                🛒
               </Button>
             )}
           </div>
