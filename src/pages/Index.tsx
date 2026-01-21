@@ -36,14 +36,20 @@ const toDisplayListing = (dbListing: DbListing): Listing => ({
 
 const Index = () => {
   const navigate = useNavigate();
-  const { addToCart, isInCart } = useCart();
-  const { addFavorite, favoriteIds } = useFavorites();
-  const { addDiscarded, discardedIds } = useDiscardedListings();
+  const { addToCart, removeFromCart, isInCart } = useCart();
+  const { addFavorite, removeFavorite, favoriteIds } = useFavorites();
+  const { addDiscarded, removeDiscarded, discardedIds } = useDiscardedListings();
 
   const [pendingExitId, setPendingExitId] = useState<string | null>(null);
   const [filters, setFilters] = useState<string[]>([]);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [searchSheetOpen, setSearchSheetOpen] = useState(false);
+  
+  // Track the last action for undo functionality
+  const [lastAction, setLastAction] = useState<{
+    listingId: string;
+    type: 'discard' | 'favorite' | 'cart';
+  } | null>(null);
 
   // Build filter object from active filter chips
   const listingFilters = useMemo(() => {
@@ -90,6 +96,7 @@ const Index = () => {
 
     setPendingExitId(listingId);
     await addDiscarded(listingId);
+    setLastAction({ listingId, type: 'discard' });
   }, [addDiscarded, pendingExitId]);
 
   const handleSwipeRight = useCallback(async (listingId: string) => {
@@ -97,6 +104,7 @@ const Index = () => {
 
     setPendingExitId(listingId);
     await addFavorite(listingId);
+    setLastAction({ listingId, type: 'favorite' });
   }, [addFavorite, pendingExitId]);
 
   const handleSwipeUp = useCallback(async (listing: DbListing) => {
@@ -104,7 +112,25 @@ const Index = () => {
 
     setPendingExitId(listing.id);
     await addToCart(toDisplayListing(listing));
+    setLastAction({ listingId: listing.id, type: 'cart' });
   }, [addToCart, pendingExitId]);
+
+  const handleUndo = useCallback(async () => {
+    if (!lastAction) return;
+
+    const { listingId, type } = lastAction;
+    
+    if (type === 'discard') {
+      await removeDiscarded(listingId);
+    } else if (type === 'favorite') {
+      await removeFavorite(listingId);
+    } else if (type === 'cart') {
+      await removeFromCart(listingId);
+    }
+    
+    setLastAction(null);
+    toast.success('Action undone!');
+  }, [lastAction, removeDiscarded, removeFavorite, removeFromCart]);
 
   const handleTopExitComplete = useCallback(() => {
     setPendingExitId(null);
@@ -149,7 +175,7 @@ const Index = () => {
 
   return (
     <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
-      <Header onSearchClick={handleSearchClick} onFilterClick={handleFilterClick} />
+      <Header onSearchClick={handleSearchClick} onFilterClick={handleFilterClick} onUndoClick={handleUndo} canUndo={!!lastAction} />
       
       {/* Active Filters */}
       {filters.length > 0 && (

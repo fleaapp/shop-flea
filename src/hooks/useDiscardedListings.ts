@@ -50,6 +50,28 @@ export const useDiscardedListings = () => {
     return true;
   }, [user]);
 
+  const removeDiscarded = useCallback(async (listingId: string) => {
+    if (!user) return false;
+
+    const { error } = await supabase
+      .from('discarded_listings')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('listing_id', listingId);
+
+    if (error) {
+      console.error('Failed to remove discarded listing:', error);
+      return false;
+    }
+
+    setDiscardedIds(prev => {
+      const next = new Set(prev);
+      next.delete(listingId);
+      return next;
+    });
+    return true;
+  }, [user]);
+
   const clearDiscarded = useCallback(async () => {
     if (!user) return false;
 
@@ -75,6 +97,7 @@ export const useDiscardedListings = () => {
     discardedIds,
     loading,
     addDiscarded,
+    removeDiscarded,
     clearDiscarded,
     isDiscarded,
     refetch: fetchDiscarded,
