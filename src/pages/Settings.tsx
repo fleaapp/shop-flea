@@ -1,44 +1,52 @@
-import { ChevronRight, Lock, HelpCircle, Info, User, RefreshCw, LogOut } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 const Settings = () => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, profile } = useAuth();
   const { clearDiscarded } = useDiscardedListings();
 
   const handleRefreshDiscarded = async () => {
     const success = await clearDiscarded();
     if (success) {
-      toast.success('Discarded listings refreshed! You can browse them again.');
+      toast.success('Passed listings refreshed! You can browse them again.');
     } else {
-      toast.error('Failed to refresh discarded listings');
+      toast.error('Failed to refresh passed listings');
     }
   };
+
+  const ProfileAvatar = () => (
+    <Avatar className="h-5 w-5">
+      <AvatarImage src={profile?.avatar_url || ''} alt="Profile" />
+      <AvatarFallback className="text-xs">👤</AvatarFallback>
+    </Avatar>
+  );
 
   const settingsGroups = [
     {
       title: 'Account',
       items: [
-        { icon: <User className="h-5 w-5" />, label: 'Edit Profile' },
-        { icon: <RefreshCw className="h-5 w-5" />, label: 'Refresh Discarded Listings', action: handleRefreshDiscarded },
-        { icon: <Lock className="h-5 w-5" />, label: 'Privacy & Security' },
+        { icon: <ProfileAvatar />, label: 'Edit Profile' },
+        { icon: <span className="text-base">🔁</span>, label: 'Refresh Passed Listings', action: handleRefreshDiscarded },
+        { icon: <span className="text-base">🔒</span>, label: 'Privacy & Security' },
       ],
     },
     {
       title: 'Support',
       items: [
-        { icon: <HelpCircle className="h-5 w-5" />, label: 'FAQ' },
-        { icon: <Info className="h-5 w-5" />, label: 'About Flea' },
+        { icon: <span className="text-base">❓</span>, label: 'FAQ' },
+        { icon: <span className="text-base">🛠️</span>, label: 'Contact Support' },
       ],
     },
     {
       title: '',
       items: [
-        { icon: <LogOut className="h-5 w-5" />, label: 'Logout', danger: true },
+        { icon: <span className="text-base">🚪</span>, label: 'Logout', danger: true },
       ],
     },
   ];
