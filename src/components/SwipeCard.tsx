@@ -110,13 +110,8 @@ const SwipeCard = ({
     >
       <div className="flex h-full flex-col overflow-hidden rounded-3xl bg-card p-3 max-[375px]:p-2 card-shadow">
         {/* Image with white border effect - takes remaining space */}
-        <div className="relative flex-1 min-h-0 overflow-hidden rounded-2xl bg-muted transform-gpu [backface-visibility:hidden] [-webkit-mask-image:-webkit-radial-gradient(white,black)]">
-          <img
-            src={listing.image}
-            alt={listing.title}
-            className="absolute inset-0 h-full w-full rounded-2xl object-cover transform-gpu scale-[1.06] [backface-visibility:hidden]"
-            draggable={false}
-          />
+        <div className="relative flex-1 min-h-0 overflow-hidden rounded-2xl">
+          <img src={listing.image} alt={listing.title} className="h-full w-full object-cover" draggable={false} />
           
           {/* Like/Nope/Cart indicators */}
 {isTop && (
