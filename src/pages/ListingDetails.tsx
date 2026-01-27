@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import ListingTag from '@/components/ListingTag';
 import ListingComments from '@/components/ListingComments';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useCart } from '@/context/CartContext';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
