@@ -201,8 +201,8 @@ const SellerProfile = () => {
 
   return (
     <div className="fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col" style={{ touchAction: 'pan-x', overscrollBehavior: 'none' }}>
-      {/* Header with back button and menu */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-2">
+      {/* Header with back button and menu - absolute positioned */}
+      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-4 z-20">
         <button
           onClick={() => navigate(-1)}
           className="h-10 w-10 flex items-center justify-center rounded-full bg-card card-shadow"
@@ -231,7 +231,7 @@ const SellerProfile = () => {
         </DropdownMenu>
       </div>
 
-      <div className="flex flex-col items-center px-4 pt-2">
+      <div className="flex flex-col items-center px-4 pt-6">
         <div className="relative">
           <div className="h-20 w-20 max-[430px]:h-16 max-[430px]:w-16 max-[375px]:h-14 max-[375px]:w-14 rounded-full p-0.5 bg-gradient-to-br from-muted to-border">
             <img src={sellerProfile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${sellerProfile.user_id}`} alt="Profile" className="h-full w-full rounded-full bg-card object-cover" />
