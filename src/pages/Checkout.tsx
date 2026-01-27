@@ -9,7 +9,7 @@ import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Listing } from '@/types/listing';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import OrderSuccessDialog from '@/components/OrderSuccessDialog';

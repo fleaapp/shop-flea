@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import BottomNav from '@/components/BottomNav';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { formatTagLabel } from '@/components/ListingTag';
 import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/hooks/useFavorites';
