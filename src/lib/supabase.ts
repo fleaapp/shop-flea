@@ -1,16 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Get URL and publishable key from environment variables (Lovable Cloud)
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-// Make sure the environment variables exist
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error("Missing Supabase environment variables. Check your .env file.");
-}
+// External Supabase project credentials
+const supabaseUrl = "https://dzglehiopfgfjmxtejve.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6Z2xlaGlvcGZnZmpteHRlanZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzI0MjUsImV4cCI6MjA4NDU0ODQyNX0.qfOBjubnuod5iGF_G_gH2ZhMDJ1fVwAO9p5BZSxG0xI";
 
 // Export the Supabase client for the rest of the app
-export const supabase = createClient(supabaseUrl, supabaseKey, {
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: localStorage,
     persistSession: true,
