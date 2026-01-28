@@ -8,7 +8,6 @@ import { AuthProvider } from "@/context/AuthContext";
 import { OnboardingProvider } from "@/context/OnboardingContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import OnboardingOverlay from "@/components/OnboardingOverlay";
-import OnboardingStartDialog from "@/components/OnboardingStartDialog";
 import Index from "./pages/Index";
 import ListingDetails from "./pages/ListingDetails";
 import Favorites from "./pages/Favorites";
@@ -36,7 +35,6 @@ const App = () => (
               <Toaster />
               <Sonner position="top-center" />
               <OnboardingOverlay />
-              <OnboardingStartDialog />
               <Routes>
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />

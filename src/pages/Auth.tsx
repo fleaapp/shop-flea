@@ -7,11 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { useOnboarding } from '@/context/OnboardingContext';
 import { supabase } from '@/lib/supabase';
 
 const Auth = () => {
   const navigate = useNavigate();
   const { user, signIn, signUp, loading: authLoading } = useAuth();
+  const { markUserAsOnboarded } = useOnboarding();
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -95,6 +97,8 @@ const Auth = () => {
       setIsLoading(false);
     } else {
       toast.success('Account created!');
+      // Mark as new user for onboarding on home page
+      markUserAsOnboarded();
       navigate('/');
     }
   };
