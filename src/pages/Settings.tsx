@@ -4,12 +4,14 @@ import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
+import { useOnboarding } from '@/context/OnboardingContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 const Settings = () => {
   const navigate = useNavigate();
   const { signOut, profile } = useAuth();
   const { clearDiscarded } = useDiscardedListings();
+  const { resetOnboarding, startOnboarding } = useOnboarding();
 
   const handleRefreshDiscarded = async () => {
     const success = await clearDiscarded();
@@ -18,6 +20,13 @@ const Settings = () => {
     } else {
       toast.error('Failed to refresh passed listings');
     }
+  };
+
+  const handleRestartTutorial = () => {
+    resetOnboarding();
+    startOnboarding();
+    navigate('/');
+    toast.success('Tutorial restarted!');
   };
 
   const ProfileAvatar = () => (
@@ -39,6 +48,7 @@ const Settings = () => {
     {
       title: 'Support',
       items: [
+        { icon: <span className="text-base">📖</span>, label: 'App Tutorial', action: handleRestartTutorial },
         { icon: <span className="text-base">❓</span>, label: 'FAQ' },
         { icon: <span className="text-base">🛠️</span>, label: 'Contact Support' },
       ],
