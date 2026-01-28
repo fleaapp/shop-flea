@@ -9,7 +9,7 @@ interface OnboardingSpotlightProps {
   onSkip: () => void;
 }
 
-const OnboardingSpotlight = ({ onComplete, onSkip }: OnboardingSpotlightProps) => {
+const OnboardingSpotlight = ({ onComplete }: OnboardingSpotlightProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -53,8 +53,7 @@ const OnboardingSpotlight = ({ onComplete, onSkip }: OnboardingSpotlightProps) =
   }, [currentStep]);
 
   useEffect(() => {
-    // Small delay to let DOM settle after navigation
-    const timer = setTimeout(updateSpotlight, 150);
+    const timer = setTimeout(updateSpotlight, 200);
     window.addEventListener('resize', updateSpotlight);
     return () => {
       clearTimeout(timer);
@@ -70,21 +69,21 @@ const OnboardingSpotlight = ({ onComplete, onSkip }: OnboardingSpotlightProps) =
     }
   };
 
-  const handlePrev = () => {
-    if (currentStepIndex > 0) {
-      setCurrentStepIndex((prev) => prev - 1);
+  // Calculate text position - ensure no overlap with spotlight
+  const getTextPosition = () => {
+    const viewportHeight = window.innerHeight;
+    const spotlightBottom = spotlight.y + spotlight.height;
+    const spotlightTop = spotlight.y;
+    
+    if (currentStep.labelPosition === 'top') {
+      // Text above spotlight - ensure enough space
+      return { top: Math.max(40, spotlightTop - 200), position: 'top' as const };
     }
+    // Text below spotlight
+    return { top: Math.min(spotlightBottom + 30, viewportHeight - 200), position: 'bottom' as const };
   };
 
-  // Calculate label position based on spotlight
-  const getLabelPosition = () => {
-    if (currentStep.labelPosition === 'top') {
-      // Position above the spotlight
-      return Math.max(60, spotlight.y - 180);
-    }
-    // Position below the spotlight
-    return spotlight.y + spotlight.height + 24;
-  };
+  const textPos = getTextPosition();
 
   return (
     <div className="fixed inset-0 z-[9999] pointer-events-none">
@@ -110,7 +109,7 @@ const OnboardingSpotlight = ({ onComplete, onSkip }: OnboardingSpotlightProps) =
           y="0"
           width="100%"
           height="100%"
-          fill="hsl(220 15% 12% / 0.92)"
+          fill="hsl(var(--onboarding-overlay))"
           mask="url(#spotlight-mask)"
         />
       </svg>
@@ -118,9 +117,9 @@ const OnboardingSpotlight = ({ onComplete, onSkip }: OnboardingSpotlightProps) =
       {/* Spotlight glow border */}
       {isVisible && (
         <motion.div
-          className="absolute rounded-2xl border-2 border-cream/40"
+          className="absolute rounded-2xl border-2 border-onboarding-foreground/40"
           style={{
-            boxShadow: '0 0 30px rgba(245, 241, 232, 0.15)',
+            boxShadow: '0 0 30px hsl(var(--onboarding-foreground) / 0.15)',
           }}
           initial={{ opacity: 0 }}
           animate={{
@@ -134,27 +133,27 @@ const OnboardingSpotlight = ({ onComplete, onSkip }: OnboardingSpotlightProps) =
         />
       )}
 
-      {/* Instruction text - plain cream text on dark overlay, NO card */}
+      {/* Instruction text - plain text on dark overlay */}
       <AnimatePresence mode="wait">
         <motion.div
           key={currentStepKey}
-          className="absolute left-0 right-0 px-6 text-center pointer-events-none"
-          style={{ top: getLabelPosition() }}
+          className="absolute left-0 right-0 px-8 text-center pointer-events-none"
+          style={{ top: textPos.top }}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.25 }}
         >
-          <h3 className="text-cream text-xl font-semibold mb-2">
+          <h3 className="text-onboarding-foreground text-xl font-semibold mb-2">
             {currentStep.title}
           </h3>
-          <p className="text-cream/80 text-base max-w-xs mx-auto">
+          <p className="text-onboarding-foreground/75 text-sm max-w-[280px] mx-auto leading-relaxed">
             {currentStep.description}
           </p>
           
           {/* Gesture animation */}
           {currentStep.gesture && (
-            <div className="mt-4">
+            <div className="mt-6">
               <GestureDemo type={currentStep.gesture} />
             </div>
           )}
@@ -164,66 +163,32 @@ const OnboardingSpotlight = ({ onComplete, onSkip }: OnboardingSpotlightProps) =
       {/* Arrow pointing to spotlight */}
       {isVisible && (
         <motion.div
-          className="absolute flex items-center justify-center pointer-events-none"
+          className="absolute flex items-center justify-center pointer-events-none text-2xl text-onboarding-foreground"
           style={{
-            left: spotlight.x + spotlight.width / 2 - 20,
+            left: spotlight.x + spotlight.width / 2 - 12,
             top: currentStep.labelPosition === 'top'
-              ? spotlight.y - 40
+              ? spotlight.y - 32
               : spotlight.y + spotlight.height + 8,
           }}
           initial={{ opacity: 0 }}
           animate={{ 
             opacity: 1,
-            y: currentStep.labelPosition === 'top' ? [0, 8, 0] : [0, -8, 0]
+            y: currentStep.labelPosition === 'top' ? [0, 6, 0] : [0, -6, 0]
           }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
         >
-          <span className="text-3xl text-cream">
-            {currentStep.labelPosition === 'top' ? '↓' : '↑'}
-          </span>
+          {currentStep.labelPosition === 'top' ? '↓' : '↑'}
         </motion.div>
       )}
 
-      {/* Navigation controls - fixed at bottom center, always visible and clickable */}
-      <div className="absolute bottom-28 left-0 right-0 flex items-center justify-center gap-6 pointer-events-auto px-6">
-        {currentStepIndex > 0 && (
-          <button
-            onClick={handlePrev}
-            className="text-cream/70 hover:text-cream text-base font-medium transition-colors"
-          >
-            Back
-          </button>
-        )}
-        
+      {/* Single Next button - fixed at bottom, always visible */}
+      <div className="absolute bottom-32 left-0 right-0 flex justify-center pointer-events-auto">
         <button
           onClick={handleNext}
-          className="bg-cream text-charcoal px-8 py-3 rounded-full font-semibold text-base hover:bg-cream/90 transition-colors"
+          className="bg-onboarding-foreground text-charcoal px-10 py-3.5 rounded-full font-semibold text-base shadow-lg hover:opacity-90 transition-opacity"
         >
-          {isLastStep ? 'Finish' : 'Next'}
+          {isLastStep ? 'Done' : 'Next'}
         </button>
-
-        <button
-          onClick={onSkip}
-          className="text-cream/70 hover:text-cream text-base font-medium transition-colors"
-        >
-          Skip
-        </button>
-      </div>
-
-      {/* Step indicator dots */}
-      <div className="absolute bottom-20 left-0 right-0 flex items-center justify-center gap-1.5 pointer-events-none">
-        {STEP_ORDER.map((_, index) => (
-          <div
-            key={index}
-            className={`w-2 h-2 rounded-full transition-colors ${
-              index === currentStepIndex
-                ? 'bg-cream'
-                : index < currentStepIndex
-                ? 'bg-cream/50'
-                : 'bg-cream/20'
-            }`}
-          />
-        ))}
       </div>
     </div>
   );
