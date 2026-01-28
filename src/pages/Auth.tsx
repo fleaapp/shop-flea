@@ -98,8 +98,13 @@ const Auth = () => {
     } else {
       toast.success('Account created!');
       // Mark as new user for onboarding on home page
+      console.log('[Auth] Marking user for onboarding...');
       markUserAsOnboarded();
-      navigate('/');
+      // Small delay to ensure localStorage is set before navigation
+      setTimeout(() => {
+        console.log('[Auth] Navigating to home after signup...');
+        navigate('/');
+      }, 100);
     }
   };
 
