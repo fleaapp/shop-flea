@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
@@ -10,6 +10,7 @@ import { useListings, DbListing } from '@/hooks/useListings';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 import { useCart } from '@/context/CartContext';
+import { useOnboarding } from '@/context/OnboardingContext';
 import { toast } from 'sonner';
 import { Listing } from '@/types/listing';
 
@@ -39,6 +40,12 @@ const Index = () => {
   const { addToCart, removeFromCart, isInCart } = useCart();
   const { addFavorite, removeFavorite, favoriteIds } = useFavorites();
   const { addDiscarded, removeDiscarded, discardedIds } = useDiscardedListings();
+  const { checkAndTriggerOnboarding } = useOnboarding();
+
+  // Check if we should start onboarding (for new users after signup)
+  useEffect(() => {
+    checkAndTriggerOnboarding();
+  }, [checkAndTriggerOnboarding]);
 
   const [pendingExitId, setPendingExitId] = useState<string | null>(null);
   const [filters, setFilters] = useState<string[]>([]);

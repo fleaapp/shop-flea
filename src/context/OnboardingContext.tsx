@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 
 export type OnboardingStep = 
   | 'swipe-navigation'
@@ -18,11 +18,14 @@ interface OnboardingContextValue {
   currentStep: OnboardingStep | null;
   isOnboardingActive: boolean;
   hasCompletedOnboarding: boolean;
+  isNewUser: boolean;
   startOnboarding: () => void;
   nextStep: () => void;
   skipOnboarding: () => void;
   resetOnboarding: () => void;
   goToStep: (step: OnboardingStep) => void;
+  markUserAsOnboarded: () => void;
+  checkAndTriggerOnboarding: () => void;
 }
 
 const OnboardingContext = createContext<OnboardingContextValue | undefined>(undefined);
@@ -43,21 +46,48 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
 ];
 
 const STORAGE_KEY = 'flea-onboarding-completed';
+const NEW_USER_KEY = 'flea-new-user-pending-onboarding';
 
 export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   const [currentStep, setCurrentStep] = useState<OnboardingStep | null>(null);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true);
+  const [isNewUser, setIsNewUser] = useState(false);
 
   useEffect(() => {
     const completed = localStorage.getItem(STORAGE_KEY);
+    const pendingOnboarding = localStorage.getItem(NEW_USER_KEY);
+    
     setHasCompletedOnboarding(completed === 'true');
+    setIsNewUser(pendingOnboarding === 'true');
   }, []);
 
-  const startOnboarding = () => {
+  const startOnboarding = useCallback(() => {
     setCurrentStep('swipe-navigation');
-  };
+    // Clear the new user flag once onboarding starts
+    localStorage.removeItem(NEW_USER_KEY);
+    setIsNewUser(false);
+  }, []);
 
-  const nextStep = () => {
+  // Called from Index page to check if we should start onboarding
+  const checkAndTriggerOnboarding = useCallback(() => {
+    const completed = localStorage.getItem(STORAGE_KEY);
+    const pendingOnboarding = localStorage.getItem(NEW_USER_KEY);
+    
+    if (pendingOnboarding === 'true' && completed !== 'true') {
+      // Small delay to let the page render first
+      setTimeout(() => {
+        startOnboarding();
+      }, 500);
+    }
+  }, [startOnboarding]);
+
+  // Called after signup to mark user for onboarding
+  const markUserAsOnboarded = useCallback(() => {
+    localStorage.setItem(NEW_USER_KEY, 'true');
+    setIsNewUser(true);
+  }, []);
+
+  const nextStep = useCallback(() => {
     if (!currentStep) return;
     
     const currentIndex = ONBOARDING_STEPS.indexOf(currentStep);
@@ -69,23 +99,27 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     }
     
     setCurrentStep(ONBOARDING_STEPS[currentIndex + 1]);
-  };
+  }, [currentStep]);
 
-  const skipOnboarding = () => {
+  const skipOnboarding = useCallback(() => {
     setCurrentStep(null);
     setHasCompletedOnboarding(true);
     localStorage.setItem(STORAGE_KEY, 'true');
-  };
+    localStorage.removeItem(NEW_USER_KEY);
+    setIsNewUser(false);
+  }, []);
 
-  const resetOnboarding = () => {
+  const resetOnboarding = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(NEW_USER_KEY);
     setHasCompletedOnboarding(false);
+    setIsNewUser(false);
     setCurrentStep(null);
-  };
+  }, []);
 
-  const goToStep = (step: OnboardingStep) => {
+  const goToStep = useCallback((step: OnboardingStep) => {
     setCurrentStep(step);
-  };
+  }, []);
 
   return (
     <OnboardingContext.Provider
@@ -93,11 +127,14 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
         currentStep,
         isOnboardingActive: currentStep !== null && currentStep !== 'complete',
         hasCompletedOnboarding,
+        isNewUser,
         startOnboarding,
         nextStep,
         skipOnboarding,
         resetOnboarding,
         goToStep,
+        markUserAsOnboarded,
+        checkAndTriggerOnboarding,
       }}
     >
       {children}

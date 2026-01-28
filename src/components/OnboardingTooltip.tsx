@@ -2,11 +2,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useOnboarding, OnboardingStep } from '@/context/OnboardingContext';
 import { cn } from '@/lib/utils';
+import { ChevronUp, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 
 interface TooltipContent {
   title: string;
   description: string;
   emoji?: string;
+  arrows?: ('up' | 'down' | 'left' | 'right')[];
 }
 
 const TOOLTIP_CONTENT: Record<OnboardingStep, TooltipContent> = {
@@ -14,6 +16,7 @@ const TOOLTIP_CONTENT: Record<OnboardingStep, TooltipContent> = {
     title: 'Swipe to Browse',
     description: 'Swipe left to pass, right to add to Wishlist, up to add to Cart!',
     emoji: '👆',
+    arrows: ['left', 'right', 'up'],
   },
   'tap-to-expand': {
     title: 'Tap for Details',
@@ -24,11 +27,13 @@ const TOOLTIP_CONTENT: Record<OnboardingStep, TooltipContent> = {
     title: 'Navigate Easily',
     description: 'Use the bottom bar: Settings, Profile, Home, Cart, and Alerts.',
     emoji: '🧭',
+    arrows: ['down'],
   },
   'cart-swipe': {
     title: 'Manage Your Cart',
     description: 'Swipe left to remove items, swipe right to move to Wishlist.',
     emoji: '🛒',
+    arrows: ['left', 'right'],
   },
   'orders-location': {
     title: 'Track Orders',
@@ -72,6 +77,37 @@ const TOOLTIP_CONTENT: Record<OnboardingStep, TooltipContent> = {
   },
 };
 
+// Animated arrow component
+const AnimatedArrow = ({ direction }: { direction: 'up' | 'down' | 'left' | 'right' }) => {
+  const ArrowIcon = {
+    up: ChevronUp,
+    down: ChevronDown,
+    left: ChevronLeft,
+    right: ChevronRight,
+  }[direction];
+
+  const animationVariants = {
+    up: { y: [0, -8, 0] },
+    down: { y: [0, 8, 0] },
+    left: { x: [0, -8, 0] },
+    right: { x: [0, 8, 0] },
+  };
+
+  return (
+    <motion.div
+      animate={animationVariants[direction]}
+      transition={{
+        duration: 1,
+        repeat: Infinity,
+        ease: 'easeInOut',
+      }}
+      className="text-primary"
+    >
+      <ArrowIcon className="w-6 h-6" strokeWidth={3} />
+    </motion.div>
+  );
+};
+
 interface OnboardingTooltipProps {
   step: OnboardingStep;
   position?: 'top' | 'bottom' | 'center';
@@ -109,7 +145,7 @@ const OnboardingTooltip = ({
           className
         )}
       >
-        {/* Arrow */}
+        {/* Arrow pointing to element */}
         {arrowPosition !== 'none' && (
           <div
             className={cn(
@@ -124,6 +160,15 @@ const OnboardingTooltip = ({
         )}
         
         <div className="relative bg-card rounded-2xl p-5 card-shadow border border-border">
+          {/* Animated swipe arrows */}
+          {content.arrows && content.arrows.length > 0 && (
+            <div className="flex justify-center items-center gap-4 mb-3">
+              {content.arrows.map((dir, i) => (
+                <AnimatedArrow key={i} direction={dir} />
+              ))}
+            </div>
+          )}
+          
           {/* Emoji */}
           <div className="text-4xl mb-3 text-center">{content.emoji}</div>
           
