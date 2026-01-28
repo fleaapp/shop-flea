@@ -77,16 +77,33 @@ const BottomNav = () => {
     { icon: <span className="text-lg">🔔</span>, label: 'Alerts', path: '/notifications', badge: alertsBadge },
   ], [profile?.avatar_url, profileIcon, ordersBadge, alertsBadge]);
 
+  // Map paths to onboarding IDs
+  const getOnboardingId = (path: string) => {
+    switch (path) {
+      case '/settings': return 'nav-settings';
+      case '/profile': return 'nav-profile';
+      case '/': return 'nav-home';
+      case '/cart': return 'nav-cart';
+      case '/notifications': return 'nav-alerts';
+      default: return undefined;
+    }
+  };
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 flex justify-center py-3 max-[375px]:py-2 z-50 pointer-events-none">
+    <nav 
+      className="fixed bottom-0 left-0 right-0 flex justify-center py-3 max-[375px]:py-2 z-50 pointer-events-none"
+      data-onboarding="bottom-nav"
+    >
       <div className="mx-4 max-[375px]:mx-2 flex items-center gap-2 max-[375px]:gap-1 rounded-full bg-nav px-4 max-[375px]:px-3 py-3 max-[375px]:py-2.5 nav-shadow pointer-events-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
+          const onboardingId = getOnboardingId(item.path);
           
           return (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
+              data-onboarding={onboardingId}
               className={cn(
                 'relative flex items-center justify-center rounded-full px-4 max-[375px]:px-3 py-2 max-[375px]:py-1.5 transition-colors duration-150',
                 isActive 

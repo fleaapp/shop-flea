@@ -202,7 +202,10 @@ const Index = () => {
       
       {/* Card Stack - centered with space for fixed nav */}
       <div className="flex-1 flex items-center justify-center pb-24 max-[393px]:pb-20 max-[375px]:pb-16 min-h-0">
-        <div className="relative w-full max-w-[min(340px,85vw)] h-[min(68vh,520px)] max-[393px]:h-[min(58vh,440px)] max-[375px]:h-[min(55vh,400px)] px-5 max-[375px]:px-3">
+        <div 
+          className="relative w-full max-w-[min(340px,85vw)] h-[min(68vh,520px)] max-[393px]:h-[min(58vh,440px)] max-[375px]:h-[min(55vh,400px)] px-5 max-[375px]:px-3"
+          data-onboarding="swipe-card-stack"
+        >
           {loading ? (
             <div className="flex h-full flex-col items-center justify-center text-center">
               <span className="text-5xl">⏳</span>
