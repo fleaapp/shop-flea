@@ -74,6 +74,7 @@ const BottomNav = () => {
     { icon: profileIcon, label: 'Profile', path: '/profile' },
     { icon: <span className="text-lg">🏠</span>, label: 'Home', path: '/' },
     { icon: <span className="text-lg">🛒</span>, label: 'Cart', path: '/cart', badge: ordersBadge },
+    { icon: <span className="text-lg">❤️</span>, label: 'Wishlist', path: '/favorites' },
     { icon: <span className="text-lg">🔔</span>, label: 'Alerts', path: '/notifications', badge: alertsBadge },
   ], [profile?.avatar_url, profileIcon, ordersBadge, alertsBadge]);
 
@@ -84,6 +85,7 @@ const BottomNav = () => {
       case '/profile': return 'nav-profile';
       case '/': return 'nav-home';
       case '/cart': return 'nav-cart';
+      case '/favorites': return 'nav-favorites';
       case '/notifications': return 'nav-alerts';
       default: return undefined;
     }

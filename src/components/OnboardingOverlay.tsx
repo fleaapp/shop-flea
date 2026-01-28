@@ -4,14 +4,26 @@ import OnboardingSpotlight from './OnboardingSpotlight';
 import OnboardingComplete from './OnboardingComplete';
 
 const OnboardingOverlay = () => {
-  const { currentStep } = useOnboarding();
+  const { currentStep, skipOnboarding } = useOnboarding();
 
   if (!currentStep) return null;
+
+  // Only show spotlight for steps that are not welcome or complete
+  const showSpotlight = currentStep !== 'welcome' && currentStep !== 'complete';
+
+  const handleComplete = () => {
+    skipOnboarding(); // This marks onboarding as complete
+  };
 
   return (
     <>
       <OnboardingWelcomeDialog />
-      <OnboardingSpotlight />
+      {showSpotlight && (
+        <OnboardingSpotlight 
+          onComplete={handleComplete} 
+          onSkip={skipOnboarding} 
+        />
+      )}
       <OnboardingComplete />
     </>
   );
