@@ -1,6 +1,6 @@
 import { useOnboarding } from '@/context/OnboardingContext';
 import OnboardingWelcomeDialog from './OnboardingWelcomeDialog';
-import OnboardingHighlight from './OnboardingHighlight';
+import OnboardingSpotlight from './OnboardingSpotlight';
 import OnboardingComplete from './OnboardingComplete';
 
 const OnboardingOverlay = () => {
@@ -11,7 +11,7 @@ const OnboardingOverlay = () => {
   return (
     <>
       <OnboardingWelcomeDialog />
-      <OnboardingHighlight />
+      <OnboardingSpotlight />
       <OnboardingComplete />
     </>
   );
