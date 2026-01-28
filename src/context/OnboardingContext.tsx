@@ -81,16 +81,12 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
 
   // Called from Index page to check if we should start onboarding
   const checkAndTriggerOnboarding = useCallback(() => {
-    const completed = localStorage.getItem(STORAGE_KEY);
     const pendingOnboarding = localStorage.getItem(NEW_USER_KEY);
-    
-    console.log('[Onboarding] Checking trigger:', { completed, pendingOnboarding });
-    
-    if (pendingOnboarding === 'true' && completed !== 'true') {
-      console.log('[Onboarding] Starting onboarding in 500ms...');
+
+    // If a user just signed up, always show onboarding even if this device previously completed it.
+    if (pendingOnboarding === 'true') {
       // Small delay to let the page render first
       setTimeout(() => {
-        console.log('[Onboarding] Triggering welcome dialog now');
         startOnboarding();
       }, 500);
     }
@@ -98,7 +94,9 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
 
   // Called after signup to mark user for onboarding
   const markUserAsOnboarded = useCallback(() => {
-    console.log('[Onboarding] Setting new user flag in localStorage');
+    // Ensure a fresh signup always gets the tour, even if onboarding was completed earlier on this device.
+    localStorage.removeItem(STORAGE_KEY);
+    setHasCompletedOnboarding(false);
     localStorage.setItem(NEW_USER_KEY, 'true');
     setIsNewUser(true);
   }, []);
