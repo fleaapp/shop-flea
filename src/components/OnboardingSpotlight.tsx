@@ -1,414 +1,231 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { useOnboarding, OnboardingStep } from '@/context/OnboardingContext';
-import { ChevronUp, ChevronLeft, ChevronRight, Hand } from 'lucide-react';
+import { ONBOARDING_STEPS, STEP_ORDER, OnboardingStepKey } from './onboarding/OnboardingSteps';
+import GestureDemo from './onboarding/GestureDemo';
 
-interface StepConfig {
-  targetId: string;
-  title: string;
-  description: string;
-  tooltipPosition: 'top' | 'bottom' | 'left' | 'right';
-  arrowDirection: 'up' | 'down' | 'left' | 'right';
-  showGestures?: ('left' | 'right' | 'up')[];
-  padding?: number;
+interface OnboardingSpotlightProps {
+  onComplete: () => void;
+  onSkip: () => void;
 }
 
-const STEP_CONFIG: Record<Exclude<OnboardingStep, 'welcome' | 'complete'>, StepConfig> = {
-  'swipe-navigation': {
-    targetId: 'swipe-card-stack',
-    title: 'Swipe to Browse',
-    description: 'Swipe left to pass, right to add to Wishlist, up to add to Cart!',
-    tooltipPosition: 'bottom',
-    arrowDirection: 'up',
-    showGestures: ['left', 'right', 'up'],
-    padding: 16,
-  },
-  'tap-to-expand': {
-    targetId: 'swipe-card-stack',
-    title: 'Tap for Details',
-    description: 'Tap any listing to see full details, photos, and seller info.',
-    tooltipPosition: 'bottom',
-    arrowDirection: 'up',
-    padding: 16,
-  },
-  'navigation-bar': {
-    targetId: 'bottom-nav',
-    title: 'Navigate the App',
-    description: 'Settings, Profile, Home, Cart, and Alerts — all here!',
-    tooltipPosition: 'top',
-    arrowDirection: 'down',
-    padding: 8,
-  },
-  'cart-swipe': {
-    targetId: 'nav-cart',
-    title: 'Manage Your Cart',
-    description: 'In Cart: swipe left to remove, swipe right to move to Wishlist.',
-    tooltipPosition: 'top',
-    arrowDirection: 'down',
-    padding: 4,
-  },
-  'wishlist-location': {
-    targetId: 'nav-profile',
-    title: 'Your Wishlist',
-    description: 'Find saved items in Profile → Wishlist tab.',
-    tooltipPosition: 'top',
-    arrowDirection: 'down',
-    padding: 4,
-  },
-  'orders-location': {
-    targetId: 'nav-cart',
-    title: 'Track Orders',
-    description: 'Find your orders in Cart → Orders tab.',
-    tooltipPosition: 'top',
-    arrowDirection: 'down',
-    padding: 4,
-  },
-  'sales-location': {
-    targetId: 'nav-alerts',
-    title: 'View Your Sales',
-    description: 'Check your sales in Alerts → Sales tab.',
-    tooltipPosition: 'top',
-    arrowDirection: 'down',
-    padding: 4,
-  },
-  'notifications-location': {
-    targetId: 'nav-alerts',
-    title: 'Stay Updated',
-    description: 'Likes, comments, and activity notifications live here.',
-    tooltipPosition: 'top',
-    arrowDirection: 'down',
-    padding: 4,
-  },
-  'help-center': {
-    targetId: 'nav-settings',
-    title: 'Need Help?',
-    description: 'Find FAQs and support in Settings → Help Center.',
-    tooltipPosition: 'top',
-    arrowDirection: 'down',
-    padding: 4,
-  },
-  'add-listings': {
-    targetId: 'nav-profile',
-    title: 'Start Selling',
-    description: 'Create listings from Profile using the + button.',
-    tooltipPosition: 'top',
-    arrowDirection: 'down',
-    padding: 4,
-  },
-  'refresh-listings': {
-    targetId: 'undo-button',
-    title: 'Undo Actions',
-    description: 'Changed your mind? Tap here to undo your last swipe.',
-    tooltipPosition: 'bottom',
-    arrowDirection: 'up',
-    padding: 8,
-  },
-  'edit-profile': {
-    targetId: 'nav-settings',
-    title: 'Personalize',
-    description: 'Edit your profile in Settings → Profile.',
-    tooltipPosition: 'top',
-    arrowDirection: 'down',
-    padding: 4,
-  },
-};
+const OnboardingSpotlight = ({ onComplete, onSkip }: OnboardingSpotlightProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [spotlight, setSpotlight] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [isVisible, setIsVisible] = useState(false);
 
-// Gesture indicators for swipe step
-const SwipeGestureIndicators = () => (
-  <div className="flex items-center justify-center gap-8 mb-4">
-    <motion.div
-      className="flex flex-col items-center gap-1"
-      animate={{ x: [-8, 0, -8] }}
-      transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-    >
-      <ChevronLeft className="w-8 h-8 text-destructive" strokeWidth={3} />
-      <span className="text-xs text-destructive font-medium">Pass</span>
-    </motion.div>
-    
-    <motion.div
-      className="flex flex-col items-center gap-1"
-      animate={{ y: [-8, 0, -8] }}
-      transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-    >
-      <ChevronUp className="w-8 h-8 text-primary" strokeWidth={3} />
-      <span className="text-xs text-primary font-medium">Cart</span>
-    </motion.div>
-    
-    <motion.div
-      className="flex flex-col items-center gap-1"
-      animate={{ x: [8, 0, 8] }}
-      transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-    >
-      <ChevronRight className="w-8 h-8 text-green-500" strokeWidth={3} />
-      <span className="text-xs text-green-500 font-medium">Wishlist</span>
-    </motion.div>
-  </div>
-);
+  const currentStepKey = STEP_ORDER[currentStepIndex];
+  const currentStep = ONBOARDING_STEPS[currentStepKey];
+  const isLastStep = currentStepIndex === STEP_ORDER.length - 1;
 
-// Long arrow pointing to element
-const PointingArrow = ({ direction }: { direction: 'up' | 'down' | 'left' | 'right' }) => {
-  const isVertical = direction === 'up' || direction === 'down';
-  const isReverse = direction === 'down' || direction === 'right';
-  
-  return (
-    <motion.div
-      className={`flex ${isVertical ? 'flex-col' : 'flex-row'} items-center ${isReverse ? (isVertical ? 'flex-col-reverse' : 'flex-row-reverse') : ''}`}
-      animate={
-        isVertical 
-          ? { y: isReverse ? [0, 8, 0] : [0, -8, 0] }
-          : { x: isReverse ? [0, 8, 0] : [0, -8, 0] }
-      }
-      transition={{ duration: 1, repeat: Infinity, ease: 'easeInOut' }}
-    >
-      {/* Arrow line */}
-      <div 
-        className={`bg-primary ${isVertical ? 'w-1 h-12' : 'h-1 w-12'} rounded-full`}
-      />
-      {/* Arrow head */}
-      <div 
-        className={`w-0 h-0 ${
-          direction === 'up' ? 'border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[12px] border-b-primary' :
-          direction === 'down' ? 'border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[12px] border-t-primary' :
-          direction === 'left' ? 'border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-r-[12px] border-r-primary' :
-          'border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[12px] border-l-primary'
-        }`}
-      />
-    </motion.div>
-  );
-};
-
-const OnboardingSpotlight = () => {
-  const { currentStep, nextStep, skipOnboarding } = useOnboarding();
-  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
-  
-  const updateTargetRect = useCallback(() => {
-    if (!currentStep || currentStep === 'welcome' || currentStep === 'complete') {
-      setTargetRect(null);
-      return;
+  // Navigate to the correct route for the current step
+  useEffect(() => {
+    if (currentStep.route !== location.pathname) {
+      navigate(currentStep.route);
     }
+  }, [currentStep.route, location.pathname, navigate]);
+
+  // Find and highlight the target element
+  const updateSpotlight = useCallback(() => {
+    const targetId = currentStep.targetId;
+    const fallbackId = currentStep.fallbackTargetId;
     
-    const config = STEP_CONFIG[currentStep];
-    if (!config) return;
-    
-    const element = document.querySelector(`[data-onboarding="${config.targetId}"]`);
+    let element = document.querySelector(`[data-onboarding="${targetId}"]`);
+    if (!element && fallbackId) {
+      element = document.querySelector(`[data-onboarding="${fallbackId}"]`);
+    }
+
     if (element) {
-      setTargetRect(element.getBoundingClientRect());
+      const rect = element.getBoundingClientRect();
+      const padding = 12;
+      setSpotlight({
+        x: rect.left - padding,
+        y: rect.top - padding,
+        width: rect.width + padding * 2,
+        height: rect.height + padding * 2,
+      });
+      setIsVisible(true);
+    } else {
+      setIsVisible(false);
     }
   }, [currentStep]);
-  
+
   useEffect(() => {
-    updateTargetRect();
-    
-    // Update on resize/scroll
-    window.addEventListener('resize', updateTargetRect);
-    window.addEventListener('scroll', updateTargetRect, true);
-    
-    // Also update after a small delay to catch late-rendering elements
-    const timeout = setTimeout(updateTargetRect, 100);
-    
+    // Small delay to let DOM settle after navigation
+    const timer = setTimeout(updateSpotlight, 150);
+    window.addEventListener('resize', updateSpotlight);
     return () => {
-      window.removeEventListener('resize', updateTargetRect);
-      window.removeEventListener('scroll', updateTargetRect, true);
-      clearTimeout(timeout);
+      clearTimeout(timer);
+      window.removeEventListener('resize', updateSpotlight);
     };
-  }, [updateTargetRect]);
-  
-  if (!currentStep || currentStep === 'welcome' || currentStep === 'complete' || !targetRect) {
-    return null;
-  }
-  
-  const config = STEP_CONFIG[currentStep];
-  const padding = config.padding || 8;
-  const stepKeys = Object.keys(STEP_CONFIG);
-  const stepIndex = stepKeys.indexOf(currentStep);
-  const totalSteps = stepKeys.length;
-  
-  // Calculate spotlight cutout dimensions
-  const spotlightX = targetRect.left - padding;
-  const spotlightY = targetRect.top - padding;
-  const spotlightWidth = targetRect.width + padding * 2;
-  const spotlightHeight = targetRect.height + padding * 2;
-  
-  // Calculate tooltip position
-  const getTooltipStyle = (): React.CSSProperties => {
-    const gap = 24; // Gap between spotlight and tooltip
-    
-    switch (config.tooltipPosition) {
-      case 'top':
-        return {
-          bottom: window.innerHeight - spotlightY + gap,
-          left: '50%',
-          transform: 'translateX(-50%)',
-        };
-      case 'bottom':
-        return {
-          top: spotlightY + spotlightHeight + gap,
-          left: '50%',
-          transform: 'translateX(-50%)',
-        };
-      case 'left':
-        return {
-          right: window.innerWidth - spotlightX + gap,
-          top: spotlightY + spotlightHeight / 2,
-          transform: 'translateY(-50%)',
-        };
-      case 'right':
-        return {
-          left: spotlightX + spotlightWidth + gap,
-          top: spotlightY + spotlightHeight / 2,
-          transform: 'translateY(-50%)',
-        };
-    }
-  };
-  
-  // Calculate arrow position (between tooltip and spotlight)
-  const getArrowStyle = (): React.CSSProperties => {
-    const arrowGap = 4;
-    
-    switch (config.arrowDirection) {
-      case 'up':
-        return {
-          bottom: window.innerHeight - spotlightY + arrowGap,
-          left: spotlightX + spotlightWidth / 2,
-          transform: 'translateX(-50%)',
-        };
-      case 'down':
-        return {
-          top: spotlightY + spotlightHeight + arrowGap,
-          left: spotlightX + spotlightWidth / 2,
-          transform: 'translateX(-50%)',
-        };
-      case 'left':
-        return {
-          right: window.innerWidth - spotlightX + arrowGap,
-          top: spotlightY + spotlightHeight / 2,
-          transform: 'translateY(-50%)',
-        };
-      case 'right':
-        return {
-          left: spotlightX + spotlightWidth + arrowGap,
-          top: spotlightY + spotlightHeight / 2,
-          transform: 'translateY(-50%)',
-        };
+  }, [updateSpotlight, currentStepIndex]);
+
+  const handleNext = () => {
+    if (isLastStep) {
+      onComplete();
+    } else {
+      setCurrentStepIndex((prev) => prev + 1);
     }
   };
 
+  const handlePrev = () => {
+    if (currentStepIndex > 0) {
+      setCurrentStepIndex((prev) => prev - 1);
+    }
+  };
+
+  // Calculate label position based on spotlight
+  const getLabelPosition = () => {
+    if (currentStep.labelPosition === 'top') {
+      // Position above the spotlight
+      return Math.max(60, spotlight.y - 180);
+    }
+    // Position below the spotlight
+    return spotlight.y + spotlight.height + 24;
+  };
+
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] pointer-events-auto"
-      >
-        {/* SVG mask for spotlight cutout */}
-        <svg className="absolute inset-0 w-full h-full">
-          <defs>
-            <mask id="spotlight-mask">
-              {/* White = visible (dark overlay) */}
-              <rect x="0" y="0" width="100%" height="100%" fill="white" />
-              {/* Black = transparent (cutout hole) */}
+    <div className="fixed inset-0 z-[9999] pointer-events-none">
+      {/* Dark overlay with spotlight cutout */}
+      <svg className="absolute inset-0 w-full h-full">
+        <defs>
+          <mask id="spotlight-mask">
+            <rect x="0" y="0" width="100%" height="100%" fill="white" />
+            {isVisible && (
               <rect
-                x={spotlightX}
-                y={spotlightY}
-                width={spotlightWidth}
-                height={spotlightHeight}
+                x={spotlight.x}
+                y={spotlight.y}
+                width={spotlight.width}
+                height={spotlight.height}
                 rx="16"
                 fill="black"
               />
-            </mask>
-          </defs>
-          {/* Dark overlay with cutout */}
-          <rect
-            x="0"
-            y="0"
-            width="100%"
-            height="100%"
-            fill="rgba(30, 30, 30, 0.85)"
-            mask="url(#spotlight-mask)"
-          />
-        </svg>
-        
-        {/* Spotlight border glow */}
-        <motion.div
-          className="absolute rounded-2xl border-2 border-primary shadow-[0_0_20px_rgba(var(--primary),0.5)]"
-          style={{
-            left: spotlightX,
-            top: spotlightY,
-            width: spotlightWidth,
-            height: spotlightHeight,
-          }}
-          animate={{
-            boxShadow: [
-              '0 0 20px 0px hsl(var(--primary) / 0.4)',
-              '0 0 30px 4px hsl(var(--primary) / 0.6)',
-              '0 0 20px 0px hsl(var(--primary) / 0.4)',
-            ],
-          }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            )}
+          </mask>
+        </defs>
+        <rect
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
+          fill="hsl(220 15% 12% / 0.92)"
+          mask="url(#spotlight-mask)"
         />
-        
-        {/* Arrow pointing to element */}
-        <div className="absolute" style={getArrowStyle()}>
-          <PointingArrow direction={config.arrowDirection} />
-        </div>
-        
-        {/* Tooltip card */}
+      </svg>
+
+      {/* Spotlight glow border */}
+      {isVisible && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.9 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 25, delay: 0.1 }}
-          className="absolute w-[280px] max-w-[85vw]"
-          style={getTooltipStyle()}
+          className="absolute rounded-2xl border-2 border-cream/40"
+          style={{
+            boxShadow: '0 0 30px rgba(245, 241, 232, 0.15)',
+          }}
+          initial={{ opacity: 0 }}
+          animate={{
+            opacity: 1,
+            x: spotlight.x,
+            y: spotlight.y,
+            width: spotlight.width,
+            height: spotlight.height,
+          }}
+          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        />
+      )}
+
+      {/* Instruction text - plain cream text on dark overlay, NO card */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentStepKey}
+          className="absolute left-0 right-0 px-6 text-center pointer-events-none"
+          style={{ top: getLabelPosition() }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.25 }}
         >
-          <div className="bg-card rounded-2xl p-5 card-shadow border border-border">
-            {/* Gesture indicators for swipe step */}
-            {config.showGestures && <SwipeGestureIndicators />}
-            
-            {/* Title */}
-            <h3 className="text-lg font-bold text-foreground text-center mb-2">
-              {config.title}
-            </h3>
-            
-            {/* Description */}
-            <p className="text-sm text-muted-foreground text-center mb-4">
-              {config.description}
-            </p>
-            
-            {/* Progress dots */}
-            <div className="flex justify-center gap-1.5 mb-4">
-              {Array.from({ length: totalSteps }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-2 h-2 rounded-full transition-colors ${
-                    i === stepIndex ? 'bg-primary' : 'bg-muted'
-                  }`}
-                />
-              ))}
+          <h3 className="text-cream text-xl font-semibold mb-2">
+            {currentStep.title}
+          </h3>
+          <p className="text-cream/80 text-base max-w-xs mx-auto">
+            {currentStep.description}
+          </p>
+          
+          {/* Gesture animation */}
+          {currentStep.gesture && (
+            <div className="mt-4">
+              <GestureDemo type={currentStep.gesture} />
             </div>
-            
-            {/* Buttons */}
-            <div className="flex gap-3">
-              <Button
-                variant="ghost"
-                onClick={skipOnboarding}
-                className="flex-1 text-sm text-muted-foreground hover:text-foreground"
-              >
-                Skip
-              </Button>
-              <Button
-                onClick={nextStep}
-                className="flex-1 bg-charcoal text-white hover:bg-charcoal/90"
-              >
-                Next
-              </Button>
-            </div>
-          </div>
+          )}
         </motion.div>
-      </motion.div>
-    </AnimatePresence>
+      </AnimatePresence>
+
+      {/* Arrow pointing to spotlight */}
+      {isVisible && (
+        <motion.div
+          className="absolute flex items-center justify-center pointer-events-none"
+          style={{
+            left: spotlight.x + spotlight.width / 2 - 20,
+            top: currentStep.labelPosition === 'top'
+              ? spotlight.y - 40
+              : spotlight.y + spotlight.height + 8,
+          }}
+          initial={{ opacity: 0 }}
+          animate={{ 
+            opacity: 1,
+            y: currentStep.labelPosition === 'top' ? [0, 8, 0] : [0, -8, 0]
+          }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <span className="text-3xl text-cream">
+            {currentStep.labelPosition === 'top' ? '↓' : '↑'}
+          </span>
+        </motion.div>
+      )}
+
+      {/* Navigation controls - fixed at bottom center, always visible and clickable */}
+      <div className="absolute bottom-28 left-0 right-0 flex items-center justify-center gap-6 pointer-events-auto px-6">
+        {currentStepIndex > 0 && (
+          <button
+            onClick={handlePrev}
+            className="text-cream/70 hover:text-cream text-base font-medium transition-colors"
+          >
+            Back
+          </button>
+        )}
+        
+        <button
+          onClick={handleNext}
+          className="bg-cream text-charcoal px-8 py-3 rounded-full font-semibold text-base hover:bg-cream/90 transition-colors"
+        >
+          {isLastStep ? 'Finish' : 'Next'}
+        </button>
+
+        <button
+          onClick={onSkip}
+          className="text-cream/70 hover:text-cream text-base font-medium transition-colors"
+        >
+          Skip
+        </button>
+      </div>
+
+      {/* Step indicator dots */}
+      <div className="absolute bottom-20 left-0 right-0 flex items-center justify-center gap-1.5 pointer-events-none">
+        {STEP_ORDER.map((_, index) => (
+          <div
+            key={index}
+            className={`w-2 h-2 rounded-full transition-colors ${
+              index === currentStepIndex
+                ? 'bg-cream'
+                : index < currentStepIndex
+                ? 'bg-cream/50'
+                : 'bg-cream/20'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
   );
 };
 
