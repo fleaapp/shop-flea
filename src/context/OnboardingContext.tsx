@@ -1,10 +1,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 
 export type OnboardingStep = 
+  | 'welcome'
   | 'swipe-navigation'
   | 'tap-to-expand'
   | 'navigation-bar'
   | 'cart-swipe'
+  | 'wishlist-location'
   | 'orders-location'
   | 'sales-location'
   | 'notifications-location'
@@ -20,6 +22,7 @@ interface OnboardingContextValue {
   hasCompletedOnboarding: boolean;
   isNewUser: boolean;
   startOnboarding: () => void;
+  startTour: () => void;
   nextStep: () => void;
   skipOnboarding: () => void;
   resetOnboarding: () => void;
@@ -31,10 +34,12 @@ interface OnboardingContextValue {
 const OnboardingContext = createContext<OnboardingContextValue | undefined>(undefined);
 
 const ONBOARDING_STEPS: OnboardingStep[] = [
+  'welcome',
   'swipe-navigation',
   'tap-to-expand',
   'navigation-bar',
   'cart-swipe',
+  'wishlist-location',
   'orders-location',
   'sales-location',
   'notifications-location',
@@ -61,11 +66,17 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     setIsNewUser(pendingOnboarding === 'true');
   }, []);
 
+  // Shows the welcome dialog
   const startOnboarding = useCallback(() => {
-    setCurrentStep('swipe-navigation');
+    setCurrentStep('welcome');
     // Clear the new user flag once onboarding starts
     localStorage.removeItem(NEW_USER_KEY);
     setIsNewUser(false);
+  }, []);
+
+  // Called when user clicks "Take Tour" - starts the actual tour
+  const startTour = useCallback(() => {
+    setCurrentStep('swipe-navigation');
   }, []);
 
   // Called from Index page to check if we should start onboarding
@@ -129,6 +140,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
         hasCompletedOnboarding,
         isNewUser,
         startOnboarding,
+        startTour,
         nextStep,
         skipOnboarding,
         resetOnboarding,
