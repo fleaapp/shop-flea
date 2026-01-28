@@ -1,12 +1,10 @@
 export type OnboardingStepKey =
   | 'swipe-navigation'
   | 'tap-to-expand'
-  | 'undo-action'
-  | 'nav-home'
-  | 'nav-cart'
-  | 'nav-favorites'
+  | 'cart-wishlist'
+  | 'cart-swipe-demo'
   | 'nav-profile'
-  | 'nav-notifications'
+  | 'nav-alerts'
   | 'nav-settings';
 
 export interface StepConfig {
@@ -15,7 +13,7 @@ export interface StepConfig {
   title: string;
   description: string;
   route: string;
-  gesture?: 'swipe-left-right' | 'swipe-up' | 'tap' | 'swipe-left';
+  gesture?: 'swipe-left-right' | 'swipe-up' | 'tap' | 'cart-swipe';
   labelPosition: 'top' | 'bottom';
 }
 
@@ -23,66 +21,52 @@ export const ONBOARDING_STEPS: Record<OnboardingStepKey, StepConfig> = {
   'swipe-navigation': {
     targetId: 'swipe-card-stack',
     title: 'Swipe to Browse',
-    description: 'Swipe left to pass, right to save to wishlist, or up to add to cart',
+    description: 'Swipe left to pass, right to save, or up to add to cart',
     route: '/',
     gesture: 'swipe-left-right',
     labelPosition: 'bottom',
   },
   'tap-to-expand': {
     targetId: 'swipe-card-stack',
-    title: 'Tap to View',
-    description: 'Tap any card to see full item details',
+    title: 'Tap to View Details',
+    description: 'Tap any card to see full item info',
     route: '/',
     gesture: 'tap',
     labelPosition: 'bottom',
   },
-  'undo-action': {
-    targetId: 'undo-button',
-    title: 'Undo Actions',
-    description: 'Made a mistake? Tap here to undo your last swipe',
-    route: '/',
-    labelPosition: 'top',
-  },
-  'nav-home': {
-    targetId: 'nav-home',
-    title: 'Home Feed',
-    description: 'Return to browsing items anytime',
-    route: '/',
-    labelPosition: 'top',
-  },
-  'nav-cart': {
-    targetId: 'nav-cart',
-    title: 'Your Cart',
-    description: 'View items you swiped up to buy. Swipe left on items to remove or move to wishlist',
-    route: '/cart',
-    gesture: 'swipe-left',
-    labelPosition: 'top',
-  },
-  'nav-favorites': {
-    targetId: 'nav-favorites',
+  'cart-wishlist': {
+    targetId: 'cart-wishlist-button',
     title: 'Your Wishlist',
-    description: 'Find all the items you saved by swiping right',
-    route: '/favorites',
+    description: 'Find all saved items here',
+    route: '/cart',
+    labelPosition: 'top',
+  },
+  'cart-swipe-demo': {
+    targetId: 'cart-items-area',
+    title: 'Manage Cart Items',
+    description: 'Swipe right to delete, left to move to wishlist',
+    route: '/cart',
+    gesture: 'cart-swipe',
     labelPosition: 'top',
   },
   'nav-profile': {
     targetId: 'nav-profile',
     title: 'Your Profile',
-    description: 'Manage your listings, orders, and sales here',
+    description: 'Manage listings, orders, and sales',
     route: '/profile',
     labelPosition: 'top',
   },
-  'nav-notifications': {
+  'nav-alerts': {
     targetId: 'nav-alerts',
     title: 'Notifications',
-    description: 'Stay updated on orders, messages, and activity',
+    description: 'Stay updated on orders and activity',
     route: '/notifications',
     labelPosition: 'top',
   },
   'nav-settings': {
     targetId: 'nav-settings',
     title: 'Settings',
-    description: 'Customize your preferences and account settings',
+    description: 'Customize your preferences',
     route: '/settings',
     labelPosition: 'top',
   },
@@ -91,11 +75,9 @@ export const ONBOARDING_STEPS: Record<OnboardingStepKey, StepConfig> = {
 export const STEP_ORDER: OnboardingStepKey[] = [
   'swipe-navigation',
   'tap-to-expand',
-  'undo-action',
-  'nav-home',
-  'nav-cart',
-  'nav-favorites',
+  'cart-wishlist',
+  'cart-swipe-demo',
   'nav-profile',
-  'nav-notifications',
+  'nav-alerts',
   'nav-settings',
 ];

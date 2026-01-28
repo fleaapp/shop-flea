@@ -203,11 +203,12 @@ const Cart = () => {
       {/* Sticky Header with Wishlist Button */}
       <div className="sticky top-0 z-40 bg-background">
         <div className="relative flex justify-center pt-8 max-[375px]:pt-6 pb-6 max-[375px]:pb-4">
-          {/* Wishlist button - charcoal background with heart envelope emoji */}
+        {/* Wishlist button - charcoal background with heart envelope emoji */}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate('/favorites')}
+            data-onboarding="cart-wishlist-button"
             className="absolute right-4 max-[375px]:right-3 top-8 max-[375px]:top-6 h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-full bg-charcoal text-mint hover:bg-charcoal-light text-xl max-[375px]:text-lg"
           >
             💌
@@ -249,7 +250,7 @@ const Cart = () => {
       </div>
 
       {activeTab === 'cart' ? (
-        <div className="px-4 max-[375px]:px-3 space-y-4 max-[375px]:space-y-3">
+        <div className="px-4 max-[375px]:px-3 space-y-4 max-[375px]:space-y-3" data-onboarding="cart-items-area">
           {cartItems.length > 0 ? (
             <>
               {Object.entries(itemsBySeller).map(([sellerId, items]) => {
