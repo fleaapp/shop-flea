@@ -102,10 +102,10 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
             <img 
               src={fleaLogo} 
               alt="Flea" 
-              className="h-10 w-auto object-contain"
+              className="h-14 w-auto object-contain"
             />
           </div>
-          <DialogDescription className="text-sm text-muted-foreground text-center">
+          <DialogDescription className="text-sm text-muted-foreground text-center pt-3">
             <span className="block">Your next secondhand score is standing by…</span>
             <span className="block">But first, introduce yourself!</span>
           </DialogDescription>
