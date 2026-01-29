@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import fleaLogo from '@/assets/flea-logo-auth.jpeg';
+import fleaLogo from '@/assets/flea-logo.png';
 
 interface WelcomeSetupDialogProps {
   open: boolean;
@@ -99,13 +99,11 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
             Welcome to
           </DialogTitle>
           <div className="flex justify-center">
-            <div className="bg-card px-2 py-1 rounded">
-              <img 
-                src={fleaLogo} 
-                alt="Flea" 
-                className="h-10 w-auto object-contain mix-blend-multiply"
-              />
-            </div>
+            <img 
+              src={fleaLogo} 
+              alt="Flea" 
+              className="h-10 w-auto object-contain"
+            />
           </div>
           <DialogDescription className="text-sm text-muted-foreground text-center">
             <span className="block">Your next secondhand score is standing by…</span>
