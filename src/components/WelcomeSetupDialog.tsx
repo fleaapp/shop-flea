@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { User } from 'lucide-react';
+
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import fleaLogo from '@/assets/flea-logo.png';
+import fleaLogo from '@/assets/flea-logo-auth.jpeg';
 
 interface WelcomeSetupDialogProps {
   open: boolean;
@@ -91,7 +91,7 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent 
-        className="w-[85vw] max-w-xs rounded-2xl border border-charcoal/20 bg-card p-5"
+        className="w-[90vw] max-w-sm rounded-3xl border-2 border-charcoal/40 bg-card p-5"
         hideCloseButton
       >
         <DialogHeader className="text-center space-y-2">
@@ -105,8 +105,9 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
               className="h-10 w-auto object-contain"
             />
           </div>
-          <DialogDescription className="text-sm text-muted-foreground">
-            Your next secondhand score is standing by… But first, introduce yourself!
+          <DialogDescription className="text-sm text-muted-foreground text-center">
+            <span className="block">Your next secondhand score is standing by…</span>
+            <span className="block">But first, introduce yourself!</span>
           </DialogDescription>
         </DialogHeader>
 
@@ -116,9 +117,8 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
             <label className="text-xs font-medium text-foreground mb-1 block">
               Username <span className="text-destructive">*</span>
             </label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <span className="absolute left-9 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
+          <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
               <Input
                 type="text"
                 placeholder="username"
@@ -127,7 +127,7 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
                   setUsername(e.target.value.toLowerCase());
                   setError('');
                 }}
-                className="h-11 pl-14 rounded-lg bg-background border border-input text-foreground placeholder:text-muted-foreground text-sm"
+                className="h-11 pl-8 rounded-lg bg-background border border-input text-foreground placeholder:text-muted-foreground text-sm"
                 autoFocus
               />
             </div>
