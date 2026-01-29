@@ -99,11 +99,13 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
             Welcome to
           </DialogTitle>
           <div className="flex justify-center">
-            <img 
-              src={fleaLogo} 
-              alt="Flea" 
-              className="h-10 w-auto object-contain"
-            />
+            <div className="bg-card px-2 py-1 rounded">
+              <img 
+                src={fleaLogo} 
+                alt="Flea" 
+                className="h-10 w-auto object-contain mix-blend-multiply"
+              />
+            </div>
           </div>
           <DialogDescription className="text-sm text-muted-foreground text-center">
             <span className="block">Your next secondhand score is standing by…</span>
@@ -111,7 +113,7 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+        <form onSubmit={handleSubmit} className="mt-4 space-y-3 px-4">
           {/* Username - Required */}
           <div>
             <label className="text-xs font-medium text-foreground mb-1 block">
