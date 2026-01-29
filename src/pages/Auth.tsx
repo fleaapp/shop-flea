@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { useOnboarding } from '@/context/OnboardingContext';
-import { supabase } from '@/lib/supabase';
+import { lovable } from '@/integrations/lovable/index';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -90,30 +90,42 @@ const Auth = () => {
     }
     setIsLoading(true);
     
-    const { error } = await signUp(signupEmail, signupPassword, signupUsername);
+    // Auto-convert username to lowercase
+    const formattedUsername = signupUsername.toLowerCase();
+    
+    const { error } = await signUp(signupEmail, signupPassword, formattedUsername);
     
     if (error) {
       toast.error(error.message || 'Failed to create account');
       setIsLoading(false);
     } else {
-      toast.success('Account created!');
-      // Mark as new user for onboarding on home page
-      markUserAsOnboarded();
-      navigate('/');
+      // Redirect to verify email page
+      navigate('/verify-email', { state: { email: signupEmail } });
     }
   };
 
   const handleGoogleSignIn = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin,
-      },
+    const { error } = await lovable.auth.signInWithOAuth('google', {
+      redirect_uri: window.location.origin,
     });
     
     if (error) {
       toast.error('Google sign-in failed');
     }
+  };
+
+  const handleAppleSignIn = async () => {
+    const { error } = await lovable.auth.signInWithOAuth('apple', {
+      redirect_uri: window.location.origin,
+    });
+    
+    if (error) {
+      toast.error('Apple sign-in failed');
+    }
+  };
+
+  const handleFacebookSignIn = () => {
+    toast.info('Facebook login is not yet available');
   };
 
   if (authLoading) {
@@ -200,7 +212,11 @@ const Auth = () => {
               </div>
               
               <div className="text-center pt-1">
-                <button type="button" className="text-xs text-foreground hover:underline">
+                <button 
+                  type="button" 
+                  onClick={() => navigate('/forgot-password')}
+                  className="text-xs text-foreground hover:underline"
+                >
                   Forgot password?
                 </button>
               </div>
@@ -316,7 +332,7 @@ const Auth = () => {
             <div className="flex justify-center gap-3">
               <button
                 type="button"
-                onClick={() => toast.info('Facebook login coming soon!')}
+                onClick={handleFacebookSignIn}
                 className="w-10 h-10 rounded-lg bg-[#423D3D] flex items-center justify-center hover:bg-[#423D3D]/90 transition-colors"
               >
                 <svg className="w-5 h-5 text-card" fill="currentColor" viewBox="0 0 24 24">
@@ -326,7 +342,7 @@ const Auth = () => {
               
               <button
                 type="button"
-                onClick={() => toast.info('Apple login coming soon!')}
+                onClick={handleAppleSignIn}
                 className="w-10 h-10 rounded-lg bg-[#423D3D] flex items-center justify-center hover:bg-[#423D3D]/90 transition-colors"
               >
                 <svg className="w-5 h-5 text-card" fill="currentColor" viewBox="0 0 24 24">
