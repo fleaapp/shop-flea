@@ -105,22 +105,34 @@ const Auth = () => {
   };
 
   const handleGoogleSignIn = async () => {
-    const { error } = await lovable.auth.signInWithOAuth('google', {
-      redirect_uri: window.location.origin,
-    });
-    
-    if (error) {
-      toast.error('Google sign-in failed');
+    try {
+      const { error } = await lovable.auth.signInWithOAuth('google', {
+        redirect_uri: window.location.origin,
+      });
+      
+      if (error) {
+        console.error('Google sign-in error:', error);
+        toast.error('Google sign-in failed. Please try again.');
+      }
+    } catch (err) {
+      console.error('Google sign-in exception:', err);
+      toast.error('Google sign-in failed. Please try again.');
     }
   };
 
   const handleAppleSignIn = async () => {
-    const { error } = await lovable.auth.signInWithOAuth('apple', {
-      redirect_uri: window.location.origin,
-    });
-    
-    if (error) {
-      toast.error('Apple sign-in failed');
+    try {
+      const { error } = await lovable.auth.signInWithOAuth('apple', {
+        redirect_uri: window.location.origin,
+      });
+      
+      if (error) {
+        console.error('Apple sign-in error:', error);
+        toast.error('Apple sign-in failed. Please try again.');
+      }
+    } catch (err) {
+      console.error('Apple sign-in exception:', err);
+      toast.error('Apple sign-in failed. Please try again.');
     }
   };
 
