@@ -6,11 +6,13 @@ import FilterChip from '@/components/FilterChip';
 import SwipeCard from '@/components/SwipeCard';
 import FilterSheet, { FilterState } from '@/components/FilterSheet';
 import SearchSheet from '@/components/SearchSheet';
+import UsernameSetupDialog from '@/components/UsernameSetupDialog';
 import { useListings, DbListing } from '@/hooks/useListings';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 import { useCart } from '@/context/CartContext';
 import { useOnboarding } from '@/context/OnboardingContext';
+import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { Listing } from '@/types/listing';
 
@@ -41,6 +43,18 @@ const Index = () => {
   const { addFavorite, removeFavorite, favoriteIds } = useFavorites();
   const { addDiscarded, removeDiscarded, discardedIds } = useDiscardedListings();
   const { checkAndTriggerOnboarding } = useOnboarding();
+  const { profile, refreshProfile } = useAuth();
+
+  // Check if user needs to set up their username (OAuth users get auto-generated usernames)
+  const needsUsernameSetup = profile?.username?.startsWith('@user_') || false;
+  const [showUsernameDialog, setShowUsernameDialog] = useState(false);
+
+  // Show username setup dialog for OAuth users with auto-generated usernames
+  useEffect(() => {
+    if (needsUsernameSetup) {
+      setShowUsernameDialog(true);
+    }
+  }, [needsUsernameSetup]);
 
   // Check if we should start onboarding (for new users after signup)
   useEffect(() => {
@@ -57,6 +71,7 @@ const Index = () => {
     listingId: string;
     type: 'discard' | 'favorite' | 'cart';
   } | null>(null);
+
 
   // Build filter object from active filter chips
   const listingFilters = useMemo(() => {
@@ -245,6 +260,13 @@ const Index = () => {
         onOpenChange={setSearchSheetOpen}
         onSearch={handleSearch}
         listings={searchListings}
+      />
+      <UsernameSetupDialog
+        open={showUsernameDialog}
+        onComplete={() => {
+          setShowUsernameDialog(false);
+          refreshProfile();
+        }}
       />
       <BottomNav />
     </div>
