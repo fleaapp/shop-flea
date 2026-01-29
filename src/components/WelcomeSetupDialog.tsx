@@ -95,20 +95,6 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
         hideCloseButton
       >
         <DialogHeader className="text-center space-y-2">
-          <div className="flex justify-center">
-            <motion.img 
-              src={fleaLogo} 
-              alt="Flea" 
-              className="h-14 w-auto object-contain"
-              initial={{ opacity: 0, scale: 0.8, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ 
-                duration: 0.6, 
-                ease: [0.34, 1.56, 0.64, 1],
-                delay: 0.2
-              }}
-            />
-          </div>
           <DialogTitle className="text-lg font-bold text-foreground">
             Less new. More <em>you</em>.
           </DialogTitle>
