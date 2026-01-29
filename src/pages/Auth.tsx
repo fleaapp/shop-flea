@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import fleaLogoAuth from '@/assets/flea-logo-auth.jpeg';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,6 @@ const Auth = () => {
   const [loginPassword, setLoginPassword] = useState('');
   
   const [signupEmail, setSignupEmail] = useState('');
-  const [signupUsername, setSignupUsername] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [passwordFocused, setPasswordFocused] = useState(false);
@@ -60,7 +59,7 @@ const Auth = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signupEmail || !signupUsername || !signupPassword) {
+    if (!signupEmail || !signupPassword) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -90,10 +89,10 @@ const Auth = () => {
     }
     setIsLoading(true);
     
-    // Auto-convert username to lowercase
-    const formattedUsername = signupUsername.toLowerCase();
+    // Use a placeholder username - user will set it in the welcome popup
+    const placeholderUsername = `user_${Date.now()}`;
     
-    const { error } = await signUp(signupEmail, signupPassword, formattedUsername);
+    const { error } = await signUp(signupEmail, signupPassword, placeholderUsername);
     
     if (error) {
       toast.error(error.message || 'Failed to create account');
@@ -262,16 +261,6 @@ const Auth = () => {
                 />
               </div>
               
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Username"
-                  value={signupUsername}
-                  onChange={(e) => setSignupUsername(e.target.value)}
-                  className="h-10 pl-9 rounded-lg bg-card border border-foreground text-foreground placeholder:text-muted-foreground text-sm focus-visible:ring-muted-foreground/50 focus-visible:ring-offset-0"
-                />
-              </div>
               
               <Popover open={passwordFocused}>
                 <PopoverTrigger asChild>
