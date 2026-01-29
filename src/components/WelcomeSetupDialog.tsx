@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-
+import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
@@ -99,14 +99,21 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
             Welcome to
           </DialogTitle>
           <div className="flex justify-center">
-            <img 
+            <motion.img 
               src={fleaLogo} 
               alt="Flea" 
               className="h-14 w-auto object-contain"
+              initial={{ opacity: 0, scale: 0.8, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ 
+                duration: 0.6, 
+                ease: [0.34, 1.56, 0.64, 1],
+                delay: 0.2
+              }}
             />
           </div>
           <DialogDescription className="text-sm text-muted-foreground text-center pt-3">
-            <span className="block">Your next secondhand score is standing by…</span>
+            <span className="block">Your next secondhand score is awaiting your swipe.</span>
             <span className="block">But first, introduce yourself!</span>
           </DialogDescription>
         </DialogHeader>
@@ -171,7 +178,7 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
               disabled={isLoading || !username.trim()}
               className="px-8 h-11 rounded-full bg-primary text-primary-foreground font-medium hover:bg-primary/90"
             >
-              {isLoading ? 'Setting up...' : 'Start Swiping!'}
+              {isLoading ? 'Setting up...' : 'Start Swiping! 👉'}
             </Button>
           </div>
         </form>
