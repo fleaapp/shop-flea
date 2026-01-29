@@ -99,24 +99,18 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
             Welcome to
           </DialogTitle>
           <div className="flex justify-center">
-            <div className="flex">
-              {['F', 'l', 'e', 'a'].map((letter, index) => (
-                <motion.span
-                  key={index}
-                  className="text-4xl font-bold text-primary"
-                  initial={{ opacity: 0, scale: 0, y: -20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 500,
-                    damping: 15,
-                    delay: 0.1 + index * 0.1,
-                  }}
-                >
-                  {letter}
-                </motion.span>
-              ))}
-            </div>
+            <motion.img 
+              src={fleaLogo} 
+              alt="Flea" 
+              className="h-14 w-auto object-contain"
+              initial={{ opacity: 0, scale: 0.8, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ 
+                duration: 0.6, 
+                ease: [0.34, 1.56, 0.64, 1],
+                delay: 0.2
+              }}
+            />
           </div>
           <DialogDescription className="text-sm text-muted-foreground text-center pt-3">
             <span className="block">Your next secondhand score is awaiting your swipe.</span>
