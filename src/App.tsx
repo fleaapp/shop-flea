@@ -15,6 +15,9 @@ import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import VerifyEmail from "./pages/VerifyEmail";
 import CreateListing from "./pages/CreateListing";
 import EditListing from "./pages/EditListing";
 import EditProfile from "./pages/EditProfile";
@@ -36,7 +39,10 @@ const App = () => (
               <Sonner position="top-center" />
               <OnboardingOverlay />
               <Routes>
-                <Route path="/auth" element={<Auth />} />
+              <Route path="/auth" element={<Auth />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                 <Route path="/listing/:id" element={<ProtectedRoute><ListingDetails /></ProtectedRoute>} />
                 <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
