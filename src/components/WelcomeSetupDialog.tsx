@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import fleaLogo from '@/assets/flea-logo.png';
+import fleaLogo from '@/assets/flea-logo-transparent.png';
 
 interface WelcomeSetupDialogProps {
   open: boolean;
