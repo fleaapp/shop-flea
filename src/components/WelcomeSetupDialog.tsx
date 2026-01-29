@@ -6,6 +6,7 @@ import { User } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import fleaLogo from '@/assets/flea-logo.png';
 
 interface WelcomeSetupDialogProps {
   open: boolean;
@@ -90,15 +91,22 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent 
-        className="w-[90vw] max-w-sm rounded-2xl border-none bg-card p-6"
+        className="w-[85vw] max-w-xs rounded-2xl border border-charcoal/20 bg-card p-5"
         hideCloseButton
       >
-        <DialogHeader className="text-center">
-          <DialogTitle className="text-xl font-bold text-foreground">
-            Welcome to Flea! 🎉
+        <DialogHeader className="text-center space-y-2">
+          <DialogTitle className="text-base font-medium text-foreground">
+            Welcome to
           </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground mt-2">
-            Let's get to know you! Introduce yourself to the community.
+          <div className="flex justify-center">
+            <img 
+              src={fleaLogo} 
+              alt="Flea" 
+              className="h-10 w-auto object-contain"
+            />
+          </div>
+          <DialogDescription className="text-sm text-muted-foreground">
+            Your next secondhand score is standing by… But first, introduce yourself!
           </DialogDescription>
         </DialogHeader>
 
@@ -157,13 +165,15 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
             <p className="text-xs text-destructive text-center">{error}</p>
           )}
 
-          <Button
-            type="submit"
-            disabled={isLoading || !username.trim()}
-            className="w-full h-11 rounded-full bg-primary text-primary-foreground font-medium hover:bg-primary/90 mt-2"
-          >
-            {isLoading ? 'Setting up...' : 'Get Started'}
-          </Button>
+          <div className="flex justify-center pt-2">
+            <Button
+              type="submit"
+              disabled={isLoading || !username.trim()}
+              className="px-8 h-11 rounded-full bg-primary text-primary-foreground font-medium hover:bg-primary/90"
+            >
+              {isLoading ? 'Setting up...' : 'Start Swiping!'}
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
