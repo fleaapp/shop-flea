@@ -95,9 +95,6 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
         hideCloseButton
       >
         <DialogHeader className="text-center space-y-2">
-          <DialogTitle className="text-base font-medium text-foreground">
-            Welcome to
-          </DialogTitle>
           <div className="flex justify-center">
             <motion.img 
               src={fleaLogo} 
@@ -112,9 +109,11 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
               }}
             />
           </div>
-          <DialogDescription className="text-sm text-muted-foreground text-center pt-3">
-            <span className="block">Your next secondhand score is awaiting your swipe.</span>
-            <span className="block">But first, introduce yourself!</span>
+          <DialogTitle className="text-lg font-bold text-foreground">
+            Less new. More <em>you</em>.
+          </DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground text-center pt-2">
+            One name stands between you and a cupboard full of stories. Introduce yourself!
           </DialogDescription>
         </DialogHeader>
 
@@ -167,6 +166,10 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
               className="h-11 rounded-lg bg-background border border-input text-foreground placeholder:text-muted-foreground text-sm"
             />
           </div>
+
+          <p className="text-[11px] text-muted-foreground/70 text-center">
+            Your name is only shared when you make a purchase.
+          </p>
 
           {error && (
             <p className="text-xs text-destructive text-center">{error}</p>
