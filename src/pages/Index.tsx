@@ -6,7 +6,7 @@ import FilterChip from '@/components/FilterChip';
 import SwipeCard from '@/components/SwipeCard';
 import FilterSheet, { FilterState } from '@/components/FilterSheet';
 import SearchSheet from '@/components/SearchSheet';
-import UsernameSetupDialog from '@/components/UsernameSetupDialog';
+import WelcomeSetupDialog from '@/components/WelcomeSetupDialog';
 import { useListings, DbListing } from '@/hooks/useListings';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
@@ -45,16 +45,16 @@ const Index = () => {
   const { checkAndTriggerOnboarding } = useOnboarding();
   const { profile, refreshProfile } = useAuth();
 
-  // Check if user needs to set up their username (OAuth users get auto-generated usernames)
-  const needsUsernameSetup = profile?.username?.startsWith('@user_') || false;
-  const [showUsernameDialog, setShowUsernameDialog] = useState(false);
+  // Check if user needs to set up their profile (new users get auto-generated usernames)
+  const needsProfileSetup = profile?.username?.startsWith('@user_') || false;
+  const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
 
-  // Show username setup dialog for OAuth users with auto-generated usernames
+  // Show welcome setup dialog for new users with auto-generated usernames
   useEffect(() => {
-    if (needsUsernameSetup) {
-      setShowUsernameDialog(true);
+    if (needsProfileSetup) {
+      setShowWelcomeDialog(true);
     }
-  }, [needsUsernameSetup]);
+  }, [needsProfileSetup]);
 
   // Check if we should start onboarding (for new users after signup)
   useEffect(() => {
@@ -261,10 +261,10 @@ const Index = () => {
         onSearch={handleSearch}
         listings={searchListings}
       />
-      <UsernameSetupDialog
-        open={showUsernameDialog}
+      <WelcomeSetupDialog
+        open={showWelcomeDialog}
         onComplete={() => {
-          setShowUsernameDialog(false);
+          setShowWelcomeDialog(false);
           refreshProfile();
         }}
       />
