@@ -86,7 +86,7 @@ const Favorites = () => {
     if (filters.category) newFilters.category = filters.category;
     if (filters.size) newFilters.size = filters.size;
     if (filters.condition) newFilters.condition = filters.condition;
-    if (filters.gender) newFilters.gender = filters.gender;
+    if (filters.fit) newFilters.gender = filters.fit;
     if (filters.priceRange[0] > 0) newFilters.minPrice = filters.priceRange[0];
     if (filters.priceRange[1] < 1000) newFilters.maxPrice = filters.priceRange[1];
     

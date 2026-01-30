@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ImagePlus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,12 +10,14 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/utils/imageCompression';
-const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'];
-const categories = ['Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories', 'Bags', 'Other'];
-const conditions = ['New', 'Like new', 'Good', 'Fair'];
-const colours = ['Black', 'White', 'Grey', 'Navy', 'Blue', 'Red', 'Pink', 'Green', 'Brown', 'Beige', 'Multi'];
-const styles = ['Casual', 'Formal', 'Streetwear', 'Vintage', 'Sporty', 'Bohemian', 'Minimalist', 'Other'];
-const genders = ['Women', 'Men', 'Unisex'];
+import { 
+  FIT_OPTIONS, 
+  CATEGORY_OPTIONS, 
+  getSizesForFitAndCategory,
+  CONDITIONS,
+  COLOURS,
+  STYLES
+} from '@/config/sizeConfig';
 
 interface ImageFile {
   file: File;
@@ -30,16 +32,34 @@ const CreateListing = () => {
   const [imageFiles, setImageFiles] = useState<ImageFile[]>([]);
   
   const [productName, setProductName] = useState('');
+  const [fit, setFit] = useState(''); // Gender/Fit selection
+  const [category, setCategory] = useState('');
   const [size, setSize] = useState('');
   const [brand, setBrand] = useState('');
-  const [category, setCategory] = useState('');
   const [condition, setCondition] = useState('');
   const [colour, setColour] = useState('');
   const [style, setStyle] = useState('');
-  const [gender, setGender] = useState('');
   const [itemPrice, setItemPrice] = useState('');
   const [shippingPrice, setShippingPrice] = useState('');
   const [description, setDescription] = useState('');
+
+  // Get available sizes based on fit and category
+  const availableSizes = useMemo(() => {
+    if (!fit || !category) return [];
+    return getSizesForFitAndCategory(fit, category);
+  }, [fit, category]);
+
+  // Reset dependent fields when parent selection changes
+  const handleFitChange = (value: string) => {
+    setFit(value);
+    setCategory('');
+    setSize('');
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setCategory(value);
+    setSize('');
+  };
 
   // Redirect if not logged in
   useEffect(() => {
@@ -129,7 +149,7 @@ const CreateListing = () => {
       return;
     }
     
-    if (!productName || !size || !brand || !category || !condition || !itemPrice) {
+    if (!productName || !fit || !category || !size || !brand || !condition || !itemPrice) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -158,7 +178,7 @@ const CreateListing = () => {
           condition,
           colour: colour || null,
           style: style || null,
-          gender: gender || null,
+          gender: fit || null, // Store fit as gender
           price: parseFloat(itemPrice),
           shipping_price: shippingPrice ? parseFloat(shippingPrice) : 0,
           images: imageUrls,
@@ -257,13 +277,37 @@ const CreateListing = () => {
           className={inputStyles}
         />
         
-        {/* Size */}
-        <Select value={size} onValueChange={setSize}>
+        {/* Fit / Gender */}
+        <Select value={fit} onValueChange={handleFitChange}>
           <SelectTrigger className={selectStyles}>
-            <SelectValue placeholder="Size" />
+            <SelectValue placeholder="Fit / Gender" />
           </SelectTrigger>
           <SelectContent>
-            {sizes.map((s) => (
+            {FIT_OPTIONS.map((f) => (
+              <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Category (depends on Fit) */}
+        <Select value={category} onValueChange={handleCategoryChange} disabled={!fit}>
+          <SelectTrigger className={selectStyles}>
+            <SelectValue placeholder={fit ? "Category" : "Select Fit first"} />
+          </SelectTrigger>
+          <SelectContent>
+            {CATEGORY_OPTIONS.map((c) => (
+              <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Size (depends on Fit + Category) */}
+        <Select value={size} onValueChange={setSize} disabled={!fit || !category}>
+          <SelectTrigger className={selectStyles}>
+            <SelectValue placeholder={!fit ? "Select Fit first" : !category ? "Select Category first" : "Size"} />
+          </SelectTrigger>
+          <SelectContent className="max-h-60">
+            {availableSizes.map((s) => (
               <SelectItem key={s} value={s.toLowerCase()}>{s}</SelectItem>
             ))}
           </SelectContent>
@@ -277,25 +321,13 @@ const CreateListing = () => {
           className={inputStyles}
         />
         
-        {/* Category */}
-        <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger className={selectStyles}>
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((c) => (
-              <SelectItem key={c} value={c.toLowerCase()}>{c}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        
         {/* Condition */}
         <Select value={condition} onValueChange={setCondition}>
           <SelectTrigger className={selectStyles}>
             <SelectValue placeholder="Condition" />
           </SelectTrigger>
           <SelectContent>
-            {conditions.map((c) => (
+            {CONDITIONS.map((c) => (
               <SelectItem key={c} value={c.toLowerCase()}>{c}</SelectItem>
             ))}
           </SelectContent>
@@ -307,7 +339,7 @@ const CreateListing = () => {
             <SelectValue placeholder="Colour" />
           </SelectTrigger>
           <SelectContent>
-            {colours.map((c) => (
+            {COLOURS.map((c) => (
               <SelectItem key={c} value={c.toLowerCase()}>{c}</SelectItem>
             ))}
           </SelectContent>
@@ -319,20 +351,8 @@ const CreateListing = () => {
             <SelectValue placeholder="Style" />
           </SelectTrigger>
           <SelectContent>
-            {styles.map((s) => (
+            {STYLES.map((s) => (
               <SelectItem key={s} value={s.toLowerCase()}>{s}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Gender */}
-        <Select value={gender} onValueChange={setGender}>
-          <SelectTrigger className={selectStyles}>
-            <SelectValue placeholder="Gender" />
-          </SelectTrigger>
-          <SelectContent>
-            {genders.map((g) => (
-              <SelectItem key={g} value={g.toLowerCase()}>{g}</SelectItem>
             ))}
           </SelectContent>
         </Select>

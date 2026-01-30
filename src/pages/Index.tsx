@@ -186,7 +186,7 @@ const Index = () => {
     if (filterState.category) activeFilters.push(filterState.category);
     if (filterState.size) activeFilters.push(filterState.size);
     if (filterState.condition) activeFilters.push(filterState.condition);
-    if (filterState.gender) activeFilters.push(filterState.gender);
+    if (filterState.fit) activeFilters.push(filterState.fit);
     setFilters(activeFilters);
     setPendingExitId(null);
     toast.success('Filters applied!');
