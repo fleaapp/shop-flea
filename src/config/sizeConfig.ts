@@ -34,19 +34,24 @@ const shoeRange = (start: number, end: number): string[] => {
   return result;
 };
 
+// Helper to format bottoms sizes with inch symbol
+const inchRange = (start: number, end: number): string[] => {
+  return range(start, end).map(n => `${n}"`);
+};
+
 // Women's sizes
 const WOMENS_CLOTHING = ['0', '2', '4', '6', '8', '10', '12', '14', '16', '18', '20', '22', '24', 'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'One Size Fits All'];
-const WOMENS_BOTTOMS = [...range(20, 42).map(String), 'One Size Fits All'];
+const WOMENS_BOTTOMS = [...inchRange(20, 42), 'One Size Fits All'];
 const WOMENS_SHOES = shoeRange(3, 13.5); // AU 3-13.5
 
 // Men's sizes
 const MENS_CLOTHING = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', 'One Size Fits All'];
-const MENS_BOTTOMS = [...range(20, 50).map(String), 'One Size Fits All'];
+const MENS_BOTTOMS = [...inchRange(20, 50), 'One Size Fits All'];
 const MENS_SHOES = shoeRange(5, 17); // AU 5-17
 
 // Unisex sizes
 const UNISEX_CLOTHING = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', 'One Size Fits All'];
-const UNISEX_BOTTOMS = [...range(20, 40).map(String), 'One Size Fits All'];
+const UNISEX_BOTTOMS = [...inchRange(20, 40), 'One Size Fits All'];
 const UNISEX_SHOES = shoeRange(3, 17); // AU 3-17
 
 // Size configuration map
