@@ -164,21 +164,23 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
 
           {/* Size (depends on Fit + Category) */}
           <div className="py-3">
-            <label className="text-base font-medium mb-2 block">Size</label>
-            <Select 
-              value={filters.size} 
-              onValueChange={(val) => setFilters({ ...filters, size: val })}
-              disabled={!filters.fit || !filters.category}
-            >
-              <SelectTrigger className="w-full bg-card border-0 h-12 rounded-xl focus:ring-[#ddfed7]">
-                <SelectValue placeholder={!filters.fit ? "Select Fit first" : !filters.category ? "Select Category first" : "Select Size"} />
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
+            <label className="text-base font-medium mb-3 block">Size</label>
+            {(!filters.fit || !filters.category) ? (
+              <p className="text-sm text-muted-foreground">
+                {!filters.fit ? "Select Fit first" : "Select Category first"}
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
                 {availableSizes.map((s) => (
-                  <SelectItem key={s} value={s.toLowerCase()}>{s}</SelectItem>
+                  <ChipButton
+                    key={s}
+                    label={s}
+                    selected={filters.size === s.toLowerCase()}
+                    onClick={() => setFilters({ ...filters, size: s.toLowerCase() })}
+                  />
                 ))}
-              </SelectContent>
-            </Select>
+              </div>
+            )}
           </div>
 
           {/* Condition */}
