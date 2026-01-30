@@ -1,9 +1,17 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  FIT_OPTIONS,
+  CATEGORY_OPTIONS,
+  getSizesForFitAndCategory,
+  CONDITIONS,
+  COLOURS,
+  STYLES,
+} from '@/config/sizeConfig';
 
 interface FilterSheetProps {
   open: boolean;
@@ -15,43 +23,51 @@ interface FilterSheetProps {
 export interface FilterState {
   preferences: boolean;
   hideSoldItems: boolean;
+  fit: string;
   category: string;
   size: string;
   condition: string;
-  gender: string;
   colour: string;
   style: string;
   priceRange: [number, number];
 }
 
-const sizeOptions = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'];
-const categoryOptions = ['Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories', 'Bags', 'Other'];
-const conditionOptions = ['New', 'Like new', 'Good', 'Fair'];
-const colourOptions = ['Black', 'White', 'Grey', 'Navy', 'Blue', 'Red', 'Pink', 'Green', 'Brown', 'Beige', 'Multi'];
-const styleOptions = ['Casual', 'Formal', 'Streetwear', 'Vintage', 'Sporty', 'Bohemian', 'Minimalist', 'Other'];
-const genderOptions = ['Women', 'Men', 'Unisex'];
-
 const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = false }: FilterSheetProps) => {
   const [filters, setFilters] = useState<FilterState>({
     preferences: false,
     hideSoldItems: false,
+    fit: '',
     category: '',
     size: '',
     condition: '',
-    gender: '',
     colour: '',
     style: '',
     priceRange: [0, 1000],
   });
 
+  // Get available sizes based on fit and category
+  const availableSizes = useMemo(() => {
+    if (!filters.fit || !filters.category) return [];
+    return getSizesForFitAndCategory(filters.fit, filters.category);
+  }, [filters.fit, filters.category]);
+
+  // Reset dependent fields when parent selection changes
+  const handleFitChange = (value: string) => {
+    setFilters(prev => ({ ...prev, fit: value, category: '', size: '' }));
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setFilters(prev => ({ ...prev, category: value, size: '' }));
+  };
+
   const handleReset = () => {
     setFilters({
       preferences: false,
       hideSoldItems: false,
+      fit: '',
       category: '',
       size: '',
       condition: '',
-      gender: '',
       colour: '',
       style: '',
       priceRange: [0, 1000],
@@ -112,30 +128,53 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
             />
           </div>
 
-          {/* Category */}
+          {/* Fit / Gender */}
           <div className="py-3">
-            <label className="text-base font-medium mb-2 block">Category</label>
-            <Select value={filters.category} onValueChange={(val) => setFilters({ ...filters, category: val })}>
+            <label className="text-base font-medium mb-2 block">Fit / Gender</label>
+            <Select value={filters.fit} onValueChange={handleFitChange}>
               <SelectTrigger className="w-full bg-card border-0 h-12 rounded-xl focus:ring-[#ddfed7]">
-                <SelectValue placeholder="Select Category" />
+                <SelectValue placeholder="Select Fit" />
               </SelectTrigger>
               <SelectContent>
-                {categoryOptions.map((c) => (
-                  <SelectItem key={c} value={c.toLowerCase()}>{c}</SelectItem>
+                {FIT_OPTIONS.map((f) => (
+                  <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Size */}
+          {/* Category (depends on Fit) */}
           <div className="py-3">
-            <label className="text-base font-medium mb-2 block">Size</label>
-            <Select value={filters.size} onValueChange={(val) => setFilters({ ...filters, size: val })}>
+            <label className="text-base font-medium mb-2 block">Category</label>
+            <Select 
+              value={filters.category} 
+              onValueChange={handleCategoryChange}
+              disabled={!filters.fit}
+            >
               <SelectTrigger className="w-full bg-card border-0 h-12 rounded-xl focus:ring-[#ddfed7]">
-                <SelectValue placeholder="Select Size" />
+                <SelectValue placeholder={filters.fit ? "Select Category" : "Select Fit first"} />
               </SelectTrigger>
               <SelectContent>
-                {sizeOptions.map((s) => (
+                {CATEGORY_OPTIONS.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Size (depends on Fit + Category) */}
+          <div className="py-3">
+            <label className="text-base font-medium mb-2 block">Size</label>
+            <Select 
+              value={filters.size} 
+              onValueChange={(val) => setFilters({ ...filters, size: val })}
+              disabled={!filters.fit || !filters.category}
+            >
+              <SelectTrigger className="w-full bg-card border-0 h-12 rounded-xl focus:ring-[#ddfed7]">
+                <SelectValue placeholder={!filters.fit ? "Select Fit first" : !filters.category ? "Select Category first" : "Select Size"} />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                {availableSizes.map((s) => (
                   <SelectItem key={s} value={s.toLowerCase()}>{s}</SelectItem>
                 ))}
               </SelectContent>
@@ -146,27 +185,12 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
           <div className="py-3">
             <label className="text-base font-medium mb-3 block">Condition</label>
             <div className="flex flex-wrap gap-2">
-              {conditionOptions.map((option) => (
+              {CONDITIONS.map((option) => (
                 <ChipButton
                   key={option}
                   label={option}
                   selected={filters.condition === option}
                   onClick={() => setFilters({ ...filters, condition: option })}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Gender */}
-          <div className="py-3">
-            <label className="text-base font-medium mb-3 block">Gender</label>
-            <div className="flex flex-wrap gap-2">
-              {genderOptions.map((option) => (
-                <ChipButton
-                  key={option}
-                  label={option}
-                  selected={filters.gender === option}
-                  onClick={() => setFilters({ ...filters, gender: option })}
                 />
               ))}
             </div>
@@ -180,7 +204,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                 <SelectValue placeholder="Select Colour" />
               </SelectTrigger>
               <SelectContent>
-                {colourOptions.map((c) => (
+                {COLOURS.map((c) => (
                   <SelectItem key={c} value={c.toLowerCase()}>{c}</SelectItem>
                 ))}
               </SelectContent>
@@ -195,7 +219,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                 <SelectValue placeholder="Select Style" />
               </SelectTrigger>
               <SelectContent>
-                {styleOptions.map((s) => (
+                {STYLES.map((s) => (
                   <SelectItem key={s} value={s.toLowerCase()}>{s}</SelectItem>
                 ))}
               </SelectContent>
