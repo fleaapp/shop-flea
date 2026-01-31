@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import fleaLogo from '@/assets/flea-logo-welcome.png';
+import fleaLogoHeader from '@/assets/flea-logo-welcome-header.png';
 
 interface WelcomeSetupDialogProps {
   open: boolean;
@@ -94,12 +94,12 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
         className="w-[90vw] max-w-sm rounded-3xl border-2 border-charcoal/40 bg-card p-5"
         hideCloseButton
       >
-        <DialogHeader className="text-center space-y-2 pt-3">
-          <DialogTitle className="text-xl font-bold text-foreground">
-            Less new. More <em>you</em>.
-          </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground text-center pt-2">
-            One name stands between you and a<br />cupboard full of stories. Introduce yourself!
+        <DialogHeader className="text-center space-y-3 pt-3">
+          <div className="flex justify-center">
+            <img src={fleaLogoHeader} alt="FLEA" className="h-10 w-auto" />
+          </div>
+          <DialogDescription className="text-sm text-muted-foreground text-center pt-1">
+            The future of fashion is circular, and it starts with <em>you</em>. Introduce yourself!
           </DialogDescription>
         </DialogHeader>
 
