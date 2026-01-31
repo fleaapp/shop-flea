@@ -39,13 +39,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
-  const toggleSize = (size: string) => {
-    setPreferredSizes(prev => 
-      prev.includes(size) 
-        ? prev.filter(s => s !== size)
-        : [...prev, size]
-    );
-  };
+  // toggleSize moved to SizeChip component area for category-aware toggling
 
   const clearAllSizes = () => {
     setPreferredSizes([]);
@@ -76,10 +70,26 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
     }
   };
 
-  const SizeChip = ({ size, selected }: { size: string; selected: boolean }) => (
+  // Create unique size key with category prefix to differentiate clothing vs shoes
+  const getSizeKey = (size: string, category: 'clothing' | 'shoes') => `${category}:${size}`;
+  
+  const toggleSize = (size: string, category: 'clothing' | 'shoes') => {
+    const sizeKey = getSizeKey(size, category);
+    setPreferredSizes(prev => 
+      prev.includes(sizeKey) 
+        ? prev.filter(s => s !== sizeKey)
+        : [...prev, sizeKey]
+    );
+  };
+
+  const isSizeSelected = (size: string, category: 'clothing' | 'shoes') => {
+    return preferredSizes.includes(getSizeKey(size, category));
+  };
+
+  const SizeChip = ({ size, selected, category }: { size: string; selected: boolean; category: 'clothing' | 'shoes' }) => (
     <button
       type="button"
-      onClick={() => toggleSize(size)}
+      onClick={() => toggleSize(size, category)}
       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
         selected ? 'bg-primary text-foreground' : 'bg-muted text-foreground hover:bg-muted/80'
       }`}
@@ -152,7 +162,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <p className="text-xs text-muted-foreground mb-2">Clothing (Alpha)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.women.clothing.alpha.map(size => (
-                        <SizeChip key={size} size={size} selected={preferredSizes.includes(size)} />
+                        <SizeChip key={`clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing')} category="clothing" />
                       ))}
                     </div>
                   </div>
@@ -160,7 +170,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <p className="text-xs text-muted-foreground mb-2">Clothing (Numeric)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.women.clothing.numeric.map(size => (
-                        <SizeChip key={size} size={size} selected={preferredSizes.includes(size)} />
+                        <SizeChip key={`clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing')} category="clothing" />
                       ))}
                     </div>
                   </div>
@@ -168,7 +178,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <p className="text-xs text-muted-foreground mb-2">Bottoms (Inches)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.women.clothing.inches.map(size => (
-                        <SizeChip key={size} size={size} selected={preferredSizes.includes(size)} />
+                        <SizeChip key={`clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing')} category="clothing" />
                       ))}
                     </div>
                   </div>
@@ -176,7 +186,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <p className="text-xs text-muted-foreground mb-2">Shoes (AU)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.women.shoes.map(size => (
-                        <SizeChip key={size} size={size} selected={preferredSizes.includes(size)} />
+                        <SizeChip key={`shoes-${size}`} size={size} selected={isSizeSelected(size, 'shoes')} category="shoes" />
                       ))}
                     </div>
                   </div>
@@ -193,7 +203,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <p className="text-xs text-muted-foreground mb-2">Clothing (Alpha)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.men.clothing.alpha.map(size => (
-                        <SizeChip key={size} size={size} selected={preferredSizes.includes(size)} />
+                        <SizeChip key={`clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing')} category="clothing" />
                       ))}
                     </div>
                   </div>
@@ -201,7 +211,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <p className="text-xs text-muted-foreground mb-2">Bottoms (Inches)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.men.clothing.inches.map(size => (
-                        <SizeChip key={size} size={size} selected={preferredSizes.includes(size)} />
+                        <SizeChip key={`clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing')} category="clothing" />
                       ))}
                     </div>
                   </div>
@@ -209,7 +219,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <p className="text-xs text-muted-foreground mb-2">Shoes (AU)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.men.shoes.map(size => (
-                        <SizeChip key={size} size={size} selected={preferredSizes.includes(size)} />
+                        <SizeChip key={`shoes-${size}`} size={size} selected={isSizeSelected(size, 'shoes')} category="shoes" />
                       ))}
                     </div>
                   </div>
@@ -226,7 +236,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <p className="text-xs text-muted-foreground mb-2">Clothing (Alpha)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.unisex.clothing.alpha.map(size => (
-                        <SizeChip key={size} size={size} selected={preferredSizes.includes(size)} />
+                        <SizeChip key={`clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing')} category="clothing" />
                       ))}
                     </div>
                   </div>
@@ -234,7 +244,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <p className="text-xs text-muted-foreground mb-2">Bottoms (Inches)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.unisex.clothing.inches.map(size => (
-                        <SizeChip key={size} size={size} selected={preferredSizes.includes(size)} />
+                        <SizeChip key={`clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing')} category="clothing" />
                       ))}
                     </div>
                   </div>
@@ -242,7 +252,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <p className="text-xs text-muted-foreground mb-2">Shoes (AU F / M)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.unisex.shoes.map(size => (
-                        <SizeChip key={size} size={size} selected={preferredSizes.includes(size)} />
+                        <SizeChip key={`shoes-${size}`} size={size} selected={isSizeSelected(size, 'shoes')} category="shoes" />
                       ))}
                     </div>
                   </div>

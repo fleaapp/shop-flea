@@ -163,7 +163,7 @@ const Profile = () => {
           // Show paused selling state
           <div className="flex flex-col items-center justify-center px-4 py-12">
             <span className="text-5xl mb-4">⏸️</span>
-            <p className="text-lg font-medium text-foreground">Paused selling</p>
+            <p className="text-lg font-medium text-muted-foreground">Paused</p>
             <p className="mt-2 text-sm text-muted-foreground text-center">
               Your listings are hidden from buyers.
               <br />
