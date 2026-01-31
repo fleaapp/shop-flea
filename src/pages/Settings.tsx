@@ -74,7 +74,7 @@ const Settings = () => {
     {
       title: 'Preferences',
       items: [
-        { icon: <span className="text-base">📐</span>, label: 'Filter Preferences', action: () => setPreferencesOpen(true) },
+        { icon: <span className="text-base">📏</span>, label: 'Filter Preferences', action: () => setPreferencesOpen(true) },
         { icon: <span className="text-base">⏸️</span>, label: 'Pause Selling', toggle: true, checked: pauseSelling, onToggle: handleTogglePauseSelling },
       ],
     },
