@@ -42,8 +42,8 @@ const CreateListing = () => {
   const [size, setSize] = useState('');
   const [brand, setBrand] = useState('');
   const [condition, setCondition] = useState('');
-  const [colour, setColour] = useState('');
-  const [style, setStyle] = useState('');
+  const [colours, setColours] = useState<string[]>([]);
+  const [styles, setStyles] = useState<string[]>([]);
   const [itemPrice, setItemPrice] = useState('');
   const [shippingPrice, setShippingPrice] = useState('');
   const [description, setDescription] = useState('');
@@ -184,8 +184,8 @@ const CreateListing = () => {
           size,
           category,
           condition,
-          colour: colour || null,
-          style: style || null,
+          colour: colours.length > 0 ? colours.join(', ') : null,
+          style: styles.length > 0 ? styles.join(', ') : null,
           gender: fit || null, // Store fit as gender
           price: parseFloat(itemPrice),
           shipping_price: shippingPrice ? parseFloat(shippingPrice) : 0,
@@ -287,7 +287,7 @@ const CreateListing = () => {
         
         {/* Fit / Gender */}
         <Select value={fit} onValueChange={handleFitChange}>
-          <SelectTrigger className={selectStyles}>
+          <SelectTrigger className={`${selectStyles} ${fit ? '[&>span]:text-foreground' : ''}`}>
             <SelectValue placeholder="Fit / Gender" />
           </SelectTrigger>
           <SelectContent>
@@ -334,7 +334,7 @@ const CreateListing = () => {
         
         {/* Condition */}
         <Select value={condition} onValueChange={setCondition}>
-          <SelectTrigger className={selectStyles}>
+          <SelectTrigger className={`${selectStyles} ${condition ? '[&>span]:text-foreground' : ''}`}>
             <SelectValue placeholder="Condition" />
           </SelectTrigger>
           <SelectContent>
@@ -344,29 +344,65 @@ const CreateListing = () => {
           </SelectContent>
         </Select>
 
-        {/* Colour */}
-        <Select value={colour} onValueChange={setColour}>
-          <SelectTrigger className={selectStyles}>
-            <SelectValue placeholder="Colour" />
-          </SelectTrigger>
-          <SelectContent>
-            {COLOURS.map((c) => (
-              <SelectItem key={c} value={c.toLowerCase()}>{c}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Colour - Multi-select bubbles */}
+        <div className={`${inputStyles} min-h-14 h-auto py-3 px-4`}>
+          <p className={`text-sm mb-2 ${colours.length > 0 ? 'text-foreground font-medium' : 'text-muted-foreground/60'}`}>
+            {colours.length > 0 ? `Colour (${colours.length} selected)` : 'Colour'}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {COLOURS.map((c) => {
+              const isSelected = colours.includes(c.toLowerCase());
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => {
+                    if (isSelected) {
+                      setColours(colours.filter(col => col !== c.toLowerCase()));
+                    } else {
+                      setColours([...colours, c.toLowerCase()]);
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    isSelected ? 'bg-primary text-foreground' : 'bg-muted text-foreground hover:bg-muted/80'
+                  }`}
+                >
+                  {c}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-        {/* Style */}
-        <Select value={style} onValueChange={setStyle}>
-          <SelectTrigger className={selectStyles}>
-            <SelectValue placeholder="Style" />
-          </SelectTrigger>
-          <SelectContent>
-            {STYLES.map((s) => (
-              <SelectItem key={s} value={s.toLowerCase()}>{s}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Style - Multi-select bubbles */}
+        <div className={`${inputStyles} min-h-14 h-auto py-3 px-4`}>
+          <p className={`text-sm mb-2 ${styles.length > 0 ? 'text-foreground font-medium' : 'text-muted-foreground/60'}`}>
+            {styles.length > 0 ? `Style (${styles.length} selected)` : 'Style'}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {STYLES.map((s) => {
+              const isSelected = styles.includes(s.toLowerCase());
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => {
+                    if (isSelected) {
+                      setStyles(styles.filter(st => st !== s.toLowerCase()));
+                    } else {
+                      setStyles([...styles, s.toLowerCase()]);
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    isSelected ? 'bg-primary text-foreground' : 'bg-muted text-foreground hover:bg-muted/80'
+                  }`}
+                >
+                  {s}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         
         {/* Item Price */}
         <div className="relative">
