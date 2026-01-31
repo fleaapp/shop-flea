@@ -31,9 +31,13 @@ export interface DbListing {
 
 export interface ListingFilters {
   category?: string;
+  categories?: string[]; // Multi-select categories
   size?: string;
+  sizes?: string[]; // Multi-select sizes
   condition?: string;
   gender?: string;
+  colours?: string[]; // Multi-select colours
+  styles?: string[]; // Multi-select styles
   minPrice?: number;
   maxPrice?: number;
   search?: string;
@@ -65,14 +69,30 @@ export const useListings = (filters?: ListingFilters) => {
     if (filters?.category) {
       query = query.eq('category', filters.category.toLowerCase());
     }
+    // Multi-select categories filter
+    if (filters?.categories && filters.categories.length > 0) {
+      query = query.in('category', filters.categories.map(c => c.toLowerCase()));
+    }
     if (filters?.size) {
       query = query.eq('size', filters.size.toLowerCase());
+    }
+    // Multi-select sizes filter
+    if (filters?.sizes && filters.sizes.length > 0) {
+      query = query.in('size', filters.sizes.map(s => s.toLowerCase()));
     }
     if (filters?.condition) {
       query = query.eq('condition', filters.condition.toLowerCase());
     }
     if (filters?.gender) {
       query = query.eq('gender', filters.gender.toLowerCase());
+    }
+    // Multi-select colours filter
+    if (filters?.colours && filters.colours.length > 0) {
+      query = query.in('colour', filters.colours.map(c => c.toLowerCase()));
+    }
+    // Multi-select styles filter
+    if (filters?.styles && filters.styles.length > 0) {
+      query = query.in('style', filters.styles.map(s => s.toLowerCase()));
     }
     if (filters?.minPrice !== undefined) {
       query = query.gte('price', filters.minPrice);
@@ -114,7 +134,7 @@ export const useListings = (filters?: ListingFilters) => {
       setListings([]);
     }
     setLoading(false);
-  }, [user, filters?.category, filters?.size, filters?.condition, filters?.gender, filters?.minPrice, filters?.maxPrice, filters?.search]);
+  }, [user, filters?.category, filters?.categories, filters?.size, filters?.sizes, filters?.condition, filters?.gender, filters?.colours, filters?.styles, filters?.minPrice, filters?.maxPrice, filters?.search]);
 
   useEffect(() => {
     fetchListings();
