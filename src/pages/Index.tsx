@@ -186,8 +186,8 @@ const Index = () => {
     // Add selected sizes as filter chips
     filterState.sizes.forEach(size => activeFilters.push(size));
     if (filterState.condition) activeFilters.push(filterState.condition);
-    if (filterState.colour) activeFilters.push(filterState.colour);
-    if (filterState.style) activeFilters.push(filterState.style);
+    filterState.colours.forEach(colour => activeFilters.push(colour));
+    filterState.styles.forEach(style => activeFilters.push(style));
     setFilters(activeFilters);
     setPendingExitId(null);
     toast.success('Filters applied!');
