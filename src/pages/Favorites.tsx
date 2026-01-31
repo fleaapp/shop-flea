@@ -5,19 +5,20 @@ import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
 import WishlistCard from '@/components/WishlistCard';
 import FilterSheet, { FilterState } from '@/components/FilterSheet';
-import { useFavoriteListings } from '@/hooks/useFavoriteListings';
+import { useFavoriteListings, DbListingWithPause } from '@/hooks/useFavoriteListings';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useCart } from '@/context/CartContext';
 import { Listing } from '@/types/listing';
-import { DbListing, ListingFilters } from '@/hooks/useListings';
+import { ListingFilters } from '@/hooks/useListings';
 import { toast } from '@/hooks/use-toast';
 
 // Convert DbListing to Listing display type
 interface DisplayListing extends Listing {
   isSold: boolean;
+  isPaused: boolean;
 }
 
-const toDisplayListing = (dbListing: DbListing): DisplayListing => {
+const toDisplayListing = (dbListing: DbListingWithPause): DisplayListing => {
   const conditionMap: Record<string, 'new' | 'like-new' | 'good' | 'fair'> = {
     'new': 'new',
     'like-new': 'like-new',
@@ -45,6 +46,7 @@ const toDisplayListing = (dbListing: DbListing): DisplayListing => {
     tags: dbListing.tags || [],
     createdAt: new Date(dbListing.created_at),
     isSold: dbListing.status === 'sold',
+    isPaused: dbListing.profiles?.pause_selling || false,
   };
 };
 
@@ -72,7 +74,16 @@ const Favorites = () => {
     refetch();
   }, [removeFavorite, refetch]);
 
-  const handleAddToCart = useCallback((listing: Listing) => {
+  const handleAddToCart = useCallback((listing: DisplayListing) => {
+    // Don't allow adding paused or sold items to cart
+    if (listing.isPaused || listing.isSold) {
+      toast({
+        title: "Item unavailable",
+        description: listing.isSold ? "This item has been sold" : "This seller has paused selling",
+        variant: "destructive",
+      });
+      return;
+    }
     addToCart(listing);
     toast({
       title: "Added to cart",
@@ -133,6 +144,7 @@ const Favorites = () => {
                   onRemove={() => handleRemoveFavorite(listing.id)}
                   onAddToCart={() => handleAddToCart(listing)}
                   isSold={listing.isSold}
+                  isPaused={listing.isPaused}
                   isInCart={isInCart(listing.id)}
                 />
               </div>

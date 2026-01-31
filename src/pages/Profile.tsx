@@ -21,6 +21,9 @@ const Profile = () => {
   const { listings: soldListings, loading: soldLoading } = useUserListings('sold');
   const { sellerOrders, sellerOrderGroups, markAsShipped } = useOrders();
 
+  // Get pause_selling from profile
+  const pauseSelling = (profile as any)?.pause_selling || false;
+
   const displayListings = activeTab === 'listings' ? activeListings : soldListings;
   const isLoading = activeTab === 'listings' ? activeLoading : soldLoading;
 
@@ -155,6 +158,17 @@ const Profile = () => {
         {isLoading ? (
           <div className="flex justify-center py-12">
             <span className="text-5xl">⏳</span>
+          </div>
+        ) : pauseSelling && activeTab === 'listings' ? (
+          // Show paused selling state
+          <div className="flex flex-col items-center justify-center px-4 py-12">
+            <span className="text-5xl mb-4">⏸️</span>
+            <p className="text-lg font-medium text-foreground">Paused selling</p>
+            <p className="mt-2 text-sm text-muted-foreground text-center">
+              Your listings are hidden from buyers.
+              <br />
+              Turn off pause in Settings to resume.
+            </p>
           </div>
         ) : displayListings.length > 0 ? (
           <div className="flex gap-4 max-[430px]:gap-3 max-[375px]:gap-2.5" style={{ paddingLeft: 'calc(50% - min(128px, 35vw))', paddingRight: 'calc(50% - min(128px, 35vw))' }}>

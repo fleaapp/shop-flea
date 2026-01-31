@@ -26,6 +26,7 @@ export interface DbListing {
     avatar_url: string | null;
     location: string | null;
     rating: number;
+    pause_selling?: boolean;
   } | null;
 }
 
@@ -115,7 +116,7 @@ export const useListings = (filters?: ListingFilters) => {
       
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('user_id, username, avatar_url, location, rating')
+        .select('user_id, username, avatar_url, location, rating, pause_selling')
         .in('user_id', uniqueUserIds);
       
       // Create a map for quick profile lookup
@@ -123,11 +124,13 @@ export const useListings = (filters?: ListingFilters) => {
         (profilesData || []).map(profile => [profile.user_id, profile])
       );
       
-      // Merge listings with profiles
-      const listingsWithProfiles = data.map(listing => ({
-        ...listing,
-        profiles: profilesMap.get(listing.user_id) || null,
-      }));
+      // Merge listings with profiles, filter out paused sellers
+      const listingsWithProfiles = data
+        .map(listing => ({
+          ...listing,
+          profiles: profilesMap.get(listing.user_id) || null,
+        }))
+        .filter(listing => !listing.profiles?.pause_selling); // Exclude paused sellers
       
       setListings(listingsWithProfiles);
     } else {

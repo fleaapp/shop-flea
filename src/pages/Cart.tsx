@@ -77,10 +77,11 @@ const Cart = () => {
     setSelectedOrderGroup(null);
   };
 
-  // Use actual listing status from database
+  // Use actual listing status from database including isPaused
   const cartItemsWithStatus = cartItems.map((item) => ({
     ...item,
     status: item.status || 'active',
+    isPaused: (item as any).isPaused || false,
   }));
 
   const toggleSelect = (id: string, sellerId: string) => {
@@ -107,8 +108,20 @@ const Cart = () => {
   };
 
   const handleCheckout = (itemIds: string[]) => {
-    const checkoutItems = cartItems.filter((item) => itemIds.includes(item.id));
-    navigate('/checkout', { state: { items: checkoutItems } });
+    // Filter out sold or paused items
+    const validItems = cartItems.filter((item) => {
+      const itemWithStatus = item as any;
+      return itemIds.includes(item.id) && 
+             itemWithStatus.status !== 'sold' && 
+             !itemWithStatus.isPaused;
+    });
+    
+    if (validItems.length === 0) {
+      toast.error('No available items to checkout');
+      return;
+    }
+    
+    navigate('/checkout', { state: { items: validItems } });
   };
 
   const handleCheckoutSelected = () => {
@@ -140,7 +153,7 @@ const Cart = () => {
   // Check which sellers have multiple items (for checkbox visibility)
   const sellersWithMultipleItems = new Set(
     Object.entries(itemsBySeller)
-      .filter(([_, items]) => items.filter(i => i.status !== 'sold').length > 1)
+      .filter(([_, items]) => items.filter(i => i.status !== 'sold' && !i.isPaused).length > 1)
       .map(([sellerId]) => sellerId)
   );
 
@@ -254,8 +267,8 @@ const Cart = () => {
           {cartItems.length > 0 ? (
             <>
               {Object.entries(itemsBySeller).map(([sellerId, items]) => {
-                // Check if all items in this seller group are sold
-                const allSold = items.every(item => item.status === 'sold');
+                // Check if all items in this seller group are unavailable (sold or paused)
+                const allUnavailable = items.every(item => item.status === 'sold' || item.isPaused);
                 
                 return (
                   <div key={sellerId} className="rounded-2xl bg-card overflow-hidden card-shadow">
@@ -265,9 +278,9 @@ const Cart = () => {
                         key={item.id}
                         item={item}
                         isSelected={selectedItems.has(item.id)}
-                        isLast={index === items.length - 1 && allSold}
+                        isLast={index === items.length - 1 && allUnavailable}
                         showSellerAvatar={index === 0}
-                        showCheckbox={sellersWithMultipleItems.has(sellerId) && item.status !== 'sold'}
+                        showCheckbox={sellersWithMultipleItems.has(sellerId) && item.status !== 'sold' && !item.isPaused}
                         onToggleSelect={() => toggleSelect(item.id, sellerId)}
                         onSwipeLeft={() => handleSwipeLeft(item.id)}
                         onSwipeRight={() => handleSwipeRight(item.id)}
@@ -275,23 +288,23 @@ const Cart = () => {
                       />
                     ))}
 
-                    {/* Checkout button - only show if not all items are sold */}
-                    {!allSold && (
+                    {/* Checkout button - only show if not all items are unavailable */}
+                    {!allUnavailable && (
                       <Button
                         onClick={() => {
                           // If user has selected items from this seller, checkout those
-                          const selectedFromSeller = items.filter(i => selectedItems.has(i.id) && i.status !== 'sold');
+                          const selectedFromSeller = items.filter(i => selectedItems.has(i.id) && i.status !== 'sold' && !i.isPaused);
                           if (selectedFromSeller.length > 0) {
                             handleCheckout(selectedFromSeller.map(i => i.id));
                           } else {
-                            // Otherwise checkout all non-sold items from this seller
-                            handleCheckout(items.filter(i => i.status !== 'sold').map(i => i.id));
+                            // Otherwise checkout all available items from this seller
+                            handleCheckout(items.filter(i => i.status !== 'sold' && !i.isPaused).map(i => i.id));
                           }
                         }}
                         className="w-full rounded-none rounded-b-2xl bg-charcoal text-white hover:bg-charcoal-light h-12"
                       >
                         {selectedItems.size > 0 && items.some(i => selectedItems.has(i.id)) 
-                          ? `Checkout ${items.filter(i => selectedItems.has(i.id) && i.status !== 'sold').length} selected`
+                          ? `Checkout ${items.filter(i => selectedItems.has(i.id) && i.status !== 'sold' && !i.isPaused).length} selected`
                           : 'Checkout'
                         }
                       </Button>

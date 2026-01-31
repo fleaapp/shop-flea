@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { Listing } from '@/types/listing';
 
 interface CartItemRowProps {
-  item: Listing & { status?: string };
+  item: Listing & { status?: string; isPaused?: boolean };
   isSelected: boolean;
   isLast: boolean;
   showSellerAvatar: boolean;
@@ -35,6 +35,8 @@ const CartItemRow = ({
   const x = useMotionValue(0);
   
   const isSold = item.status === 'sold';
+  const isPaused = item.isPaused || false;
+  const isUnavailable = isSold || isPaused;
   
   // Background colors based on swipe direction
   const leftBgOpacity = useTransform(x, [-SWIPE_THRESHOLD, 0], [1, 0]);
@@ -95,13 +97,15 @@ const CartItemRow = ({
         transition={{ duration: 0.2 }}
         className={cn(
           "flex gap-4 p-4 bg-card relative z-10 cursor-grab active:cursor-grabbing",
-          isSold && "relative"
+          isUnavailable && "relative"
         )}
       >
-        {/* Sold overlay */}
-        {isSold && (
+        {/* Sold/Paused overlay */}
+        {isUnavailable && (
           <div className="absolute inset-0 bg-charcoal/70 backdrop-blur-sm z-20 flex items-center justify-center">
-            <span className="text-2xl font-bold text-white tracking-wider">SOLD</span>
+            <span className="text-2xl font-bold text-white tracking-wider">
+              {isSold ? 'SOLD' : '⏸️ Paused'}
+            </span>
           </div>
         )}
 
@@ -130,14 +134,14 @@ const CartItemRow = ({
           className={cn(
             "relative h-24 w-24 flex-shrink-0 cursor-pointer"
           )}
-          onClick={() => !isSold && onCardClick()}
+          onClick={() => !isUnavailable && onCardClick()}
         >
           <img
             src={item.image}
             alt={item.title}
             className={cn(
               "h-full w-full rounded-xl object-cover",
-              isSold && "opacity-50"
+              isUnavailable && "opacity-50"
             )}
           />
         </div>
@@ -145,7 +149,7 @@ const CartItemRow = ({
         {/* Content */}
         <div className={cn(
           "flex flex-1 flex-col justify-between h-24",
-          isSold && "opacity-50"
+          isUnavailable && "opacity-50"
         )}>
           <div className="flex items-start justify-between pt-1">
             <h3 className="font-semibold text-foreground">{item.title}</h3>

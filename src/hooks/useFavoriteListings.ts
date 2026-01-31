@@ -3,9 +3,20 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { DbListing, ListingFilters } from './useListings';
 
+// Extended DbListing to include pause_selling from profiles
+export interface DbListingWithPause extends DbListing {
+  profiles?: {
+    username: string;
+    avatar_url: string | null;
+    location: string | null;
+    rating: number;
+    pause_selling?: boolean;
+  } | null;
+}
+
 export const useFavoriteListings = (filters?: ListingFilters) => {
   const { user } = useAuth();
-  const [listings, setListings] = useState<DbListing[]>([]);
+  const [listings, setListings] = useState<DbListingWithPause[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchFavoriteListings = useCallback(async () => {
@@ -68,12 +79,12 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
     if (error) {
       setListings([]);
     } else if (data && data.length > 0) {
-      // Get unique user_ids and fetch all profiles in a single query
+      // Get unique user_ids and fetch all profiles in a single query, including pause_selling
       const uniqueUserIds = [...new Set(data.map(listing => listing.user_id))];
       
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('user_id, username, avatar_url, location, rating')
+        .select('user_id, username, avatar_url, location, rating, pause_selling')
         .in('user_id', uniqueUserIds);
       
       // Create a map for quick profile lookup

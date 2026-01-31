@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '@/components/BottomNav';
@@ -6,12 +7,19 @@ import { useAuth } from '@/context/AuthContext';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 import { useOnboarding } from '@/context/OnboardingContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import { supabase } from '@/lib/supabase';
+import FilterPreferencesSheet from '@/components/FilterPreferencesSheet';
 
 const Settings = () => {
   const navigate = useNavigate();
-  const { signOut, profile } = useAuth();
+  const { signOut, profile, user, refreshProfile } = useAuth();
   const { clearDiscarded } = useDiscardedListings();
   const { resetOnboarding, startOnboarding } = useOnboarding();
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
+  
+  // Get pause_selling from profile
+  const pauseSelling = (profile as any)?.pause_selling || false;
 
   const handleRefreshDiscarded = async () => {
     const success = await clearDiscarded();
@@ -29,6 +37,24 @@ const Settings = () => {
     toast.success('Tutorial restarted!');
   };
 
+  const handleTogglePauseSelling = async (checked: boolean) => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ pause_selling: checked } as any)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      await refreshProfile();
+      toast.success(checked ? 'Selling paused' : 'Selling resumed');
+    } catch (error) {
+      toast.error('Failed to update pause selling status');
+    }
+  };
+
   const ProfileAvatar = () => (
     <Avatar className="h-5 w-5">
       <AvatarImage src={profile?.avatar_url || ''} alt="Profile" />
@@ -43,6 +69,13 @@ const Settings = () => {
         { icon: <ProfileAvatar />, label: 'Edit Profile' },
         { icon: <span className="text-base">🔁</span>, label: 'Refresh Passed Listings', action: handleRefreshDiscarded },
         { icon: <span className="text-base">🔒</span>, label: 'Privacy & Security' },
+      ],
+    },
+    {
+      title: 'Preferences',
+      items: [
+        { icon: <span className="text-base">📐</span>, label: 'Filter Preferences', action: () => setPreferencesOpen(true) },
+        { icon: <span className="text-base">⏸️</span>, label: 'Pause Selling', toggle: true, checked: pauseSelling, onToggle: handleTogglePauseSelling },
       ],
     },
     {
@@ -82,8 +115,9 @@ const Settings = () => {
               {group.items.map((item) => (
                 <div
                   key={item.label}
-                  className={`flex items-center justify-between rounded-2xl bg-card p-4 max-[375px]:p-3 card-shadow cursor-pointer ${item.danger ? 'text-destructive' : ''}`}
+                  className={`flex items-center justify-between rounded-2xl bg-card p-4 max-[375px]:p-3 card-shadow ${item.toggle ? '' : 'cursor-pointer'} ${item.danger ? 'text-destructive' : ''}`}
                   onClick={async () => {
+                    if (item.toggle) return; // Don't handle click for toggle items
                     if (item.label === 'Logout') {
                       await signOut();
                       toast.success('Logged out');
@@ -92,7 +126,7 @@ const Settings = () => {
                       navigate('/settings/profile');
                     } else if (item.action) {
                       await item.action();
-                    } else if (!item.toggle) {
+                    } else {
                       toast(`${item.label} clicked`);
                     }
                   }}
@@ -102,7 +136,12 @@ const Settings = () => {
                     <span className={`text-base max-[375px]:text-sm font-medium ${item.danger ? 'text-destructive' : 'text-foreground'}`}>{item.label}</span>
                   </div>
                   
-                  {!item.danger && (
+                  {item.toggle ? (
+                    <Switch
+                      checked={item.checked}
+                      onCheckedChange={item.onToggle}
+                    />
+                  ) : !item.danger && (
                     <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   )}
                 </div>
@@ -116,6 +155,12 @@ const Settings = () => {
       <div className="mt-8 max-[375px]:mt-6 text-center">
         <p className="text-sm max-[375px]:text-xs text-muted-foreground">Version 1.0.0</p>
       </div>
+      
+      {/* Filter Preferences Sheet */}
+      <FilterPreferencesSheet
+        open={preferencesOpen}
+        onOpenChange={setPreferencesOpen}
+      />
       
       <BottomNav />
     </div>

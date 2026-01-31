@@ -2,18 +2,12 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronRight, Camera } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/utils/imageCompression';
-
-const SIZES = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'];
-const GENDERS = ['Men', 'Women', 'Unisex'];
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -24,13 +18,10 @@ const EditProfile = () => {
   const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState(''); // Without @ prefix
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [pauseSelling, setPauseSelling] = useState(false);
-  const [preferredSizes, setPreferredSizes] = useState<string[]>([]);
-  const [preferredGender, setPreferredGender] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [preferencesOpen, setPreferencesOpen] = useState(false);
-  const [hasOutstandingOrders, setHasOutstandingOrders] = useState(false);
+  const [canDeleteAccount, setCanDeleteAccount] = useState(true);
+  const [deleteBlockReason, setDeleteBlockReason] = useState<string | null>(null);
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [originalUsername, setOriginalUsername] = useState('');
 
@@ -55,19 +46,41 @@ const EditProfile = () => {
         const profileData = data as any;
         setFirstName(profileData.first_name || '');
         setLastName(profileData.last_name || '');
-        setPauseSelling(profileData.pause_selling || false);
-        setPreferredSizes(profileData.preferred_sizes || []);
-        setPreferredGender(profileData.preferred_gender || null);
       }
 
-      // Check for outstanding orders
-      const { count } = await supabase
+      // Check for account deletion eligibility
+      // Must wait 14 days after all sold items are delivered
+      const { data: recentOrders } = await supabase
+        .from('orders')
+        .select('delivered_at, status')
+        .eq('seller_id', user.id)
+        .eq('status', 'delivered')
+        .order('delivered_at', { ascending: false })
+        .limit(1);
+
+      if (recentOrders && recentOrders.length > 0) {
+        const lastDelivery = new Date(recentOrders[0].delivered_at);
+        const fourteenDaysAgo = new Date();
+        fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+        
+        if (lastDelivery > fourteenDaysAgo) {
+          setCanDeleteAccount(false);
+          const daysRemaining = Math.ceil((lastDelivery.getTime() - fourteenDaysAgo.getTime()) / (1000 * 60 * 60 * 24));
+          setDeleteBlockReason(`Wait ${daysRemaining} days after last delivery`);
+        }
+      }
+
+      // Also check for outstanding orders (not delivered yet)
+      const { count: outstandingCount } = await supabase
         .from('orders')
         .select('*', { count: 'exact', head: true })
         .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
         .not('status', 'eq', 'delivered');
       
-      setHasOutstandingOrders((count || 0) > 0);
+      if ((outstandingCount || 0) > 0) {
+        setCanDeleteAccount(false);
+        setDeleteBlockReason('Complete all orders first');
+      }
     };
     
     loadProfile();
@@ -159,9 +172,6 @@ const EditProfile = () => {
           avatar_url: avatarUrl,
           first_name: firstName,
           last_name: lastName,
-          pause_selling: pauseSelling,
-          preferred_sizes: preferredSizes,
-          preferred_gender: preferredGender,
         } as any)
         .eq('user_id', user.id);
 
@@ -180,21 +190,13 @@ const EditProfile = () => {
   };
 
   const handleDeleteAccount = async () => {
-    if (hasOutstandingOrders) {
-      toast.error('Cannot delete account with outstanding orders');
+    if (!canDeleteAccount) {
+      toast.error(deleteBlockReason || 'Cannot delete account');
       return;
     }
     
     // In a real app, this would trigger account deletion
     toast.error('Account deletion requires confirmation via email');
-  };
-
-  const toggleSize = (size: string) => {
-    setPreferredSizes(prev => 
-      prev.includes(size) 
-        ? prev.filter(s => s !== size)
-        : [...prev, size]
-    );
   };
 
   return (
@@ -236,24 +238,6 @@ const EditProfile = () => {
             />
           </div>
         </div>
-
-        {/* Pause Selling Toggle */}
-        <div className="flex items-center justify-between rounded-2xl bg-card p-4 card-shadow">
-          <span className="font-medium text-foreground">Pause selling</span>
-          <Switch 
-            checked={pauseSelling} 
-            onCheckedChange={setPauseSelling} 
-          />
-        </div>
-
-        {/* Preferences */}
-        <button 
-          onClick={() => setPreferencesOpen(true)}
-          className="flex w-full items-center justify-between rounded-2xl bg-card p-4 card-shadow"
-        >
-          <span className="font-medium text-foreground">Preferences</span>
-          <ChevronRight className="h-5 w-5 text-muted-foreground" />
-        </button>
 
         {/* Form Fields */}
         <div className="space-y-4">
@@ -326,93 +310,36 @@ const EditProfile = () => {
           </div>
         </div>
 
-        {/* Save Button */}
-        <Button 
-          onClick={handleSave}
-          disabled={isLoading}
-          className="w-full h-12 rounded-full bg-primary text-primary-foreground font-medium"
-        >
-          {isLoading ? 'Saving...' : 'Save Changes'}
-        </Button>
+        {/* Buttons - shorter width */}
+        <div className="flex flex-col items-center gap-3 pt-4">
+          <Button 
+            onClick={handleSave}
+            disabled={isLoading}
+            className="w-48 h-12 rounded-full bg-primary text-primary-foreground font-medium"
+          >
+            {isLoading ? 'Saving...' : 'Save Changes'}
+          </Button>
 
-        {/* Delete Account */}
-        <Button
-          variant="ghost"
-          onClick={handleDeleteAccount}
-          disabled={hasOutstandingOrders}
-          className={`w-full h-12 rounded-full font-medium ${
-            hasOutstandingOrders 
-              ? 'bg-muted text-muted-foreground cursor-not-allowed' 
-              : 'bg-muted text-destructive hover:bg-destructive/10'
-          }`}
-        >
-          Delete account
-        </Button>
-        
-        {hasOutstandingOrders && (
-          <p className="text-center text-xs text-muted-foreground">
-            Complete all orders before deleting your account
-          </p>
-        )}
-      </div>
-
-      {/* Preferences Sheet */}
-      <Sheet open={preferencesOpen} onOpenChange={setPreferencesOpen}>
-        <SheetContent side="bottom" className="rounded-t-3xl">
-          <SheetHeader>
-            <SheetTitle className="text-center">Filter Preferences</SheetTitle>
-          </SheetHeader>
+          <Button
+            variant="ghost"
+            onClick={handleDeleteAccount}
+            disabled={!canDeleteAccount}
+            className={`w-48 h-12 rounded-full font-medium ${
+              !canDeleteAccount 
+                ? 'bg-muted text-muted-foreground cursor-not-allowed' 
+                : 'bg-muted text-destructive hover:bg-destructive/10'
+            }`}
+          >
+            Delete account
+          </Button>
           
-          <div className="mt-6 space-y-6 pb-8">
-            {/* Size Preferences */}
-            <div>
-              <Label className="text-sm font-medium text-foreground mb-3 block">Preferred Sizes</Label>
-              <div className="flex flex-wrap gap-2">
-                {SIZES.map((size) => (
-                  <button
-                    key={size}
-                    onClick={() => toggleSize(size)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                      preferredSizes.includes(size)
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground'
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Gender Preferences */}
-            <div>
-              <Label className="text-sm font-medium text-foreground mb-3 block">Preferred Gender</Label>
-              <div className="flex flex-wrap gap-2">
-                {GENDERS.map((gender) => (
-                  <button
-                    key={gender}
-                    onClick={() => setPreferredGender(preferredGender === gender ? null : gender)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                      preferredGender === gender
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground'
-                    }`}
-                  >
-                    {gender}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <Button 
-              onClick={() => setPreferencesOpen(false)}
-              className="w-full h-12 rounded-full bg-primary text-primary-foreground font-medium"
-            >
-              Done
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
+          {!canDeleteAccount && deleteBlockReason && (
+            <p className="text-center text-xs text-muted-foreground">
+              {deleteBlockReason}
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
