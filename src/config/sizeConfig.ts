@@ -244,7 +244,16 @@ export const getAllSizes = (): string[] => {
   return Array.from(allSizes);
 };
 
-// Other listing options (unchanged)
+// Other listing options
 export const CONDITIONS = ['New with tags', 'Like new', 'Good', 'Fair'];
-export const COLOURS = ['Black', 'White', 'Grey', 'Navy', 'Blue', 'Red', 'Pink', 'Green', 'Brown', 'Beige', 'Multi'];
-export const STYLES = ['Casual', 'Formal', 'Streetwear', 'Vintage', 'Sporty', 'Bohemian', 'Minimalist', 'Other'];
+
+export const COLOURS = [
+  'Black', 'White', 'Grey', 'Navy', 'Blue', 'Green', 'Khaki', 
+  'Beige / Cream', 'Brown', 'Red', 'Pink', 'Purple', 'Yellow', 
+  'Orange', 'Silver', 'Gold', 'Tan', 'Multi / Patterned'
+];
+
+export const STYLES = [
+  'Active', 'Casual', 'Vintage', 'Y2K', 'Boho', 'Surf', 
+  'Summer', 'Winter', 'Streetwear', 'Lounge', 'Formal', 'Office', 'Other'
+];

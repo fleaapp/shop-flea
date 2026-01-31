@@ -3,7 +3,6 @@ import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, X } from 'lucide-react';
 import { FILTER_SIZES, CONDITIONS, COLOURS, STYLES, CATEGORY_OPTIONS } from '@/config/sizeConfig';
@@ -21,8 +20,8 @@ export interface FilterState {
   sizes: string[]; // Multi-select sizes
   categories: string[]; // Multi-select categories (includes subcategories)
   condition: string;
-  colour: string;
-  style: string;
+  colours: string[]; // Multi-select colours
+  styles: string[]; // Multi-select styles
   priceRange: [number, number];
 }
 
@@ -33,8 +32,8 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
     sizes: [],
     categories: [],
     condition: '',
-    colour: '',
-    style: '',
+    colours: [],
+    styles: [],
     priceRange: [0, 1000],
   });
 
@@ -45,6 +44,8 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
     women: false,
     men: false,
     unisex: false,
+    colours: false,
+    styles: false,
   });
 
   // Track expanded category sections
@@ -86,6 +87,34 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
     setFilters(prev => ({ ...prev, categories: [] }));
   };
 
+  const toggleColour = (colour: string) => {
+    const normalizedColour = colour.toLowerCase();
+    setFilters(prev => ({
+      ...prev,
+      colours: prev.colours.includes(normalizedColour)
+        ? prev.colours.filter(c => c !== normalizedColour)
+        : [...prev.colours, normalizedColour],
+    }));
+  };
+
+  const toggleStyle = (style: string) => {
+    const normalizedStyle = style.toLowerCase();
+    setFilters(prev => ({
+      ...prev,
+      styles: prev.styles.includes(normalizedStyle)
+        ? prev.styles.filter(s => s !== normalizedStyle)
+        : [...prev.styles, normalizedStyle],
+    }));
+  };
+
+  const clearAllColours = () => {
+    setFilters(prev => ({ ...prev, colours: [] }));
+  };
+
+  const clearAllStyles = () => {
+    setFilters(prev => ({ ...prev, styles: [] }));
+  };
+
   const handleReset = () => {
     setFilters({
       preferences: false,
@@ -93,11 +122,11 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
       sizes: [],
       categories: [],
       condition: '',
-      colour: '',
-      style: '',
+      colours: [],
+      styles: [],
       priceRange: [0, 1000],
     });
-    setExpandedSections({ categories: false, sizes: false, women: false, men: false, unisex: false });
+    setExpandedSections({ categories: false, sizes: false, women: false, men: false, unisex: false, colours: false, styles: false });
     setExpandedCategories({});
   };
 
@@ -422,34 +451,94 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
             </div>
           </div>
 
-          {/* Colour */}
+          {/* Colour - Multi-select */}
           <div className="py-3 border-t border-border">
-            <label className="text-base font-medium mb-2 block">Colour</label>
-            <Select value={filters.colour} onValueChange={(val) => setFilters({ ...filters, colour: val })}>
-              <SelectTrigger className="w-full bg-card border-0 h-12 rounded-xl focus:ring-[#ddfed7]">
-                <SelectValue placeholder="Select Colour" />
-              </SelectTrigger>
-              <SelectContent>
-                {COLOURS.map((c) => (
-                  <SelectItem key={c} value={c.toLowerCase()}>{c}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Collapsible open={expandedSections.colours} onOpenChange={() => toggleSection('colours')}>
+              <div className="flex items-center justify-between">
+                <CollapsibleTrigger className="flex items-center justify-between flex-1 py-2 text-left">
+                  <span className="text-lg font-medium">Colour</span>
+                  <ChevronDown
+                    className={`h-5 w-5 text-muted-foreground transition-transform ${
+                      expandedSections.colours ? 'rotate-180' : ''
+                    }`}
+                  />
+                </CollapsibleTrigger>
+                {filters.colours.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearAllColours}
+                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 ml-2"
+                  >
+                    Clear ({filters.colours.length})
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+              <CollapsibleContent className="pb-3">
+                <div className="flex flex-wrap gap-1.5 pt-2">
+                  {COLOURS.map((colour) => {
+                    const isSelected = filters.colours.includes(colour.toLowerCase());
+                    return (
+                      <button
+                        key={colour}
+                        type="button"
+                        onClick={() => toggleColour(colour)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                          isSelected ? 'bg-primary text-foreground' : 'bg-muted text-foreground hover:bg-muted/80'
+                        }`}
+                      >
+                        {colour}
+                      </button>
+                    );
+                  })}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
-          {/* Style */}
+          {/* Style - Multi-select */}
           <div className="py-3 border-t border-border">
-            <label className="text-base font-medium mb-2 block">Style</label>
-            <Select value={filters.style} onValueChange={(val) => setFilters({ ...filters, style: val })}>
-              <SelectTrigger className="w-full bg-card border-0 h-12 rounded-xl focus:ring-[#ddfed7]">
-                <SelectValue placeholder="Select Style" />
-              </SelectTrigger>
-              <SelectContent>
-                {STYLES.map((s) => (
-                  <SelectItem key={s} value={s.toLowerCase()}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Collapsible open={expandedSections.styles} onOpenChange={() => toggleSection('styles')}>
+              <div className="flex items-center justify-between">
+                <CollapsibleTrigger className="flex items-center justify-between flex-1 py-2 text-left">
+                  <span className="text-lg font-medium">Style</span>
+                  <ChevronDown
+                    className={`h-5 w-5 text-muted-foreground transition-transform ${
+                      expandedSections.styles ? 'rotate-180' : ''
+                    }`}
+                  />
+                </CollapsibleTrigger>
+                {filters.styles.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearAllStyles}
+                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 ml-2"
+                  >
+                    Clear ({filters.styles.length})
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+              <CollapsibleContent className="pb-3">
+                <div className="flex flex-wrap gap-1.5 pt-2">
+                  {STYLES.map((style) => {
+                    const isSelected = filters.styles.includes(style.toLowerCase());
+                    return (
+                      <button
+                        key={style}
+                        type="button"
+                        onClick={() => toggleStyle(style)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                          isSelected ? 'bg-primary text-foreground' : 'bg-muted text-foreground hover:bg-muted/80'
+                        }`}
+                      >
+                        {style}
+                      </button>
+                    );
+                  })}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
           {/* Price */}
