@@ -19,12 +19,15 @@ interface WishlistCardProps {
   onRemove?: () => void;
   onAddToCart?: () => void;
   isSold?: boolean;
+  isPaused?: boolean;
   isInCart?: boolean;
 }
 
-const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isInCart = false }: WishlistCardProps) => {
+const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused = false, isInCart = false }: WishlistCardProps) => {
   const navigate = useNavigate();
   const [showConfirm, setShowConfirm] = useState(false);
+
+  const isUnavailable = isSold || isPaused;
 
   const handleCardClick = () => {
     navigate(`/listing/${listing.id}`, { state: { listing, isSold, fromWishlist: true } });
@@ -57,13 +60,15 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isInCart
             <img 
               src={listing.image} 
               alt={listing.title} 
-              className={`h-full w-full object-cover ${isSold ? 'blur-[2px]' : ''}`}
+              className={`h-full w-full object-cover ${isUnavailable ? 'blur-[2px]' : ''}`}
             />
             
-            {/* Sold overlay */}
-            {isSold && (
+            {/* Sold/Paused overlay */}
+            {isUnavailable && (
               <div className="absolute inset-0 flex items-center justify-center bg-charcoal/70">
-                <span className="text-2xl font-bold text-white tracking-wider">SOLD</span>
+                <span className="text-2xl font-bold text-white tracking-wider">
+                  {isSold ? 'SOLD' : '⏸️ Paused'}
+                </span>
               </div>
             )}
             
@@ -77,8 +82,8 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isInCart
               ❌
             </Button>
             
-            {/* Add to cart button - top right (hide if sold) */}
-            {!isSold && (
+            {/* Add to cart button - top right (hide if unavailable) */}
+            {!isUnavailable && (
               <Button
                 variant="ghost"
                 size="icon"

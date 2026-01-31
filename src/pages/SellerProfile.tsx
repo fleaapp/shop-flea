@@ -21,6 +21,7 @@ interface SellerProfile {
   username: string;
   avatar_url: string | null;
   rating: number | null;
+  pause_selling?: boolean;
 }
 
 interface DbListing {
@@ -71,10 +72,10 @@ const SellerProfile = () => {
     setLoading(true);
     setListingsLoading(true);
 
-    // Fetch seller profile
+    // Fetch seller profile including pause_selling
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
-      .select('user_id, username, avatar_url, rating')
+      .select('user_id, username, avatar_url, rating, pause_selling')
       .eq('user_id', sellerId)
       .single();
 
@@ -264,6 +265,15 @@ const SellerProfile = () => {
         {listingsLoading ? (
           <div className="flex justify-center py-12">
             <span className="text-5xl">⏳</span>
+          </div>
+        ) : sellerProfile.pause_selling && activeTab === 'listings' ? (
+          // Show paused selling state for seller
+          <div className="flex flex-col items-center justify-center px-4 py-12">
+            <span className="text-5xl mb-4">⏸️</span>
+            <p className="text-lg font-medium text-foreground">Paused selling</p>
+            <p className="mt-2 text-sm text-muted-foreground text-center">
+              This seller has temporarily paused their listings.
+            </p>
           </div>
         ) : displayListings.length > 0 ? (
           <div className="flex gap-4 max-[430px]:gap-3 max-[375px]:gap-2.5" style={{ paddingLeft: 'calc(50% - min(128px, 35vw))', paddingRight: 'calc(50% - min(128px, 35vw))' }}>

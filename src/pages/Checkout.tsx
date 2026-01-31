@@ -56,7 +56,10 @@ const Checkout = () => {
         </Button>
       </div>;
   }
-  const subtotal = items.reduce((sum, item) => sum + item.price + item.shippingPrice, 0);
+  // Check if any items are from paused sellers (should have been filtered at Cart, but double-check)
+  const validItems = items.filter((item: any) => !item.isPaused && item.status !== 'sold');
+  
+  const subtotal = validItems.reduce((sum: number, item: any) => sum + item.price + item.shippingPrice, 0);
   const sellerFee = subtotal * 0.04;
   const total = subtotal + sellerFee;
   

@@ -3,8 +3,13 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { Listing } from '@/types/listing';
 
+// Extended Listing type to include pause status
+interface CartListing extends Listing {
+  isPaused?: boolean;
+}
+
 interface CartContextType {
-  cartItems: Listing[];
+  cartItems: CartListing[];
   cartIds: Set<string>;
   loading: boolean;
   addToCart: (listing: Listing) => Promise<boolean>;
@@ -18,7 +23,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
-  const [cartItems, setCartItems] = useState<Listing[]>([]);
+  const [cartItems, setCartItems] = useState<CartListing[]>([]);
   const [cartIds, setCartIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
 
@@ -60,17 +65,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // Fetch seller profiles
+    // Fetch seller profiles including pause_selling
     const userIds = [...new Set(listingsData.map(l => l.user_id))];
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('user_id, username, avatar_url, rating')
+      .select('user_id, username, avatar_url, rating, pause_selling')
       .in('user_id', userIds);
 
     const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
     // Transform to Listing type
-    const transformedListings: Listing[] = listingsData.map(listing => {
+    const transformedListings: CartListing[] = listingsData.map(listing => {
       const seller = profileMap.get(listing.user_id);
       return {
         id: listing.id,
@@ -91,6 +96,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         location: '',
         createdAt: new Date(listing.created_at),
         status: listing.status,
+        isPaused: seller?.pause_selling || false,
       };
     });
 
