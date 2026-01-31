@@ -7,16 +7,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import BottomNav from '@/components/BottomNav';
 import SizeSelectionDrawer from '@/components/SizeSelectionDrawer';
+import CategorySelectionDrawer from '@/components/CategorySelectionDrawer';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/utils/imageCompression';
 import { 
   FIT_OPTIONS, 
-  CATEGORY_OPTIONS, 
+  CATEGORY_OPTIONS,
   CONDITIONS,
   COLOURS,
-  STYLES
+  STYLES,
+  isShoeCategory
 } from '@/config/sizeConfig';
 
 interface ImageFile {
@@ -31,10 +33,12 @@ const CreateListing = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [imageFiles, setImageFiles] = useState<ImageFile[]>([]);
   const [sizeDrawerOpen, setSizeDrawerOpen] = useState(false);
+  const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
   
   const [productName, setProductName] = useState('');
   const [fit, setFit] = useState(''); // Gender/Fit selection
   const [category, setCategory] = useState('');
+  const [subcategory, setSubcategory] = useState('');
   const [size, setSize] = useState('');
   const [brand, setBrand] = useState('');
   const [condition, setCondition] = useState('');
@@ -47,13 +51,22 @@ const CreateListing = () => {
   // Reset dependent fields when parent selection changes
   const handleFitChange = (value: string) => {
     setFit(value);
-    setCategory('');
-    setSize('');
+    setSize(''); // Only reset size, keep category
   };
 
-  const handleCategoryChange = (value: string) => {
-    setCategory(value);
-    setSize('');
+  const handleCategorySelect = (cat: string, subcat: string) => {
+    setCategory(cat);
+    setSubcategory(subcat);
+    setSize(''); // Reset size when category changes
+  };
+
+  // Helper to get display label for category
+  const getCategoryDisplayLabel = () => {
+    const cat = CATEGORY_OPTIONS.find(c => c.value === category);
+    if (!cat) return "Category";
+    const subcats = cat.subcategories as readonly { value: string; label: string }[];
+    const subcat = subcats?.find(s => s.value === subcategory);
+    return cat.label + (subcat ? ` - ${subcat.label}` : '');
   };
 
   // Redirect if not logged in
@@ -284,17 +297,17 @@ const CreateListing = () => {
           </SelectContent>
         </Select>
 
-        {/* Category (depends on Fit) */}
-        <Select value={category} onValueChange={handleCategoryChange} disabled={!fit}>
-          <SelectTrigger className={selectStyles}>
-            <SelectValue placeholder={fit ? "Category" : "Select Fit first"} />
-          </SelectTrigger>
-          <SelectContent>
-            {CATEGORY_OPTIONS.map((c) => (
-              <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Category - Opens Drawer */}
+        <button
+          type="button"
+          onClick={() => setCategoryDrawerOpen(true)}
+          className={`${inputStyles} w-full flex items-center justify-between px-4 text-left`}
+        >
+          <span className={category ? 'text-foreground' : 'text-muted-foreground/60'}>
+            {category ? getCategoryDisplayLabel() : "Category"}
+          </span>
+          <ChevronRight className="h-5 w-5 text-muted-foreground/60" />
+        </button>
 
         {/* Size - Opens Drawer */}
         <button
@@ -403,9 +416,17 @@ const CreateListing = () => {
         open={sizeDrawerOpen}
         onOpenChange={setSizeDrawerOpen}
         fit={fit}
-        category={category}
+        category={isShoeCategory(category) ? 'shoes' : 'clothing'}
         selectedSize={size}
         onSelectSize={setSize}
+      />
+      
+      <CategorySelectionDrawer
+        open={categoryDrawerOpen}
+        onOpenChange={setCategoryDrawerOpen}
+        selectedCategory={category}
+        selectedSubcategory={subcategory}
+        onSelectCategory={handleCategorySelect}
       />
       
       <BottomNav />
