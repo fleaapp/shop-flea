@@ -149,7 +149,51 @@ export const SIZE_CONFIG: Record<FitType, Record<CategoryType, string[]>> = {
   },
 };
 
-// Get sizes based on fit and category (for listings)
+// Sectioned size configuration for listings drawer (3 sections for clothing)
+export const LISTING_SIZE_SECTIONS = {
+  women: {
+    clothing: {
+      'Clothing (Alpha)': WOMENS_CLOTHING_ALPHA,
+      'Clothing (Numeric)': WOMENS_CLOTHING_NUMERIC,
+      'Bottoms (Inches)': WOMENS_BOTTOMS_INCHES,
+      'Extras': WOMENS_EXTRAS,
+    },
+    shoes: {
+      'Shoes (AU)': WOMENS_SHOES,
+    },
+  },
+  men: {
+    clothing: {
+      'Clothing (Alpha)': MENS_CLOTHING_ALPHA,
+      'Bottoms (Inches)': MENS_BOTTOMS_INCHES,
+      'Extras': MENS_EXTRAS,
+    },
+    shoes: {
+      'Shoes (AU)': MENS_SHOES,
+    },
+  },
+  unisex: {
+    clothing: {
+      'Clothing (Alpha)': UNISEX_CLOTHING_ALPHA,
+      'Bottoms (Inches)': UNISEX_BOTTOMS_INCHES,
+    },
+    shoes: {
+      'Shoes (AU F / M)': UNISEX_SHOES,
+    },
+  },
+} as const;
+
+// Get sectioned sizes for listing drawer
+export const getSizeSectionsForListing = (fit: string, category: string): Record<string, string[]> => {
+  const normalizedFit = fit.toLowerCase() as FitType;
+  const isShoes = isShoeCategory(category);
+  const categoryKey: CategoryType = isShoes ? 'shoes' : 'clothing';
+  
+  if (!LISTING_SIZE_SECTIONS[normalizedFit]) return {};
+  return LISTING_SIZE_SECTIONS[normalizedFit][categoryKey] || {};
+};
+
+// Get sizes based on fit and category (for listings - flat array)
 export const getSizesForFitAndCategory = (fit: string, category: string): string[] => {
   const normalizedFit = fit.toLowerCase() as FitType;
   const isShoes = isShoeCategory(category);
