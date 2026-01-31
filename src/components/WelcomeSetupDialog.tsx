@@ -99,7 +99,9 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
             <img src={fleaLogoHeader} alt="FLEA" className="h-10 w-auto" />
           </div>
           <DialogDescription className="text-sm text-muted-foreground text-center pt-1">
-            The future of fashion is circular, and it starts with <em>you</em>. Introduce yourself!
+            The future of fashion is circular,<br />
+            and it starts with <em>you</em>.
+            <p className="font-bold text-foreground mt-3">Introduce yourself!</p>
           </DialogDescription>
         </DialogHeader>
 
