@@ -183,10 +183,11 @@ const Index = () => {
 
   const handleApplyFilters = (filterState: FilterState) => {
     const activeFilters: string[] = [];
-    if (filterState.category) activeFilters.push(filterState.category);
-    if (filterState.size) activeFilters.push(filterState.size);
+    // Add selected sizes as filter chips
+    filterState.sizes.forEach(size => activeFilters.push(size));
     if (filterState.condition) activeFilters.push(filterState.condition);
-    if (filterState.fit) activeFilters.push(filterState.fit);
+    if (filterState.colour) activeFilters.push(filterState.colour);
+    if (filterState.style) activeFilters.push(filterState.style);
     setFilters(activeFilters);
     setPendingExitId(null);
     toast.success('Filters applied!');

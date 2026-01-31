@@ -83,10 +83,9 @@ const Favorites = () => {
   const handleApplyFilters = useCallback((filters: FilterState) => {
     const newFilters: ListingFilters = {};
     
-    if (filters.category) newFilters.category = filters.category;
-    if (filters.size) newFilters.size = filters.size;
+    // Multi-select sizes - use first size for now (backend needs update for multi-size filter)
+    if (filters.sizes.length > 0) newFilters.size = filters.sizes[0];
     if (filters.condition) newFilters.condition = filters.condition;
-    if (filters.fit) newFilters.gender = filters.fit;
     if (filters.priceRange[0] > 0) newFilters.minPrice = filters.priceRange[0];
     if (filters.priceRange[1] < 1000) newFilters.maxPrice = filters.priceRange[1];
     

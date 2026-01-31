@@ -1,11 +1,12 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ImagePlus, X } from 'lucide-react';
+import { ArrowLeft, ImagePlus, X, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import BottomNav from '@/components/BottomNav';
+import SizeSelectionDrawer from '@/components/SizeSelectionDrawer';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -13,7 +14,6 @@ import { compressImage } from '@/utils/imageCompression';
 import { 
   FIT_OPTIONS, 
   CATEGORY_OPTIONS, 
-  getSizesForFitAndCategory,
   CONDITIONS,
   COLOURS,
   STYLES
@@ -30,6 +30,7 @@ const CreateListing = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [imageFiles, setImageFiles] = useState<ImageFile[]>([]);
+  const [sizeDrawerOpen, setSizeDrawerOpen] = useState(false);
   
   const [productName, setProductName] = useState('');
   const [fit, setFit] = useState(''); // Gender/Fit selection
@@ -42,12 +43,6 @@ const CreateListing = () => {
   const [itemPrice, setItemPrice] = useState('');
   const [shippingPrice, setShippingPrice] = useState('');
   const [description, setDescription] = useState('');
-
-  // Get available sizes based on fit and category
-  const availableSizes = useMemo(() => {
-    if (!fit || !category) return [];
-    return getSizesForFitAndCategory(fit, category);
-  }, [fit, category]);
 
   // Reset dependent fields when parent selection changes
   const handleFitChange = (value: string) => {
@@ -301,17 +296,20 @@ const CreateListing = () => {
           </SelectContent>
         </Select>
 
-        {/* Size (depends on Fit + Category) */}
-        <Select value={size} onValueChange={setSize} disabled={!fit || !category}>
-          <SelectTrigger className={selectStyles}>
-            <SelectValue placeholder={!fit ? "Select Fit first" : !category ? "Select Category first" : "Size"} />
-          </SelectTrigger>
-          <SelectContent className="max-h-60">
-            {availableSizes.map((s) => (
-              <SelectItem key={s} value={s.toLowerCase()}>{s}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Size - Opens Drawer */}
+        <button
+          type="button"
+          onClick={() => setSizeDrawerOpen(true)}
+          disabled={!fit || !category}
+          className={`${inputStyles} w-full flex items-center justify-between px-4 text-left ${
+            !fit || !category ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+        >
+          <span className={size ? 'text-foreground' : 'text-muted-foreground/60'}>
+            {size ? size.toUpperCase() : (!fit ? "Select Fit first" : !category ? "Select Category first" : "Size")}
+          </span>
+          <ChevronRight className="h-5 w-5 text-muted-foreground/60" />
+        </button>
 
         {/* Brand - Text Input */}
         <Input
@@ -400,6 +398,15 @@ const CreateListing = () => {
           </Button>
         </div>
       </form>
+      
+      <SizeSelectionDrawer
+        open={sizeDrawerOpen}
+        onOpenChange={setSizeDrawerOpen}
+        fit={fit}
+        category={category}
+        selectedSize={size}
+        onSelectSize={setSize}
+      />
       
       <BottomNav />
     </div>
