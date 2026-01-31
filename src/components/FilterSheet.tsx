@@ -433,7 +433,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
           </div>
 
           {/* Condition */}
-          <div className="py-3 border-t border-border">
+          <div className="py-3 border-t border-border pb-5">
             <label className="text-base font-medium mb-3 block">Condition</label>
             <div className="flex flex-wrap gap-2">
               {CONDITIONS.map((option) => (
@@ -451,94 +451,72 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
             </div>
           </div>
 
-          {/* Colour - Multi-select */}
+          {/* Colour - Always expanded */}
           <div className="py-3 border-t border-border">
-            <Collapsible open={expandedSections.colours} onOpenChange={() => toggleSection('colours')}>
-              <div className="flex items-center justify-between">
-                <CollapsibleTrigger className="flex items-center justify-between flex-1 py-2 text-left">
-                  <span className="text-lg font-medium">Colour</span>
-                  <ChevronDown
-                    className={`h-5 w-5 text-muted-foreground transition-transform ${
-                      expandedSections.colours ? 'rotate-180' : ''
-                    }`}
-                  />
-                </CollapsibleTrigger>
-                {filters.colours.length > 0 && (
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-lg font-medium">Colour</span>
+              {filters.colours.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearAllColours}
+                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                >
+                  Clear ({filters.colours.length})
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {COLOURS.map((colour) => {
+                const isSelected = filters.colours.includes(colour.toLowerCase());
+                return (
                   <button
+                    key={colour}
                     type="button"
-                    onClick={clearAllColours}
-                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 ml-2"
+                    onClick={() => toggleColour(colour)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                      isSelected ? 'bg-primary text-foreground' : 'bg-muted text-foreground hover:bg-muted/80'
+                    }`}
                   >
-                    Clear ({filters.colours.length})
-                    <X className="h-3 w-3" />
+                    {colour}
                   </button>
-                )}
-              </div>
-              <CollapsibleContent className="pb-3">
-                <div className="flex flex-wrap gap-1.5 pt-2">
-                  {COLOURS.map((colour) => {
-                    const isSelected = filters.colours.includes(colour.toLowerCase());
-                    return (
-                      <button
-                        key={colour}
-                        type="button"
-                        onClick={() => toggleColour(colour)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                          isSelected ? 'bg-primary text-foreground' : 'bg-muted text-foreground hover:bg-muted/80'
-                        }`}
-                      >
-                        {colour}
-                      </button>
-                    );
-                  })}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Style - Multi-select */}
+          {/* Style - Always expanded */}
           <div className="py-3 border-t border-border">
-            <Collapsible open={expandedSections.styles} onOpenChange={() => toggleSection('styles')}>
-              <div className="flex items-center justify-between">
-                <CollapsibleTrigger className="flex items-center justify-between flex-1 py-2 text-left">
-                  <span className="text-lg font-medium">Style</span>
-                  <ChevronDown
-                    className={`h-5 w-5 text-muted-foreground transition-transform ${
-                      expandedSections.styles ? 'rotate-180' : ''
-                    }`}
-                  />
-                </CollapsibleTrigger>
-                {filters.styles.length > 0 && (
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-lg font-medium">Style</span>
+              {filters.styles.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearAllStyles}
+                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                >
+                  Clear ({filters.styles.length})
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {STYLES.map((style) => {
+                const isSelected = filters.styles.includes(style.toLowerCase());
+                return (
                   <button
+                    key={style}
                     type="button"
-                    onClick={clearAllStyles}
-                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 ml-2"
+                    onClick={() => toggleStyle(style)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                      isSelected ? 'bg-primary text-foreground' : 'bg-muted text-foreground hover:bg-muted/80'
+                    }`}
                   >
-                    Clear ({filters.styles.length})
-                    <X className="h-3 w-3" />
+                    {style}
                   </button>
-                )}
-              </div>
-              <CollapsibleContent className="pb-3">
-                <div className="flex flex-wrap gap-1.5 pt-2">
-                  {STYLES.map((style) => {
-                    const isSelected = filters.styles.includes(style.toLowerCase());
-                    return (
-                      <button
-                        key={style}
-                        type="button"
-                        onClick={() => toggleStyle(style)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                          isSelected ? 'bg-primary text-foreground' : 'bg-muted text-foreground hover:bg-muted/80'
-                        }`}
-                      >
-                        {style}
-                      </button>
-                    );
-                  })}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+                );
+              })}
+            </div>
           </div>
 
           {/* Price */}
@@ -577,21 +555,86 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
           </div>
         </div>
 
-        {/* Bottom Buttons */}
-        <div className="p-6 bg-background border-t border-border flex gap-4">
-          <Button
-            variant="outline"
-            onClick={handleReset}
-            className="flex-1 h-12 rounded-xl bg-muted text-foreground border-0 font-medium"
-          >
-            Reset
-          </Button>
-          <Button
-            onClick={handleApply}
-            className="flex-1 h-12 rounded-xl bg-foreground text-background font-medium hover:bg-foreground/90"
-          >
-            Apply Filters
-          </Button>
+        {/* Sticky Selected Filters + Bottom Buttons */}
+        <div className="bg-background border-t border-border">
+          {/* Selected Filters Bar */}
+          {(() => {
+            const selectedFilters: { label: string; type: string; value: string }[] = [];
+            
+            // Add sizes
+            filters.sizes.forEach(size => {
+              selectedFilters.push({ label: size.toUpperCase(), type: 'size', value: size });
+            });
+            
+            // Add categories
+            filters.categories.forEach(cat => {
+              selectedFilters.push({ label: cat.charAt(0).toUpperCase() + cat.slice(1), type: 'category', value: cat });
+            });
+            
+            // Add condition
+            if (filters.condition) {
+              selectedFilters.push({ label: filters.condition, type: 'condition', value: filters.condition });
+            }
+            
+            // Add colours
+            filters.colours.forEach(colour => {
+              selectedFilters.push({ label: colour.charAt(0).toUpperCase() + colour.slice(1), type: 'colour', value: colour });
+            });
+            
+            // Add styles
+            filters.styles.forEach(style => {
+              selectedFilters.push({ label: style.charAt(0).toUpperCase() + style.slice(1), type: 'style', value: style });
+            });
+
+            if (selectedFilters.length === 0) return null;
+
+            return (
+              <div className="px-6 py-3 border-b border-border">
+                <div className="flex flex-wrap gap-2">
+                  {selectedFilters.map((filter, index) => (
+                    <button
+                      key={`${filter.type}-${filter.value}-${index}`}
+                      type="button"
+                      onClick={() => {
+                        if (filter.type === 'size') {
+                          toggleSize(filter.value);
+                        } else if (filter.type === 'category') {
+                          toggleCategory(filter.value);
+                        } else if (filter.type === 'condition') {
+                          setFilters(prev => ({ ...prev, condition: '' }));
+                        } else if (filter.type === 'colour') {
+                          toggleColour(filter.value);
+                        } else if (filter.type === 'style') {
+                          toggleStyle(filter.value);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-primary text-foreground"
+                    >
+                      {filter.label}
+                      <X className="h-3 w-3" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+          
+          {/* Buttons */}
+          <div className="p-6 flex gap-4">
+            <Button
+              variant="outline"
+              onClick={handleReset}
+              className="flex-1 h-12 rounded-xl bg-muted text-foreground border-0 font-medium"
+            >
+              Reset
+            </Button>
+            <Button
+              onClick={handleApply}
+              className="flex-1 h-12 rounded-xl bg-foreground text-background font-medium hover:bg-foreground/90"
+            >
+              Apply Filters
+            </Button>
+          </div>
         </div>
       </DrawerContent>
     </Drawer>
