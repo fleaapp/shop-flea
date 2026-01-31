@@ -85,30 +85,46 @@ export const supportsOneSize = (category: string): boolean => {
   return cat !== 'shoes' && !cat.includes('shoes');
 };
 
-// ===== CLOTHING SIZES (inches) =====
-const WOMENS_CLOTHING_INCHES = [
+// ===== WOMEN'S SIZES =====
+const WOMENS_CLOTHING_ALPHA = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
+const WOMENS_CLOTHING_NUMERIC = ['0', '2', '4', '6', '8', '10', '12', '14', '16', '18', '20', '22', '24'];
+const WOMENS_BOTTOMS_INCHES = [
   '20"', '21"', '22"', '23"', '24"', '25"', '26"', '27"', '28"', '29"',
   '30"', '31"', '32"', '34"', '35"', '36"', '37"', '38"', '39"', '40"'
 ];
-const WOMENS_CLOTHING_ALPHA = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
-const WOMENS_CLOTHING = [...WOMENS_CLOTHING_INCHES, ...WOMENS_CLOTHING_ALPHA, 'ONE SIZE', 'OTHER'];
+const WOMENS_EXTRAS = ['ONE SIZE', 'OTHER'];
+const WOMENS_CLOTHING = [...WOMENS_CLOTHING_ALPHA, ...WOMENS_CLOTHING_NUMERIC, ...WOMENS_BOTTOMS_INCHES, ...WOMENS_EXTRAS];
 
-const MENS_CLOTHING_INCHES = [
+// Women's shoes: AU 3-14 including half sizes
+const WOMENS_SHOES = [
+  '3', '3.5', '4', '4.5', '5', '5.5', '6', '6.5', '7', '7.5',
+  '8', '8.5', '9', '9.5', '10', '10.5', '11', '11.5', '12', '12.5', '13', '13.5', '14'
+];
+
+// ===== MEN'S SIZES =====
+const MENS_CLOTHING_ALPHA = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
+const MENS_BOTTOMS_INCHES = [
   '25"', '26"', '28"', '30"', '32"', '34"', '36"', '38"', '40"', '42"', '44"'
 ];
-const MENS_CLOTHING_ALPHA = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
-const MENS_CLOTHING = [...MENS_CLOTHING_INCHES, ...MENS_CLOTHING_ALPHA, 'ONE SIZE', 'OTHER'];
+const MENS_EXTRAS = ['ONE SIZE', 'OTHER'];
+const MENS_CLOTHING = [...MENS_CLOTHING_ALPHA, ...MENS_BOTTOMS_INCHES, ...MENS_EXTRAS];
 
-const UNISEX_CLOTHING_INCHES = [
-  '20"', '21"', '22"', '23"', '24"', '25"', '26"', '27"', '28"', '29"',
-  '30"', '31"', '32"', '33"', '34"', '35"', '36"', '37"', '38"', '39"', '40"'
+// Men's shoes: AU 5-17.5 including half sizes
+const MENS_SHOES = [
+  '5', '5.5', '6', '6.5', '7', '7.5', '8', '8.5', '9', '9.5',
+  '10', '10.5', '11', '11.5', '12', '12.5', '13', '13.5', '14', '14.5',
+  '15', '15.5', '16', '16.5', '17', '17.5'
 ];
-const UNISEX_CLOTHING_ALPHA = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
-const UNISEX_CLOTHING = [...UNISEX_CLOTHING_INCHES, ...UNISEX_CLOTHING_ALPHA, 'ONE SIZE', 'OTHER'];
 
-// ===== SHOE SIZES (F/M format for unisex display) =====
-// Shoe sizes in unified F/M format
-const SHOE_SIZES_FM = [
+// ===== UNISEX SIZES =====
+const UNISEX_CLOTHING_ALPHA = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
+const UNISEX_BOTTOMS_INCHES = [
+  '21"', '22"', '23"', '24"', '25"', '26"', '28"', '30"', '32"', '34"', '36"', '38"', '40"', '42"', '44"'
+];
+const UNISEX_CLOTHING = [...UNISEX_CLOTHING_ALPHA, ...UNISEX_BOTTOMS_INCHES];
+
+// Unisex shoes with F/M equivalents
+const UNISEX_SHOES = [
   'F3 / M1.5', 'F3.5 / M2', 'F4 / M2.5', 'F4.5 / M3', 'F5 / M3.5',
   'F5.5 / M4', 'F6 / M4.5', 'F6.5 / M5', 'F7 / M5.5', 'F7.5 / M6',
   'F8 / M6.5', 'F8.5 / M7', 'F9 / M7.5', 'F9.5 / M8', 'F10 / M8.5',
@@ -121,15 +137,15 @@ const SHOE_SIZES_FM = [
 export const SIZE_CONFIG: Record<FitType, Record<CategoryType, string[]>> = {
   women: {
     clothing: WOMENS_CLOTHING,
-    shoes: SHOE_SIZES_FM, // Same for all genders since F/M format is universal
+    shoes: WOMENS_SHOES,
   },
   men: {
     clothing: MENS_CLOTHING,
-    shoes: SHOE_SIZES_FM,
+    shoes: MENS_SHOES,
   },
   unisex: {
     clothing: UNISEX_CLOTHING,
-    shoes: SHOE_SIZES_FM,
+    shoes: UNISEX_SHOES,
   },
 };
 
@@ -149,24 +165,25 @@ export const getSizesForFitAndCategory = (fit: string, category: string): string
 export const FILTER_SIZES = {
   women: {
     clothing: {
-      inches: WOMENS_CLOTHING_INCHES,
       alpha: WOMENS_CLOTHING_ALPHA,
+      numeric: WOMENS_CLOTHING_NUMERIC,
+      inches: WOMENS_BOTTOMS_INCHES,
     },
-    shoes: SHOE_SIZES_FM,
+    shoes: WOMENS_SHOES,
   },
   men: {
     clothing: {
-      inches: MENS_CLOTHING_INCHES,
       alpha: MENS_CLOTHING_ALPHA,
+      inches: MENS_BOTTOMS_INCHES,
     },
-    shoes: SHOE_SIZES_FM,
+    shoes: MENS_SHOES,
   },
   unisex: {
     clothing: {
-      inches: UNISEX_CLOTHING_INCHES,
       alpha: UNISEX_CLOTHING_ALPHA,
+      inches: UNISEX_BOTTOMS_INCHES,
     },
-    shoes: SHOE_SIZES_FM,
+    shoes: UNISEX_SHOES,
   },
 } as const;
 

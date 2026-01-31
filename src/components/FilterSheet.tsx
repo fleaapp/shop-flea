@@ -216,17 +216,25 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
               <CollapsibleContent className="pb-3">
                 <div className="space-y-3 pl-2">
                   <div>
-                    <p className="text-xs text-muted-foreground mb-2">Clothing (inches)</p>
+                    <p className="text-xs text-muted-foreground mb-2">Clothing (Alpha)</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {FILTER_SIZES.women.clothing.inches.map(size => (
+                      {FILTER_SIZES.women.clothing.alpha.map(size => (
                         <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
                       ))}
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground mb-2">Clothing (alpha)</p>
+                    <p className="text-xs text-muted-foreground mb-2">Clothing (Numeric)</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {FILTER_SIZES.women.clothing.alpha.map(size => (
+                      {FILTER_SIZES.women.clothing.numeric.map(size => (
+                        <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Bottoms (Inches)</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {FILTER_SIZES.women.clothing.inches.map(size => (
                         <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
                       ))}
                     </div>
@@ -249,17 +257,17 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
               <CollapsibleContent className="pb-3">
                 <div className="space-y-3 pl-2">
                   <div>
-                    <p className="text-xs text-muted-foreground mb-2">Clothing (inches)</p>
+                    <p className="text-xs text-muted-foreground mb-2">Clothing (Alpha)</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {FILTER_SIZES.men.clothing.inches.map(size => (
+                      {FILTER_SIZES.men.clothing.alpha.map(size => (
                         <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
                       ))}
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground mb-2">Clothing (alpha)</p>
+                    <p className="text-xs text-muted-foreground mb-2">Bottoms (Inches)</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {FILTER_SIZES.men.clothing.alpha.map(size => (
+                      {FILTER_SIZES.men.clothing.inches.map(size => (
                         <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
                       ))}
                     </div>
@@ -282,15 +290,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
               <CollapsibleContent className="pb-3">
                 <div className="space-y-3 pl-2">
                   <div>
-                    <p className="text-xs text-muted-foreground mb-2">Clothing (inches)</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {FILTER_SIZES.unisex.clothing.inches.map(size => (
-                        <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-2">Clothing (alpha)</p>
+                    <p className="text-xs text-muted-foreground mb-2">Clothing (Alpha)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.unisex.clothing.alpha.map(size => (
                         <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
@@ -298,7 +298,15 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground mb-2">Shoes (AU)</p>
+                    <p className="text-xs text-muted-foreground mb-2">Bottoms (Inches)</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {FILTER_SIZES.unisex.clothing.inches.map(size => (
+                        <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Shoes (AU F / M)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.unisex.shoes.map(size => (
                         <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
