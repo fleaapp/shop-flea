@@ -252,16 +252,13 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                           <button
                             type="button"
                             onClick={() => toggleCategory(cat.value)}
-                            className={`flex items-center justify-between w-full py-2 text-left transition-colors ${
-                              mainSelected ? 'text-primary font-semibold' : ''
+                            className={`transition-colors ${
+                              mainSelected 
+                                ? 'px-3 py-1.5 rounded-full text-xs font-medium bg-primary text-foreground'
+                                : 'block w-full py-2 text-left text-sm font-medium'
                             }`}
                           >
-                            <span className="text-sm font-medium">{cat.label}</span>
-                            {mainSelected && (
-                              <span className="px-2 py-0.5 rounded-full text-xs bg-primary text-foreground">
-                                Selected
-                              </span>
-                            )}
+                            {cat.label}
                           </button>
                         )}
                       </div>
