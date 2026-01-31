@@ -293,7 +293,7 @@ const SellerProfile = () => {
                     </div>
                     <div className="text-right flex-shrink-0 ml-1.5 max-[393px]:ml-0.5 max-[375px]:ml-0.5">
                       <p className="text-lg max-[393px]:text-base max-[375px]:text-sm font-bold text-foreground leading-none">${listing.price}</p>
-                      <p className="text-xs max-[393px]:text-[10px] max-[375px]:text-[9px] text-muted-foreground whitespace-nowrap leading-tight mt-1">+ ${listing.shipping_price || 0} shipping</p>
+                      <p className="text-xs max-[393px]:text-[10px] max-[375px]:text-[9px] text-muted-foreground whitespace-nowrap leading-tight mt-0.5">+ ${listing.shipping_price || 0} shipping</p>
                     </div>
                   </div>
                 </div>
