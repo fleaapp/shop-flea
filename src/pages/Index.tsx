@@ -62,9 +62,20 @@ const Index = () => {
   }, [checkAndTriggerOnboarding]);
 
   const [pendingExitId, setPendingExitId] = useState<string | null>(null);
-  const [filters, setFilters] = useState<string[]>([]);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [searchSheetOpen, setSearchSheetOpen] = useState(false);
+  
+  // Store the full filter state from FilterSheet
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>({
+    preferences: false,
+    hideSoldItems: false,
+    sizes: [],
+    categories: [],
+    condition: '',
+    colours: [],
+    styles: [],
+    priceRange: [0, 1000],
+  });
   
   // Track the last action for undo functionality
   const [lastAction, setLastAction] = useState<{
@@ -73,26 +84,34 @@ const Index = () => {
   } | null>(null);
 
 
-  // Build filter object from active filter chips
+  // Build filter object from applied filters for useListings hook
   const listingFilters = useMemo(() => {
-    const filterObj: Record<string, string> = {};
-    // Simple parsing - could be enhanced
-    filters.forEach(f => {
-      const lowerF = f.toLowerCase();
-      if (['tops', 'bottoms', 'shoes', 'accessories', 'outerwear'].includes(lowerF)) {
-        filterObj.category = lowerF;
-      } else if (['xs', 's', 'm', 'l', 'xl', 'xxl'].includes(lowerF)) {
-        filterObj.size = lowerF;
-      } else if (['new', 'like-new', 'good', 'fair'].includes(lowerF)) {
-        filterObj.condition = lowerF;
-      } else if (['mens', 'womens', 'unisex'].includes(lowerF)) {
-        filterObj.gender = lowerF;
-      } else {
-        filterObj.search = f;
-      }
-    });
+    const filterObj: Record<string, any> = {};
+    
+    if (appliedFilters.sizes.length > 0) {
+      filterObj.sizes = appliedFilters.sizes;
+    }
+    if (appliedFilters.categories.length > 0) {
+      filterObj.categories = appliedFilters.categories;
+    }
+    if (appliedFilters.condition) {
+      filterObj.condition = appliedFilters.condition;
+    }
+    if (appliedFilters.colours.length > 0) {
+      filterObj.colours = appliedFilters.colours;
+    }
+    if (appliedFilters.styles.length > 0) {
+      filterObj.styles = appliedFilters.styles;
+    }
+    if (appliedFilters.priceRange[0] > 0) {
+      filterObj.minPrice = appliedFilters.priceRange[0];
+    }
+    if (appliedFilters.priceRange[1] < 1000) {
+      filterObj.maxPrice = appliedFilters.priceRange[1];
+    }
+    
     return filterObj;
-  }, [filters]);
+  }, [appliedFilters]);
 
   const { listings: dbListings, loading } = useListings(listingFilters);
 
@@ -162,8 +181,44 @@ const Index = () => {
     navigate(`/listing/${listing.id}`);
   };
 
-  const removeFilter = (filter: string) => {
-    setFilters((prev) => prev.filter((f) => f !== filter));
+  // Build display chips from applied filters
+  const activeFilterChips = useMemo(() => {
+    const chips: { label: string; type: string; value: string }[] = [];
+    
+    appliedFilters.sizes.forEach(size => {
+      chips.push({ label: size.toUpperCase(), type: 'size', value: size });
+    });
+    appliedFilters.categories.forEach(cat => {
+      chips.push({ label: cat.charAt(0).toUpperCase() + cat.slice(1), type: 'category', value: cat });
+    });
+    if (appliedFilters.condition) {
+      chips.push({ label: appliedFilters.condition.charAt(0).toUpperCase() + appliedFilters.condition.slice(1), type: 'condition', value: appliedFilters.condition });
+    }
+    appliedFilters.colours.forEach(colour => {
+      chips.push({ label: colour.charAt(0).toUpperCase() + colour.slice(1), type: 'colour', value: colour });
+    });
+    appliedFilters.styles.forEach(style => {
+      chips.push({ label: style.charAt(0).toUpperCase() + style.slice(1), type: 'style', value: style });
+    });
+    
+    return chips;
+  }, [appliedFilters]);
+
+  const removeFilter = (type: string, value: string) => {
+    setAppliedFilters(prev => {
+      if (type === 'size') {
+        return { ...prev, sizes: prev.sizes.filter(s => s !== value) };
+      } else if (type === 'category') {
+        return { ...prev, categories: prev.categories.filter(c => c !== value) };
+      } else if (type === 'condition') {
+        return { ...prev, condition: '' };
+      } else if (type === 'colour') {
+        return { ...prev, colours: prev.colours.filter(c => c !== value) };
+      } else if (type === 'style') {
+        return { ...prev, styles: prev.styles.filter(s => s !== value) };
+      }
+      return prev;
+    });
   };
 
   const handleSearchClick = () => {
@@ -171,10 +226,9 @@ const Index = () => {
   };
 
   const handleSearch = (query: string) => {
-    setFilters(prev => {
-      if (prev.includes(query)) return prev;
-      return [...prev, query];
-    });
+    // Search adds a search term - for now we'll treat it as a category search
+    // This could be enhanced to be a dedicated search filter
+    toast.info(`Searching for "${query}"`);
   };
 
   const handleFilterClick = () => {
@@ -182,13 +236,7 @@ const Index = () => {
   };
 
   const handleApplyFilters = (filterState: FilterState) => {
-    const activeFilters: string[] = [];
-    // Add selected sizes as filter chips
-    filterState.sizes.forEach(size => activeFilters.push(size));
-    if (filterState.condition) activeFilters.push(filterState.condition);
-    filterState.colours.forEach(colour => activeFilters.push(colour));
-    filterState.styles.forEach(style => activeFilters.push(style));
-    setFilters(activeFilters);
+    setAppliedFilters(filterState);
     setPendingExitId(null);
     toast.success('Filters applied!');
   };
@@ -201,18 +249,15 @@ const Index = () => {
       <Header onSearchClick={handleSearchClick} onFilterClick={handleFilterClick} onUndoClick={handleUndo} canUndo={!!lastAction} />
       
       {/* Active Filters */}
-      {filters.length > 0 && (
+      {activeFilterChips.length > 0 && (
         <div className="flex gap-2 px-6 pb-2 flex-shrink-0 overflow-x-auto scrollbar-hide">
-          {filters.map((filter) => {
-            // Capitalize sizes (XS, S, M, L, XL, XXL) and first letter of other filters
-            const sizes = ['xs', 's', 'm', 'l', 'xl', 'xxl', 'one size'];
-            const displayLabel = sizes.includes(filter.toLowerCase())
-              ? filter.toUpperCase()
-              : filter.charAt(0).toUpperCase() + filter.slice(1);
-            return (
-              <FilterChip key={filter} label={displayLabel} onRemove={() => removeFilter(filter)} />
-            );
-          })}
+          {activeFilterChips.map((chip, index) => (
+            <FilterChip 
+              key={`${chip.type}-${chip.value}-${index}`} 
+              label={chip.label} 
+              onRemove={() => removeFilter(chip.type, chip.value)} 
+            />
+          ))}
         </div>
       )}
       
