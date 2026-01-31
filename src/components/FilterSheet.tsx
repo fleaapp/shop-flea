@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, X } from 'lucide-react';
-import { FILTER_SIZES, CONDITIONS, COLOURS, STYLES } from '@/config/sizeConfig';
+import { FILTER_SIZES, CONDITIONS, COLOURS, STYLES, CATEGORY_OPTIONS } from '@/config/sizeConfig';
 
 interface FilterSheetProps {
   open: boolean;
@@ -19,6 +19,7 @@ export interface FilterState {
   preferences: boolean;
   hideSoldItems: boolean;
   sizes: string[]; // Multi-select sizes
+  categories: string[]; // Multi-select categories
   condition: string;
   colour: string;
   style: string;
@@ -30,6 +31,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
     preferences: false,
     hideSoldItems: false,
     sizes: [],
+    categories: [],
     condition: '',
     colour: '',
     style: '',
@@ -38,6 +40,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
 
   // Track which sections are expanded
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    categories: false,
     women: false,
     men: false,
     unisex: false,
@@ -57,8 +60,22 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
     }));
   };
 
+  const toggleCategory = (category: string) => {
+    const normalizedCat = category.toLowerCase();
+    setFilters(prev => ({
+      ...prev,
+      categories: prev.categories.includes(normalizedCat)
+        ? prev.categories.filter(c => c !== normalizedCat)
+        : [...prev.categories, normalizedCat],
+    }));
+  };
+
   const clearAllSizes = () => {
     setFilters(prev => ({ ...prev, sizes: [] }));
+  };
+
+  const clearAllCategories = () => {
+    setFilters(prev => ({ ...prev, categories: [] }));
   };
 
   const handleReset = () => {
@@ -66,12 +83,13 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
       preferences: false,
       hideSoldItems: false,
       sizes: [],
+      categories: [],
       condition: '',
       colour: '',
       style: '',
       priceRange: [0, 1000],
     });
-    setExpandedSections({ women: false, men: false, unisex: false });
+    setExpandedSections({ categories: false, women: false, men: false, unisex: false });
   };
 
   const handleApply = () => {
@@ -132,6 +150,50 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
             />
           </div>
 
+          {/* Categories Section */}
+          <div className="py-3 border-t border-border">
+            <Collapsible open={expandedSections.categories} onOpenChange={() => toggleSection('categories')}>
+              <div className="flex items-center justify-between">
+                <CollapsibleTrigger className="flex items-center justify-between flex-1 py-2 text-left">
+                  <span className="text-lg font-medium">Categories</span>
+                  <ChevronDown
+                    className={`h-5 w-5 text-muted-foreground transition-transform ${
+                      expandedSections.categories ? 'rotate-180' : ''
+                    }`}
+                  />
+                </CollapsibleTrigger>
+                {filters.categories.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearAllCategories}
+                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 ml-2"
+                  >
+                    Clear ({filters.categories.length})
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+              <CollapsibleContent className="pb-3">
+                <div className="flex flex-wrap gap-1.5 pt-2">
+                  {CATEGORY_OPTIONS.map(cat => (
+                    <button
+                      key={cat.value}
+                      type="button"
+                      onClick={() => toggleCategory(cat.value)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                        filters.categories.includes(cat.value.toLowerCase())
+                          ? 'bg-primary text-foreground'
+                          : 'bg-muted text-foreground hover:bg-muted/80'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+
           {/* Sizes Section with Accordion */}
           <div className="py-3 border-t border-border">
             <div className="flex items-center justify-between mb-2">
@@ -154,15 +216,15 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
               <CollapsibleContent className="pb-3">
                 <div className="space-y-3 pl-2">
                   <div>
-                    <p className="text-xs text-muted-foreground mb-2">Clothing - Numeric</p>
+                    <p className="text-xs text-muted-foreground mb-2">Clothing (inches)</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {FILTER_SIZES.women.clothing.numeric.map(size => (
+                      {FILTER_SIZES.women.clothing.inches.map(size => (
                         <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
                       ))}
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground mb-2">Clothing - Alpha</p>
+                    <p className="text-xs text-muted-foreground mb-2">Clothing (alpha)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.women.clothing.alpha.map(size => (
                         <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
@@ -187,7 +249,15 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
               <CollapsibleContent className="pb-3">
                 <div className="space-y-3 pl-2">
                   <div>
-                    <p className="text-xs text-muted-foreground mb-2">Clothing</p>
+                    <p className="text-xs text-muted-foreground mb-2">Clothing (inches)</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {FILTER_SIZES.men.clothing.inches.map(size => (
+                        <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Clothing (alpha)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.men.clothing.alpha.map(size => (
                         <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
@@ -212,7 +282,15 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
               <CollapsibleContent className="pb-3">
                 <div className="space-y-3 pl-2">
                   <div>
-                    <p className="text-xs text-muted-foreground mb-2">Clothing</p>
+                    <p className="text-xs text-muted-foreground mb-2">Clothing (inches)</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {FILTER_SIZES.unisex.clothing.inches.map(size => (
+                        <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Clothing (alpha)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.unisex.clothing.alpha.map(size => (
                         <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
