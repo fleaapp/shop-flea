@@ -96,11 +96,12 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
       >
         <DialogHeader className="text-center space-y-3 pt-3">
           <div className="flex justify-center">
-            <img src={fleaLogoHeader} alt="FLEA" className="h-14 w-auto" />
+            <img src={fleaLogoHeader} alt="FLEA" className="h-10 w-auto" />
           </div>
           <DialogDescription className="text-sm text-muted-foreground text-center pt-1">
             The future of fashion is circular,<br />
-            and it starts with <em>you</em>. <span className="font-bold text-foreground">Introduce yourself!</span>
+            and it starts with <em>you</em>.
+            <p className="font-bold text-foreground mt-3">Introduce yourself!</p>
           </DialogDescription>
         </DialogHeader>
 
