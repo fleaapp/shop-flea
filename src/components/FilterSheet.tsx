@@ -1,17 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  FIT_OPTIONS,
-  CATEGORY_OPTIONS,
-  getSizesForFitAndCategory,
-  CONDITIONS,
-  COLOURS,
-  STYLES,
-} from '@/config/sizeConfig';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ChevronDown, X } from 'lucide-react';
+import { FILTER_SIZES, CONDITIONS, COLOURS, STYLES } from '@/config/sizeConfig';
 
 interface FilterSheetProps {
   open: boolean;
@@ -23,9 +18,7 @@ interface FilterSheetProps {
 export interface FilterState {
   preferences: boolean;
   hideSoldItems: boolean;
-  fit: string;
-  category: string;
-  size: string;
+  sizes: string[]; // Multi-select sizes
   condition: string;
   colour: string;
   style: string;
@@ -36,42 +29,49 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
   const [filters, setFilters] = useState<FilterState>({
     preferences: false,
     hideSoldItems: false,
-    fit: '',
-    category: '',
-    size: '',
+    sizes: [],
     condition: '',
     colour: '',
     style: '',
     priceRange: [0, 1000],
   });
 
-  // Get available sizes based on fit and category
-  const availableSizes = useMemo(() => {
-    if (!filters.fit || !filters.category) return [];
-    return getSizesForFitAndCategory(filters.fit, filters.category);
-  }, [filters.fit, filters.category]);
+  // Track which sections are expanded
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    women: false,
+    men: false,
+    unisex: false,
+  });
 
-  // Reset dependent fields when parent selection changes
-  const handleFitChange = (value: string) => {
-    setFilters(prev => ({ ...prev, fit: value, category: '', size: '' }));
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
-  const handleCategoryChange = (value: string) => {
-    setFilters(prev => ({ ...prev, category: value, size: '' }));
+  const toggleSize = (size: string) => {
+    const normalizedSize = size.toLowerCase();
+    setFilters(prev => ({
+      ...prev,
+      sizes: prev.sizes.includes(normalizedSize)
+        ? prev.sizes.filter(s => s !== normalizedSize)
+        : [...prev.sizes, normalizedSize],
+    }));
+  };
+
+  const clearAllSizes = () => {
+    setFilters(prev => ({ ...prev, sizes: [] }));
   };
 
   const handleReset = () => {
     setFilters({
       preferences: false,
       hideSoldItems: false,
-      fit: '',
-      category: '',
-      size: '',
+      sizes: [],
       condition: '',
       colour: '',
       style: '',
       priceRange: [0, 1000],
     });
+    setExpandedSections({ women: false, men: false, unisex: false });
   };
 
   const handleApply = () => {
@@ -79,23 +79,27 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
     onOpenChange(false);
   };
 
-  const ChipButton = ({ 
-    label, 
-    selected, 
-    onClick 
-  }: { 
-    label: string; 
-    selected: boolean; 
-    onClick: () => void;
-  }) => (
+  const SizeChip = ({ size, selected }: { size: string; selected: boolean }) => (
     <button
-      onClick={onClick}
-      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-        selected ? 'bg-primary text-foreground' : 'bg-card text-foreground'
+      type="button"
+      onClick={() => toggleSize(size)}
+      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+        selected ? 'bg-primary text-foreground' : 'bg-muted text-foreground hover:bg-muted/80'
       }`}
     >
-      {label}
+      {size}
     </button>
+  );
+
+  const SectionHeader = ({ label, section }: { label: string; section: string }) => (
+    <CollapsibleTrigger className="flex items-center justify-between w-full py-3 text-left">
+      <span className="font-medium">{label}</span>
+      <ChevronDown
+        className={`h-5 w-5 text-muted-foreground transition-transform ${
+          expandedSections[section] ? 'rotate-180' : ''
+        }`}
+      />
+    </CollapsibleTrigger>
   );
 
   return (
@@ -128,78 +132,127 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
             />
           </div>
 
-          {/* Fit / Gender */}
-          <div className="py-3">
-            <label className="text-base font-medium mb-2 block">Fit / Gender</label>
-            <Select value={filters.fit} onValueChange={handleFitChange}>
-              <SelectTrigger className="w-full bg-card border-0 h-12 rounded-xl focus:ring-[#ddfed7]">
-                <SelectValue placeholder="Select Fit" />
-              </SelectTrigger>
-              <SelectContent>
-                {FIT_OPTIONS.map((f) => (
-                  <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Sizes Section with Accordion */}
+          <div className="py-3 border-t border-border">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-lg font-medium">Sizes</label>
+              {filters.sizes.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearAllSizes}
+                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                >
+                  Clear ({filters.sizes.length})
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+            
+            {/* Women's Section */}
+            <Collapsible open={expandedSections.women} onOpenChange={() => toggleSection('women')}>
+              <SectionHeader label="Women's" section="women" />
+              <CollapsibleContent className="pb-3">
+                <div className="space-y-3 pl-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Clothing - Numeric</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {FILTER_SIZES.women.clothing.numeric.map(size => (
+                        <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Clothing - Alpha</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {FILTER_SIZES.women.clothing.alpha.map(size => (
+                        <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Shoes (AU)</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {FILTER_SIZES.women.shoes.map(size => (
+                        <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
 
-          {/* Category (depends on Fit) */}
-          <div className="py-3">
-            <label className="text-base font-medium mb-2 block">Category</label>
-            <Select 
-              value={filters.category} 
-              onValueChange={handleCategoryChange}
-              disabled={!filters.fit}
-            >
-              <SelectTrigger className="w-full bg-card border-0 h-12 rounded-xl focus:ring-[#ddfed7]">
-                <SelectValue placeholder={filters.fit ? "Select Category" : "Select Fit first"} />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORY_OPTIONS.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+            {/* Men's Section */}
+            <Collapsible open={expandedSections.men} onOpenChange={() => toggleSection('men')}>
+              <SectionHeader label="Men's" section="men" />
+              <CollapsibleContent className="pb-3">
+                <div className="space-y-3 pl-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Clothing</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {FILTER_SIZES.men.clothing.alpha.map(size => (
+                        <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Shoes (AU)</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {FILTER_SIZES.men.shoes.map(size => (
+                        <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
 
-          {/* Size (depends on Fit + Category) */}
-          <div className="py-3">
-            <label className="text-base font-medium mb-3 block">Size</label>
-            {(!filters.fit || !filters.category) ? (
-              <p className="text-sm text-muted-foreground">
-                {!filters.fit ? "Select Fit first" : "Select Category first"}
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {availableSizes.map((s) => (
-                  <ChipButton
-                    key={s}
-                    label={s}
-                    selected={filters.size === s.toLowerCase()}
-                    onClick={() => setFilters({ ...filters, size: s.toLowerCase() })}
-                  />
-                ))}
-              </div>
-            )}
+            {/* Unisex Section */}
+            <Collapsible open={expandedSections.unisex} onOpenChange={() => toggleSection('unisex')}>
+              <SectionHeader label="Unisex" section="unisex" />
+              <CollapsibleContent className="pb-3">
+                <div className="space-y-3 pl-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Clothing</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {FILTER_SIZES.unisex.clothing.alpha.map(size => (
+                        <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Shoes (AU)</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {FILTER_SIZES.unisex.shoes.map(size => (
+                        <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
           {/* Condition */}
-          <div className="py-3">
+          <div className="py-3 border-t border-border">
             <label className="text-base font-medium mb-3 block">Condition</label>
             <div className="flex flex-wrap gap-2">
               {CONDITIONS.map((option) => (
-                <ChipButton
+                <button
                   key={option}
-                  label={option}
-                  selected={filters.condition === option}
-                  onClick={() => setFilters({ ...filters, condition: option })}
-                />
+                  type="button"
+                  onClick={() => setFilters({ ...filters, condition: filters.condition === option ? '' : option })}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    filters.condition === option ? 'bg-primary text-foreground' : 'bg-muted text-foreground'
+                  }`}
+                >
+                  {option}
+                </button>
               ))}
             </div>
           </div>
 
           {/* Colour */}
-          <div className="py-3">
+          <div className="py-3 border-t border-border">
             <label className="text-base font-medium mb-2 block">Colour</label>
             <Select value={filters.colour} onValueChange={(val) => setFilters({ ...filters, colour: val })}>
               <SelectTrigger className="w-full bg-card border-0 h-12 rounded-xl focus:ring-[#ddfed7]">
@@ -214,7 +267,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
           </div>
 
           {/* Style */}
-          <div className="py-3">
+          <div className="py-3 border-t border-border">
             <label className="text-base font-medium mb-2 block">Style</label>
             <Select value={filters.style} onValueChange={(val) => setFilters({ ...filters, style: val })}>
               <SelectTrigger className="w-full bg-card border-0 h-12 rounded-xl focus:ring-[#ddfed7]">
@@ -229,7 +282,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
           </div>
 
           {/* Price */}
-          <div className="py-3">
+          <div className="py-3 border-t border-border">
             <label className="text-base font-medium mb-2 block">Price</label>
             <div className="flex gap-4 items-center">
               <div className="flex-1">

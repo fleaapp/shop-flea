@@ -1,8 +1,8 @@
 // Centralized size configuration for Flea
-// Sizes depend on Fit (Gender) and Category
+// Single source of truth for both listings and filters
 
 export type FitType = 'women' | 'men' | 'unisex';
-export type CategoryType = 'clothing' | 'bottoms' | 'shoes';
+export type CategoryType = 'clothing' | 'shoes';
 
 export const FIT_OPTIONS = [
   { value: 'women', label: "Women's" },
@@ -12,18 +12,8 @@ export const FIT_OPTIONS = [
 
 export const CATEGORY_OPTIONS = [
   { value: 'clothing', label: 'Clothing' },
-  { value: 'bottoms', label: 'Bottoms' },
   { value: 'shoes', label: 'Shoes' },
 ] as const;
-
-// Helper to generate range of numbers
-const range = (start: number, end: number, step: number = 1): number[] => {
-  const result: number[] = [];
-  for (let i = start; i <= end; i += step) {
-    result.push(i);
-  }
-  return result;
-};
 
 // Helper to generate shoe sizes with half sizes
 const shoeRange = (start: number, end: number): string[] => {
@@ -34,46 +24,39 @@ const shoeRange = (start: number, end: number): string[] => {
   return result;
 };
 
-// Helper to format bottoms sizes with inch symbol
-const inchRange = (start: number, end: number): string[] => {
-  return range(start, end).map(n => `${n}"`);
-};
-
 // Women's sizes
-const WOMENS_CLOTHING = ['0', '2', '4', '6', '8', '10', '12', '14', '16', '18', '20', '22', '24', 'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'One Size Fits All'];
-const WOMENS_BOTTOMS = [...inchRange(20, 42), 'One Size Fits All'];
-const WOMENS_SHOES = shoeRange(3, 13.5); // AU 3-13.5
+const WOMENS_CLOTHING_NUMERIC = ['0', '2', '4', '6', '8', '10', '12', '14', '16', '18', '20', '22', '24'];
+const WOMENS_CLOTHING_ALPHA = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
+const WOMENS_CLOTHING = [...WOMENS_CLOTHING_NUMERIC, ...WOMENS_CLOTHING_ALPHA, 'ONE SIZE', 'OTHER'];
+const WOMENS_SHOES = shoeRange(3, 13.5); // AU 3-13.5, NO ONE SIZE
 
 // Men's sizes
-const MENS_CLOTHING = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', 'One Size Fits All'];
-const MENS_BOTTOMS = [...inchRange(20, 50), 'One Size Fits All'];
-const MENS_SHOES = shoeRange(5, 17); // AU 5-17
+const MENS_CLOTHING_ALPHA = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
+const MENS_CLOTHING = [...MENS_CLOTHING_ALPHA, 'ONE SIZE', 'OTHER'];
+const MENS_SHOES = shoeRange(5, 17); // AU 5-17, NO ONE SIZE
 
 // Unisex sizes
-const UNISEX_CLOTHING = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', 'One Size Fits All'];
-const UNISEX_BOTTOMS = [...inchRange(20, 40), 'One Size Fits All'];
-const UNISEX_SHOES = shoeRange(3, 17); // AU 3-17
+const UNISEX_CLOTHING_ALPHA = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
+const UNISEX_CLOTHING = [...UNISEX_CLOTHING_ALPHA, 'ONE SIZE', 'OTHER'];
+const UNISEX_SHOES = shoeRange(3, 17); // AU 3-17, NO ONE SIZE
 
-// Size configuration map
+// Size configuration map for listings (single select)
 export const SIZE_CONFIG: Record<FitType, Record<CategoryType, string[]>> = {
   women: {
     clothing: WOMENS_CLOTHING,
-    bottoms: WOMENS_BOTTOMS,
     shoes: WOMENS_SHOES,
   },
   men: {
     clothing: MENS_CLOTHING,
-    bottoms: MENS_BOTTOMS,
     shoes: MENS_SHOES,
   },
   unisex: {
     clothing: UNISEX_CLOTHING,
-    bottoms: UNISEX_BOTTOMS,
     shoes: UNISEX_SHOES,
   },
 };
 
-// Get sizes based on fit and category
+// Get sizes based on fit and category (for listings)
 export const getSizesForFitAndCategory = (fit: string, category: string): string[] => {
   const normalizedFit = fit.toLowerCase() as FitType;
   const normalizedCategory = category.toLowerCase() as CategoryType;
@@ -83,6 +66,29 @@ export const getSizesForFitAndCategory = (fit: string, category: string): string
   
   return SIZE_CONFIG[normalizedFit][normalizedCategory];
 };
+
+// Filter size definitions - organized by gender for the accordion structure
+export const FILTER_SIZES = {
+  women: {
+    clothing: {
+      numeric: WOMENS_CLOTHING_NUMERIC,
+      alpha: WOMENS_CLOTHING_ALPHA,
+    },
+    shoes: shoeRange(3, 13.5),
+  },
+  men: {
+    clothing: {
+      alpha: MENS_CLOTHING_ALPHA,
+    },
+    shoes: shoeRange(5, 17),
+  },
+  unisex: {
+    clothing: {
+      alpha: UNISEX_CLOTHING_ALPHA,
+    },
+    shoes: shoeRange(3, 17),
+  },
+} as const;
 
 // Get all possible sizes (for display purposes when no filter is applied)
 export const getAllSizes = (): string[] => {
