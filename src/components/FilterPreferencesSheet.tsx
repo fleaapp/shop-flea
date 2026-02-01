@@ -7,6 +7,7 @@ import { FILTER_SIZES, FIT_OPTIONS } from '@/config/sizeConfig';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { normalizeSizeKeys } from '@/utils/sizeKeys';
 
 interface FilterPreferencesSheetProps {
   open: boolean;
@@ -30,7 +31,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
   useEffect(() => {
     if (open && profile) {
       const profileData = profile as any;
-      setPreferredSizes(profileData.preferred_sizes || []);
+      setPreferredSizes(normalizeSizeKeys(profileData.preferred_sizes));
       setPreferredGender(profileData.preferred_gender || null);
     }
   }, [open, profile]);

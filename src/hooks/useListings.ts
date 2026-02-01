@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { getQuerySizesFromKeys, listingSizeKey, normalizeSizeKeys } from '@/utils/sizeKeys';
 export interface DbListing {
   id: string;
   user_id: string;
@@ -79,7 +80,8 @@ export const useListings = (filters?: ListingFilters) => {
     }
     // Multi-select sizes filter
     if (filters?.sizes && filters.sizes.length > 0) {
-      query = query.in('size', filters.sizes.map(s => s.toLowerCase()));
+      const querySizes = getQuerySizesFromKeys(filters.sizes);
+      query = query.in('size', querySizes);
     }
     if (filters?.condition) {
       query = query.eq('condition', filters.condition.toLowerCase());
@@ -111,8 +113,17 @@ export const useListings = (filters?: ListingFilters) => {
       setError(queryError.message);
       setListings([]);
     } else if (data && data.length > 0) {
+      // If size keys are in use (e.g. clothing:8 vs shoes:8), apply a second
+      // pass to ensure category+size matching (DB only stores size).
+      const normalizedSizeKeys = normalizeSizeKeys(filters?.sizes);
+      const sizeKeySet = normalizedSizeKeys.length > 0 ? new Set(normalizedSizeKeys) : null;
+
+      const sizeFiltered = sizeKeySet
+        ? data.filter((l) => sizeKeySet.has(listingSizeKey(l.size, l.category)))
+        : data;
+
       // Get unique user_ids and fetch all profiles in a single query
-      const uniqueUserIds = [...new Set(data.map(listing => listing.user_id))];
+      const uniqueUserIds = [...new Set(sizeFiltered.map(listing => listing.user_id))];
       
       const { data: profilesData } = await supabase
         .from('profiles')
@@ -125,7 +136,7 @@ export const useListings = (filters?: ListingFilters) => {
       );
       
       // Merge listings with profiles, filter out paused sellers
-      const listingsWithProfiles = data
+      const listingsWithProfiles = sizeFiltered
         .map(listing => ({
           ...listing,
           profiles: profilesMap.get(listing.user_id) || null,

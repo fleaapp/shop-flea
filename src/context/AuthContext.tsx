@@ -10,6 +10,9 @@ interface Profile {
   location: string | null;
   rating: number;
   total_reviews: number;
+  preferred_sizes?: string[] | null;
+  preferred_gender?: string | null;
+  pause_selling?: boolean;
 }
 
 interface AuthContextType {

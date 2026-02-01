@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { DbListing, ListingFilters } from './useListings';
+import { getQuerySizesFromKeys, listingSizeKey, normalizeSizeKeys } from '@/utils/sizeKeys';
 
 // Extended DbListing to include pause_selling from profiles
 export interface DbListingWithPause extends DbListing {
@@ -58,6 +59,10 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
     if (filters?.size) {
       query = query.eq('size', filters.size.toLowerCase());
     }
+    if (filters?.sizes && filters.sizes.length > 0) {
+      const querySizes = getQuerySizesFromKeys(filters.sizes);
+      query = query.in('size', querySizes);
+    }
     if (filters?.condition) {
       query = query.eq('condition', filters.condition.toLowerCase());
     }
@@ -79,8 +84,14 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
     if (error) {
       setListings([]);
     } else if (data && data.length > 0) {
+      const normalizedSizeKeys = normalizeSizeKeys(filters?.sizes);
+      const sizeKeySet = normalizedSizeKeys.length > 0 ? new Set(normalizedSizeKeys) : null;
+      const sizeFiltered = sizeKeySet
+        ? data.filter((l) => sizeKeySet.has(listingSizeKey(l.size, l.category)))
+        : data;
+
       // Get unique user_ids and fetch all profiles in a single query, including pause_selling
-      const uniqueUserIds = [...new Set(data.map(listing => listing.user_id))];
+      const uniqueUserIds = [...new Set(sizeFiltered.map(listing => listing.user_id))];
       
       const { data: profilesData } = await supabase
         .from('profiles')
@@ -93,7 +104,7 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
       );
       
       // Merge listings with profiles
-      const listingsWithProfiles = data.map(listing => ({
+      const listingsWithProfiles = sizeFiltered.map(listing => ({
         ...listing,
         profiles: profilesMap.get(listing.user_id) || null,
       }));
