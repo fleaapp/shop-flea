@@ -3,6 +3,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, X, Clock } from 'lucide-react';
 import { Listing } from '@/types/listing';
+import { useAuth } from '@/context/AuthContext';
 
 interface SearchSheetProps {
   open: boolean;
@@ -31,16 +32,30 @@ const SUGGESTION_CATEGORIES = [
 ];
 
 const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProps) => {
+  const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
-  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
-    const saved = localStorage.getItem('recentSearches');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
+  // User-specific localStorage key for recent searches
+  const storageKey = user ? `recentSearches_${user.id}` : null;
+
+  // Load recent searches when user changes or component mounts
   useEffect(() => {
-    localStorage.setItem('recentSearches', JSON.stringify(recentSearches));
-  }, [recentSearches]);
+    if (storageKey) {
+      const saved = localStorage.getItem(storageKey);
+      setRecentSearches(saved ? JSON.parse(saved) : []);
+    } else {
+      setRecentSearches([]);
+    }
+  }, [storageKey]);
+
+  // Save recent searches when they change
+  useEffect(() => {
+    if (storageKey && recentSearches.length > 0) {
+      localStorage.setItem(storageKey, JSON.stringify(recentSearches));
+    }
+  }, [recentSearches, storageKey]);
 
   const handleSearch = (searchTerm: string) => {
     if (!searchTerm.trim()) return;
