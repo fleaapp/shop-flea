@@ -72,6 +72,7 @@ const Index = () => {
     hideSoldItems: false,
     sizes: [],
     categories: [],
+    gender: '',
     condition: '',
     colours: [],
     styles: [],
@@ -94,6 +95,9 @@ const Index = () => {
     }
     if (appliedFilters.categories.length > 0) {
       filterObj.categories = appliedFilters.categories;
+    }
+    if (appliedFilters.gender) {
+      filterObj.gender = appliedFilters.gender;
     }
     if (appliedFilters.condition) {
       filterObj.condition = appliedFilters.condition;
@@ -186,6 +190,13 @@ const Index = () => {
   const activeFilterChips = useMemo(() => {
     const chips: { label: string; type: string; value: string }[] = [];
     
+    // Add gender/fit first
+    if (appliedFilters.gender) {
+      const fitLabel = appliedFilters.gender === 'women' ? "Women's" : 
+                       appliedFilters.gender === 'men' ? "Men's" : 'Unisex';
+      chips.push({ label: fitLabel, type: 'gender', value: appliedFilters.gender });
+    }
+    
     appliedFilters.sizes.forEach(size => {
       chips.push({ label: formatSizeKeyLabel(size), type: 'size', value: size });
     });
@@ -207,7 +218,9 @@ const Index = () => {
 
   const removeFilter = (type: string, value: string) => {
     setAppliedFilters(prev => {
-      if (type === 'size') {
+      if (type === 'gender') {
+        return { ...prev, gender: '' };
+      } else if (type === 'size') {
         return { ...prev, sizes: prev.sizes.filter(s => s !== value) };
       } else if (type === 'category') {
         return { ...prev, categories: prev.categories.filter(c => c !== value) };
