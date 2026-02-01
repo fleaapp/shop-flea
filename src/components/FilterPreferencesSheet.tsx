@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, X } from 'lucide-react';
@@ -111,11 +111,11 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
   );
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="text-center">Filter Preferences</SheetTitle>
-        </SheetHeader>
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="max-h-[85vh] overflow-y-auto">
+        <DrawerHeader>
+          <DrawerTitle className="text-center">Filter Preferences</DrawerTitle>
+        </DrawerHeader>
         
         <div className="mt-6 space-y-6 pb-8">
           {/* Gender Preferences */}
@@ -262,16 +262,18 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
             </Collapsible>
           </div>
 
-          <Button 
-            onClick={handleSave}
-            disabled={isLoading}
-            className="w-full h-12 rounded-full bg-primary text-primary-foreground font-medium"
-          >
-            {isLoading ? 'Saving...' : 'Save Preferences'}
-          </Button>
+          <div className="flex justify-center">
+            <Button 
+              onClick={handleSave}
+              disabled={isLoading}
+              className="w-40 h-12 rounded-full bg-primary text-primary-foreground font-medium"
+            >
+              {isLoading ? 'Saving...' : 'Save Preferences'}
+            </Button>
+          </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   );
 };
 

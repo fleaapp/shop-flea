@@ -5,7 +5,6 @@ import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
-import { useOnboarding } from '@/context/OnboardingContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/lib/supabase';
@@ -15,7 +14,6 @@ const Settings = () => {
   const navigate = useNavigate();
   const { signOut, profile, user, refreshProfile } = useAuth();
   const { clearDiscarded } = useDiscardedListings();
-  const { resetOnboarding, startOnboarding } = useOnboarding();
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   
   // Get pause_selling from profile
@@ -30,11 +28,10 @@ const Settings = () => {
     }
   };
 
-  const handleRestartTutorial = () => {
-    resetOnboarding();
-    startOnboarding();
-    navigate('/');
-    toast.success('Tutorial restarted!');
+  const handleLogout = async () => {
+    await signOut();
+    toast.success('Logged out');
+    navigate('/auth');
   };
 
   const handleTogglePauseSelling = async (checked: boolean) => {
@@ -68,12 +65,6 @@ const Settings = () => {
       items: [
         { icon: <ProfileAvatar />, label: 'Edit Profile' },
         { icon: <span className="text-base">🔁</span>, label: 'Refresh Passed Listings', action: handleRefreshDiscarded },
-        { icon: <span className="text-base">🔒</span>, label: 'Privacy & Security' },
-      ],
-    },
-    {
-      title: 'Preferences',
-      items: [
         { icon: <span className="text-base">📏</span>, label: 'Filter Preferences', action: () => setPreferencesOpen(true) },
         { icon: <span className="text-base">⏸️</span>, label: 'Pause Selling', toggle: true, checked: pauseSelling, onToggle: handleTogglePauseSelling },
       ],
@@ -81,15 +72,9 @@ const Settings = () => {
     {
       title: 'Support',
       items: [
-        { icon: <span className="text-base">📖</span>, label: 'App Tutorial', action: handleRestartTutorial },
         { icon: <span className="text-base">❓</span>, label: 'FAQ' },
         { icon: <span className="text-base">🛠️</span>, label: 'Contact Support' },
-      ],
-    },
-    {
-      title: '',
-      items: [
-        { icon: <span className="text-base">🚪</span>, label: 'Logout', danger: true },
+        { icon: <span className="text-base">🔒</span>, label: 'Privacy & Security' },
       ],
     },
   ];
@@ -115,14 +100,10 @@ const Settings = () => {
               {group.items.map((item) => (
                 <div
                   key={item.label}
-                  className={`flex items-center justify-between rounded-2xl bg-card p-4 max-[375px]:p-3 card-shadow ${item.toggle ? '' : 'cursor-pointer'} ${item.danger ? 'text-destructive' : ''}`}
+                  className={`flex items-center justify-between rounded-2xl bg-card p-4 max-[375px]:p-3 card-shadow ${item.toggle ? '' : 'cursor-pointer'}`}
                   onClick={async () => {
-                    if (item.toggle) return; // Don't handle click for toggle items
-                    if (item.label === 'Logout') {
-                      await signOut();
-                      toast.success('Logged out');
-                      navigate('/auth');
-                    } else if (item.label === 'Edit Profile') {
+                    if (item.toggle) return;
+                    if (item.label === 'Edit Profile') {
                       navigate('/settings/profile');
                     } else if (item.action) {
                       await item.action();
@@ -132,8 +113,8 @@ const Settings = () => {
                   }}
                 >
                   <div className="flex items-center gap-3 max-[375px]:gap-2">
-                    <div className={item.danger ? 'text-destructive' : 'text-muted-foreground'}>{item.icon}</div>
-                    <span className={`text-base max-[375px]:text-sm font-medium ${item.danger ? 'text-destructive' : 'text-foreground'}`}>{item.label}</span>
+                    <div className="text-muted-foreground">{item.icon}</div>
+                    <span className="text-base max-[375px]:text-sm font-medium text-foreground">{item.label}</span>
                   </div>
                   
                   {item.toggle ? (
@@ -141,7 +122,7 @@ const Settings = () => {
                       checked={item.checked}
                       onCheckedChange={item.onToggle}
                     />
-                  ) : !item.danger && (
+                  ) : (
                     <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   )}
                 </div>
@@ -151,8 +132,18 @@ const Settings = () => {
         ))}
       </div>
       
+      {/* Logout Button */}
+      <div className="mt-8 max-[375px]:mt-6 flex justify-center">
+        <button
+          onClick={handleLogout}
+          className="w-32 py-3 rounded-full bg-muted text-muted-foreground font-medium text-sm hover:bg-muted/80 transition-colors"
+        >
+          Logout
+        </button>
+      </div>
+      
       {/* Version */}
-      <div className="mt-8 max-[375px]:mt-6 text-center">
+      <div className="mt-4 text-center">
         <p className="text-sm max-[375px]:text-xs text-muted-foreground">Version 1.0.0</p>
       </div>
       
