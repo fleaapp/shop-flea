@@ -112,12 +112,12 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[85vh] overflow-y-auto">
+      <DrawerContent className="max-h-[85vh] overflow-y-auto outline-none focus:outline-none">
         <DrawerHeader>
           <DrawerTitle className="text-center">Filter Preferences</DrawerTitle>
         </DrawerHeader>
         
-        <div className="mt-6 space-y-6 pb-8">
+        <div className="mt-6 space-y-6 pb-8 px-4">
           {/* Gender Preferences */}
           <div>
             <label className="text-sm font-medium text-foreground mb-3 block">Preferred Fit</label>
