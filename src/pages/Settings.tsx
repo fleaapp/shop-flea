@@ -136,8 +136,9 @@ const Settings = () => {
       <div className="mt-8 max-[375px]:mt-6 flex justify-center">
         <button
           onClick={handleLogout}
-          className="w-32 py-3 rounded-full bg-muted text-muted-foreground font-medium text-sm hover:bg-muted/80 transition-colors"
+          className="w-32 py-3 rounded-full bg-muted text-muted-foreground font-bold text-sm hover:bg-muted/80 transition-colors flex items-center justify-center gap-2"
         >
+          <span>🚪</span>
           Logout
         </button>
       </div>
