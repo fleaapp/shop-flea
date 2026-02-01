@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, X } from 'lucide-react';
-import { FILTER_SIZES, CONDITIONS, COLOURS, STYLES, CATEGORY_OPTIONS } from '@/config/sizeConfig';
+import { FILTER_SIZES, CONDITIONS, COLOURS, STYLES, CATEGORY_OPTIONS, FIT_OPTIONS } from '@/config/sizeConfig';
 import { formatSizeKeyLabel, makeSizeKey, normalizeSizeKeys, SizeCategoryKey } from '@/utils/sizeKeys';
 
 interface FilterSheetProps {
@@ -21,6 +21,7 @@ export interface FilterState {
   hideSoldItems: boolean;
   sizes: string[]; // Multi-select sizes
   categories: string[]; // Multi-select categories (includes subcategories)
+  gender: string; // Gender/Fit filter
   condition: string;
   colours: string[]; // Multi-select colours
   styles: string[]; // Multi-select styles
@@ -33,6 +34,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
     hideSoldItems: false,
     sizes: [],
     categories: [],
+    gender: '',
     condition: '',
     colours: [],
     styles: [],
@@ -143,6 +145,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
       hideSoldItems: false,
       sizes: [],
       categories: [],
+      gender: '',
       condition: '',
       colours: [],
       styles: [],
@@ -226,6 +229,28 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
               }}
               className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-input [&>span]:data-[state=checked]:bg-primary [&>span]:data-[state=unchecked]:bg-charcoal"
             />
+          </div>
+
+          {/* Gender/Fit Section */}
+          <div className="py-3 border-t border-border">
+            <label className="text-lg font-medium mb-3 block">Fit</label>
+            <div className="flex flex-wrap gap-2">
+              {FIT_OPTIONS.map((fit) => (
+                <button
+                  key={fit.value}
+                  type="button"
+                  onClick={() => setFilters(prev => ({ 
+                    ...prev, 
+                    gender: prev.gender === fit.value ? '' : fit.value 
+                  }))}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    filters.gender === fit.value ? 'bg-primary text-foreground' : 'bg-muted text-foreground'
+                  }`}
+                >
+                  {fit.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Categories Section - Now with subcategories */}
@@ -589,6 +614,12 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
           {(() => {
             const selectedFilters: { label: string; type: string; value: string }[] = [];
             
+            // Add gender/fit
+            if (filters.gender) {
+              const fitLabel = FIT_OPTIONS.find(f => f.value === filters.gender)?.label || filters.gender;
+              selectedFilters.push({ label: fitLabel, type: 'gender', value: filters.gender });
+            }
+            
             // Add sizes
             filters.sizes.forEach(sizeKey => {
               selectedFilters.push({ label: formatSizeKeyLabel(sizeKey), type: 'size', value: sizeKey });
@@ -624,7 +655,9 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                       key={`${filter.type}-${filter.value}-${index}`}
                       type="button"
                       onClick={() => {
-                        if (filter.type === 'size') {
+                        if (filter.type === 'gender') {
+                          setFilters(prev => ({ ...prev, gender: '' }));
+                        } else if (filter.type === 'size') {
                           toggleSizeKey(filter.value);
                         } else if (filter.type === 'category') {
                           toggleCategory(filter.value);
