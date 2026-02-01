@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -6,12 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, X } from 'lucide-react';
 import { FILTER_SIZES, CONDITIONS, COLOURS, STYLES, CATEGORY_OPTIONS } from '@/config/sizeConfig';
+import { formatSizeKeyLabel, makeSizeKey, normalizeSizeKeys, SizeCategoryKey } from '@/utils/sizeKeys';
 
 interface FilterSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onApplyFilters: (filters: FilterState) => void;
   showHideSoldItems?: boolean;
+  preferredSizes?: string[] | null;
 }
 
 export interface FilterState {
@@ -25,7 +27,7 @@ export interface FilterState {
   priceRange: [number, number];
 }
 
-const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = false }: FilterSheetProps) => {
+const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = false, preferredSizes }: FilterSheetProps) => {
   const [filters, setFilters] = useState<FilterState>({
     preferences: false,
     hideSoldItems: false,
@@ -59,15 +61,35 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
     setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }));
   };
 
-  const toggleSize = (size: string) => {
-    const normalizedSize = size.toLowerCase();
+  const toggleSize = (size: string, category: SizeCategoryKey) => {
+    const key = makeSizeKey(category, size);
     setFilters(prev => ({
       ...prev,
-      sizes: prev.sizes.includes(normalizedSize)
-        ? prev.sizes.filter(s => s !== normalizedSize)
-        : [...prev.sizes, normalizedSize],
+      sizes: prev.sizes.includes(key)
+        ? prev.sizes.filter(s => s !== key)
+        : [...prev.sizes, key],
     }));
   };
+
+  const toggleSizeKey = (key: string) => {
+    const normalized = key.toLowerCase();
+    setFilters(prev => ({
+      ...prev,
+      sizes: prev.sizes.includes(normalized)
+        ? prev.sizes.filter(s => s !== normalized)
+        : [...prev.sizes, normalized],
+    }));
+  };
+
+  // When Preferences is enabled, keep sizes synced to saved preferences.
+  useEffect(() => {
+    if (!open) return;
+    if (!filters.preferences) return;
+    setFilters(prev => ({
+      ...prev,
+      sizes: normalizeSizeKeys(preferredSizes),
+    }));
+  }, [open, filters.preferences, preferredSizes]);
 
   const toggleCategory = (category: string) => {
     const normalizedCat = category.toLowerCase();
@@ -135,10 +157,10 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
     onOpenChange(false);
   };
 
-  const SizeChip = ({ size, selected }: { size: string; selected: boolean }) => (
+  const SizeChip = ({ size, selected, category }: { size: string; selected: boolean; category: SizeCategoryKey }) => (
     <button
       type="button"
-      onClick={() => toggleSize(size)}
+      onClick={() => toggleSize(size, category)}
       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
         selected ? 'bg-primary text-foreground' : 'bg-muted text-foreground hover:bg-muted/80'
       }`}
@@ -195,7 +217,13 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
             <span className="text-lg font-medium">Preferences</span>
             <Switch
               checked={filters.preferences}
-              onCheckedChange={(checked) => setFilters({ ...filters, preferences: checked })}
+              onCheckedChange={(checked) => {
+                setFilters(prev => ({
+                  ...prev,
+                  preferences: checked,
+                  sizes: checked ? normalizeSizeKeys(preferredSizes) : prev.sizes,
+                }));
+              }}
               className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-input [&>span]:data-[state=checked]:bg-primary [&>span]:data-[state=unchecked]:bg-charcoal"
             />
           </div>
@@ -331,7 +359,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                         <p className="text-xs text-muted-foreground mb-2">Clothing (Alpha)</p>
                         <div className="flex flex-wrap gap-1.5">
                           {FILTER_SIZES.women.clothing.alpha.map(size => (
-                            <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                            <SizeChip key={`clothing-${size}`} size={size} category="clothing" selected={filters.sizes.includes(makeSizeKey('clothing', size))} />
                           ))}
                         </div>
                       </div>
@@ -339,7 +367,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                         <p className="text-xs text-muted-foreground mb-2">Clothing (Numeric)</p>
                         <div className="flex flex-wrap gap-1.5">
                           {FILTER_SIZES.women.clothing.numeric.map(size => (
-                            <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                            <SizeChip key={`clothing-${size}`} size={size} category="clothing" selected={filters.sizes.includes(makeSizeKey('clothing', size))} />
                           ))}
                         </div>
                       </div>
@@ -347,7 +375,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                         <p className="text-xs text-muted-foreground mb-2">Bottoms (Inches)</p>
                         <div className="flex flex-wrap gap-1.5">
                           {FILTER_SIZES.women.clothing.inches.map(size => (
-                            <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                            <SizeChip key={`clothing-${size}`} size={size} category="clothing" selected={filters.sizes.includes(makeSizeKey('clothing', size))} />
                           ))}
                         </div>
                       </div>
@@ -355,7 +383,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                         <p className="text-xs text-muted-foreground mb-2">Shoes (AU)</p>
                         <div className="flex flex-wrap gap-1.5">
                           {FILTER_SIZES.women.shoes.map(size => (
-                            <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                            <SizeChip key={`shoes-${size}`} size={size} category="shoes" selected={filters.sizes.includes(makeSizeKey('shoes', size))} />
                           ))}
                         </div>
                       </div>
@@ -372,7 +400,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                         <p className="text-xs text-muted-foreground mb-2">Clothing (Alpha)</p>
                         <div className="flex flex-wrap gap-1.5">
                           {FILTER_SIZES.men.clothing.alpha.map(size => (
-                            <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                            <SizeChip key={`clothing-${size}`} size={size} category="clothing" selected={filters.sizes.includes(makeSizeKey('clothing', size))} />
                           ))}
                         </div>
                       </div>
@@ -380,7 +408,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                         <p className="text-xs text-muted-foreground mb-2">Bottoms (Inches)</p>
                         <div className="flex flex-wrap gap-1.5">
                           {FILTER_SIZES.men.clothing.inches.map(size => (
-                            <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                            <SizeChip key={`clothing-${size}`} size={size} category="clothing" selected={filters.sizes.includes(makeSizeKey('clothing', size))} />
                           ))}
                         </div>
                       </div>
@@ -388,7 +416,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                         <p className="text-xs text-muted-foreground mb-2">Shoes (AU)</p>
                         <div className="flex flex-wrap gap-1.5">
                           {FILTER_SIZES.men.shoes.map(size => (
-                            <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                            <SizeChip key={`shoes-${size}`} size={size} category="shoes" selected={filters.sizes.includes(makeSizeKey('shoes', size))} />
                           ))}
                         </div>
                       </div>
@@ -405,7 +433,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                         <p className="text-xs text-muted-foreground mb-2">Clothing (Alpha)</p>
                         <div className="flex flex-wrap gap-1.5">
                           {FILTER_SIZES.unisex.clothing.alpha.map(size => (
-                            <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                            <SizeChip key={`clothing-${size}`} size={size} category="clothing" selected={filters.sizes.includes(makeSizeKey('clothing', size))} />
                           ))}
                         </div>
                       </div>
@@ -413,7 +441,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                         <p className="text-xs text-muted-foreground mb-2">Bottoms (Inches)</p>
                         <div className="flex flex-wrap gap-1.5">
                           {FILTER_SIZES.unisex.clothing.inches.map(size => (
-                            <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                            <SizeChip key={`clothing-${size}`} size={size} category="clothing" selected={filters.sizes.includes(makeSizeKey('clothing', size))} />
                           ))}
                         </div>
                       </div>
@@ -421,7 +449,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                         <p className="text-xs text-muted-foreground mb-2">Shoes (AU F / M)</p>
                         <div className="flex flex-wrap gap-1.5">
                           {FILTER_SIZES.unisex.shoes.map(size => (
-                            <SizeChip key={size} size={size} selected={filters.sizes.includes(size.toLowerCase())} />
+                            <SizeChip key={`shoes-${size}`} size={size} category="shoes" selected={filters.sizes.includes(makeSizeKey('shoes', size))} />
                           ))}
                         </div>
                       </div>
@@ -562,8 +590,8 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
             const selectedFilters: { label: string; type: string; value: string }[] = [];
             
             // Add sizes
-            filters.sizes.forEach(size => {
-              selectedFilters.push({ label: size.toUpperCase(), type: 'size', value: size });
+            filters.sizes.forEach(sizeKey => {
+              selectedFilters.push({ label: formatSizeKeyLabel(sizeKey), type: 'size', value: sizeKey });
             });
             
             // Add categories
@@ -597,7 +625,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                       type="button"
                       onClick={() => {
                         if (filter.type === 'size') {
-                          toggleSize(filter.value);
+                          toggleSizeKey(filter.value);
                         } else if (filter.type === 'category') {
                           toggleCategory(filter.value);
                         } else if (filter.type === 'condition') {

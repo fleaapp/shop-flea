@@ -43,6 +43,8 @@ export const CATEGORY_OPTIONS = [
       { value: 'pants', label: 'Pants' },
     ],
   },
+  { value: 'dresses', label: 'Dresses', subcategories: [] },
+  { value: 'playsuits-jumpsuits', label: 'Playsuits / Jumpsuits', subcategories: [] },
   { value: 'sleepwear', label: 'Sleepwear', subcategories: [] },
   { value: 'underwear', label: 'Underwear', subcategories: [] },
   { value: 'activewear', label: 'Activewear', subcategories: [] },

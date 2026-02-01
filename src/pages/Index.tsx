@@ -15,6 +15,7 @@ import { useOnboarding } from '@/context/OnboardingContext';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { Listing } from '@/types/listing';
+import { formatSizeKeyLabel } from '@/utils/sizeKeys';
 
 // Convert DbListing to Listing format for components that expect it
 const toDisplayListing = (dbListing: DbListing): Listing => ({
@@ -186,7 +187,7 @@ const Index = () => {
     const chips: { label: string; type: string; value: string }[] = [];
     
     appliedFilters.sizes.forEach(size => {
-      chips.push({ label: size.toUpperCase(), type: 'size', value: size });
+      chips.push({ label: formatSizeKeyLabel(size), type: 'size', value: size });
     });
     appliedFilters.categories.forEach(cat => {
       chips.push({ label: cat.charAt(0).toUpperCase() + cat.slice(1), type: 'category', value: cat });
@@ -300,6 +301,7 @@ const Index = () => {
         open={filterSheetOpen} 
         onOpenChange={setFilterSheetOpen}
         onApplyFilters={handleApplyFilters}
+        preferredSizes={profile?.preferred_sizes}
       />
       <SearchSheet
         open={searchSheetOpen}
