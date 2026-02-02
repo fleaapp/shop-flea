@@ -91,7 +91,7 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent 
-        className="w-[90vw] max-w-sm rounded-3xl border-2 border-charcoal bg-card p-5"
+        className="w-[90vw] max-w-sm rounded-3xl border-[3px] border-charcoal bg-card p-5"
         hideCloseButton
       >
         <DialogHeader className="text-center space-y-3 pt-3">
