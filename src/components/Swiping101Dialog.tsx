@@ -21,12 +21,12 @@ const Swiping101Dialog = ({ open, onComplete }: Swiping101DialogProps) => {
           className="text-center"
         >
           {/* Header */}
-          <h2 className="text-[1.625rem] font-bold text-charcoal/80 mb-2 mt-2">
+          <h2 className="text-[1.625rem] font-bold text-charcoal mb-2 mt-2">
             Swiping 101
           </h2>
           
           {/* Subheader */}
-          <p className="text-sm text-charcoal/80 mb-6">
+          <p className="text-sm text-charcoal/70 mb-6">
             Fundamentals of Flea
           </p>
           
