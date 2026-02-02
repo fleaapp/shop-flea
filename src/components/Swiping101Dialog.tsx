@@ -35,11 +35,11 @@ const Swiping101Dialog = ({ open, onComplete }: Swiping101DialogProps) => {
             <div className="grid grid-cols-[auto_auto_auto] gap-x-2 gap-y-3 text-base text-muted-foreground">
               <span className="text-right">Swipe 👉</span>
               <span className="text-center">=</span>
-              <span className="text-left">Add to Wishlist 💌</span>
+              <span className="text-left">Wishlist 💌</span>
               
               <span className="text-right">Swipe 👆</span>
               <span className="text-center">=</span>
-              <span className="text-left">Add to Cart 🛒</span>
+              <span className="text-left">Cart 🛒</span>
               
               <span className="text-right">Swipe 👈</span>
               <span className="text-center">=</span>
