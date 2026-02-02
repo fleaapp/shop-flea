@@ -7,6 +7,7 @@ import SwipeCard from '@/components/SwipeCard';
 import FilterSheet, { FilterState } from '@/components/FilterSheet';
 import SearchSheet from '@/components/SearchSheet';
 import WelcomeSetupDialog from '@/components/WelcomeSetupDialog';
+import Swiping101Dialog from '@/components/Swiping101Dialog';
 import { useListings, DbListing } from '@/hooks/useListings';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
@@ -49,6 +50,7 @@ const Index = () => {
   // Check if user needs to set up their profile (new users get auto-generated usernames)
   const needsProfileSetup = profile?.username?.startsWith('@user_') || false;
   const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
+  const [showSwiping101Dialog, setShowSwiping101Dialog] = useState(false);
 
   // Show welcome setup dialog for new users with auto-generated usernames
   useEffect(() => {
@@ -327,7 +329,12 @@ const Index = () => {
         onComplete={() => {
           setShowWelcomeDialog(false);
           refreshProfile();
+          setShowSwiping101Dialog(true);
         }}
+      />
+      <Swiping101Dialog
+        open={showSwiping101Dialog}
+        onComplete={() => setShowSwiping101Dialog(false)}
       />
       <BottomNav />
     </div>
