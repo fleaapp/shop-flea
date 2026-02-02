@@ -21,22 +21,33 @@ const Swiping101Dialog = ({ open, onComplete }: Swiping101DialogProps) => {
           className="text-center"
         >
           {/* Header */}
-          <h2 className="text-2xl font-bold text-muted-foreground mb-2 mt-2 text-[1.625rem]">
+          <h2 className="text-[1.625rem] font-bold text-charcoal mb-2 mt-2">
             Swiping 101
           </h2>
           
           {/* Subheader */}
-          <p className="text-sm text-muted-foreground/80 mb-6">
+          <p className="text-sm text-charcoal/70 mb-6">
             Fundamentals of Flea
           </p>
           
           {/* Body - Gesture Instructions */}
           <div className="space-y-3 mb-8 flex flex-col items-center">
-            <div className="text-left">
-              <p className="text-base text-muted-foreground">Swipe 👉 = Add to Wishlist 💌</p>
-              <p className="text-base text-muted-foreground mt-3">Swipe 👆 = Add to Cart 🛒</p>
-              <p className="text-base text-muted-foreground mt-3">Swipe 👈 = Pass ❌</p>
-              <p className="text-base text-muted-foreground mt-3">Tap card 👇 = More details</p>
+            <div className="grid grid-cols-[auto_auto_auto] gap-x-2 gap-y-3 text-base text-muted-foreground">
+              <span className="text-right">Swipe 👉</span>
+              <span className="text-center">=</span>
+              <span className="text-left">Add to Wishlist 💌</span>
+              
+              <span className="text-right">Swipe 👆</span>
+              <span className="text-center">=</span>
+              <span className="text-left">Add to Cart 🛒</span>
+              
+              <span className="text-right">Swipe 👈</span>
+              <span className="text-center">=</span>
+              <span className="text-left">Pass ❌</span>
+              
+              <span className="text-right">Tap card 👇</span>
+              <span className="text-center">=</span>
+              <span className="text-left">More details</span>
             </div>
           </div>
           
