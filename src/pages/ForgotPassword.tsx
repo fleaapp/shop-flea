@@ -101,7 +101,7 @@ const ForgotPassword = () => {
                 Check your email
               </h1>
               <p className="text-sm text-foreground/70 mb-6">
-                We've sent a password reset link to <strong>{email}</strong>
+                Check your email for a password reset link. We sent it to <strong>{email}</strong>
               </p>
               <Button
                 onClick={() => navigate('/auth')}

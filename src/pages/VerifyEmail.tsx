@@ -43,9 +43,9 @@ const VerifyEmail = () => {
           </h1>
           
           <p className="text-sm text-foreground/70 mb-6">
-            We've sent a verification link to{' '}
-            {email ? <strong>{email}</strong> : 'your email address'}.
-            Please check your inbox and click the link to activate your account.
+            Check your inbox — we just sent a verification email to{' '}
+            {email ? <strong>{email}</strong> : 'your email address'}!
+            Click the link to activate your account.
           </p>
 
           <div className="space-y-3">
