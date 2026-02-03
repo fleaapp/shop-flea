@@ -169,10 +169,10 @@ const Auth = () => {
       </div>
       
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 max-[375px]:px-4 py-10 max-[375px]:py-8">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 max-[375px]:px-4 pt-16 pb-10 max-[375px]:pt-12 max-[375px]:pb-8">
         
         {/* Tab Toggle */}
-        <div className="flex bg-[#423D3D] rounded-full p-1 mb-6 max-[375px]:mb-4">
+        <div className="flex bg-[#423D3D] rounded-full p-1 mb-6 max-[375px]:mb-4 h-9">
           <button
             onClick={() => setActiveTab('login')}
             className={`px-4 max-[375px]:px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
@@ -318,7 +318,15 @@ const Auth = () => {
                 </button>
               </div>
               
-              <div className="pt-2">
+              {/* Terms & Privacy notice */}
+              <p className="text-[10px] text-foreground/70 text-center pt-2">
+                By signing up, you agree to our{' '}
+                <button type="button" className="underline hover:text-foreground">Terms</button>
+                {' & '}
+                <button type="button" className="underline hover:text-foreground">Privacy</button>.
+              </p>
+              
+              <div className="pt-1">
                 <Button
                   type="submit"
                   disabled={isLoading}
@@ -372,15 +380,6 @@ const Auth = () => {
             </div>
           </div>
         </div>
-      </div>
-      
-      {/* Footer */}
-      <div className="absolute bottom-6 left-0 right-0 text-center">
-        <p className="text-sm text-foreground">
-          <button className="hover:underline">Terms & Conditions</button>
-          <span className="mx-2">|</span>
-          <button className="hover:underline">Privacy Policy</button>
-        </p>
       </div>
     </div>
   );

@@ -39,12 +39,14 @@ const ForgotPassword = () => {
   return (
     <div className="fixed inset-0 bg-primary flex flex-col overflow-hidden">
       {/* Back button */}
-      <button
-        onClick={() => navigate('/auth')}
-        className="absolute top-6 left-6 text-foreground hover:opacity-70 transition-opacity"
-      >
-        <ArrowLeft className="h-6 w-6" />
-      </button>
+      {!emailSent && (
+        <button
+          onClick={() => navigate('/auth')}
+          className="absolute top-6 left-6 text-foreground hover:opacity-70 transition-opacity"
+        >
+          <ArrowLeft className="h-6 w-6" />
+        </button>
+      )}
 
       {/* Logo */}
       <div className="absolute top-20 max-[375px]:top-12 left-0 right-0 flex justify-center">
@@ -60,7 +62,7 @@ const ForgotPassword = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 max-[375px]:px-4 py-10 max-[375px]:py-8">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 max-[375px]:px-4 pt-16 pb-10 max-[375px]:pt-12 max-[375px]:pb-8">
         <div className="w-full max-w-[min(300px,85vw)]">
           {!emailSent ? (
             <>
@@ -86,7 +88,7 @@ const ForgotPassword = () => {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="h-10 w-full rounded-full bg-[#423D3D] text-card text-sm font-medium hover:bg-[#423D3D]/90"
+                  className="h-9 w-auto px-6 mx-auto flex rounded-full bg-[#423D3D] text-card text-sm font-medium hover:bg-[#423D3D]/90"
                 >
                   {isLoading ? 'Sending...' : 'Send Reset Link'}
                 </Button>
@@ -105,22 +107,13 @@ const ForgotPassword = () => {
               </p>
               <Button
                 onClick={() => navigate('/auth')}
-                className="h-10 w-full rounded-full bg-[#423D3D] text-card text-sm font-medium hover:bg-[#423D3D]/90"
+                className="h-9 w-auto px-6 mx-auto flex rounded-full bg-[#423D3D] text-card text-sm font-medium hover:bg-[#423D3D]/90"
               >
                 Back to Login
               </Button>
             </div>
           )}
         </div>
-      </div>
-
-      {/* Footer */}
-      <div className="absolute bottom-6 left-0 right-0 text-center">
-        <p className="text-sm text-foreground">
-          <button className="hover:underline">Terms & Conditions</button>
-          <span className="mx-2">|</span>
-          <button className="hover:underline">Privacy Policy</button>
-        </p>
       </div>
     </div>
   );
