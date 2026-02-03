@@ -88,7 +88,7 @@ const ForgotPassword = () => {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="h-9 w-auto px-6 mx-auto flex rounded-full bg-[#423D3D] text-card text-sm font-medium hover:bg-[#423D3D]/90"
+                  className="h-10 w-auto px-6 mx-auto flex rounded-full bg-[#423D3D] text-card text-sm font-medium hover:bg-[#423D3D]/90"
                 >
                   {isLoading ? 'Sending...' : 'Send Reset Link'}
                 </Button>
@@ -96,9 +96,6 @@ const ForgotPassword = () => {
             </>
           ) : (
             <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-[#423D3D] flex items-center justify-center mx-auto mb-4">
-                <Mail className="h-8 w-8 text-card" />
-              </div>
               <h1 className="text-xl font-semibold text-foreground mb-2">
                 Check your email
               </h1>
@@ -107,7 +104,7 @@ const ForgotPassword = () => {
               </p>
               <Button
                 onClick={() => navigate('/auth')}
-                className="h-9 w-auto px-6 mx-auto flex rounded-full bg-[#423D3D] text-card text-sm font-medium hover:bg-[#423D3D]/90"
+                className="h-10 w-auto px-6 mx-auto flex rounded-full bg-[#423D3D] text-card text-sm font-medium hover:bg-[#423D3D]/90"
               >
                 Back to Login
               </Button>
