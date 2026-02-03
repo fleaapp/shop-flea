@@ -110,7 +110,7 @@ const ResetPassword = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 max-[375px]:px-4 py-10 max-[375px]:py-8">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 max-[375px]:px-4 pt-16 pb-10 max-[375px]:pt-12 max-[375px]:pb-8">
         <div className="w-full max-w-[min(300px,85vw)]">
           {!resetSuccess ? (
             <>
@@ -181,7 +181,7 @@ const ResetPassword = () => {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="h-10 w-full rounded-full bg-[#423D3D] text-card text-sm font-medium hover:bg-[#423D3D]/90"
+                  className="h-9 w-auto px-6 mx-auto flex rounded-full bg-[#423D3D] text-card text-sm font-medium hover:bg-[#423D3D]/90"
                 >
                   {isLoading ? 'Resetting...' : 'Reset Password'}
                 </Button>
@@ -200,22 +200,13 @@ const ResetPassword = () => {
               </p>
               <Button
                 onClick={() => navigate('/auth')}
-                className="h-10 w-full rounded-full bg-[#423D3D] text-card text-sm font-medium hover:bg-[#423D3D]/90"
+                className="h-9 w-auto px-6 mx-auto flex rounded-full bg-[#423D3D] text-card text-sm font-medium hover:bg-[#423D3D]/90"
               >
                 Back to Login
               </Button>
             </div>
           )}
         </div>
-      </div>
-
-      {/* Footer */}
-      <div className="absolute bottom-6 left-0 right-0 text-center">
-        <p className="text-sm text-foreground">
-          <button className="hover:underline">Terms & Conditions</button>
-          <span className="mx-2">|</span>
-          <button className="hover:underline">Privacy Policy</button>
-        </p>
       </div>
     </div>
   );
