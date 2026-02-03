@@ -242,7 +242,7 @@ const Auth = () => {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="h-9 w-auto px-8 mx-auto flex rounded-full bg-[#423D3D] text-card text-sm font-medium hover:bg-[#423D3D]/90"
+                  className="h-10 w-auto px-8 mx-auto flex rounded-full bg-[#423D3D] text-card text-sm font-medium hover:bg-[#423D3D]/90"
                 >
                   {isLoading ? 'Signing in...' : 'Login'}
                 </Button>
@@ -330,7 +330,7 @@ const Auth = () => {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="h-9 w-auto px-8 mx-auto flex rounded-full bg-[#423D3D] text-card text-sm font-medium hover:bg-[#423D3D]/90"
+                  className="h-10 w-auto px-8 mx-auto flex rounded-full bg-[#423D3D] text-card text-sm font-medium hover:bg-[#423D3D]/90"
                 >
                   {isLoading ? 'Creating account...' : 'Sign up'}
                 </Button>
