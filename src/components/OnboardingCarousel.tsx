@@ -1,4 +1,4 @@
- import { useState } from 'react';
+ import { useState, useEffect } from 'react';
  import { motion, AnimatePresence } from 'framer-motion';
  import { Button } from '@/components/ui/button';
  
@@ -17,6 +17,7 @@
    image: string;
    text: string;
    alt: string;
+   isGif: boolean;
  }
  
  const slides: Slide[] = [
@@ -24,26 +25,37 @@
      image: tapToExpandGif,
      text: 'Tap 👇 card for more details',
      alt: 'Tap to expand card',
+     isGif: true,
    },
    {
      image: swipeLeftPass,
-     text: 'Swipe 👈 to Pass',
+     text: 'Swipe 👈 to Pass ❌',
      alt: 'Swipe left to pass',
+     isGif: false,
    },
    {
      image: swipeUpCart,
-     text: 'Swipe 👆 to Cart',
+     text: 'Swipe 👆 to add to Cart 🛒',
      alt: 'Swipe up to add to cart',
+     isGif: false,
    },
    {
      image: swipeRightWishlist,
-     text: 'Swipe 👉 to Wishlist',
+     text: 'Swipe 👉 to add to Wishlist 💌',
      alt: 'Swipe right to add to wishlist',
+     isGif: false,
    },
  ];
  
  const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
    const [currentSlide, setCurrentSlide] = useState(0);
+ 
+   // Reset slide when closing
+   useEffect(() => {
+     if (!open) {
+       setCurrentSlide(0);
+     }
+   }, [open]);
  
    if (!open) return null;
  
@@ -58,9 +70,12 @@
    const isLastSlide = currentSlide === slides.length - 1;
  
    return (
-     <div className="fixed inset-0 z-50 bg-charcoal flex flex-col">
+     <div className="fixed inset-0 z-50 flex flex-col">
+       {/* Dark overlay background - home screen visible underneath */}
+       <div className="absolute inset-0 bg-charcoal/90" />
+       
        {/* Main content area - centered image and text */}
-       <div className="flex-1 flex flex-col items-center justify-center px-6">
+       <div className="relative flex-1 flex flex-col items-center justify-center px-6 pb-36">
          <AnimatePresence mode="wait">
            <motion.div
              key={currentSlide}
@@ -70,31 +85,35 @@
              transition={{ duration: 0.3 }}
              className="flex flex-col items-center justify-center"
            >
-             {/* Image/GIF container - centered */}
-             <div className="flex items-center justify-center mb-8">
+             {/* Image/GIF container - consistent sizing */}
+             <div className="flex items-center justify-center mb-8 w-[300px] h-[300px] max-[375px]:w-[260px] max-[375px]:h-[260px]">
                <img
                  src={slides[currentSlide].image}
                  alt={slides[currentSlide].alt}
-                 className="max-w-[280px] max-h-[400px] object-contain"
+                 className={`object-contain ${
+                   slides[currentSlide].isGif 
+                     ? 'w-full h-full' 
+                     : 'w-full h-full'
+                 }`}
                />
              </div>
              
-             {/* Text underneath */}
-             <p className="text-cream text-xl font-medium text-center">
+             {/* Text underneath - consistent styling */}
+             <p className="text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg">
                {slides[currentSlide].text}
              </p>
            </motion.div>
          </AnimatePresence>
        </div>
  
-       {/* Bottom section - pagination dots and Next button */}
-       <div className="pb-12 px-6">
+       {/* Bottom section - pagination dots and Next button - positioned above bottom nav */}
+       <div className="relative pb-28 px-6 max-[375px]:pb-24">
          {/* Pagination dots */}
-         <div className="flex justify-center gap-2 mb-8">
+         <div className="flex justify-center gap-2.5 mb-6">
            {slides.map((_, index) => (
              <div
                key={index}
-               className={`w-2 h-2 rounded-full transition-colors ${
+               className={`w-2.5 h-2.5 rounded-full transition-colors ${
                  index === currentSlide ? 'bg-cream' : 'bg-cream/30'
                }`}
              />
@@ -105,7 +124,7 @@
          <div className="flex justify-center">
            <Button
              onClick={handleNext}
-             className="px-10 py-3 h-12 rounded-full bg-cream text-charcoal font-semibold text-base hover:bg-cream/90"
+             className="px-12 py-3 h-12 rounded-full bg-cream text-charcoal font-semibold text-base hover:bg-cream/90"
            >
              {isLastSlide ? "Let's go!" : 'Next'}
            </Button>
