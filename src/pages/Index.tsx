@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { X } from 'lucide-react';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import FilterChip from '@/components/FilterChip';
@@ -286,13 +287,38 @@ const Index = () => {
               onRemove={clearSearch} 
             />
           )}
-          {activeFilterChips.map((chip, index) => (
+          {activeFilterChips.length === 1 && (
             <FilterChip 
-              key={`${chip.type}-${chip.value}-${index}`} 
-              label={chip.label} 
-              onRemove={() => removeFilter(chip.type, chip.value)} 
+              label={activeFilterChips[0].label} 
+              onRemove={() => removeFilter(activeFilterChips[0].type, activeFilterChips[0].value)} 
             />
-          ))}
+          )}
+          {activeFilterChips.length > 1 && (
+            <div className="inline-flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-sm text-secondary-foreground">
+              <button
+                onClick={() => setFilterSheetOpen(true)}
+                className="font-medium"
+              >
+                ({activeFilterChips.length}) Filters
+              </button>
+              <button
+                onClick={() => setAppliedFilters({
+                  preferences: false,
+                  hideSoldItems: false,
+                  sizes: [],
+                  categories: [],
+                  gender: '',
+                  condition: '',
+                  colours: [],
+                  styles: [],
+                  priceRange: [0, 1000],
+                })}
+                className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-muted"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
         </div>
       )}
       
