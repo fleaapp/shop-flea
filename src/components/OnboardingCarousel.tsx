@@ -132,26 +132,28 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 
         {/* Controls pinned above bottom nav */}
         <div className="relative w-full px-6 pb-[calc(84px+env(safe-area-inset-bottom))] max-[375px]:pb-[calc(76px+env(safe-area-inset-bottom))]">
-          {/* Pagination dots */}
-          <div className="flex justify-center gap-2.5 mb-4">
-            {slides.map((_, index) => (
-              <div
-                key={index}
-                className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                  index === currentSlide ? 'bg-cream' : 'bg-cream/30'
-                }`}
-              />
-            ))}
-          </div>
+          <div className="mx-auto w-full max-w-sm -translate-y-4">
+            {/* Pagination dots */}
+            <div className="flex justify-center gap-2.5 mb-4">
+              {slides.map((_, index) => (
+                <div
+                  key={index}
+                  className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                    index === currentSlide ? 'bg-cream' : 'bg-cream/30'
+                  }`}
+                />
+              ))}
+            </div>
 
-          {/* Next button */}
-          <div className="flex justify-center">
-            <Button
-              onClick={handleNext}
-              className="px-12 py-3 h-12 rounded-full bg-charcoal-light text-cream font-semibold text-base hover:bg-charcoal-light/90"
-            >
-              {isLastSlide ? "Let's go!" : 'Next'}
-            </Button>
+            {/* Next button */}
+            <div className="flex justify-center">
+              <Button
+                onClick={handleNext}
+                className="px-12 py-3 h-12 rounded-full bg-charcoal-light text-cream font-semibold text-base hover:bg-charcoal-light/90"
+              >
+                {isLastSlide ? "Let's go!" : 'Next'}
+              </Button>
+            </div>
           </div>
         </div>
      </div>
