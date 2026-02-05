@@ -86,7 +86,7 @@
              className="flex flex-col items-center justify-center"
            >
              {/* Image/GIF container - consistent sizing */}
-              <div className="flex items-center justify-center mb-2 w-[min(92vw,52vh,400px)] h-[min(92vw,52vh,400px)]">
+              <div className="flex items-center justify-center w-[min(92vw,52vh,400px)] h-[min(92vw,52vh,400px)]">
                <img
                  src={slides[currentSlide].image}
                  alt={slides[currentSlide].alt}
@@ -99,7 +99,7 @@
              </div>
              
              {/* Text underneath - consistent styling */}
-              <p className="text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg">
+              <p className="text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg -mt-8 max-[375px]:-mt-6">
                {slides[currentSlide].text}
              </p>
            </motion.div>
