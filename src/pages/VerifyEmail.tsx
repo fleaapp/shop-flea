@@ -54,8 +54,9 @@ const VerifyEmail = () => {
               Back to Login
             </Button>
             
-            <p className="text-xs text-foreground/50">
-              Didn't receive the email? Check your spam folder or try signing up again.
+            <p className="text-xs text-foreground/50 pt-2">
+              Didn't receive the email?<br />
+              Check your spam folder or try signing up again.
             </p>
           </div>
         </div>
