@@ -90,12 +90,12 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
    const isLastSlide = currentSlide === slides.length - 1;
  
    return (
-      <div className="fixed inset-0 z-50 flex flex-col">
+       <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center">
        {/* Dark overlay background - home screen visible underneath */}
        <div className="absolute inset-0 bg-charcoal/90" />
        
        {/* Main content area - centered image and text */}
-         <div className="relative flex-1 flex flex-col items-center justify-center px-6 pb-16">
+         <div className="relative w-full flex flex-col items-center justify-center px-6 pb-[calc(96px+env(safe-area-inset-bottom))]">
          <AnimatePresence mode="wait">
            <motion.div
              key={currentSlide}
@@ -128,31 +128,31 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
              </p>
            </motion.div>
          </AnimatePresence>
-       </div>
- 
-       {/* Bottom section - pagination dots and Next button - positioned above bottom nav */}
-        <div className="relative px-6 pb-[calc(76px+env(safe-area-inset-bottom))] max-[375px]:pb-[calc(68px+env(safe-area-inset-bottom))]">
-         {/* Pagination dots */}
-          <div className="flex justify-center gap-2.5 mb-2">
-           {slides.map((_, index) => (
-             <div
-               key={index}
-               className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                 index === currentSlide ? 'bg-cream' : 'bg-cream/30'
-               }`}
-             />
-           ))}
-         </div>
- 
-         {/* Next button */}
-         <div className="flex justify-center">
-           <Button
-             onClick={handleNext}
-              className="px-12 py-3 h-12 rounded-full bg-charcoal-light text-cream font-semibold text-base hover:bg-charcoal-light/90"
-           >
-             {isLastSlide ? "Let's go!" : 'Next'}
-           </Button>
-         </div>
+
+          {/* Controls directly under text (kept above bottom nav via padding on this container) */}
+          <div className="mt-4 w-full max-w-sm">
+            {/* Pagination dots */}
+            <div className="flex justify-center gap-2.5 mb-2">
+              {slides.map((_, index) => (
+                <div
+                  key={index}
+                  className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                    index === currentSlide ? 'bg-cream' : 'bg-cream/30'
+                  }`}
+                />
+              ))}
+            </div>
+
+            {/* Next button */}
+            <div className="flex justify-center">
+              <Button
+                onClick={handleNext}
+                className="px-12 py-3 h-12 rounded-full bg-charcoal-light text-cream font-semibold text-base hover:bg-charcoal-light/90"
+              >
+                {isLastSlide ? "Let's go!" : 'Next'}
+              </Button>
+            </div>
+          </div>
        </div>
      </div>
    );
