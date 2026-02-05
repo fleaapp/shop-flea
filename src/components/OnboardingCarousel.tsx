@@ -18,6 +18,7 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
    text: string;
    alt: string;
    isGif: boolean;
+  imageOffset?: string; // optional vertical offset for alignment
  }
  
  const slides: Slide[] = [
@@ -38,6 +39,7 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
      text: 'Swipe 👆 to add to Cart 🛒',
      alt: 'Swipe up to add to cart',
      isGif: false,
+    imageOffset: '-translate-y-4',
    },
    {
      image: swipeRightWishlist,
@@ -110,7 +112,7 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
               onDragEnd={handleDragEnd}
            >
              {/* Image/GIF container - consistent sizing */}
-              <div className="flex items-center justify-center w-[min(92vw,52vh,400px)] h-[min(92vw,52vh,400px)]">
+              <div className={`flex items-center justify-center w-[min(92vw,52vh,400px)] h-[min(92vw,52vh,400px)] ${slides[currentSlide].imageOffset || ''}`}>
                <img
                  src={slides[currentSlide].image}
                  alt={slides[currentSlide].alt}
