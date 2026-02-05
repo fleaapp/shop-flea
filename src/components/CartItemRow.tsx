@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
-import { Check, Heart, X } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Listing } from '@/types/listing';
 
@@ -69,20 +69,20 @@ const CartItemRow = ({
     >
       {/* Swipe background indicators */}
       <motion.div 
-        className="absolute inset-0 bg-destructive flex items-center justify-start pl-6"
+        className="absolute inset-0 bg-destructive flex items-center justify-end pr-6"
         style={{ opacity: leftBgOpacity }}
       >
         <motion.div style={{ scale: leftIconScale }}>
-          <X className="h-8 w-8 text-white" />
+          <span className="text-4xl">❌</span>
         </motion.div>
       </motion.div>
       
       <motion.div 
-        className="absolute inset-0 bg-price flex items-center justify-end pr-6"
+        className="absolute inset-0 bg-price flex items-center justify-start pl-6"
         style={{ opacity: rightBgOpacity }}
       >
         <motion.div style={{ scale: rightIconScale }}>
-          <Heart className="h-8 w-8 text-white" />
+          <span className="text-4xl">💌</span>
         </motion.div>
       </motion.div>
 
