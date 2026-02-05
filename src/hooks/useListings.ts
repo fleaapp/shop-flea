@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { getQuerySizesFromKeys, listingSizeKey, normalizeSizeKeys } from '@/utils/sizeKeys';
+import { filterBySearch } from '@/utils/searchUtils';
+
 export interface DbListing {
   id: string;
   user_id: string;
@@ -103,9 +105,7 @@ export const useListings = (filters?: ListingFilters) => {
     if (filters?.maxPrice !== undefined) {
       query = query.lte('price', filters.maxPrice);
     }
-    if (filters?.search) {
-      query = query.or(`title.ilike.%${filters.search}%,brand.ilike.%${filters.search}%,description.ilike.%${filters.search}%,category.ilike.%${filters.search}%,colour.ilike.%${filters.search}%,style.ilike.%${filters.search}%,size.ilike.%${filters.search}%,condition.ilike.%${filters.search}%,tags.cs.{"${filters.search.toLowerCase()}"}`);
-    }
+    // Note: search filtering is done client-side for better multi-word support
 
     const { data, error: queryError } = await query;
 
@@ -136,12 +136,17 @@ export const useListings = (filters?: ListingFilters) => {
       );
       
       // Merge listings with profiles, filter out paused sellers
-      const listingsWithProfiles = sizeFiltered
+      let listingsWithProfiles = sizeFiltered
         .map(listing => ({
           ...listing,
           profiles: profilesMap.get(listing.user_id) || null,
         }))
         .filter(listing => !listing.profiles?.pause_selling); // Exclude paused sellers
+      
+      // Apply client-side search filtering for multi-word, token-based search
+      if (filters?.search) {
+        listingsWithProfiles = filterBySearch(listingsWithProfiles, filters.search);
+      }
       
       setListings(listingsWithProfiles);
     } else {
