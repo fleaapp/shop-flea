@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/utils/imageCompression';
+ import ChangeEmailSheet from '@/components/ChangeEmailSheet';
+ import ChangePasswordSheet from '@/components/ChangePasswordSheet';
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -24,6 +26,8 @@ const EditProfile = () => {
   const [deleteBlockReason, setDeleteBlockReason] = useState<string | null>(null);
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [originalUsername, setOriginalUsername] = useState('');
+   const [emailSheetOpen, setEmailSheetOpen] = useState(false);
+   const [passwordSheetOpen, setPasswordSheetOpen] = useState(false);
 
   // Load profile data
   useEffect(() => {
@@ -290,7 +294,7 @@ const EditProfile = () => {
           <div>
             <Label className="text-sm font-medium text-foreground mb-2 block">Email</Label>
             <button 
-              onClick={() => toast.info('Email change requires verification')}
+               onClick={() => setEmailSheetOpen(true)}
               className="flex w-full items-center justify-between h-12 rounded-2xl bg-card px-4 card-shadow"
             >
               <span className="text-muted-foreground">{user?.email || 'Email'}</span>
@@ -301,7 +305,7 @@ const EditProfile = () => {
           <div>
             <Label className="text-sm font-medium text-foreground mb-2 block">Password</Label>
             <button 
-              onClick={() => toast.info('Password change coming soon')}
+               onClick={() => setPasswordSheetOpen(true)}
               className="flex w-full items-center justify-between h-12 rounded-2xl bg-card px-4 card-shadow"
             >
               <span className="text-muted-foreground">••••••••••</span>
@@ -339,6 +343,19 @@ const EditProfile = () => {
             </p>
           )}
         </div>
+       
+       {/* Change Email Sheet */}
+       <ChangeEmailSheet
+         open={emailSheetOpen}
+         onOpenChange={setEmailSheetOpen}
+         currentEmail={user?.email || ''}
+       />
+       
+       {/* Change Password Sheet */}
+       <ChangePasswordSheet
+         open={passwordSheetOpen}
+         onOpenChange={setPasswordSheetOpen}
+       />
       </div>
     </div>
   );

@@ -7,6 +7,10 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import fleaLogoHeader from '@/assets/flea-logo-welcome-header.png';
+ import { preloadImage } from '@/utils/preloadAssets';
+ 
+ // Preload logo on module load
+ preloadImage(fleaLogoHeader);
 
 interface WelcomeSetupDialogProps {
   open: boolean;

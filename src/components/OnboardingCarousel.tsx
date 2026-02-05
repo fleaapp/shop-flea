@@ -1,12 +1,17 @@
  import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
  import { Button } from '@/components/ui/button';
+ import { preloadImages } from '@/utils/preloadAssets';
  
  // Import onboarding assets
  import tapToExpandGif from '@/assets/onboarding/tap-to-expand.gif';
  import swipeLeftPass from '@/assets/onboarding/swipe-left-pass.svg';
  import swipeUpCart from '@/assets/onboarding/swipe-up-cart.svg';
  import swipeRightWishlist from '@/assets/onboarding/swipe-right-wishlist.svg';
+ 
+ // Preload all onboarding assets immediately on module load
+ const onboardingAssets = [tapToExpandGif, swipeLeftPass, swipeUpCart, swipeRightWishlist];
+ preloadImages(onboardingAssets);
  
  interface OnboardingCarouselProps {
    open: boolean;
