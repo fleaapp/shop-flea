@@ -132,7 +132,7 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 
         {/* Controls pinned above bottom nav */}
         <div className="relative w-full px-6 pb-[calc(84px+env(safe-area-inset-bottom))] max-[375px]:pb-[calc(76px+env(safe-area-inset-bottom))]">
-          <div className="mx-auto w-full max-w-sm -translate-y-4">
+          <div className="mx-auto w-full max-w-sm -translate-y-6">
             {/* Pagination dots */}
             <div className="flex justify-center gap-2.5 mb-4">
               {slides.map((_, index) => (
