@@ -95,7 +95,7 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
        <div className="absolute inset-0 bg-charcoal/90" />
        
        {/* Main content area - centered image and text */}
-         <div className="relative flex-1 w-full flex flex-col items-center justify-center px-6 pb-[calc(88px+env(safe-area-inset-bottom))] max-[375px]:pb-[calc(80px+env(safe-area-inset-bottom))]">
+         <div className="relative flex-1 w-full flex flex-col items-center justify-center px-6">
          <AnimatePresence mode="wait">
            <motion.div
              key={currentSlide}
@@ -128,32 +128,32 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
              </p>
            </motion.div>
          </AnimatePresence>
-
-          {/* Controls directly under text (kept above bottom nav via padding on this container) */}
-           <div className="mt-[72px] max-[375px]:mt-16 w-full max-w-sm">
-            {/* Pagination dots */}
-            <div className="flex justify-center gap-2.5 mb-5">
-              {slides.map((_, index) => (
-                <div
-                  key={index}
-                  className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                    index === currentSlide ? 'bg-cream' : 'bg-cream/30'
-                  }`}
-                />
-              ))}
-            </div>
-
-            {/* Next button */}
-            <div className="flex justify-center">
-              <Button
-                onClick={handleNext}
-                className="px-12 py-3 h-12 rounded-full bg-charcoal-light text-cream font-semibold text-base hover:bg-charcoal-light/90"
-              >
-                {isLastSlide ? "Let's go!" : 'Next'}
-              </Button>
-            </div>
-          </div>
        </div>
+
+        {/* Controls pinned above bottom nav */}
+        <div className="relative w-full px-6 pb-[calc(88px+env(safe-area-inset-bottom))] max-[375px]:pb-[calc(80px+env(safe-area-inset-bottom))]">
+          {/* Pagination dots */}
+          <div className="flex justify-center gap-2.5 mb-4">
+            {slides.map((_, index) => (
+              <div
+                key={index}
+                className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                  index === currentSlide ? 'bg-cream' : 'bg-cream/30'
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Next button */}
+          <div className="flex justify-center">
+            <Button
+              onClick={handleNext}
+              className="px-12 py-3 h-12 rounded-full bg-charcoal-light text-cream font-semibold text-base hover:bg-charcoal-light/90"
+            >
+              {isLastSlide ? "Let's go!" : 'Next'}
+            </Button>
+          </div>
+        </div>
      </div>
    );
  };
