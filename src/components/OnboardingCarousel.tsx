@@ -90,12 +90,12 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
    const isLastSlide = currentSlide === slides.length - 1;
  
    return (
-       <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center">
+       <div className="fixed inset-0 z-[999] flex flex-col">
        {/* Dark overlay background - home screen visible underneath */}
        <div className="absolute inset-0 bg-charcoal/90" />
        
        {/* Main content area - centered image and text */}
-         <div className="relative w-full flex flex-col items-center justify-center px-6 pb-[calc(96px+env(safe-area-inset-bottom))]">
+         <div className="relative flex-1 w-full flex flex-col items-center justify-center px-6 pb-[calc(88px+env(safe-area-inset-bottom))] max-[375px]:pb-[calc(80px+env(safe-area-inset-bottom))]">
          <AnimatePresence mode="wait">
            <motion.div
              key={currentSlide}
@@ -130,9 +130,9 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
          </AnimatePresence>
 
           {/* Controls directly under text (kept above bottom nav via padding on this container) */}
-          <div className="mt-16 w-full max-w-sm">
+           <div className="mt-[72px] max-[375px]:mt-16 w-full max-w-sm">
             {/* Pagination dots */}
-            <div className="flex justify-center gap-2.5 mb-4">
+            <div className="flex justify-center gap-2.5 mb-5">
               {slides.map((_, index) => (
                 <div
                   key={index}
