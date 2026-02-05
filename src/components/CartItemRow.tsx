@@ -119,7 +119,7 @@ const CartItemRow = ({
         dragElastic={0.7}
         onDragEnd={handleDragEnd}
         style={{ x }}
-        animate={isRemoving ? { x: x.get() < 0 ? -400 : 400, opacity: 0 } : {}}
+        animate={isRemoving ? { x: xRef.current < 0 ? -400 : 400, opacity: 0 } : {}}
         transition={{ duration: 0.2 }}
         className={cn(
           "flex gap-4 p-4 bg-card relative z-10 cursor-grab active:cursor-grabbing",
