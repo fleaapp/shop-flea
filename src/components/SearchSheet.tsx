@@ -373,7 +373,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
 
           {/* Trending Searches */}
           {!query && trending.length > 0 && (
-            <div className="mb-6">
+            <div className="mt-6 mb-6">
               <h3 className="text-sm font-medium text-foreground mb-3">Trending</h3>
               <div className="bg-card rounded-2xl p-4 space-y-1">
                 {trending.map((item, index) => (

@@ -81,6 +81,9 @@ const Index = () => {
     priceRange: [0, 1000],
   });
   
+  // Search query state
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  
   // Track the last action for undo functionality
   const [lastAction, setLastAction] = useState<{
     listingId: string;
@@ -120,7 +123,15 @@ const Index = () => {
     return filterObj;
   }, [appliedFilters]);
 
-  const { listings: dbListings, loading } = useListings(listingFilters);
+  // Add search to filters
+  const finalFilters = useMemo(() => {
+    if (searchQuery) {
+      return { ...listingFilters, search: searchQuery };
+    }
+    return listingFilters;
+  }, [listingFilters, searchQuery]);
+
+  const { listings: dbListings, loading } = useListings(finalFilters);
 
   // Filter out listings that are discarded, favorited, or in cart.
   // IMPORTANT: while the top card is animating out, keep it in the stack so
@@ -242,9 +253,11 @@ const Index = () => {
   };
 
   const handleSearch = (query: string) => {
-    // Search adds a search term - for now we'll treat it as a category search
-    // This could be enhanced to be a dedicated search filter
-    toast.info(`Searching for "${query}"`);
+    setSearchQuery(query);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
   };
 
   const handleFilterClick = () => {
@@ -265,8 +278,14 @@ const Index = () => {
       <Header onSearchClick={handleSearchClick} onFilterClick={handleFilterClick} onUndoClick={handleUndo} canUndo={!!lastAction} />
       
       {/* Active Filters */}
-      {activeFilterChips.length > 0 && (
+      {(activeFilterChips.length > 0 || searchQuery) && (
         <div className="flex gap-2 px-6 pb-2 flex-shrink-0 overflow-x-auto scrollbar-hide">
+          {searchQuery && (
+            <FilterChip 
+              label={`"${searchQuery}"`} 
+              onRemove={clearSearch} 
+            />
+          )}
           {activeFilterChips.map((chip, index) => (
             <FilterChip 
               key={`${chip.type}-${chip.value}-${index}`} 
