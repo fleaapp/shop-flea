@@ -1,0 +1,51 @@
+ import { useState, useEffect } from 'react';
+ import { supabase } from '@/integrations/supabase/client';
+ 
+ interface TrendingSearch {
+   query: string;
+   search_count: number;
+ }
+ 
+ export function useTrendingSearches() {
+   const [trending, setTrending] = useState<TrendingSearch[]>([]);
+   const [loading, setLoading] = useState(true);
+ 
+   useEffect(() => {
+     const fetchTrending = async () => {
+       try {
+         const { data, error } = await supabase.rpc('get_trending_searches', {
+           limit_count: 8
+         });
+         
+         if (error) {
+           console.error('Error fetching trending searches:', error);
+           return;
+         }
+         
+         setTrending(data || []);
+       } catch (err) {
+         console.error('Failed to fetch trending searches:', err);
+       } finally {
+         setLoading(false);
+       }
+     };
+ 
+     fetchTrending();
+   }, []);
+ 
+   const recordSearch = async (query: string, userId?: string) => {
+     if (!query.trim()) return;
+     
+     try {
+       await supabase.from('search_queries').insert({
+         query: query.trim().toLowerCase(),
+         user_id: userId || null
+       });
+     } catch (err) {
+       // Silent fail - don't block user experience
+       console.error('Failed to record search:', err);
+     }
+   };
+ 
+   return { trending, loading, recordSearch };
+ }

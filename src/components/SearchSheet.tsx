@@ -1,9 +1,13 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, X, Clock } from 'lucide-react';
+import { ArrowLeft, X, Clock, TrendingUp, User } from 'lucide-react';
 import { Listing } from '@/types/listing';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { isSimilar } from '@/utils/fuzzyMatch';
+import { useTrendingSearches } from '@/hooks/useTrendingSearches';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface SearchSheetProps {
   open: boolean;
@@ -12,11 +16,19 @@ interface SearchSheetProps {
   listings: Listing[];
 }
 
+interface SellerSuggestion {
+  user_id: string;
+  username: string;
+  avatar_url: string | null;
+}
+
 const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProps) => {
   const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [sellers, setSellers] = useState<SellerSuggestion[]>([]);
+  const { trending, recordSearch } = useTrendingSearches();
 
   // User-specific localStorage key for recent searches
   const storageKey = user ? `recentSearches_${user.id}` : null;
@@ -37,6 +49,25 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
       localStorage.setItem(storageKey, JSON.stringify(recentSearches));
     }
   }, [recentSearches, storageKey]);
+
+  // Fetch sellers for suggestions
+  useEffect(() => {
+    const fetchSellers = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id, username, avatar_url')
+        .not('username', 'like', '@user_%')
+        .limit(50);
+      
+      if (data) {
+        setSellers(data);
+      }
+    };
+    
+    if (open) {
+      fetchSellers();
+    }
+  }, [open]);
 
   // Extract searchable terms from listings
   const searchableTerms = useMemo(() => {
@@ -74,6 +105,9 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
   const handleSearch = (searchTerm: string) => {
     if (!searchTerm.trim()) return;
     
+    // Record search for trending
+    recordSearch(searchTerm, user?.id);
+    
     // Add to recent searches (avoid duplicates, keep max 10)
     setRecentSearches(prev => {
       const filtered = prev.filter(s => s.toLowerCase() !== searchTerm.toLowerCase());
@@ -85,68 +119,98 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
     setQuery('');
   };
 
+  const handleSellerClick = (username: string) => {
+    // Navigate to seller profile or search for seller
+    onSearch(`@${username}`);
+    onOpenChange(false);
+    setQuery('');
+  };
+
   const handleRemoveRecent = (searchTerm: string) => {
     setRecentSearches(prev => prev.filter(s => s !== searchTerm));
   };
 
   const clearQuery = () => setQuery('');
 
+  // Filter matching sellers
+  const matchingSellers = useMemo(() => {
+    if (!query.trim()) return [];
+    
+    const lowerQuery = query.toLowerCase().trim();
+    
+    return sellers
+      .filter(seller => {
+        const username = seller.username.toLowerCase();
+        return username.includes(lowerQuery) || isSimilar(username, lowerQuery);
+      })
+      .slice(0, 4);
+  }, [query, sellers]);
+
   // Generate search suggestions based on query
   const suggestions = useMemo(() => {
     if (!query.trim()) return [];
     
     const lowerQuery = query.toLowerCase().trim();
-    const results: string[] = [];
+    const scored: { text: string; score: number }[] = [];
     const seen = new Set<string>();
     
-    // Find matching listing titles (prioritize these)
+    // Find matching listing titles with fuzzy matching
     listings.forEach(listing => {
       const titleLower = listing.title.toLowerCase();
-      if (titleLower.includes(lowerQuery) && !seen.has(titleLower)) {
+      if (!seen.has(titleLower) && (titleLower.includes(lowerQuery) || isSimilar(titleLower, lowerQuery))) {
         seen.add(titleLower);
-        results.push(listing.title);
+        const score = titleLower.includes(lowerQuery) ? 1 : 0.7;
+        scored.push({ text: listing.title, score });
       }
     });
     
-    // Find matching categories
+    // Find matching categories with fuzzy matching
     const categories = [...new Set(listings.map(l => l.category))];
     categories.forEach(cat => {
       const catLower = cat.toLowerCase();
-      if (catLower.includes(lowerQuery) && !seen.has(catLower)) {
+      if (!seen.has(catLower) && (catLower.includes(lowerQuery) || isSimilar(catLower, lowerQuery))) {
         seen.add(catLower);
-        results.push(cat.charAt(0).toUpperCase() + cat.slice(1));
+        const score = catLower.includes(lowerQuery) ? 0.95 : 0.65;
+        scored.push({ text: cat.charAt(0).toUpperCase() + cat.slice(1), score });
       }
     });
     
-    // Find matching brands
+    // Find matching brands with fuzzy matching
     const brands = [...new Set(listings.map(l => l.brand).filter(Boolean))];
     brands.forEach(brand => {
       const brandLower = brand.toLowerCase();
-      if (brandLower.includes(lowerQuery) && !seen.has(brandLower)) {
+      if (!seen.has(brandLower) && (brandLower.includes(lowerQuery) || isSimilar(brandLower, lowerQuery))) {
         seen.add(brandLower);
-        results.push(brand);
+        const score = brandLower.includes(lowerQuery) ? 0.9 : 0.6;
+        scored.push({ text: brand, score });
       }
     });
     
-    // Find matching tags
+    // Find matching tags with fuzzy matching
     const allTags = [...new Set(listings.flatMap(l => l.tags || []))];
     allTags.forEach(tag => {
       const tagLower = tag.toLowerCase();
-      if (tagLower.includes(lowerQuery) && !seen.has(tagLower)) {
+      if (!seen.has(tagLower) && (tagLower.includes(lowerQuery) || isSimilar(tagLower, lowerQuery))) {
         seen.add(tagLower);
-        results.push(tag.charAt(0).toUpperCase() + tag.slice(1));
+        const score = tagLower.includes(lowerQuery) ? 0.85 : 0.55;
+        scored.push({ text: tag.charAt(0).toUpperCase() + tag.slice(1), score });
       }
     });
     
-    // Find partial word matches from searchable terms
+    // Find partial word matches from searchable terms with fuzzy matching
     searchableTerms.forEach(term => {
-      if (term.startsWith(lowerQuery) && !seen.has(term) && term !== lowerQuery) {
+      if (!seen.has(term) && term !== lowerQuery && (term.startsWith(lowerQuery) || isSimilar(term, lowerQuery))) {
         seen.add(term);
-        results.push(term.charAt(0).toUpperCase() + term.slice(1));
+        const score = term.startsWith(lowerQuery) ? 0.8 : 0.5;
+        scored.push({ text: term.charAt(0).toUpperCase() + term.slice(1), score });
       }
     });
     
-    return results.slice(0, 8);
+    // Sort by score and return top results
+    return scored
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 8)
+      .map(item => item.text);
   }, [query, listings, searchableTerms]);
 
   // Helper to render suggestion with query highlighted
@@ -252,6 +316,32 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
             </div>
           )}
 
+          {/* Matching Sellers */}
+          {query && matchingSellers.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-foreground mb-3">Sellers</h3>
+              <div className="bg-card rounded-2xl p-4">
+                <div className="space-y-1">
+                  {matchingSellers.map((seller) => (
+                    <button
+                      key={seller.user_id}
+                      onClick={() => handleSellerClick(seller.username)}
+                      className="flex items-center gap-3 w-full text-left py-2.5"
+                    >
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={seller.avatar_url || undefined} />
+                        <AvatarFallback>
+                          <User className="h-4 w-4" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-foreground font-medium">{seller.username}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Recent Searches */}
           {recentSearches.length > 0 && (
             <div>
@@ -281,8 +371,27 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
             </div>
           )}
 
+          {/* Trending Searches */}
+          {!query && trending.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-foreground mb-3">Trending</h3>
+              <div className="bg-card rounded-2xl p-4 space-y-1">
+                {trending.map((item, index) => (
+                  <button
+                    key={`${item.query}-${index}`}
+                    onClick={() => handleSearch(item.query)}
+                    className="flex items-center gap-3 w-full text-left py-2.5"
+                  >
+                    <TrendingUp className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-foreground font-medium capitalize">{item.query}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Empty state when no recent searches and no query */}
-          {!query && recentSearches.length === 0 && (
+          {!query && recentSearches.length === 0 && trending.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <span className="text-5xl opacity-50 mb-4">🔍</span>
               <p className="text-muted-foreground">Start typing to search listings</p>

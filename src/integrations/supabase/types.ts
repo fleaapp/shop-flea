@@ -414,12 +414,39 @@ export type Database = {
           },
         ]
       }
+      search_queries: {
+        Row: {
+          created_at: string
+          id: string
+          query: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          query: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          query?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_trending_searches: {
+        Args: { limit_count?: number }
+        Returns: {
+          query: string
+          search_count: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
