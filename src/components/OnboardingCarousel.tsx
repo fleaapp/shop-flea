@@ -75,7 +75,7 @@
        <div className="absolute inset-0 bg-charcoal/90" />
        
        {/* Main content area - centered image and text */}
-        <div className="relative flex-1 flex flex-col items-center justify-end px-6 pb-4 max-[375px]:pb-3">
+        <div className="relative flex-1 flex flex-col items-center justify-center px-6">
          <AnimatePresence mode="wait">
            <motion.div
              key={currentSlide}
@@ -99,7 +99,7 @@
              </div>
              
              {/* Text underneath - consistent styling */}
-              <p className="text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg -mt-8 max-[375px]:-mt-6">
+              <p className="text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg -mt-12 max-[375px]:-mt-10">
                {slides[currentSlide].text}
              </p>
            </motion.div>
@@ -107,9 +107,9 @@
        </div>
  
        {/* Bottom section - pagination dots and Next button - positioned above bottom nav */}
-        <div className="relative px-6 pb-[calc(96px+env(safe-area-inset-bottom))] max-[375px]:pb-[calc(84px+env(safe-area-inset-bottom))]">
+        <div className="relative px-6 pb-[calc(80px+env(safe-area-inset-bottom))] max-[375px]:pb-[calc(72px+env(safe-area-inset-bottom))]">
          {/* Pagination dots */}
-          <div className="flex justify-center gap-2.5 mb-2">
+          <div className="flex justify-center gap-2.5 mb-3">
            {slides.map((_, index) => (
              <div
                key={index}
