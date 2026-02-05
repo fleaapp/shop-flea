@@ -32,8 +32,9 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
     // First get the user's favorite listing IDs
     const { data: favorites, error: favError } = await supabase
       .from('favorites')
-      .select('listing_id')
-      .eq('user_id', user.id);
+        .select('listing_id, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
     if (favError || !favorites || favorites.length === 0) {
       setListings([]);
@@ -102,12 +103,24 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
       const profilesMap = new Map(
         (profilesData || []).map(profile => [profile.user_id, profile])
       );
+
+      // Create a map for favorite order (most recent first)
+      const favoriteOrderMap = new Map(
+        favorites.map((f, index) => [f.listing_id, index])
+      );
       
       // Merge listings with profiles
       const listingsWithProfiles = sizeFiltered.map(listing => ({
         ...listing,
         profiles: profilesMap.get(listing.user_id) || null,
       }));
+
+      // Sort by the order they were added to favorites (most recent first)
+      listingsWithProfiles.sort((a, b) => {
+        const orderA = favoriteOrderMap.get(a.id) ?? Number.MAX_VALUE;
+        const orderB = favoriteOrderMap.get(b.id) ?? Number.MAX_VALUE;
+        return orderA - orderB;
+      });
       
       setListings(listingsWithProfiles);
     } else {

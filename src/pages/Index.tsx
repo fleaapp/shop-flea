@@ -304,7 +304,8 @@ const Index = () => {
               ))}
             </>
           ) : (
-            <div className="flex h-full flex-col items-center justify-center text-center">
+            <div className="flex h-full flex-col items-center justify-center text-center px-4">
+              <span className="text-5xl mb-3">😢</span>
               <p className="text-lg font-medium text-muted-foreground">No more listings!</p>
               <p className="mt-2 text-sm text-muted-foreground">Check back later for new items</p>
             </div>
