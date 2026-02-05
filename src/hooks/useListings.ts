@@ -104,7 +104,7 @@ export const useListings = (filters?: ListingFilters) => {
       query = query.lte('price', filters.maxPrice);
     }
     if (filters?.search) {
-      query = query.or(`title.ilike.%${filters.search}%,brand.ilike.%${filters.search}%,description.ilike.%${filters.search}%,category.ilike.%${filters.search}%,tags.cs.{"${filters.search.toLowerCase()}"}`);
+      query = query.or(`title.ilike.%${filters.search}%,brand.ilike.%${filters.search}%,description.ilike.%${filters.search}%,category.ilike.%${filters.search}%,colour.ilike.%${filters.search}%,style.ilike.%${filters.search}%,size.ilike.%${filters.search}%,condition.ilike.%${filters.search}%,tags.cs.{"${filters.search.toLowerCase()}"}`);
     }
 
     const { data, error: queryError } = await query;
