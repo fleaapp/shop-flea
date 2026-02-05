@@ -1,9 +1,19 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Listing } from '@/types/listing';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface CartItemRowProps {
   item: Listing & { status?: string; isPaused?: boolean };
@@ -32,14 +42,16 @@ const CartItemRow = ({
 }: CartItemRowProps) => {
   const navigate = useNavigate();
   const [isRemoving, setIsRemoving] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'left' | 'right' | null>(null);
   const x = useMotionValue(0);
+  const xRef = useRef(0);
   
   const isSold = item.status === 'sold';
   const isPaused = item.isPaused || false;
   const isUnavailable = isSold || isPaused;
   
   // Background colors based on swipe direction
-  const leftBgOpacity = useTransform(x, [-SWIPE_THRESHOLD, 0], [1, 0]);
+  const leftBgOpacity = useTransform(x, [-SWIPE_THRESHOLD, 0], [1, 0]); 
   const rightBgOpacity = useTransform(x, [0, SWIPE_THRESHOLD], [0, 1]);
   
   // Icon scale based on swipe
@@ -48,19 +60,33 @@ const CartItemRow = ({
 
   const handleDragEnd = (_: any, info: PanInfo) => {
     if (info.offset.x < -SWIPE_THRESHOLD) {
-      setIsRemoving(true);
-      setTimeout(() => {
-        onSwipeLeft();
-      }, 200);
+      xRef.current = info.offset.x;
+      setPendingAction('left');
     } else if (info.offset.x > SWIPE_THRESHOLD) {
-      setIsRemoving(true);
-      setTimeout(() => {
-        onSwipeRight();
-      }, 200);
+      xRef.current = info.offset.x;
+      setPendingAction('right');
     }
   };
 
+  const handleConfirmAction = () => {
+    setIsRemoving(true);
+    setTimeout(() => {
+      if (pendingAction === 'left') {
+        onSwipeLeft();
+      } else {
+        onSwipeRight();
+      }
+      setPendingAction(null);
+    }, 200);
+  };
+
+  const handleCancelAction = () => {
+    setPendingAction(null);
+    x.set(0);
+  };
+
   return (
+    <>
     <div
       className={cn(
         "relative overflow-hidden",
@@ -69,7 +95,7 @@ const CartItemRow = ({
     >
       {/* Swipe background indicators */}
       <motion.div 
-        className="absolute inset-0 bg-destructive flex items-center justify-end pr-6"
+        className="absolute inset-0 bg-muted-foreground/50 flex items-center justify-end pr-6"
         style={{ opacity: leftBgOpacity }}
       >
         <motion.div style={{ scale: leftIconScale }}>
@@ -176,6 +202,33 @@ const CartItemRow = ({
         </div>
       </motion.div>
     </div>
+
+    {/* Confirmation Dialog */}
+    <AlertDialog open={pendingAction !== null} onOpenChange={(open) => !open && handleCancelAction()}>
+      <AlertDialogContent className="rounded-2xl max-w-[90vw] w-[320px]">
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {pendingAction === 'left' ? 'Remove from cart?' : 'Move to wishlist?'}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {pendingAction === 'left' 
+              ? `Remove "${item.title}" from your cart?`
+              : `Move "${item.title}" to your wishlist?`
+            }
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex-row gap-2">
+          <AlertDialogCancel className="flex-1 m-0 rounded-full">Cancel</AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={handleConfirmAction}
+            className="flex-1 m-0 rounded-full"
+          >
+            {pendingAction === 'left' ? 'Remove' : 'Move'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 };
 

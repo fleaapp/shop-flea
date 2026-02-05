@@ -37,10 +37,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
 
     // Fetch cart item IDs
-    const { data: cartData, error: cartError } = await supabase
+    const { data: cartData, error: cartError } = await supabase 
       .from('cart_items')
-      .select('listing_id')
-      .eq('user_id', user.id);
+      .select('listing_id, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
 
     if (cartError || !cartData || cartData.length === 0) {
       setCartItems([]);
@@ -74,6 +75,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
+    // Create a map for cart order (most recent first)
+    const cartOrderMap = new Map(
+      cartData.map((c, index) => [c.listing_id, index])
+    );
+
     // Transform to Listing type
     const transformedListings: CartListing[] = listingsData.map(listing => {
       const seller = profileMap.get(listing.user_id);
@@ -98,6 +104,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         status: listing.status,
         isPaused: seller?.pause_selling || false,
       };
+    });
+
+    // Sort by the order they were added to cart (most recent first)
+    transformedListings.sort((a, b) => {
+      const orderA = cartOrderMap.get(a.id) ?? Number.MAX_VALUE;
+      const orderB = cartOrderMap.get(b.id) ?? Number.MAX_VALUE;
+      return orderA - orderB;
     });
 
     setCartItems(transformedListings);
