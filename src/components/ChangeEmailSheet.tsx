@@ -1,5 +1,5 @@
- import { useState } from 'react';
- import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { useState } from 'react';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
  import { Input } from '@/components/ui/input';
  import { Button } from '@/components/ui/button';
  import { Label } from '@/components/ui/label';
@@ -55,11 +55,11 @@
    };
  
    return (
-     <Sheet open={open} onOpenChange={onOpenChange}>
-       <SheetContent side="bottom" className="rounded-t-3xl px-6 pb-8">
-         <SheetHeader className="pb-4">
-           <SheetTitle className="text-center">Change Email</SheetTitle>
-         </SheetHeader>
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="px-6 pb-8">
+        <DrawerHeader className="pb-4">
+          <DrawerTitle className="text-center">Change Email</DrawerTitle>
+        </DrawerHeader>
  
          <form onSubmit={handleSubmit} className="space-y-4">
            <div>
@@ -80,8 +80,8 @@
              />
            </div>
  
-           <p className="text-xs text-muted-foreground text-center">
-             You'll need to verify your new email address before the change takes effect.
+          <p className="text-xs text-muted-foreground text-center leading-relaxed">
+            You'll need to verify your new email address<br />before the change takes effect.
            </p>
  
            <div className="flex justify-center pt-2">
@@ -94,8 +94,8 @@
              </Button>
            </div>
          </form>
-       </SheetContent>
-     </Sheet>
+      </DrawerContent>
+    </Drawer>
    );
  };
  
