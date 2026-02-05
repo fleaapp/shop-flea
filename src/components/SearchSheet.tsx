@@ -12,25 +12,6 @@ interface SearchSheetProps {
   listings: Listing[];
 }
 
-// Common clothing categories for suggestions
-const SUGGESTION_CATEGORIES = [
-  'cardigan',
-  'skirt',
-  'shorts',
-  'sneakers',
-  'jeans',
-  'shirt',
-  'jacket',
-  'sweater',
-  'dress',
-  't-shirt',
-  'pants',
-  'coat',
-  'hoodie',
-  'blouse',
-  'top',
-];
-
 const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProps) => {
   const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -56,6 +37,39 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
       localStorage.setItem(storageKey, JSON.stringify(recentSearches));
     }
   }, [recentSearches, storageKey]);
+
+  // Extract searchable terms from listings
+  const searchableTerms = useMemo(() => {
+    const terms = new Set<string>();
+    
+    listings.forEach(listing => {
+      // Add title words (split and clean)
+      listing.title.split(/\s+/).forEach(word => {
+        const cleaned = word.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (cleaned.length > 2) terms.add(cleaned);
+      });
+      
+      // Add full title as a term
+      terms.add(listing.title.toLowerCase());
+      
+      // Add category
+      if (listing.category) {
+        terms.add(listing.category.toLowerCase());
+      }
+      
+      // Add brand
+      if (listing.brand) {
+        terms.add(listing.brand.toLowerCase());
+      }
+      
+      // Add tags
+      listing.tags?.forEach(tag => {
+        terms.add(tag.toLowerCase());
+      });
+    });
+    
+    return Array.from(terms);
+  }, [listings]);
 
   const handleSearch = (searchTerm: string) => {
     if (!searchTerm.trim()) return;
@@ -83,38 +97,57 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
     
     const lowerQuery = query.toLowerCase().trim();
     const results: string[] = [];
+    const seen = new Set<string>();
     
-    // Generate suggestions by combining query with common categories
-    SUGGESTION_CATEGORIES.forEach(category => {
-      // If query matches the start of a category, suggest it
-      if (category.startsWith(lowerQuery)) {
-        results.push(category.charAt(0).toUpperCase() + category.slice(1));
-      }
-      // Otherwise, combine query with category (e.g., "Red cardigan")
-      else if (!category.includes(lowerQuery)) {
-        const suggestion = `${query.trim()} ${category}`;
-        // Check if any listings might match this combination
-        const hasMatch = listings.some(listing => {
-          const searchText = `${listing.title} ${listing.category} ${listing.tags.join(' ')}`.toLowerCase();
-          return searchText.includes(lowerQuery) || 
-                 searchText.includes(category);
-        });
-        if (hasMatch || results.length < 8) {
-          results.push(suggestion);
-        }
+    // Find matching listing titles (prioritize these)
+    listings.forEach(listing => {
+      const titleLower = listing.title.toLowerCase();
+      if (titleLower.includes(lowerQuery) && !seen.has(titleLower)) {
+        seen.add(titleLower);
+        results.push(listing.title);
       }
     });
     
-    // Also add exact matches from listing categories and colors
-    const uniqueCategories = [...new Set(listings.map(l => l.category))];
-    uniqueCategories.forEach(cat => {
-      if (cat.toLowerCase().includes(lowerQuery) && !results.some(r => r.toLowerCase() === cat.toLowerCase())) {
-        results.unshift(cat);
+    // Find matching categories
+    const categories = [...new Set(listings.map(l => l.category))];
+    categories.forEach(cat => {
+      const catLower = cat.toLowerCase();
+      if (catLower.includes(lowerQuery) && !seen.has(catLower)) {
+        seen.add(catLower);
+        results.push(cat.charAt(0).toUpperCase() + cat.slice(1));
+      }
+    });
+    
+    // Find matching brands
+    const brands = [...new Set(listings.map(l => l.brand).filter(Boolean))];
+    brands.forEach(brand => {
+      const brandLower = brand.toLowerCase();
+      if (brandLower.includes(lowerQuery) && !seen.has(brandLower)) {
+        seen.add(brandLower);
+        results.push(brand);
+      }
+    });
+    
+    // Find matching tags
+    const allTags = [...new Set(listings.flatMap(l => l.tags || []))];
+    allTags.forEach(tag => {
+      const tagLower = tag.toLowerCase();
+      if (tagLower.includes(lowerQuery) && !seen.has(tagLower)) {
+        seen.add(tagLower);
+        results.push(tag.charAt(0).toUpperCase() + tag.slice(1));
+      }
+    });
+    
+    // Find partial word matches from searchable terms
+    searchableTerms.forEach(term => {
+      if (term.startsWith(lowerQuery) && !seen.has(term) && term !== lowerQuery) {
+        seen.add(term);
+        results.push(term.charAt(0).toUpperCase() + term.slice(1));
       }
     });
     
     return results.slice(0, 8);
-  }, [query, listings]);
+  }, [query, listings, searchableTerms]);
 
   // Helper to render suggestion with query highlighted
   const renderSuggestion = (suggestion: string) => {
