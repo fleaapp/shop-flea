@@ -75,7 +75,7 @@
        <div className="absolute inset-0 bg-charcoal/90" />
        
        {/* Main content area - centered image and text */}
-       <div className="relative flex-1 flex flex-col items-center justify-center px-6 pb-36">
+       <div className="relative flex-1 flex flex-col items-center justify-center px-6 pb-24">
          <AnimatePresence mode="wait">
            <motion.div
              key={currentSlide}
@@ -86,7 +86,7 @@
              className="flex flex-col items-center justify-center"
            >
              {/* Image/GIF container - consistent sizing */}
-             <div className="flex items-center justify-center mb-8 w-[300px] h-[300px] max-[375px]:w-[260px] max-[375px]:h-[260px]">
+             <div className="flex items-center justify-center mb-4 w-[340px] h-[340px] max-[393px]:w-[300px] max-[393px]:h-[300px] max-[375px]:w-[280px] max-[375px]:h-[280px]">
                <img
                  src={slides[currentSlide].image}
                  alt={slides[currentSlide].alt}
@@ -99,7 +99,7 @@
              </div>
              
              {/* Text underneath - consistent styling */}
-             <p className="text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg">
+             <p className="text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg mt-2">
                {slides[currentSlide].text}
              </p>
            </motion.div>
@@ -107,9 +107,9 @@
        </div>
  
        {/* Bottom section - pagination dots and Next button - positioned above bottom nav */}
-       <div className="relative pb-28 px-6 max-[375px]:pb-24">
+       <div className="relative pb-24 px-6 max-[375px]:pb-20">
          {/* Pagination dots */}
-         <div className="flex justify-center gap-2.5 mb-6">
+         <div className="flex justify-center gap-2.5 mb-4">
            {slides.map((_, index) => (
              <div
                key={index}
@@ -124,7 +124,7 @@
          <div className="flex justify-center">
            <Button
              onClick={handleNext}
-             className="px-12 py-3 h-12 rounded-full bg-cream text-charcoal font-semibold text-base hover:bg-cream/90"
+             className="px-12 py-3 h-12 rounded-full bg-[#6B6B6B] text-white font-semibold text-base hover:bg-[#5a5a5a]"
            >
              {isLastSlide ? "Let's go!" : 'Next'}
            </Button>
