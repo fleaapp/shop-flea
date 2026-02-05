@@ -130,7 +130,7 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
          </AnimatePresence>
 
           {/* Controls directly under text (kept above bottom nav via padding on this container) */}
-          <div className="mt-12 w-full max-w-sm">
+          <div className="mt-16 w-full max-w-sm">
             {/* Pagination dots */}
             <div className="flex justify-center gap-2.5 mb-4">
               {slides.map((_, index) => (
