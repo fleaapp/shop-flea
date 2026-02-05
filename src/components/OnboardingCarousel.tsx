@@ -70,12 +70,12 @@
    const isLastSlide = currentSlide === slides.length - 1;
  
    return (
-     <div className="fixed inset-0 z-50 flex flex-col">
+      <div className="fixed inset-0 z-50 flex flex-col">
        {/* Dark overlay background - home screen visible underneath */}
        <div className="absolute inset-0 bg-charcoal/90" />
        
        {/* Main content area - centered image and text */}
-       <div className="relative flex-1 flex flex-col items-center justify-center px-6 pb-24">
+        <div className="relative flex-1 flex flex-col items-center justify-end px-6 pb-4 max-[375px]:pb-3">
          <AnimatePresence mode="wait">
            <motion.div
              key={currentSlide}
@@ -86,7 +86,7 @@
              className="flex flex-col items-center justify-center"
            >
              {/* Image/GIF container - consistent sizing */}
-             <div className="flex items-center justify-center mb-4 w-[340px] h-[340px] max-[393px]:w-[300px] max-[393px]:h-[300px] max-[375px]:w-[280px] max-[375px]:h-[280px]">
+              <div className="flex items-center justify-center mb-2 w-[min(92vw,52vh,400px)] h-[min(92vw,52vh,400px)]">
                <img
                  src={slides[currentSlide].image}
                  alt={slides[currentSlide].alt}
@@ -99,7 +99,7 @@
              </div>
              
              {/* Text underneath - consistent styling */}
-             <p className="text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg mt-2">
+              <p className="text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg">
                {slides[currentSlide].text}
              </p>
            </motion.div>
@@ -107,9 +107,9 @@
        </div>
  
        {/* Bottom section - pagination dots and Next button - positioned above bottom nav */}
-       <div className="relative pb-24 px-6 max-[375px]:pb-20">
+        <div className="relative px-6 pb-[calc(96px+env(safe-area-inset-bottom))] max-[375px]:pb-[calc(84px+env(safe-area-inset-bottom))]">
          {/* Pagination dots */}
-         <div className="flex justify-center gap-2.5 mb-4">
+          <div className="flex justify-center gap-2.5 mb-2">
            {slides.map((_, index) => (
              <div
                key={index}
@@ -124,7 +124,7 @@
          <div className="flex justify-center">
            <Button
              onClick={handleNext}
-             className="px-12 py-3 h-12 rounded-full bg-[#6B6B6B] text-white font-semibold text-base hover:bg-[#5a5a5a]"
+              className="px-12 py-3 h-12 rounded-full bg-charcoal-light text-cream font-semibold text-base hover:bg-charcoal-light/90"
            >
              {isLastSlide ? "Let's go!" : 'Next'}
            </Button>
