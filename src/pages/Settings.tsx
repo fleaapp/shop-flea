@@ -9,12 +9,14 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/lib/supabase';
 import FilterPreferencesSheet from '@/components/FilterPreferencesSheet';
+import OnboardingCarousel from '@/components/OnboardingCarousel';
 
 const Settings = () => {
   const navigate = useNavigate();
   const { signOut, profile, user, refreshProfile } = useAuth();
   const { clearDiscarded } = useDiscardedListings();
   const [preferencesOpen, setPreferencesOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   
   // Get pause_selling from profile
   const pauseSelling = (profile as any)?.pause_selling || false;
@@ -67,6 +69,7 @@ const Settings = () => {
         { icon: <span className="text-base">🔁</span>, label: 'Refresh Passed Listings', action: handleRefreshDiscarded },
         { icon: <span className="text-base">📏</span>, label: 'Filter Preferences', action: () => setPreferencesOpen(true) },
         { icon: <span className="text-base">⏸️</span>, label: 'Pause Selling', toggle: true, checked: pauseSelling, onToggle: handleTogglePauseSelling },
+        { icon: <span className="text-base">📖</span>, label: 'Show Onboarding', action: () => setShowOnboarding(true) },
       ],
     },
     {
@@ -152,6 +155,12 @@ const Settings = () => {
       <FilterPreferencesSheet
         open={preferencesOpen}
         onOpenChange={setPreferencesOpen}
+      />
+      
+      {/* Onboarding Carousel */}
+      <OnboardingCarousel
+        open={showOnboarding}
+        onComplete={() => setShowOnboarding(false)}
       />
       
       <BottomNav />
