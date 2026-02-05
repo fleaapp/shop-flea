@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Mail, ArrowLeft } from 'lucide-react';
+ import { ArrowLeft } from 'lucide-react';
 import fleaLogoAuth from '@/assets/flea-logo-auth.jpeg';
 import { Button } from '@/components/ui/button';
 
@@ -34,16 +34,14 @@ const VerifyEmail = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 max-[375px]:px-4 py-10 max-[375px]:py-8">
         <div className="w-full max-w-[min(300px,85vw)] text-center">
-          <div className="w-16 h-16 rounded-full bg-[#423D3D] flex items-center justify-center mx-auto mb-4">
-            <Mail className="h-8 w-8 text-card" />
-          </div>
+           <div className="text-5xl mx-auto mb-4">📬</div>
           
           <h1 className="text-xl font-semibold text-foreground mb-2">
             Verify your email
           </h1>
           
-          <p className="text-sm text-foreground/70 mb-6">
-            Check your inbox — we just sent a verification email to{' '}
+           <p className="text-sm text-foreground/70 mb-6">
+             Check your inbox - we just sent a verification email to{' '}
             {email ? <strong>{email}</strong> : 'your email address'}!
             Click the link to activate your account.
           </p>
@@ -51,7 +49,7 @@ const VerifyEmail = () => {
           <div className="space-y-3">
             <Button
               onClick={() => navigate('/auth')}
-              className="h-10 w-full rounded-full bg-[#423D3D] text-card text-sm font-medium hover:bg-[#423D3D]/90"
+               className="h-10 w-auto px-8 mx-auto flex rounded-full bg-[#423D3D] text-card text-sm font-medium hover:bg-[#423D3D]/90"
             >
               Back to Login
             </Button>
@@ -63,14 +61,6 @@ const VerifyEmail = () => {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="absolute bottom-6 left-0 right-0 text-center">
-        <p className="text-sm text-foreground">
-          <button className="hover:underline">Terms & Conditions</button>
-          <span className="mx-2">|</span>
-          <button className="hover:underline">Privacy Policy</button>
-        </p>
-      </div>
     </div>
   );
 };
