@@ -113,7 +113,7 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
               </p>
               
               <div className="flex items-center justify-center gap-3">
-                <span className="text-sm font-medium w-20 text-right">1 item</span>
+                <span className="text-sm font-medium w-20 text-left">1 item</span>
                 <div className="relative w-24">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                   <Input
@@ -130,7 +130,7 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
               </div>
               
               <div className="flex items-center justify-center gap-3">
-                <span className="text-sm font-medium w-20 text-right">2–3 items</span>
+                <span className="text-sm font-medium w-20 text-left">2–3 items</span>
                 <div className="relative w-24">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                   <Input
@@ -147,7 +147,7 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
               </div>
               
               <div className="flex items-center justify-center gap-3">
-                <span className="text-sm font-medium w-20 text-right">4+ items</span>
+                <span className="text-sm font-medium w-20 text-left">4+ items</span>
                 <div className="relative w-24">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                   <Input
