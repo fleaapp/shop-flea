@@ -91,7 +91,7 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-6 space-y-5">
+        <div className="mt-4 space-y-5">
           {/* Toggle */}
           <div className="flex items-center justify-between rounded-xl bg-card p-4 border border-border">
             <Label htmlFor="tiered-toggle" className="text-sm font-medium cursor-pointer">
@@ -112,7 +112,7 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
                 Buyers pay less when they buy<br />multiple items from you.
               </p>
               
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center justify-center gap-2">
                 <span className="text-sm font-medium w-16">1 item</span>
                 <div className="relative w-24">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
@@ -126,10 +126,10 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
                     placeholder="10.00"
                   />
                 </div>
-                <span className="text-xs text-muted-foreground w-20 text-right">Base shipping</span>
+                <span className="text-xs text-muted-foreground w-20">Base shipping</span>
               </div>
               
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center justify-center gap-2">
                 <span className="text-sm font-medium w-16">2–3 items</span>
                 <div className="relative w-24">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
@@ -143,10 +143,10 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
                     placeholder="13.00"
                   />
                 </div>
-                <span className="text-xs text-muted-foreground w-20 text-right">Slightly higher</span>
+                <span className="text-xs text-muted-foreground w-20">Slightly higher</span>
               </div>
               
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center justify-center gap-2">
                 <span className="text-sm font-medium w-16">4+ items</span>
                 <div className="relative w-24">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
@@ -160,7 +160,7 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
                     placeholder="17.00"
                   />
                 </div>
-                <span className="text-xs text-muted-foreground w-20 text-right">Discounted rate</span>
+                <span className="text-xs text-muted-foreground w-20">Discounted rate</span>
               </div>
             </div>
           )}
