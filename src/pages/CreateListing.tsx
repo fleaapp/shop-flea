@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import BottomNav from '@/components/BottomNav';
 import SizeSelectionDrawer from '@/components/SizeSelectionDrawer';
 import CategorySelectionDrawer from '@/components/CategorySelectionDrawer';
+import TieredShippingSetupModal from '@/components/TieredShippingSetupModal';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -28,12 +29,14 @@ interface ImageFile {
 
 const CreateListing = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [imageFiles, setImageFiles] = useState<ImageFile[]>([]);
   const [sizeDrawerOpen, setSizeDrawerOpen] = useState(false);
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
+  const [showShippingSetup, setShowShippingSetup] = useState(false);
+  const [shippingChecked, setShippingChecked] = useState(false);
   
   const [productName, setProductName] = useState('');
   const [fit, setFit] = useState(''); // Gender/Fit selection
@@ -76,6 +79,28 @@ const CreateListing = () => {
       navigate('/auth');
     }
   }, [user, authLoading, navigate]);
+
+  // Check if shipping preferences need to be set
+  useEffect(() => {
+    if (!authLoading && user && profile && !shippingChecked) {
+      setShippingChecked(true);
+      // Show modal if shipping preferences haven't been set yet
+      if (!profile.shipping_preferences_set) {
+        setShowShippingSetup(true);
+      }
+    }
+  }, [user, profile, authLoading, shippingChecked]);
+
+  const handleShippingSetupComplete = async () => {
+    setShowShippingSetup(false);
+    await refreshProfile();
+  };
+
+  const handleShippingSetupCancel = () => {
+    setShowShippingSetup(false);
+    // Navigate back since they can't proceed without setting shipping
+    navigate(-1);
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -463,6 +488,12 @@ const CreateListing = () => {
         selectedCategory={category}
         selectedSubcategory={subcategory}
         onSelectCategory={handleCategorySelect}
+      />
+
+      <TieredShippingSetupModal
+        open={showShippingSetup}
+        onComplete={handleShippingSetupComplete}
+        onCancel={handleShippingSetupCancel}
       />
       
       <BottomNav />

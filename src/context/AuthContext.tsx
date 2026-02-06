@@ -13,6 +13,11 @@ interface Profile {
   preferred_sizes?: string[] | null;
   preferred_gender?: string | null;
   pause_selling?: boolean;
+  tiered_shipping_enabled?: boolean;
+  shipping_tier_1?: number;
+  shipping_tier_2?: number;
+  shipping_tier_3?: number;
+  shipping_preferences_set?: boolean;
 }
 
 interface AuthContextType {

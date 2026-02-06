@@ -9,6 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/lib/supabase';
 import FilterPreferencesSheet from '@/components/FilterPreferencesSheet';
+import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
 import OnboardingCarousel from '@/components/OnboardingCarousel';
 
 const Settings = () => {
@@ -16,6 +17,7 @@ const Settings = () => {
   const { signOut, profile, user, refreshProfile } = useAuth();
   const { clearDiscarded } = useDiscardedListings();
   const [preferencesOpen, setPreferencesOpen] = useState(false);
+  const [shippingOpen, setShippingOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   
   // Get pause_selling from profile
@@ -68,6 +70,7 @@ const Settings = () => {
         { icon: <ProfileAvatar />, label: 'Edit Profile' },
         { icon: <span className="text-base">🔁</span>, label: 'Refresh Passed Listings', action: handleRefreshDiscarded },
         { icon: <span className="text-base">📏</span>, label: 'Filter Preferences', action: () => setPreferencesOpen(true) },
+        { icon: <span className="text-base">📦</span>, label: 'Shipping', action: () => setShippingOpen(true) },
         { icon: <span className="text-base">⏸️</span>, label: 'Pause Selling', toggle: true, checked: pauseSelling, onToggle: handleTogglePauseSelling },
         { icon: <span className="text-base">📖</span>, label: 'Show Onboarding', action: () => setShowOnboarding(true) },
       ],
@@ -155,6 +158,12 @@ const Settings = () => {
       <FilterPreferencesSheet
         open={preferencesOpen}
         onOpenChange={setPreferencesOpen}
+      />
+
+      {/* Shipping Settings Sheet */}
+      <ShippingSettingsSheet
+        open={shippingOpen}
+        onOpenChange={setShippingOpen}
       />
       
       {/* Onboarding Carousel */}

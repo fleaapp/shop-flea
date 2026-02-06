@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,8 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import OrderSuccessDialog from '@/components/OrderSuccessDialog';
+import { fetchSellerShippingSettings, calculateTotalShipping, SellerShippingInfo } from '@/utils/shippingCalculator';
+
 type PaymentMethod = 'card' | 'paypal' | 'applepay';
 const Checkout = () => {
   const navigate = useNavigate();
@@ -29,6 +31,7 @@ const Checkout = () => {
   const [selectedCard, setSelectedCard] = useState<string | null>('saved-1');
   const [showNewCard, setShowNewCard] = useState(false);
   const [saveCard, setSaveCard] = useState(true);
+  const [sellerSettings, setSellerSettings] = useState<Map<string, SellerShippingInfo>>(new Map());
   
 
   // Form state
@@ -44,10 +47,50 @@ const Checkout = () => {
   const [shippingCity, setShippingCity] = useState('');
   const [shippingState, setShippingState] = useState('');
   const [shippingPostcode, setShippingPostcode] = useState('');
+
+  // Fetch seller shipping settings
+  useEffect(() => {
+    const loadSellerSettings = async () => {
+      if (items.length === 0) return;
+      
+      const sellerIds = [...new Set(items.map(item => item.sellerId))];
+      const settings = await fetchSellerShippingSettings(sellerIds);
+      setSellerSettings(settings);
+    };
+    
+    loadSellerSettings();
+  }, [items]);
+
   const handleClose = () => {
     setOpen(false);
     setTimeout(() => navigate(-1), 300);
   };
+
+  // Check if any items are from paused sellers (should have been filtered at Cart, but double-check)
+  const validItems = useMemo(() => 
+    items.filter((item: any) => !item.isPaused && item.status !== 'sold'),
+    [items]
+  );
+  
+  // Calculate shipping using tiered settings
+  const { totalShipping, shippingBySeller } = useMemo(() => {
+    return calculateTotalShipping(
+      validItems.map(item => ({
+        id: item.id,
+        sellerId: item.sellerId,
+        shippingPrice: item.shippingPrice
+      })),
+      sellerSettings
+    );
+  }, [validItems, sellerSettings]);
+  
+  const itemsTotal = validItems.reduce((sum: number, item: any) => sum + item.price, 0);
+  const subtotal = itemsTotal + totalShipping;
+  const sellerFee = subtotal * 0.04;
+  const total = subtotal + sellerFee;
+  
+  const isShippingComplete = shippingFirstName.trim() && shippingLastName.trim() && shippingAddress.trim() && shippingCity.trim() && shippingState.trim() && shippingPostcode.trim();
+  
   if (items.length === 0) {
     return <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
         <p className="text-muted-foreground">No items to checkout</p>
@@ -56,14 +99,6 @@ const Checkout = () => {
         </Button>
       </div>;
   }
-  // Check if any items are from paused sellers (should have been filtered at Cart, but double-check)
-  const validItems = items.filter((item: any) => !item.isPaused && item.status !== 'sold');
-  
-  const subtotal = validItems.reduce((sum: number, item: any) => sum + item.price + item.shippingPrice, 0);
-  const sellerFee = subtotal * 0.04;
-  const total = subtotal + sellerFee;
-  
-  const isShippingComplete = shippingFirstName.trim() && shippingLastName.trim() && shippingAddress.trim() && shippingCity.trim() && shippingState.trim() && shippingPostcode.trim();
   
   const handlePlaceOrder = async () => {
     if (!user) {
@@ -82,29 +117,50 @@ const Checkout = () => {
       // A single id to group all items bought together in this checkout
       const orderGroupId = crypto.randomUUID();
 
-      // Create order records for each item
-      const orderPromises = items.map(async (item) => {
-        const { error } = await supabase.from('orders').insert({
-          order_group_id: orderGroupId,
-          listing_id: item.id,
-          buyer_id: user.id,
-          seller_id: item.sellerId,
-          price: item.price,
-          shipping_price: item.shippingPrice,
-          status: 'awaiting',
-          shipping_first_name: shippingFirstName.trim(),
-          shipping_last_name: shippingLastName.trim(),
-          shipping_address: shippingAddress.trim(),
-          shipping_city: shippingCity.trim(),
-          shipping_state: shippingState,
-          shipping_postcode: shippingPostcode.trim(),
-        });
-
-        if (error) throw error;
-
-        // Update listing status to sold
-        await supabase.from('listings').update({ status: 'sold' }).eq('id', item.id);
+      // Group items by seller to calculate per-seller shipping
+      const itemsBySeller = new Map<string, Listing[]>();
+      validItems.forEach(item => {
+        const existing = itemsBySeller.get(item.sellerId) || [];
+        itemsBySeller.set(item.sellerId, [...existing, item]);
       });
+
+      // Create order records for each item with tiered shipping
+      const orderPromises: Promise<void>[] = [];
+      
+      itemsBySeller.forEach((sellerItems, sellerId) => {
+        const sellerShipping = shippingBySeller.get(sellerId) || 0;
+        // Distribute shipping cost across items (first item gets full shipping, rest get 0)
+        // This simplifies order display while maintaining accurate totals
+        
+        sellerItems.forEach((item, index) => {
+          const itemShipping = index === 0 ? sellerShipping : 0;
+          
+          orderPromises.push((async () => {
+            const { error } = await supabase.from('orders').insert({
+              order_group_id: orderGroupId,
+              listing_id: item.id,
+              buyer_id: user.id,
+              seller_id: item.sellerId,
+              price: item.price,
+              shipping_price: itemShipping,
+              status: 'awaiting',
+              shipping_first_name: shippingFirstName.trim(),
+              shipping_last_name: shippingLastName.trim(),
+              shipping_address: shippingAddress.trim(),
+              shipping_city: shippingCity.trim(),
+              shipping_state: shippingState,
+              shipping_postcode: shippingPostcode.trim(),
+            });
+
+            if (error) throw error;
+
+            // Update listing status to sold
+            await supabase.from('listings').update({ status: 'sold' }).eq('id', item.id);
+          })());
+        });
+      });
+      
+      await Promise.all(orderPromises);
       
       await Promise.all(orderPromises);
       
@@ -143,19 +199,46 @@ const Checkout = () => {
                 <span className="text-sm text-secondary-foreground">Order Summary</span>
               </div>
               
-              {/* Items */}
+              {/* Items grouped by seller */}
               <div className="p-4 space-y-4">
-                {items.map(item => <div key={item.id} className="flex gap-4">
-                    <img src={item.image} alt={item.title} className="h-20 w-20 rounded-xl object-cover" />
-                    <div className="flex-1 flex flex-col">
-                      <h3 className="font-semibold text-foreground">{item.title}</h3>
-                      <div className="flex-1" />
-                      <div className="text-right">
-                        <p className="text-xl font-bold text-foreground">${item.price}</p>
-                        <p className="text-sm text-muted-foreground">+ ${item.shippingPrice} shipping</p>
+                {(() => {
+                  // Group items by seller for display
+                  const groupedItems = new Map<string, Listing[]>();
+                  validItems.forEach(item => {
+                    const existing = groupedItems.get(item.sellerId) || [];
+                    groupedItems.set(item.sellerId, [...existing, item]);
+                  });
+                  
+                  return Array.from(groupedItems.entries()).map(([sellerId, sellerItems]) => {
+                    const shipping = shippingBySeller.get(sellerId) || 0;
+                    const thisSellerSettings = sellerSettings.get(sellerId);
+                    const isTiered = thisSellerSettings?.tieredEnabled && sellerItems.length > 1;
+                    
+                    return (
+                      <div key={sellerId} className="space-y-3">
+                        {sellerItems.map(item => (
+                          <div key={item.id} className="flex gap-4">
+                            <img src={item.image} alt={item.title} className="h-20 w-20 rounded-xl object-cover" />
+                            <div className="flex-1 flex flex-col">
+                              <h3 className="font-semibold text-foreground">{item.title}</h3>
+                              <div className="flex-1" />
+                              <div className="text-right">
+                                <p className="text-xl font-bold text-foreground">${item.price}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {/* Show combined shipping for this seller */}
+                        <div className="flex justify-between text-sm pl-24">
+                          <span className="text-muted-foreground">
+                            {isTiered ? `Combined shipping (${sellerItems.length} items)` : 'Shipping'}
+                          </span>
+                          <span className="text-foreground">+ ${shipping.toFixed(2)}</span>
+                        </div>
                       </div>
-                    </div>
-                  </div>)}
+                    );
+                  });
+                })()}
               </div>
               
               {/* Seller fee */}

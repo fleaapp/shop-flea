@@ -334,6 +334,11 @@ export type Database = {
           preferred_gender: string | null
           preferred_sizes: string[] | null
           rating: number | null
+          shipping_preferences_set: boolean | null
+          shipping_tier_1: number | null
+          shipping_tier_2: number | null
+          shipping_tier_3: number | null
+          tiered_shipping_enabled: boolean | null
           total_reviews: number | null
           updated_at: string
           user_id: string
@@ -350,6 +355,11 @@ export type Database = {
           preferred_gender?: string | null
           preferred_sizes?: string[] | null
           rating?: number | null
+          shipping_preferences_set?: boolean | null
+          shipping_tier_1?: number | null
+          shipping_tier_2?: number | null
+          shipping_tier_3?: number | null
+          tiered_shipping_enabled?: boolean | null
           total_reviews?: number | null
           updated_at?: string
           user_id: string
@@ -366,6 +376,11 @@ export type Database = {
           preferred_gender?: string | null
           preferred_sizes?: string[] | null
           rating?: number | null
+          shipping_preferences_set?: boolean | null
+          shipping_tier_1?: number | null
+          shipping_tier_2?: number | null
+          shipping_tier_3?: number | null
+          tiered_shipping_enabled?: boolean | null
           total_reviews?: number | null
           updated_at?: string
           user_id?: string
