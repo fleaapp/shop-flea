@@ -17,9 +17,9 @@ interface TieredShippingSetupModalProps {
 const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShippingSetupModalProps) => {
   const { user, refreshProfile } = useAuth();
   const [tieredEnabled, setTieredEnabled] = useState(true);
-  const [tier1, setTier1] = useState('5.00');
-  const [tier2, setTier2] = useState('7.00');
-  const [tier3, setTier3] = useState('9.00');
+  const [tier1, setTier1] = useState('10.00');
+  const [tier2, setTier2] = useState('13.00');
+  const [tier3, setTier3] = useState('17.00');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSave = async () => {
@@ -82,7 +82,7 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
         className="w-[90vw] max-w-md rounded-3xl border-[3px] border-charcoal bg-card p-6"
         hideCloseButton={false}
       >
-        <DialogHeader className="text-center space-y-2">
+        <DialogHeader className="text-center space-y-3 pt-4 pb-2">
           <DialogTitle className="text-xl font-bold flex items-center justify-center gap-2">
             <span>📦</span> Set Your Shipping
           </DialogTitle>
@@ -107,13 +107,12 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
           {/* Tier inputs - only show if enabled */}
           {tieredEnabled && (
             <div className="space-y-3">
-              <p className="text-sm text-muted-foreground text-center">
-                Buyers pay less when they buy multiple items from you.
+              <p className="text-sm text-muted-foreground text-center leading-relaxed">
+                Buyers pay less when they buy<br />multiple items from you.
               </p>
               
               <div className="flex items-center gap-3">
                 <span className="text-sm font-medium flex-1">1 item</span>
-                <span className="text-xs text-muted-foreground w-24 text-right">Base shipping</span>
                 <div className="relative w-24">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                   <Input
@@ -123,14 +122,14 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
                     value={tier1}
                     onChange={(e) => setTier1(e.target.value)}
                     className="pl-7 h-11 rounded-xl"
-                    placeholder="5.00"
+                    placeholder="10.00"
                   />
                 </div>
+                <span className="text-xs text-muted-foreground w-24">Base shipping</span>
               </div>
               
               <div className="flex items-center gap-3">
                 <span className="text-sm font-medium flex-1">2–3 items</span>
-                <span className="text-xs text-muted-foreground w-24 text-right">Slightly higher</span>
                 <div className="relative w-24">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                   <Input
@@ -140,14 +139,14 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
                     value={tier2}
                     onChange={(e) => setTier2(e.target.value)}
                     className="pl-7 h-11 rounded-xl"
-                    placeholder="7.00"
+                    placeholder="13.00"
                   />
                 </div>
+                <span className="text-xs text-muted-foreground w-24">Slightly higher</span>
               </div>
               
               <div className="flex items-center gap-3">
                 <span className="text-sm font-medium flex-1">4+ items</span>
-                <span className="text-xs text-muted-foreground w-24 text-right">Discounted rate</span>
                 <div className="relative w-24">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                   <Input
@@ -157,9 +156,10 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
                     value={tier3}
                     onChange={(e) => setTier3(e.target.value)}
                     className="pl-7 h-11 rounded-xl"
-                    placeholder="9.00"
+                    placeholder="17.00"
                   />
                 </div>
+                <span className="text-xs text-muted-foreground w-24">Discounted rate</span>
               </div>
             </div>
           )}
