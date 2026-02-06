@@ -91,7 +91,7 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-4 space-y-4">
+        <div className="mt-6 space-y-5">
           {/* Toggle */}
           <div className="flex items-center justify-between rounded-xl bg-card p-4 border border-border">
             <Label htmlFor="tiered-toggle" className="text-sm font-medium cursor-pointer">
@@ -100,19 +100,20 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
             <Switch 
               id="tiered-toggle"
               checked={tieredEnabled} 
-              onCheckedChange={setTieredEnabled} 
+              onCheckedChange={setTieredEnabled}
+              className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted"
             />
           </div>
 
           {/* Tier inputs - only show if enabled */}
           {tieredEnabled && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <p className="text-sm text-muted-foreground text-center leading-relaxed">
                 Buyers pay less when they buy<br />multiple items from you.
               </p>
               
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium flex-1">1 item</span>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm font-medium w-16">1 item</span>
                 <div className="relative w-24">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                   <Input
@@ -125,11 +126,11 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
                     placeholder="10.00"
                   />
                 </div>
-                <span className="text-xs text-muted-foreground w-24">Base shipping</span>
+                <span className="text-xs text-muted-foreground w-20 text-right">Base shipping</span>
               </div>
               
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium flex-1">2–3 items</span>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm font-medium w-16">2–3 items</span>
                 <div className="relative w-24">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                   <Input
@@ -142,11 +143,11 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
                     placeholder="13.00"
                   />
                 </div>
-                <span className="text-xs text-muted-foreground w-24">Slightly higher</span>
+                <span className="text-xs text-muted-foreground w-20 text-right">Slightly higher</span>
               </div>
               
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium flex-1">4+ items</span>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm font-medium w-16">4+ items</span>
                 <div className="relative w-24">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                   <Input
@@ -159,7 +160,7 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
                     placeholder="17.00"
                   />
                 </div>
-                <span className="text-xs text-muted-foreground w-24">Discounted rate</span>
+                <span className="text-xs text-muted-foreground w-20 text-right">Discounted rate</span>
               </div>
             </div>
           )}
@@ -172,12 +173,12 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
             </div>
           )}
 
-          <p className="text-xs text-muted-foreground text-center leading-relaxed">
+          <p className="text-xs text-muted-foreground text-center leading-relaxed pt-1">
             You can always adjust shipping per listing<br />or in Settings → Shipping.
           </p>
 
           {/* CTA Button */}
-          <div className="flex justify-center">
+          <div className="flex justify-center pt-1">
             <Button
               onClick={handleSave}
               disabled={isLoading}
