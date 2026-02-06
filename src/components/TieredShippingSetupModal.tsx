@@ -4,8 +4,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Info } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -88,46 +86,17 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
           <DialogTitle className="text-xl font-bold flex items-center justify-center gap-2">
             <span>📦</span> Set Your Shipping
           </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground text-left leading-relaxed">
-            Before you list your first item, set your shipping preferences.
+          <DialogDescription className="text-sm text-muted-foreground text-center leading-relaxed">
+            Before you list your first item,<br />set your shipping preferences.
           </DialogDescription>
         </DialogHeader>
 
         <div className="mt-4 space-y-4">
-          {/* Explanation cards */}
-          <div className="space-y-2 text-sm">
-            <div className="rounded-xl bg-primary/10 p-3">
-              <p className="font-medium text-foreground">Tiered shipping ON (recommended)</p>
-              <p className="text-muted-foreground text-xs mt-1">
-                Buyers pay less when they buy multiple items from you.
-              </p>
-            </div>
-            <div className="rounded-xl bg-muted p-3">
-              <p className="font-medium text-foreground">Tiered shipping OFF</p>
-              <p className="text-muted-foreground text-xs mt-1">
-                Each listing charges exactly what you enter — no combined shipping, no discounts.
-              </p>
-            </div>
-          </div>
-
           {/* Toggle */}
           <div className="flex items-center justify-between rounded-xl bg-card p-4 border border-border">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="tiered-toggle" className="text-sm font-medium cursor-pointer">
-                Enable tiered shipping (recommended)
-              </Label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-[250px] text-xs">
-                    Automatically adjust shipping for multiple items: buyers get discounts if they buy more than one. 
-                    Turn off if you want each listing to charge exactly what you set.
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
+            <Label htmlFor="tiered-toggle" className="text-sm font-medium cursor-pointer">
+              {tieredEnabled ? 'Tiered shipping (recommended)' : 'Tiered shipping OFF'}
+            </Label>
             <Switch 
               id="tiered-toggle"
               checked={tieredEnabled} 
@@ -138,9 +107,14 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
           {/* Tier inputs - only show if enabled */}
           {tieredEnabled && (
             <div className="space-y-3">
+              <p className="text-sm text-muted-foreground text-center">
+                Buyers pay less when they buy multiple items from you.
+              </p>
+              
               <div className="flex items-center gap-3">
-                <span className="text-sm font-medium w-24">1 item:</span>
-                <div className="relative flex-1">
+                <span className="text-sm font-medium flex-1">1 item</span>
+                <span className="text-xs text-muted-foreground w-24 text-right">Base shipping</span>
+                <div className="relative w-24">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                   <Input
                     type="number"
@@ -152,12 +126,12 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
                     placeholder="5.00"
                   />
                 </div>
-                <span className="text-xs text-muted-foreground w-20">Base shipping</span>
               </div>
               
               <div className="flex items-center gap-3">
-                <span className="text-sm font-medium w-24">2–3 items:</span>
-                <div className="relative flex-1">
+                <span className="text-sm font-medium flex-1">2–3 items</span>
+                <span className="text-xs text-muted-foreground w-24 text-right">Slightly higher</span>
+                <div className="relative w-24">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                   <Input
                     type="number"
@@ -169,12 +143,12 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
                     placeholder="7.00"
                   />
                 </div>
-                <span className="text-xs text-muted-foreground w-20">Slightly higher</span>
               </div>
               
               <div className="flex items-center gap-3">
-                <span className="text-sm font-medium w-24">4+ items:</span>
-                <div className="relative flex-1">
+                <span className="text-sm font-medium flex-1">4+ items</span>
+                <span className="text-xs text-muted-foreground w-24 text-right">Discounted rate</span>
+                <div className="relative w-24">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                   <Input
                     type="number"
@@ -186,7 +160,6 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
                     placeholder="9.00"
                   />
                 </div>
-                <span className="text-xs text-muted-foreground w-20">Discounted rate</span>
               </div>
             </div>
           )}
@@ -194,24 +167,25 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
           {!tieredEnabled && (
             <div className="rounded-xl bg-muted/50 p-4 text-center">
               <p className="text-sm text-muted-foreground">
-                Shipping for each listing will be entered manually.<br />
-                Multiple items from you will be charged individually.
+                Each listing charges exactly what you enter —<br />no combined shipping, no discounts.
               </p>
             </div>
           )}
 
-          <p className="text-xs text-muted-foreground text-center">
-            You can always adjust shipping per listing or in Settings → Shipping.
+          <p className="text-xs text-muted-foreground text-center leading-relaxed">
+            You can always adjust shipping per listing<br />or in Settings → Shipping.
           </p>
 
           {/* CTA Button */}
-          <Button
-            onClick={handleSave}
-            disabled={isLoading}
-            className="w-full h-12 rounded-full bg-charcoal text-white font-medium hover:bg-charcoal-light"
-          >
-            {isLoading ? 'Saving...' : 'Save & Continue'}
-          </Button>
+          <div className="flex justify-center">
+            <Button
+              onClick={handleSave}
+              disabled={isLoading}
+              className="w-40 h-12 rounded-full bg-charcoal text-white font-medium hover:bg-charcoal-light"
+            >
+              {isLoading ? 'Saving...' : 'Save & Continue'}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
