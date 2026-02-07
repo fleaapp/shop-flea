@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
@@ -19,6 +19,7 @@ const Settings = () => {
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [shippingOpen, setShippingOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [faqExpanded, setFaqExpanded] = useState(false);
   
   // Get pause_selling from profile
   const pauseSelling = (profile as any)?.pause_selling || false;
@@ -77,8 +78,7 @@ const Settings = () => {
     {
       title: 'Support',
       items: [
-        { icon: <span className="text-base">❓</span>, label: 'FAQ' },
-        { icon: <span className="text-base">📖</span>, label: 'Show Onboarding', action: () => setShowOnboarding(true) },
+        { icon: <span className="text-base">❓</span>, label: 'FAQ', expandable: true },
         { icon: <span className="text-base">🛠️</span>, label: 'Contact Support' },
         { icon: <span className="text-base">🔒</span>, label: 'Privacy & Security' },
       ],
@@ -104,32 +104,62 @@ const Settings = () => {
             
             <div className="space-y-2 max-[375px]:space-y-1.5">
               {group.items.map((item) => (
-                <div
-                  key={item.label}
-                  className={`flex items-center justify-between rounded-2xl bg-card p-4 max-[375px]:p-3 card-shadow ${item.toggle ? '' : 'cursor-pointer'}`}
-                  onClick={async () => {
-                    if (item.toggle) return;
-                    if (item.label === 'Edit Profile') {
-                      navigate('/settings/profile');
-                    } else if (item.action) {
-                      await item.action();
-                    } else {
-                      toast(`${item.label} clicked`);
-                    }
-                  }}
-                >
-                  <div className="flex items-center gap-3 max-[375px]:gap-2">
-                    <div className="text-muted-foreground">{item.icon}</div>
-                    <span className="text-base max-[375px]:text-sm font-medium text-foreground">{item.label}</span>
+                <div key={item.label}>
+                  <div
+                    className={`flex items-center justify-between rounded-2xl bg-card p-4 max-[375px]:p-3 card-shadow ${item.toggle ? '' : 'cursor-pointer'}`}
+                    onClick={async () => {
+                      if (item.toggle) return;
+                      if (item.expandable) {
+                        setFaqExpanded(!faqExpanded);
+                        return;
+                      }
+                      if (item.label === 'Edit Profile') {
+                        navigate('/settings/profile');
+                      } else if (item.action) {
+                        await item.action();
+                      } else {
+                        toast(`${item.label} clicked`);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center gap-3 max-[375px]:gap-2">
+                      <div className="text-muted-foreground">{item.icon}</div>
+                      <span className="text-base max-[375px]:text-sm font-medium text-foreground">{item.label}</span>
+                    </div>
+                    
+                    {item.toggle ? (
+                      <Switch
+                        checked={item.checked}
+                        onCheckedChange={item.onToggle}
+                        className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime"
+                      />
+                    ) : item.expandable ? (
+                      faqExpanded ? (
+                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                      )
+                    ) : (
+                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    )}
                   </div>
                   
-                  {item.toggle ? (
-                    <Switch
-                      checked={item.checked}
-                      onCheckedChange={item.onToggle}
-                    />
-                  ) : (
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  {/* FAQ sub-items */}
+                  {item.expandable && faqExpanded && (
+                    <div className="ml-6 mt-2 space-y-2">
+                      <div
+                        className="flex items-center justify-between rounded-2xl bg-card p-4 max-[375px]:p-3 card-shadow cursor-pointer"
+                        onClick={() => setShowOnboarding(true)}
+                      >
+                        <div className="flex items-center gap-3 max-[375px]:gap-2">
+                          <div className="text-muted-foreground">
+                            <span className="text-base">📖</span>
+                          </div>
+                          <span className="text-base max-[375px]:text-sm font-medium text-foreground">Show Onboarding</span>
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    </div>
                   )}
                 </div>
               ))}
