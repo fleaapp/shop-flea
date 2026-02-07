@@ -4,8 +4,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Info } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -18,9 +16,9 @@ interface ShippingSettingsSheetProps {
 const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProps) => {
   const { user, refreshProfile } = useAuth();
   const [tieredEnabled, setTieredEnabled] = useState(true);
-  const [tier1, setTier1] = useState('5.00');
-  const [tier2, setTier2] = useState('7.00');
-  const [tier3, setTier3] = useState('9.00');
+  const [tier1, setTier1] = useState('10.00');
+  const [tier2, setTier2] = useState('13.00');
+  const [tier3, setTier3] = useState('17.00');
   const [isLoading, setIsLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
@@ -38,9 +36,9 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
       
       if (data) {
         setTieredEnabled(data.tiered_shipping_enabled ?? true);
-        setTier1(data.shipping_tier_1?.toString() ?? '5.00');
-        setTier2(data.shipping_tier_2?.toString() ?? '7.00');
-        setTier3(data.shipping_tier_3?.toString() ?? '9.00');
+        setTier1(data.shipping_tier_1?.toString() ?? '10.00');
+        setTier2(data.shipping_tier_2?.toString() ?? '13.00');
+        setTier3(data.shipping_tier_3?.toString() ?? '17.00');
       }
       setInitialLoading(false);
     };
@@ -105,7 +103,7 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="px-6 pb-8">
-        <DrawerHeader className="pb-4">
+        <DrawerHeader className="py-6">
           <DrawerTitle className="text-center flex items-center justify-center gap-2">
             <span>📦</span> Shipping Settings
           </DrawerTitle>
@@ -119,25 +117,14 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
           <div className="space-y-4">
             {/* Toggle */}
             <div className="flex items-center justify-between rounded-xl bg-card p-4 border border-border">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="tiered-toggle-settings" className="text-sm font-medium cursor-pointer">
-                  Enable tiered shipping
-                </Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-[250px] text-xs">
-                      Automatically adjust shipping for multiple items: buyers get discounts if they buy more than one.
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+              <Label htmlFor="tiered-toggle-settings" className="text-sm font-medium cursor-pointer">
+                Tiered shipping
+              </Label>
               <Switch 
                 id="tiered-toggle-settings"
                 checked={tieredEnabled} 
-                onCheckedChange={setTieredEnabled} 
+                onCheckedChange={setTieredEnabled}
+                className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted"
               />
             </div>
 
