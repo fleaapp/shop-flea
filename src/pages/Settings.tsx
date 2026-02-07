@@ -70,15 +70,15 @@ const Settings = () => {
         { icon: <ProfileAvatar />, label: 'Edit Profile' },
         { icon: <span className="text-base">🔁</span>, label: 'Refresh Passed Listings', action: handleRefreshDiscarded },
         { icon: <span className="text-base">📏</span>, label: 'Filter Preferences', action: () => setPreferencesOpen(true) },
-        { icon: <span className="text-base">📦</span>, label: 'Shipping', action: () => setShippingOpen(true) },
+        { icon: <span className="text-base">📦</span>, label: 'Shipping Settings', action: () => setShippingOpen(true) },
         { icon: <span className="text-base">⏸️</span>, label: 'Pause Selling', toggle: true, checked: pauseSelling, onToggle: handleTogglePauseSelling },
-        { icon: <span className="text-base">📖</span>, label: 'Show Onboarding', action: () => setShowOnboarding(true) },
       ],
     },
     {
       title: 'Support',
       items: [
         { icon: <span className="text-base">❓</span>, label: 'FAQ' },
+        { icon: <span className="text-base">📖</span>, label: 'Show Onboarding', action: () => setShowOnboarding(true) },
         { icon: <span className="text-base">🛠️</span>, label: 'Contact Support' },
         { icon: <span className="text-base">🔒</span>, label: 'Privacy & Security' },
       ],
