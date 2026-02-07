@@ -131,11 +131,11 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
             {/* Tier inputs - only show if enabled */}
             {tieredEnabled && (
               <div className="space-y-3">
-                <p className="text-sm font-medium text-foreground">Shipping tiers</p>
+                <p className="text-sm font-medium text-foreground text-center">Shipping tiers</p>
                 
-                <div className="flex items-center gap-3">
-                  <span className="text-sm w-24">1 item:</span>
-                  <div className="relative flex-1">
+                <div className="flex items-center justify-center gap-3">
+                  <span className="text-sm w-20 text-left">1 item:</span>
+                  <div className="relative w-24">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                     <Input
                       type="number"
@@ -148,9 +148,9 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-3">
-                  <span className="text-sm w-24">2–3 items:</span>
-                  <div className="relative flex-1">
+                <div className="flex items-center justify-center gap-3">
+                  <span className="text-sm w-20 text-left">2–3 items:</span>
+                  <div className="relative w-24">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                     <Input
                       type="number"
@@ -163,9 +163,9 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-3">
-                  <span className="text-sm w-24">4+ items:</span>
-                  <div className="relative flex-1">
+                <div className="flex items-center justify-center gap-3">
+                  <span className="text-sm w-20 text-left">4+ items:</span>
+                  <div className="relative w-24">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                     <Input
                       type="number"
@@ -194,7 +194,7 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
               <Button
                 onClick={handleSave}
                 disabled={isLoading}
-                className="w-48 h-12 rounded-full bg-primary text-primary-foreground font-medium"
+                className="w-40 h-12 rounded-full bg-charcoal text-white font-medium hover:bg-charcoal-light"
               >
                 {isLoading ? 'Saving...' : 'Save Settings'}
               </Button>
