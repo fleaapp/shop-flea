@@ -44,6 +44,10 @@ const CreateListing = () => {
   const [showShippingSetup, setShowShippingSetup] = useState(false);
   const [shippingChecked, setShippingChecked] = useState(false);
   
+  // Tiered shipping state
+  const [tieredShippingEnabled, setTieredShippingEnabled] = useState<boolean | null>(null);
+  const [tier1Price, setTier1Price] = useState<number | null>(null);
+  
   const [productName, setProductName] = useState('');
   const [fit, setFit] = useState(''); // Gender/Fit selection
   const [category, setCategory] = useState('');
@@ -86,14 +90,23 @@ const CreateListing = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // Check if shipping preferences need to be set
+  // Check if shipping preferences need to be set and load tiered shipping state
   useEffect(() => {
     if (!authLoading && user && profile && !shippingChecked) {
       setShippingChecked(true);
 
-      // If we already saved locally (because backend columns aren't present), don't block.
-      if (loadShippingPrefs(user.id)) return;
+      // Check localStorage first for shipping prefs
+      const localPrefs = loadShippingPrefs(user.id);
+      if (localPrefs) {
+        setTieredShippingEnabled(localPrefs.tieredEnabled);
+        if (localPrefs.tieredEnabled) {
+          setTier1Price(localPrefs.tier1);
+          setShippingPrice(localPrefs.tier1.toString());
+        }
+        return;
+      }
 
+      // Fall back to profile data
       const needsShippingSetup =
         profile.tiered_shipping_enabled === null ||
         profile.tiered_shipping_enabled === undefined ||
@@ -107,6 +120,13 @@ const CreateListing = () => {
 
       if (needsShippingSetup) {
         setShowShippingSetup(true);
+      } else {
+        // Load tiered shipping settings from profile
+        setTieredShippingEnabled(profile.tiered_shipping_enabled ?? false);
+        if (profile.tiered_shipping_enabled && profile.shipping_tier_1 != null) {
+          setTier1Price(profile.shipping_tier_1);
+          setShippingPrice(profile.shipping_tier_1.toString());
+        }
       }
     }
   }, [user, profile, authLoading, shippingChecked]);
@@ -114,6 +134,18 @@ const CreateListing = () => {
   const handleShippingSetupComplete = async () => {
     setShowShippingSetup(false);
     await refreshProfile();
+    
+    // Reload shipping prefs after setup
+    if (user) {
+      const localPrefs = loadShippingPrefs(user.id);
+      if (localPrefs) {
+        setTieredShippingEnabled(localPrefs.tieredEnabled);
+        if (localPrefs.tieredEnabled) {
+          setTier1Price(localPrefs.tier1);
+          setShippingPrice(localPrefs.tier1.toString());
+        }
+      }
+    }
   };
 
   const handleShippingSetupCancel = () => {
@@ -487,14 +519,20 @@ const CreateListing = () => {
 
         {/* Shipping Price */}
         <div className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60 font-medium">$</span>
+          <span className={`absolute left-4 top-1/2 -translate-y-1/2 font-medium ${tieredShippingEnabled ? 'text-muted-foreground/40' : 'text-muted-foreground/60'}`}>$</span>
           <Input
             type="number"
             placeholder="Shipping price"
             value={shippingPrice}
             onChange={(e) => setShippingPrice(e.target.value)}
-            className={`${inputStyles} pl-8`}
+            disabled={tieredShippingEnabled === true}
+            className={`${inputStyles} pl-8 ${tieredShippingEnabled ? 'opacity-60 cursor-not-allowed' : ''}`}
           />
+          {tieredShippingEnabled && (
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60">
+              Tiered shipping
+            </span>
+          )}
         </div>
         
         {/* Description */}
