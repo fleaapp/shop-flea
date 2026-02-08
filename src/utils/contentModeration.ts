@@ -13,16 +13,18 @@ const PROFANITY_LIST = [
 ];
 
 // Social media platforms and communication apps
-const SOCIAL_PLATFORMS = [
-  'instagram', 'insta', 'ig',
-  'tiktok', 'tik tok', 'tt',
-  'snapchat', 'snap', 'sc',
-  'whatsapp', 'whats app', 'wa',
-  'facebook', 'fb', 'messenger',
+// Split into short abbreviations (need word boundary matching) and full names
+const SOCIAL_PLATFORMS_SHORT = ['ig', 'tt', 'sc', 'wa', 'fb', 'yt'];
+const SOCIAL_PLATFORMS_FULL = [
+  'instagram', 'insta',
+  'tiktok', 'tik tok',
+  'snapchat', 'snap',
+  'whatsapp', 'whats app',
+  'facebook', 'messenger',
   'twitter', 'x.com',
   'telegram', 'discord', 'signal',
-  'wechat', 'line', 'viber', 'kik',
-  'linkedin', 'youtube', 'yt',
+  'wechat', 'line app', 'viber', 'kik',
+  'linkedin', 'youtube',
   'dm me', 'text me', 'call me', 'hit me up', 'hmu',
   'add me', 'follow me', 'message me outside',
 ];
@@ -177,25 +179,26 @@ function detectUrl(text: string): boolean {
 // Detect social media mentions
 function detectSocialMedia(text: string): boolean {
   const normalized = normalizeText(text);
-  const stripped = stripAllNonAlphanumeric(text);
   
-  for (const platform of SOCIAL_PLATFORMS) {
-    const strippedPlatform = stripAllNonAlphanumeric(platform);
-    
-    // Check normalized text
-    if (normalized.includes(platform)) {
+  // Check full platform names as whole words only
+  for (const platform of SOCIAL_PLATFORMS_FULL) {
+    const wordPattern = new RegExp(`\\b${platform.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+    if (wordPattern.test(normalized)) {
       return true;
     }
-    
-    // Check stripped text (catches spaced/punctuated versions)
-    if (stripped.includes(strippedPlatform)) {
+  }
+  
+  // Check short abbreviations only as standalone words (not substrings)
+  for (const abbrev of SOCIAL_PLATFORMS_SHORT) {
+    const wordPattern = new RegExp(`\\b${abbrev}\\b`, 'i');
+    if (wordPattern.test(normalized)) {
       return true;
     }
   }
   
   // Check for @ handles pattern (social media usernames)
-  if (/@[a-z0-9_]{2,}/i.test(text) && !text.includes('@user')) {
-    // Exclude @user which might be legitimate
+  // Must be @username format, not email-like patterns
+  if (/@[a-z0-9_]{3,}(?![a-z0-9.]*\.[a-z]{2,})/i.test(text)) {
     return true;
   }
   
