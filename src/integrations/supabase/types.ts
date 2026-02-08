@@ -129,6 +129,7 @@ export type Database = {
           id: string
           listing_id: string
           parent_id: string | null
+          report_count: number
           updated_at: string
           user_id: string
         }
@@ -138,6 +139,7 @@ export type Database = {
           id?: string
           listing_id: string
           parent_id?: string | null
+          report_count?: number
           updated_at?: string
           user_id: string
         }
@@ -147,6 +149,7 @@ export type Database = {
           id?: string
           listing_id?: string
           parent_id?: string | null
+          report_count?: number
           updated_at?: string
           user_id?: string
         }
@@ -181,6 +184,7 @@ export type Database = {
           images: string[]
           price: number
           region_id: string | null
+          report_count: number
           shipping_price: number | null
           size: string
           status: string
@@ -203,6 +207,7 @@ export type Database = {
           images?: string[]
           price: number
           region_id?: string | null
+          report_count?: number
           shipping_price?: number | null
           size: string
           status?: string
@@ -225,6 +230,7 @@ export type Database = {
           images?: string[]
           price?: number
           region_id?: string | null
+          report_count?: number
           shipping_price?: number | null
           size?: string
           status?: string
@@ -371,10 +377,12 @@ export type Database = {
           preferred_sizes: string[] | null
           rating: number | null
           region_id: string | null
+          report_strike_count: number
           shipping_preferences_set: boolean | null
           shipping_tier_1: number | null
           shipping_tier_2: number | null
           shipping_tier_3: number | null
+          status: string
           tiered_shipping_enabled: boolean | null
           total_reviews: number | null
           updated_at: string
@@ -394,10 +402,12 @@ export type Database = {
           preferred_sizes?: string[] | null
           rating?: number | null
           region_id?: string | null
+          report_strike_count?: number
           shipping_preferences_set?: boolean | null
           shipping_tier_1?: number | null
           shipping_tier_2?: number | null
           shipping_tier_3?: number | null
+          status?: string
           tiered_shipping_enabled?: boolean | null
           total_reviews?: number | null
           updated_at?: string
@@ -417,10 +427,12 @@ export type Database = {
           preferred_sizes?: string[] | null
           rating?: number | null
           region_id?: string | null
+          report_strike_count?: number
           shipping_preferences_set?: boolean | null
           shipping_tier_1?: number | null
           shipping_tier_2?: number | null
           shipping_tier_3?: number | null
+          status?: string
           tiered_shipping_enabled?: boolean | null
           total_reviews?: number | null
           updated_at?: string
@@ -458,6 +470,36 @@ export type Database = {
           is_active?: boolean
           name?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string | null
+          report_type: string
+          reported_entity_id: string
+          reported_user_id: string
+          reporting_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          report_type: string
+          reported_entity_id: string
+          reported_user_id: string
+          reporting_user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          report_type?: string
+          reported_entity_id?: string
+          reported_user_id?: string
+          reporting_user_id?: string
         }
         Relationships: []
       }
@@ -572,6 +614,7 @@ export type Database = {
       }
       get_user_region_id: { Args: { user_uuid: string }; Returns: string }
       is_region_active: { Args: { region: string }; Returns: boolean }
+      is_user_blocked: { Args: { user_uuid: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

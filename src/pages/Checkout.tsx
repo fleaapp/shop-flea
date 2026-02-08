@@ -13,13 +13,16 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import OrderSuccessDialog from '@/components/OrderSuccessDialog';
+import BlockedUserBanner from '@/components/BlockedUserBanner';
 import { fetchSellerShippingSettings, calculateTotalShipping, SellerShippingInfo } from '@/utils/shippingCalculator';
+import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 
 type PaymentMethod = 'card' | 'paypal' | 'applepay';
 const Checkout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { isBlocked } = useBlockedStatus();
   const {
     removeFromCart
   } = useCart();
@@ -103,6 +106,11 @@ const Checkout = () => {
   const handlePlaceOrder = async () => {
     if (!user) {
       toast.error('You must be logged in to place an order');
+      return;
+    }
+
+    if (isBlocked) {
+      toast.error('Your account is restricted. You cannot make purchases.');
       return;
     }
     

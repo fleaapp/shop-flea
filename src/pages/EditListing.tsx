@@ -9,10 +9,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import BottomNav from '@/components/BottomNav';
 import SizeSelectionDrawer from '@/components/SizeSelectionDrawer';
 import CategorySelectionDrawer from '@/components/CategorySelectionDrawer';
+import BlockedUserBanner from '@/components/BlockedUserBanner';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/utils/imageCompression';
+import { useContentModeration } from '@/hooks/useContentModeration';
+import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import {
   FIT_OPTIONS,
   CATEGORY_OPTIONS,
@@ -31,6 +34,8 @@ const EditListing = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { user, loading: authLoading } = useAuth();
+  const { checkListingContent, isChecking } = useContentModeration();
+  const { isBlocked } = useBlockedStatus();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
@@ -214,6 +219,11 @@ const EditListing = () => {
       navigate('/auth');
       return;
     }
+
+    if (isBlocked) {
+      toast.error('Your account is restricted. You cannot edit listings.');
+      return;
+    }
     
     if (!productName || !fit || !category || !size || !brand || !condition || !itemPrice) {
       toast.error('Please fill in all required fields');
@@ -229,6 +239,18 @@ const EditListing = () => {
     setIsLoading(true);
     
     try {
+      // Check content moderation before saving
+      const moderationResult = await checkListingContent({
+        title: productName,
+        description: description || undefined,
+        brand,
+      });
+
+      if (moderationResult.isBlocked) {
+        setIsLoading(false);
+        return;
+      }
+
       // Upload new images
       const newImageUrls = await uploadImages();
       const allImages = [...existingImages, ...newImageUrls];

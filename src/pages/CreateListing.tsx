@@ -9,10 +9,13 @@ import BottomNav from '@/components/BottomNav';
 import SizeSelectionDrawer from '@/components/SizeSelectionDrawer';
 import CategorySelectionDrawer from '@/components/CategorySelectionDrawer';
 import TieredShippingSetupModal from '@/components/TieredShippingSetupModal';
+import BlockedUserBanner from '@/components/BlockedUserBanner';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/utils/imageCompression';
+import { useContentModeration } from '@/hooks/useContentModeration';
+import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import { 
   FIT_OPTIONS, 
   CATEGORY_OPTIONS,
@@ -30,6 +33,8 @@ interface ImageFile {
 const CreateListing = () => {
   const navigate = useNavigate();
   const { user, profile, loading: authLoading, refreshProfile } = useAuth();
+  const { checkListingContent, isChecking } = useContentModeration();
+  const { isBlocked } = useBlockedStatus();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [imageFiles, setImageFiles] = useState<ImageFile[]>([]);
@@ -181,6 +186,12 @@ const CreateListing = () => {
       navigate('/auth');
       return;
     }
+
+    // Check if user is blocked
+    if (isBlocked) {
+      toast.error('Your account is restricted. You cannot create listings.');
+      return;
+    }
     
     if (!productName || !fit || !category || !size || !brand || !condition || !itemPrice) {
       toast.error('Please fill in all required fields');
@@ -195,6 +206,18 @@ const CreateListing = () => {
     setIsLoading(true);
     
     try {
+      // Check content for moderation before uploading
+      const moderationResult = await checkListingContent({
+        title: productName,
+        description: description || undefined,
+        brand,
+      });
+
+      if (moderationResult.isBlocked) {
+        setIsLoading(false);
+        return; // Error toast already shown by hook
+      }
+
       // Upload images to storage
       const imageUrls = await uploadImages();
       
@@ -248,6 +271,8 @@ const CreateListing = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
+      {/* Blocked user banner */}
+      {isBlocked && <BlockedUserBanner />}
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
