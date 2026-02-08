@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { loadShippingPrefs, saveShippingPrefs } from '@/utils/shippingPrefs';
 import { toast } from 'sonner';
 
 interface ShippingSettingsSheetProps {
@@ -28,18 +29,33 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
       if (!user || !open) return;
       
       setInitialLoading(true);
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('tiered_shipping_enabled, shipping_tier_1, shipping_tier_2, shipping_tier_3')
         .eq('user_id', user.id)
         .maybeSingle();
-      
-      if (data) {
+
+      if (error) {
+        if ((error as any).code === 'PGRST204') {
+          const local = loadShippingPrefs(user.id);
+          if (local) {
+            setTieredEnabled(local.tieredEnabled);
+            if (local.tieredEnabled) {
+              setTier1(local.tier1.toFixed(2));
+              setTier2(local.tier2.toFixed(2));
+              setTier3(local.tier3.toFixed(2));
+            }
+          }
+        } else {
+          console.error('Error loading shipping settings:', error);
+        }
+      } else if (data) {
         setTieredEnabled(data.tiered_shipping_enabled ?? true);
         setTier1(data.shipping_tier_1?.toString() ?? '10.00');
         setTier2(data.shipping_tier_2?.toString() ?? '13.00');
         setTier3(data.shipping_tier_3?.toString() ?? '17.00');
       }
+
       setInitialLoading(false);
     };
 
@@ -86,7 +102,28 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
         .update(updateData)
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        if ((error as any).code === 'PGRST204') {
+          // External Supabase may not have these columns yet.
+          saveShippingPrefs(
+            user.id,
+            tieredEnabled
+              ? {
+                  tieredEnabled: true,
+                  tier1: parseFloat(tier1),
+                  tier2: parseFloat(tier2),
+                  tier3: parseFloat(tier3),
+                }
+              : { tieredEnabled: false }
+          );
+
+          toast.success('Shipping settings saved!');
+          onOpenChange(false);
+          return;
+        }
+
+        throw error;
+      }
 
       await refreshProfile();
       toast.success('Shipping settings saved!');

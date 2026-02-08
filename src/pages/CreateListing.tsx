@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/utils/imageCompression';
+import { loadShippingPrefs } from '@/utils/shippingPrefs';
 import { useContentModeration } from '@/hooks/useContentModeration';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import { 
@@ -89,6 +90,9 @@ const CreateListing = () => {
   useEffect(() => {
     if (!authLoading && user && profile && !shippingChecked) {
       setShippingChecked(true);
+
+      // If we already saved locally (because backend columns aren't present), don't block.
+      if (loadShippingPrefs(user.id)) return;
 
       const needsShippingSetup =
         profile.tiered_shipping_enabled === null ||
