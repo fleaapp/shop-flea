@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { saveShippingPrefs } from '@/utils/shippingPrefs';
 import { toast } from 'sonner';
 
 interface TieredShippingSetupModalProps {
@@ -62,7 +63,28 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
         .update(updateData)
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        // External Supabase may not have these columns yet.
+        if ((error as any).code === 'PGRST204') {
+          saveShippingPrefs(
+            user.id,
+            tieredEnabled
+              ? {
+                  tieredEnabled: true,
+                  tier1: parseFloat(tier1),
+                  tier2: parseFloat(tier2),
+                  tier3: parseFloat(tier3),
+                }
+              : { tieredEnabled: false }
+          );
+
+          toast.success('Shipping preferences saved!');
+          onComplete();
+          return;
+        }
+
+        throw error;
+      }
 
       await refreshProfile();
       toast.success('Shipping preferences saved!');
