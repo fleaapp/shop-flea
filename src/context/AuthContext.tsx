@@ -18,6 +18,8 @@ interface Profile {
   shipping_tier_2?: number;
   shipping_tier_3?: number;
   shipping_preferences_set?: boolean;
+  region_id?: string | null;
+  country_code?: string | null;
 }
 
 interface AuthContextType {
@@ -25,7 +27,7 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, username: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, username: string, countryCode?: string, regionId?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -86,7 +88,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, [fetchProfile]);
 
-  const signUp = async (email: string, password: string, username: string) => {
+  const signUp = async (
+    email: string, 
+    password: string, 
+    username: string,
+    countryCode?: string,
+    regionId?: string
+  ) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -94,6 +102,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         emailRedirectTo: window.location.origin,
         data: {
           username: `@${username.replace(/^@/, '')}`,
+          country_code: countryCode,
+          region_id: regionId,
         },
       },
     });

@@ -35,6 +35,35 @@ export type Database = {
         }
         Relationships: []
       }
+      countries: {
+        Row: {
+          code: string
+          created_at: string
+          name: string
+          region_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          name: string
+          region_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          name?: string
+          region_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "countries_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       discarded_listings: {
         Row: {
           created_at: string
@@ -144,12 +173,14 @@ export type Database = {
           category: string
           colour: string | null
           condition: string
+          country_code: string | null
           created_at: string
           description: string | null
           gender: string | null
           id: string
           images: string[]
           price: number
+          region_id: string | null
           shipping_price: number | null
           size: string
           status: string
@@ -164,12 +195,14 @@ export type Database = {
           category: string
           colour?: string | null
           condition: string
+          country_code?: string | null
           created_at?: string
           description?: string | null
           gender?: string | null
           id?: string
           images?: string[]
           price: number
+          region_id?: string | null
           shipping_price?: number | null
           size: string
           status?: string
@@ -184,12 +217,14 @@ export type Database = {
           category?: string
           colour?: string | null
           condition?: string
+          country_code?: string | null
           created_at?: string
           description?: string | null
           gender?: string | null
           id?: string
           images?: string[]
           price?: number
+          region_id?: string | null
           shipping_price?: number | null
           size?: string
           status?: string
@@ -325,6 +360,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          country_code: string | null
           created_at: string
           first_name: string | null
           id: string
@@ -334,6 +370,7 @@ export type Database = {
           preferred_gender: string | null
           preferred_sizes: string[] | null
           rating: number | null
+          region_id: string | null
           shipping_preferences_set: boolean | null
           shipping_tier_1: number | null
           shipping_tier_2: number | null
@@ -346,6 +383,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          country_code?: string | null
           created_at?: string
           first_name?: string | null
           id?: string
@@ -355,6 +393,7 @@ export type Database = {
           preferred_gender?: string | null
           preferred_sizes?: string[] | null
           rating?: number | null
+          region_id?: string | null
           shipping_preferences_set?: boolean | null
           shipping_tier_1?: number | null
           shipping_tier_2?: number | null
@@ -367,6 +406,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          country_code?: string | null
           created_at?: string
           first_name?: string | null
           id?: string
@@ -376,6 +416,7 @@ export type Database = {
           preferred_gender?: string | null
           preferred_sizes?: string[] | null
           rating?: number | null
+          region_id?: string | null
           shipping_preferences_set?: boolean | null
           shipping_tier_1?: number | null
           shipping_tier_2?: number | null
@@ -385,6 +426,38 @@ export type Database = {
           updated_at?: string
           user_id?: string
           username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regions: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -450,6 +523,41 @@ export type Database = {
         }
         Relationships: []
       }
+      waitlist: {
+        Row: {
+          country_code: string
+          created_at: string
+          email: string
+          id: string
+          notified_at: string | null
+          region_id: string | null
+        }
+        Insert: {
+          country_code: string
+          created_at?: string
+          email: string
+          id?: string
+          notified_at?: string | null
+          region_id?: string | null
+        }
+        Update: {
+          country_code?: string
+          created_at?: string
+          email?: string
+          id?: string
+          notified_at?: string | null
+          region_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waitlist_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -462,6 +570,8 @@ export type Database = {
           search_count: number
         }[]
       }
+      get_user_region_id: { Args: { user_uuid: string }; Returns: string }
+      is_region_active: { Args: { region: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

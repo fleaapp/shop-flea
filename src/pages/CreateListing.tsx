@@ -198,7 +198,7 @@ const CreateListing = () => {
       // Upload images to storage
       const imageUrls = await uploadImages();
       
-      // Create the listing
+      // Create the listing with region from user's profile
       const { error } = await supabase
         .from('listings')
         .insert({
@@ -217,6 +217,8 @@ const CreateListing = () => {
           images: imageUrls,
           tags: [brand, category].filter(Boolean),
           status: 'active',
+          region_id: profile?.region_id || null,
+          country_code: profile?.country_code || null,
         });
       
       if (error) {
