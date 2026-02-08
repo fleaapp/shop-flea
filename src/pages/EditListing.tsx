@@ -12,6 +12,7 @@ import CategorySelectionDrawer from '@/components/CategorySelectionDrawer';
 import BlockedUserBanner from '@/components/BlockedUserBanner';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { loadShippingPrefs } from '@/utils/shippingPrefs';
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/utils/imageCompression';
 import { useContentModeration } from '@/hooks/useContentModeration';
@@ -33,7 +34,7 @@ interface ImageFile {
 const EditListing = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const { checkListingContent, isChecking } = useContentModeration();
   const { isBlocked } = useBlockedStatus();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -43,6 +44,9 @@ const EditListing = () => {
   const [isMarkingSold, setIsMarkingSold] = useState(false);
   const [sizeDrawerOpen, setSizeDrawerOpen] = useState(false);
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
+  
+  // Tiered shipping state
+  const [tieredShippingEnabled, setTieredShippingEnabled] = useState<boolean | null>(null);
   
   // New images to upload
   const [newImageFiles, setNewImageFiles] = useState<ImageFile[]>([]);
@@ -135,6 +139,27 @@ const EditListing = () => {
       navigate('/auth');
     }
   }, [user, authLoading, navigate]);
+
+  // Load tiered shipping settings
+  useEffect(() => {
+    if (!authLoading && user && profile) {
+      // Check localStorage first for shipping prefs
+      const localPrefs = loadShippingPrefs(user.id);
+      if (localPrefs) {
+        setTieredShippingEnabled(localPrefs.tieredEnabled);
+        if (localPrefs.tieredEnabled) {
+          setShippingPrice(localPrefs.tier1.toString());
+        }
+        return;
+      }
+
+      // Fall back to profile data
+      setTieredShippingEnabled(profile.tiered_shipping_enabled ?? false);
+      if (profile.tiered_shipping_enabled && profile.shipping_tier_1 != null) {
+        setShippingPrice(profile.shipping_tier_1.toString());
+      }
+    }
+  }, [user, profile, authLoading]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -569,14 +594,20 @@ const EditListing = () => {
 
         {/* Shipping Price */}
         <div className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60 font-medium">$</span>
+          <span className={`absolute left-4 top-1/2 -translate-y-1/2 font-medium ${tieredShippingEnabled ? 'text-muted-foreground/40' : 'text-muted-foreground/60'}`}>$</span>
           <Input
             type="number"
             placeholder="Shipping price"
             value={shippingPrice}
             onChange={(e) => setShippingPrice(e.target.value)}
-            className={`${inputStyles} pl-8`}
+            disabled={tieredShippingEnabled === true}
+            className={`${inputStyles} pl-8 ${tieredShippingEnabled ? 'opacity-60 cursor-not-allowed' : ''}`}
           />
+          {tieredShippingEnabled && (
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60">
+              Tiered shipping
+            </span>
+          )}
         </div>
         
         {/* Description */}
