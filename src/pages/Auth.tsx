@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { useOnboarding } from '@/context/OnboardingContext';
 import { supabase } from '@/lib/supabase';
+import { detectUserLocation, checkRegionActive } from '@/services/geolocation';
+import RegionBlockedScreen from '@/components/RegionBlockedScreen';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -18,6 +20,12 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
+  // Region detection state
+  const [isDetectingLocation, setIsDetectingLocation] = useState(true);
+  const [detectedCountry, setDetectedCountry] = useState<{ code: string; name: string } | null>(null);
+  const [detectedRegion, setDetectedRegion] = useState<string | null>(null);
+  const [isRegionBlocked, setIsRegionBlocked] = useState(false);
+  
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   
@@ -25,6 +33,37 @@ const Auth = () => {
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [passwordFocused, setPasswordFocused] = useState(false);
+  
+  // Detect user location on mount
+  useEffect(() => {
+    const detectLocation = async () => {
+      try {
+        const location = await detectUserLocation();
+        setDetectedCountry({ code: location.country_code, name: location.country_name });
+        setDetectedRegion(location.region_id);
+        
+        // Check if their region is active
+        if (location.region_id) {
+          const isActive = await checkRegionActive(location.region_id);
+          setIsRegionBlocked(!isActive);
+        } else {
+          // Unknown region - block access
+          setIsRegionBlocked(true);
+        }
+      } catch (error) {
+        console.error('Location detection failed:', error);
+        // On error, block access to be safe
+        setIsRegionBlocked(true);
+        setDetectedCountry({ code: 'UNKNOWN', name: 'Unknown' });
+      } finally {
+        setIsDetectingLocation(false);
+      }
+    };
+    
+    detectLocation();
+  }, []);
+  
+  // Redirect if already logged in
   // Redirect if already logged in
   useEffect(() => {
     if (user && !authLoading) {
@@ -92,7 +131,13 @@ const Auth = () => {
     // Use a placeholder username - user will set it in the welcome popup
     const placeholderUsername = `user_${Date.now()}`;
     
-    const { error } = await signUp(signupEmail, signupPassword, placeholderUsername);
+    const { error } = await signUp(
+      signupEmail, 
+      signupPassword, 
+      placeholderUsername,
+      detectedCountry?.code,
+      detectedRegion || undefined
+    );
     
     if (error) {
       toast.error(error.message || 'Failed to create account');
@@ -145,11 +190,22 @@ const Auth = () => {
     toast.info('Facebook login is not yet available');
   };
 
-  if (authLoading) {
+  // Show loading while detecting location
+  if (authLoading || isDetectingLocation) {
     return (
       <div className="fixed inset-0 bg-primary flex items-center justify-center overflow-hidden">
         <span className="text-5xl">⏳</span>
       </div>
+    );
+  }
+
+  // Show region blocked screen if user is outside active regions
+  if (isRegionBlocked && detectedCountry) {
+    return (
+      <RegionBlockedScreen 
+        countryCode={detectedCountry.code} 
+        countryName={detectedCountry.name} 
+      />
     );
   }
 
