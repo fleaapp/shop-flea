@@ -425,12 +425,10 @@ const ListingDetails = () => {
                 </div>
               </div>
 
-            </div>
-          </div>
+              {/* Comments Section */}
+              <ListingComments listingId={listing.id} sellerId={listing.user_id} />
 
-          {/* Sticky Comments Section - above footer */}
-          <div className="sticky bottom-[82px] left-0 right-0 bg-background px-4 border-t border-border z-10">
-            <ListingComments listingId={listing.id} sellerId={listing.user_id} />
+            </div>
           </div>
 
           {/* Sticky Footer Actions */}
