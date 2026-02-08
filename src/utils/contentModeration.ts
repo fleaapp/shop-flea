@@ -205,19 +205,12 @@ function detectSocialMedia(text: string): boolean {
 // Detect profanity
 function detectProfanity(text: string): boolean {
   const normalized = normalizeText(text);
-  const stripped = stripAllNonAlphanumeric(text);
   
   for (const word of PROFANITY_LIST) {
-    const strippedWord = stripAllNonAlphanumeric(word);
-    
-    // Check as whole word in normalized text
+    // Only check as whole word to avoid false positives
+    // e.g., "classic" should not match "ass", "ladies" should not match "die"
     const wordPattern = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
     if (wordPattern.test(normalized)) {
-      return true;
-    }
-    
-    // Check in stripped text
-    if (stripped.includes(strippedWord)) {
       return true;
     }
   }
