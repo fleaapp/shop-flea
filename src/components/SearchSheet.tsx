@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { ArrowLeft, X, Clock, TrendingUp, User } from 'lucide-react';
 import { Listing } from '@/types/listing';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { isSimilar } from '@/utils/fuzzyMatch';
 import { useTrendingSearches } from '@/hooks/useTrendingSearches';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';

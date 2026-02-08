@@ -1,14 +1,6 @@
 import { useState, useCallback } from 'react';
-import { supabase as cloudSupabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
-interface ModerationResult {
-  isBlocked: boolean;
-  reason: string | null;
-  category: 'profanity' | 'contact' | 'social' | 'url' | null;
-  field?: string;
-  userBlocked?: boolean;
-}
+import { moderateContent, moderateFields, ModerationResult } from '@/utils/contentModeration';
 
 export const useContentModeration = () => {
   const [isChecking, setIsChecking] = useState(false);
@@ -20,24 +12,14 @@ export const useContentModeration = () => {
     setIsChecking(true);
     
     try {
-      const { data, error } = await cloudSupabase.functions.invoke('moderate-content', {
-        body: { content, contentType },
-      });
+      // Use client-side moderation
+      const result = moderateFields(content);
 
-      if (error) {
-        console.error('Moderation check failed:', error);
-        // If moderation fails, allow content (fail open for UX, but log for review)
-        return { isBlocked: false, reason: null, category: null };
+      if (result.isBlocked) {
+        toast.error(result.reason || "This content couldn't be posted because it violates Flea's community guidelines.");
       }
 
-      if (data.isBlocked) {
-        toast.error(data.reason || "This content couldn't be posted because it violates Flea's community guidelines.");
-      }
-
-      return data as ModerationResult;
-    } catch (err) {
-      console.error('Moderation error:', err);
-      return { isBlocked: false, reason: null, category: null };
+      return result;
     } finally {
       setIsChecking(false);
     }
