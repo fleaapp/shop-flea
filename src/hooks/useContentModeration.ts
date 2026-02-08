@@ -15,6 +15,17 @@ export const useContentModeration = () => {
       // Use client-side moderation
       const result = moderateFields(content);
 
+      if (import.meta.env.DEV && result.isBlocked) {
+        // Helpful for debugging false positives without affecting production UX
+        console.warn('[moderation] blocked', {
+          contentType,
+          category: result.category,
+          field: result.field,
+          reason: result.reason,
+          content,
+        });
+      }
+
       if (result.isBlocked) {
         toast.error(result.reason || "This content couldn't be posted because it violates Flea's community guidelines.");
       }

@@ -135,27 +135,13 @@ function detectPhoneNumber(text: string): boolean {
 // Detect email addresses
 function detectEmail(text: string): boolean {
   const normalized = normalizeText(text);
-  
-  // Standard email pattern
-  const emailPattern = /[a-z0-9._%+-]+\s*[@\(\[at\]]\s*[a-z0-9.-]+\s*[.\(\[dot\]]\s*[a-z]{2,}/i;
-  if (emailPattern.test(normalized)) {
-    return true;
-  }
-  
-  // Obfuscated email patterns
-  const obfuscatedPatterns = [
-    /\w+\s*\(?at\)?\s*\w+\s*\(?dot\)?\s*\w+/i,
-    /\w+\s*\[at\]\s*\w+\s*\[dot\]\s*\w+/i,
-    /\w+\s*-at-\s*\w+\s*-dot-\s*\w+/i,
-  ];
-  
-  for (const pattern of obfuscatedPatterns) {
-    if (pattern.test(text)) {
-      return true;
-    }
-  }
-  
-  return false;
+
+  // Robust email + common obfuscations (at/dot)
+  // NOTE: Avoid character classes like [at] which cause false positives.
+  const emailLikePattern =
+    /[a-z0-9._%+-]{1,64}\s*(?:@|\(at\)|\[at\]|\s+at\s+|-at-)\s*[a-z0-9.-]{1,255}\s*(?:\.|\(dot\)|\[dot\]|\s+dot\s+|-dot-)\s*[a-z]{2,24}/i;
+
+  return emailLikePattern.test(normalized);
 }
 
 // Detect URLs
@@ -179,45 +165,64 @@ function detectUrl(text: string): boolean {
 // Detect social media mentions
 function detectSocialMedia(text: string): boolean {
   const normalized = normalizeText(text);
-  
-  // Check full platform names as whole words only
+
+  const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // Build a regex that matches a term even if users add spaces/punctuation between letters,
+  // but requires non-alphanumeric boundaries to avoid substring false positives.
+  const makeLooseBoundedPattern = (term: string) => {
+    const compact = term.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!compact) return null;
+    const inner = compact
+      .split('')
+      .map((ch) => escapeRegExp(ch))
+      .join('[^a-z0-9]*');
+    return new RegExp(`(?:^|[^a-z0-9])${inner}(?:$|[^a-z0-9])`, 'i');
+  };
+
+  // Full platform names + phrases (catch obfuscations like i.n.s.t.a, i n s t a)
   for (const platform of SOCIAL_PLATFORMS_FULL) {
-    const wordPattern = new RegExp(`\\b${platform.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-    if (wordPattern.test(normalized)) {
-      return true;
-    }
+    const pattern = makeLooseBoundedPattern(platform);
+    if (pattern && pattern.test(normalized)) return true;
   }
-  
-  // Check short abbreviations only as standalone words (not substrings)
+
+  // Short abbreviations must be standalone tokens only (avoid false positives like "shoeS - Casual" => "sc")
   for (const abbrev of SOCIAL_PLATFORMS_SHORT) {
-    const wordPattern = new RegExp(`\\b${abbrev}\\b`, 'i');
-    if (wordPattern.test(normalized)) {
-      return true;
-    }
+    const pattern = new RegExp(`(?:^|[^a-z0-9])${escapeRegExp(abbrev)}(?:$|[^a-z0-9])`, 'i');
+    if (pattern.test(normalized)) return true;
   }
-  
-  // Check for @ handles pattern (social media usernames)
-  // Must be @username format, not email-like patterns
-  if (/@[a-z0-9_]{3,}(?![a-z0-9.]*\.[a-z]{2,})/i.test(text)) {
+
+  // @handles: require a non-alphanumeric boundary before @ so emails don't match
+  if (/(?:^|[^a-z0-9])@[a-z0-9_]{3,}\b/i.test(text)) {
     return true;
   }
-  
+
   return false;
 }
 
 // Detect profanity
 function detectProfanity(text: string): boolean {
   const normalized = normalizeText(text);
-  
+
+  const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // Matches obfuscated profanity (spaces/punctuation/leet) but avoids substring false positives
+  // by enforcing non-alphanumeric boundaries.
+  const makeLooseBoundedPattern = (term: string) => {
+    const compact = term.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!compact) return null;
+    const inner = compact
+      .split('')
+      .map((ch) => escapeRegExp(ch))
+      .join('[^a-z0-9]*');
+    return new RegExp(`(?:^|[^a-z0-9])${inner}(?:$|[^a-z0-9])`, 'i');
+  };
+
   for (const word of PROFANITY_LIST) {
-    // Only check as whole word to avoid false positives
-    // e.g., "classic" should not match "ass", "ladies" should not match "die"
-    const wordPattern = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-    if (wordPattern.test(normalized)) {
-      return true;
-    }
+    const pattern = makeLooseBoundedPattern(word);
+    if (pattern && pattern.test(normalized)) return true;
   }
-  
+
   return false;
 }
 
