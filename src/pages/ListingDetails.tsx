@@ -99,13 +99,24 @@ const ListingDetails = () => {
       setListing(listingData);
       
       // Then fetch the seller's profile
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('username, avatar_url, location, country_code')
         .eq('user_id', listingData.user_id)
         .maybeSingle();
       
-      setSeller(profileData);
+      // If country_code column doesn't exist, retry without it
+      if (profileError?.code === '42703') {
+        const { data: fallbackProfile } = await supabase
+          .from('profiles')
+          .select('username, avatar_url, location')
+          .eq('user_id', listingData.user_id)
+          .maybeSingle();
+        setSeller(fallbackProfile ? { ...fallbackProfile, country_code: null } : null);
+      } else {
+        setSeller(profileData);
+      }
+      
       setLoading(false);
     };
     
@@ -158,26 +169,29 @@ const ListingDetails = () => {
   const sellerAvatar = seller?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${listing.id}`;
   
   // Get location from country_code, with mapping for display
-  const getLocationDisplay = (countryCode: string | null | undefined): string => {
-    if (!countryCode) return 'Unknown';
-    const countryNames: Record<string, string> = {
-      AU: 'Australia',
-      NZ: 'New Zealand',
-      GB: 'United Kingdom',
-      US: 'United States',
-      CA: 'Canada',
-      // EU countries
-      AT: 'Austria', BE: 'Belgium', BG: 'Bulgaria', HR: 'Croatia', CY: 'Cyprus',
-      CZ: 'Czech Republic', DK: 'Denmark', EE: 'Estonia', FI: 'Finland', FR: 'France',
-      DE: 'Germany', GR: 'Greece', HU: 'Hungary', IE: 'Ireland', IT: 'Italy',
-      LV: 'Latvia', LT: 'Lithuania', LU: 'Luxembourg', MT: 'Malta', NL: 'Netherlands',
-      PL: 'Poland', PT: 'Portugal', RO: 'Romania', SK: 'Slovakia', SI: 'Slovenia',
-      ES: 'Spain', SE: 'Sweden',
-    };
-    return countryNames[countryCode] || countryCode;
+  const getLocationDisplay = (countryCode: string | null | undefined, fallbackLocation: string | null | undefined): string => {
+    if (countryCode) {
+      const countryNames: Record<string, string> = {
+        AU: 'Australia',
+        NZ: 'New Zealand',
+        GB: 'United Kingdom',
+        US: 'United States',
+        CA: 'Canada',
+        // EU countries
+        AT: 'Austria', BE: 'Belgium', BG: 'Bulgaria', HR: 'Croatia', CY: 'Cyprus',
+        CZ: 'Czech Republic', DK: 'Denmark', EE: 'Estonia', FI: 'Finland', FR: 'France',
+        DE: 'Germany', GR: 'Greece', HU: 'Hungary', IE: 'Ireland', IT: 'Italy',
+        LV: 'Latvia', LT: 'Lithuania', LU: 'Luxembourg', MT: 'Malta', NL: 'Netherlands',
+        PL: 'Poland', PT: 'Portugal', RO: 'Romania', SK: 'Slovakia', SI: 'Slovenia',
+        ES: 'Spain', SE: 'Sweden',
+      };
+      return countryNames[countryCode] || countryCode;
+    }
+    // Fallback to location field if country_code not available
+    return fallbackLocation || 'Unknown';
   };
   
-  const sellerLocation = getLocationDisplay(seller?.country_code);
+  const sellerLocation = getLocationDisplay(seller?.country_code, seller?.location);
 
   const handleWishlistClick = async () => {
     if (isFavorite(listing.id)) {
