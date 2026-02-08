@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase as cloudSupabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface ModerationResult {
@@ -20,7 +20,7 @@ export const useContentModeration = () => {
     setIsChecking(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('moderate-content', {
+      const { data, error } = await cloudSupabase.functions.invoke('moderate-content', {
         body: { content, contentType },
       });
 
