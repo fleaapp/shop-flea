@@ -265,9 +265,11 @@ const CreateListing = () => {
       
       toast.success('Listing posted!');
       navigate('/profile');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating listing:', error);
-      toast.error('Failed to create listing. Please try again.');
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      const message = error?.message || error?.error_description || 'Please try again.';
+      toast.error(`Failed to create listing: ${message}`);
     } finally {
       setIsLoading(false);
     }
