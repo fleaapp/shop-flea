@@ -8,8 +8,17 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/utils/imageCompression';
- import ChangeEmailSheet from '@/components/ChangeEmailSheet';
- import ChangePasswordSheet from '@/components/ChangePasswordSheet';
+import ChangeEmailSheet from '@/components/ChangeEmailSheet';
+import ChangePasswordSheet from '@/components/ChangePasswordSheet';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -26,8 +35,10 @@ const EditProfile = () => {
   const [deleteBlockReason, setDeleteBlockReason] = useState<string | null>(null);
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [originalUsername, setOriginalUsername] = useState('');
-   const [emailSheetOpen, setEmailSheetOpen] = useState(false);
-   const [passwordSheetOpen, setPasswordSheetOpen] = useState(false);
+  const [emailSheetOpen, setEmailSheetOpen] = useState(false);
+  const [passwordSheetOpen, setPasswordSheetOpen] = useState(false);
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  const [countryCode, setCountryCode] = useState<string | null>(null);
 
   // Load profile data
   useEffect(() => {
@@ -50,6 +61,7 @@ const EditProfile = () => {
         const profileData = data as any;
         setFirstName(profileData.first_name || '');
         setLastName(profileData.last_name || '');
+        setCountryCode(data.country_code || null);
       }
 
       // Check for account deletion eligibility
@@ -203,6 +215,24 @@ const EditProfile = () => {
     toast.error('Account deletion requires confirmation via email');
   };
 
+  // Helper to get country name from code
+  const getCountryName = (code: string): string => {
+    const countryNames: Record<string, string> = {
+      AU: 'Australia',
+      NZ: 'New Zealand',
+      GB: 'United Kingdom',
+      US: 'United States',
+      CA: 'Canada',
+      AT: 'Austria', BE: 'Belgium', BG: 'Bulgaria', HR: 'Croatia', CY: 'Cyprus',
+      CZ: 'Czech Republic', DK: 'Denmark', EE: 'Estonia', FI: 'Finland', FR: 'France',
+      DE: 'Germany', GR: 'Greece', HU: 'Hungary', IE: 'Ireland', IT: 'Italy',
+      LV: 'Latvia', LT: 'Lithuania', LU: 'Luxembourg', MT: 'Malta', NL: 'Netherlands',
+      PL: 'Poland', PT: 'Portugal', RO: 'Romania', SK: 'Slovakia', SI: 'Slovenia',
+      ES: 'Spain', SE: 'Sweden',
+    };
+    return countryNames[code] || code;
+  };
+
   return (
     <div className="min-h-screen bg-background pb-8">
       {/* Header */}
@@ -292,9 +322,22 @@ const EditProfile = () => {
           </div>
 
           <div>
+            <Label className="text-sm font-medium text-foreground mb-2 block">Location</Label>
+            <button 
+              onClick={() => setLocationDialogOpen(true)}
+              className="flex w-full items-center justify-between h-12 rounded-2xl bg-muted px-4 card-shadow cursor-pointer"
+            >
+              <span className="text-muted-foreground">
+                {countryCode ? getCountryName(countryCode) : 'Not set'}
+              </span>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </button>
+          </div>
+
+          <div>
             <Label className="text-sm font-medium text-foreground mb-2 block">Email</Label>
             <button 
-               onClick={() => setEmailSheetOpen(true)}
+              onClick={() => setEmailSheetOpen(true)}
               className="flex w-full items-center justify-between h-12 rounded-2xl bg-card px-4 card-shadow"
             >
               <span className="text-muted-foreground">{user?.email || 'Email'}</span>
@@ -305,7 +348,7 @@ const EditProfile = () => {
           <div>
             <Label className="text-sm font-medium text-foreground mb-2 block">Password</Label>
             <button 
-               onClick={() => setPasswordSheetOpen(true)}
+              onClick={() => setPasswordSheetOpen(true)}
               className="flex w-full items-center justify-between h-12 rounded-2xl bg-card px-4 card-shadow"
             >
               <span className="text-muted-foreground">••••••••••</span>
@@ -351,11 +394,26 @@ const EditProfile = () => {
          currentEmail={user?.email || ''}
        />
        
-       {/* Change Password Sheet */}
-       <ChangePasswordSheet
-         open={passwordSheetOpen}
-         onOpenChange={setPasswordSheetOpen}
-       />
+        {/* Change Password Sheet */}
+        <ChangePasswordSheet
+          open={passwordSheetOpen}
+          onOpenChange={setPasswordSheetOpen}
+        />
+        
+        {/* Location Change Dialog */}
+        <AlertDialog open={locationDialogOpen} onOpenChange={setLocationDialogOpen}>
+          <AlertDialogContent className="max-w-[300px] rounded-2xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Change Location</AlertDialogTitle>
+              <AlertDialogDescription className="text-center">
+                If you need to change your location, please reach out to support for assistance.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction className="w-full">OK</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

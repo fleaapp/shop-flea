@@ -50,6 +50,7 @@ interface SellerProfile {
   username: string;
   avatar_url: string | null;
   location: string | null;
+  country_code: string | null;
 }
 
 const ListingDetails = () => {
@@ -100,7 +101,7 @@ const ListingDetails = () => {
       // Then fetch the seller's profile
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('username, avatar_url, location')
+        .select('username, avatar_url, location, country_code')
         .eq('user_id', listingData.user_id)
         .maybeSingle();
       
@@ -155,7 +156,28 @@ const ListingDetails = () => {
   const images = listing.images?.length ? listing.images : [];
   const sellerName = seller?.username || '@user';
   const sellerAvatar = seller?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${listing.id}`;
-  const sellerLocation = seller?.location || 'Unknown';
+  
+  // Get location from country_code, with mapping for display
+  const getLocationDisplay = (countryCode: string | null | undefined): string => {
+    if (!countryCode) return 'Unknown';
+    const countryNames: Record<string, string> = {
+      AU: 'Australia',
+      NZ: 'New Zealand',
+      GB: 'United Kingdom',
+      US: 'United States',
+      CA: 'Canada',
+      // EU countries
+      AT: 'Austria', BE: 'Belgium', BG: 'Bulgaria', HR: 'Croatia', CY: 'Cyprus',
+      CZ: 'Czech Republic', DK: 'Denmark', EE: 'Estonia', FI: 'Finland', FR: 'France',
+      DE: 'Germany', GR: 'Greece', HU: 'Hungary', IE: 'Ireland', IT: 'Italy',
+      LV: 'Latvia', LT: 'Lithuania', LU: 'Luxembourg', MT: 'Malta', NL: 'Netherlands',
+      PL: 'Poland', PT: 'Portugal', RO: 'Romania', SK: 'Slovakia', SI: 'Slovenia',
+      ES: 'Spain', SE: 'Sweden',
+    };
+    return countryNames[countryCode] || countryCode;
+  };
+  
+  const sellerLocation = getLocationDisplay(seller?.country_code);
 
   const handleWishlistClick = async () => {
     if (isFavorite(listing.id)) {
