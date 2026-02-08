@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { MapPin, MoreVertical, Flag, Share2 } from 'lucide-react';
+import { MapPin, MoreVertical, Flag, Share2, User } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,8 @@ import { supabase } from '@/lib/supabase';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useCart } from '@/context/CartContext';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
+import { useReporting } from '@/hooks/useReporting';
+import { useAuth } from '@/context/AuthContext';
 
 interface DbListing {
   id: string;
@@ -57,6 +60,8 @@ const ListingDetails = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
+  const { user } = useAuth();
+  const { reportListing, reportUser, isReporting } = useReporting();
   const [open, setOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
@@ -295,14 +300,42 @@ const ListingDetails = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44 bg-background border border-border rounded-xl shadow-lg z-50">
                   <DropdownMenuItem 
-                    onClick={() => {
-                      toast.info('Listing reported. We will review it shortly.');
+                    onClick={async () => {
+                      if (!user) {
+                        toast.error('Please log in to report');
+                        return;
+                      }
+                      try {
+                        await reportListing(listing.id, listing.user_id);
+                      } catch (error) {
+                        // Error already handled in hook
+                      }
                     }}
+                    disabled={isReporting}
                     className="flex items-center gap-2 cursor-pointer"
                   >
                     <Flag className="h-4 w-4" />
                     Report listing
                   </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={async () => {
+                      if (!user) {
+                        toast.error('Please log in to report');
+                        return;
+                      }
+                      try {
+                        await reportUser(listing.user_id);
+                      } catch (error) {
+                        // Error already handled in hook
+                      }
+                    }}
+                    disabled={isReporting}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <User className="h-4 w-4" />
+                    Report seller
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={async () => {
                       const shareUrl = `${window.location.origin}/listing/${listing.id}`;

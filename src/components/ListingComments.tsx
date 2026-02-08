@@ -18,6 +18,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useReporting } from '@/hooks/useReporting';
+import { useContentModeration } from '@/hooks/useContentModeration';
+import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 
 interface Comment {
   id: string;
@@ -44,6 +47,9 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
   const [replyingTo, setReplyingTo] = useState<{ id: string; username: string } | null>(null);
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { reportComment, isReporting } = useReporting();
+  const { checkCommentContent, isChecking } = useContentModeration();
+  const { isBlocked } = useBlockedStatus();
 
   // Always fetch comment count (for badge visibility when collapsed)
   const { data: commentCount = 0 } = useQuery({
@@ -99,6 +105,17 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
   const addComment = useMutation({
     mutationFn: async ({ content, parentId }: { content: string; parentId?: string }) => {
       if (!user) throw new Error('Must be logged in');
+
+      // Check if user is blocked
+      if (isBlocked) {
+        throw new Error('Your account is restricted. You cannot post comments.');
+      }
+      
+      // Check content moderation
+      const moderationResult = await checkCommentContent(content);
+      if (moderationResult.isBlocked) {
+        throw new Error(moderationResult.reason || 'Content blocked');
+      }
       
       const { error } = await supabase
         .from('listing_comments')
@@ -118,8 +135,11 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
       setReplyingTo(null);
       toast.success(replyingTo ? 'Reply added!' : 'Comment added!');
     },
-    onError: () => {
-      toast.error('Failed to add comment');
+    onError: (error: Error) => {
+      // Don't show duplicate toast if moderation already showed one
+      if (!error.message.includes('Content blocked')) {
+        toast.error(error.message || 'Failed to add comment');
+      }
     },
   });
 
@@ -148,11 +168,23 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
       toast.error('Please log in to comment');
       return;
     }
+    if (isBlocked) {
+      toast.error('Your account is restricted. You cannot post comments.');
+      return;
+    }
     addComment.mutate({ content: newComment, parentId: replyingTo?.id });
   };
 
-  const handleReport = (commentId: string) => {
-    toast.success('Comment reported. Thank you for helping keep the community safe.');
+  const handleReport = async (comment: Comment) => {
+    if (!user) {
+      toast.error('Please log in to report');
+      return;
+    }
+    try {
+      await reportComment(comment.id, comment.user_id);
+    } catch (error) {
+      // Error already handled in hook
+    }
   };
 
   const canDeleteComment = (comment: Comment) => {
@@ -224,7 +256,10 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
               Remove
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem onClick={() => handleReport(comment.id)}>
+          <DropdownMenuItem 
+            onClick={() => handleReport(comment)}
+            disabled={isReporting}
+          >
             <Flag className="h-4 w-4 mr-2" />
             Report
           </DropdownMenuItem>
@@ -278,12 +313,17 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
                 <Button
                   size="icon"
                   onClick={handleSubmit}
-                  disabled={!newComment.trim() || addComment.isPending}
+                  disabled={!newComment.trim() || addComment.isPending || isChecking || isBlocked}
                   className="h-[60px] w-12 rounded-xl bg-primary"
                 >
                   <Send className="h-5 w-5" />
                 </Button>
               </div>
+              {isBlocked && (
+                <p className="text-xs text-destructive text-center">
+                  Your account is restricted and cannot post comments.
+                </p>
+              )}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-2">
