@@ -89,8 +89,19 @@ const CreateListing = () => {
   useEffect(() => {
     if (!authLoading && user && profile && !shippingChecked) {
       setShippingChecked(true);
-      // Show modal if shipping preferences haven't been set yet
-      if (!profile.shipping_preferences_set) {
+
+      const needsShippingSetup =
+        profile.tiered_shipping_enabled === null ||
+        profile.tiered_shipping_enabled === undefined ||
+        (profile.tiered_shipping_enabled === true &&
+          (profile.shipping_tier_1 === null ||
+            profile.shipping_tier_2 === null ||
+            profile.shipping_tier_3 === null ||
+            profile.shipping_tier_1 === undefined ||
+            profile.shipping_tier_2 === undefined ||
+            profile.shipping_tier_3 === undefined));
+
+      if (needsShippingSetup) {
         setShowShippingSetup(true);
       }
     }
