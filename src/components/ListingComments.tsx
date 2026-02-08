@@ -269,12 +269,12 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
   );
 
   return (
-    <div className="mt-6">
+    <div>
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>
           <Button
             variant="outline"
-            className="w-full flex items-center justify-between rounded-2xl border-2 bg-card px-4 py-3 h-auto"
+            className="w-full flex items-center justify-between rounded-none border-x-0 border-t-0 border-b bg-card px-4 py-3 h-auto"
           >
             <span className="font-bold">
               💬 Comments {commentCount > 0 && `(${commentCount})`}
