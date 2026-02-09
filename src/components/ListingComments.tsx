@@ -503,7 +503,7 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
                   
                   {/* Replies - line centered under parent avatar */}
                   {comment.replies && comment.replies.length > 0 && (
-                    <div className="-mt-1 space-y-2 ml-[15px] border-l-2 border-muted pl-2">
+                    <div className="mt-2 space-y-2 ml-[15px] border-l-2 border-muted pl-2">
                       {comment.replies.map((reply) => (
                         <CommentItem key={reply.id} comment={reply} isReply />
                       ))}
