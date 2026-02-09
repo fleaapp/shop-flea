@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, ChevronUp, Send, MoreHorizontal, Trash2, Flag, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Send, MoreHorizontal, Trash2, Flag, X, AtSign } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
@@ -45,6 +45,10 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<{ id: string; username: string } | null>(null);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const [cursorPosition, setCursorPosition] = useState(0);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { reportComment, isReporting } = useReporting();
@@ -101,6 +105,82 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
     },
     enabled: isOpen,
   });
+
+  // Fetch users for @mention autocomplete
+  const { data: mentionUsers = [] } = useQuery({
+    queryKey: ['mention-users', mentionQuery],
+    queryFn: async () => {
+      if (!mentionQuery || mentionQuery.length < 1) return [];
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id, username, avatar_url')
+        .ilike('username', `%${mentionQuery}%`)
+        .limit(5);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: mentionQuery !== null && mentionQuery.length >= 1,
+  });
+
+  // Handle text input and detect @mentions
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    const cursorPos = e.target.selectionStart || 0;
+    setNewComment(value);
+    setCursorPosition(cursorPos);
+
+    // Detect @mention
+    const textBeforeCursor = value.slice(0, cursorPos);
+    const mentionMatch = textBeforeCursor.match(/@(\w*)$/);
+    
+    if (mentionMatch) {
+      setMentionQuery(mentionMatch[1]);
+      setMentionIndex(0);
+    } else {
+      setMentionQuery(null);
+    }
+  };
+
+  // Insert selected mention
+  const insertMention = (username: string) => {
+    const textBeforeCursor = newComment.slice(0, cursorPosition);
+    const textAfterCursor = newComment.slice(cursorPosition);
+    const mentionMatch = textBeforeCursor.match(/@(\w*)$/);
+    
+    if (mentionMatch) {
+      const beforeMention = textBeforeCursor.slice(0, mentionMatch.index);
+      const newText = `${beforeMention}@${username} ${textAfterCursor}`;
+      setNewComment(newText);
+      setMentionQuery(null);
+      
+      // Focus back on textarea
+      setTimeout(() => {
+        if (textareaRef.current) {
+          const newCursorPos = beforeMention.length + username.length + 2;
+          textareaRef.current.focus();
+          textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+        }
+      }, 0);
+    }
+  };
+
+  // Handle keyboard navigation in mention dropdown
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mentionQuery !== null && mentionUsers.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setMentionIndex((prev) => Math.min(prev + 1, mentionUsers.length - 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setMentionIndex((prev) => Math.max(prev - 1, 0));
+      } else if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        insertMention(mentionUsers[mentionIndex].username);
+      } else if (e.key === 'Escape') {
+        setMentionQuery(null);
+      }
+    }
+  };
 
   const addComment = useMutation({
     mutationFn: async ({ content, parentId }: { content: string; parentId?: string }) => {
@@ -218,20 +298,24 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
           </span>
         </div>
         
-        {/* Comment content */}
+        {/* Comment content with @mentions highlighted */}
         <p className={`text-foreground mt-0.5 break-words ${isReply ? 'text-xs' : 'text-sm'}`}>
-          {comment.content}
+          {comment.content.split(/(@\w+)/g).map((part, i) => 
+            part.startsWith('@') ? (
+              <span key={i} className="text-primary font-medium">{part}</span>
+            ) : (
+              <span key={i}>{part}</span>
+            )
+          )}
         </p>
         
-        {/* Reply button - only for parent comments */}
-        {!isReply && (
-          <button
-            onClick={() => handleReply(comment)}
-            className="text-xs text-muted-foreground hover:text-foreground mt-1 font-medium"
-          >
-            Reply
-          </button>
-        )}
+        {/* Reply button - for all comments */}
+        <button
+          onClick={() => handleReply(comment)}
+          className="text-xs text-muted-foreground hover:text-foreground mt-1 font-medium"
+        >
+          Reply
+        </button>
       </div>
       
       {/* 3-dot menu */}
@@ -302,14 +386,40 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
                   </button>
                 </div>
               )}
-              <div className="flex gap-2">
-                <Textarea
-                  placeholder={replyingTo ? `Reply to ${replyingTo.username}...` : "Write a comment..."}
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  className="min-h-[60px] resize-none rounded-xl border-muted-foreground/20 bg-card"
-                  maxLength={500}
-                />
+              <div className="flex gap-2 relative">
+                <div className="flex-1 relative">
+                  <Textarea
+                    ref={textareaRef}
+                    placeholder={replyingTo ? `Reply to ${replyingTo.username}...` : "Write a comment... (use @ to mention)"}
+                    value={newComment}
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                    className="min-h-[60px] resize-none rounded-xl border-muted-foreground/20 bg-card"
+                    maxLength={500}
+                  />
+                  
+                  {/* @mention autocomplete dropdown */}
+                  {mentionQuery !== null && mentionUsers.length > 0 && (
+                    <div className="absolute bottom-full left-0 right-0 mb-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden z-50">
+                      {mentionUsers.map((mentionUser, idx) => (
+                        <button
+                          key={mentionUser.user_id}
+                          onClick={() => insertMention(mentionUser.username)}
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted/50 ${
+                            idx === mentionIndex ? 'bg-muted/50' : ''
+                          }`}
+                        >
+                          <img
+                            src={mentionUser.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${mentionUser.user_id}`}
+                            alt={mentionUser.username}
+                            className="h-6 w-6 rounded-full bg-muted"
+                          />
+                          <span className="font-medium">{mentionUser.username}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <Button
                   size="icon"
                   onClick={handleSubmit}
