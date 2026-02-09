@@ -454,33 +454,33 @@ const ListingDetails = () => {
               ❌
             </Button>
 
-            {!isSold && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={handleWishlistClick}
-                  className={`h-14 w-14 rounded-2xl border-2 text-2xl transition-colors ${
-                    isFavorite(listing.id) 
-                      ? 'bg-[#ddfed7] border-[#ddfed7]' 
-                      : 'bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]'
-                  }`}
-                >
-                  💌
-                </Button>
+            <Button
+              variant="outline"
+              onClick={handleWishlistClick}
+              className={`h-14 w-14 rounded-2xl border-2 text-2xl transition-colors ${
+                isFavorite(listing.id) 
+                  ? 'bg-[#ddfed7] border-[#ddfed7]' 
+                  : isSold 
+                    ? 'bg-muted/50 border-muted opacity-50' 
+                    : 'bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]'
+              }`}
+            >
+              💌
+            </Button>
 
-                <Button
-                  variant="outline"
-                  onClick={handleCartClick}
-                  className={`h-14 w-14 rounded-2xl border-2 text-2xl transition-colors ${
-                    isInCart(listing.id) 
-                      ? 'bg-[#ddfed7] border-[#ddfed7]' 
-                      : 'bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]'
-                  }`}
-                >
-                  🛒
-                </Button>
-              </>
-            )}
+            <Button
+              variant="outline"
+              onClick={handleCartClick}
+              className={`h-14 w-14 rounded-2xl border-2 text-2xl transition-colors ${
+                isInCart(listing.id) 
+                  ? 'bg-[#ddfed7] border-[#ddfed7]' 
+                  : isSold 
+                    ? 'bg-muted/50 border-muted opacity-50' 
+                    : 'bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]'
+              }`}
+            >
+              🛒
+            </Button>
           </div>
 
           {/* Remove from Wishlist Confirmation */}
