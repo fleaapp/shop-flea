@@ -54,7 +54,7 @@ const ContactSupport = () => {
         <div className="flex justify-center">
           <button
             onClick={() => setNewChatOpen(true)}
-            className="w-56 rounded-full bg-muted text-foreground font-bold py-4 text-sm hover:bg-muted/80 transition-colors flex items-center justify-center gap-2"
+            className="w-56 rounded-full bg-[hsl(0,0%,45%)] text-white font-bold py-4 text-sm hover:bg-[hsl(0,0%,40%)] transition-colors flex items-center justify-center gap-2"
           >
             <span>💬</span> Start a New Chat
           </button>
