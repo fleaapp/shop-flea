@@ -79,7 +79,7 @@ const Settings = () => {
       title: 'Support',
       items: [
         { icon: <span className="text-base">❓</span>, label: 'FAQ', expandable: true },
-        { icon: <span className="text-base">🛠️</span>, label: 'Contact Support' },
+        { icon: <span className="text-base">🛠️</span>, label: 'Contact Support', action: () => navigate('/contact-support') },
         { icon: <span className="text-base">🔒</span>, label: 'Privacy & Security' },
       ],
     },

@@ -23,6 +23,8 @@ import EditListing from "./pages/EditListing";
 import EditProfile from "./pages/EditProfile";
 import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
+import ContactSupport from "./pages/ContactSupport";
+import ChatConversation from "./pages/ChatConversation";
 import NotFound from "./pages/NotFound";
 import SellerProfile from "./pages/SellerProfile";
 
@@ -54,6 +56,8 @@ const App = () => (
                 <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/settings/profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+                <Route path="/contact-support" element={<ProtectedRoute><ContactSupport /></ProtectedRoute>} />
+                <Route path="/contact-support/:threadId" element={<ProtectedRoute><ChatConversation /></ProtectedRoute>} />
                 <Route path="/seller/:sellerId" element={<ProtectedRoute><SellerProfile /></ProtectedRoute>} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
