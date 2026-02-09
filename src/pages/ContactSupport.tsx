@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
 import BottomNav from '@/components/BottomNav';
 import NewChatForm from '@/components/NewChatForm';
+import { useUnreadSupport } from '@/hooks/useUnreadSupport';
 
 interface ChatThread {
   id: string;
@@ -22,6 +23,7 @@ const ContactSupport = () => {
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [loading, setLoading] = useState(true);
   const [newChatOpen, setNewChatOpen] = useState(false);
+  const { getThreadUnread } = useUnreadSupport();
 
   useEffect(() => {
     if (!user) return;
@@ -40,21 +42,23 @@ const ContactSupport = () => {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background px-4 py-4 flex items-center gap-3">
-        <button onClick={() => navigate('/settings')} className="text-foreground">
+      <header className="sticky top-0 z-40 bg-background px-4 py-4 flex items-center">
+        <button onClick={() => navigate('/settings')} className="text-foreground absolute left-4">
           <ChevronLeft className="h-6 w-6" />
         </button>
-        <h1 className="text-xl font-bold text-foreground">Contact Support</h1>
+        <h1 className="text-xl font-bold text-foreground text-center w-full">Contact Support</h1>
       </header>
 
       <div className="px-4 space-y-4">
         {/* New Chat Button */}
-        <button
-          onClick={() => setNewChatOpen(true)}
-          className="w-full rounded-2xl bg-charcoal text-card font-bold py-3.5 text-sm hover:bg-charcoal/90 transition-colors"
-        >
-          Start a New Chat
-        </button>
+        <div className="flex justify-center">
+          <button
+            onClick={() => setNewChatOpen(true)}
+            className="w-56 rounded-full bg-muted text-foreground font-bold py-4 text-sm hover:bg-muted/80 transition-colors flex items-center justify-center gap-2"
+          >
+            <span>💬</span> Start a New Chat
+          </button>
+        </div>
 
         {/* Thread List */}
         {loading ? (
@@ -87,6 +91,11 @@ const ContactSupport = () => {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  {getThreadUnread(thread.id) > 0 && (
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                      {getThreadUnread(thread.id)}
+                    </span>
+                  )}
                   <span
                     className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                       thread.status === 'active'

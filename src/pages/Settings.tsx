@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase';
 import FilterPreferencesSheet from '@/components/FilterPreferencesSheet';
 import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
 import OnboardingCarousel from '@/components/OnboardingCarousel';
+import { useUnreadSupport } from '@/hooks/useUnreadSupport';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ const Settings = () => {
   const [shippingOpen, setShippingOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [faqExpanded, setFaqExpanded] = useState(false);
+  const { total: supportUnread } = useUnreadSupport();
   
   // Get pause_selling from profile
   const pauseSelling = (profile as any)?.pause_selling || false;
@@ -79,7 +81,7 @@ const Settings = () => {
       title: 'Support',
       items: [
         { icon: <span className="text-base">❓</span>, label: 'FAQ', expandable: true },
-        { icon: <span className="text-base">🛠️</span>, label: 'Contact Support', action: () => navigate('/contact-support') },
+        { icon: <span className="text-base">🛠️</span>, label: 'Contact Support', action: () => navigate('/contact-support'), badge: supportUnread || undefined },
         { icon: <span className="text-base">🔒</span>, label: 'Privacy & Security' },
       ],
     },
@@ -127,6 +129,12 @@ const Settings = () => {
                       <span className="text-base max-[375px]:text-sm font-medium text-foreground">{item.label}</span>
                     </div>
                     
+                    <div className="flex items-center gap-2">
+                      {(item as any).badge && (
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                          {(item as any).badge}
+                        </span>
+                      )}
                     {item.toggle ? (
                       <Switch
                         checked={item.checked}
@@ -142,6 +150,7 @@ const Settings = () => {
                     ) : (
                       <ChevronRight className="h-5 w-5 text-muted-foreground" />
                     )}
+                    </div>
                   </div>
                   
                   {/* FAQ sub-items */}

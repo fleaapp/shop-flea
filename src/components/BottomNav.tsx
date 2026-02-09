@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useOrders } from '@/hooks/useOrders';
+import { useUnreadSupport } from '@/hooks/useUnreadSupport';
 
 interface NavItem {
   icon: React.ReactNode;
@@ -20,6 +21,7 @@ const BottomNav = () => {
   const { user } = useAuth();
   const { unreadCount: activityUnreadCount } = useNotifications();
   const { buyerOrders, sellerOrders } = useOrders();
+  const { total: supportUnread } = useUnreadSupport();
 
   // Orders badge: awaiting + shipped orders (buyer perspective)
   const ordersBadge = useMemo(() => {
@@ -70,7 +72,7 @@ const BottomNav = () => {
   );
 
   const navItems: NavItem[] = useMemo(() => [
-    { icon: <span className="text-lg">⚙️</span>, label: 'Settings', path: '/settings' },
+    { icon: <span className="text-lg">⚙️</span>, label: 'Settings', path: '/settings', badge: supportUnread || undefined },
     { icon: profileIcon, label: 'Profile', path: '/profile' },
     { icon: <span className="text-lg">🏠</span>, label: 'Home', path: '/' },
     { icon: <span className="text-lg">🛒</span>, label: 'Cart', path: '/cart', badge: ordersBadge },
