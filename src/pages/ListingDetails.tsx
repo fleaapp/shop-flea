@@ -47,6 +47,7 @@ interface DbListing {
   gender: string | null;
   category: string;
   user_id: string;
+  status?: string;
 }
 
 interface SellerProfile {
@@ -69,9 +70,10 @@ const ListingDetails = () => {
   const [listing, setListing] = useState<DbListing | null>(null);
   const [seller, setSeller] = useState<SellerProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [listingStatus, setListingStatus] = useState<string>('active');
   
-  // Check if listing is sold (passed from navigation state)
-  const isSold = location.state?.isSold || false;
+  // Check if listing is sold - check both navigation state AND database status
+  const isSold = location.state?.isSold || listingStatus === 'sold';
   // Check if we came from the favorites/wishlist page
   const fromWishlist = location.state?.fromWishlist || false;
 
@@ -102,6 +104,7 @@ const ListingDetails = () => {
       }
       
       setListing(listingData);
+      setListingStatus(listingData.status || 'active');
       
       // Then fetch the seller's profile
       const { data: profileData, error: profileError } = await supabase
@@ -203,6 +206,11 @@ const ListingDetails = () => {
       setShowRemoveFromWishlistDialog(true);
       return;
     }
+    // Prevent adding sold items to wishlist
+    if (isSold) {
+      toast.error('This item has already been sold');
+      return;
+    }
     const success = await addFavorite(listing.id);
     if (success) {
       toast.success('Added to wishlist!');
@@ -221,6 +229,11 @@ const ListingDetails = () => {
   const handleCartClick = () => {
     if (isInCart(listing.id)) {
       setShowRemoveFromCartDialog(true);
+      return;
+    }
+    // Prevent adding sold items to cart
+    if (isSold) {
+      toast.error('This item has already been sold');
       return;
     }
     // Convert DB listing to Listing type for cart
