@@ -340,7 +340,7 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
               <Link 
                 key={i} 
                 to={`/seller/${encodeURIComponent(part)}`}
-                className="text-primary font-bold underline hover:opacity-80"
+                className="text-foreground font-bold underline hover:opacity-80"
                 onClick={(e) => e.stopPropagation()}
               >
                 {part}
