@@ -135,12 +135,12 @@ const ChatConversation = () => {
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background px-4 py-4 flex items-center gap-3 border-b border-border">
-        <button onClick={() => navigate('/contact-support')} className="text-foreground">
+      <header className="sticky top-0 z-40 bg-background px-4 py-4 flex items-center border-b border-border">
+        <button onClick={() => navigate('/contact-support')} className="text-foreground absolute left-4 z-10">
           <ChevronLeft className="h-6 w-6" />
         </button>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-base font-bold text-foreground truncate">{thread?.title || 'Chat'}</h1>
+        <div className="flex-1 text-center">
+          <h1 className="text-base font-bold text-foreground truncate px-10">{thread?.title || 'Chat'}</h1>
           {thread && (
             <span className={`text-xs font-medium ${isResolved ? 'text-muted-foreground' : 'text-price-green'}`}>
               {isResolved ? 'Resolved' : 'Active'}
