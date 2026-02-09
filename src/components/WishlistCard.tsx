@@ -60,12 +60,12 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused
             <img 
               src={listing.image} 
               alt={listing.title} 
-              className={`h-full w-full object-cover rounded-2xl ${isUnavailable ? 'blur-[2px]' : ''}`}
+              className={`h-full w-full object-cover block ${isUnavailable ? 'blur-[2px]' : ''}`}
             />
             
             {/* Sold/Paused overlay */}
             {isUnavailable && (
-              <div className="absolute inset-0 flex items-center justify-center bg-charcoal/70 rounded-2xl">
+              <div className="absolute inset-0 flex items-center justify-center bg-charcoal/70">
                 <span className="text-2xl font-bold text-white tracking-wider">
                   {isSold ? 'SOLD' : '⏸️ Paused'}
                 </span>
