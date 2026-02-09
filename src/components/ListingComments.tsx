@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, ChevronUp, Send, MoreHorizontal, Trash2, Flag, X, AtSign } from 'lucide-react';
+import { ChevronDown, ChevronUp, Send, MoreHorizontal, Trash2, Flag, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -149,14 +150,16 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
     
     if (mentionMatch) {
       const beforeMention = textBeforeCursor.slice(0, mentionMatch.index);
-      const newText = `${beforeMention}@${username} ${textAfterCursor}`;
+      // Username may already have @ prefix - strip it to avoid @@
+      const cleanUsername = username.startsWith('@') ? username.slice(1) : username;
+      const newText = `${beforeMention}@${cleanUsername} ${textAfterCursor}`;
       setNewComment(newText);
       setMentionQuery(null);
       
       // Focus back on textarea
       setTimeout(() => {
         if (textareaRef.current) {
-          const newCursorPos = beforeMention.length + username.length + 2;
+          const newCursorPos = beforeMention.length + cleanUsername.length + 2;
           textareaRef.current.focus();
           textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
         }
@@ -207,6 +210,25 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
         });
 
       if (error) throw error;
+
+      // Extract @mentions and send notifications
+      const mentions = content.match(/@[\w]+/g);
+      if (mentions && mentions.length > 0) {
+        // Normalize usernames (ensure @ prefix for DB lookup)
+        const usernames = mentions.map(m => m.startsWith('@') ? m : `@${m}`);
+        
+        try {
+          await supabase.rpc('create_mention_notifications', {
+            p_mentioned_usernames: usernames,
+            p_mentioner_user_id: user.id,
+            p_listing_id: listingId,
+            p_comment_preview: content.trim().slice(0, 100)
+          });
+        } catch (notifError) {
+          // Don't fail the comment if notification fails
+          console.error('Failed to send mention notifications:', notifError);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['listing-comments', listingId] });
@@ -298,11 +320,18 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
           </span>
         </div>
         
-        {/* Comment content with @mentions highlighted */}
+        {/* Comment content with @mentions as clickable links */}
         <p className={`text-foreground mt-0.5 break-words ${isReply ? 'text-xs' : 'text-sm'}`}>
           {comment.content.split(/(@\w+)/g).map((part, i) => 
             part.startsWith('@') ? (
-              <span key={i} className="text-primary font-medium">{part}</span>
+              <Link 
+                key={i} 
+                to={`/seller/${encodeURIComponent(part)}`}
+                className="text-primary font-bold underline hover:opacity-80"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {part}
+              </Link>
             ) : (
               <span key={i}>{part}</span>
             )
