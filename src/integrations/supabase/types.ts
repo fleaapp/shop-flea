@@ -605,6 +605,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_mention_notifications: {
+        Args: {
+          p_comment_preview: string
+          p_listing_id: string
+          p_mentioned_usernames: string[]
+          p_mentioner_user_id: string
+        }
+        Returns: undefined
+      }
       get_trending_searches: {
         Args: { limit_count?: number }
         Returns: {

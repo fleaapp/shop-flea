@@ -73,6 +73,10 @@ export interface ModerationResult {
   field?: string;
 }
 
+export interface ModerationOptions {
+  allowMentions?: boolean; // If true, @mentions won't be flagged as social media
+}
+
 // Normalize text by removing special chars and substitutions
 function normalizeText(text: string): string {
   let normalized = text.toLowerCase();
@@ -163,7 +167,7 @@ function detectUrl(text: string): boolean {
 }
 
 // Detect social media mentions
-function detectSocialMedia(text: string): boolean {
+function detectSocialMedia(text: string, options?: ModerationOptions): boolean {
   const normalized = normalizeText(text);
 
   const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -192,9 +196,11 @@ function detectSocialMedia(text: string): boolean {
     if (pattern.test(normalized)) return true;
   }
 
-  // @handles: require a non-alphanumeric boundary before @ so emails don't match
-  if (/(?:^|[^a-z0-9])@[a-z0-9_]{3,}\b/i.test(text)) {
-    return true;
+  // @handles: only flag if we're NOT allowing mentions (comments allow mentions)
+  if (!options?.allowMentions) {
+    if (/(?:^|[^a-z0-9])@[a-z0-9_]{3,}\b/i.test(text)) {
+      return true;
+    }
   }
 
   return false;
@@ -227,7 +233,7 @@ function detectProfanity(text: string): boolean {
 }
 
 // Main moderation function
-export function moderateContent(text: string): ModerationResult {
+export function moderateContent(text: string, options?: ModerationOptions): ModerationResult {
   if (!text || typeof text !== 'string') {
     return { isBlocked: false, reason: null, category: null };
   }
@@ -260,7 +266,7 @@ export function moderateContent(text: string): ModerationResult {
   }
   
   // Check for social media
-  if (detectSocialMedia(text)) {
+  if (detectSocialMedia(text, options)) {
     return {
       isBlocked: true,
       reason: "Sharing contact details or directing users off Flea isn't allowed. Please keep all communication within the app.",
@@ -281,10 +287,10 @@ export function moderateContent(text: string): ModerationResult {
 }
 
 // Check multiple fields at once
-export function moderateFields(fields: Record<string, string | undefined>): ModerationResult {
+export function moderateFields(fields: Record<string, string | undefined>, options?: ModerationOptions): ModerationResult {
   for (const [field, value] of Object.entries(fields)) {
     if (value && typeof value === 'string') {
-      const result = moderateContent(value);
+      const result = moderateContent(value, options);
       if (result.isBlocked) {
         return { ...result, field };
       }

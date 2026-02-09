@@ -1,19 +1,20 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { moderateContent, moderateFields, ModerationResult } from '@/utils/contentModeration';
+import { moderateContent, moderateFields, ModerationResult, ModerationOptions } from '@/utils/contentModeration';
 
 export const useContentModeration = () => {
   const [isChecking, setIsChecking] = useState(false);
 
   const checkContent = useCallback(async (
     content: Record<string, string | undefined>,
-    contentType: 'listing' | 'comment' | 'profile'
+    contentType: 'listing' | 'comment' | 'profile',
+    options?: ModerationOptions
   ): Promise<ModerationResult> => {
     setIsChecking(true);
     
     try {
-      // Use client-side moderation
-      const result = moderateFields(content);
+      // Use client-side moderation with options
+      const result = moderateFields(content, options);
 
       if (import.meta.env.DEV && result.isBlocked) {
         // Helpful for debugging false positives without affecting production UX
@@ -45,7 +46,8 @@ export const useContentModeration = () => {
   }, [checkContent]);
 
   const checkCommentContent = useCallback(async (content: string) => {
-    return checkContent({ content }, 'comment');
+    // Allow @mentions in comments
+    return checkContent({ content }, 'comment', { allowMentions: true });
   }, [checkContent]);
 
   return {
