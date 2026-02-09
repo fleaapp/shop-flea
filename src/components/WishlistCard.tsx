@@ -60,7 +60,7 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused
             <img 
               src={listing.image} 
               alt={listing.title} 
-              className={`h-full w-full object-cover ${isUnavailable ? 'blur-[2px]' : ''}`}
+              className={`h-full w-full object-cover rounded-2xl ${isUnavailable ? 'blur-[2px]' : ''}`}
             />
             
             {/* Sold/Paused overlay */}
