@@ -95,13 +95,26 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
         profile: profileMap.get(comment.user_id) || { username: '@user', avatar_url: null }
       })) as Comment[];
 
-      // Organize into threads (parent comments with their replies)
+      // Organize into threads - collect all replies under their root parent
       const parentComments = commentsWithProfiles.filter(c => !c.parent_id);
-      const replies = commentsWithProfiles.filter(c => c.parent_id);
+      const allReplies = commentsWithProfiles.filter(c => c.parent_id);
+
+      // Build a map to find root parent for any comment
+      const commentMap = new Map(commentsWithProfiles.map(c => [c.id, c]));
+      
+      const findRootParent = (comment: Comment): string | null => {
+        if (!comment.parent_id) return comment.id;
+        const parent = commentMap.get(comment.parent_id);
+        if (!parent) return comment.parent_id; // parent_id points to root
+        if (!parent.parent_id) return parent.id; // parent is root
+        return findRootParent(parent); // recurse up
+      };
 
       return parentComments.map(parent => ({
         ...parent,
-        replies: replies.filter(r => r.parent_id === parent.id)
+        replies: allReplies
+          .filter(r => findRootParent(r) === parent.id)
+          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
       })).reverse(); // Newest first for parent comments
     },
     enabled: isOpen,
