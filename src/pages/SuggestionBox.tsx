@@ -66,20 +66,13 @@ const SuggestionBox = () => {
           We're building Flea alongside our community. If there's a feature you want, something that feels clunky, or an idea you can't stop thinking about… tell us!
         </p>
 
-        <div className="relative w-full mb-6">
-          <Textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="min-h-[160px] rounded-2xl bg-card border-border text-foreground resize-none w-full peer"
-            maxLength={2000}
-          />
-          {!content && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-muted-foreground text-sm">
-              <span className="font-bold">Share your ideas here…</span>
-              <span>What would you love to see added or improved in Flea?</span>
-            </div>
-          )}
-        </div>
+        <Textarea
+          placeholder="Share your ideas here…"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          className="min-h-[160px] rounded-2xl bg-card border-border text-foreground placeholder:text-muted-foreground resize-none w-full mb-6"
+          maxLength={2000}
+        />
 
         <Button
           onClick={handleSubmit}
