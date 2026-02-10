@@ -90,7 +90,7 @@ const Settings = () => {
     {
       title: 'Support',
       items: [
-        { icon: <span className="text-base">🛠️</span>, label: 'Help Centre', expandable: true, onExpand: () => setHelpCentreExpanded(!helpCentreExpanded), isExpanded: helpCentreExpanded },
+        { icon: <span className="text-base">🛠️</span>, label: 'Help Centre', expandable: true, onExpand: () => setHelpCentreExpanded(!helpCentreExpanded), isExpanded: helpCentreExpanded, badge: supportUnread || undefined },
         { icon: <span className="text-base">🚪</span>, label: 'Logout', action: handleLogout, isLogout: true },
       ],
     },
