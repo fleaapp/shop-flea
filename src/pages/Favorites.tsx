@@ -133,10 +133,11 @@ const Favorites = () => {
           </div>
         ) : displayListings.length > 0 ? (
           <div 
-            className="flex gap-4 max-[375px]:gap-3 overflow-x-auto snap-x snap-mandatory h-full items-center px-[calc(50vw-min(170px,42vw))]"
+            className="flex gap-4 max-[375px]:gap-3 overflow-x-auto snap-x snap-mandatory h-full items-center"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             <style>{`.flex::-webkit-scrollbar { display: none; }`}</style>
+            <div className="flex-shrink-0 w-[calc(50vw-min(170px,42.5vw))] max-[393px]:w-[calc(50vw-min(150px,40vw))] max-[375px]:w-[calc(50vw-min(140px,39vw))]" />
             {displayListings.map((listing) => (
               <div key={listing.id} className="flex-shrink-0 snap-center">
                 <WishlistCard 
@@ -149,6 +150,7 @@ const Favorites = () => {
                 />
               </div>
             ))}
+            <div className="flex-shrink-0 w-[calc(50vw-min(170px,42.5vw))] max-[393px]:w-[calc(50vw-min(150px,40vw))] max-[375px]:w-[calc(50vw-min(140px,39vw))]" />
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center w-full text-center px-4">
