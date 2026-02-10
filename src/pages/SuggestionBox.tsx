@@ -57,12 +57,12 @@ const SuggestionBox = () => {
         <h1 className="text-xl font-bold text-foreground flex-1 text-center pr-6">📮 Suggestion Box</h1>
       </header>
 
-      <div className="px-6 pt-8 flex flex-col items-center text-center max-w-[300px] mx-auto">
+      <div className="px-6 pt-8 flex flex-col items-center text-center max-w-md mx-auto">
         <h2 className="text-lg font-bold text-foreground mb-3">
           Help shape the future of Flea
         </h2>
 
-        <p className="text-xs text-muted-foreground mb-8 leading-relaxed">
+        <p className="text-xs text-muted-foreground mb-8 leading-relaxed max-w-[280px]">
           We're building Flea alongside our community. If there's a feature you want, something that feels clunky, or an idea you can't stop thinking about… tell us!
         </p>
 
@@ -77,7 +77,7 @@ const SuggestionBox = () => {
         <Button
           onClick={handleSubmit}
           disabled={submitting || !content.trim()}
-          className="rounded-full h-12 px-8 bg-foreground text-background font-bold text-sm hover:bg-foreground/90"
+          className="rounded-full h-12 px-8 bg-nav text-white font-bold text-sm hover:bg-nav/90"
         >
           📬 Submit
         </Button>
