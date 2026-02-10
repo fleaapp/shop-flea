@@ -81,6 +81,7 @@ const Settings = () => {
       title: 'Support',
       items: [
         { icon: <span className="text-base">❓</span>, label: 'FAQ', expandable: true },
+        { icon: <span className="text-base">📮</span>, label: 'Suggestion Box', action: () => navigate('/suggestion-box') },
         { icon: <span className="text-base">🛠️</span>, label: 'Contact Support', action: () => navigate('/contact-support'), badge: supportUnread || undefined },
         { icon: <span className="text-base">🔒</span>, label: 'Privacy & Security' },
       ],
