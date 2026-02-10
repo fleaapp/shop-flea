@@ -54,30 +54,30 @@ const SuggestionBox = () => {
         <button onClick={() => navigate(-1)} className="p-1">
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
-        <h1 className="text-xl font-bold text-foreground flex-1 text-center pr-6">Suggestion Box</h1>
+        <h1 className="text-xl font-bold text-foreground flex-1 text-center pr-6">📮 Suggestion Box</h1>
       </header>
 
-      <div className="px-6 pt-8 flex flex-col items-center text-center max-w-md mx-auto">
-        <h2 className="text-2xl font-bold text-foreground mb-3">
+      <div className="px-6 pt-8 flex flex-col items-center text-center max-w-[300px] mx-auto">
+        <h2 className="text-lg font-bold text-foreground mb-3">
           Help shape the future of Flea
         </h2>
 
-        <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
-          We're building Flea alongside our community.{'\n'}If there's a feature you want, something that feels{'\n'}clunky, or an idea you can't stop thinking about — tell us.
+        <p className="text-xs text-muted-foreground mb-8 leading-relaxed">
+          We're building Flea alongside our community. If there's a feature you want, something that feels clunky, or an idea you can't stop thinking about… tell us!
         </p>
 
         <Textarea
-          placeholder={`Share your idea here…\nWhat would you love to see added or improved in Flea?`}
+          placeholder="Share your idea here… What would you love to see added or improved in Flea?"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="min-h-[160px] rounded-2xl bg-card border-border text-foreground placeholder:text-muted-foreground resize-none w-full mb-6"
+          className="min-h-[160px] rounded-2xl bg-card border-border text-foreground placeholder:text-muted-foreground placeholder:pt-2 resize-none w-full mb-6"
           maxLength={2000}
         />
 
         <Button
           onClick={handleSubmit}
           disabled={submitting || !content.trim()}
-          className="rounded-full h-10 px-8 bg-foreground text-background font-bold text-sm hover:bg-foreground/90"
+          className="rounded-full h-12 px-8 bg-foreground text-background font-bold text-sm hover:bg-foreground/90"
         >
           📬 Submit
         </Button>
