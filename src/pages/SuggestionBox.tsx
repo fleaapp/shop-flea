@@ -58,7 +58,7 @@ const SuggestionBox = () => {
         <h1 className="text-xl font-bold text-foreground flex-1 text-center pr-6">📮 Suggestion Box</h1>
       </header>
 
-      <div className="px-6 pt-8 flex flex-col items-center text-center max-w-md mx-auto">
+      <div className="px-4 pt-8 flex flex-col items-center text-center max-w-lg mx-auto">
         <h2 className="text-lg font-bold text-foreground mb-3">
           Help shape the future of Flea
         </h2>
@@ -71,7 +71,7 @@ const SuggestionBox = () => {
           placeholder="Share your suggestions here..."
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="min-h-[160px] rounded-2xl bg-card border-border text-foreground placeholder:text-muted-foreground resize-none w-full mb-6 pt-5 px-5"
+          className="min-h-[200px] rounded-2xl bg-card border-border text-foreground placeholder:text-muted-foreground resize-none w-full mb-6 pt-5 px-5"
           maxLength={2000}
         />
 
