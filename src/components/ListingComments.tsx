@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useReporting } from '@/hooks/useReporting';
+import ReportDialog from '@/components/ReportDialog';
 import { useContentModeration } from '@/hooks/useContentModeration';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 
@@ -52,7 +53,7 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { reportComment, isReporting } = useReporting();
+  const { openReport, submitPendingReport, closeReport, pendingReport, isReporting } = useReporting();
   const { checkCommentContent, isChecking } = useContentModeration();
   const { isBlocked } = useBlockedStatus();
 
@@ -290,16 +291,8 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
     addComment.mutate({ content: newComment, parentId: replyingTo?.id });
   };
 
-  const handleReport = async (comment: Comment) => {
-    if (!user) {
-      toast.error('Please log in to report');
-      return;
-    }
-    try {
-      await reportComment(comment.id, comment.user_id);
-    } catch (error) {
-      // Error already handled in hook
-    }
+  const handleReport = (comment: Comment) => {
+    openReport('comment', comment.id, comment.user_id);
   };
 
   const canDeleteComment = (comment: Comment) => {
@@ -515,6 +508,13 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
           )}
         </CollapsibleContent>
       </Collapsible>
+      <ReportDialog
+        open={!!pendingReport}
+        onOpenChange={(v) => { if (!v) closeReport(); }}
+        onSubmit={submitPendingReport}
+        isSubmitting={isReporting}
+        reportType={pendingReport?.reportType || 'comment'}
+      />
     </div>
   );
 };
