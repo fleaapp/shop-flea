@@ -8,6 +8,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { OnboardingProvider } from "@/context/OnboardingContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import OnboardingOverlay from "@/components/OnboardingOverlay";
+import SuggestionBox from "./pages/SuggestionBox";
 import Index from "./pages/Index";
 import ListingDetails from "./pages/ListingDetails";
 import Favorites from "./pages/Favorites";
@@ -56,6 +57,7 @@ const App = () => (
                 <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/settings/profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+                <Route path="/suggestion-box" element={<ProtectedRoute><SuggestionBox /></ProtectedRoute>} />
                 <Route path="/contact-support" element={<ProtectedRoute><ContactSupport /></ProtectedRoute>} />
                 <Route path="/contact-support/:threadId" element={<ProtectedRoute><ChatConversation /></ProtectedRoute>} />
                 <Route path="/seller/:sellerId" element={<ProtectedRoute><SellerProfile /></ProtectedRoute>} />
