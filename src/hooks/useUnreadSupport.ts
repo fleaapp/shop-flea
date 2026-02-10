@@ -16,22 +16,26 @@ export const useUnreadSupport = () => {
       if (!user?.id) return { total: 0, perThread: [] as ThreadUnread[] };
 
       // Get all user's threads
-      const { data: threads } = await (supabase as any)
+      const { data: threads, error: threadsError } = await (supabase as any)
         .from('chat_threads')
         .select('id')
         .eq('user_id', user.id);
+
+      console.log('[UnreadSupport] threads:', threads, 'error:', threadsError);
 
       if (!threads || threads.length === 0) return { total: 0, perThread: [] as ThreadUnread[] };
 
       const threadIds = threads.map((t: any) => t.id);
 
       // Get unread messages (from support, not read)
-      const { data: messages } = await (supabase as any)
+      const { data: messages, error: msgError } = await (supabase as any)
         .from('chat_messages')
-        .select('id, thread_id')
+        .select('id, thread_id, sender_type, read')
         .in('thread_id', threadIds)
         .eq('sender_type', 'support')
         .eq('read', false);
+
+      console.log('[UnreadSupport] messages:', messages, 'error:', msgError);
 
       if (!messages || messages.length === 0) return { total: 0, perThread: [] as ThreadUnread[] };
 
