@@ -9,6 +9,7 @@ import { OnboardingProvider } from "@/context/OnboardingContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import OnboardingOverlay from "@/components/OnboardingOverlay";
 import SuggestionBox from "./pages/SuggestionBox";
+import AvatarPreview from "./pages/AvatarPreview";
 import Index from "./pages/Index";
 import ListingDetails from "./pages/ListingDetails";
 import Favorites from "./pages/Favorites";
@@ -61,6 +62,7 @@ const App = () => (
                 <Route path="/contact-support" element={<ProtectedRoute><ContactSupport /></ProtectedRoute>} />
                 <Route path="/contact-support/:threadId" element={<ProtectedRoute><ChatConversation /></ProtectedRoute>} />
                 <Route path="/seller/:sellerId" element={<ProtectedRoute><SellerProfile /></ProtectedRoute>} />
+                <Route path="/avatar-preview" element={<AvatarPreview />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
