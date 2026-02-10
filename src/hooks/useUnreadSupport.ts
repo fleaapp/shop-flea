@@ -27,12 +27,12 @@ export const useUnreadSupport = () => {
 
       const threadIds = threads.map((t: any) => t.id);
 
-      // Get unread messages (from support, not read)
+      // Get unread messages (not from user, not read)
       const { data: messages, error: msgError } = await (supabase as any)
         .from('chat_messages')
         .select('id, thread_id, sender_type, read')
         .in('thread_id', threadIds)
-        .eq('sender_type', 'support')
+        .neq('sender_type', 'user')
         .eq('read', false);
 
       console.log('[UnreadSupport] messages:', messages, 'error:', msgError);
