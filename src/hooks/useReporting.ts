@@ -25,11 +25,11 @@ export const useReporting = () => {
         .from('reports')
         .insert({
           report_type: reportType,
-          reported_entity_id: entityId,
+          reported_item_id: entityId,
           reported_user_id: ownerId,
-          reporting_user_id: user.id,
+          reporter_user_id: user.id,
           reason,
-        });
+        } as any);
 
       if (error) {
         if (error.code === '23505') {
