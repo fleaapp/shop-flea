@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { MapPin, MoreVertical, Flag, Share2, User } from 'lucide-react';
+import { MapPin, MoreVertical, Flag, Share2, User, Pencil, HelpCircle, Receipt, Truck } from 'lucide-react';
 import { toast } from 'sonner';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import {
@@ -32,6 +32,9 @@ import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 import { useReporting } from '@/hooks/useReporting';
 import ReportDialog from '@/components/ReportDialog';
 import { useAuth } from '@/context/AuthContext';
+import { useOrders, OrderGroup } from '@/hooks/useOrders';
+import SalesDetailsSheet from '@/components/SalesDetailsSheet';
+import OrderSuccessDialog from '@/components/OrderSuccessDialog';
 
 interface DbListing {
   id: string;
@@ -87,6 +90,15 @@ const ListingDetails = () => {
   // Confirmation dialog states
   const [showRemoveFromCartDialog, setShowRemoveFromCartDialog] = useState(false);
   const [showRemoveFromWishlistDialog, setShowRemoveFromWishlistDialog] = useState(false);
+  const [showMarkAsSoldDialog, setShowMarkAsSoldDialog] = useState(false);
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false);
+  const [salesSheetOpen, setSalesSheetOpen] = useState(false);
+  const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
+
+  const isOwner = user?.id === listing?.user_id;
+
+  // Fetch seller orders for own sold listings
+  const { sellerOrders, sellerOrderGroups, markAsShipped } = useOrders();
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -314,23 +326,27 @@ const ListingDetails = () => {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44 bg-background border border-border rounded-xl shadow-lg z-50">
-                  <DropdownMenuItem 
-                    onClick={() => openReport('listing', listing.id, listing.user_id)}
-                    disabled={isReporting}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <Flag className="h-4 w-4" />
-                    Report listing
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => openReport('user', listing.user_id, listing.user_id)}
-                    disabled={isReporting}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <User className="h-4 w-4" />
-                    Report seller
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
+                  {!isOwner && (
+                    <>
+                      <DropdownMenuItem 
+                        onClick={() => openReport('listing', listing.id, listing.user_id)}
+                        disabled={isReporting}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <Flag className="h-4 w-4" />
+                        Report listing
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => openReport('user', listing.user_id, listing.user_id)}
+                        disabled={isReporting}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <User className="h-4 w-4" />
+                        Report seller
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   <DropdownMenuItem 
                     onClick={async () => {
                       const shareUrl = `${window.location.origin}/listing/${listing.id}`;
@@ -428,41 +444,129 @@ const ListingDetails = () => {
 
           {/* Sticky Footer Actions */}
           <div className="sticky bottom-0 left-0 right-0 flex gap-3 bg-background px-4 py-4 border-t border-border justify-center">
-            <Button
-              variant="outline"
-              onClick={handleDiscard}
-              className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]"
-            >
-              ❌
-            </Button>
+            {isOwner ? (
+              // Owner footer
+              isSold ? (
+                // Sold listing owner footer
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowReceiptDialog(true)}
+                    className="h-14 rounded-2xl border-2 text-sm font-medium px-5 bg-transparent"
+                  >
+                    <Receipt className="h-4 w-4 mr-2" />
+                    Receipt
+                  </Button>
+                  {(() => {
+                    const order = sellerOrders.find(o => o.listing_id === listing.id);
+                    const orderGroup = sellerOrderGroups.find(g => g.orders.some(o => o.listing_id === listing.id));
+                    if (!order) return null;
+                    if (order.status === 'awaiting') {
+                      return (
+                        <Button
+                          onClick={() => {
+                            if (orderGroup) {
+                              setSelectedOrderGroup(orderGroup);
+                              setSalesSheetOpen(true);
+                            }
+                          }}
+                          className="h-14 rounded-2xl text-sm font-medium px-5 bg-[#ddfed7] text-foreground hover:bg-[#ddfed7]/80 border-2 border-[#ddfed7]"
+                        >
+                          <Truck className="h-4 w-4 mr-2" />
+                          Mark as shipped
+                        </Button>
+                      );
+                    }
+                    return (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          if (orderGroup) {
+                            setSelectedOrderGroup(orderGroup);
+                            setSalesSheetOpen(true);
+                          }
+                        }}
+                        className="h-14 rounded-2xl border-2 text-sm font-medium px-5 bg-transparent"
+                      >
+                        <Truck className="h-4 w-4 mr-2" />
+                        {order.status === 'shipped' ? 'Shipped' : 'Delivered'}
+                      </Button>
+                    );
+                  })()}
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setOpen(false);
+                      setTimeout(() => navigate('/support'), 300);
+                    }}
+                    className="h-14 rounded-2xl border-2 text-sm font-medium px-5 bg-transparent"
+                  >
+                    <HelpCircle className="h-4 w-4 mr-2" />
+                    Need help?
+                  </Button>
+                </>
+              ) : (
+                // Active listing owner footer
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setOpen(false);
+                      setTimeout(() => navigate(`/listing/${listing.id}/edit`), 300);
+                    }}
+                    className="h-14 rounded-2xl border-2 text-sm font-medium px-6 bg-transparent"
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit listing
+                  </Button>
+                  <Button
+                    onClick={() => setShowMarkAsSoldDialog(true)}
+                    className="h-14 rounded-2xl text-sm font-medium px-6 bg-[#ddfed7] text-foreground hover:bg-[#ddfed7]/80 border-2 border-[#ddfed7]"
+                  >
+                    Mark as sold
+                  </Button>
+                </>
+              )
+            ) : (
+              // Non-owner footer
+              <>
+                <Button
+                  variant="outline"
+                  onClick={handleDiscard}
+                  className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]"
+                >
+                  ❌
+                </Button>
 
-            <Button
-              variant="outline"
-              onClick={handleWishlistClick}
-              className={`h-14 w-14 rounded-2xl border-2 text-2xl transition-colors ${
-                isFavorite(listing.id) 
-                  ? 'bg-[#ddfed7] border-[#ddfed7]' 
-                  : isSold 
-                    ? 'bg-muted/50 border-muted opacity-50' 
-                    : 'bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]'
-              }`}
-            >
-              💌
-            </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleWishlistClick}
+                  className={`h-14 w-14 rounded-2xl border-2 text-2xl transition-colors ${
+                    isFavorite(listing.id) 
+                      ? 'bg-[#ddfed7] border-[#ddfed7]' 
+                      : isSold 
+                        ? 'bg-muted/50 border-muted opacity-50' 
+                        : 'bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]'
+                  }`}
+                >
+                  💌
+                </Button>
 
-            <Button
-              variant="outline"
-              onClick={handleCartClick}
-              className={`h-14 w-14 rounded-2xl border-2 text-2xl transition-colors ${
-                isInCart(listing.id) 
-                  ? 'bg-[#ddfed7] border-[#ddfed7]' 
-                  : isSold 
-                    ? 'bg-muted/50 border-muted opacity-50' 
-                    : 'bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]'
-              }`}
-            >
-              🛒
-            </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleCartClick}
+                  className={`h-14 w-14 rounded-2xl border-2 text-2xl transition-colors ${
+                    isInCart(listing.id) 
+                      ? 'bg-[#ddfed7] border-[#ddfed7]' 
+                      : isSold 
+                        ? 'bg-muted/50 border-muted opacity-50' 
+                        : 'bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]'
+                  }`}
+                >
+                  🛒
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Remove from Wishlist Confirmation */}
@@ -500,8 +604,77 @@ const ListingDetails = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+
+          {/* Mark as Sold Confirmation */}
+          <AlertDialog open={showMarkAsSoldDialog} onOpenChange={setShowMarkAsSoldDialog}>
+            <AlertDialogContent className="max-w-[280px] rounded-2xl">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Mark as sold?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This listing will be marked as sold. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-row gap-2">
+                <AlertDialogCancel className="flex-1 mt-0">Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={async () => {
+                    const { error } = await supabase
+                      .from('listings')
+                      .update({ status: 'sold' })
+                      .eq('id', listing.id)
+                      .eq('user_id', user!.id);
+                    if (error) {
+                      toast.error('Failed to mark as sold');
+                    } else {
+                      setListingStatus('sold');
+                      toast.success('Listing marked as sold');
+                    }
+                    setShowMarkAsSoldDialog(false);
+                  }}
+                  className="flex-1"
+                >
+                  Mark as sold
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </DrawerContent>
       </Drawer>
+
+      {/* Sales Details Sheet for shipping */}
+      <SalesDetailsSheet
+        orders={selectedOrderGroup?.orders ?? null}
+        open={salesSheetOpen}
+        onOpenChange={(open) => {
+          setSalesSheetOpen(open);
+          if (!open) setSelectedOrderGroup(null);
+        }}
+        onMarkShipped={(trackingDetails) => {
+          if (!selectedOrderGroup) return;
+          if (selectedOrderGroup.order_group_id) {
+            markAsShipped.mutate({
+              orderGroupId: selectedOrderGroup.order_group_id,
+              trackingProvider: trackingDetails.serviceProvider,
+              trackingNumber: trackingDetails.trackingNumber,
+            });
+          } else {
+            markAsShipped.mutate({
+              orderId: selectedOrderGroup.orders[0].id,
+              trackingProvider: trackingDetails.serviceProvider,
+              trackingNumber: trackingDetails.trackingNumber,
+            });
+          }
+          setSalesSheetOpen(false);
+          setSelectedOrderGroup(null);
+        }}
+      />
+
+      {/* Receipt Dialog */}
+      <OrderSuccessDialog
+        open={showReceiptDialog}
+        onClose={() => setShowReceiptDialog(false)}
+      />
+
       <ReportDialog
         open={!!pendingReport}
         onOpenChange={(v) => { if (!v) closeReport(); }}
