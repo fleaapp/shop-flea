@@ -1,6 +1,6 @@
-import { Plus, Pencil } from 'lucide-react';
+import { Plus, Pencil, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/context/AuthContext';
 import { useUserListings } from '@/hooks/useListings';
@@ -9,10 +9,15 @@ import { useOrders, Order, OrderGroup } from '@/hooks/useOrders';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
 import ReviewsDrawer from '@/components/ReviewsDrawer';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
+import { supabase } from '@/lib/supabase';
+import { compressImage } from '@/utils/imageCompression';
+import { toast } from 'sonner';
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, refreshProfile } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<'listings' | 'sold'>('listings');
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [salesSheetOpen, setSalesSheetOpen] = useState(false);
@@ -125,6 +130,38 @@ const Profile = () => {
           <div className="h-20 w-20 max-[430px]:h-16 max-[430px]:w-16 max-[375px]:h-14 max-[375px]:w-14 rounded-full p-0.5 bg-gradient-to-br from-muted to-border">
             <img src={profile?.avatar_url || getDefaultAvatar(user.id)} alt="Profile" className="h-full w-full rounded-full bg-card object-cover" />
           </div>
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-card shadow-md"
+          >
+            <Camera className="h-3.5 w-3.5 text-muted-foreground" />
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file || !user) return;
+              setUploading(true);
+              try {
+                const compressedFile = await compressImage(file, { maxWidth: 400, maxHeight: 400, quality: 0.85 });
+                const filePath = `${user.id}/avatar.jpg`;
+                const { error: uploadError } = await supabase.storage.from('listings').upload(filePath, compressedFile, { upsert: true });
+                if (uploadError) throw uploadError;
+                const { data: { publicUrl } } = supabase.storage.from('listings').getPublicUrl(filePath);
+                await supabase.from('profiles').update({ avatar_url: `${publicUrl}?t=${Date.now()}` } as any).eq('user_id', user.id);
+                await refreshProfile();
+                toast.success('Avatar updated');
+              } catch (error) {
+                toast.error('Failed to upload avatar');
+              } finally {
+                setUploading(false);
+              }
+            }}
+            className="hidden"
+          />
         </div>
         <h2 className="mt-3 text-lg max-[430px]:text-base font-semibold text-foreground">{profile?.username || '@user'}</h2>
         <button
