@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { MapPin, MoreVertical, Flag, Share2, User } from 'lucide-react';
 import { toast } from 'sonner';
+import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -175,7 +176,7 @@ const ListingDetails = () => {
 
   const images = listing.images?.length ? listing.images : [];
   const sellerName = seller?.username || '@user';
-  const sellerAvatar = seller?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${listing.id}`;
+  const sellerAvatar = seller?.avatar_url || getDefaultAvatar(listing.user_id || listing.id);
   
   // Get location from country_code, with mapping for display
   const getLocationDisplay = (countryCode: string | null | undefined, fallbackLocation: string | null | undefined): string => {

@@ -8,6 +8,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { useAuth } from '@/context/AuthContext';
 import { useReporting } from '@/hooks/useReporting';
 import ReportDialog from '@/components/ReportDialog';
+import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { toast } from 'sonner';
 import { Listing } from '@/types/listing';
 import ReviewsDrawer from '@/components/ReviewsDrawer';
@@ -239,7 +240,7 @@ const SellerProfile = () => {
       <div className="flex flex-col items-center px-4 pt-6">
         <div className="relative">
           <div className="h-20 w-20 max-[430px]:h-16 max-[430px]:w-16 max-[375px]:h-14 max-[375px]:w-14 rounded-full p-0.5 bg-gradient-to-br from-muted to-border">
-            <img src={sellerProfile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${sellerProfile.user_id}`} alt="Profile" className="h-full w-full rounded-full bg-card object-cover" />
+            <img src={sellerProfile.avatar_url || getDefaultAvatar(sellerProfile.user_id)} alt="Profile" className="h-full w-full rounded-full bg-card object-cover" />
           </div>
         </div>
         <h2 className="mt-3 text-lg max-[430px]:text-base font-semibold text-foreground">{sellerProfile.username || '@seller'}</h2>

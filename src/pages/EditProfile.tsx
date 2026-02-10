@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/utils/imageCompression';
+import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import ChangeEmailSheet from '@/components/ChangeEmailSheet';
 import ChangePasswordSheet from '@/components/ChangePasswordSheet';
 import {
@@ -251,7 +252,7 @@ const EditProfile = () => {
           <div className="relative">
             <div className="h-28 w-28 rounded-full p-0.5 bg-gradient-to-br from-muted to-border">
               <img 
-                src={avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`} 
+                src={avatarUrl || getDefaultAvatar(user?.id || 'default')} 
                 alt="Profile" 
                 className="h-full w-full rounded-full bg-card object-cover" 
               />
