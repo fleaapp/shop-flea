@@ -8,6 +8,11 @@ import avatarPokerChip from '@/assets/avatars/poker-chip.png';
 import avatarPearl from '@/assets/avatars/pearl.png';
 import avatarMarble from '@/assets/avatars/marble.png';
 import avatarDiscoBall from '@/assets/avatars/disco-ball.png';
+import avatarCoin from '@/assets/avatars/coin.png';
+import avatarDartboard from '@/assets/avatars/dartboard.png';
+import avatarPlate from '@/assets/avatars/plate.png';
+import avatarGolfBall from '@/assets/avatars/golf-ball.png';
+import avatarYarn from '@/assets/avatars/yarn.png';
 
 const DEFAULT_AVATARS = [
   avatarButton,
@@ -20,6 +25,11 @@ const DEFAULT_AVATARS = [
   avatarPearl,
   avatarMarble,
   avatarDiscoBall,
+  avatarCoin,
+  avatarDartboard,
+  avatarPlate,
+  avatarGolfBall,
+  avatarYarn,
 ];
 
 /**
