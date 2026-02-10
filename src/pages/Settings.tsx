@@ -66,6 +66,16 @@ const Settings = () => {
     </Avatar>
   );
 
+  const [helpCentreExpanded, setHelpCentreExpanded] = useState(false);
+
+  const helpCentreItems = [
+    { icon: <span className="text-base">❓</span>, label: 'FAQ', expandable: true },
+    { icon: <span className="text-base">📮</span>, label: 'Suggestion Box', action: () => navigate('/suggestion-box') },
+    { icon: <span className="text-base">💬</span>, label: 'Contact Support', action: () => navigate('/contact-support'), badge: supportUnread || undefined },
+    { icon: <span className="text-base">🔒</span>, label: 'Terms & Privacy' },
+    { icon: <span className="text-base">📖</span>, label: 'App Walkthrough', action: () => setShowOnboarding(true) },
+  ];
+
   const settingsGroups = [
     {
       title: 'Account',
@@ -80,10 +90,7 @@ const Settings = () => {
     {
       title: 'Support',
       items: [
-        { icon: <span className="text-base">❓</span>, label: 'FAQ', expandable: true },
-        { icon: <span className="text-base">📮</span>, label: 'Suggestion Box', action: () => navigate('/suggestion-box') },
-        { icon: <span className="text-base">🛠️</span>, label: 'Contact Support', action: () => navigate('/contact-support'), badge: supportUnread || undefined },
-        { icon: <span className="text-base">🔒</span>, label: 'Privacy & Security' },
+        { icon: <span className="text-base">🛠️</span>, label: 'Help Centre', expandable: true, onExpand: () => setHelpCentreExpanded(!helpCentreExpanded), isExpanded: helpCentreExpanded },
       ],
     },
   ];
@@ -112,10 +119,11 @@ const Settings = () => {
                     className={`flex items-center justify-between rounded-2xl bg-card p-4 max-[375px]:p-3 card-shadow ${item.toggle ? '' : 'cursor-pointer'}`}
                     onClick={async () => {
                       if (item.toggle) return;
-                      if (item.expandable) {
-                        setFaqExpanded(!faqExpanded);
+                      if ((item as any).onExpand) {
+                        (item as any).onExpand();
                         return;
                       }
+                      if (item.expandable) return;
                       if (item.label === 'Edit Profile') {
                         navigate('/settings/profile');
                       } else if (item.action) {
@@ -143,7 +151,7 @@ const Settings = () => {
                         className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime"
                       />
                     ) : item.expandable ? (
-                      faqExpanded ? (
+                      (item as any).isExpanded ? (
                         <ChevronDown className="h-5 w-5 text-muted-foreground" />
                       ) : (
                         <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -154,21 +162,50 @@ const Settings = () => {
                     </div>
                   </div>
                   
-                  {/* FAQ sub-items */}
-                  {item.expandable && faqExpanded && (
+                  {/* Help Centre sub-items */}
+                  {(item as any).isExpanded && (
                     <div className="ml-6 mt-2 space-y-2">
-                      <div
-                        className="flex items-center justify-between rounded-2xl bg-card p-4 max-[375px]:p-3 card-shadow cursor-pointer"
-                        onClick={() => setShowOnboarding(true)}
-                      >
-                        <div className="flex items-center gap-3 max-[375px]:gap-2">
-                          <div className="text-muted-foreground">
-                            <span className="text-base">📖</span>
+                      {helpCentreItems.map((subItem) => (
+                        <div key={subItem.label}>
+                          <div
+                            className="flex items-center justify-between rounded-2xl bg-card p-4 max-[375px]:p-3 card-shadow cursor-pointer"
+                            onClick={async () => {
+                              if (subItem.expandable) {
+                                setFaqExpanded(!faqExpanded);
+                                return;
+                              }
+                              if (subItem.action) {
+                                await subItem.action();
+                              } else {
+                                toast(`${subItem.label} clicked`);
+                              }
+                            }}
+                          >
+                            <div className="flex items-center gap-3 max-[375px]:gap-2">
+                              <div className="text-muted-foreground">{subItem.icon}</div>
+                              <span className="text-base max-[375px]:text-sm font-medium text-foreground">{subItem.label}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {(subItem as any).badge && (
+                                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                                  {(subItem as any).badge}
+                                </span>
+                              )}
+                              {subItem.expandable ? (
+                                faqExpanded ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                              ) : (
+                                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                              )}
+                            </div>
                           </div>
-                          <span className="text-base max-[375px]:text-sm font-medium text-foreground">Show Onboarding</span>
+                          {/* FAQ sub-sub-item */}
+                          {subItem.expandable && faqExpanded && (
+                            <div className="ml-6 mt-2 space-y-2">
+                              {/* FAQ content can go here */}
+                            </div>
+                          )}
                         </div>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                      </div>
+                      ))}
                     </div>
                   )}
                 </div>
