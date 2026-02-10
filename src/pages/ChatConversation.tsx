@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import ChatBubble from '@/components/ChatBubble';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface Message {
   id: string;
@@ -27,6 +28,7 @@ const ChatConversation = () => {
   const { threadId } = useParams<{ threadId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [messages, setMessages] = useState<Message[]>([]);
   const [thread, setThread] = useState<Thread | null>(null);
   const [newMsg, setNewMsg] = useState('');
@@ -34,6 +36,21 @@ const ChatConversation = () => {
   const [file, setFile] = useState<File | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Mark non-user messages as read when opening conversation
+  useEffect(() => {
+    if (!threadId || !user) return;
+    const markRead = async () => {
+      await (supabase as any)
+        .from('chat_messages')
+        .update({ read: true })
+        .eq('thread_id', threadId)
+        .neq('sender_type', 'user')
+        .eq('read', false);
+      queryClient.invalidateQueries({ queryKey: ['unread-support'] });
+    };
+    markRead();
+  }, [threadId, user, queryClient]);
 
   const scrollToBottom = () => {
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 100);
