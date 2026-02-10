@@ -69,9 +69,9 @@ const Settings = () => {
   const [helpCentreExpanded, setHelpCentreExpanded] = useState(false);
 
   const helpCentreItems = [
+    { icon: <span className="text-base">💬</span>, label: 'Contact Support', action: () => navigate('/contact-support'), badge: supportUnread || undefined },
     { icon: <span className="text-base">❓</span>, label: 'FAQ', expandable: true },
     { icon: <span className="text-base">📮</span>, label: 'Suggestion Box', action: () => navigate('/suggestion-box') },
-    { icon: <span className="text-base">💬</span>, label: 'Contact Support', action: () => navigate('/contact-support'), badge: supportUnread || undefined },
     { icon: <span className="text-base">🔒</span>, label: 'Terms & Privacy' },
     { icon: <span className="text-base">📖</span>, label: 'App Walkthrough', action: () => setShowOnboarding(true) },
   ];
