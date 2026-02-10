@@ -26,7 +26,7 @@ const Auth = () => {
   const [detectedRegion, setDetectedRegion] = useState<string | null>(null);
   const [isRegionBlocked, setIsRegionBlocked] = useState(false);
   
-  const [loginEmail, setLoginEmail] = useState('');
+  const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   
   const [signupEmail, setSignupEmail] = useState('');
@@ -73,18 +73,32 @@ const Auth = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loginEmail || !loginPassword) {
+    if (!loginIdentifier || !loginPassword) {
       toast.error('Please fill in all fields');
       return;
     }
     setIsLoading(true);
     
-    const { error } = await signIn(loginEmail, loginPassword);
+    let email = loginIdentifier.trim();
+    
+    // If it doesn't look like an email, treat as username and look up email
+    if (!email.includes('@') || !email.includes('.')) {
+      const usernameQuery = email.startsWith('@') ? email : `@${email}`;
+      const { data, error: rpcError } = await supabase.rpc('get_email_by_username', { p_username: usernameQuery });
+      
+      if (rpcError || !data) {
+        toast.error('No account found with that username');
+        setIsLoading(false);
+        return;
+      }
+      email = data;
+    }
+    
+    const { error } = await signIn(email, loginPassword);
     
     if (error) {
-      // Handle specific error cases for better UX
       if (error.message?.includes('Invalid login credentials')) {
-        toast.error('Incorrect email or password');
+        toast.error('Incorrect email/username or password');
       } else if (error.message?.includes('Email not confirmed')) {
         toast.error('Please verify your email before logging in');
       } else {
@@ -258,10 +272,10 @@ const Auth = () => {
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
+                  type="text"
+                  placeholder="Email or username"
+                  value={loginIdentifier}
+                  onChange={(e) => setLoginIdentifier(e.target.value)}
                   className="h-10 pl-9 rounded-lg bg-card border border-foreground text-foreground placeholder:text-muted-foreground text-sm focus-visible:ring-muted-foreground/50 focus-visible:ring-offset-0"
                 />
               </div>
