@@ -117,7 +117,7 @@ const Settings = () => {
               {group.items.map((item) => (
                 <div key={item.label}>
                   <div
-                    className={`flex items-center justify-between rounded-2xl p-4 max-[375px]:p-3 card-shadow ${(item as any).isLogout ? 'bg-muted' : 'bg-card'} ${item.toggle ? '' : 'cursor-pointer'}`}
+                    className={`flex items-center justify-between rounded-2xl p-4 max-[375px]:p-3 card-shadow ${(item as any).isLogout ? 'bg-secondary' : 'bg-card'} ${item.toggle ? '' : 'cursor-pointer'}`}
                     onClick={async () => {
                       if (item.toggle) return;
                       if ((item as any).onExpand) {
