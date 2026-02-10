@@ -29,7 +29,7 @@ export const useReporting = () => {
           reported_user_id: ownerId,
           reporting_user_id: user.id,
           reason,
-        } as any);
+        });
 
       if (error) {
         if (error.code === '23505') {
