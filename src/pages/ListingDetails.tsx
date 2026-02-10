@@ -29,6 +29,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { useCart } from '@/context/CartContext';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 import { useReporting } from '@/hooks/useReporting';
+import ReportDialog from '@/components/ReportDialog';
 import { useAuth } from '@/context/AuthContext';
 
 interface DbListing {
@@ -62,7 +63,7 @@ const ListingDetails = () => {
   const location = useLocation();
   const { id } = useParams();
   const { user } = useAuth();
-  const { reportListing, reportUser, isReporting } = useReporting();
+  const { openReport, submitPendingReport, closeReport, pendingReport, isReporting } = useReporting();
   const [open, setOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
@@ -313,17 +314,7 @@ const ListingDetails = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44 bg-background border border-border rounded-xl shadow-lg z-50">
                   <DropdownMenuItem 
-                    onClick={async () => {
-                      if (!user) {
-                        toast.error('Please log in to report');
-                        return;
-                      }
-                      try {
-                        await reportListing(listing.id, listing.user_id);
-                      } catch (error) {
-                        // Error already handled in hook
-                      }
-                    }}
+                    onClick={() => openReport('listing', listing.id, listing.user_id)}
                     disabled={isReporting}
                     className="flex items-center gap-2 cursor-pointer"
                   >
@@ -331,17 +322,7 @@ const ListingDetails = () => {
                     Report listing
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    onClick={async () => {
-                      if (!user) {
-                        toast.error('Please log in to report');
-                        return;
-                      }
-                      try {
-                        await reportUser(listing.user_id);
-                      } catch (error) {
-                        // Error already handled in hook
-                      }
-                    }}
+                    onClick={() => openReport('user', listing.user_id, listing.user_id)}
                     disabled={isReporting}
                     className="flex items-center gap-2 cursor-pointer"
                   >
@@ -520,6 +501,13 @@ const ListingDetails = () => {
           </AlertDialog>
         </DrawerContent>
       </Drawer>
+      <ReportDialog
+        open={!!pendingReport}
+        onOpenChange={(v) => { if (!v) closeReport(); }}
+        onSubmit={submitPendingReport}
+        isSubmitting={isReporting}
+        reportType={pendingReport?.reportType || 'listing'}
+      />
     </div>
   );
 };

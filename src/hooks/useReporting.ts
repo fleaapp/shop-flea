@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -5,34 +6,33 @@ import { toast } from 'sonner';
 
 type ReportType = 'user' | 'listing' | 'comment';
 
-interface ReportData {
+interface ReportTarget {
   reportType: ReportType;
-  reportedEntityId: string;
-  reportedUserId: string;
-  reason?: string;
+  entityId: string;
+  ownerId: string;
 }
 
 export const useReporting = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [pendingReport, setPendingReport] = useState<ReportTarget | null>(null);
 
   const submitReport = useMutation({
-    mutationFn: async (data: ReportData) => {
+    mutationFn: async ({ reportType, entityId, ownerId, reason }: ReportTarget & { reason: string }) => {
       if (!user) throw new Error('Must be logged in to report');
 
       const { error } = await supabase
         .from('reports')
         .insert({
-          report_type: data.reportType,
-          reported_entity_id: data.reportedEntityId,
-          reported_user_id: data.reportedUserId,
+          report_type: reportType,
+          reported_entity_id: entityId,
+          reported_user_id: ownerId,
           reporting_user_id: user.id,
-          reason: data.reason,
-        });
+          reason,
+        } as any);
 
       if (error) {
         if (error.code === '23505') {
-          // Unique constraint violation - already reported
           throw new Error('You have already reported this content');
         }
         throw error;
@@ -45,10 +45,10 @@ export const useReporting = () => {
         comment: 'Comment reported. Thank you for helping keep the community safe.',
       };
       toast.success(messages[variables.reportType]);
-      
-      // Invalidate relevant queries
+      setPendingReport(null);
+
       if (variables.reportType === 'listing') {
-        queryClient.invalidateQueries({ queryKey: ['listing', variables.reportedEntityId] });
+        queryClient.invalidateQueries({ queryKey: ['listing', variables.entityId] });
       } else if (variables.reportType === 'comment') {
         queryClient.invalidateQueries({ queryKey: ['listing-comments'] });
       }
@@ -58,37 +58,26 @@ export const useReporting = () => {
     },
   });
 
-  const reportUser = (userId: string, reason?: string) => {
-    return submitReport.mutateAsync({
-      reportType: 'user',
-      reportedEntityId: userId,
-      reportedUserId: userId,
-      reason,
-    });
+  const openReport = (reportType: ReportType, entityId: string, ownerId: string) => {
+    if (!user) {
+      toast.error('Please log in to report');
+      return;
+    }
+    setPendingReport({ reportType, entityId, ownerId });
   };
 
-  const reportListing = (listingId: string, sellerId: string, reason?: string) => {
-    return submitReport.mutateAsync({
-      reportType: 'listing',
-      reportedEntityId: listingId,
-      reportedUserId: sellerId,
-      reason,
-    });
+  const submitPendingReport = (reason: string) => {
+    if (!pendingReport) return;
+    submitReport.mutate({ ...pendingReport, reason });
   };
 
-  const reportComment = (commentId: string, authorId: string, reason?: string) => {
-    return submitReport.mutateAsync({
-      reportType: 'comment',
-      reportedEntityId: commentId,
-      reportedUserId: authorId,
-      reason,
-    });
-  };
+  const closeReport = () => setPendingReport(null);
 
   return {
-    reportUser,
-    reportListing,
-    reportComment,
+    openReport,
+    submitPendingReport,
+    closeReport,
+    pendingReport,
     isReporting: submitReport.isPending,
   };
 };

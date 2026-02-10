@@ -6,6 +6,8 @@ import { formatTagLabel } from '@/components/ListingTag';
 import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useAuth } from '@/context/AuthContext';
+import { useReporting } from '@/hooks/useReporting';
+import ReportDialog from '@/components/ReportDialog';
 import { toast } from 'sonner';
 import { Listing } from '@/types/listing';
 import ReviewsDrawer from '@/components/ReviewsDrawer';
@@ -56,6 +58,7 @@ const SellerProfile = () => {
   const { addToCart, isInCart } = useCart();
   const { addFavorite, isFavorite } = useFavorites();
   const { user } = useAuth();
+  const { openReport, submitPendingReport, closeReport, pendingReport, isReporting } = useReporting();
 
   useEffect(() => {
     if (sellerId) {
@@ -128,7 +131,8 @@ const SellerProfile = () => {
   };
 
   const handleReportUser = () => {
-    toast.success('User reported');
+    if (!sellerProfile) return;
+    openReport('user', sellerProfile.user_id, sellerProfile.user_id);
   };
 
   const handleBlockUser = () => {
@@ -322,6 +326,14 @@ const SellerProfile = () => {
         username={sellerProfile.username}
         open={reviewsOpen}
         onOpenChange={setReviewsOpen}
+      />
+
+      <ReportDialog
+        open={!!pendingReport}
+        onOpenChange={(v) => { if (!v) closeReport(); }}
+        onSubmit={submitPendingReport}
+        isSubmitting={isReporting}
+        reportType={pendingReport?.reportType || 'user'}
       />
 
       <BottomNav />
