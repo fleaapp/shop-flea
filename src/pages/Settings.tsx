@@ -117,7 +117,7 @@ const Settings = () => {
               {group.items.map((item) => (
                 <div key={item.label}>
                   <div
-                    className={`flex items-center justify-between rounded-2xl p-4 max-[375px]:p-3 card-shadow ${(item as any).isLogout ? 'bg-[hsl(220,10%,80%)]' : 'bg-card'} ${item.toggle ? '' : 'cursor-pointer'}`}
+                    className={`flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow ${(item as any).isLogout ? 'bg-[hsl(220,10%,84%)]' : 'bg-card'} ${item.toggle ? '' : 'cursor-pointer'}`}
                     onClick={async () => {
                       if (item.toggle) return;
                       if ((item as any).onExpand) {
@@ -169,7 +169,7 @@ const Settings = () => {
                       {helpCentreItems.map((subItem) => (
                         <div key={subItem.label}>
                           <div
-                            className="flex items-center justify-between rounded-2xl bg-card p-4 max-[375px]:p-3 card-shadow cursor-pointer"
+                            className="flex items-center justify-between rounded-2xl bg-card p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow cursor-pointer"
                             onClick={async () => {
                               if (subItem.expandable) {
                                 setFaqExpanded(!faqExpanded);
