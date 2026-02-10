@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import BottomNav from '@/components/BottomNav';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
@@ -48,9 +49,9 @@ const SuggestionBox = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background px-4 py-4 flex items-center">
+      <header className="px-4 py-4 flex items-center flex-shrink-0">
         <button onClick={() => navigate(-1)} className="p-1">
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
@@ -82,6 +83,8 @@ const SuggestionBox = () => {
           📬 Submit
         </Button>
       </div>
+
+      <BottomNav />
     </div>
   );
 };
