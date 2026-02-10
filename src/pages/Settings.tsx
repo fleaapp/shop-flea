@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '@/components/BottomNav';
@@ -61,7 +62,7 @@ const Settings = () => {
 
   const ProfileAvatar = () => (
     <Avatar className="h-5 w-5">
-      <AvatarImage src={profile?.avatar_url || ''} alt="Profile" />
+      <AvatarImage src={profile?.avatar_url || (user?.id ? getDefaultAvatar(user.id) : '')} alt="Profile" />
       <AvatarFallback className="text-xs">👤</AvatarFallback>
     </Avatar>
   );
