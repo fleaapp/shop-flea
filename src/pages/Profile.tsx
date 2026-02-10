@@ -1,4 +1,4 @@
-import { Plus, Pencil, Camera } from 'lucide-react';
+import { Plus, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useRef } from 'react';
 import BottomNav from '@/components/BottomNav';
@@ -222,7 +222,7 @@ const Profile = () => {
                     }} 
                     className="absolute right-4 max-[430px]:right-3 max-[375px]:right-2.5 top-4 max-[430px]:top-3 max-[375px]:top-2.5 z-10 flex h-8 w-8 max-[430px]:h-7 max-[430px]:w-7 max-[375px]:h-6 max-[375px]:w-6 items-center justify-center rounded-lg max-[375px]:rounded-md bg-card/80 backdrop-blur-sm"
                   >
-                    <Pencil className="h-4 w-4 max-[430px]:h-3.5 max-[430px]:w-3.5 max-[375px]:h-3 max-[375px]:w-3 text-foreground" />
+                    <span className="text-sm max-[430px]:text-xs max-[375px]:text-[10px]">✏️</span>
                   </button>
                 )}
 

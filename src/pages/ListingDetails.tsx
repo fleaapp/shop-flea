@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { MapPin, MoreVertical, Flag, Share2, User, Pencil, HelpCircle, Receipt, Truck } from 'lucide-react';
+import { MapPin, MoreVertical, Flag, Share2, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import {
@@ -452,9 +452,9 @@ const ListingDetails = () => {
                   <Button
                     variant="outline"
                     onClick={() => setShowReceiptDialog(true)}
-                    className="h-14 rounded-2xl border-2 text-sm font-medium px-5 bg-transparent"
+                    className="h-14 rounded-2xl border-2 text-sm font-medium px-3 bg-transparent flex-1 min-w-0"
                   >
-                    <Receipt className="h-4 w-4 mr-2" />
+                    <span className="mr-1">🧾</span>
                     Receipt
                   </Button>
                   {(() => {
@@ -470,9 +470,9 @@ const ListingDetails = () => {
                               setSalesSheetOpen(true);
                             }
                           }}
-                          className="h-14 rounded-2xl text-sm font-medium px-5 bg-[#ddfed7] text-foreground hover:bg-[#ddfed7]/80 border-2 border-[#ddfed7]"
+                          className="h-14 rounded-2xl text-sm font-medium px-3 bg-[#ddfed7] text-foreground hover:bg-[#ddfed7]/80 border-2 border-[#ddfed7] flex-1 min-w-0"
                         >
-                          <Truck className="h-4 w-4 mr-2" />
+                          <span className="mr-1">📦</span>
                           Mark as shipped
                         </Button>
                       );
@@ -486,9 +486,9 @@ const ListingDetails = () => {
                             setSalesSheetOpen(true);
                           }
                         }}
-                        className="h-14 rounded-2xl border-2 text-sm font-medium px-5 bg-transparent"
+                        className="h-14 rounded-2xl border-2 text-sm font-medium px-3 bg-transparent flex-1 min-w-0"
                       >
-                        <Truck className="h-4 w-4 mr-2" />
+                        <span className="mr-1">📦</span>
                         {order.status === 'shipped' ? 'Shipped' : 'Delivered'}
                       </Button>
                     );
@@ -499,10 +499,10 @@ const ListingDetails = () => {
                       setOpen(false);
                       setTimeout(() => navigate('/support'), 300);
                     }}
-                    className="h-14 rounded-2xl border-2 text-sm font-medium px-5 bg-transparent"
+                    className="h-14 rounded-2xl border-2 text-sm font-medium px-3 bg-transparent flex-1 min-w-0"
                   >
-                    <HelpCircle className="h-4 w-4 mr-2" />
-                    Need help?
+                    <span className="mr-1">❓</span>
+                    Help
                   </Button>
                 </>
               ) : (
@@ -516,8 +516,8 @@ const ListingDetails = () => {
                     }}
                     className="h-14 rounded-2xl border-2 text-sm font-medium px-6 bg-transparent"
                   >
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Edit listing
+                    <span className="mr-1.5">✏️</span>
+                    Edit Listing
                   </Button>
                   <Button
                     onClick={() => setShowMarkAsSoldDialog(true)}
