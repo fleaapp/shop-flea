@@ -41,7 +41,7 @@ const AvatarPreview = () => (
           <img
             src={a.src}
             alt={a.name}
-            className="h-20 w-20 rounded-full object-cover bg-muted"
+            className="h-20 w-20 rounded-full object-cover bg-background"
           />
           <span className="text-xs text-muted-foreground">{a.name}</span>
         </div>
