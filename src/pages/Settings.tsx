@@ -118,7 +118,7 @@ const Settings = () => {
               {group.items.map((item) => (
                 <div key={item.label}>
                   <div
-                    className={`flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow ${(item as any).isLogout ? 'bg-[#e7e2da]' : 'bg-card'} ${item.toggle ? '' : 'cursor-pointer'}`}
+                    className={`flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow ${(item as any).isLogout ? 'bg-[#e0e0dc]' : 'bg-card'} ${item.toggle ? '' : 'cursor-pointer'}`}
                     onClick={async () => {
                       if (item.toggle) return;
                       if ((item as any).onExpand) {
