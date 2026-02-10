@@ -27,15 +27,17 @@ export const useUnreadSupport = () => {
 
       const threadIds = threads.map((t: any) => t.id);
 
-      // Get unread messages (not from user, not read)
-      const { data: messages, error: msgError } = await (supabase as any)
+      // Get ALL non-user messages to debug
+      const { data: allMsgs } = await (supabase as any)
         .from('chat_messages')
         .select('id, thread_id, sender_type, read')
         .in('thread_id', threadIds)
-        .neq('sender_type', 'user')
-        .eq('read', false);
+        .neq('sender_type', 'user');
 
-      console.log('[UnreadSupport] messages:', messages, 'error:', msgError);
+      console.log('[UnreadSupport] all non-user messages:', JSON.stringify(allMsgs));
+
+      // Filter unread on client side
+      const messages = (allMsgs || []).filter((m: any) => m.read === false);
 
       if (!messages || messages.length === 0) return { total: 0, perThread: [] as ThreadUnread[] };
 
