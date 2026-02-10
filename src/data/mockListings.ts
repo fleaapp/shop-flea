@@ -3,6 +3,7 @@ import jacketImg from '@/assets/listing-jacket.jpg';
 import bagImg from '@/assets/listing-bag.jpg';
 import sneakersImg from '@/assets/listing-sneakers.jpg';
 import sweaterImg from '@/assets/listing-sweater.jpg';
+import { getDefaultAvatar } from '@/utils/defaultAvatars';
 
 export const mockListings: Listing[] = [
   {
@@ -19,7 +20,7 @@ export const mockListings: Listing[] = [
     tags: ['New', 'Blue', 'Unisex'],
     sellerId: 'user1',
     sellerName: 'Sarah M.',
-    sellerAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
+    sellerAvatar: getDefaultAvatar('user1'),
     location: 'Brooklyn, NY',
     createdAt: new Date('2024-01-15'),
     condition: 'new',
@@ -38,7 +39,7 @@ export const mockListings: Listing[] = [
     tags: ['Vintage', 'Leather', 'Red'],
     sellerId: 'user2',
     sellerName: 'Mike T.',
-    sellerAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mike',
+    sellerAvatar: getDefaultAvatar('user2'),
     location: 'Manhattan, NY',
     createdAt: new Date('2024-01-14'),
     condition: 'good',
@@ -57,7 +58,7 @@ export const mockListings: Listing[] = [
     tags: ['Like New', 'White'],
     sellerId: 'user3',
     sellerName: 'Alex K.',
-    sellerAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
+    sellerAvatar: getDefaultAvatar('user3'),
     location: 'Queens, NY',
     createdAt: new Date('2024-01-13'),
     condition: 'like-new',
@@ -76,7 +77,7 @@ export const mockListings: Listing[] = [
     tags: ['Cozy', 'Cream'],
     sellerId: 'user4',
     sellerName: 'Emma L.',
-    sellerAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emma',
+    sellerAvatar: getDefaultAvatar('user4'),
     location: 'Williamsburg, NY',
     createdAt: new Date('2024-01-12'),
     condition: 'new',
