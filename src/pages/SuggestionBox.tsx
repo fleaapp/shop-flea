@@ -62,22 +62,29 @@ const SuggestionBox = () => {
           Help shape the future of Flea
         </h2>
 
-        <p className="text-xs text-muted-foreground mb-8 leading-relaxed max-w-[280px]">
+        <p className="text-xs text-muted-foreground mb-8 leading-relaxed max-w-[320px]">
           We're building Flea alongside our community. If there's a feature you want, something that feels clunky, or an idea you can't stop thinking about… tell us!
         </p>
 
-        <Textarea
-          placeholder="Share your idea here… What would you love to see added or improved in Flea?"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          className="min-h-[160px] rounded-2xl bg-card border-border text-foreground placeholder:text-muted-foreground placeholder:pt-2 resize-none w-full mb-6"
-          maxLength={2000}
-        />
+        <div className="relative w-full mb-6">
+          <Textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="min-h-[160px] rounded-2xl bg-card border-border text-foreground resize-none w-full peer"
+            maxLength={2000}
+          />
+          {!content && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-muted-foreground text-sm">
+              <span className="font-bold">Share your ideas here…</span>
+              <span>What would you love to see added or improved in Flea?</span>
+            </div>
+          )}
+        </div>
 
         <Button
           onClick={handleSubmit}
           disabled={submitting || !content.trim()}
-          className="rounded-full h-12 px-8 bg-nav text-white font-bold text-sm hover:bg-nav/90"
+          className="rounded-full h-12 px-8 bg-[#2b303b] text-white font-bold text-sm hover:bg-[#2b303b]/90"
         >
           📬 Submit
         </Button>
