@@ -67,10 +67,10 @@ const SuggestionBox = () => {
         </p>
 
         <Textarea
-          placeholder="Share your ideas here…"
+          placeholder="Share your suggestions here..."
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="min-h-[160px] rounded-2xl bg-card border-border text-foreground placeholder:text-muted-foreground resize-none w-full mb-6"
+          className="min-h-[160px] rounded-2xl bg-card border-border text-foreground placeholder:text-muted-foreground resize-none w-full mb-6 pt-5 px-5"
           maxLength={2000}
         />
 
