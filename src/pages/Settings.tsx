@@ -91,6 +91,7 @@ const Settings = () => {
       title: 'Support',
       items: [
         { icon: <span className="text-base">🛠️</span>, label: 'Help Centre', expandable: true, onExpand: () => setHelpCentreExpanded(!helpCentreExpanded), isExpanded: helpCentreExpanded },
+        { icon: <span className="text-base">🚪</span>, label: 'Logout', action: handleLogout, isLogout: true },
       ],
     },
   ];
@@ -116,7 +117,7 @@ const Settings = () => {
               {group.items.map((item) => (
                 <div key={item.label}>
                   <div
-                    className={`flex items-center justify-between rounded-2xl bg-card p-4 max-[375px]:p-3 card-shadow ${item.toggle ? '' : 'cursor-pointer'}`}
+                    className={`flex items-center justify-between rounded-2xl p-4 max-[375px]:p-3 card-shadow ${(item as any).isLogout ? 'bg-muted' : 'bg-card'} ${item.toggle ? '' : 'cursor-pointer'}`}
                     onClick={async () => {
                       if (item.toggle) return;
                       if ((item as any).onExpand) {
@@ -215,16 +216,6 @@ const Settings = () => {
         ))}
       </div>
       
-      {/* Logout Button */}
-      <div className="mt-8 max-[375px]:mt-6 flex justify-center">
-        <button
-          onClick={handleLogout}
-          className="w-32 py-3 rounded-full bg-muted text-muted-foreground font-bold text-sm hover:bg-muted/80 transition-colors flex items-center justify-center gap-2"
-        >
-          <span>🚪</span>
-          Logout
-        </button>
-      </div>
       
       {/* Version */}
       <div className="mt-4 text-center">
