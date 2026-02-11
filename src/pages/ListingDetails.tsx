@@ -94,6 +94,8 @@ const ListingDetails = () => {
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [salesSheetOpen, setSalesSheetOpen] = useState(false);
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
+  const [cartCount, setCartCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
 
   const isOwner = user?.id === listing?.user_id;
 
@@ -143,6 +145,20 @@ const ListingDetails = () => {
     };
     
     fetchListing();
+  }, [id]);
+
+  // Fetch cart and wishlist counts for this listing
+  useEffect(() => {
+    const fetchCounts = async () => {
+      if (!id) return;
+      const [cartRes, favRes] = await Promise.all([
+        supabase.from('cart_items').select('id', { count: 'exact', head: true }).eq('listing_id', id),
+        supabase.from('favorites').select('id', { count: 'exact', head: true }).eq('listing_id', id),
+      ]);
+      setCartCount(cartRes.count ?? 0);
+      setWishlistCount(favRes.count ?? 0);
+    };
+    fetchCounts();
   }, [id]);
 
   const handleClose = () => {
@@ -375,6 +391,26 @@ const ListingDetails = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              {/* Cart & Wishlist count icons */}
+              <div className="absolute top-3 left-3 flex flex-col items-center gap-2">
+                <div className="flex flex-col items-center">
+                  <div className="h-8 w-8 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center text-sm">
+                    🛒
+                  </div>
+                  <span className="text-[10px] font-semibold text-foreground mt-0.5 bg-background/70 backdrop-blur-sm rounded-full px-1.5 leading-tight">
+                    {cartCount}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="h-8 w-8 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center text-sm">
+                    💌
+                  </div>
+                  <span className="text-[10px] font-semibold text-foreground mt-0.5 bg-background/70 backdrop-blur-sm rounded-full px-1.5 leading-tight">
+                    {wishlistCount}
+                  </span>
+                </div>
+              </div>
 
               {images.length > 1 && (
                 <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-background/70 px-2 py-1 text-xs text-foreground">
