@@ -121,7 +121,9 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
 
   const handleSellerClick = (username: string) => {
     // Navigate to seller profile or search for seller
-    onSearch(`@${username}`);
+    // Usernames in DB already have @ prefix, avoid double @@
+    const cleanUsername = username.startsWith('@') ? username : `@${username}`;
+    onSearch(cleanUsername);
     onOpenChange(false);
     setQuery('');
   };
@@ -254,10 +256,11 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
             <button onClick={() => onOpenChange(false)} className="p-1">
               <ArrowLeft className="h-6 w-6 text-foreground" />
             </button>
-            <div className="flex items-center gap-2 flex-1 justify-center -ml-7">
+          <div className="flex-1 flex items-center justify-center">
               <span className="text-lg">🔍</span>
-              <span className="text-lg font-semibold">Search</span>
+              <span className="text-lg font-semibold ml-2">Search</span>
             </div>
+            <div className="w-6" />
           </div>
 
           {/* Search Input */}
