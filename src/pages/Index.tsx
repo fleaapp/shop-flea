@@ -8,7 +8,8 @@ import SwipeCard from '@/components/SwipeCard';
 import FilterSheet, { FilterState } from '@/components/FilterSheet';
 import SearchSheet from '@/components/SearchSheet';
 import WelcomeSetupDialog from '@/components/WelcomeSetupDialog';
- import OnboardingCarousel from '@/components/OnboardingCarousel';
+import PasswordSetupDialog from '@/components/PasswordSetupDialog';
+import OnboardingCarousel from '@/components/OnboardingCarousel';
 import { useListings, DbListing } from '@/hooks/useListings';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
@@ -46,12 +47,16 @@ const Index = () => {
   const { addFavorite, removeFavorite, favoriteIds } = useFavorites();
   const { addDiscarded, removeDiscarded, discardedIds } = useDiscardedListings();
   const { checkAndTriggerOnboarding } = useOnboarding();
-  const { profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
 
   // Check if user needs to set up their profile (new users get auto-generated usernames)
   const needsProfileSetup = profile?.username?.startsWith('@user_') || false;
   const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
-   const [showOnboardingCarousel, setShowOnboardingCarousel] = useState(false);
+  const [showPasswordSetup, setShowPasswordSetup] = useState(false);
+  const [showOnboardingCarousel, setShowOnboardingCarousel] = useState(false);
+
+  // Check if user signed up via Google OAuth (no password set)
+  const isGoogleUser = user?.app_metadata?.provider === 'google';
 
   // Show welcome setup dialog for new users with auto-generated usernames
   useEffect(() => {
@@ -375,12 +380,23 @@ const Index = () => {
         onComplete={() => {
           setShowWelcomeDialog(false);
           refreshProfile();
-           setShowOnboardingCarousel(true);
+          if (isGoogleUser) {
+            setShowPasswordSetup(true);
+          } else {
+            setShowOnboardingCarousel(true);
+          }
         }}
       />
-       <OnboardingCarousel
-         open={showOnboardingCarousel}
-         onComplete={() => setShowOnboardingCarousel(false)}
+      <PasswordSetupDialog
+        open={showPasswordSetup}
+        onComplete={() => {
+          setShowPasswordSetup(false);
+          setShowOnboardingCarousel(true);
+        }}
+      />
+      <OnboardingCarousel
+        open={showOnboardingCarousel}
+        onComplete={() => setShowOnboardingCarousel(false)}
       />
       <BottomNav />
     </div>
