@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronRight, Camera } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -25,7 +24,6 @@ import {
 
 const EditProfile = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { user, profile, refreshProfile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -129,8 +127,10 @@ const EditProfile = () => {
       const { error: uploadError } = await supabase.storage.from('listings').upload(filePath, compressedFile, { upsert: true });
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from('listings').getPublicUrl(filePath);
-      setAvatarUrl(`${publicUrl}?t=${Date.now()}`);
-      queryClient.invalidateQueries({ queryKey: ['profile-avatar'] });
+      const newAvatarUrl = `${publicUrl}?t=${Date.now()}`;
+      await supabase.from('profiles').update({ avatar_url: newAvatarUrl } as any).eq('user_id', user.id);
+      setAvatarUrl(newAvatarUrl);
+      await refreshProfile();
       toast.success('Avatar uploaded');
     } catch {
       toast.error('Failed to upload avatar');
