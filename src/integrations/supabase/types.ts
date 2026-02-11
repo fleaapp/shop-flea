@@ -35,6 +35,77 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          attachment_url: string | null
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          sender_id: string
+          sender_type: string
+          thread_id: string
+        }
+        Insert: {
+          attachment_url?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          sender_id: string
+          sender_type?: string
+          thread_id: string
+        }
+        Update: {
+          attachment_url?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          sender_id?: string
+          sender_type?: string
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "chat_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_threads: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       countries: {
         Row: {
           code: string
@@ -605,7 +676,77 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_public: {
+        Row: {
+          avatar_url: string | null
+          country_code: string | null
+          created_at: string | null
+          id: string | null
+          location: string | null
+          pause_selling: boolean | null
+          rating: number | null
+          region_id: string | null
+          shipping_preferences_set: boolean | null
+          shipping_tier_1: number | null
+          shipping_tier_2: number | null
+          shipping_tier_3: number | null
+          status: string | null
+          tiered_shipping_enabled: boolean | null
+          total_reviews: number | null
+          updated_at: string | null
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          id?: string | null
+          location?: string | null
+          pause_selling?: boolean | null
+          rating?: number | null
+          region_id?: string | null
+          shipping_preferences_set?: boolean | null
+          shipping_tier_1?: number | null
+          shipping_tier_2?: number | null
+          shipping_tier_3?: number | null
+          status?: string | null
+          tiered_shipping_enabled?: boolean | null
+          total_reviews?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          id?: string | null
+          location?: string | null
+          pause_selling?: boolean | null
+          rating?: number | null
+          region_id?: string | null
+          shipping_preferences_set?: boolean | null
+          shipping_tier_1?: number | null
+          shipping_tier_2?: number | null
+          shipping_tier_3?: number | null
+          status?: string | null
+          tiered_shipping_enabled?: boolean | null
+          total_reviews?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       create_mention_notifications: {
