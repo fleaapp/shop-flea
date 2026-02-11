@@ -514,14 +514,14 @@ const ListingDetails = () => {
                       setOpen(false);
                       setTimeout(() => navigate(`/listing/${listing.id}/edit`), 300);
                     }}
-                    className="h-14 rounded-2xl border-2 text-sm font-medium px-6 bg-transparent"
+                    className="h-14 rounded-2xl border-2 text-sm font-medium px-3 bg-transparent flex-1 min-w-0"
                   >
-                    <span className="mr-1.5">✏️</span>
+                    <span className="mr-0.5">✏️</span>
                     Edit Listing
                   </Button>
                   <Button
                     onClick={() => setShowMarkAsSoldDialog(true)}
-                    className="h-14 rounded-2xl text-sm font-medium px-6 bg-[#ddfed7] text-foreground hover:bg-[#ddfed7]/80 border-2 border-[#ddfed7]"
+                    className="h-14 rounded-2xl text-sm font-medium px-3 bg-charcoal text-white hover:bg-charcoal/90 border-2 border-charcoal flex-1 min-w-0"
                   >
                     Mark as sold
                   </Button>
