@@ -87,20 +87,26 @@ const Auth = () => {
       const withAt = email.startsWith('@') ? email : `@${email}`;
       const withoutAt = email.startsWith('@') ? email.slice(1) : email;
       
+      console.log('[Login] Trying username lookup with:', withAt);
       let { data, error: rpcError } = await supabase.rpc('get_email_by_username', { p_username: withAt });
+      console.log('[Login] Result with @:', { data, error: rpcError });
       
       // If not found with @, try without
       if (!data) {
+        console.log('[Login] Trying without @:', withoutAt);
         const result = await supabase.rpc('get_email_by_username', { p_username: withoutAt });
         data = result.data;
         rpcError = result.error;
+        console.log('[Login] Result without @:', { data, error: rpcError });
       }
       
       if (rpcError || !data) {
+        console.log('[Login] Username lookup failed completely');
         toast.error('No account found with that username');
         setIsLoading(false);
         return;
       }
+      console.log('[Login] Found email, proceeding to sign in');
       email = data;
     }
     
