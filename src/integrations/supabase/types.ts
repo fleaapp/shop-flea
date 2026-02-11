@@ -372,6 +372,7 @@ export type Database = {
           id: string
           last_name: string | null
           location: string | null
+          password_set: boolean
           pause_selling: boolean
           preferred_gender: string | null
           preferred_sizes: string[] | null
@@ -397,6 +398,7 @@ export type Database = {
           id?: string
           last_name?: string | null
           location?: string | null
+          password_set?: boolean
           pause_selling?: boolean
           preferred_gender?: string | null
           preferred_sizes?: string[] | null
@@ -422,6 +424,7 @@ export type Database = {
           id?: string
           last_name?: string | null
           location?: string | null
+          password_set?: boolean
           pause_selling?: boolean
           preferred_gender?: string | null
           preferred_sizes?: string[] | null

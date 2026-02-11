@@ -56,8 +56,8 @@ const Index = () => {
   const [passwordCompleted, setPasswordCompleted] = useState(() => sessionStorage.getItem('flea_pw_done') === '1');
   // Check if user signed up via Google OAuth and hasn't set a password yet
   const isGoogleUser = user?.app_metadata?.provider === 'google';
-  const hasEmailIdentity = user?.identities?.some(i => i.provider === 'email');
-  const needsPasswordSetup = isGoogleUser && !hasEmailIdentity && !passwordCompleted;
+  const passwordSetInMeta = user?.user_metadata?.password_set === true;
+  const needsPasswordSetup = isGoogleUser && !passwordSetInMeta && !passwordCompleted;
 
   // Welcome dialog shows when profile needs setup
   const showWelcomeDialog = needsProfileSetup;
