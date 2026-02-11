@@ -17,8 +17,10 @@ const getTransformedUrl = (
     '/storage/v1/object/public/',
     '/storage/v1/render/image/public/'
   );
-  const [base] = transformed.split('?');
-  return `${base}?width=${width}&quality=${quality}`;
+  const [base, queryString] = transformed.split('?');
+  // Preserve existing query params (like cache-busting ?t=) alongside transform params
+  const existingParams = queryString ? `&${queryString}` : '';
+  return `${base}?width=${width}&quality=${quality}${existingParams}`;
 };
 
 /**
