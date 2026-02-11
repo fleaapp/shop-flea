@@ -39,9 +39,9 @@ const ContactSupport = () => {
     };
     fetchThreads();
   }, [user, newChatOpen]);
-  return <div className="min-h-screen bg-background pb-24 flex flex-col">
+  return <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background px-4 py-4 flex items-center">
+      <header className="sticky top-0 z-40 bg-background px-4 py-4 flex items-center shrink-0">
         <button onClick={() => navigate('/settings')} className="text-foreground absolute left-4">
           <ChevronLeft className="h-6 w-6" />
         </button>
@@ -49,13 +49,13 @@ const ContactSupport = () => {
       </header>
 
       {/* Sticky New Chat Button */}
-      <div className="sticky top-[60px] z-30 flex justify-center py-4 bg-background">
+      <div className="flex justify-center py-4 bg-background shrink-0">
         <button onClick={() => setNewChatOpen(true)} className="w-48 rounded-full font-bold py-5 text-sm transition-colors flex items-center justify-center gap-2 bg-secondary text-[#6b6b6b]">
           <span>💬</span> Start a New Chat
         </button>
       </div>
 
-      <div className="px-4 space-y-4">
+      <div className="px-4 space-y-4 overflow-y-auto flex-1 pb-24">
 
         {/* Thread List */}
         {loading ? <div className="space-y-3">
