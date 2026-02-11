@@ -485,7 +485,7 @@ const ListingDetails = () => {
                               setSalesSheetOpen(true);
                             }
                           }}
-                          className="h-14 rounded-2xl border-2 text-sm font-medium px-4 bg-transparent w-44 gap-1"
+                          className="h-14 rounded-2xl border-2 border-muted text-sm font-medium px-4 bg-muted text-muted-foreground w-44 gap-1"
                         >
                           {order.status === 'shipped' ? '✈️ Shipped' : '🚚 Delivered'}
                         </Button>
