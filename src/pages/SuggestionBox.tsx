@@ -58,7 +58,7 @@ const SuggestionBox = () => {
         <h1 className="text-xl font-bold text-foreground flex-1 text-center pr-6">📮 Suggestion Box</h1>
       </header>
 
-      <div className="px-4 pt-8 flex flex-col items-center text-center max-w-lg mx-auto">
+      <div className="px-4 pt-8 flex flex-col items-center text-center max-w-xl mx-auto">
         <h2 className="text-lg font-bold text-foreground mb-3">
           Help shape the future of Flea
         </h2>
