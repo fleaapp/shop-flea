@@ -15,9 +15,10 @@ import fleaLogoHeader from '@/assets/flea-logo-welcome-header.png';
 interface WelcomeSetupDialogProps {
   open: boolean;
   onComplete: () => void;
+  isGoogleUser?: boolean;
 }
 
-const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
+const WelcomeSetupDialog = ({ open, onComplete, isGoogleUser = false }: WelcomeSetupDialogProps) => {
   const { user, refreshProfile } = useAuth();
   const [username, setUsername] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -173,7 +174,7 @@ const WelcomeSetupDialog = ({ open, onComplete }: WelcomeSetupDialogProps) => {
               disabled={isLoading || !username.trim()}
               className="px-8 h-11 rounded-full bg-primary text-primary-foreground font-medium hover:bg-primary/90"
             >
-              {isLoading ? 'Setting up...' : 'Start Swiping! 👉'}
+              {isLoading ? 'Setting up...' : isGoogleUser ? 'Continue 👉' : 'Start Swiping! 👉'}
             </Button>
           </div>
         </form>
