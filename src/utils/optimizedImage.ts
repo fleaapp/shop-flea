@@ -24,11 +24,12 @@ const getTransformedUrl = (
 };
 
 /**
- * Optimized URL for avatar-sized images (small, square — safe to resize).
+ * Avatar URL — pass-through since avatars are already compressed to 400x400 on upload.
+ * We skip the transform endpoint because its CDN cache doesn't respect cache-busting params.
  */
 export const getAvatarUrl = (url: string | null | undefined): string => {
   if (!url) return '';
-  return getTransformedUrl(url, 128, 70);
+  return url;
 };
 
 /**
