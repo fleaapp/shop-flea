@@ -80,9 +80,18 @@ const SwipeCard = ({
       return { x: stackTranslateX, y: 0, rotate: stackRotation, opacity: 1 };
     }
 
-    // Top card: motion values drive x/y/rotate while dragging.
-    return {};
+    // Top card: motion values drive x/y/rotate while dragging — no animate target needed.
+    return { opacity: 1 };
   };
+
+  // Snap motion values when exit begins so the exit animation starts from the
+  // current drag position instead of jumping back to 0 first.
+  useEffect(() => {
+    if (exitDirection) {
+      x.stop();
+      y.stop();
+    }
+  }, [exitDirection, x, y]);
 
   return (
     <motion.div
@@ -100,7 +109,7 @@ const SwipeCard = ({
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       dragElastic={0.9}
       onDragEnd={handleDragEnd}
-      transition={{ duration: 0.22 }}
+      transition={exitDirection ? { duration: 0.3, ease: 'easeOut' } : { duration: 0.22 }}
       onAnimationComplete={() => {
         if (!exitDirection || exitNotifiedRef.current) return;
         exitNotifiedRef.current = true;
