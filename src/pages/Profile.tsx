@@ -1,6 +1,7 @@
 import { Plus, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/context/AuthContext';
 import { useUserListings } from '@/hooks/useListings';
@@ -17,6 +18,7 @@ import AvatarCropDialog from '@/components/AvatarCropDialog';
 
 const Profile = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -276,6 +278,7 @@ const Profile = () => {
               const { data: { publicUrl } } = supabase.storage.from('listings').getPublicUrl(filePath);
               await supabase.from('profiles').update({ avatar_url: `${publicUrl}?t=${Date.now()}` } as any).eq('user_id', user.id);
               await refreshProfile();
+              queryClient.invalidateQueries({ queryKey: ['profile-avatar'] });
               toast.success('Avatar updated');
             } catch {
               toast.error('Failed to upload avatar');
