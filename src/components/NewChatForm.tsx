@@ -30,7 +30,7 @@ const NewChatForm = ({ open, onOpenChange }: NewChatFormProps) => {
       let attachmentUrl: string | null = null;
 
       if (file) {
-        const filePath = `support/${user.id}/${Date.now()}_${file.name}`;
+        const filePath = `${user.id}/support/${Date.now()}_${file.name}`;
         const { error: uploadErr } = await supabase.storage.from('listings').upload(filePath, file);
         if (uploadErr) throw uploadErr;
         const { data: urlData } = supabase.storage.from('listings').getPublicUrl(filePath);
