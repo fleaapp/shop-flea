@@ -59,12 +59,12 @@ const Profile = () => {
           }}
           className="absolute left-1/2 -translate-x-1/2 bottom-3 max-[430px]:bottom-2.5 max-[375px]:bottom-2 z-10 rounded-full bg-[#ddfed7] text-charcoal text-xs font-medium px-4 py-2 max-[375px]:px-3 max-[375px]:py-1.5 max-[375px]:text-[10px] whitespace-nowrap"
         >
-          Mark as shipped
+          📦 Mark as shipped
         </button>
       );
     }
 
-    const statusLabel = order.status === 'shipped' ? 'Shipped' : 'Delivered';
+    const statusLabel = order.status === 'shipped' ? '✈️ Shipped' : '🚚 Delivered';
     return (
       <button
         onClick={(e) => {
