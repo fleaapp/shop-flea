@@ -375,6 +375,7 @@ const Index = () => {
       />
       <WelcomeSetupDialog
         open={showWelcomeDialog}
+        isGoogleUser={isGoogleUser}
         onComplete={() => {
           refreshProfile();
           if (!isGoogleUser) {

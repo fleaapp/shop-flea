@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Eye, EyeOff } from 'lucide-react';
-import fleaLogoHeader from '@/assets/flea-logo-welcome-header.png';
+
 
 interface PasswordSetupDialogProps {
   open: boolean;
@@ -65,17 +65,14 @@ const PasswordSetupDialog = ({ open, onComplete }: PasswordSetupDialogProps) => 
         className="w-[90vw] max-w-sm rounded-3xl border-[3px] border-charcoal bg-card p-5"
         hideCloseButton
       >
-        <DialogHeader className="text-center space-y-3 pt-3">
-          <div className="flex justify-center">
-            <img src={fleaLogoHeader} alt="FLEA" className="h-12 w-auto" />
-          </div>
-          <DialogDescription className="text-sm text-muted-foreground text-center pt-1">
+        <DialogHeader className="text-center space-y-2 pt-2">
+          <h2 className="text-xl font-bold text-foreground">Create Your Password</h2>
+          <DialogDescription className="text-sm text-muted-foreground text-center">
             One last step before you start swiping!
-            <p className="font-bold text-foreground mt-3">Create a password</p>
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-3 px-4">
+        <form onSubmit={handleSubmit} className="mt-2 space-y-3 px-4">
           {/* Password */}
           <div>
             <label className="text-xs font-medium text-foreground mb-1 block">
@@ -143,7 +140,7 @@ const PasswordSetupDialog = ({ open, onComplete }: PasswordSetupDialogProps) => 
               disabled={isLoading || !isValid}
               className="px-8 h-11 rounded-full bg-primary text-primary-foreground font-medium hover:bg-primary/90"
             >
-              {isLoading ? 'Setting up...' : 'Continue 🔒'}
+              {isLoading ? 'Setting up...' : 'Start Swiping 👉'}
             </Button>
           </div>
         </form>
