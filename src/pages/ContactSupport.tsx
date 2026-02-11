@@ -48,13 +48,14 @@ const ContactSupport = () => {
         <h1 className="text-xl font-bold text-foreground text-center w-full">Contact Support</h1>
       </header>
 
+      {/* Sticky New Chat Button */}
+      <div className="sticky top-[60px] z-30 flex justify-center py-4 bg-background">
+        <button onClick={() => setNewChatOpen(true)} className="w-48 rounded-full font-bold py-5 text-sm transition-colors flex items-center justify-center gap-2 bg-secondary text-[#6b6b6b]">
+          <span>💬</span> Start a New Chat
+        </button>
+      </div>
+
       <div className="px-4 space-y-4">
-        {/* New Chat Button */}
-        <div className="flex justify-center">
-          <button onClick={() => setNewChatOpen(true)} className="w-48 rounded-full font-bold py-5 text-sm transition-colors flex items-center justify-center gap-2 bg-secondary text-[#6b6b6b]">
-            <span>💬</span> Start a New Chat
-          </button>
-        </div>
 
         {/* Thread List */}
         {loading ? <div className="space-y-3">
