@@ -9,6 +9,7 @@ import { useOrders, Order, OrderGroup } from '@/hooks/useOrders';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
 import ReviewsDrawer from '@/components/ReviewsDrawer';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
+import { getAvatarUrl } from '@/utils/optimizedImage';
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/utils/imageCompression';
 import { toast } from 'sonner';
@@ -128,7 +129,7 @@ const Profile = () => {
       <div className="flex flex-col items-center px-4 pt-6">
         <div className="relative">
           <div className="h-20 w-20 max-[430px]:h-16 max-[430px]:w-16 max-[375px]:h-14 max-[375px]:w-14 rounded-full p-0.5 bg-gradient-to-br from-muted to-border">
-            <img src={profile?.avatar_url || getDefaultAvatar(user.id)} alt="Profile" className="h-full w-full rounded-full bg-card object-cover" />
+            <img src={getAvatarUrl(profile?.avatar_url) || getDefaultAvatar(user.id)} alt="Profile" className="h-full w-full rounded-full bg-card object-cover" loading="eager" decoding="async" />
           </div>
           <button 
             onClick={() => fileInputRef.current?.click()}

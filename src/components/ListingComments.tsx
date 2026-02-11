@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
+import { getAvatarUrl } from '@/utils/optimizedImage';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -312,7 +313,7 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
   const CommentItem = ({ comment, isReply = false }: { comment: Comment; isReply?: boolean }) => (
     <div className={`flex gap-3 ${isReply ? 'ml-8 mt-2' : ''}`}>
       <img
-        src={comment.profile?.avatar_url || getDefaultAvatar(comment.user_id)}
+        src={getAvatarUrl(comment.profile?.avatar_url) || getDefaultAvatar(comment.user_id)}
         alt={comment.profile?.username || '@user'}
         className={`rounded-full bg-muted flex-shrink-0 ${isReply ? 'h-6 w-6' : 'h-8 w-8'}`}
       />
@@ -446,7 +447,7 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
                           }`}
                         >
                           <img
-                            src={mentionUser.avatar_url || getDefaultAvatar(mentionUser.user_id)}
+                            src={getAvatarUrl(mentionUser.avatar_url) || getDefaultAvatar(mentionUser.user_id)}
                             alt={mentionUser.username}
                             className="h-6 w-6 rounded-full bg-muted"
                           />
