@@ -1,51 +1,34 @@
 /**
- * Utility for optimizing Supabase storage image URLs using image transforms.
- * Appends width/quality params to reduce payload size on mobile.
+ * Utility for image URL helpers.
+ * Currently passes through original URLs since the external Supabase instance
+ * doesn't support image transforms, which were causing images to appear zoomed/cropped.
  */
-
-const SUPABASE_STORAGE_HOST = 'dzglehiopfgfjmxtejve.supabase.co/storage';
 
 /**
- * Returns an optimized version of a Supabase storage image URL.
- * For non-Supabase URLs (e.g. local assets), returns the original.
+ * Returns the image URL as-is. Previously attempted Supabase image transforms
+ * but they caused cropping/zoom issues.
  */
 export const getOptimizedImageUrl = (
-  url: string | null | undefined,
-  options: { width?: number; quality?: number } = {}
+  url: string | null | undefined
 ): string => {
   if (!url) return '';
-
-  // Only transform Supabase storage URLs
-  if (!url.includes(SUPABASE_STORAGE_HOST)) return url;
-
-  const { width = 600, quality = 75 } = options;
-
-  // Use Supabase image transform endpoint
-  // Convert /storage/v1/object/public/... to /storage/v1/render/image/public/...
-  const transformed = url.replace(
-    '/storage/v1/object/public/',
-    '/storage/v1/render/image/public/'
-  );
-
-  // Strip any existing query params (like cache-bust ?t=...) and rebuild
-  const [base] = transformed.split('?');
-  return `${base}?width=${width}&quality=${quality}`;
+  return url;
 };
 
 /**
- * Optimized URL for avatar-sized images (small, square).
+ * Avatar image URL (pass-through).
  */
 export const getAvatarUrl = (url: string | null | undefined): string =>
-  getOptimizedImageUrl(url, { width: 128, quality: 70 });
+  getOptimizedImageUrl(url);
 
 /**
- * Optimized URL for listing card thumbnails.
+ * Listing card thumbnail URL (pass-through).
  */
 export const getCardImageUrl = (url: string | null | undefined): string =>
-  getOptimizedImageUrl(url, { width: 400, quality: 75 });
+  getOptimizedImageUrl(url);
 
 /**
- * Optimized URL for full listing detail images.
+ * Full listing detail image URL (pass-through).
  */
 export const getDetailImageUrl = (url: string | null | undefined): string =>
-  getOptimizedImageUrl(url, { width: 800, quality: 80 });
+  getOptimizedImageUrl(url);
