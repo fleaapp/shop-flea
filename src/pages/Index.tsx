@@ -53,11 +53,11 @@ const Index = () => {
   // Check if user needs to set up their profile (new users get auto-generated usernames)
   const needsProfileSetup = profile?.username?.startsWith('@user_') || false;
   const [showOnboardingCarousel, setShowOnboardingCarousel] = useState(false);
-
+  const [passwordCompleted, setPasswordCompleted] = useState(false);
   // Check if user signed up via Google OAuth and hasn't set a password yet
   const isGoogleUser = user?.app_metadata?.provider === 'google';
   const hasEmailIdentity = user?.identities?.some(i => i.provider === 'email');
-  const needsPasswordSetup = isGoogleUser && !hasEmailIdentity;
+  const needsPasswordSetup = isGoogleUser && !hasEmailIdentity && !passwordCompleted;
 
   // Welcome dialog shows when profile needs setup
   const showWelcomeDialog = needsProfileSetup;
@@ -387,13 +387,10 @@ const Index = () => {
       <PasswordSetupDialog
         open={showPasswordDialog}
         onComplete={async () => {
-          // Refresh the auth session so user.identities updates and dialog closes
-          const { data } = await supabase.auth.refreshSession();
-          if (data?.user) {
-            // Force re-render with updated user by refreshing profile too
-            await refreshProfile();
-          }
+          setPasswordCompleted(true);
           setShowOnboardingCarousel(true);
+          // Also refresh session in background so identities update for future checks
+          supabase.auth.refreshSession();
         }}
       />
       <OnboardingCarousel
