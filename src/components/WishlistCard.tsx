@@ -107,7 +107,7 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused
             <div className="flex items-end justify-between">
               <div className="flex-1 min-w-0">
                 <h3 className="text-lg max-[375px]:text-base font-semibold text-foreground truncate">{listing.title}</h3>
-                <div className="mt-1.5 max-[375px]:mt-1 flex flex-wrap gap-1.5 max-[375px]:gap-1">
+                <div className="mt-1.5 max-[375px]:mt-1 flex flex-nowrap gap-1.5 max-[375px]:gap-1 overflow-x-auto scrollbar-hide">
                   <ListingTag label={listing.size} isSize />
                   <ListingTag label={listing.brand} />
                 </div>
