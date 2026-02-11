@@ -40,21 +40,23 @@ const PasswordSetupDialog = ({ open, onComplete }: PasswordSetupDialogProps) => 
     setIsLoading(true);
     setError('');
 
-    try {
-      const { error: updateError } = await supabase.auth.updateUser({ password });
-      if (updateError) throw updateError;
+    // Transition UI immediately, update password in background
+    toast.success('Password created successfully! 🔒');
+    onComplete();
 
-      toast.success('Password created successfully! 🔒');
-      onComplete();
-
-      // Update metadata in background — don't block the UI
+    // Fire password update in background — don't block the UI
+    supabase.auth.updateUser({ password }).then(({ error: updateError }) => {
+      if (updateError) {
+        console.error('Error setting password:', updateError);
+        toast.error('Password failed to save. Please set it in Settings.');
+        return;
+      }
+      // Update metadata in background
       supabase.auth.updateUser({ data: { password_set: true } }).catch(() => {});
-    } catch (err: any) {
+    }).catch((err) => {
       console.error('Error setting password:', err);
-      setError(err?.message || 'Failed to set password. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+      toast.error('Password failed to save. Please set it in Settings.');
+    });
   };
 
   const isValid = password.length >= 8 && password === confirmPassword;
