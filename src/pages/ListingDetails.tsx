@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { MapPin, MoreVertical, Flag, Share2, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
+import { getDetailImageUrl, getAvatarUrl } from '@/utils/optimizedImage';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -204,7 +205,7 @@ const ListingDetails = () => {
 
   const images = listing.images?.length ? listing.images : [];
   const sellerName = seller?.username || '@user';
-  const sellerAvatar = seller?.avatar_url || getDefaultAvatar(listing.user_id || listing.id);
+  const sellerAvatar = getAvatarUrl(seller?.avatar_url) || getDefaultAvatar(listing.user_id || listing.id);
   
   // Get location from country_code, with mapping for display
   const getLocationDisplay = (countryCode: string | null | undefined, fallbackLocation: string | null | undefined): string => {
@@ -324,10 +325,11 @@ const ListingDetails = () => {
                   {images.map((src, index) => (
                     <CarouselItem key={`${listing.id}-img-${index}`} className="pl-0">
                       <img
-                        src={src}
+                        src={getDetailImageUrl(src)}
                         alt={`${listing.title} photo ${index + 1}`}
                         className="aspect-square w-full object-cover"
                         loading={index === 0 ? 'eager' : 'lazy'}
+                        decoding="async"
                       />
                     </CarouselItem>
                   ))}

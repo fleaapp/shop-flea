@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
+import { getAvatarUrl } from '@/utils/optimizedImage';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -65,7 +66,7 @@ const BottomNav = () => {
   const profileIcon = (
     <div className="h-5 w-5 rounded-full overflow-hidden bg-background flex items-center justify-center">
       <img
-        src={profile?.avatar_url || (user?.id ? getDefaultAvatar(user.id) : '')}
+        src={getAvatarUrl(profile?.avatar_url) || (user?.id ? getDefaultAvatar(user.id) : '')}
         alt="Profile"
         className="h-full w-full object-cover"
       />

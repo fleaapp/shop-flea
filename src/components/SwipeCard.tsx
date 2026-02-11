@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { Listing } from '@/types/listing';
 import ListingTag from './ListingTag';
+import { getCardImageUrl, getAvatarUrl } from '@/utils/optimizedImage';
 
 interface SwipeCardProps {
   listing: Listing;
@@ -120,7 +121,7 @@ const SwipeCard = ({
       <div className="flex h-full flex-col overflow-hidden rounded-3xl bg-card p-3 max-[375px]:p-2 card-shadow">
         {/* Image with white border effect - takes remaining space */}
         <div className="relative flex-1 min-h-0 overflow-hidden rounded-2xl">
-          <img src={listing.image} alt={listing.title} className="h-full w-full object-cover" draggable={false} />
+          <img src={getCardImageUrl(listing.image)} alt={listing.title} className="h-full w-full object-cover" draggable={false} loading={isTop ? 'eager' : 'lazy'} decoding="async" />
           
           {/* Like/Nope/Cart indicators */}
 {isTop && (
