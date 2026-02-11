@@ -51,19 +51,17 @@ const Index = () => {
 
   // Check if user needs to set up their profile (new users get auto-generated usernames)
   const needsProfileSetup = profile?.username?.startsWith('@user_') || false;
-  const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
-  const [showPasswordSetup, setShowPasswordSetup] = useState(false);
   const [showOnboardingCarousel, setShowOnboardingCarousel] = useState(false);
 
-  // Check if user signed up via Google OAuth (no password set)
+  // Check if user signed up via Google OAuth and hasn't set a password yet
   const isGoogleUser = user?.app_metadata?.provider === 'google';
+  const hasEmailIdentity = user?.identities?.some(i => i.provider === 'email');
+  const needsPasswordSetup = isGoogleUser && !hasEmailIdentity;
 
-  // Show welcome setup dialog for new users with auto-generated usernames
-  useEffect(() => {
-    if (needsProfileSetup) {
-      setShowWelcomeDialog(true);
-    }
-  }, [needsProfileSetup]);
+  // Welcome dialog shows when profile needs setup
+  const showWelcomeDialog = needsProfileSetup;
+  // Password dialog shows when welcome is done but password still needed
+  const showPasswordDialog = !needsProfileSetup && needsPasswordSetup;
 
   // Check if we should start onboarding (for new users after signup)
   useEffect(() => {
@@ -378,19 +376,17 @@ const Index = () => {
       <WelcomeSetupDialog
         open={showWelcomeDialog}
         onComplete={() => {
-          setShowWelcomeDialog(false);
           refreshProfile();
-          if (isGoogleUser) {
-            setShowPasswordSetup(true);
-          } else {
+          if (!isGoogleUser) {
             setShowOnboardingCarousel(true);
           }
         }}
       />
       <PasswordSetupDialog
-        open={showPasswordSetup}
+        open={showPasswordDialog}
         onComplete={() => {
-          setShowPasswordSetup(false);
+          // Refresh the user session so identities update
+          refreshProfile();
           setShowOnboardingCarousel(true);
         }}
       />
