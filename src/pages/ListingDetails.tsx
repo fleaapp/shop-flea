@@ -487,7 +487,7 @@ const ListingDetails = () => {
                           }}
                           className="h-14 rounded-2xl border-2 text-sm font-medium px-4 bg-transparent w-44 gap-1"
                         >
-                          📦 {order.status === 'shipped' ? 'Shipped' : 'Delivered'}
+                          {order.status === 'shipped' ? '✈️ Shipped' : '🚚 Delivered'}
                         </Button>
                       );
                     })()}
