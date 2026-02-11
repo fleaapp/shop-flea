@@ -41,17 +41,14 @@ const PasswordSetupDialog = ({ open, onComplete }: PasswordSetupDialogProps) => 
     setError('');
 
     try {
-      const { error: updateError } = await supabase.auth.updateUser({ 
-        password,
-        data: { password_set: true }
-      });
+      const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) throw updateError;
-
-      // Refresh session so metadata updates
-      await supabase.auth.refreshSession();
 
       toast.success('Password created successfully! 🔒');
       onComplete();
+
+      // Update metadata in background — don't block the UI
+      supabase.auth.updateUser({ data: { password_set: true } }).catch(() => {});
     } catch (err: any) {
       console.error('Error setting password:', err);
       setError(err?.message || 'Failed to set password. Please try again.');
