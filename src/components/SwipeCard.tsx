@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { motion, useMotionValue, useTransform, PanInfo, animate } from 'framer-motion';
 import { Listing } from '@/types/listing';
 import ListingTag from './ListingTag';
-import { getCardImageUrl, getAvatarUrl } from '@/utils/optimizedImage';
+import { getCardImageUrl } from '@/utils/optimizedImage';
 
 interface SwipeCardProps {
   listing: Listing;
@@ -25,7 +25,7 @@ const SwipeCard = ({
   isTop,
   index
 }: SwipeCardProps) => {
-  const [exitDirection, setExitDirection] = useState<'left' | 'right' | 'up' | null>(null);
+  const [gone, setGone] = useState(false);
   const exitNotifiedRef = useRef(false);
   const cardRef = useRef<HTMLDivElement>(null);
   
@@ -37,120 +37,117 @@ const SwipeCard = ({
   const nopeOpacity = useTransform(x, [-100, 0], [1, 0]);
   const cartOpacity = useTransform(y, [-100, 0], [1, 0]);
 
-  // When a card becomes the top card, reset drag offsets.
-  useEffect(() => {
-    if (isTop && exitDirection === null) {
-      x.set(0);
-      y.set(0);
-    }
-  }, [isTop, exitDirection, x, y]);
-
-  useEffect(() => {
-    if (exitDirection) {
-      exitNotifiedRef.current = false;
-    }
-  }, [exitDirection]);
-
-  const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    const threshold = 100;
-    
-    // Check vertical swipe first (up takes priority)
-    if (info.offset.y < -threshold && Math.abs(info.offset.y) > Math.abs(info.offset.x)) {
-      setExitDirection('up');
-      onSwipeUp();
-    } else if (info.offset.x > threshold) {
-      setExitDirection('right');
-      onSwipeRight();
-    } else if (info.offset.x < -threshold) {
-      setExitDirection('left');
-      onSwipeLeft();
-    }
-  };
-
   const stackOffset = index * 4;
   const stackRotation = index * 3;
   const stackTranslateX = index * 12;
 
-  const getAnimateProps = () => {
-    if (exitDirection === 'left') return { x: -500, rotate: -30, opacity: 0 };
-    if (exitDirection === 'right') return { x: 500, rotate: 30, opacity: 0 };
-    if (exitDirection === 'up') return { y: -500, opacity: 0 };
-
-    // Stacked cards: keep them positioned behind the top card.
-    if (!isTop) {
-      return { x: stackTranslateX, y: 0, rotate: stackRotation, opacity: 1 };
-    }
-
-    // Top card: motion values drive x/y/rotate while dragging — no animate target needed.
-    return { opacity: 1 };
-  };
-
-  // Snap motion values when exit begins so the exit animation starts from the
-  // current drag position instead of jumping back to 0 first.
+  // Position stacked (non-top) cards without animation
   useEffect(() => {
-    if (exitDirection) {
-      x.stop();
-      y.stop();
+    if (!isTop && !gone) {
+      x.set(stackTranslateX);
+      y.set(0);
     }
-  }, [exitDirection, x, y]);
+  }, [isTop, gone, stackTranslateX, x, y]);
+
+  // Reset when becoming top card
+  useEffect(() => {
+    if (isTop && !gone) {
+      x.set(0);
+      y.set(0);
+    }
+  }, [isTop, gone, x, y]);
+
+  const animateExit = useCallback((direction: 'left' | 'right' | 'up') => {
+    setGone(true);
+    exitNotifiedRef.current = false;
+
+    const targets: Record<string, { x?: number; y?: number }> = {
+      left: { x: -500 },
+      right: { x: 500 },
+      up: { y: -600 },
+    };
+    const target = targets[direction];
+
+    const animations: Promise<void>[] = [];
+
+    if (target.x !== undefined) {
+      animations.push(
+        new Promise(resolve => {
+          animate(x, target.x!, { duration: 0.3, ease: 'easeOut', onComplete: resolve });
+        })
+      );
+    }
+    if (target.y !== undefined) {
+      animations.push(
+        new Promise(resolve => {
+          animate(y, target.y!, { duration: 0.3, ease: 'easeOut', onComplete: resolve });
+        })
+      );
+    }
+
+    Promise.all(animations).then(() => {
+      if (!exitNotifiedRef.current) {
+        exitNotifiedRef.current = true;
+        onExitComplete?.();
+      }
+    });
+  }, [x, y, onExitComplete]);
+
+  const handleDragEnd = useCallback((_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (gone) return;
+    const threshold = 100;
+    
+    if (info.offset.y < -threshold && Math.abs(info.offset.y) > Math.abs(info.offset.x)) {
+      onSwipeUp();
+      animateExit('up');
+    } else if (info.offset.x > threshold) {
+      onSwipeRight();
+      animateExit('right');
+    } else if (info.offset.x < -threshold) {
+      onSwipeLeft();
+      animateExit('left');
+    }
+  }, [gone, onSwipeUp, onSwipeRight, onSwipeLeft, animateExit]);
 
   return (
     <motion.div
       ref={cardRef}
       className="absolute inset-x-0 top-0 mx-auto w-[calc(100%-16px)] max-[375px]:w-[calc(100%-8px)] max-w-sm cursor-grab active:cursor-grabbing h-[calc(100%-8px)]"
       style={{
-        x: isTop && !exitDirection ? x : undefined,
-        y: isTop && !exitDirection ? y : undefined,
-        rotate: isTop && !exitDirection ? rotate : undefined,
+        x,
+        y,
+        rotate: isTop ? rotate : stackRotation,
         zIndex: 10 - index,
-        marginTop: stackOffset
+        marginTop: stackOffset,
+        opacity: gone ? 0 : 1,
       }}
-      animate={getAnimateProps()}
-      drag={isTop && !exitDirection}
+      drag={isTop && !gone}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       dragElastic={0.9}
       onDragEnd={handleDragEnd}
-      transition={exitDirection ? { duration: 0.3, ease: 'easeOut' } : { duration: 0.22 }}
-      onAnimationComplete={() => {
-        if (!exitDirection || exitNotifiedRef.current) return;
-        exitNotifiedRef.current = true;
-        onExitComplete?.();
-      }}
-      onClick={isTop && !exitDirection ? onClick : undefined}
+      onClick={isTop && !gone ? onClick : undefined}
     >
       <div className="flex h-full flex-col overflow-hidden rounded-3xl bg-card p-3 max-[375px]:p-2 card-shadow">
-        {/* Image with white border effect - takes remaining space */}
+        {/* Image */}
         <div className="relative flex-1 min-h-0 overflow-hidden rounded-2xl">
           <img src={getCardImageUrl(listing.image)} alt={listing.title} className="h-full w-full object-cover" draggable={false} loading={isTop ? 'eager' : 'lazy'} decoding="async" />
           
-          {/* Like/Nope/Cart indicators */}
-{isTop && (
+          {isTop && (
             <>
-              <motion.div
-                style={{ opacity: likeOpacity }}
-                className="absolute inset-0 flex items-center justify-center"
-              >
+              <motion.div style={{ opacity: likeOpacity }} className="absolute inset-0 flex items-center justify-center">
                 <span className="text-7xl">💌</span>
               </motion.div>
-              
-              <motion.div
-                style={{ opacity: nopeOpacity }}
-                className="absolute inset-0 flex items-center justify-center"
-              >
+              <motion.div style={{ opacity: nopeOpacity }} className="absolute inset-0 flex items-center justify-center">
                 <span className="text-7xl">❌</span>
               </motion.div>
-              
-              <motion.div
-                style={{ opacity: cartOpacity }}
-                className="absolute inset-0 flex items-center justify-center"
-              >
+              <motion.div style={{ opacity: cartOpacity }} className="absolute inset-0 flex items-center justify-center">
                 <span className="text-7xl">🛒</span>
               </motion.div>
             </>
           )}
         </div>
         
-        {/* Content - fixed height */}
+        {/* Content */}
         <div className="px-2 max-[375px]:px-1.5 pt-3 max-[375px]:pt-2 pb-1 flex-shrink-0">
           <div className="flex items-end justify-between">
             <div className="flex-1 min-w-0">
