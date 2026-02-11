@@ -18,6 +18,7 @@ import { useOnboarding } from '@/context/OnboardingContext';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { Listing } from '@/types/listing';
+import { supabase } from '@/lib/supabase';
 import { formatSizeKeyLabel } from '@/utils/sizeKeys';
 
 // Convert DbListing to Listing format for components that expect it
@@ -385,9 +386,13 @@ const Index = () => {
       />
       <PasswordSetupDialog
         open={showPasswordDialog}
-        onComplete={() => {
-          // Refresh the user session so identities update
-          refreshProfile();
+        onComplete={async () => {
+          // Refresh the auth session so user.identities updates and dialog closes
+          const { data } = await supabase.auth.refreshSession();
+          if (data?.user) {
+            // Force re-render with updated user by refreshing profile too
+            await refreshProfile();
+          }
           setShowOnboardingCarousel(true);
         }}
       />
