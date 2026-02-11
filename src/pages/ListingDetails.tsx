@@ -393,24 +393,30 @@ const ListingDetails = () => {
               </DropdownMenu>
 
               {/* Cart & Wishlist count icons */}
-              <div className="absolute top-3 left-3 flex flex-col items-center gap-2">
-                <div className="flex flex-col items-center">
-                  <div className="h-8 w-8 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center text-sm">
-                    🛒
-                  </div>
-                  <span className="text-[10px] font-semibold text-foreground mt-0.5 bg-background/70 backdrop-blur-sm rounded-full px-1.5 leading-tight">
-                    {cartCount}
-                  </span>
+              {(cartCount > 0 || wishlistCount > 0) && (
+                <div className="absolute top-3 left-3 flex flex-col items-center gap-2">
+                  {cartCount > 0 && (
+                    <div className="flex flex-col items-center">
+                      <div className="h-8 w-8 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center text-sm">
+                        🛒
+                      </div>
+                      <span className="text-[10px] font-semibold text-foreground mt-0.5 bg-background/70 backdrop-blur-sm rounded-full px-1.5 leading-tight">
+                        {cartCount}
+                      </span>
+                    </div>
+                  )}
+                  {wishlistCount > 0 && (
+                    <div className="flex flex-col items-center">
+                      <div className="h-8 w-8 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center text-sm">
+                        💌
+                      </div>
+                      <span className="text-[10px] font-semibold text-foreground mt-0.5 bg-background/70 backdrop-blur-sm rounded-full px-1.5 leading-tight">
+                        {wishlistCount}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex flex-col items-center">
-                  <div className="h-8 w-8 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center text-sm">
-                    💌
-                  </div>
-                  <span className="text-[10px] font-semibold text-foreground mt-0.5 bg-background/70 backdrop-blur-sm rounded-full px-1.5 leading-tight">
-                    {wishlistCount}
-                  </span>
-                </div>
-              </div>
+              )}
 
               {images.length > 1 && (
                 <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-background/70 px-2 py-1 text-xs text-foreground">
