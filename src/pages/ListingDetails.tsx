@@ -508,23 +508,25 @@ const ListingDetails = () => {
               ) : (
                 // Active listing owner footer
                 <>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setOpen(false);
-                      setTimeout(() => navigate(`/listing/${listing.id}/edit`), 300);
-                    }}
-                    className="h-14 rounded-2xl border-2 text-sm font-medium px-5 bg-transparent"
-                  >
-                    <span className="mr-0.5">✏️</span>
-                    Edit Listing
-                  </Button>
-                  <Button
-                    onClick={() => setShowMarkAsSoldDialog(true)}
-                    className="h-14 rounded-2xl text-sm font-medium px-5 bg-charcoal text-white hover:bg-charcoal/90 border-2 border-charcoal"
-                  >
-                    Mark as sold
-                  </Button>
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setOpen(false);
+                        setTimeout(() => navigate(`/listing/${listing.id}/edit`), 300);
+                      }}
+                      className="h-14 rounded-2xl border-2 text-sm font-medium bg-transparent w-40"
+                    >
+                      <span className="mr-0.5">✏️</span>
+                      Edit Listing
+                    </Button>
+                    <Button
+                      onClick={() => setShowMarkAsSoldDialog(true)}
+                      className="h-14 rounded-2xl text-sm font-medium bg-charcoal text-white hover:bg-charcoal/90 border-2 border-charcoal w-40"
+                    >
+                      Mark as sold
+                    </Button>
+                  </div>
                 </>
               )
             ) : (
