@@ -117,7 +117,7 @@ const ChatConversation = () => {
     try {
       let attachmentUrl: string | null = null;
       if (file) {
-        const filePath = `support/${user.id}/${Date.now()}_${file.name}`;
+        const filePath = `${user.id}/support/${Date.now()}_${file.name}`;
         const { error: upErr } = await supabase.storage.from('listings').upload(filePath, file);
         if (upErr) throw upErr;
         const { data: urlData } = supabase.storage.from('listings').getPublicUrl(filePath);
