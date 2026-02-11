@@ -76,7 +76,7 @@ const NewChatForm = ({ open, onOpenChange }: NewChatFormProps) => {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-3xl pb-8">
+      <SheetContent side="bottom" className="rounded-t-3xl pb-8 max-h-[90dvh] overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="text-lg font-bold">New Support Chat</SheetTitle>
         </SheetHeader>
@@ -121,7 +121,7 @@ const NewChatForm = ({ open, onOpenChange }: NewChatFormProps) => {
           <Button
             onClick={handleSubmit}
             disabled={submitting || !title.trim() || !description.trim()}
-            className="w-full rounded-full bg-charcoal text-card font-bold hover:bg-charcoal/90"
+            className="w-48 mx-auto rounded-full bg-charcoal text-card font-bold hover:bg-charcoal/90 h-12"
           >
             {submitting ? 'Sending...' : 'Send'}
           </Button>
