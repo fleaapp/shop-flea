@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -7,10 +7,11 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import fleaLogoHeader from '@/assets/flea-logo-welcome-header.png';
- import { preloadImage } from '@/utils/preloadAssets';
- 
- // Preload logo on module load
- preloadImage(fleaLogoHeader);
+import { preloadImage } from '@/utils/preloadAssets';
+import { detectUserLocation } from '@/services/geolocation';
+
+// Preload logo on module load
+preloadImage(fleaLogoHeader);
 
 interface WelcomeSetupDialogProps {
   open: boolean;
@@ -25,6 +26,18 @@ const WelcomeSetupDialog = ({ open, onComplete, isGoogleUser = false }: WelcomeS
   const [lastName, setLastName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [detectedLocation, setDetectedLocation] = useState<{ countryCode: string; regionId: string | null } | null>(null);
+
+  // Detect location when dialog opens (important for Google OAuth users who skip Auth page detection)
+  useEffect(() => {
+    if (open) {
+      detectUserLocation().then((loc) => {
+        setDetectedLocation({ countryCode: loc.country_code, regionId: loc.region_id });
+      }).catch(() => {
+        // Silently fail - location will remain null
+      });
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,14 +83,22 @@ const WelcomeSetupDialog = ({ open, onComplete, isGoogleUser = false }: WelcomeS
         return;
       }
 
-      // Update the user's profile with all fields
+      // Update the user's profile with all fields, including location if detected
+      const updateData: Record<string, any> = { 
+        username: `@${formattedUsername}`,
+        first_name: firstName.trim() || null,
+        last_name: lastName.trim() || null,
+      };
+
+      // Add location data if available and not already set
+      if (detectedLocation?.countryCode && detectedLocation.countryCode !== 'UNKNOWN') {
+        updateData.country_code = detectedLocation.countryCode;
+        updateData.region_id = detectedLocation.regionId;
+      }
+
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ 
-          username: `@${formattedUsername}`,
-          first_name: firstName.trim() || null,
-          last_name: lastName.trim() || null
-        })
+        .update(updateData)
         .eq('user_id', user?.id);
 
       if (updateError) throw updateError;
