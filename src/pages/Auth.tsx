@@ -83,8 +83,18 @@ const Auth = () => {
     
     // If it doesn't look like an email, treat as username and look up email
     if (!email.includes('@') || !email.includes('.')) {
-      const usernameQuery = email.startsWith('@') ? email : `@${email}`;
-      const { data, error: rpcError } = await supabase.rpc('get_email_by_username', { p_username: usernameQuery });
+      // Try with @ prefix first, then without
+      const withAt = email.startsWith('@') ? email : `@${email}`;
+      const withoutAt = email.startsWith('@') ? email.slice(1) : email;
+      
+      let { data, error: rpcError } = await supabase.rpc('get_email_by_username', { p_username: withAt });
+      
+      // If not found with @, try without
+      if (!data) {
+        const result = await supabase.rpc('get_email_by_username', { p_username: withoutAt });
+        data = result.data;
+        rpcError = result.error;
+      }
       
       if (rpcError || !data) {
         toast.error('No account found with that username');
