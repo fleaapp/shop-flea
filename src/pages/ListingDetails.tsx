@@ -453,7 +453,7 @@ const ListingDetails = () => {
                     <Button
                       variant="outline"
                       onClick={() => setShowReceiptDialog(true)}
-                      className="h-14 rounded-2xl border-2 text-sm font-medium px-5 bg-transparent w-36 gap-1"
+                      className="h-14 rounded-2xl border-2 text-sm font-medium px-5 bg-transparent w-40 gap-1"
                     >
                       🧾 Receipt
                     </Button>
@@ -470,7 +470,7 @@ const ListingDetails = () => {
                                 setSalesSheetOpen(true);
                               }
                             }}
-                            className="h-14 rounded-2xl text-xs font-medium px-3 bg-[#ddfed7] text-foreground hover:bg-[#ddfed7]/80 border-2 border-[#ddfed7] w-36 gap-1"
+                            className="h-14 rounded-2xl text-sm font-medium px-2 bg-[#ddfed7] text-foreground hover:bg-[#ddfed7]/80 border-2 border-[#ddfed7] w-40 gap-1"
                           >
                             📦 Mark as shipped
                           </Button>
@@ -485,7 +485,7 @@ const ListingDetails = () => {
                               setSalesSheetOpen(true);
                             }
                           }}
-                          className="h-14 rounded-2xl border-2 text-sm font-medium px-4 bg-transparent w-36 gap-1"
+                          className="h-14 rounded-2xl border-2 text-sm font-medium px-4 bg-transparent w-40 gap-1"
                         >
                           📦 {order.status === 'shipped' ? 'Shipped' : 'Delivered'}
                         </Button>
