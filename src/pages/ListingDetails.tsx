@@ -558,7 +558,7 @@ const ListingDetails = () => {
                       }}
                       className="h-14 rounded-2xl border-2 text-sm font-medium bg-transparent w-36"
                     >
-                      <span className="mr-0.5">📝</span>
+                      <span className="mr-0.5">✏️</span>
                       Edit Listing
                     </Button>
                     <Button
