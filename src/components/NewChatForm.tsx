@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -75,13 +75,13 @@ const NewChatForm = ({ open, onOpenChange }: NewChatFormProps) => {
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-3xl pb-8 max-h-[90dvh] overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="text-lg font-bold">New Support Chat</SheetTitle>
-        </SheetHeader>
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="pb-8">
+        <DrawerHeader>
+          <DrawerTitle className="text-lg font-bold">New Support Chat</DrawerTitle>
+        </DrawerHeader>
 
-        <div className="mt-4 space-y-4">
+        <div className="px-4 space-y-4">
           <div>
             <label className="text-sm font-medium text-foreground mb-1 block">Title</label>
             <Input
@@ -118,16 +118,18 @@ const NewChatForm = ({ open, onOpenChange }: NewChatFormProps) => {
             </button>
           </div>
 
-          <Button
-            onClick={handleSubmit}
-            disabled={submitting || !title.trim() || !description.trim()}
-            className="w-48 mx-auto rounded-full bg-charcoal text-card font-bold hover:bg-charcoal/90 h-12"
-          >
-            {submitting ? 'Sending...' : 'Send'}
-          </Button>
+          <div className="flex justify-center">
+            <Button
+              onClick={handleSubmit}
+              disabled={submitting || !title.trim() || !description.trim()}
+              className="w-48 rounded-full bg-charcoal text-card font-bold hover:bg-charcoal/90 h-12"
+            >
+              {submitting ? 'Sending...' : 'Send'}
+            </Button>
+          </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   );
 };
 

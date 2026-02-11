@@ -39,7 +39,7 @@ const ContactSupport = () => {
     };
     fetchThreads();
   }, [user, newChatOpen]);
-  return <div className="min-h-screen bg-background pb-24">
+  return <div className="min-h-screen bg-background pb-24 flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background px-4 py-4 flex items-center">
         <button onClick={() => navigate('/settings')} className="text-foreground absolute left-4">
