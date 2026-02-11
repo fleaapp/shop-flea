@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/utils/imageCompression';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
+import AvatarCropDialog from '@/components/AvatarCropDialog';
 import ChangeEmailSheet from '@/components/ChangeEmailSheet';
 import ChangePasswordSheet from '@/components/ChangePasswordSheet';
 import {
@@ -40,6 +41,7 @@ const EditProfile = () => {
   const [passwordSheetOpen, setPasswordSheetOpen] = useState(false);
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
   const [countryCode, setCountryCode] = useState<string | null>(null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
 
   // Load profile data
   useEffect(() => {
@@ -103,35 +105,31 @@ const EditProfile = () => {
     loadProfile();
   }, [user]);
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setCropSrc(reader.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
+  const handleCroppedAvatar = async (blob: Blob) => {
+    setCropSrc(null);
+    if (!user) return;
     setUploading(true);
     try {
-      // Compress avatar image - smaller for profile pics
-      const compressedFile = await compressImage(file, {
-        maxWidth: 400,
-        maxHeight: 400,
-        quality: 0.85,
-      });
-      
+      const compressedFile = await compressImage(
+        new File([blob], 'avatar.jpg', { type: 'image/jpeg' }),
+        { maxWidth: 400, maxHeight: 400, quality: 0.85 }
+      );
       const filePath = `${user.id}/avatar.jpg`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('listings')
-        .upload(filePath, compressedFile, { upsert: true });
-
+      const { error: uploadError } = await supabase.storage.from('listings').upload(filePath, compressedFile, { upsert: true });
       if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('listings')
-        .getPublicUrl(filePath);
-
-      // Add cache buster to force refresh
+      const { data: { publicUrl } } = supabase.storage.from('listings').getPublicUrl(filePath);
       setAvatarUrl(`${publicUrl}?t=${Date.now()}`);
       toast.success('Avatar uploaded');
-    } catch (error) {
+    } catch {
       toast.error('Failed to upload avatar');
     } finally {
       setUploading(false);
@@ -415,6 +413,14 @@ const EditProfile = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        {cropSrc && (
+          <AvatarCropDialog
+            open={!!cropSrc}
+            imageSrc={cropSrc}
+            onCancel={() => setCropSrc(null)}
+            onCropComplete={handleCroppedAvatar}
+          />
+        )}
       </div>
     </div>
   );

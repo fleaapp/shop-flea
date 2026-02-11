@@ -13,12 +13,14 @@ import { getAvatarUrl } from '@/utils/optimizedImage';
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/utils/imageCompression';
 import { toast } from 'sonner';
+import AvatarCropDialog from '@/components/AvatarCropDialog';
 
 const Profile = () => {
   const navigate = useNavigate();
   const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'listings' | 'sold'>('listings');
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [salesSheetOpen, setSalesSheetOpen] = useState(false);
@@ -142,24 +144,13 @@ const Profile = () => {
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            onChange={async (e) => {
+            onChange={(e) => {
               const file = e.target.files?.[0];
-              if (!file || !user) return;
-              setUploading(true);
-              try {
-                const compressedFile = await compressImage(file, { maxWidth: 400, maxHeight: 400, quality: 0.85 });
-                const filePath = `${user.id}/avatar.jpg`;
-                const { error: uploadError } = await supabase.storage.from('listings').upload(filePath, compressedFile, { upsert: true });
-                if (uploadError) throw uploadError;
-                const { data: { publicUrl } } = supabase.storage.from('listings').getPublicUrl(filePath);
-                await supabase.from('profiles').update({ avatar_url: `${publicUrl}?t=${Date.now()}` } as any).eq('user_id', user.id);
-                await refreshProfile();
-                toast.success('Avatar updated');
-              } catch (error) {
-                toast.error('Failed to upload avatar');
-              } finally {
-                setUploading(false);
-              }
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = () => setCropSrc(reader.result as string);
+              reader.readAsDataURL(file);
+              e.target.value = '';
             }}
             className="hidden"
           />
@@ -267,6 +258,33 @@ const Profile = () => {
           </div>
         )}
       </div>
+
+      {cropSrc && (
+        <AvatarCropDialog
+          open={!!cropSrc}
+          imageSrc={cropSrc}
+          onCancel={() => setCropSrc(null)}
+          onCropComplete={async (blob) => {
+            setCropSrc(null);
+            if (!user) return;
+            setUploading(true);
+            try {
+              const compressedFile = await compressImage(new File([blob], 'avatar.jpg', { type: 'image/jpeg' }), { maxWidth: 400, maxHeight: 400, quality: 0.85 });
+              const filePath = `${user.id}/avatar.jpg`;
+              const { error: uploadError } = await supabase.storage.from('listings').upload(filePath, compressedFile, { upsert: true });
+              if (uploadError) throw uploadError;
+              const { data: { publicUrl } } = supabase.storage.from('listings').getPublicUrl(filePath);
+              await supabase.from('profiles').update({ avatar_url: `${publicUrl}?t=${Date.now()}` } as any).eq('user_id', user.id);
+              await refreshProfile();
+              toast.success('Avatar updated');
+            } catch {
+              toast.error('Failed to upload avatar');
+            } finally {
+              setUploading(false);
+            }
+          }}
+        />
+      )}
 
       <SalesDetailsSheet
         orders={selectedOrderGroup?.orders ?? null}
