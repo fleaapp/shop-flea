@@ -39,7 +39,7 @@ const ContactSupport = () => {
     };
     fetchThreads();
   }, [user, newChatOpen]);
-  return <div className="h-screen bg-background flex flex-col overflow-hidden">
+  return <div className="fixed inset-0 bg-background flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background px-4 py-4 flex items-center shrink-0">
         <button onClick={() => navigate('/settings')} className="text-foreground absolute left-4">
@@ -55,7 +55,7 @@ const ContactSupport = () => {
         </button>
       </div>
 
-      <div className="px-4 space-y-4 overflow-y-auto flex-1 pb-24">
+      <div className="px-4 space-y-4 min-h-0 flex-1 overflow-y-auto pb-24">
 
         {/* Thread List */}
         {loading ? <div className="space-y-3">
