@@ -44,6 +44,9 @@ const PasswordSetupDialog = ({ open, onComplete }: PasswordSetupDialogProps) => 
       const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) throw updateError;
 
+      // Refresh session so identities array updates (email identity added)
+      await supabase.auth.refreshSession();
+
       toast.success('Password created successfully! 🔒');
       onComplete();
     } catch (err: any) {
