@@ -150,7 +150,7 @@ export const getNotificationMessage = (type: string, username?: string, message?
     case 'price_drop_wishlist':
       return 'Price dropped on an item in your wishlist!';
     case 'cart_item_sold':
-      return message ? `Your cart's feeling lighter… ${message} just sold. 🛒🤷` : 'An item in your cart was sold.';
+      return message ? `Your cart's feeling lighter… ${message} in your cart just sold. 🛒🤷` : 'An item in your cart was sold.';
     case 'wishlist_item_sold':
       return message ? `Too slow… ${message} from your Wishlist just found a new home. 😢🏠` : 'An item in your wishlist was sold.';
     case 'cart_wishlist_item_sold':
