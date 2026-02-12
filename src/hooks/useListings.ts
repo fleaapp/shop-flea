@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { preloadImages } from '@/utils/preloadAssets';
 import { getQuerySizesFromKeys, listingSizeKey, normalizeSizeKeys } from '@/utils/sizeKeys';
 import { filterBySearch } from '@/utils/searchUtils';
 
@@ -141,11 +142,19 @@ export const useListings = (filters?: ListingFilters) => {
           ...listing,
           profiles: profilesMap.get(listing.user_id) || null,
         }))
-        .filter(listing => !listing.profiles?.pause_selling); // Exclude paused sellers
+        .filter(listing => !listing.profiles?.pause_selling);
       
       // Apply client-side search filtering for multi-word, token-based search
       if (filters?.search) {
         listingsWithProfiles = filterBySearch(listingsWithProfiles, filters.search);
+      }
+      
+      // Preload seller avatars in the background for instant display
+      const avatarUrls = listingsWithProfiles
+        .map(l => l.profiles?.avatar_url)
+        .filter((url): url is string => !!url);
+      if (avatarUrls.length > 0) {
+        preloadImages(avatarUrls);
       }
       
       setListings(listingsWithProfiles);
