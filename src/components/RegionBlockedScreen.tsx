@@ -74,8 +74,8 @@ const RegionBlockedScreen = ({ countryCode, countryName }: RegionBlockedScreenPr
         <div className="w-full max-w-[320px] text-center">
           {/* Australia flag and message */}
           <div className="mb-8">
-            <p className="text-lg font-medium text-foreground leading-relaxed">
-              Flea is currently available in Australia only 🇦🇺
+           <p className="text-lg font-bold text-foreground whitespace-nowrap">
+              Flea has landed in 🇦🇺
             </p>
             <p className="text-sm text-foreground/70 mt-3">
               We're expanding to more countries very soon. Drop your email below and we'll let you know as soon as Flea goes live in your country.
