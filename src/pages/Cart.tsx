@@ -56,7 +56,7 @@ const Cart = () => {
   const navigate = useNavigate();
   const { cartItems, removeFromCart } = useCart();
   const { addFavorite } = useFavorites();
-  const { addDiscarded } = useDiscardedListings();
+  const { removeDiscarded } = useDiscardedListings();
   const { buyerOrderGroups, loadingBuyerOrders, markAsDelivered } = useOrders();
   const [activeTab, setActiveTab] = useState<'cart' | 'orders'>('cart');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -140,12 +140,13 @@ const Cart = () => {
 
   const handleSwipeLeft = async (itemId: string) => {
     await removeFromCart(itemId);
-    await addDiscarded(itemId);
+    await removeDiscarded(itemId);
     toast.success('Removed from cart');
   };
 
   const handleSwipeRight = async (itemId: string) => {
     await removeFromCart(itemId);
+    await removeDiscarded(itemId);
     await addFavorite(itemId);
     toast.success('Moved to wishlist');
   };

@@ -7,6 +7,7 @@ import WishlistCard from '@/components/WishlistCard';
 import FilterSheet, { FilterState } from '@/components/FilterSheet';
 import { useFavoriteListings, DbListingWithPause } from '@/hooks/useFavoriteListings';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 import { useCart } from '@/context/CartContext';
 import { Listing } from '@/types/listing';
 import { ListingFilters } from '@/hooks/useListings';
@@ -58,6 +59,7 @@ const Favorites = () => {
   
   const { listings, loading, refetch } = useFavoriteListings(appliedFilters);
   const { removeFavorite } = useFavorites();
+  const { removeDiscarded } = useDiscardedListings();
   const { addToCart, isInCart } = useCart();
 
   const displayListings = useMemo(() => {
@@ -67,12 +69,13 @@ const Favorites = () => {
 
   const handleRemoveFavorite = useCallback(async (listingId: string) => {
     await removeFavorite(listingId);
+    await removeDiscarded(listingId);
     toast({
       title: "Removed from wishlist",
       description: "Item has been removed from your wishlist",
     });
     refetch();
-  }, [removeFavorite, refetch]);
+  }, [removeFavorite, removeDiscarded, refetch]);
 
   const handleAddToCart = useCallback((listing: DisplayListing) => {
     // Don't allow adding paused or sold items to cart
