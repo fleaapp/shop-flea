@@ -184,6 +184,8 @@ const CartItemRow = ({
                 src={item.sellerAvatar}
                 alt={item.sellerName}
                 className="h-8 w-8 rounded-full bg-muted cursor-pointer active:scale-95 transition-transform"
+                loading="lazy"
+                decoding="async"
                 onClick={(e) => {
                   e.stopPropagation();
                   navigate(`/seller/${item.sellerId}`);

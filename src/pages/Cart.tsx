@@ -14,6 +14,8 @@ import OrderDetailsSheet from '@/components/OrderDetailsSheet';
 import { formatDistanceToNow } from 'date-fns';
 import { Listing } from '@/types/listing';
 import { fetchSellerShippingSettings, SellerShippingInfo } from '@/utils/shippingCalculator';
+import { getAvatarUrl } from '@/utils/optimizedImage';
+import { getDefaultAvatar } from '@/utils/defaultAvatars';
 
 const getOrderStatusBadge = (status: Order['status']) => {
   switch (status) {
@@ -187,7 +189,7 @@ const Cart = () => {
     const primaryOrder = group.orders[0];
     const rawUsername = primaryOrder.seller_profile?.username || 'Unknown';
     const sellerUsername = rawUsername.startsWith('@') ? rawUsername.slice(1) : rawUsername;
-    const sellerAvatar = primaryOrder.seller_profile?.avatar_url || '';
+    const sellerAvatar = getAvatarUrl(primaryOrder.seller_profile?.avatar_url) || getDefaultAvatar(primaryOrder.seller_id);
     const productImage = primaryOrder.listing?.images?.[0] || '';
     const itemCount = group.orders.length;
 

@@ -24,12 +24,13 @@ const getTransformedUrl = (
 };
 
 /**
- * Avatar URL — pass-through since avatars are already compressed to 400x400 on upload.
- * We skip the transform endpoint because its CDN cache doesn't respect cache-busting params.
+ * Avatar URL — use Supabase image transforms for a small thumbnail (96px for 2× retina).
+ * This serves ~96×96 images via CDN instead of the full 400×400 upload, drastically
+ * reducing payload and improving load times across all screens.
  */
 export const getAvatarUrl = (url: string | null | undefined): string => {
   if (!url) return '';
-  return url;
+  return getTransformedUrl(url, 96, 75);
 };
 
 /**
