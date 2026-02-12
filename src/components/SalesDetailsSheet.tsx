@@ -9,6 +9,7 @@ import { Order, OrderStatus } from '@/hooks/useOrders';
 import { format } from 'date-fns';
 import { useExistingReview } from '@/hooks/useReviews';
 import WriteReviewDrawer from '@/components/WriteReviewDrawer';
+import { getDefaultAvatar } from '@/utils/defaultAvatars';
 
 interface SalesDetailsSheetProps {
   orders: Order[] | null;
@@ -89,7 +90,7 @@ const SalesDetailsSheet = ({
 
   const rawBuyerUsername = primaryOrder.buyer_profile?.username || 'Unknown';
   const buyerUsername = rawBuyerUsername.startsWith('@') ? rawBuyerUsername.slice(1) : rawBuyerUsername;
-  const buyerAvatar = primaryOrder.buyer_profile?.avatar_url || '';
+  const buyerAvatar = primaryOrder.buyer_profile?.avatar_url || getDefaultAvatar(primaryOrder.buyer_id);
 
   const providers = Array.from(new Set(orders.map((o) => o.tracking_provider).filter(Boolean) as string[]));
   const numbers = Array.from(new Set(orders.map((o) => o.tracking_number).filter(Boolean) as string[]));
