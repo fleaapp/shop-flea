@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { Listing } from '@/types/listing';
+import { getDefaultAvatar } from '@/utils/defaultAvatars';
 
 // Extended Listing type to include pause status
 interface CartListing extends Listing {
@@ -94,7 +95,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         images: listing.images || [],
         sellerId: listing.user_id,
         sellerName: seller?.username || 'Unknown',
-        sellerAvatar: seller?.avatar_url || '',
+        sellerAvatar: seller?.avatar_url || getDefaultAvatar(listing.user_id),
         condition: listing.condition as Listing['condition'],
         category: listing.category,
         description: listing.description || '',
