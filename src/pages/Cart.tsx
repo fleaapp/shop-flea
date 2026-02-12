@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import CartItemRow from '@/components/CartItemRow';
 import OrderDetailsSheet from '@/components/OrderDetailsSheet';
 import { formatDistanceToNow } from 'date-fns';
 import { Listing } from '@/types/listing';
+import { fetchSellerShippingSettings, SellerShippingInfo } from '@/utils/shippingCalculator';
 
 const getOrderStatusBadge = (status: Order['status']) => {
   switch (status) {
@@ -60,6 +61,14 @@ const Cart = () => {
   const [activeTab, setActiveTab] = useState<'cart' | 'orders'>('cart');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
+  const [sellerSettings, setSellerSettings] = useState<Map<string, SellerShippingInfo>>(new Map());
+
+  // Fetch seller shipping settings for tiered shipping labels
+  useEffect(() => {
+    const sellerIds = [...new Set(cartItems.map(i => i.sellerId))];
+    if (sellerIds.length === 0) return;
+    fetchSellerShippingSettings(sellerIds).then(setSellerSettings);
+  }, [cartItems]);
 
   const handleOrderClick = (group: OrderGroup) => {
     setSelectedOrderGroup(group);
@@ -288,27 +297,43 @@ const Cart = () => {
                       />
                     ))}
 
-                    {/* Checkout button - only show if not all items are unavailable */}
-                    {!allUnavailable && (
-                      <Button
-                        onClick={() => {
-                          // If user has selected items from this seller, checkout those
-                          const selectedFromSeller = items.filter(i => selectedItems.has(i.id) && i.status !== 'sold' && !i.isPaused);
-                          if (selectedFromSeller.length > 0) {
-                            handleCheckout(selectedFromSeller.map(i => i.id));
-                          } else {
-                            // Otherwise checkout all available items from this seller
-                            handleCheckout(items.filter(i => i.status !== 'sold' && !i.isPaused).map(i => i.id));
-                          }
-                        }}
-                        className="w-full rounded-none rounded-b-2xl bg-charcoal text-white hover:bg-charcoal-light h-12"
-                      >
-                        {selectedItems.size > 0 && items.some(i => selectedItems.has(i.id)) 
-                          ? `Checkout ${items.filter(i => selectedItems.has(i.id) && i.status !== 'sold' && !i.isPaused).length} selected`
-                          : 'Checkout'
-                        }
-                      </Button>
-                    )}
+                    {/* Tiered shipping label + Checkout button - only show if not all items are unavailable */}
+                    {!allUnavailable && (() => {
+                      const availableItems = items.filter(i => i.status !== 'sold' && !i.isPaused);
+                      const settings = sellerSettings.get(sellerId);
+                      const showTierLabel = settings?.tieredEnabled && availableItems.length > 1;
+                      const tierText = showTierLabel
+                        ? availableItems.length <= 3
+                          ? `2–3 items: $${settings!.tier2.toFixed(2)} combined shipping`
+                          : `4+ items: $${settings!.tier3.toFixed(2)} combined shipping`
+                        : null;
+
+                      return (
+                        <>
+                          {tierText && (
+                            <div className="px-4 py-2 bg-accent/30 text-center">
+                              <span className="text-xs font-medium text-accent-foreground">📦 {tierText}</span>
+                            </div>
+                          )}
+                          <Button
+                            onClick={() => {
+                              const selectedFromSeller = items.filter(i => selectedItems.has(i.id) && i.status !== 'sold' && !i.isPaused);
+                              if (selectedFromSeller.length > 0) {
+                                handleCheckout(selectedFromSeller.map(i => i.id));
+                              } else {
+                                handleCheckout(availableItems.map(i => i.id));
+                              }
+                            }}
+                            className="w-full rounded-none rounded-b-2xl bg-charcoal text-white hover:bg-charcoal-light h-12"
+                          >
+                            {selectedItems.size > 0 && items.some(i => selectedItems.has(i.id)) 
+                              ? `Checkout ${items.filter(i => selectedItems.has(i.id) && i.status !== 'sold' && !i.isPaused).length} selected`
+                              : 'Checkout'
+                            }
+                          </Button>
+                        </>
+                      );
+                    })()}
                   </div>
                 );
               })}
