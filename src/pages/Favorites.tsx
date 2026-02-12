@@ -8,6 +8,7 @@ import FilterSheet, { FilterState } from '@/components/FilterSheet';
 import { useFavoriteListings, DbListingWithPause } from '@/hooks/useFavoriteListings';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
+import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { useCart } from '@/context/CartContext';
 import { Listing } from '@/types/listing';
 import { ListingFilters } from '@/hooks/useListings';
@@ -40,7 +41,7 @@ const toDisplayListing = (dbListing: DbListingWithPause): DisplayListing => {
     location: dbListing.profiles?.location || 'Unknown',
     sellerId: dbListing.user_id,
     sellerName: dbListing.profiles?.username || 'Unknown Seller',
-    sellerAvatar: dbListing.profiles?.avatar_url || '',
+    sellerAvatar: dbListing.profiles?.avatar_url || getDefaultAvatar(dbListing.user_id),
     description: dbListing.description || '',
     condition: conditionMap[dbListing.condition?.toLowerCase() || ''] || 'good',
     category: dbListing.category || '',

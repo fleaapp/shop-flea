@@ -159,7 +159,7 @@ const SellerProfile = () => {
       images: listing.images || [],
       sellerId: listing.user_id,
       sellerName: sellerProfile?.username || 'Unknown',
-      sellerAvatar: sellerProfile?.avatar_url || '',
+      sellerAvatar: sellerProfile?.avatar_url || getDefaultAvatar(listing.user_id),
       condition: listing.condition as Listing['condition'],
       category: listing.category,
       description: listing.description || '',

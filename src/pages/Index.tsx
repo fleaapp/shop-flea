@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { Listing } from '@/types/listing';
 import { supabase } from '@/lib/supabase';
 import { formatSizeKeyLabel } from '@/utils/sizeKeys';
+import { getDefaultAvatar } from '@/utils/defaultAvatars';
 
 // Convert DbListing to Listing format for components that expect it
 const toDisplayListing = (dbListing: DbListing): Listing => ({
@@ -36,7 +37,7 @@ const toDisplayListing = (dbListing: DbListing): Listing => ({
   tags: dbListing.tags || [],
   sellerId: dbListing.user_id,
   sellerName: dbListing.profiles?.username || '@user',
-  sellerAvatar: dbListing.profiles?.avatar_url || '',
+  sellerAvatar: dbListing.profiles?.avatar_url || getDefaultAvatar(dbListing.user_id),
   location: dbListing.profiles?.location || 'Unknown',
   createdAt: new Date(dbListing.created_at),
   condition: (dbListing.condition as 'new' | 'like-new' | 'good' | 'fair') || 'good',

@@ -8,6 +8,7 @@ import { Order, OrderStatus } from '@/hooks/useOrders';
 import { format } from 'date-fns';
 import { useExistingReview } from '@/hooks/useReviews';
 import WriteReviewDrawer from '@/components/WriteReviewDrawer';
+import { getDefaultAvatar } from '@/utils/defaultAvatars';
 
 interface OrderDetailsSheetProps {
   orders: Order[] | null;
@@ -55,7 +56,7 @@ const OrderDetailsSheet = ({
 
   const rawUsername = primaryOrder.seller_profile?.username || 'Unknown';
   const sellerUsername = rawUsername.startsWith('@') ? rawUsername.slice(1) : rawUsername;
-  const sellerAvatar = primaryOrder.seller_profile?.avatar_url || '';
+  const sellerAvatar = primaryOrder.seller_profile?.avatar_url || getDefaultAvatar(primaryOrder.seller_id);
 
   const displayId = (primaryOrder.order_group_id || primaryOrder.id).slice(0, 8).toUpperCase();
 
