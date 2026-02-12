@@ -8,6 +8,7 @@ export type NotificationType =
   | 'cart_item_sold'
   | 'wishlist_item_sold'
   | 'cart_wishlist_item_sold'
+  | 'listing_sold'
   | 'new_review'
   | 'item_sold'
   | 'order_shipped'
@@ -155,6 +156,9 @@ export const getNotificationMessage = (type: string, username?: string, message?
       return message ? `Too slow… ${message} from your Wishlist just found a new home. 😢🏠` : 'An item in your wishlist was sold.';
     case 'cart_wishlist_item_sold':
       return message ? `Double heartbreak 💔 – ${message} from your Cart & Wishlist has sold.` : 'An item from your Cart & Wishlist has sold.';
+    case 'listing_sold':
+      // Legacy type from old trigger — just show a generic sold message
+      return 'An item you saved was sold.';
     case 'new_review':
       return displayUsername ? `${displayUsername} left you a review.` : 'You received a new review.';
     case 'item_sold':
