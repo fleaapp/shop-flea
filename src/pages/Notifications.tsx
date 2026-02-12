@@ -191,7 +191,7 @@ const Notifications = () => {
         <ProductThumbnail image={listingImage} avatar={userAvatar} fallbackEmoji={emoji} />
 
         <div className="flex-1 min-w-0 pb-5 pr-10">
-          <p className="text-sm font-semibold text-foreground pt-2">{renderMessage()}</p>
+          <p className="text-sm text-foreground pt-2">{renderMessage()}</p>
         </div>
 
         <div className="absolute bottom-4 right-4">
