@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Listing } from '@/types/listing';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { getAvatarUrl } from '@/utils/optimizedImage';
+import { preloadImages } from '@/utils/preloadAssets';
 
 // Extended Listing type to include pause status
 interface CartListing extends Listing {
@@ -114,6 +115,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const orderB = cartOrderMap.get(b.id) ?? Number.MAX_VALUE;
       return orderA - orderB;
     });
+
+    // Preload seller avatars for instant display
+    const avatarUrls = transformedListings
+      .map(l => l.sellerAvatar)
+      .filter(url => !!url);
+    if (avatarUrls.length > 0) {
+      preloadImages(avatarUrls);
+    }
 
     setCartItems(transformedListings);
     setLoading(false);
