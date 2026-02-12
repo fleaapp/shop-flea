@@ -7,6 +7,7 @@ export type NotificationType =
   | 'price_drop_wishlist'
   | 'cart_item_sold'
   | 'wishlist_item_sold'
+  | 'cart_wishlist_item_sold'
   | 'new_review'
   | 'item_sold'
   | 'order_shipped'
@@ -149,9 +150,11 @@ export const getNotificationMessage = (type: string, username?: string, message?
     case 'price_drop_wishlist':
       return 'Price dropped on an item in your wishlist!';
     case 'cart_item_sold':
-      return 'An item in your cart was sold.';
+      return message ? `Your cart's feeling lighter… ${message} just sold. 🛒🤷` : 'An item in your cart was sold.';
     case 'wishlist_item_sold':
-      return 'An item in your wishlist was sold.';
+      return message ? `Too slow… ${message} from your Wishlist just found a new home. 😢🏠` : 'An item in your wishlist was sold.';
+    case 'cart_wishlist_item_sold':
+      return message ? `Double heartbreak 💔 - ${message} from your Cart & Wishlist has sold.` : 'An item from your Cart & Wishlist has sold.';
     case 'new_review':
       return displayUsername ? `${displayUsername} left you a review.` : 'You received a new review.';
     case 'item_sold':
@@ -175,8 +178,11 @@ export const getNotificationEmoji = (type: string): string => {
     case 'price_drop_wishlist':
       return '💰';
     case 'cart_item_sold':
+      return '🛒';
     case 'wishlist_item_sold':
       return '😢';
+    case 'cart_wishlist_item_sold':
+      return '💔';
     case 'new_review':
       return '⭐';
     case 'item_sold':
