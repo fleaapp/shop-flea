@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Listing } from '@/types/listing';
@@ -12,12 +11,10 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import OrderSuccessDialog from '@/components/OrderSuccessDialog';
 import BlockedUserBanner from '@/components/BlockedUserBanner';
 import { fetchSellerShippingSettings, calculateTotalShipping, SellerShippingInfo } from '@/utils/shippingCalculator';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 
-type PaymentMethod = 'card' | 'paypal' | 'applepay';
 const Checkout = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -29,19 +26,7 @@ const Checkout = () => {
   const items: Listing[] = location.state?.items || [];
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [open, setOpen] = useState(true);
-  const [showOrderSuccess, setShowOrderSuccess] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('card');
-  const [selectedCard, setSelectedCard] = useState<string | null>('saved-1');
-  const [showNewCard, setShowNewCard] = useState(false);
-  const [saveCard, setSaveCard] = useState(true);
   const [sellerSettings, setSellerSettings] = useState<Map<string, SellerShippingInfo>>(new Map());
-  
-
-  // Form state
-  const [cardHolder, setCardHolder] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-  const [cvv, setCvv] = useState('');
-  const [expiry, setExpiry] = useState('');
 
   // Shipping details state
   const [shippingFirstName, setShippingFirstName] = useState('');
@@ -122,64 +107,42 @@ const Checkout = () => {
     setIsSubmitting(true);
     
     try {
-      // A single id to group all items bought together in this checkout
-      const orderGroupId = crypto.randomUUID();
+      // Save shipping details to sessionStorage for use after Stripe redirect
+      const shippingDetails = {
+        shippingFirstName: shippingFirstName.trim(),
+        shippingLastName: shippingLastName.trim(),
+        shippingAddress: shippingAddress.trim(),
+        shippingCity: shippingCity.trim(),
+        shippingState,
+        shippingPostcode: shippingPostcode.trim(),
+      };
+      sessionStorage.setItem('checkout_shipping', JSON.stringify(shippingDetails));
+      sessionStorage.setItem('checkout_items', JSON.stringify(validItems));
+      sessionStorage.setItem('checkout_seller_settings', JSON.stringify(Array.from(sellerSettings.entries())));
+      sessionStorage.setItem('checkout_shipping_by_seller', JSON.stringify(Array.from(shippingBySeller.entries())));
 
-      // Group items by seller to calculate per-seller shipping
-      const itemsBySeller = new Map<string, Listing[]>();
-      validItems.forEach(item => {
-        const existing = itemsBySeller.get(item.sellerId) || [];
-        itemsBySeller.set(item.sellerId, [...existing, item]);
+      // Call Stripe checkout edge function
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: {
+          items: validItems.map(item => ({
+            id: item.id,
+            title: item.title,
+            price: item.price,
+            image: item.image,
+          })),
+          shipping: totalShipping,
+          sellerFee,
+        },
       });
 
-      // Create order records for each item with tiered shipping
-      const orderPromises: Promise<void>[] = [];
-      
-      itemsBySeller.forEach((sellerItems, sellerId) => {
-        const sellerShipping = shippingBySeller.get(sellerId) || 0;
-        // Distribute shipping cost across items (first item gets full shipping, rest get 0)
-        // This simplifies order display while maintaining accurate totals
-        
-        sellerItems.forEach((item, index) => {
-          const itemShipping = index === 0 ? sellerShipping : 0;
-          
-          orderPromises.push((async () => {
-            const { error } = await supabase.from('orders').insert({
-              order_group_id: orderGroupId,
-              listing_id: item.id,
-              buyer_id: user.id,
-              seller_id: item.sellerId,
-              price: item.price,
-              shipping_price: itemShipping,
-              status: 'awaiting',
-              shipping_first_name: shippingFirstName.trim(),
-              shipping_last_name: shippingLastName.trim(),
-              shipping_address: shippingAddress.trim(),
-              shipping_city: shippingCity.trim(),
-              shipping_state: shippingState,
-              shipping_postcode: shippingPostcode.trim(),
-            });
+      if (error) throw error;
+      if (!data?.url) throw new Error('No checkout URL returned');
 
-            if (error) throw error;
-
-            // Update listing status to sold
-            await supabase.from('listings').update({ status: 'sold' }).eq('id', item.id);
-          })());
-        });
-      });
-      
-      await Promise.all(orderPromises);
-      
-      await Promise.all(orderPromises);
-      
-      // Remove items from cart
-      items.forEach(item => removeFromCart(item.id));
-      
-      // Show success dialog over the checkout drawer (don't close it)
-      setShowOrderSuccess(true);
+      // Redirect to Stripe Checkout
+      window.location.href = data.url;
     } catch (error) {
-      console.error('Error placing order:', error);
-      toast.error('Failed to place order. Please try again.');
+      console.error('Error creating checkout session:', error);
+      toast.error('Failed to start checkout. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -314,82 +277,6 @@ const Checkout = () => {
               </div>
             </div>
 
-            {/* Payment Method */}
-            <div className="mt-6">
-              <h2 className="font-semibold text-foreground mb-3">Payment method</h2>
-              <div className="flex gap-3">
-                <button onClick={() => setSelectedPayment('card')} className={cn('flex items-center justify-center h-14 w-16 rounded-xl border-2 transition-all', selectedPayment === 'card' ? 'border-charcoal bg-card' : 'border-border bg-card')}>
-                  <div className="flex">
-                    <div className="h-6 w-6 rounded-full bg-red-500 -mr-2" />
-                    <div className="h-6 w-6 rounded-full bg-orange-400" />
-                  </div>
-                </button>
-                
-                <button onClick={() => setSelectedPayment('paypal')} className={cn('flex items-center justify-center h-14 w-16 rounded-xl border-2 transition-all', selectedPayment === 'paypal' ? 'border-charcoal bg-card' : 'border-border bg-card')}>
-                  <span className="text-sm font-bold text-blue-600">PayPal</span>
-                </button>
-                
-                <button onClick={() => setSelectedPayment('applepay')} className={cn('flex items-center justify-center h-14 w-16 rounded-xl border-2 transition-all', selectedPayment === 'applepay' ? 'border-charcoal bg-card' : 'border-border bg-card')}>
-                  <span className="text-sm font-semibold text-foreground"> Pay</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Saved Cards */}
-            {selectedPayment === 'card' && !showNewCard && <div className="mt-6">
-                <h2 className="font-semibold text-foreground mb-3">Saved cards</h2>
-                <div className="space-y-3">
-                  {savedCards.map(card => <button key={card.id} onClick={() => setSelectedCard(card.id)} className={cn('w-full flex items-center gap-3 p-4 rounded-2xl border-2 transition-all', selectedCard === card.id ? 'border-charcoal bg-card' : 'border-border bg-card')}>
-                      <div className="flex">
-                        <div className="h-6 w-6 rounded-full bg-red-500 -mr-2" />
-                        <div className="h-6 w-6 rounded-full bg-orange-400" />
-                      </div>
-                      <span className="flex-1 text-left text-foreground">Ending in {card.lastFour}.</span>
-                      <div className={cn('h-5 w-5 rounded-full border-2 flex items-center justify-center', selectedCard === card.id ? 'border-charcoal bg-charcoal' : 'border-muted-foreground/30')}>
-                        {selectedCard === card.id && <div className="h-2 w-2 rounded-full bg-white" />}
-                      </div>
-                    </button>)}
-                </div>
-                
-                <button onClick={() => {
-              setShowNewCard(true);
-              setSelectedCard(null);
-            }} className="mt-4 w-full text-center text-sm font-medium text-foreground hover:text-muted-foreground">
-                  + Add new card
-                </button>
-              </div>}
-
-            {/* New Card Form */}
-            {selectedPayment === 'card' && showNewCard && <div className="mt-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Card holder name</label>
-                  <Input value={cardHolder} onChange={e => setCardHolder(e.target.value)} className="h-12 rounded-xl bg-card border-border focus-visible:ring-muted-foreground/50" placeholder="Name on card" />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Card number</label>
-                  <Input value={cardNumber} onChange={e => setCardNumber(e.target.value)} className="h-12 rounded-xl bg-card border-border focus-visible:ring-muted-foreground/50" placeholder="1234 5678 9012 3456" maxLength={19} />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">CVV</label>
-                    <Input value={cvv} onChange={e => setCvv(e.target.value)} className="h-12 rounded-xl bg-card border-border focus-visible:ring-muted-foreground/50" placeholder="123" maxLength={4} />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Expiry</label>
-                    <Input value={expiry} onChange={e => setExpiry(e.target.value)} className="h-12 rounded-xl bg-card border-border focus-visible:ring-muted-foreground/50" placeholder="MM/YY" maxLength={5} />
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-3 pt-2">
-                  <Checkbox id="save-card" checked={saveCard} onCheckedChange={checked => setSaveCard(checked as boolean)} />
-                  <label htmlFor="save-card" className="text-sm text-muted-foreground">
-                    Save card information.
-                  </label>
-                </div>
-              </div>}
-
             {/* Confirm Button */}
             <div className="mt-8">
               <Button 
@@ -397,22 +284,15 @@ const Checkout = () => {
                 disabled={isSubmitting || !isShippingComplete}
                 className="w-full h-12 rounded-full bg-charcoal text-white hover:bg-charcoal-light font-medium disabled:opacity-50"
               >
-                {isSubmitting ? 'Placing order...' : 'Confirm order'}
+                {isSubmitting ? 'Redirecting to payment...' : 'Proceed to payment'}
               </Button>
+              <p className="text-xs text-muted-foreground text-center mt-3">
+                You'll be redirected to Stripe to complete payment securely.
+              </p>
             </div>
           </div>
         </DrawerContent>
       </Drawer>
-      
-      {/* Order Success Dialog */}
-      <OrderSuccessDialog 
-        open={showOrderSuccess} 
-        onClose={() => {
-          setShowOrderSuccess(false);
-          setOpen(false);
-          setTimeout(() => navigate('/'), 300);
-        }} 
-      />
     </div>;
 };
 export default Checkout;
