@@ -167,6 +167,22 @@ const Notifications = () => {
     const emoji = getNotificationEmoji(notification.type as any);
     const message = getNotificationMessage(notification.type as any, username, notification.message);
 
+    // Bold the item name in sold notifications
+    const isSoldType = ['cart_item_sold', 'wishlist_item_sold', 'cart_wishlist_item_sold'].includes(notification.type);
+    const itemName = notification.listing?.title;
+
+    const renderMessage = () => {
+      if (isSoldType && itemName && message.includes(itemName)) {
+        const parts = message.split(itemName);
+        return (
+          <>
+            {parts[0]}<span className="font-bold">{itemName}</span>{parts.slice(1).join(itemName)}
+          </>
+        );
+      }
+      return message;
+    };
+
     return (
       <div 
         onClick={() => handleNotificationClick(notification)}
@@ -175,7 +191,7 @@ const Notifications = () => {
         <ProductThumbnail image={listingImage} avatar={userAvatar} fallbackEmoji={emoji} />
 
         <div className="flex-1 min-w-0 pb-5 pr-10">
-          <p className="text-sm font-semibold text-foreground pt-2">{message}</p>
+          <p className="text-sm font-semibold text-foreground pt-2">{renderMessage()}</p>
         </div>
 
         <div className="absolute bottom-4 right-4">
