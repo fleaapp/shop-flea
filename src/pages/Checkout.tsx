@@ -9,6 +9,7 @@ import { Listing } from '@/types/listing';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { supabase as cloudSupabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import BlockedUserBanner from '@/components/BlockedUserBanner';
@@ -121,8 +122,8 @@ const Checkout = () => {
       sessionStorage.setItem('checkout_seller_settings', JSON.stringify(Array.from(sellerSettings.entries())));
       sessionStorage.setItem('checkout_shipping_by_seller', JSON.stringify(Array.from(shippingBySeller.entries())));
 
-      // Call Stripe checkout edge function
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
+      // Call Stripe checkout edge function (on Cloud project)
+      const { data, error } = await cloudSupabase.functions.invoke('create-checkout', {
         body: {
           items: validItems.map(item => ({
             id: item.id,
@@ -132,6 +133,7 @@ const Checkout = () => {
           })),
           shipping: totalShipping,
           sellerFee,
+          userEmail: user.email,
         },
       });
 
