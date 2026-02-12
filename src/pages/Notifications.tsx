@@ -5,6 +5,7 @@ import BottomNav from '@/components/BottomNav';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
 import { useOrders, Order, OrderGroup } from '@/hooks/useOrders';
 import { useNotifications, getNotificationMessage, getNotificationEmoji, Notification } from '@/hooks/useNotifications';
+import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -162,7 +163,7 @@ const Notifications = () => {
 
   const NotificationCard = ({ notification }: { notification: Notification }) => {
     const listingImage = notification.listing?.images?.[0] || '';
-    const userAvatar = notification.related_user?.avatar_url || undefined;
+    const userAvatar = notification.related_user?.avatar_url || (notification.related_user_id ? getDefaultAvatar(notification.related_user_id) : undefined);
     const username = notification.related_user?.username;
     const emoji = getNotificationEmoji(notification.type as any);
     const itemName = notification.listing?.title || null;
