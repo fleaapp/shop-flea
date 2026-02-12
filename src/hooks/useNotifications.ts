@@ -137,10 +137,10 @@ export const useNotifications = () => {
   };
 };
 
-export const getNotificationMessage = (type: string, username?: string, message?: string | null): string => {
+export const getNotificationMessage = (type: string, username?: string, listingTitle?: string | null): string => {
   // For comment notifications, use the message from the database which includes context
-  if ((type === 'new_comment' || type === 'comment_reply') && message) {
-    return message;
+  if ((type === 'new_comment' || type === 'comment_reply') && listingTitle) {
+    return listingTitle;
   }
   
   const displayUsername = username?.startsWith('@') ? username : username ? `@${username}` : undefined;
@@ -151,14 +151,14 @@ export const getNotificationMessage = (type: string, username?: string, message?
     case 'price_drop_wishlist':
       return 'Price dropped on an item in your wishlist!';
     case 'cart_item_sold':
-      return message ? `Your cart's feeling lighter… ${message} in your cart just sold. 🛒🤷` : 'An item in your cart was sold.';
+      return listingTitle ? `Your cart's feeling lighter… ${listingTitle} in your cart just sold. 🛒🤷` : 'An item in your cart was sold.';
     case 'wishlist_item_sold':
-      return message ? `Too slow… ${message} from your Wishlist just found a new home. 😢🏠` : 'An item in your wishlist was sold.';
+      return listingTitle ? `Too slow… ${listingTitle} from your Wishlist just found a new home. 😢🏠` : 'An item in your wishlist was sold.';
     case 'cart_wishlist_item_sold':
-      return message ? `Double heartbreak 💔 – ${message} from your Cart & Wishlist has sold.` : 'An item from your Cart & Wishlist has sold.';
+      return listingTitle ? `Double heartbreak 💔 – ${listingTitle} from your Cart & Wishlist has sold.` : 'An item from your Cart & Wishlist has sold.';
     case 'listing_sold':
-      // Legacy type from old trigger — just show a generic sold message
-      return 'An item you saved was sold.';
+      // Legacy type from old trigger — use listing title if available
+      return listingTitle ? `${listingTitle} has been sold.` : 'An item you saved was sold.';
     case 'new_review':
       return displayUsername ? `${displayUsername} left you a review.` : 'You received a new review.';
     case 'item_sold':

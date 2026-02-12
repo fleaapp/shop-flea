@@ -165,14 +165,17 @@ const Notifications = () => {
     const userAvatar = notification.related_user?.avatar_url || undefined;
     const username = notification.related_user?.username;
     const emoji = getNotificationEmoji(notification.type as any);
-    const message = getNotificationMessage(notification.type as any, username, notification.message);
+    const itemName = notification.listing?.title || null;
 
-    // Bold the item name in sold notifications
-    const isSoldType = ['cart_item_sold', 'wishlist_item_sold', 'cart_wishlist_item_sold'].includes(notification.type);
-    const itemName = notification.listing?.title;
+    // For sold-type and legacy notifications, use the listing title from joined data (not the raw message column)
+    // For comment notifications, pass the raw message (which contains the formatted comment text)
+    const isSoldOrLegacy = ['cart_item_sold', 'wishlist_item_sold', 'cart_wishlist_item_sold', 'listing_sold'].includes(notification.type);
+    const isCommentType = ['new_comment', 'comment_reply'].includes(notification.type);
+    const messageArg = isSoldOrLegacy ? itemName : isCommentType ? notification.message : itemName;
+    const message = getNotificationMessage(notification.type as any, username, messageArg);
 
     const renderMessage = () => {
-      if (isSoldType && itemName && message.includes(itemName)) {
+      if (isSoldOrLegacy && itemName && message.includes(itemName)) {
         const parts = message.split(itemName);
         return (
           <>
