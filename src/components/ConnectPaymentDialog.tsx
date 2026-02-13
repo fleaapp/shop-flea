@@ -17,8 +17,8 @@ const ConnectPaymentDialog = ({ open, onOpenChange }: ConnectPaymentDialogProps)
   const navigate = useNavigate();
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="rounded-2xl max-w-sm mx-auto">
+    <Dialog open={open} onOpenChange={() => {}}>
+      <DialogContent className="rounded-2xl max-w-sm mx-auto" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="text-center text-lg">
             Connect a Payment Method
@@ -43,6 +43,16 @@ const ConnectPaymentDialog = ({ open, onOpenChange }: ConnectPaymentDialogProps)
             variant="outline"
           >
             🅿️ Connect PayPal (Coming Soon)
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              onOpenChange(false);
+              navigate(-1);
+            }}
+            className="w-full h-10 text-muted-foreground"
+          >
+            Go Back
           </Button>
         </div>
       </DialogContent>
