@@ -10,6 +10,7 @@ import SizeSelectionDrawer from '@/components/SizeSelectionDrawer';
 import CategorySelectionDrawer from '@/components/CategorySelectionDrawer';
 import TieredShippingSetupModal from '@/components/TieredShippingSetupModal';
 import BlockedUserBanner from '@/components/BlockedUserBanner';
+import ConnectPaymentDialog from '@/components/ConnectPaymentDialog';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -43,6 +44,17 @@ const CreateListing = () => {
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
   const [showShippingSetup, setShowShippingSetup] = useState(false);
   const [shippingChecked, setShippingChecked] = useState(false);
+  const [showPaymentGate, setShowPaymentGate] = useState(false);
+
+  // Check if seller has connected a payment method
+  const hasPaymentMethod = profile?.stripe_onboarding_complete === true;
+
+  // Show payment gate if no payment method connected
+  useEffect(() => {
+    if (!authLoading && user && profile && !hasPaymentMethod) {
+      setShowPaymentGate(true);
+    }
+  }, [authLoading, user, profile, hasPaymentMethod]);
   
   // Tiered shipping state
   const [tieredShippingEnabled, setTieredShippingEnabled] = useState<boolean | null>(null);
@@ -577,6 +589,8 @@ const CreateListing = () => {
         onComplete={handleShippingSetupComplete}
         onCancel={handleShippingSetupCancel}
       />
+      
+      <ConnectPaymentDialog open={showPaymentGate} onOpenChange={setShowPaymentGate} />
       
       <BottomNav />
     </div>
