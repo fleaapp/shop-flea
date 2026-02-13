@@ -18,28 +18,28 @@ const ConnectPaymentDialog = ({ open, onOpenChange }: ConnectPaymentDialogProps)
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent hideCloseButton className="rounded-2xl max-w-sm mx-auto pt-8 pb-6" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+      <DialogContent hideCloseButton className="w-[85vw] max-w-xs rounded-3xl border-[3px] border-charcoal bg-card p-6 pt-8 pb-6" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="text-center text-lg">
             💳 Connect a Payment Method
           </DialogTitle>
-          <DialogDescription className="text-center text-balance max-w-[240px] mx-auto">
+          <DialogDescription className="text-center text-balance max-w-[220px] mx-auto">
             To sell on Flea, connect Stripe or PayPal to receive payments directly.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3 mt-2">
+        <div className="space-y-3 mt-2 flex flex-col items-center">
           <Button
             onClick={() => {
               onOpenChange(false);
               navigate('/settings');
             }}
-            className="w-full h-12 rounded-full bg-charcoal text-white hover:bg-charcoal-light"
+            className="px-6 h-11 rounded-full bg-charcoal text-white hover:bg-charcoal-light border-none"
           >
             💳 Connect Stripe
           </Button>
           <Button
             disabled
-            className="w-full h-12 rounded-full opacity-50"
+            className="px-6 h-11 rounded-full opacity-50 border-none"
             variant="outline"
           >
             🅿️ Connect PayPal (Coming Soon)
@@ -50,7 +50,7 @@ const ConnectPaymentDialog = ({ open, onOpenChange }: ConnectPaymentDialogProps)
               onOpenChange(false);
               navigate(-1);
             }}
-            className="w-full h-10 text-muted-foreground mb-1"
+            className="h-10 text-muted-foreground mb-1"
           >
             Go Back
           </Button>
