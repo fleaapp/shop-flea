@@ -18,12 +18,12 @@ const ConnectPaymentDialog = ({ open, onOpenChange }: ConnectPaymentDialogProps)
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="rounded-2xl max-w-sm mx-auto" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+      <DialogContent hideCloseButton className="rounded-2xl max-w-sm mx-auto pt-8 pb-6" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="text-center text-lg">
-            Connect a Payment Method
+            💳 Connect a Payment Method
           </DialogTitle>
-          <DialogDescription className="text-center">
+          <DialogDescription className="text-center text-balance max-w-[240px] mx-auto">
             To sell on Flea, connect Stripe or PayPal to receive payments directly.
           </DialogDescription>
         </DialogHeader>
@@ -50,7 +50,7 @@ const ConnectPaymentDialog = ({ open, onOpenChange }: ConnectPaymentDialogProps)
               onOpenChange(false);
               navigate(-1);
             }}
-            className="w-full h-10 text-muted-foreground"
+            className="w-full h-10 text-muted-foreground mb-1"
           >
             Go Back
           </Button>
