@@ -1,0 +1,75 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import Stripe from "https://esm.sh/stripe@18.5.0";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { userEmail, userId, returnUrl } = await req.json();
+
+    if (!userEmail || !userId) {
+      throw new Error("userEmail and userId are required");
+    }
+
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+      apiVersion: "2025-08-27.basil",
+    });
+
+    // Check if user already has a Connect account stored
+    // We receive the stripe_account_id from the client if it exists
+    const { stripeAccountId } = await req.json().catch(() => ({}));
+
+    let accountId: string;
+
+    if (stripeAccountId) {
+      // Use existing account
+      accountId = stripeAccountId;
+    } else {
+      // Create a new Standard Connect account
+      const account = await stripe.accounts.create({
+        type: "standard",
+        email: userEmail,
+        metadata: {
+          flea_user_id: userId,
+        },
+      });
+      accountId = account.id;
+    }
+
+    // Create an account link for onboarding
+    const accountLink = await stripe.accountLinks.create({
+      account: accountId,
+      refresh_url: `${returnUrl}?stripe_refresh=true`,
+      return_url: `${returnUrl}?stripe_success=true`,
+      type: "account_onboarding",
+    });
+
+    return new Response(
+      JSON.stringify({
+        url: accountLink.url,
+        accountId: accountId,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      }
+    );
+  } catch (error) {
+    console.error("Stripe Connect onboard error:", error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      }
+    );
+  }
+});

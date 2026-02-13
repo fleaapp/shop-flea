@@ -455,6 +455,8 @@ export type Database = {
           shipping_tier_2: number | null
           shipping_tier_3: number | null
           status: string
+          stripe_account_id: string | null
+          stripe_onboarding_complete: boolean
           tiered_shipping_enabled: boolean | null
           total_reviews: number | null
           updated_at: string
@@ -481,6 +483,8 @@ export type Database = {
           shipping_tier_2?: number | null
           shipping_tier_3?: number | null
           status?: string
+          stripe_account_id?: string | null
+          stripe_onboarding_complete?: boolean
           tiered_shipping_enabled?: boolean | null
           total_reviews?: number | null
           updated_at?: string
@@ -507,6 +511,8 @@ export type Database = {
           shipping_tier_2?: number | null
           shipping_tier_3?: number | null
           status?: string
+          stripe_account_id?: string | null
+          stripe_onboarding_complete?: boolean
           tiered_shipping_enabled?: boolean | null
           total_reviews?: number | null
           updated_at?: string
@@ -691,6 +697,7 @@ export type Database = {
           shipping_tier_2: number | null
           shipping_tier_3: number | null
           status: string | null
+          stripe_onboarding_complete: boolean | null
           tiered_shipping_enabled: boolean | null
           total_reviews: number | null
           updated_at: string | null
@@ -711,6 +718,7 @@ export type Database = {
           shipping_tier_2?: number | null
           shipping_tier_3?: number | null
           status?: string | null
+          stripe_onboarding_complete?: boolean | null
           tiered_shipping_enabled?: boolean | null
           total_reviews?: number | null
           updated_at?: string | null
@@ -731,6 +739,7 @@ export type Database = {
           shipping_tier_2?: number | null
           shipping_tier_3?: number | null
           status?: string | null
+          stripe_onboarding_complete?: boolean | null
           tiered_shipping_enabled?: boolean | null
           total_reviews?: number | null
           updated_at?: string | null

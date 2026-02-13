@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import FilterPreferencesSheet from '@/components/FilterPreferencesSheet';
 import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
 import OnboardingCarousel from '@/components/OnboardingCarousel';
+import PaymentMethodsSection from '@/components/PaymentMethodsSection';
 import { useUnreadSupport } from '@/hooks/useUnreadSupport';
 const Settings = () => {
   const navigate = useNavigate();
@@ -136,6 +137,9 @@ const Settings = () => {
       
       {/* Settings Groups */}
       <div className="px-4 max-[375px]:px-3 space-y-6 max-[375px]:space-y-4">
+        {/* Payment Methods Section */}
+        <PaymentMethodsSection />
+        
         {settingsGroups.map((group, idx) => <div key={group.title || idx}>
             {group.title && <h2 className="mb-3 max-[375px]:mb-2 text-sm max-[375px]:text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 {group.title}

@@ -20,6 +20,8 @@ interface Profile {
   shipping_preferences_set?: boolean;
   region_id?: string | null;
   country_code?: string | null;
+  stripe_account_id?: string | null;
+  stripe_onboarding_complete?: boolean;
 }
 
 interface AuthContextType {

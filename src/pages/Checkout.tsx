@@ -50,6 +50,28 @@ const Checkout = () => {
     loadSellerSettings();
   }, [items]);
 
+  // Fetch seller Stripe account IDs
+  const [sellerStripeAccounts, setSellerStripeAccounts] = useState<Map<string, string>>(new Map());
+  useEffect(() => {
+    const loadSellerStripe = async () => {
+      if (items.length === 0) return;
+      const sellerIds = [...new Set(items.map(item => item.sellerId))];
+      const { data } = await supabase
+        .from('profiles' as any)
+        .select('user_id, stripe_account_id, stripe_onboarding_complete')
+        .in('user_id', sellerIds);
+      
+      const accounts = new Map<string, string>();
+      data?.forEach((p: any) => {
+        if (p.stripe_account_id && p.stripe_onboarding_complete) {
+          accounts.set(p.user_id, p.stripe_account_id);
+        }
+      });
+      setSellerStripeAccounts(accounts);
+    };
+    loadSellerStripe();
+  }, [items]);
+
   const handleClose = () => {
     setOpen(false);
     setTimeout(() => navigate(-1), 300);
@@ -75,8 +97,9 @@ const Checkout = () => {
   
   const itemsTotal = validItems.reduce((sum: number, item: any) => sum + item.price, 0);
   const subtotal = itemsTotal + totalShipping;
-  const sellerFee = subtotal * 0.04;
-  const total = subtotal + sellerFee;
+  // 2% buyer processing fee (Stripe)
+  const processingFee = subtotal * 0.02;
+  const total = subtotal + processingFee;
   
   const isShippingComplete = shippingFirstName.trim() && shippingLastName.trim() && shippingAddress.trim() && shippingCity.trim() && shippingState.trim() && shippingPostcode.trim();
   
@@ -122,8 +145,18 @@ const Checkout = () => {
       sessionStorage.setItem('checkout_seller_settings', JSON.stringify(Array.from(sellerSettings.entries())));
       sessionStorage.setItem('checkout_shipping_by_seller', JSON.stringify(Array.from(shippingBySeller.entries())));
 
-      // Call Stripe checkout edge function (on Cloud project)
-      const { data, error } = await cloudSupabase.functions.invoke('create-checkout', {
+      // Get the seller's Stripe account ID (for now, assume single seller checkout)
+      const sellerId = validItems[0]?.sellerId;
+      const sellerStripeAccountId = sellerStripeAccounts.get(sellerId);
+      
+      if (!sellerStripeAccountId) {
+        toast.error('This seller has not connected a payment method yet.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Call Stripe Connect checkout edge function (on Cloud project)
+      const { data, error } = await cloudSupabase.functions.invoke('stripe-connect-checkout', {
         body: {
           items: validItems.map(item => ({
             id: item.id,
@@ -132,8 +165,8 @@ const Checkout = () => {
             image: item.image,
           })),
           shipping: totalShipping,
-          sellerFee,
           userEmail: user.email,
+          sellerStripeAccountId,
         },
       });
 
@@ -214,10 +247,10 @@ const Checkout = () => {
                 })()}
               </div>
               
-              {/* Seller fee */}
+              {/* Processing fee */}
               <div className="px-4 py-3 border-t border-border flex justify-between text-sm">
-                <span className="text-muted-foreground">4% seller fee</span>
-                <span className="text-foreground">− ${sellerFee.toFixed(2)}</span>
+                <span className="text-muted-foreground">Processing fee (2%)</span>
+                <span className="text-foreground">+ ${processingFee.toFixed(2)}</span>
               </div>
               
               {/* Total */}
