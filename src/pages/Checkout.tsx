@@ -248,16 +248,14 @@ const Checkout = () => {
           <div className="overflow-y-auto px-4 pb-8">
 
             {/* Order Summary Card */}
-            <div className="rounded-2xl bg-card overflow-hidden card-shadow">
-              {/* Header */}
-              <div className="px-4 py-2 text-primary-foreground bg-zinc-300">
-                <span className="text-sm text-secondary-foreground">Order Summary</span>
+            <div className="rounded-xl bg-card overflow-hidden">
+              <div className="bg-muted-foreground/20 px-4 py-2 text-sm font-medium text-muted-foreground">
+                Order Summary
               </div>
               
               {/* Items grouped by seller */}
-              <div className="p-4 space-y-4">
+              <div className="px-4 py-4 space-y-4">
                 {(() => {
-                  // Group items by seller for display
                   const groupedItems = new Map<string, Listing[]>();
                   validItems.forEach(item => {
                     const existing = groupedItems.get(item.sellerId) || [];
@@ -266,52 +264,45 @@ const Checkout = () => {
                   
                   return Array.from(groupedItems.entries()).map(([sellerId, sellerItems]) => {
                     const shipping = shippingBySeller.get(sellerId) || 0;
-                    const thisSellerSettings = sellerSettings.get(sellerId);
-                    const isTiered = thisSellerSettings?.tieredEnabled && sellerItems.length > 1;
                     
                     return (
-                      <div key={sellerId} className="space-y-3">
-                        {sellerItems.map(item => (
+                      <div key={sellerId} className="space-y-4">
+                        {sellerItems.map((item, idx) => (
                           <div key={item.id} className="flex gap-4">
-                            <img src={item.image} alt={item.title} className="h-20 w-20 rounded-xl object-cover" />
-                            <div className="flex-1 flex flex-col">
+                            <img src={item.image} alt={item.title} className="h-20 w-20 rounded-xl object-cover bg-muted" />
+                            <div className="flex-1 flex flex-col justify-between">
                               <h3 className="font-semibold text-foreground">{item.title}</h3>
-                              <div className="flex-1" />
                               <div className="text-right">
-                                <p className="text-xl font-bold text-foreground">${item.price}</p>
+                                <p className="text-lg font-semibold">${item.price}</p>
+                                {idx === sellerItems.length - 1 && (
+                                  <p className="text-sm text-muted-foreground">+ ${shipping.toFixed(2)} shipping</p>
+                                )}
                               </div>
                             </div>
                           </div>
                         ))}
-                        {/* Show combined shipping for this seller */}
-                        <div className="flex justify-between text-sm pl-24">
-                          <span className="text-muted-foreground">
-                            {isTiered ? `Combined shipping (${sellerItems.length} items)` : 'Shipping'}
-                          </span>
-                          <span className="text-foreground">+ ${shipping.toFixed(2)}</span>
-                        </div>
                       </div>
                     );
                   });
                 })()}
               </div>
               
-              {/* Processing fee */}
-              <div className="px-4 py-3 border-t border-border flex justify-between text-sm">
+              {/* Fee line */}
+              <div className="flex justify-between text-sm px-4 py-3 border-t border-border">
                 <span className="text-muted-foreground">Payment processing fee (2%)</span>
-                <span className="text-foreground">+ ${processingFee.toFixed(2)}</span>
+                <span className="text-muted-foreground">+ ${processingFee.toFixed(2)}</span>
               </div>
               
               {/* Total */}
-              <div className="bg-charcoal px-4 py-3 flex justify-center">
-                <span className="text-white font-medium">Total payment: ${total.toFixed(2)}</span>
+              <div className="flex items-center justify-center bg-charcoal text-white py-3 px-4">
+                <span className="font-medium">Total payment: ${total.toFixed(2)}</span>
               </div>
             </div>
 
             {/* Shipping Details */}
-            <div className="mt-4 rounded-2xl bg-card overflow-hidden card-shadow">
-              <div className="px-4 py-2 bg-zinc-300">
-                <span className="text-sm text-secondary-foreground">Shipping details</span>
+            <div className="rounded-xl bg-card overflow-hidden">
+              <div className="bg-muted-foreground/20 px-4 py-2 text-sm font-medium text-muted-foreground">
+                Shipping details
               </div>
               
               {/* Show input fields directly for first-time users (no saved data) */}
