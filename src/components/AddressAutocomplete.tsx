@@ -110,7 +110,7 @@ const AddressAutocomplete = ({
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       fetchSuggestions(newValue);
-    }, 350);
+    }, 150);
   };
 
   const handleSelect = (suggestion: AddressSuggestion) => {

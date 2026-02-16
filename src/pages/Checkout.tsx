@@ -145,7 +145,7 @@ const Checkout = () => {
   
   const itemsTotal = validItems.reduce((sum: number, item: any) => sum + item.price, 0);
   const subtotal = itemsTotal + totalShipping;
-  // 2% payment processing fee
+  // 2% payment processing fee (buyer-facing)
   const processingFee = subtotal * 0.02;
   const total = subtotal + processingFee;
   
