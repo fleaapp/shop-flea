@@ -37,10 +37,11 @@ const PaymentMethodsSection = () => {
       if (error) throw error;
       if (!data?.url) throw new Error('No onboarding URL returned');
 
-      // Save the Stripe account ID to localStorage before redirecting
+      // Save state to localStorage before redirecting
       if (data.accountId) {
         localStorage.setItem('flea_stripe_account_id', data.accountId);
       }
+      localStorage.setItem('flea_stripe_pending', 'true');
 
       // Also try to save to profile (may fail silently on external DB)
       if (data.accountId && data.accountId !== stripeAccountId) {
@@ -76,6 +77,7 @@ const PaymentMethodsSection = () => {
       console.log('[PaymentMethodsSection] Status response:', data);
 
       if (data?.chargesEnabled) {
+        localStorage.removeItem('flea_stripe_pending');
         await supabase
           .from('profiles')
           .update({ stripe_onboarding_complete: true, stripe_account_id: accountId } as any)
@@ -92,20 +94,19 @@ const PaymentMethodsSection = () => {
     }
   };
 
+  // Auto-check on mount if returning from Stripe onboarding
   useEffect(() => {
     const savedAccountId = localStorage.getItem('flea_stripe_account_id');
+    const isPending = localStorage.getItem('flea_stripe_pending') === 'true';
     const hasAccountId = stripeAccountId || savedAccountId;
-    console.log('[PaymentMethodsSection] useEffect check', { stripeAccountId, savedAccountId, stripeConnected, search: window.location.search });
+    console.log('[PaymentMethodsSection] useEffect check', { stripeAccountId, savedAccountId, isPending, stripeConnected });
     
-    if (hasAccountId && !stripeConnected) {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('stripe_success') === 'true') {
-        console.log('[PaymentMethodsSection] stripe_success detected, calling handleCheckStatus');
-        handleCheckStatus();
-        window.history.replaceState({}, '', '/settings');
-      }
+    // Check status if we have an account and are pending (returning from Stripe)
+    if (hasAccountId && isPending && !stripeConnected && user) {
+      console.log('[PaymentMethodsSection] Pending return detected, calling handleCheckStatus');
+      handleCheckStatus();
     }
-  }, [stripeAccountId, stripeConnected]);
+  }, [stripeAccountId, stripeConnected, user]);
 
   return (
     <div>
