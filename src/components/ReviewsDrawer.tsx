@@ -33,7 +33,7 @@ function ReviewsDrawer({ userId, username, open, onOpenChange }: ReviewsDrawerPr
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[90vh]">
+      <DrawerContent className="max-h-[80vh]">
         <div className="overflow-y-auto">
           <DrawerHeader className="text-center pb-4">
             <DrawerTitle className="text-xl font-semibold">

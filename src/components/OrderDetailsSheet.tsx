@@ -51,6 +51,7 @@ const OrderDetailsSheet = ({
   const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
   const processingFee = subtotal * 0.02;
   const total = subtotal + processingFee;
+  // Note: buyer pays 2% processing fee; seller pays 7% platform fee (shown in SalesDetailsSheet)
   const statusBadge = getStatusBadge(primaryOrder.status);
   const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
 
@@ -62,7 +63,7 @@ const OrderDetailsSheet = ({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[90vh]">
+      <DrawerContent className="max-h-[80vh]">
         <div className="overflow-y-auto">
           <DrawerHeader className="text-center pb-4">
             <DrawerTitle className="text-xl font-semibold">Order details</DrawerTitle>

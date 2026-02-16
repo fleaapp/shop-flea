@@ -69,7 +69,7 @@ const SalesDetailsSheet = ({
   if (!orders || orders.length === 0) return null;
 
   const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
-  const platformFee = subtotal * 0.02;
+  const platformFee = subtotal * 0.07;
   const youReceived = subtotal - platformFee;
   const statusBadge = getStatusBadge(primaryOrder.status);
   const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
@@ -101,7 +101,7 @@ const SalesDetailsSheet = ({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[90vh]">
+      <DrawerContent className="max-h-[80vh]">
         <div className="overflow-y-auto">
           <DrawerHeader className="text-center pb-4">
             <DrawerTitle className="text-xl font-semibold">Sale details</DrawerTitle>
@@ -178,7 +178,7 @@ const SalesDetailsSheet = ({
 
                 {/* Fee line */}
                 <div className="flex justify-between text-sm px-4 py-3 border-t border-border">
-                  <span className="text-muted-foreground">Platform fee (2%)</span>
+                  <span className="text-muted-foreground">Platform fee (7%)</span>
                   <span className="text-muted-foreground">- ${platformFee.toFixed(2)}</span>
                 </div>
 
@@ -229,6 +229,35 @@ const SalesDetailsSheet = ({
                     </div>
                   </>
                 )}
+              </div>
+            </div>
+
+            {/* Payment & Payout Section */}
+            <div className="rounded-xl bg-card overflow-hidden">
+              <SectionHeader>Payment & Payout</SectionHeader>
+              <div className="p-4 space-y-3">
+                <button
+                  className="w-full text-left text-sm text-foreground underline"
+                  onClick={() => {
+                    window.open('https://dashboard.stripe.com/payments', '_blank');
+                  }}
+                >
+                  View order on Stripe →
+                </button>
+                <div className="border-t border-border pt-3">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Need your funds faster? Request an instant payout for a 1.5% fee.
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="rounded-full h-10 px-6 text-sm"
+                    onClick={() => {
+                      window.open('https://dashboard.stripe.com/payouts', '_blank');
+                    }}
+                  >
+                    Instant payout (1.5% fee)
+                  </Button>
+                </div>
               </div>
             </div>
 
