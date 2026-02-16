@@ -36,6 +36,7 @@ serve(async (req) => {
       // Create a new Express Connect account (simpler onboarding for individual sellers)
       const account = await stripe.accounts.create({
         type: "express",
+        business_type: "individual",
         email: userEmail,
         metadata: {
           flea_user_id: userId,
