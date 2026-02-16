@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ImagePlus, X, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -49,40 +49,44 @@ const CreateListing = () => {
   // Check if seller has connected a payment method
   const hasPaymentMethodDB = profile?.stripe_onboarding_complete === true;
   const [hasPaymentMethodStripe, setHasPaymentMethodStripe] = useState(false);
+  const [paymentCheckDone, setPaymentCheckDone] = useState(false);
   const hasPaymentMethod = hasPaymentMethodDB || hasPaymentMethodStripe;
 
   // Check Stripe directly for connection status
-  const checkStripeStatus = useCallback(async () => {
-    if (!user?.email || hasPaymentMethodDB) return;
-    try {
-      const { supabase: cloudSupabase } = await import('@/integrations/supabase/client');
-      const { data } = await cloudSupabase.functions.invoke('stripe-connect-status', {
-        body: { userEmail: user.email },
-      });
-      if (data?.chargesEnabled) {
-        setHasPaymentMethodStripe(true);
+  useEffect(() => {
+    if (!user?.email || hasPaymentMethodDB || authLoading) return;
+    
+    const checkStripe = async () => {
+      try {
+        const { supabase: cloudSupabase } = await import('@/integrations/supabase/client');
+        const { data } = await cloudSupabase.functions.invoke('stripe-connect-status', {
+          body: { userEmail: user.email },
+        });
+        if (data?.chargesEnabled) {
+          setHasPaymentMethodStripe(true);
+        }
+      } catch (e) {
+        // Silent fail
+      } finally {
+        setPaymentCheckDone(true);
       }
-    } catch (e) {
-      // Silent fail
-    }
-  }, [user?.email, hasPaymentMethodDB]);
+    };
+    
+    checkStripe();
+  }, [user?.email, hasPaymentMethodDB, authLoading]);
 
-  // Show payment gate if no payment method connected
+  // Show payment gate only AFTER check completes
   useEffect(() => {
-    if (!authLoading && user && profile && !hasPaymentMethodDB) {
-      checkStripeStatus().then(() => {
-        // Re-evaluate after check - gate will be controlled by hasPaymentMethod
-      });
+    if (hasPaymentMethodDB) {
+      setShowPaymentGate(false);
+      return;
     }
-  }, [authLoading, user, profile, hasPaymentMethodDB, checkStripeStatus]);
-
-  useEffect(() => {
-    if (!authLoading && user && profile && !hasPaymentMethod) {
+    if (!authLoading && user && profile && paymentCheckDone && !hasPaymentMethod) {
       setShowPaymentGate(true);
-    } else {
+    } else if (hasPaymentMethod) {
       setShowPaymentGate(false);
     }
-  }, [authLoading, user, profile, hasPaymentMethod]);
+  }, [authLoading, user, profile, hasPaymentMethod, paymentCheckDone, hasPaymentMethodDB]);
   
   // Tiered shipping state
   const [tieredShippingEnabled, setTieredShippingEnabled] = useState<boolean | null>(null);
