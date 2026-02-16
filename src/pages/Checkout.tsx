@@ -56,17 +56,49 @@ const Checkout = () => {
     const loadSellerStripe = async () => {
       if (items.length === 0) return;
       const sellerIds = [...new Set(items.map(item => item.sellerId))];
+      
+      // First try DB
       const { data } = await supabase
         .from('profiles' as any)
         .select('user_id, stripe_account_id, stripe_onboarding_complete')
         .in('user_id', sellerIds);
       
       const accounts = new Map<string, string>();
+      const uncheckedSellerIds = new Set(sellerIds);
+      
       data?.forEach((p: any) => {
         if (p.stripe_account_id && p.stripe_onboarding_complete) {
           accounts.set(p.user_id, p.stripe_account_id);
+          uncheckedSellerIds.delete(p.user_id);
         }
       });
+
+      // For sellers not confirmed in DB, check Stripe directly via their email
+      for (const sellerId of uncheckedSellerIds) {
+        try {
+          const sellerItem = items.find(item => item.sellerId === sellerId);
+          const sellerUsername = sellerItem?.sellerName;
+          if (!sellerUsername) continue;
+
+          // Look up seller email via RPC
+          const { data: sellerEmail } = await supabase.rpc('get_email_by_username', { 
+            p_username: sellerUsername 
+          });
+          if (!sellerEmail) continue;
+
+          // Check Stripe status via edge function
+          const { data: statusData } = await cloudSupabase.functions.invoke('stripe-connect-status', {
+            body: { userEmail: sellerEmail },
+          });
+          
+          if (statusData?.chargesEnabled && statusData?.accountId) {
+            accounts.set(sellerId, statusData.accountId);
+          }
+        } catch (e) {
+          // Silent fail per seller
+        }
+      }
+      
       setSellerStripeAccounts(accounts);
     };
     loadSellerStripe();
