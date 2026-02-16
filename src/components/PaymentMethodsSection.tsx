@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { supabase as cloudSupabase } from '@/integrations/supabase/client';
@@ -8,14 +8,12 @@ import { ChevronRight } from 'lucide-react';
 const PaymentMethodsSection = () => {
   const { user, profile, refreshProfile } = useAuth();
   const [isConnecting, setIsConnecting] = useState(false);
-  const [localConnected, setLocalConnected] = useState(() => localStorage.getItem('flea_stripe_connected') === 'true');
+  const [isChecking, setIsChecking] = useState(false);
+  const [localConnected, setLocalConnected] = useState(false);
+  const [localAccountId, setLocalAccountId] = useState<string | null>(null);
 
   const stripeConnected = profile?.stripe_onboarding_complete === true || localConnected;
-  const stripeAccountId = (profile as any)?.stripe_account_id || localStorage.getItem('flea_stripe_account_id');
-  
-  console.log('[PaymentMethodsSection] status:', JSON.stringify({ stripeConnected, localConnected, stripeAccountId }));
-
-  
+  const stripeAccountId = (profile as any)?.stripe_account_id || localAccountId;
 
   const handleConnectStripe = async () => {
     if (!user || !user.email) {
@@ -25,14 +23,11 @@ const PaymentMethodsSection = () => {
 
     setIsConnecting(true);
     try {
-      // Check localStorage for a previously saved Stripe account ID
-      const savedAccountId = localStorage.getItem('flea_stripe_account_id');
-      
       const { data, error } = await cloudSupabase.functions.invoke('stripe-connect-onboard', {
         body: {
           userEmail: user.email,
           userId: user.id,
-          stripeAccountId: stripeAccountId || savedAccountId || undefined,
+          stripeAccountId: stripeAccountId || undefined,
           returnUrl: window.location.origin + '/settings',
         },
       });
@@ -40,21 +35,14 @@ const PaymentMethodsSection = () => {
       if (error) throw error;
       if (!data?.url) throw new Error('No onboarding URL returned');
 
-      // Save state to localStorage before redirecting
+      // Try to save to profile before redirecting
       if (data.accountId) {
-        localStorage.setItem('flea_stripe_account_id', data.accountId);
-      }
-      localStorage.setItem('flea_stripe_pending', 'true');
-
-      // Also try to save to profile (may fail silently on external DB)
-      if (data.accountId && data.accountId !== stripeAccountId) {
         await supabase
           .from('profiles')
           .update({ stripe_account_id: data.accountId } as any)
           .eq('user_id', user.id);
       }
 
-      // Redirect to Stripe onboarding
       window.location.href = data.url;
     } catch (error: any) {
       console.error('Stripe Connect error:', error);
@@ -64,55 +52,54 @@ const PaymentMethodsSection = () => {
     }
   };
 
-  // Check Stripe status on return from onboarding
-  const handleCheckStatus = async () => {
-    const accountId = stripeAccountId || localStorage.getItem('flea_stripe_account_id');
-    console.log('[PaymentMethodsSection] handleCheckStatus called', { accountId, user: !!user });
-    if (!accountId || !user) return;
+  // Check Stripe status by querying Stripe directly via email
+  const handleCheckStatus = useCallback(async (silent = false) => {
+    if (!user?.email) return;
+    setIsChecking(true);
 
     try {
-      console.log('[PaymentMethodsSection] Invoking stripe-connect-status...');
       const { data, error } = await cloudSupabase.functions.invoke('stripe-connect-status', {
-        body: { stripeAccountId: accountId },
+        body: { 
+          stripeAccountId: stripeAccountId || undefined,
+          userEmail: user.email,
+        },
       });
 
       if (error) throw error;
-      console.log('[PaymentMethodsSection] Status response:', data);
 
-      if (data?.chargesEnabled) {
-        localStorage.removeItem('flea_stripe_pending');
-        localStorage.setItem('flea_stripe_connected', 'true');
+      if (data?.chargesEnabled && data?.accountId) {
         setLocalConnected(true);
-        // Try to save to DB (may fail on external DB)
+        setLocalAccountId(data.accountId);
+        // Try to persist to DB
         await supabase
           .from('profiles')
-          .update({ stripe_onboarding_complete: true, stripe_account_id: accountId } as any)
+          .update({ stripe_onboarding_complete: true, stripe_account_id: data.accountId } as any)
           .eq('user_id', user.id);
         await refreshProfile();
-        toast.success('Stripe account connected successfully!');
+        if (!silent) toast.success('Stripe account connected successfully!');
       } else if (data?.detailsSubmitted) {
-        toast('Stripe is reviewing your account. Check back soon.');
+        if (data?.accountId) setLocalAccountId(data.accountId);
+        if (!silent) toast('Stripe is reviewing your account. Check back soon.');
+      } else if (data?.accountId) {
+        setLocalAccountId(data.accountId);
+        if (!silent) toast('Stripe onboarding incomplete. Please finish setup.');
       } else {
-        toast('Stripe onboarding incomplete. Please finish setup.');
+        if (!silent) toast('No Stripe account found. Please connect Stripe first.');
       }
     } catch (error) {
       console.error('Status check error:', error);
+      if (!silent) toast.error('Failed to check Stripe status.');
+    } finally {
+      setIsChecking(false);
     }
-  };
+  }, [user, stripeAccountId, refreshProfile]);
 
-  // Auto-check on mount if returning from Stripe onboarding
+  // Auto-check on mount if not already connected
   useEffect(() => {
-    const savedAccountId = localStorage.getItem('flea_stripe_account_id');
-    const isPending = localStorage.getItem('flea_stripe_pending') === 'true';
-    const hasAccountId = stripeAccountId || savedAccountId;
-    console.log('[PaymentMethodsSection] useEffect check', { stripeAccountId, savedAccountId, isPending, stripeConnected });
-    
-    // Check status if we have an account and are pending (returning from Stripe)
-    if (hasAccountId && isPending && !stripeConnected && user) {
-      console.log('[PaymentMethodsSection] Pending return detected, calling handleCheckStatus');
-      handleCheckStatus();
+    if (user?.email && !stripeConnected) {
+      handleCheckStatus(true);
     }
-  }, [stripeAccountId, stripeConnected, user]);
+  }, [user?.email, stripeConnected, handleCheckStatus]);
 
   return (
     <div>
@@ -132,7 +119,7 @@ const PaymentMethodsSection = () => {
                 Stripe
               </span>
               <p className={`text-xs mt-0.5 ${stripeConnected ? 'text-green-600' : 'text-muted-foreground'}`}>
-                {stripeConnected ? '✅ Connected' : 'Not connected'}
+                {stripeConnected ? '✅ Connected' : isChecking ? 'Checking...' : 'Not connected'}
               </p>
             </div>
           </div>
@@ -161,13 +148,14 @@ const PaymentMethodsSection = () => {
           <span className="text-xs text-muted-foreground">Soon</span>
         </div>
 
-        {/* Refresh status button if account exists but not complete */}
-        {(stripeAccountId || localStorage.getItem('flea_stripe_account_id')) && !stripeConnected && (
+        {/* Refresh status button if not connected */}
+        {!stripeConnected && (
           <button
-            onClick={handleCheckStatus}
-            className="w-full text-center text-sm text-primary underline py-2"
+            onClick={() => handleCheckStatus(false)}
+            disabled={isChecking}
+            className="w-full text-center text-sm text-primary underline py-2 disabled:opacity-50"
           >
-            Refresh connection status
+            {isChecking ? 'Checking...' : 'Refresh connection status'}
           </button>
         )}
       </div>
