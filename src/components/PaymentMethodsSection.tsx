@@ -22,11 +22,14 @@ const PaymentMethodsSection = () => {
 
     setIsConnecting(true);
     try {
+      // Check localStorage for a previously saved Stripe account ID
+      const savedAccountId = localStorage.getItem('flea_stripe_account_id');
+      
       const { data, error } = await cloudSupabase.functions.invoke('stripe-connect-onboard', {
         body: {
           userEmail: user.email,
           userId: user.id,
-          stripeAccountId: stripeAccountId || undefined,
+          stripeAccountId: stripeAccountId || savedAccountId || undefined,
           returnUrl: window.location.origin + '/settings',
         },
       });
@@ -34,7 +37,12 @@ const PaymentMethodsSection = () => {
       if (error) throw error;
       if (!data?.url) throw new Error('No onboarding URL returned');
 
-      // Save the Stripe account ID to the profile before redirecting
+      // Save the Stripe account ID to localStorage before redirecting
+      if (data.accountId) {
+        localStorage.setItem('flea_stripe_account_id', data.accountId);
+      }
+
+      // Also try to save to profile (may fail silently on external DB)
       if (data.accountId && data.accountId !== stripeAccountId) {
         await supabase
           .from('profiles')
@@ -54,21 +62,23 @@ const PaymentMethodsSection = () => {
 
   // Check Stripe status on return from onboarding
   const handleCheckStatus = async () => {
-    console.log('[PaymentMethodsSection] handleCheckStatus called', { stripeAccountId, user: !!user });
-    if (!stripeAccountId || !user) return;
+    const accountId = stripeAccountId || localStorage.getItem('flea_stripe_account_id');
+    console.log('[PaymentMethodsSection] handleCheckStatus called', { accountId, user: !!user });
+    if (!accountId || !user) return;
 
     try {
       console.log('[PaymentMethodsSection] Invoking stripe-connect-status...');
       const { data, error } = await cloudSupabase.functions.invoke('stripe-connect-status', {
-        body: { stripeAccountId },
+        body: { stripeAccountId: accountId },
       });
 
       if (error) throw error;
+      console.log('[PaymentMethodsSection] Status response:', data);
 
       if (data?.chargesEnabled) {
         await supabase
           .from('profiles')
-          .update({ stripe_onboarding_complete: true } as any)
+          .update({ stripe_onboarding_complete: true, stripe_account_id: accountId } as any)
           .eq('user_id', user.id);
         await refreshProfile();
         toast.success('Stripe account connected successfully!');
@@ -83,8 +93,11 @@ const PaymentMethodsSection = () => {
   };
 
   useEffect(() => {
-    console.log('[PaymentMethodsSection] useEffect check', { stripeAccountId, stripeConnected, search: window.location.search });
-    if (stripeAccountId && !stripeConnected) {
+    const savedAccountId = localStorage.getItem('flea_stripe_account_id');
+    const hasAccountId = stripeAccountId || savedAccountId;
+    console.log('[PaymentMethodsSection] useEffect check', { stripeAccountId, savedAccountId, stripeConnected, search: window.location.search });
+    
+    if (hasAccountId && !stripeConnected) {
       const params = new URLSearchParams(window.location.search);
       if (params.get('stripe_success') === 'true') {
         console.log('[PaymentMethodsSection] stripe_success detected, calling handleCheckStatus');
@@ -142,7 +155,7 @@ const PaymentMethodsSection = () => {
         </div>
 
         {/* Refresh status button if account exists but not complete */}
-        {stripeAccountId && !stripeConnected && (
+        {(stripeAccountId || localStorage.getItem('flea_stripe_account_id')) && !stripeConnected && (
           <button
             onClick={handleCheckStatus}
             className="w-full text-center text-sm text-primary underline py-2"
