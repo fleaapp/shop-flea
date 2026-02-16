@@ -205,7 +205,7 @@ const Settings = () => {
                     </div>}
                 </div>)}
             </div>
-            {group.title === 'Account' && <div className="mt-4"><PaymentMethodsSection /></div>}
+            {group.title === 'Account' && <div className="mt-2"><PaymentMethodsSection /></div>}
           </div>)}
       </div>
       

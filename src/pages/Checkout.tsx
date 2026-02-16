@@ -245,7 +245,7 @@ const Checkout = () => {
             <h1 className="text-center text-xl font-bold text-foreground py-4">Checkout</h1>
           </div>
           
-          <div className="overflow-y-auto px-4 pb-8">
+          <div className="overflow-y-auto px-4 pb-8 space-y-4">
 
             {/* Order Summary Card */}
             <div className="rounded-xl bg-card overflow-hidden">
