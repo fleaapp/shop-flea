@@ -69,7 +69,7 @@ const OrderSuccessDialog = ({ open, onClose }: OrderSuccessDialogProps) => {
         <button
           onClick={onClose}
           style={closeButtonStyle}
-          className="mb-12 max-[413px]:mb-14 text-white/80 hover:text-white transition-colors pointer-events-auto z-10"
+          className="mb-12 max-[413px]:mb-14 text-white/80 hover:text-white transition-colors pointer-events-auto z-10 outline-none focus:outline-none focus-visible:outline-none"
           aria-label="Close"
         >
           <X className="h-7 w-7 sm:h-8 sm:w-8" />

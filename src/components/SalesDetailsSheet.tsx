@@ -241,9 +241,15 @@ const SalesDetailsSheet = ({
                 >
                   Mark as shipped
                 </Button>
-                <button className="text-center text-sm text-foreground underline">
-                  Need help?
-                </button>
+              <button
+                className="text-center text-sm text-foreground underline"
+                onClick={() => {
+                  onOpenChange(false);
+                  setTimeout(() => navigate('/contact-support'), 300);
+                }}
+              >
+                Need help?
+              </button>
               </div>
             )}
             {primaryOrder.status === 'delivered' && !existingReview && (

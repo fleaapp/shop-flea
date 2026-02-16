@@ -191,7 +191,13 @@ const OrderDetailsSheet = ({
                   Review Seller
                 </Button>
               )}
-              <button className="text-center text-sm text-foreground underline">
+              <button
+                className="text-center text-sm text-foreground underline"
+                onClick={() => {
+                  onOpenChange(false);
+                  setTimeout(() => navigate('/contact-support'), 300);
+                }}
+              >
                 Need help?
               </button>
             </div>
