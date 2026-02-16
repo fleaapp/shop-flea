@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { userEmail, userId, returnUrl } = await req.json();
+    const { userEmail, userId, returnUrl, stripeAccountId } = await req.json();
 
     if (!userEmail || !userId) {
       throw new Error("userEmail and userId are required");
@@ -22,10 +22,6 @@ serve(async (req) => {
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
-
-    // Check if user already has a Connect account stored
-    // We receive the stripe_account_id from the client if it exists
-    const { stripeAccountId } = await req.json().catch(() => ({}));
 
     let accountId: string;
 
