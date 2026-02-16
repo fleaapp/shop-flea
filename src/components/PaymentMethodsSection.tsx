@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { supabase as cloudSupabase } from '@/integrations/supabase/client';
@@ -78,18 +78,15 @@ const PaymentMethodsSection = () => {
     }
   };
 
-  // Auto-check on mount if we have an account ID but not completed
-  useState(() => {
+  useEffect(() => {
     if (stripeAccountId && !stripeConnected) {
-      // Check if returning from Stripe onboarding
       const params = new URLSearchParams(window.location.search);
       if (params.get('stripe_success') === 'true') {
         handleCheckStatus();
-        // Clean up URL
         window.history.replaceState({}, '', '/settings');
       }
     }
-  });
+  }, [stripeAccountId, stripeConnected]);
 
   return (
     <div>
