@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -137,76 +137,117 @@ const Settings = () => {
       
       {/* Settings Groups */}
       <div className="px-4 max-[375px]:px-3 space-y-6 max-[375px]:space-y-4">
-        {settingsGroups.map((group, idx) => <div key={group.title || idx}>
-            {group.title && <h2 className="mb-3 max-[375px]:mb-2 text-sm max-[375px]:text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                {group.title}
-              </h2>}
-            
-            <div className="space-y-2 max-[375px]:space-y-1.5">
-              {group.items.map(item => <div key={item.label}>
-                  <div className={`flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow ${(item as any).isLogout ? 'bg-[#e0e0dc]' : 'bg-card'} ${item.toggle ? '' : 'cursor-pointer'}`} onClick={async () => {
-              if (item.toggle) return;
-              if ((item as any).onExpand) {
-                (item as any).onExpand();
-                return;
-              }
-              if (item.expandable) return;
-              if (item.label === 'Edit Profile') {
-                navigate('/settings/profile');
-              } else if (item.action) {
-                await item.action();
-              } else {
-                toast(`${item.label} clicked`);
-              }
-            }}>
-                    <div className="flex items-center gap-3 max-[375px]:gap-2">
-                      <div className="text-muted-foreground">{item.icon}</div>
-                      <span className="text-base max-[375px]:text-sm font-medium text-foreground">{item.label}</span>
+        {settingsGroups.map((group, idx) => {
+          if (group.title === 'Account') {
+            return (
+              <React.Fragment key={group.title}>
+                <div>
+                  <h2 className="mb-3 max-[375px]:mb-2 text-sm max-[375px]:text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    {group.title}
+                  </h2>
+                  <div className="space-y-2 max-[375px]:space-y-1.5">
+                    {group.items.map(item => <div key={item.label}>
+                        <div className={`flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow ${(item as any).isLogout ? 'bg-[#e0e0dc]' : 'bg-card'} ${item.toggle ? '' : 'cursor-pointer'}`} onClick={async () => {
+                    if (item.toggle) return;
+                    if ((item as any).onExpand) {
+                      (item as any).onExpand();
+                      return;
+                    }
+                    if (item.expandable) return;
+                    if (item.label === 'Edit Profile') {
+                      navigate('/settings/profile');
+                    } else if (item.action) {
+                      await item.action();
+                    } else {
+                      toast(`${item.label} clicked`);
+                    }
+                  }}>
+                          <div className="flex items-center gap-3 max-[375px]:gap-2">
+                            <div className="text-muted-foreground">{item.icon}</div>
+                            <span className="text-base max-[375px]:text-sm font-medium text-foreground">{item.label}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {(item as any).badge && <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                                {(item as any).badge}
+                              </span>}
+                          {item.toggle ? <Switch checked={item.checked} onCheckedChange={item.onToggle} className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime" /> : item.expandable ? (item as any).isExpanded ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
+                          </div>
+                        </div>
+                      </div>)}
+                  </div>
+                </div>
+                <PaymentMethodsSection />
+              </React.Fragment>
+            );
+          }
+
+          return (
+            <div key={group.title || idx}>
+              {group.title && <h2 className="mb-3 max-[375px]:mb-2 text-sm max-[375px]:text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  {group.title}
+                </h2>}
+              <div className="space-y-2 max-[375px]:space-y-1.5">
+                {group.items.map(item => <div key={item.label}>
+                    <div className={`flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow ${(item as any).isLogout ? 'bg-[#e0e0dc]' : 'bg-card'} ${item.toggle ? '' : 'cursor-pointer'}`} onClick={async () => {
+                if (item.toggle) return;
+                if ((item as any).onExpand) {
+                  (item as any).onExpand();
+                  return;
+                }
+                if (item.expandable) return;
+                if (item.label === 'Edit Profile') {
+                  navigate('/settings/profile');
+                } else if (item.action) {
+                  await item.action();
+                } else {
+                  toast(`${item.label} clicked`);
+                }
+              }}>
+                      <div className="flex items-center gap-3 max-[375px]:gap-2">
+                        <div className="text-muted-foreground">{item.icon}</div>
+                        <span className="text-base max-[375px]:text-sm font-medium text-foreground">{item.label}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {(item as any).badge && <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                            {(item as any).badge}
+                          </span>}
+                      {item.toggle ? <Switch checked={item.checked} onCheckedChange={item.onToggle} className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime" /> : item.expandable ? (item as any).isExpanded ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
+                      </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
-                      {(item as any).badge && <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                          {(item as any).badge}
-                        </span>}
-                    {item.toggle ? <Switch checked={item.checked} onCheckedChange={item.onToggle} className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime" /> : item.expandable ? (item as any).isExpanded ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
-                    </div>
-                  </div>
-                  
-                  {/* Help Centre sub-items */}
-                  {(item as any).isExpanded && <div className="ml-6 mt-2 space-y-2">
-                      {helpCentreItems.map(subItem => <div key={subItem.label}>
-                          <div className="flex items-center justify-between rounded-2xl bg-card p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow cursor-pointer" onClick={async () => {
-                  if (subItem.expandable) {
-                    setFaqExpanded(!faqExpanded);
-                    return;
-                  }
-                  if (subItem.action) {
-                    await subItem.action();
-                  } else {
-                    toast(`${subItem.label} clicked`);
-                  }
-                }}>
-                            <div className="flex items-center gap-3 max-[375px]:gap-2">
-                              <div className="text-muted-foreground">{subItem.icon}</div>
-                              <span className="text-base max-[375px]:text-sm font-medium text-foreground">{subItem.label}</span>
+                    {/* Help Centre sub-items */}
+                    {(item as any).isExpanded && <div className="ml-6 mt-2 space-y-2">
+                        {helpCentreItems.map(subItem => <div key={subItem.label}>
+                            <div className="flex items-center justify-between rounded-2xl bg-card p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow cursor-pointer" onClick={async () => {
+                    if (subItem.expandable) {
+                      setFaqExpanded(!faqExpanded);
+                      return;
+                    }
+                    if (subItem.action) {
+                      await subItem.action();
+                    } else {
+                      toast(`${subItem.label} clicked`);
+                    }
+                  }}>
+                              <div className="flex items-center gap-3 max-[375px]:gap-2">
+                                <div className="text-muted-foreground">{subItem.icon}</div>
+                                <span className="text-base max-[375px]:text-sm font-medium text-foreground">{subItem.label}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {(subItem as any).badge && <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                                    {(subItem as any).badge}
+                                  </span>}
+                                {subItem.expandable ? faqExpanded ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              {(subItem as any).badge && <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                                  {(subItem as any).badge}
-                                </span>}
-                              {subItem.expandable ? faqExpanded ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
-                            </div>
-                          </div>
-                          {/* FAQ sub-sub-item */}
-                          {subItem.expandable && faqExpanded && <div className="ml-6 mt-2 space-y-2">
-                              {/* FAQ content can go here */}
-                            </div>}
-                        </div>)}
-                    </div>}
-                </div>)}
+                            {subItem.expandable && faqExpanded && <div className="ml-6 mt-2 space-y-2" />}
+                          </div>)}
+                      </div>}
+                  </div>)}
+              </div>
             </div>
-            {group.title === 'Account' && <PaymentMethodsSection />}
-          </div>)}
+          );
+        })}
       </div>
       
       
