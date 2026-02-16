@@ -147,17 +147,6 @@ const PaymentMethodsSection = () => {
           </div>
           <span className="text-xs text-muted-foreground">Soon</span>
         </div>
-
-        {/* Refresh status button if not connected */}
-        {!stripeConnected && (
-          <button
-            onClick={() => handleCheckStatus(false)}
-            disabled={isChecking}
-            className="w-full text-center text-sm text-primary underline py-1 disabled:opacity-50"
-          >
-            {isChecking ? 'Checking...' : 'Refresh connection status'}
-          </button>
-        )}
       </div>
     </div>
   );
