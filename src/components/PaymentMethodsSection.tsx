@@ -11,6 +11,8 @@ const PaymentMethodsSection = () => {
 
   const stripeConnected = profile?.stripe_onboarding_complete === true;
   const stripeAccountId = (profile as any)?.stripe_account_id;
+  
+  console.log('[PaymentMethodsSection] profile:', JSON.stringify({ stripeConnected, stripeAccountId, stripe_onboarding_complete: profile?.stripe_onboarding_complete, stripe_account_id: (profile as any)?.stripe_account_id }));
 
   const handleConnectStripe = async () => {
     if (!user || !user.email) {
@@ -52,9 +54,11 @@ const PaymentMethodsSection = () => {
 
   // Check Stripe status on return from onboarding
   const handleCheckStatus = async () => {
+    console.log('[PaymentMethodsSection] handleCheckStatus called', { stripeAccountId, user: !!user });
     if (!stripeAccountId || !user) return;
 
     try {
+      console.log('[PaymentMethodsSection] Invoking stripe-connect-status...');
       const { data, error } = await cloudSupabase.functions.invoke('stripe-connect-status', {
         body: { stripeAccountId },
       });
@@ -79,9 +83,11 @@ const PaymentMethodsSection = () => {
   };
 
   useEffect(() => {
+    console.log('[PaymentMethodsSection] useEffect check', { stripeAccountId, stripeConnected, search: window.location.search });
     if (stripeAccountId && !stripeConnected) {
       const params = new URLSearchParams(window.location.search);
       if (params.get('stripe_success') === 'true') {
+        console.log('[PaymentMethodsSection] stripe_success detected, calling handleCheckStatus');
         handleCheckStatus();
         window.history.replaceState({}, '', '/settings');
       }
