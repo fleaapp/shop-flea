@@ -49,8 +49,8 @@ const OrderDetailsSheet = ({
   if (!orders || orders.length === 0) return null;
 
   const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
-  const buyerFee = subtotal * 0.04;
-  const total = subtotal + buyerFee;
+  const processingFee = subtotal * 0.02;
+  const total = subtotal + processingFee;
   const statusBadge = getStatusBadge(primaryOrder.status);
   const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
 
@@ -125,8 +125,8 @@ const OrderDetailsSheet = ({
 
                 {/* Fee line */}
                 <div className="flex justify-between text-sm px-4 py-3 border-t border-border">
-                  <span className="text-muted-foreground">4% buyer fee</span>
-                  <span className="text-muted-foreground">+ ${buyerFee.toFixed(2)}</span>
+                  <span className="text-muted-foreground">Payment processing fee (2%)</span>
+                  <span className="text-muted-foreground">+ ${processingFee.toFixed(2)}</span>
                 </div>
 
                 {/* Total */}
