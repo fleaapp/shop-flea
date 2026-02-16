@@ -102,7 +102,7 @@ const PaymentMethodsSection = () => {
   }, [user?.email, stripeConnected, handleCheckStatus]);
 
   return (
-    <div>
+    <div className="mt-6 max-[375px]:mt-4">
       <h2 className="mb-3 max-[375px]:mb-2 text-sm max-[375px]:text-xs font-medium text-muted-foreground uppercase tracking-wide">
         Payment Methods
       </h2>
@@ -153,7 +153,7 @@ const PaymentMethodsSection = () => {
           <button
             onClick={() => handleCheckStatus(false)}
             disabled={isChecking}
-            className="w-full text-center text-sm text-primary underline py-2 disabled:opacity-50"
+            className="w-full text-center text-sm text-primary underline py-1 disabled:opacity-50"
           >
             {isChecking ? 'Checking...' : 'Refresh connection status'}
           </button>
