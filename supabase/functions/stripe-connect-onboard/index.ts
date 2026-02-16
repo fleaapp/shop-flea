@@ -36,8 +36,14 @@ serve(async (req) => {
       // Create a new Express Connect account (simpler onboarding for individual sellers)
       const account = await stripe.accounts.create({
         type: "express",
+        country: "AU",
         business_type: "individual",
         email: userEmail,
+        business_profile: {
+          mcc: "5699", // Miscellaneous apparel and accessory shops
+          product_description: "Selling pre-owned clothing and accessories on Flea marketplace",
+          url: "https://shop-flea.lovable.app",
+        },
         metadata: {
           flea_user_id: userId,
         },
