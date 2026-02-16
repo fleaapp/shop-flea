@@ -8,11 +8,14 @@ import { ChevronRight } from 'lucide-react';
 const PaymentMethodsSection = () => {
   const { user, profile, refreshProfile } = useAuth();
   const [isConnecting, setIsConnecting] = useState(false);
+  const [localConnected, setLocalConnected] = useState(() => localStorage.getItem('flea_stripe_connected') === 'true');
 
-  const stripeConnected = profile?.stripe_onboarding_complete === true;
-  const stripeAccountId = (profile as any)?.stripe_account_id;
+  const stripeConnected = profile?.stripe_onboarding_complete === true || localConnected;
+  const stripeAccountId = (profile as any)?.stripe_account_id || localStorage.getItem('flea_stripe_account_id');
   
-  console.log('[PaymentMethodsSection] profile:', JSON.stringify({ stripeConnected, stripeAccountId, stripe_onboarding_complete: profile?.stripe_onboarding_complete, stripe_account_id: (profile as any)?.stripe_account_id }));
+  console.log('[PaymentMethodsSection] status:', JSON.stringify({ stripeConnected, localConnected, stripeAccountId }));
+
+  
 
   const handleConnectStripe = async () => {
     if (!user || !user.email) {
@@ -78,6 +81,9 @@ const PaymentMethodsSection = () => {
 
       if (data?.chargesEnabled) {
         localStorage.removeItem('flea_stripe_pending');
+        localStorage.setItem('flea_stripe_connected', 'true');
+        setLocalConnected(true);
+        // Try to save to DB (may fail on external DB)
         await supabase
           .from('profiles')
           .update({ stripe_onboarding_complete: true, stripe_account_id: accountId } as any)
