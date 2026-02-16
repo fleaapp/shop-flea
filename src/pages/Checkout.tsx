@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
+import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { Listing } from '@/types/listing';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
@@ -222,7 +223,7 @@ const Checkout = () => {
   }];
   return <div className="min-h-screen bg-background">
       <Drawer open={open} onOpenChange={isOpen => !isOpen && handleClose()}>
-        <DrawerContent className="max-h-[85vh] bg-background">
+        <DrawerContent className="max-h-[85vh] bg-background" style={{ maxHeight: '85dvh' }}>
           {/* Sticky Header */}
           <div className="sticky top-0 z-10 bg-background">
             <h1 className="text-center text-xl font-bold text-foreground py-4">Checkout</h1>
@@ -311,7 +312,17 @@ const Checkout = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">Street address</label>
-                  <Input value={shippingAddress} onChange={e => setShippingAddress(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Street address" />
+                  <AddressAutocomplete
+                    value={shippingAddress}
+                    onChange={setShippingAddress}
+                    onSelect={(addr) => {
+                      setShippingAddress(addr.street);
+                      if (addr.city) setShippingCity(addr.city);
+                      if (addr.state) setShippingState(addr.state);
+                      if (addr.postcode) setShippingPostcode(addr.postcode);
+                    }}
+                    placeholder="Start typing your address..."
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">City</label>
