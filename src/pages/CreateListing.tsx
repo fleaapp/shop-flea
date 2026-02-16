@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ImagePlus, X, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -47,12 +47,40 @@ const CreateListing = () => {
   const [showPaymentGate, setShowPaymentGate] = useState(false);
 
   // Check if seller has connected a payment method
-  const hasPaymentMethod = profile?.stripe_onboarding_complete === true;
+  const hasPaymentMethodDB = profile?.stripe_onboarding_complete === true;
+  const [hasPaymentMethodStripe, setHasPaymentMethodStripe] = useState(false);
+  const hasPaymentMethod = hasPaymentMethodDB || hasPaymentMethodStripe;
+
+  // Check Stripe directly for connection status
+  const checkStripeStatus = useCallback(async () => {
+    if (!user?.email || hasPaymentMethodDB) return;
+    try {
+      const { supabase: cloudSupabase } = await import('@/integrations/supabase/client');
+      const { data } = await cloudSupabase.functions.invoke('stripe-connect-status', {
+        body: { userEmail: user.email },
+      });
+      if (data?.chargesEnabled) {
+        setHasPaymentMethodStripe(true);
+      }
+    } catch (e) {
+      // Silent fail
+    }
+  }, [user?.email, hasPaymentMethodDB]);
 
   // Show payment gate if no payment method connected
   useEffect(() => {
+    if (!authLoading && user && profile && !hasPaymentMethodDB) {
+      checkStripeStatus().then(() => {
+        // Re-evaluate after check - gate will be controlled by hasPaymentMethod
+      });
+    }
+  }, [authLoading, user, profile, hasPaymentMethodDB, checkStripeStatus]);
+
+  useEffect(() => {
     if (!authLoading && user && profile && !hasPaymentMethod) {
       setShowPaymentGate(true);
+    } else {
+      setShowPaymentGate(false);
     }
   }, [authLoading, user, profile, hasPaymentMethod]);
   
