@@ -102,7 +102,7 @@ const PaymentMethodsSection = () => {
   }, [user?.email, stripeConnected, handleCheckStatus]);
 
   return (
-    <div className="mt-6 max-[375px]:mt-4">
+    <div>
       <h2 className="mb-3 max-[375px]:mb-2 text-sm max-[375px]:text-xs font-medium text-muted-foreground uppercase tracking-wide">
         Payment Methods
       </h2>
