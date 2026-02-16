@@ -33,12 +33,16 @@ serve(async (req) => {
       // Use existing account
       accountId = stripeAccountId;
     } else {
-      // Create a new Standard Connect account
+      // Create a new Express Connect account (simpler onboarding for individual sellers)
       const account = await stripe.accounts.create({
-        type: "standard",
+        type: "express",
         email: userEmail,
         metadata: {
           flea_user_id: userId,
+        },
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
         },
       });
       accountId = account.id;
