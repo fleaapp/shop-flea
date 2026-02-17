@@ -49,10 +49,12 @@ const CreateListing = () => {
   const [stripeReturnHandled, setStripeReturnHandled] = useState(false);
 
   // Check if seller has connected a payment method
+  // Use localStorage as persistent fallback to survive component remounts
   const hasPaymentMethodDB = profile?.stripe_onboarding_complete === true;
-  const [hasPaymentMethodStripe, setHasPaymentMethodStripe] = useState(false);
-  const [paymentCheckDone, setPaymentCheckDone] = useState(hasPaymentMethodDB);
-  const hasPaymentMethod = hasPaymentMethodDB || hasPaymentMethodStripe;
+  const hasPaymentMethodLocal = typeof window !== 'undefined' && localStorage.getItem('flea_stripe_connected') === 'true';
+  const [hasPaymentMethodStripe, setHasPaymentMethodStripe] = useState(hasPaymentMethodLocal);
+  const [paymentCheckDone, setPaymentCheckDone] = useState(hasPaymentMethodDB || hasPaymentMethodLocal);
+  const hasPaymentMethod = hasPaymentMethodDB || hasPaymentMethodStripe || hasPaymentMethodLocal;
 
   // Handle return from Stripe onboarding
   useEffect(() => {
@@ -77,28 +79,46 @@ const CreateListing = () => {
         });
 
         if (data?.chargesEnabled && data?.accountId) {
+          // Persist connection state in localStorage FIRST (survives remounts)
+          localStorage.setItem('flea_stripe_connected', 'true');
           setHasPaymentMethodStripe(true);
+
           // Persist to DB
-          await supabase
+          const { error: dbError } = await supabase
             .from('profiles')
             .update({ stripe_onboarding_complete: true, stripe_account_id: data.accountId } as any)
             .eq('user_id', user.id);
+
+          if (dbError) {
+            console.error('Failed to update profile with Stripe status:', dbError);
+          }
+
           await refreshProfile();
           toast.success('Stripe account connected successfully!');
 
-          // Check if new seller (no shipping tiers set up)
+          // Always show shipping setup for new sellers after fresh connect
+          // Use refreshed profile or current profile to check
+          const currentProfile = profile;
           const needsShipping =
-            profile?.tiered_shipping_enabled === null ||
-            profile?.tiered_shipping_enabled === undefined ||
-            (profile?.tiered_shipping_enabled === true &&
-              (profile?.shipping_tier_1 === null || profile?.shipping_tier_1 === undefined));
+            currentProfile?.tiered_shipping_enabled === null ||
+            currentProfile?.tiered_shipping_enabled === undefined ||
+            (currentProfile?.tiered_shipping_enabled === true &&
+              (currentProfile?.shipping_tier_1 === null || currentProfile?.shipping_tier_1 === undefined));
 
           if (needsShipping) {
-            // New seller — show shipping setup
             setShowShippingSetup(true);
-            setShippingChecked(true); // Prevent the other useEffect from also triggering
+            setShippingChecked(true);
           }
-          // Returning seller: they'll just land on the create listing form
+        } else if (data?.detailsSubmitted) {
+          // Onboarding submitted but Stripe hasn't verified yet
+          if (data?.accountId) {
+            // Save the account ID so we can check again later
+            await supabase
+              .from('profiles')
+              .update({ stripe_account_id: data.accountId } as any)
+              .eq('user_id', user.id);
+          }
+          toast('Stripe is reviewing your account. This may take a moment — please try again shortly.');
         } else {
           toast.error('Stripe onboarding not complete. Please try again.');
         }
@@ -113,7 +133,7 @@ const CreateListing = () => {
 
   // Check Stripe directly for connection status (only if not returning from Stripe)
   useEffect(() => {
-    if (hasPaymentMethodDB) {
+    if (hasPaymentMethodDB || hasPaymentMethodLocal) {
       setPaymentCheckDone(true);
       return;
     }
@@ -125,10 +145,19 @@ const CreateListing = () => {
       try {
         const { invokeCloudFunction } = await import('@/utils/cloudFunctions');
         const { data } = await invokeCloudFunction('stripe-connect-status', {
-          stripeAccountId: undefined,
+          stripeAccountId: (profile as any)?.stripe_account_id || undefined,
         });
         if (data?.chargesEnabled) {
           setHasPaymentMethodStripe(true);
+          localStorage.setItem('flea_stripe_connected', 'true');
+          // Also persist to DB if not already
+          if (data.accountId && !hasPaymentMethodDB) {
+            await supabase
+              .from('profiles')
+              .update({ stripe_onboarding_complete: true, stripe_account_id: data.accountId } as any)
+              .eq('user_id', user.id);
+            await refreshProfile();
+          }
         }
       } catch (e) {
         // Silent fail
@@ -138,7 +167,7 @@ const CreateListing = () => {
     };
     
     checkStripe();
-  }, [user?.email, hasPaymentMethodDB, authLoading, searchParams]);
+  }, [user?.email, hasPaymentMethodDB, hasPaymentMethodLocal, authLoading, searchParams]);
 
   // Show payment gate only AFTER check completes
   useEffect(() => {
@@ -431,7 +460,7 @@ const CreateListing = () => {
   // If user has no payment method, show the gate IMMEDIATELY
   // But skip the gate if we're handling a Stripe return (let the verify useEffect run)
   const isStripeReturn = searchParams.get('stripe_success') === 'true' || stripeReturnHandled;
-  if (!hasPaymentMethodDB && !hasPaymentMethodStripe && user && profile && !isStripeReturn) {
+  if (!hasPaymentMethod && user && profile && !isStripeReturn) {
     return (
       <div className="min-h-screen bg-background pb-24">
         <header className="relative flex items-center justify-center px-4 py-4">

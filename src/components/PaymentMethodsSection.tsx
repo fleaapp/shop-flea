@@ -9,7 +9,9 @@ const PaymentMethodsSection = () => {
   const { user, profile, refreshProfile } = useAuth();
   const [isConnecting, setIsConnecting] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
-  const [localConnected, setLocalConnected] = useState(false);
+  const [localConnected, setLocalConnected] = useState(
+    () => localStorage.getItem('flea_stripe_connected') === 'true'
+  );
   const [localAccountId, setLocalAccountId] = useState<string | null>(null);
 
   const stripeConnected = profile?.stripe_onboarding_complete === true || localConnected;
@@ -39,6 +41,9 @@ const PaymentMethodsSection = () => {
           .eq('user_id', user.id);
       }
 
+      // Set pending flag for return handling
+      localStorage.setItem('flea_stripe_pending', 'true');
+
       window.location.href = data.url;
     } catch (error: any) {
       console.error('Stripe Connect error:', error);
@@ -63,6 +68,7 @@ const PaymentMethodsSection = () => {
       if (data?.chargesEnabled && data?.accountId) {
         setLocalConnected(true);
         setLocalAccountId(data.accountId);
+        localStorage.setItem('flea_stripe_connected', 'true');
         // Try to persist to DB
         await supabase
           .from('profiles')
