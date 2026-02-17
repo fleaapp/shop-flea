@@ -45,14 +45,21 @@ const PasswordSetupDialog = ({ open, onComplete }: PasswordSetupDialogProps) => 
     onComplete();
 
     // Fire password update in background — don't block the UI
-    supabase.auth.updateUser({ password }).then(({ error: updateError }) => {
+    supabase.auth.updateUser({ password }).then(async ({ error: updateError }) => {
       if (updateError) {
         console.error('Error setting password:', updateError);
         toast.error('Password failed to save. Please set it in Settings.');
         return;
       }
-      // Update metadata in background
-      supabase.auth.updateUser({ data: { password_set: true } }).catch(() => {});
+      // Update metadata and profile DB column in background
+      await Promise.all([
+        supabase.auth.updateUser({ data: { password_set: true } }),
+        supabase.auth.getUser().then(({ data }) => {
+          if (data?.user?.id) {
+            return supabase.from('profiles').update({ password_set: true }).eq('user_id', data.user.id);
+          }
+        }),
+      ]);
     }).catch((err) => {
       console.error('Error setting password:', err);
       toast.error('Password failed to save. Please set it in Settings.');
