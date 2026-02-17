@@ -354,10 +354,32 @@ const CreateListing = () => {
   const inputStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 placeholder:text-muted-foreground/60 focus-visible:ring-muted-foreground/50";
   const selectStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 [&>span]:text-muted-foreground/60 focus:ring-muted-foreground/50";
 
-  if (authLoading) {
+  // Block rendering until auth AND payment check are complete
+  if (authLoading || (!hasPaymentMethodDB && !paymentCheckDone)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <span className="text-5xl">⏳</span>
+      </div>
+    );
+  }
+
+  // If payment check is done and user has no payment method, show ONLY the gate
+  if (!hasPaymentMethod && paymentCheckDone && user && profile) {
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <header className="relative flex items-center justify-center px-4 py-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="absolute left-4 h-10 w-10 rounded-full"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-bold text-foreground">Add New Listing</h1>
+        </header>
+        <ConnectPaymentDialog open={true} onOpenChange={() => {}} />
+        <BottomNav />
       </div>
     );
   }
@@ -622,7 +644,7 @@ const CreateListing = () => {
         onCancel={handleShippingSetupCancel}
       />
       
-      <ConnectPaymentDialog open={showPaymentGate} onOpenChange={setShowPaymentGate} />
+      {/* Payment gate now handled by early return above */}
       
       <BottomNav />
     </div>
