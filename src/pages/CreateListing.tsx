@@ -359,8 +359,8 @@ const CreateListing = () => {
   const inputStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 placeholder:text-muted-foreground/60 focus-visible:ring-muted-foreground/50";
   const selectStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 [&>span]:text-muted-foreground/60 focus:ring-muted-foreground/50";
 
-  // Block rendering until auth AND payment check are complete
-  if (authLoading || (!hasPaymentMethodDB && !paymentCheckDone)) {
+  // Only show loading while auth is loading (profile not yet available)
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <span className="text-5xl">⏳</span>
@@ -368,8 +368,8 @@ const CreateListing = () => {
     );
   }
 
-  // If payment check is done and user has no payment method, show ONLY the gate
-  if (!hasPaymentMethod && paymentCheckDone && user && profile) {
+  // If user has no payment method, show ONLY the gate — no loading, instant check from profile
+  if (!hasPaymentMethod && user && profile) {
     return (
       <div className="min-h-screen bg-background pb-24">
         <header className="relative flex items-center justify-center px-4 py-4">
