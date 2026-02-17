@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
 
 interface Profile {
   id: string;
@@ -102,6 +103,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => subscription.unsubscribe();
   }, [fetchProfile]);
+
+  // Auto-verify Stripe connection on login so sellers stay connected across sessions
+  const stripeVerifiedRef = useRef(false);
+  useEffect(() => {
+    if (!profile || !user || stripeVerifiedRef.current) return;
+    // Only verify if they have an account ID but aren't marked complete
+    if (!profile.stripe_account_id || profile.stripe_onboarding_complete) return;
+    stripeVerifiedRef.current = true;
+
+    const verify = async () => {
+      try {
+        const { data, error } = await invokeCloudFunction('stripe-connect-status', {
+          stripeAccountId: profile.stripe_account_id,
+        });
+        if (error || !data) return;
+
+        if (data.chargesEnabled || data.detailsSubmitted) {
+          localStorage.setItem(`flea_stripe_connected_${user.id}`, 'true');
+          localStorage.removeItem('flea_stripe_pending');
+          await supabase
+            .from('profiles')
+            .update({ stripe_onboarding_complete: true } as any)
+            .eq('user_id', user.id);
+          await fetchProfile(user.id);
+        }
+      } catch (e) {
+        console.error('Auto Stripe verify on login failed:', e);
+      }
+    };
+    verify();
+  }, [profile, user, fetchProfile]);
 
   const signUp = async (
     email: string, 
