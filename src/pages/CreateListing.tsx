@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ImagePlus, X, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -45,142 +46,29 @@ const CreateListing = () => {
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
   const [showShippingSetup, setShowShippingSetup] = useState(false);
   const [shippingChecked, setShippingChecked] = useState(false);
-  const [showPaymentGate, setShowPaymentGate] = useState(false);
-  const [stripeReturnHandled, setStripeReturnHandled] = useState(false);
+  const [showVerifyingDialog, setShowVerifyingDialog] = useState(false);
 
   // Check if seller has connected a payment method
-  // Use localStorage as persistent fallback to survive component remounts
   const hasPaymentMethodDB = profile?.stripe_onboarding_complete === true;
   const stripeLocalKey = user ? `flea_stripe_connected_${user.id}` : null;
   const getLocalFlag = () => typeof window !== 'undefined' && !!stripeLocalKey && localStorage.getItem(stripeLocalKey) === 'true';
-  const initialLocalFlag = typeof window !== 'undefined' && !!stripeLocalKey && localStorage.getItem(stripeLocalKey) === 'true';
-  const [hasPaymentMethodStripe, setHasPaymentMethodStripe] = useState(initialLocalFlag);
-  const [paymentCheckDone, setPaymentCheckDone] = useState(hasPaymentMethodDB || initialLocalFlag);
+  const [hasPaymentMethodStripe, setHasPaymentMethodStripe] = useState(() => typeof window !== 'undefined' && !!stripeLocalKey && localStorage.getItem(stripeLocalKey) === 'true');
 
-  // Sync localStorage flag when user ID becomes available (fixes race where user is null at mount)
+  // Sync localStorage flag when user ID becomes available
   useEffect(() => {
     if (user) {
       const stored = getLocalFlag();
-      if (stored) {
-        setHasPaymentMethodStripe(true);
-        setPaymentCheckDone(true);
-      }
+      if (stored) setHasPaymentMethodStripe(true);
     }
   }, [user]);
+
   const hasPaymentMethod = hasPaymentMethodDB || hasPaymentMethodStripe;
 
-  // Detect if we're returning from Stripe (check ONCE at mount, store in ref to survive re-renders)
-  const isReturningFromStripe = useRef(
-    typeof window !== 'undefined' && (
-      new URLSearchParams(window.location.search).get('stripe_success') === 'true' ||
-      new URLSearchParams(window.location.search).get('stripe_refresh') === 'true' ||
-      localStorage.getItem('flea_stripe_pending') === 'true'
-    )
+  // Check if Stripe is in a "pending verification" state (has account but not yet connected)
+  const stripeAccountId = profile?.stripe_account_id || null;
+  const stripePending = !hasPaymentMethod && (
+    localStorage.getItem('flea_stripe_pending') === 'true' || !!stripeAccountId
   );
-
-  // Handle return from Stripe onboarding — single unified verification
-  useEffect(() => {
-    if (stripeReturnHandled) return;
-    if (!isReturningFromStripe.current) return;
-    if (!user?.email) return; // Wait for auth
-
-    setStripeReturnHandled(true);
-    // Clean URL params immediately
-    searchParams.delete('stripe_success');
-    searchParams.delete('stripe_refresh');
-    setSearchParams(searchParams, { replace: true });
-    localStorage.removeItem('flea_stripe_pending');
-
-    const verifyAndContinue = async () => {
-      try {
-        const { invokeCloudFunction } = await import('@/utils/cloudFunctions');
-        const stripeAccountId = (profile as any)?.stripe_account_id || undefined;
-        const { data } = await invokeCloudFunction('stripe-connect-status', {
-          stripeAccountId,
-        });
-
-        console.log('[CreateListing] Stripe return verify result:', JSON.stringify(data));
-
-        // If an account exists in Stripe at all, treat as connected
-        // The actual payment capability check happens at checkout, not listing creation
-        if (data?.accountId) {
-          // Persist connection state in localStorage FIRST (survives remounts)
-          if (stripeLocalKey) localStorage.setItem(stripeLocalKey, 'true');
-          setHasPaymentMethodStripe(true);
-          setPaymentCheckDone(true);
-
-          // Persist to DB
-          const { error: dbError } = await supabase
-            .from('profiles')
-            .update({ stripe_onboarding_complete: true, stripe_account_id: data.accountId } as any)
-            .eq('user_id', user.id);
-
-          if (dbError) {
-            console.error('Failed to update profile with Stripe status:', dbError);
-          }
-
-          await refreshProfile();
-          
-          if (data.chargesEnabled) {
-            toast.success('Stripe account connected successfully!');
-          } else {
-            toast.success('Stripe account linked! Payments will be enabled once Stripe approves your account.');
-          }
-
-          // Reset shipping check so useEffect re-evaluates with fresh profile
-          setShippingChecked(false);
-        } else {
-          setPaymentCheckDone(true);
-          toast.error('Stripe onboarding not complete. Please try again.');
-        }
-      } catch (e) {
-        console.error('Stripe verify error:', e);
-        setPaymentCheckDone(true);
-        toast.error('Failed to verify Stripe connection.');
-      }
-    };
-
-    verifyAndContinue();
-  }, [user?.email, stripeReturnHandled, profile, refreshProfile, searchParams, setSearchParams]);
-
-  // Check Stripe directly for connection status (only runs when NOT returning from Stripe)
-  useEffect(() => {
-    // Never run this if we're handling a Stripe return
-    if (isReturningFromStripe.current) return;
-    if (hasPaymentMethodDB || hasPaymentMethodStripe) {
-      setPaymentCheckDone(true);
-      return;
-    }
-    if (!user?.email || authLoading) return;
-
-    const checkStripe = async () => {
-      try {
-        const { invokeCloudFunction } = await import('@/utils/cloudFunctions');
-        const { data } = await invokeCloudFunction('stripe-connect-status', {
-          stripeAccountId: (profile as any)?.stripe_account_id || undefined,
-        });
-        console.log('[CreateListing] General Stripe check result:', JSON.stringify(data));
-        // If account exists at all, treat as connected for listing creation purposes
-        if (data?.accountId) {
-          setHasPaymentMethodStripe(true);
-          if (stripeLocalKey) localStorage.setItem(stripeLocalKey, 'true');
-          if (data.accountId && !hasPaymentMethodDB) {
-            await supabase
-              .from('profiles')
-              .update({ stripe_onboarding_complete: true, stripe_account_id: data.accountId } as any)
-              .eq('user_id', user.id);
-            await refreshProfile();
-          }
-        }
-      } catch (e) {
-        // Silent fail
-      } finally {
-        setPaymentCheckDone(true);
-      }
-    };
-
-    checkStripe();
-  }, [user?.email, hasPaymentMethodDB, hasPaymentMethodStripe, authLoading]);
 
   
   // Tiered shipping state
@@ -232,7 +120,7 @@ const CreateListing = () => {
   // Check if shipping preferences need to be set and load tiered shipping state
   useEffect(() => {
     // Only check shipping AFTER payment gate is resolved
-    if (!authLoading && user && profile && !shippingChecked && hasPaymentMethod && paymentCheckDone) {
+    if (!authLoading && user && profile && !shippingChecked && hasPaymentMethod) {
       setShippingChecked(true);
 
       // Check localStorage first for shipping prefs
@@ -270,7 +158,7 @@ const CreateListing = () => {
         }
       }
     }
-  }, [user, profile, authLoading, shippingChecked, hasPaymentMethod, paymentCheckDone]);
+  }, [user, profile, authLoading, shippingChecked, hasPaymentMethod]);
 
   const handleShippingSetupComplete = async () => {
     setShowShippingSetup(false);
@@ -451,20 +339,60 @@ const CreateListing = () => {
   const inputStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 placeholder:text-muted-foreground/60 focus-visible:ring-muted-foreground/50";
   const selectStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 [&>span]:text-muted-foreground/60 focus:ring-muted-foreground/50";
 
-  // Show loading only while auth is loading, or while verifying a Stripe return
-  if (authLoading || (user && !paymentCheckDone && isReturningFromStripe.current)) {
+  // Show loading only while auth is loading
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-8">
         <span className="text-5xl">⏳</span>
         <p className="text-sm text-muted-foreground text-center leading-relaxed">
-          Verifying connection. Please wait.<br />
-          This could take up to 2 minutes.
+          Loading...
         </p>
       </div>
     );
   }
 
-  // Show payment gate if user has no payment method (or check still in progress for non-Stripe-return)
+  // Show verifying dialog if Stripe is pending (account exists but not yet connected)
+  if (stripePending && user && profile) {
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <header className="relative flex items-center justify-center px-4 py-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="absolute left-4 h-10 w-10 rounded-full"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-bold text-foreground">Add New Listing</h1>
+        </header>
+        <Dialog open={true} onOpenChange={() => {}}>
+          <DialogContent hideCloseButton className="w-[88vw] max-w-sm rounded-3xl border-[3px] border-charcoal bg-card p-6 pt-10 pb-8" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+            <DialogHeader className="space-y-2">
+              <DialogTitle className="text-center text-lg">
+                ⏳ Verifying Your Connection
+              </DialogTitle>
+              <DialogDescription className="text-center text-balance max-w-[260px] mx-auto">
+                Your Stripe account is being verified. This can take a couple of minutes. Please check back shortly!
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-4 flex flex-col items-center">
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/settings')}
+                className="w-64 h-11 rounded-full bg-charcoal text-white hover:bg-charcoal-light border-none shadow-none ring-0 outline-none focus-visible:ring-0"
+              >
+                Go to Settings
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+        <BottomNav />
+      </div>
+    );
+  }
+
+  // Show payment gate if user has no payment method at all
   if (!hasPaymentMethod && user && profile) {
     return (
       <div className="min-h-screen bg-background pb-24">

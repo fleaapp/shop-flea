@@ -22,6 +22,7 @@ const PaymentMethodsSection = () => {
 
   const stripeConnected = profile?.stripe_onboarding_complete === true || localConnected;
   const stripeAccountId = profile?.stripe_account_id || localAccountId;
+  const stripePending = localStorage.getItem('flea_stripe_pending') === 'true' || (!!stripeAccountId && !stripeConnected);
 
   const handleConnectStripe = async () => {
     if (!user || !user.email) {
@@ -128,8 +129,8 @@ const PaymentMethodsSection = () => {
               <span className="text-base max-[375px]:text-sm font-medium text-foreground">
                 Stripe
               </span>
-              <p className={`text-xs mt-0.5 ${stripeConnected ? 'text-green-600' : 'text-muted-foreground'}`}>
-                {stripeConnected ? '✅ Connected' : isChecking ? 'Checking...' : 'Not connected'}
+              <p className={`text-xs mt-0.5 ${stripeConnected ? 'text-green-600' : stripePending || isChecking ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                {stripeConnected ? '✅ Connected' : stripePending || isChecking ? '⏳ Verifying...' : 'Not connected'}
               </p>
             </div>
           </div>
@@ -138,6 +139,8 @@ const PaymentMethodsSection = () => {
               <span className="text-xs text-muted-foreground">Connecting...</span>
             ) : stripeConnected ? (
               <span className="text-xs text-green-600 font-medium">Active</span>
+            ) : stripePending || isChecking ? (
+              <span className="text-xs text-amber-600 font-medium">Verifying</span>
             ) : (
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             )}
