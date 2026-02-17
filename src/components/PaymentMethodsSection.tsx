@@ -13,7 +13,7 @@ const PaymentMethodsSection = () => {
   const [localAccountId, setLocalAccountId] = useState<string | null>(null);
 
   const stripeConnected = profile?.stripe_onboarding_complete === true || localConnected;
-  const stripeAccountId = (profile as any)?.stripe_account_id || localAccountId;
+  const stripeAccountId = profile?.stripe_account_id || localAccountId;
 
   const handleConnectStripe = async () => {
     if (!user || !user.email) {
@@ -87,9 +87,11 @@ const PaymentMethodsSection = () => {
     }
   }, [user, stripeAccountId, refreshProfile]);
 
-  // Auto-check on mount if not already connected
+  // Only auto-check if returning from Stripe redirect, not on every mount
   useEffect(() => {
-    if (user?.email && !stripeConnected) {
+    const pending = localStorage.getItem('flea_stripe_pending');
+    if (pending && user?.email && !stripeConnected) {
+      localStorage.removeItem('flea_stripe_pending');
       handleCheckStatus(true);
     }
   }, [user?.email, stripeConnected, handleCheckStatus]);
