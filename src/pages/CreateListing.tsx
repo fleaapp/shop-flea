@@ -428,9 +428,9 @@ const CreateListing = () => {
     );
   }
 
-  // If user has no payment method, show the gate
-  // hasPaymentMethodDB is instant from profile — no loading needed for connected users
-  if (!hasPaymentMethod && paymentCheckDone && user && profile) {
+  // If user has no payment method, show the gate IMMEDIATELY
+  // DB flag is the source of truth — no waiting for async check
+  if (!hasPaymentMethodDB && !hasPaymentMethodStripe && user && profile) {
     return (
       <div className="min-h-screen bg-background pb-24">
         <header className="relative flex items-center justify-center px-4 py-4">
