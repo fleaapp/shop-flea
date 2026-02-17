@@ -428,17 +428,9 @@ const CreateListing = () => {
     );
   }
 
-  // Wait for payment check to complete before deciding
-  if (!paymentCheckDone && !hasPaymentMethodDB) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <span className="text-5xl">⏳</span>
-      </div>
-    );
-  }
-
-  // If user has no payment method (after check is done), show ONLY the gate
-  if (paymentCheckDone && !hasPaymentMethod && user && profile) {
+  // If user has no payment method, show the gate
+  // hasPaymentMethodDB is instant from profile — no loading needed for connected users
+  if (!hasPaymentMethod && paymentCheckDone && user && profile) {
     return (
       <div className="min-h-screen bg-background pb-24">
         <header className="relative flex items-center justify-center px-4 py-4">
