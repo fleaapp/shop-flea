@@ -123,18 +123,8 @@ const CreateListing = () => {
     if (!authLoading && user && profile && !shippingChecked && hasPaymentMethod) {
       setShippingChecked(true);
 
-      // First-time sellers MUST complete shipping setup regardless of localStorage
-      const needsShippingSetup =
-        profile.shipping_preferences_set !== true &&
-        (profile.tiered_shipping_enabled === null ||
-        profile.tiered_shipping_enabled === undefined ||
-        (profile.tiered_shipping_enabled === true &&
-          (profile.shipping_tier_1 === null ||
-            profile.shipping_tier_2 === null ||
-            profile.shipping_tier_3 === null ||
-            profile.shipping_tier_1 === undefined ||
-            profile.shipping_tier_2 === undefined ||
-            profile.shipping_tier_3 === undefined)));
+      // First-time sellers MUST complete shipping setup if they haven't explicitly saved preferences
+      const needsShippingSetup = profile.shipping_preferences_set !== true;
 
       if (needsShippingSetup) {
         setShowShippingSetup(true);
