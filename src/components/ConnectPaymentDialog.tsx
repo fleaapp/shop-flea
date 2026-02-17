@@ -34,7 +34,7 @@ const ConnectPaymentDialog = ({ open, onOpenChange }: ConnectPaymentDialogProps)
       const stripeAccountId = (profile as any)?.stripe_account_id || undefined;
       const { data, error } = await invokeCloudFunction('stripe-connect-onboard', {
         stripeAccountId,
-        returnUrl: window.location.origin + '/create-listing',
+        returnUrl: window.location.origin + '/create',
       });
 
       if (error) throw error;
