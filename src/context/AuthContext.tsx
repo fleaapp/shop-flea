@@ -127,14 +127,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // Determine if this is a brand-new signup (auto-generated username like @user_xxx)
-    const isNewSignup = profile.username?.startsWith('@user_');
-
-    // For new signups WITHOUT a stored account ID, skip to prevent
-    // email-based lookup from auto-inheriting unrelated Stripe accounts.
-    // For established users (who completed profile setup), allow email-based
-    // lookup as a fallback in case the DB update for stripe_account_id failed.
-    if (!profile.stripe_account_id && isNewSignup) return;
+    // ONLY auto-verify if the profile already has a stripe_account_id stored.
+    // Never do email-based lookups here — that would auto-connect unrelated
+    // Stripe accounts to new users who share the same email.
+    // Email-based lookup is only done explicitly in PaymentMethodsSection
+    // when the user actively checks their Stripe status.
+    if (!profile.stripe_account_id) return;
 
     stripeVerifiedRef.current = true;
 
