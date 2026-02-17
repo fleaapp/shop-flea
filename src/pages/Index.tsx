@@ -56,10 +56,30 @@ const Index = () => {
   const [showOnboardingCarousel, setShowOnboardingCarousel] = useState(false);
   const [passwordCompleted, setPasswordCompleted] = useState(() => sessionStorage.getItem('flea_pw_done') === '1');
   // Check if user signed up via Google OAuth and hasn't set a password yet
-  const isGoogleUser = user?.app_metadata?.provider === 'google';
+  // Check multiple signals: app_metadata.provider, app_metadata.providers array, and identities
+  const isGoogleUser = 
+    user?.app_metadata?.provider === 'google' ||
+    user?.app_metadata?.providers?.includes('google') ||
+    user?.identities?.some((id: any) => id.provider === 'google') ||
+    false;
   const passwordSetInMeta = user?.user_metadata?.password_set === true;
   const passwordSetInProfile = profile?.password_set === true;
   const needsPasswordSetup = isGoogleUser && !passwordSetInMeta && !passwordSetInProfile && !passwordCompleted;
+  
+  // Debug: log provider detection
+  useEffect(() => {
+    if (user) {
+      console.log('[Index] Provider detection:', {
+        provider: user.app_metadata?.provider,
+        providers: user.app_metadata?.providers,
+        identities: user.identities?.map((id: any) => id.provider),
+        isGoogleUser,
+        passwordSetInMeta,
+        passwordSetInProfile,
+        needsPasswordSetup,
+      });
+    }
+  }, [user, isGoogleUser, passwordSetInMeta, passwordSetInProfile, needsPasswordSetup]);
 
   // Welcome dialog shows when profile needs setup
   const showWelcomeDialog = needsProfileSetup;
