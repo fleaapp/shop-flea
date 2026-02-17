@@ -56,10 +56,10 @@ const Index = () => {
   const profileLoaded = profile !== null;
   const [welcomeCompleted, setWelcomeCompleted] = useState(false);
   const [showOnboardingCarousel, setShowOnboardingCarousel] = useState(false);
-  const [passwordCompleted, setPasswordCompleted] = useState(() => sessionStorage.getItem('flea_pw_done') === '1');
+  const [passwordCompleted, setPasswordCompleted] = useState(() => localStorage.getItem('flea_pw_done') === '1');
   
-  // PRIMARY detection: sessionStorage flag set BEFORE Google OAuth redirect (100% reliable)
-  const oauthSignupFlag = sessionStorage.getItem('flea_oauth_signup') === '1';
+  // PRIMARY detection: localStorage flag set BEFORE Google OAuth redirect (survives redirects unlike sessionStorage)
+  const oauthSignupFlag = localStorage.getItem('flea_oauth_signup') === '1';
   
   // SECONDARY detection: app_metadata checks (fallback for returning users)
   const hasEmailIdentity = user?.identities?.some((id: any) => id.provider === 'email') ?? false;
@@ -411,8 +411,8 @@ const Index = () => {
         isGoogleUser={isGoogleUser}
         onComplete={() => {
           setWelcomeCompleted(true);
-          // Use the sessionStorage flag — it was set BEFORE the OAuth redirect and is 100% reliable
-          const isOAuth = sessionStorage.getItem('flea_oauth_signup') === '1';
+          // Use the localStorage flag — it was set BEFORE the OAuth redirect and survives cross-origin redirects
+          const isOAuth = localStorage.getItem('flea_oauth_signup') === '1';
           console.log('[PW_DEBUG] onComplete fired:', { isOAuth, passwordCompleted, passwordAlreadySet, oauthSignupFlag });
           if (isOAuth && !passwordCompleted && !passwordAlreadySet) {
             setPasswordDialogLocked(true);
@@ -425,8 +425,8 @@ const Index = () => {
       <PasswordSetupDialog
         open={showPasswordDialog}
         onComplete={async () => {
-          sessionStorage.setItem('flea_pw_done', '1');
-          sessionStorage.removeItem('flea_oauth_signup'); // Clean up OAuth flag
+          localStorage.setItem('flea_pw_done', '1');
+          localStorage.removeItem('flea_oauth_signup'); // Clean up OAuth flag
           setPasswordCompleted(true);
           setShowOnboardingCarousel(true);
           await refreshProfile();

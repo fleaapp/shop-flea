@@ -104,13 +104,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, [fetchProfile]);
 
-  // Auto-verify Stripe connection on login so sellers stay connected across sessions
+  // Auto-verify Stripe connection on login so sellers stay connected across sessions.
   // ONLY runs if the user already has a stripe_account_id saved — never searches by email
   // to prevent new signups from auto-inheriting unrelated Stripe accounts.
-  // Auto-verify Stripe connection on every login.
-  // Runs whenever the profile is loaded and stripe_onboarding_complete is not true.
-  // The edge function searches by email if no account ID is stored, so this works
-  // even if a previous DB save of stripe_account_id failed.
   const stripeVerifiedRef = useRef(false);
   useEffect(() => {
     if (!profile || !user || stripeVerifiedRef.current) return;
@@ -121,12 +117,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem('flea_stripe_pending');
       return;
     }
+    // CRITICAL: Only verify if there's an existing account ID in DB.
+    // Without this guard, the edge function searches by email and can
+    // auto-connect unrelated Stripe accounts to brand new signups.
+    if (!profile.stripe_account_id) return;
     stripeVerifiedRef.current = true;
 
     const verify = async () => {
       try {
         const { data, error } = await invokeCloudFunction('stripe-connect-status', {
-          stripeAccountId: profile.stripe_account_id || undefined,
+          stripeAccountId: profile.stripe_account_id,
         });
         if (error || !data) return;
 

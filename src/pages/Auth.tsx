@@ -261,7 +261,7 @@ const Auth = () => {
   const handleGoogleSignIn = async () => {
     try {
       // Mark that user is signing in via Google BEFORE redirect — this flag survives the OAuth redirect
-      sessionStorage.setItem('flea_oauth_signup', '1');
+      localStorage.setItem('flea_oauth_signup', '1');
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -271,12 +271,12 @@ const Auth = () => {
       });
       
       if (error) {
-        sessionStorage.removeItem('flea_oauth_signup');
+        localStorage.removeItem('flea_oauth_signup');
         console.error('Google sign-in error:', error);
         toast.error('Google sign-in failed. Please try again.');
       }
     } catch (err) {
-      sessionStorage.removeItem('flea_oauth_signup');
+      localStorage.removeItem('flea_oauth_signup');
       console.error('Google sign-in exception:', err);
       toast.error('Google sign-in failed. Please try again.');
     }
@@ -285,7 +285,7 @@ const Auth = () => {
   const handleAppleSignIn = async () => {
     try {
       // Mark that user is signing in via OAuth BEFORE redirect
-      sessionStorage.setItem('flea_oauth_signup', '1');
+      localStorage.setItem('flea_oauth_signup', '1');
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
@@ -295,12 +295,12 @@ const Auth = () => {
       });
       
       if (error) {
-        sessionStorage.removeItem('flea_oauth_signup');
+        localStorage.removeItem('flea_oauth_signup');
         console.error('Apple sign-in error:', error);
         toast.error('Apple sign-in failed. Please try again.');
       }
     } catch (err) {
-      sessionStorage.removeItem('flea_oauth_signup');
+      localStorage.removeItem('flea_oauth_signup');
       console.error('Apple sign-in exception:', err);
       toast.error('Apple sign-in failed. Please try again.');
     }
