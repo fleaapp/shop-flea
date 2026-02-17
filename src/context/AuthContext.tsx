@@ -107,32 +107,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Auto-verify Stripe connection on login so sellers stay connected across sessions
   // ONLY runs if the user already has a stripe_account_id saved — never searches by email
   // to prevent new signups from auto-inheriting unrelated Stripe accounts.
+  // Auto-verify Stripe connection on every login.
+  // Runs whenever the profile is loaded and stripe_onboarding_complete is not true.
+  // The edge function searches by email if no account ID is stored, so this works
+  // even if a previous DB save of stripe_account_id failed.
   const stripeVerifiedRef = useRef(false);
   useEffect(() => {
     if (!profile || !user || stripeVerifiedRef.current) return;
-    // Skip if already fully connected
-    if (profile.stripe_onboarding_complete) return;
-    // Only verify if there's an existing account ID — don't search by email
-    if (!profile.stripe_account_id) return;
+    // Skip if already fully connected in DB
+    if (profile.stripe_onboarding_complete) {
+      // Ensure localStorage is in sync even if we skip the API call
+      localStorage.setItem(`flea_stripe_connected_${user.id}`, 'true');
+      localStorage.removeItem('flea_stripe_pending');
+      return;
+    }
     stripeVerifiedRef.current = true;
 
     const verify = async () => {
       try {
         const { data, error } = await invokeCloudFunction('stripe-connect-status', {
-          stripeAccountId: profile.stripe_account_id,
+          stripeAccountId: profile.stripe_account_id || undefined,
         });
         if (error || !data) return;
 
         if ((data.chargesEnabled || data.detailsSubmitted) && data.accountId) {
           localStorage.setItem(`flea_stripe_connected_${user.id}`, 'true');
           localStorage.removeItem('flea_stripe_pending');
-          await supabase
+          const { error: updateError } = await supabase
             .from('profiles')
             .update({ 
               stripe_onboarding_complete: true,
               stripe_account_id: data.accountId,
             } as any)
             .eq('user_id', user.id);
+          if (updateError) {
+            console.error('Failed to persist Stripe status to DB:', updateError);
+          }
           // Use setTimeout to avoid disrupting other in-flight UI flows (e.g. password dialog)
           setTimeout(() => fetchProfile(user.id), 500);
         }

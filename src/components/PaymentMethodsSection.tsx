@@ -77,10 +77,13 @@ const PaymentMethodsSection = () => {
         setLocalAccountId(data.accountId);
         if (user) localStorage.setItem(`flea_stripe_connected_${user.id}`, 'true');
         // Try to persist to DB
-        await supabase
+        const { error: updateError } = await supabase
           .from('profiles')
           .update({ stripe_onboarding_complete: true, stripe_account_id: data.accountId } as any)
           .eq('user_id', user.id);
+        if (updateError) {
+          console.error('Failed to persist Stripe status to DB:', updateError);
+        }
         await refreshProfile();
         if (!silent) {
           if (data?.chargesEnabled) {
