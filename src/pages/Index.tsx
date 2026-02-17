@@ -53,6 +53,7 @@ const Index = () => {
 
   // Check if user needs to set up their profile (new users get auto-generated usernames)
   const needsProfileSetup = profile?.username?.startsWith('@user_') || false;
+  const [welcomeCompleted, setWelcomeCompleted] = useState(false);
   const [showOnboardingCarousel, setShowOnboardingCarousel] = useState(false);
   const [passwordCompleted, setPasswordCompleted] = useState(() => sessionStorage.getItem('flea_pw_done') === '1');
   // Check if user signed up via Google OAuth and hasn't set a password yet
@@ -82,9 +83,9 @@ const Index = () => {
   }, [user, isGoogleUser, passwordSetInMeta, passwordSetInProfile, needsPasswordSetup]);
 
   // Welcome dialog shows when profile needs setup
-  const showWelcomeDialog = needsProfileSetup;
-  // Password dialog shows when welcome is done but password still needed
-  const showPasswordDialog = !needsProfileSetup && needsPasswordSetup;
+  const showWelcomeDialog = needsProfileSetup && !welcomeCompleted;
+  // Password dialog shows when welcome is done (either completed this session or profile already set up) and password still needed
+  const showPasswordDialog = (welcomeCompleted || !needsProfileSetup) && needsPasswordSetup;
 
   // Check if we should start onboarding (for new users after signup)
   useEffect(() => {
@@ -400,6 +401,7 @@ const Index = () => {
         open={showWelcomeDialog}
         isGoogleUser={isGoogleUser}
         onComplete={() => {
+          setWelcomeCompleted(true);
           refreshProfile();
           if (!isGoogleUser) {
             setShowOnboardingCarousel(true);
