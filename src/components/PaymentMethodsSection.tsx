@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { supabase as cloudSupabase } from '@/integrations/supabase/client';
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { toast } from 'sonner';
 import { ChevronRight } from 'lucide-react';
 
@@ -23,11 +23,9 @@ const PaymentMethodsSection = () => {
 
     setIsConnecting(true);
     try {
-      const { data, error } = await cloudSupabase.functions.invoke('stripe-connect-onboard', {
-        body: {
-          stripeAccountId: stripeAccountId || undefined,
-          returnUrl: window.location.origin + '/settings',
-        },
+      const { data, error } = await invokeCloudFunction('stripe-connect-onboard', {
+        stripeAccountId: stripeAccountId || undefined,
+        returnUrl: window.location.origin + '/settings',
       });
 
       if (error) throw error;
@@ -56,10 +54,8 @@ const PaymentMethodsSection = () => {
     setIsChecking(true);
 
     try {
-      const { data, error } = await cloudSupabase.functions.invoke('stripe-connect-status', {
-        body: { 
-          stripeAccountId: stripeAccountId || undefined,
-        },
+      const { data, error } = await invokeCloudFunction('stripe-connect-status', {
+        stripeAccountId: stripeAccountId || undefined,
       });
 
       if (error) throw error;

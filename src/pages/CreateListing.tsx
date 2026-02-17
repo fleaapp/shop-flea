@@ -58,9 +58,9 @@ const CreateListing = () => {
     
     const checkStripe = async () => {
       try {
-        const { supabase: cloudSupabase } = await import('@/integrations/supabase/client');
-        const { data } = await cloudSupabase.functions.invoke('stripe-connect-status', {
-          body: { stripeAccountId: undefined },
+        const { invokeCloudFunction } = await import('@/utils/cloudFunctions');
+        const { data } = await invokeCloudFunction('stripe-connect-status', {
+          stripeAccountId: undefined,
         });
         if (data?.chargesEnabled) {
           setHasPaymentMethodStripe(true);
