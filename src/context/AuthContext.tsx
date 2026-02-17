@@ -198,12 +198,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    // Clean up user-scoped localStorage flags
-    if (user) {
-      localStorage.removeItem(`flea_stripe_connected_${user.id}`);
-    }
-    // Also remove legacy unscoped key
+    // IMPORTANT: Do NOT remove flea_stripe_connected_${user.id} on signout.
+    // It is user-scoped so there's no cross-account leakage, and removing it
+    // causes Stripe to appear "disconnected" on re-login if the DB update
+    // previously failed. The flag persists so Stripe stays connected.
+    
+    // Remove legacy unscoped key only
     localStorage.removeItem('flea_stripe_connected');
+    // Clean up OAuth/password flags (not user-scoped, could affect next account)
+    localStorage.removeItem('flea_oauth_signup');
     await supabase.auth.signOut();
   };
 
