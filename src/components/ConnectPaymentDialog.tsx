@@ -7,6 +7,11 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 interface ConnectPaymentDialogProps {
   open: boolean;
@@ -15,6 +20,44 @@ interface ConnectPaymentDialogProps {
 
 const ConnectPaymentDialog = ({ open, onOpenChange }: ConnectPaymentDialogProps) => {
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  const handleConnectStripe = async () => {
+    if (!user || !user.email) {
+      toast.error('You must be logged in to connect Stripe');
+      return;
+    }
+
+    setIsConnecting(true);
+    try {
+      const stripeAccountId = (profile as any)?.stripe_account_id || undefined;
+      const { data, error } = await invokeCloudFunction('stripe-connect-onboard', {
+        stripeAccountId,
+        returnUrl: window.location.origin + '/create-listing',
+      });
+
+      if (error) throw error;
+      if (!data?.url) throw new Error('No onboarding URL returned');
+
+      // Save account ID before redirecting
+      if (data.accountId) {
+        await supabase
+          .from('profiles')
+          .update({ stripe_account_id: data.accountId } as any)
+          .eq('user_id', user.id);
+      }
+
+      // Mark that we're coming from the connect flow
+      localStorage.setItem('flea_stripe_pending', 'true');
+      window.location.href = data.url;
+    } catch (error: any) {
+      console.error('Stripe Connect error:', error);
+      toast.error('Failed to start Stripe connection. Please try again.');
+    } finally {
+      setIsConnecting(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
@@ -29,13 +72,11 @@ const ConnectPaymentDialog = ({ open, onOpenChange }: ConnectPaymentDialogProps)
         </DialogHeader>
         <div className="space-y-3 mt-4 flex flex-col items-center">
           <Button
-            onClick={() => {
-              onOpenChange(false);
-              navigate('/settings');
-            }}
+            onClick={handleConnectStripe}
+            disabled={isConnecting}
             className="w-64 h-11 rounded-full bg-charcoal text-white hover:bg-charcoal-light border-none shadow-none ring-0 outline-none focus-visible:ring-0"
           >
-            💳 Connect Stripe
+            {isConnecting ? 'Connecting...' : '💳 Connect Stripe'}
           </Button>
           <Button
             disabled

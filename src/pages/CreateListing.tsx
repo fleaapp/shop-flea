@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ImagePlus, X, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +34,7 @@ interface ImageFile {
 
 const CreateListing = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   const { checkListingContent, isChecking } = useContentModeration();
   const { isBlocked } = useBlockedStatus();
@@ -45,6 +46,7 @@ const CreateListing = () => {
   const [showShippingSetup, setShowShippingSetup] = useState(false);
   const [shippingChecked, setShippingChecked] = useState(false);
   const [showPaymentGate, setShowPaymentGate] = useState(false);
+  const [stripeReturnHandled, setStripeReturnHandled] = useState(false);
 
   // Check if seller has connected a payment method
   const hasPaymentMethodDB = profile?.stripe_onboarding_complete === true;
@@ -52,14 +54,72 @@ const CreateListing = () => {
   const [paymentCheckDone, setPaymentCheckDone] = useState(hasPaymentMethodDB);
   const hasPaymentMethod = hasPaymentMethodDB || hasPaymentMethodStripe;
 
-  // Check Stripe directly for connection status
+  // Handle return from Stripe onboarding
   useEffect(() => {
-    // If DB says connected, mark check as done immediately
+    if (stripeReturnHandled) return;
+    const stripeSuccess = searchParams.get('stripe_success');
+    if (stripeSuccess !== 'true') return;
+    if (!user?.email) return;
+
+    setStripeReturnHandled(true);
+    // Clean URL params
+    searchParams.delete('stripe_success');
+    setSearchParams(searchParams, { replace: true });
+    localStorage.removeItem('flea_stripe_pending');
+
+    // Verify Stripe status and update profile
+    const verifyAndContinue = async () => {
+      try {
+        const { invokeCloudFunction } = await import('@/utils/cloudFunctions');
+        const stripeAccountId = (profile as any)?.stripe_account_id || undefined;
+        const { data } = await invokeCloudFunction('stripe-connect-status', {
+          stripeAccountId,
+        });
+
+        if (data?.chargesEnabled && data?.accountId) {
+          setHasPaymentMethodStripe(true);
+          // Persist to DB
+          await supabase
+            .from('profiles')
+            .update({ stripe_onboarding_complete: true, stripe_account_id: data.accountId } as any)
+            .eq('user_id', user.id);
+          await refreshProfile();
+          toast.success('Stripe account connected successfully!');
+
+          // Check if new seller (no shipping tiers set up)
+          const needsShipping =
+            profile?.tiered_shipping_enabled === null ||
+            profile?.tiered_shipping_enabled === undefined ||
+            (profile?.tiered_shipping_enabled === true &&
+              (profile?.shipping_tier_1 === null || profile?.shipping_tier_1 === undefined));
+
+          if (needsShipping) {
+            // New seller — show shipping setup
+            setShowShippingSetup(true);
+            setShippingChecked(true); // Prevent the other useEffect from also triggering
+          }
+          // Returning seller: they'll just land on the create listing form
+        } else {
+          toast.error('Stripe onboarding not complete. Please try again.');
+        }
+      } catch (e) {
+        console.error('Stripe verify error:', e);
+        toast.error('Failed to verify Stripe connection.');
+      }
+    };
+
+    verifyAndContinue();
+  }, [searchParams, user?.email, stripeReturnHandled, profile, refreshProfile, setSearchParams]);
+
+  // Check Stripe directly for connection status (only if not returning from Stripe)
+  useEffect(() => {
     if (hasPaymentMethodDB) {
       setPaymentCheckDone(true);
       return;
     }
     if (!user?.email || authLoading) return;
+    // Skip if we're handling Stripe return
+    if (searchParams.get('stripe_success') === 'true') return;
     
     const checkStripe = async () => {
       try {
@@ -78,7 +138,7 @@ const CreateListing = () => {
     };
     
     checkStripe();
-  }, [user?.email, hasPaymentMethodDB, authLoading]);
+  }, [user?.email, hasPaymentMethodDB, authLoading, searchParams]);
 
   // Show payment gate only AFTER check completes
   useEffect(() => {

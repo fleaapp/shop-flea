@@ -195,7 +195,20 @@ const Auth = () => {
     );
     
     if (error) {
-      toast.error(error.message || 'Failed to create account');
+      const msg = error.message || '';
+      // Handle duplicate email
+      if (msg.includes('already registered') || msg.includes('already been registered') || msg.includes('User already registered')) {
+        // Check if the account was created via OAuth (Google)
+        // Supabase doesn't differentiate easily, so show a generic message with options
+        toast.error('This email is already registered. Try logging in instead.', { duration: 5000 });
+        setActiveTab('login');
+        setLoginIdentifier(signupEmail);
+        setSignupEmail('');
+        setSignupPassword('');
+        setSignupConfirmPassword('');
+      } else {
+        toast.error(msg || 'Failed to create account');
+      }
       setIsLoading(false);
     } else {
       // Redirect to verify email page
