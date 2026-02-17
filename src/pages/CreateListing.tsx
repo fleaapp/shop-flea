@@ -53,8 +53,9 @@ const CreateListing = () => {
   const hasPaymentMethodDB = profile?.stripe_onboarding_complete === true;
   const stripeLocalKey = user ? `flea_stripe_connected_${user.id}` : null;
   const getLocalFlag = () => typeof window !== 'undefined' && !!stripeLocalKey && localStorage.getItem(stripeLocalKey) === 'true';
-  const [hasPaymentMethodStripe, setHasPaymentMethodStripe] = useState(false);
-  const [paymentCheckDone, setPaymentCheckDone] = useState(hasPaymentMethodDB);
+  const initialLocalFlag = typeof window !== 'undefined' && !!stripeLocalKey && localStorage.getItem(stripeLocalKey) === 'true';
+  const [hasPaymentMethodStripe, setHasPaymentMethodStripe] = useState(initialLocalFlag);
+  const [paymentCheckDone, setPaymentCheckDone] = useState(hasPaymentMethodDB || initialLocalFlag);
 
   // Sync localStorage flag when user ID becomes available (fixes race where user is null at mount)
   useEffect(() => {
