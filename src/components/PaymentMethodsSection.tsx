@@ -104,13 +104,20 @@ const PaymentMethodsSection = () => {
   }, [user, stripeAccountId, refreshProfile]);
 
   // Only auto-check if returning from Stripe redirect, not on every mount
+  // Keep flea_stripe_pending flag until connection is confirmed so CreateListing can detect pending state
   useEffect(() => {
     const pending = localStorage.getItem('flea_stripe_pending');
     if (pending && user?.email && !stripeConnected) {
-      localStorage.removeItem('flea_stripe_pending');
       handleCheckStatus(true);
     }
   }, [user?.email, stripeConnected, handleCheckStatus]);
+
+  // Only clear the pending flag once Stripe is fully connected
+  useEffect(() => {
+    if (stripeConnected) {
+      localStorage.removeItem('flea_stripe_pending');
+    }
+  }, [stripeConnected]);
 
   return (
     <div>
