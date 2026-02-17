@@ -49,12 +49,17 @@ const CreateListing = () => {
   // Check if seller has connected a payment method
   const hasPaymentMethodDB = profile?.stripe_onboarding_complete === true;
   const [hasPaymentMethodStripe, setHasPaymentMethodStripe] = useState(false);
-  const [paymentCheckDone, setPaymentCheckDone] = useState(false);
+  const [paymentCheckDone, setPaymentCheckDone] = useState(hasPaymentMethodDB);
   const hasPaymentMethod = hasPaymentMethodDB || hasPaymentMethodStripe;
 
   // Check Stripe directly for connection status
   useEffect(() => {
-    if (!user?.email || hasPaymentMethodDB || authLoading) return;
+    // If DB says connected, mark check as done immediately
+    if (hasPaymentMethodDB) {
+      setPaymentCheckDone(true);
+      return;
+    }
+    if (!user?.email || authLoading) return;
     
     const checkStripe = async () => {
       try {
