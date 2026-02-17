@@ -19,6 +19,7 @@ import { compressImage } from '@/utils/imageCompression';
 import { loadShippingPrefs } from '@/utils/shippingPrefs';
 import { useContentModeration } from '@/hooks/useContentModeration';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { 
   FIT_OPTIONS, 
   CATEGORY_OPTIONS,
@@ -69,6 +70,39 @@ const CreateListing = () => {
   const stripePending = !hasPaymentMethod && (
     localStorage.getItem('flea_stripe_pending') === 'true' || !!stripeAccountId
   );
+
+  // Auto-verify Stripe status if user has an account ID but isn't marked as connected
+  // This prevents users from having to re-connect every login
+  useEffect(() => {
+    if (!user || hasPaymentMethod || !stripeAccountId) return;
+    let cancelled = false;
+
+    const verifyStripeStatus = async () => {
+      try {
+        const { data, error } = await invokeCloudFunction('stripe-connect-status', {
+          stripeAccountId,
+        });
+        if (cancelled || error) return;
+
+        if (data?.chargesEnabled || data?.detailsSubmitted) {
+          // Stripe is connected — persist to DB + localStorage
+          if (stripeLocalKey) localStorage.setItem(stripeLocalKey, 'true');
+          localStorage.removeItem('flea_stripe_pending');
+          setHasPaymentMethodStripe(true);
+          await supabase
+            .from('profiles')
+            .update({ stripe_onboarding_complete: true } as any)
+            .eq('user_id', user.id);
+          await refreshProfile();
+        }
+      } catch (e) {
+        console.error('Auto Stripe verify failed:', e);
+      }
+    };
+
+    verifyStripeStatus();
+    return () => { cancelled = true; };
+  }, [user, hasPaymentMethod, stripeAccountId]);
 
   
   // Tiered shipping state
