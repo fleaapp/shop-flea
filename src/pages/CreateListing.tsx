@@ -101,7 +101,9 @@ const CreateListing = () => {
 
         console.log('[CreateListing] Stripe return verify result:', JSON.stringify(data));
 
-        if ((data?.chargesEnabled || data?.detailsSubmitted) && data?.accountId) {
+        // If an account exists in Stripe at all, treat as connected
+        // The actual payment capability check happens at checkout, not listing creation
+        if (data?.accountId) {
           // Persist connection state in localStorage FIRST (survives remounts)
           if (stripeLocalKey) localStorage.setItem(stripeLocalKey, 'true');
           setHasPaymentMethodStripe(true);
@@ -118,7 +120,12 @@ const CreateListing = () => {
           }
 
           await refreshProfile();
-          toast.success('Stripe account connected successfully!');
+          
+          if (data.chargesEnabled) {
+            toast.success('Stripe account connected successfully!');
+          } else {
+            toast.success('Stripe account linked! Payments will be enabled once Stripe approves your account.');
+          }
 
           // Show shipping setup for new sellers after fresh connect
           const currentProfile = profile;
@@ -162,7 +169,9 @@ const CreateListing = () => {
         const { data } = await invokeCloudFunction('stripe-connect-status', {
           stripeAccountId: (profile as any)?.stripe_account_id || undefined,
         });
-        if (data?.chargesEnabled || data?.detailsSubmitted) {
+        console.log('[CreateListing] General Stripe check result:', JSON.stringify(data));
+        // If account exists at all, treat as connected for listing creation purposes
+        if (data?.accountId) {
           setHasPaymentMethodStripe(true);
           if (stripeLocalKey) localStorage.setItem(stripeLocalKey, 'true');
           if (data.accountId && !hasPaymentMethodDB) {
