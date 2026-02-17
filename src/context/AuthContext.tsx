@@ -105,18 +105,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchProfile]);
 
   // Auto-verify Stripe connection on login so sellers stay connected across sessions
+  // ONLY runs if the user already has a stripe_account_id saved — never searches by email
+  // to prevent new signups from auto-inheriting unrelated Stripe accounts.
   const stripeVerifiedRef = useRef(false);
   useEffect(() => {
     if (!profile || !user || stripeVerifiedRef.current) return;
     // Skip if already fully connected
     if (profile.stripe_onboarding_complete) return;
+    // Only verify if there's an existing account ID — don't search by email
+    if (!profile.stripe_account_id) return;
     stripeVerifiedRef.current = true;
 
     const verify = async () => {
       try {
-        // Pass account ID if available; otherwise the function searches by email
         const { data, error } = await invokeCloudFunction('stripe-connect-status', {
-          stripeAccountId: profile.stripe_account_id || undefined,
+          stripeAccountId: profile.stripe_account_id,
         });
         if (error || !data) return;
 
@@ -130,7 +133,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               stripe_account_id: data.accountId,
             } as any)
             .eq('user_id', user.id);
-          await fetchProfile(user.id);
+          // Use setTimeout to avoid disrupting other in-flight UI flows (e.g. password dialog)
+          setTimeout(() => fetchProfile(user.id), 500);
         }
       } catch (e) {
         console.error('Auto Stripe verify on login failed:', e);
