@@ -51,7 +51,8 @@ const CreateListing = () => {
   // Check if seller has connected a payment method
   // Use localStorage as persistent fallback to survive component remounts
   const hasPaymentMethodDB = profile?.stripe_onboarding_complete === true;
-  const hasPaymentMethodLocal = typeof window !== 'undefined' && localStorage.getItem('flea_stripe_connected') === 'true';
+  const stripeLocalKey = user ? `flea_stripe_connected_${user.id}` : null;
+  const hasPaymentMethodLocal = typeof window !== 'undefined' && !!stripeLocalKey && localStorage.getItem(stripeLocalKey) === 'true';
   const [hasPaymentMethodStripe, setHasPaymentMethodStripe] = useState(hasPaymentMethodLocal);
   const [paymentCheckDone, setPaymentCheckDone] = useState(hasPaymentMethodDB || hasPaymentMethodLocal);
   const hasPaymentMethod = hasPaymentMethodDB || hasPaymentMethodStripe || hasPaymentMethodLocal;
@@ -80,7 +81,7 @@ const CreateListing = () => {
 
         if (data?.chargesEnabled && data?.accountId) {
           // Persist connection state in localStorage FIRST (survives remounts)
-          localStorage.setItem('flea_stripe_connected', 'true');
+          if (stripeLocalKey) localStorage.setItem(stripeLocalKey, 'true');
           setHasPaymentMethodStripe(true);
 
           // Persist to DB
@@ -149,7 +150,7 @@ const CreateListing = () => {
         });
         if (data?.chargesEnabled) {
           setHasPaymentMethodStripe(true);
-          localStorage.setItem('flea_stripe_connected', 'true');
+          if (stripeLocalKey) localStorage.setItem(stripeLocalKey, 'true');
           // Also persist to DB if not already
           if (data.accountId && !hasPaymentMethodDB) {
             await supabase

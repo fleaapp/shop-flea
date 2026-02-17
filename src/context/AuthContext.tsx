@@ -133,6 +133,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    // Clean up user-scoped localStorage flags
+    if (user) {
+      localStorage.removeItem(`flea_stripe_connected_${user.id}`);
+    }
+    // Also remove legacy unscoped key
+    localStorage.removeItem('flea_stripe_connected');
     await supabase.auth.signOut();
   };
 
