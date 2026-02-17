@@ -58,7 +58,8 @@ const Index = () => {
   // Check if user signed up via Google OAuth and hasn't set a password yet
   const isGoogleUser = user?.app_metadata?.provider === 'google';
   const passwordSetInMeta = user?.user_metadata?.password_set === true;
-  const needsPasswordSetup = isGoogleUser && !passwordSetInMeta && !passwordCompleted;
+  const passwordSetInProfile = profile?.password_set === true;
+  const needsPasswordSetup = isGoogleUser && !passwordSetInMeta && !passwordSetInProfile && !passwordCompleted;
 
   // Welcome dialog shows when profile needs setup
   const showWelcomeDialog = needsProfileSetup;
@@ -391,6 +392,8 @@ const Index = () => {
           sessionStorage.setItem('flea_pw_done', '1');
           setPasswordCompleted(true);
           setShowOnboardingCarousel(true);
+          // Refresh profile so password_set is updated from DB
+          await refreshProfile();
           // Also refresh session in background so identities update for future checks
           supabase.auth.refreshSession();
         }}
