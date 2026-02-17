@@ -127,18 +127,8 @@ const CreateListing = () => {
             toast.success('Stripe account linked! Payments will be enabled once Stripe approves your account.');
           }
 
-          // Show shipping setup for new sellers after fresh connect
-          const currentProfile = profile;
-          const needsShipping =
-            currentProfile?.tiered_shipping_enabled === null ||
-            currentProfile?.tiered_shipping_enabled === undefined ||
-            (currentProfile?.tiered_shipping_enabled === true &&
-              (currentProfile?.shipping_tier_1 === null || currentProfile?.shipping_tier_1 === undefined));
-
-          if (needsShipping) {
-            setShowShippingSetup(true);
-            setShippingChecked(true);
-          }
+          // Reset shipping check so useEffect re-evaluates with fresh profile
+          setShippingChecked(false);
         } else {
           setPaymentCheckDone(true);
           toast.error('Stripe onboarding not complete. Please try again.');
@@ -464,8 +454,12 @@ const CreateListing = () => {
   // Show loading while auth is loading OR while payment check is in progress
   if (authLoading || (user && !paymentCheckDone && !hasPaymentMethod)) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-8">
         <span className="text-5xl">⏳</span>
+        <p className="text-sm text-muted-foreground text-center leading-relaxed">
+          Verifying connection. Please wait.<br />
+          This could take up to 2 minutes.
+        </p>
       </div>
     );
   }
