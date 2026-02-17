@@ -68,29 +68,49 @@ const Checkout = () => {
 
   // Fetch seller Stripe account IDs
   const [sellerStripeAccounts, setSellerStripeAccounts] = useState<Map<string, string>>(new Map());
+  const [sellerStripeLoading, setSellerStripeLoading] = useState(true);
   useEffect(() => {
     const loadSellerStripe = async () => {
-      if (items.length === 0) return;
+      if (items.length === 0) { setSellerStripeLoading(false); return; }
       const sellerIds = [...new Set(items.map(item => item.sellerId))];
       
-      // First try DB
       const { data } = await supabase
         .from('profiles' as any)
         .select('user_id, stripe_account_id, stripe_onboarding_complete')
         .in('user_id', sellerIds);
       
       const accounts = new Map<string, string>();
-      const uncheckedSellerIds = new Set(sellerIds);
+      const needsVerification: { userId: string; accountId: string }[] = [];
       
       data?.forEach((p: any) => {
         if (p.stripe_account_id && p.stripe_onboarding_complete) {
           accounts.set(p.user_id, p.stripe_account_id);
-          uncheckedSellerIds.delete(p.user_id);
+        } else if (p.stripe_account_id && !p.stripe_onboarding_complete) {
+          needsVerification.push({ userId: p.user_id, accountId: p.stripe_account_id });
         }
       });
-      // Sellers without stripe_account_id in their profile are not connected
+
+      // For sellers with stale DB flags, verify directly with Stripe and fix the flag
+      for (const seller of needsVerification) {
+        try {
+          const { data: statusData, error } = await invokeCloudFunction('stripe-connect-status', {
+            stripeAccountId: seller.accountId,
+          });
+          if (!error && statusData && (statusData.chargesEnabled || statusData.detailsSubmitted)) {
+            accounts.set(seller.userId, seller.accountId);
+            supabase
+              .from('profiles')
+              .update({ stripe_onboarding_complete: true } as any)
+              .eq('user_id', seller.userId)
+              .then(() => {});
+          }
+        } catch (e) {
+          console.error('Seller Stripe verify failed:', e);
+        }
+      }
       
       setSellerStripeAccounts(accounts);
+      setSellerStripeLoading(false);
     };
     loadSellerStripe();
   }, [items]);
