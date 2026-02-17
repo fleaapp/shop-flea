@@ -155,7 +155,7 @@ const CreateListing = () => {
     setShowShippingSetup(false);
     await refreshProfile();
     
-    // Reload shipping prefs after setup
+    // Reload shipping prefs after setup — try localStorage first, then re-fetch profile
     if (user) {
       const localPrefs = loadShippingPrefs(user.id);
       if (localPrefs) {
@@ -163,6 +163,24 @@ const CreateListing = () => {
         if (localPrefs.tieredEnabled) {
           setTier1Price(localPrefs.tier1);
           setShippingPrice(localPrefs.tier1.toString());
+        } else {
+          setTieredShippingEnabled(false);
+        }
+        return;
+      }
+
+      // Fallback: read directly from DB in case localStorage wasn't used
+      const { data } = await supabase
+        .from('profiles')
+        .select('tiered_shipping_enabled, shipping_tier_1, shipping_tier_2, shipping_tier_3')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (data) {
+        setTieredShippingEnabled(data.tiered_shipping_enabled ?? false);
+        if (data.tiered_shipping_enabled && data.shipping_tier_1 != null) {
+          setTier1Price(data.shipping_tier_1);
+          setShippingPrice(data.shipping_tier_1.toString());
         }
       }
     }
