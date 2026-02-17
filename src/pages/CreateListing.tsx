@@ -73,7 +73,9 @@ const CreateListing = () => {
   useEffect(() => {
     if (stripeReturnHandled) return;
     const stripeSuccess = searchParams.get('stripe_success');
-    if (stripeSuccess !== 'true') return;
+    const hasPendingFlag = localStorage.getItem('flea_stripe_pending') === 'true';
+    // Trigger on stripe_success param OR pending flag (covers cases where param is lost)
+    if (stripeSuccess !== 'true' && !hasPendingFlag) return;
     if (!user?.email) return;
 
     setStripeReturnHandled(true);
@@ -91,7 +93,7 @@ const CreateListing = () => {
           stripeAccountId,
         });
 
-        if (data?.chargesEnabled && data?.accountId) {
+        if ((data?.chargesEnabled || data?.detailsSubmitted) && data?.accountId) {
           // Persist connection state in localStorage FIRST (survives remounts)
           if (stripeLocalKey) localStorage.setItem(stripeLocalKey, 'true');
           setHasPaymentMethodStripe(true);
@@ -122,16 +124,6 @@ const CreateListing = () => {
             setShowShippingSetup(true);
             setShippingChecked(true);
           }
-        } else if (data?.detailsSubmitted) {
-          // Onboarding submitted but Stripe hasn't verified yet
-          if (data?.accountId) {
-            // Save the account ID so we can check again later
-            await supabase
-              .from('profiles')
-              .update({ stripe_account_id: data.accountId } as any)
-              .eq('user_id', user.id);
-          }
-          toast('Stripe is reviewing your account. This may take a moment — please try again shortly.');
         } else {
           toast.error('Stripe onboarding not complete. Please try again.');
         }
@@ -160,7 +152,7 @@ const CreateListing = () => {
         const { data } = await invokeCloudFunction('stripe-connect-status', {
           stripeAccountId: (profile as any)?.stripe_account_id || undefined,
         });
-        if (data?.chargesEnabled) {
+        if (data?.chargesEnabled || data?.detailsSubmitted) {
           setHasPaymentMethodStripe(true);
           if (stripeLocalKey) localStorage.setItem(stripeLocalKey, 'true');
           // Also persist to DB if not already
