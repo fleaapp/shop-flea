@@ -464,8 +464,8 @@ const CreateListing = () => {
     );
   }
 
-  // Show payment gate only after check is done and user genuinely has no payment method
-  if (!hasPaymentMethod && user && profile && paymentCheckDone) {
+  // Show payment gate if user has no payment method (or check still in progress for non-Stripe-return)
+  if (!hasPaymentMethod && user && profile) {
     return (
       <div className="min-h-screen bg-background pb-24">
         <header className="relative flex items-center justify-center px-4 py-4">
