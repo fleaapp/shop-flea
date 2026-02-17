@@ -42,12 +42,17 @@ serve(async (req) => {
     if (!accountId && userEmail) {
       console.log(`[stripe-connect-status] Searching for account by email: ${userEmail}`);
       const accounts = await stripe.accounts.list({ limit: 100 });
-      const match = accounts.data.find(
+      // Find the BEST match: prefer one with details_submitted, then charges_enabled, then any match
+      const matches = accounts.data.filter(
         (a) => a.email?.toLowerCase() === userEmail.toLowerCase()
       );
-      if (match) {
-        accountId = match.id;
-        console.log(`[stripe-connect-status] Found account: ${accountId}`);
+      if (matches.length > 0) {
+        // Prefer the most "complete" account
+        const best = matches.find(a => a.charges_enabled) 
+          || matches.find(a => a.details_submitted)
+          || matches[0];
+        accountId = best.id;
+        console.log(`[stripe-connect-status] Found ${matches.length} account(s), using best: ${accountId}`);
       } else {
         console.log(`[stripe-connect-status] No account found for email: ${userEmail}`);
       }
@@ -55,7 +60,7 @@ serve(async (req) => {
 
     if (!accountId) {
       return new Response(
-        JSON.stringify({ chargesEnabled: false, detailsSubmitted: false, accountId: null }),
+        JSON.stringify({ chargesEnabled: false, detailsSubmitted: false, accountId: null, accountExists: false }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
@@ -65,12 +70,16 @@ serve(async (req) => {
 
     const account = await stripe.accounts.retrieve(accountId);
 
+    console.log(`[stripe-connect-status] Account ${accountId} state: charges_enabled=${account.charges_enabled}, details_submitted=${account.details_submitted}, payouts_enabled=${account.payouts_enabled}, disabled_reason=${account.requirements?.disabled_reason}`);
+
     return new Response(
       JSON.stringify({
         chargesEnabled: account.charges_enabled,
         detailsSubmitted: account.details_submitted,
         payoutsEnabled: account.payouts_enabled,
         accountId: accountId,
+        accountExists: true,
+        requirementsDisabledReason: account.requirements?.disabled_reason || null,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

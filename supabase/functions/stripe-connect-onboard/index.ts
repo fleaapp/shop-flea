@@ -39,29 +39,42 @@ serve(async (req) => {
     let accountId: string;
 
     if (stripeAccountId) {
-      // Use existing account
+      // Use existing account from profile
       accountId = stripeAccountId;
     } else {
-      // Create a new Express Connect account (simpler onboarding for individual sellers)
-      const account = await stripe.accounts.create({
-        type: "express",
-        country: "AU",
-        business_type: "individual",
-        email: userEmail,
-        business_profile: {
-          mcc: "5699", // Miscellaneous apparel and accessory shops
-          product_description: "Selling pre-owned clothing and accessories on Flea marketplace",
-          url: "https://shop-flea.lovable.app",
-        },
-        metadata: {
-          flea_user_id: userId,
-        },
-        capabilities: {
-          card_payments: { requested: true },
-          transfers: { requested: true },
-        },
-      });
-      accountId = account.id;
+      // Check if an account already exists for this email before creating a new one
+      const existingAccounts = await stripe.accounts.list({ limit: 100 });
+      const existingMatch = existingAccounts.data.find(
+        (a) => a.email?.toLowerCase() === userEmail?.toLowerCase()
+      );
+
+      if (existingMatch) {
+        // Reuse existing account instead of creating a duplicate
+        accountId = existingMatch.id;
+        console.log(`[stripe-connect-onboard] Reusing existing account: ${accountId}`);
+      } else {
+        // Create a new Express Connect account
+        const account = await stripe.accounts.create({
+          type: "express",
+          country: "AU",
+          business_type: "individual",
+          email: userEmail,
+          business_profile: {
+            mcc: "5699",
+            product_description: "Selling pre-owned clothing and accessories on Flea marketplace",
+            url: "https://shop-flea.lovable.app",
+          },
+          metadata: {
+            flea_user_id: userId,
+          },
+          capabilities: {
+            card_payments: { requested: true },
+            transfers: { requested: true },
+          },
+        });
+        accountId = account.id;
+        console.log(`[stripe-connect-onboard] Created new account: ${accountId}`);
+      }
     }
 
     // Create an account link for onboarding
