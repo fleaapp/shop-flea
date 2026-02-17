@@ -56,8 +56,8 @@ const Index = () => {
   const [welcomeCompleted, setWelcomeCompleted] = useState(false);
   const [showOnboardingCarousel, setShowOnboardingCarousel] = useState(false);
   const [passwordCompleted, setPasswordCompleted] = useState(() => sessionStorage.getItem('flea_pw_done') === '1');
-  // Check if user signed up via Google OAuth and hasn't set a password yet
-  // Check multiple signals: app_metadata.provider, app_metadata.providers array, and identities
+  
+  // Check if user signed up via Google OAuth
   const isGoogleUser = 
     user?.app_metadata?.provider === 'google' ||
     user?.app_metadata?.providers?.includes('google') ||
@@ -65,27 +65,24 @@ const Index = () => {
     false;
   const passwordSetInMeta = user?.user_metadata?.password_set === true;
   const passwordSetInProfile = profile?.password_set === true;
-  const needsPasswordSetup = isGoogleUser && !passwordSetInMeta && !passwordSetInProfile && !passwordCompleted;
+
+  // Once we determine the password dialog needs to show, lock it so reactive changes can't dismiss it
+  const [passwordDialogLocked, setPasswordDialogLocked] = useState(false);
   
-  // Debug: log provider detection
   useEffect(() => {
-    if (user) {
-      console.log('[Index] Provider detection:', {
-        provider: user.app_metadata?.provider,
-        providers: user.app_metadata?.providers,
-        identities: user.identities?.map((id: any) => id.provider),
-        isGoogleUser,
-        passwordSetInMeta,
-        passwordSetInProfile,
-        needsPasswordSetup,
-      });
+    // Lock the password dialog open when conditions are met (only lock once, never unlock via this effect)
+    if (!passwordDialogLocked && !passwordCompleted && isGoogleUser && !passwordSetInMeta && !passwordSetInProfile) {
+      // Only lock after welcome is done (either this session or profile already set up)
+      if (welcomeCompleted || !needsProfileSetup) {
+        setPasswordDialogLocked(true);
+      }
     }
-  }, [user, isGoogleUser, passwordSetInMeta, passwordSetInProfile, needsPasswordSetup]);
+  }, [welcomeCompleted, needsProfileSetup, isGoogleUser, passwordSetInMeta, passwordSetInProfile, passwordCompleted, passwordDialogLocked]);
 
   // Welcome dialog shows when profile needs setup
   const showWelcomeDialog = needsProfileSetup && !welcomeCompleted;
-  // Password dialog shows when welcome is done (either completed this session or profile already set up) and password still needed
-  const showPasswordDialog = (welcomeCompleted || !needsProfileSetup) && needsPasswordSetup;
+  // Password dialog: once locked, stays open until explicitly completed
+  const showPasswordDialog = passwordDialogLocked && !passwordCompleted;
 
   // Check if we should start onboarding (for new users after signup)
   useEffect(() => {
