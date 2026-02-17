@@ -58,17 +58,22 @@ const Index = () => {
   const [showOnboardingCarousel, setShowOnboardingCarousel] = useState(false);
   const [passwordCompleted, setPasswordCompleted] = useState(() => sessionStorage.getItem('flea_pw_done') === '1');
   
-  // Check if user signed up via OAuth (Google, Apple, etc.) — NOT email/password
+  // PRIMARY detection: sessionStorage flag set BEFORE Google OAuth redirect (100% reliable)
+  const oauthSignupFlag = sessionStorage.getItem('flea_oauth_signup') === '1';
+  
+  // SECONDARY detection: app_metadata checks (fallback for returning users)
   const hasEmailIdentity = user?.identities?.some((id: any) => id.provider === 'email') ?? false;
-  const isOAuthUser = 
+  const isOAuthUserFromMeta = 
     user?.app_metadata?.provider === 'google' ||
     user?.app_metadata?.providers?.includes('google') ||
     user?.identities?.some((id: any) => id.provider === 'google') ||
-    // CRITICAL FALLBACK: if user has identities but NONE are 'email', they're OAuth-only
     (!!user?.identities && user.identities.length > 0 && !hasEmailIdentity) ||
     false;
-  // Keep isGoogleUser as alias for backward compatibility (prop passed to WelcomeSetupDialog)
+  
+  // Combined: either the sessionStorage flag OR metadata detection
+  const isOAuthUser = oauthSignupFlag || isOAuthUserFromMeta;
   const isGoogleUser = isOAuthUser;
+  
   const passwordSetInMeta = user?.user_metadata?.password_set === true;
   const passwordSetInProfile = profile?.password_set === true;
   const passwordAlreadySet = passwordSetInMeta || passwordSetInProfile;
@@ -76,11 +81,10 @@ const Index = () => {
   // Once we determine the password dialog needs to show, lock it so reactive changes can't dismiss it
   const [passwordDialogLocked, setPasswordDialogLocked] = useState(false);
 
-  // Effect ONLY for returning OAuth users who already have a profile (not fresh signups)
+  // Effect for returning OAuth users who already have a profile (not fresh signups)
   useEffect(() => {
     if (passwordDialogLocked || passwordCompleted || passwordAlreadySet) return;
     if (!isOAuthUser || !profileLoaded) return;
-    // Returning user: profile exists and username is already set
     if (!needsProfileSetup) {
       console.log('[PW_DEBUG] ✅ LOCKING password dialog (returning OAuth user)');
       setPasswordDialogLocked(true);
@@ -407,13 +411,10 @@ const Index = () => {
         isGoogleUser={isGoogleUser}
         onComplete={() => {
           setWelcomeCompleted(true);
-          // DIRECTLY lock the password dialog for OAuth users — no effects, no race conditions
-          // Check identities at THIS moment (user object is fully loaded by now)
-          const oauthOnly = !user?.identities?.some((id: any) => id.provider === 'email');
-          const needsPw = !passwordCompleted && !passwordAlreadySet && 
-            (isOAuthUser || (!!user?.identities && user.identities.length > 0 && oauthOnly));
-          console.log('[PW_DEBUG] onComplete fired:', { isOAuthUser, oauthOnly, needsPw, passwordCompleted, passwordAlreadySet, identities: user?.identities?.map((id: any) => id.provider) });
-          if (needsPw) {
+          // Use the sessionStorage flag — it was set BEFORE the OAuth redirect and is 100% reliable
+          const isOAuth = sessionStorage.getItem('flea_oauth_signup') === '1';
+          console.log('[PW_DEBUG] onComplete fired:', { isOAuth, passwordCompleted, passwordAlreadySet, oauthSignupFlag });
+          if (isOAuth && !passwordCompleted && !passwordAlreadySet) {
             setPasswordDialogLocked(true);
           } else {
             setShowOnboardingCarousel(true);
@@ -425,11 +426,10 @@ const Index = () => {
         open={showPasswordDialog}
         onComplete={async () => {
           sessionStorage.setItem('flea_pw_done', '1');
+          sessionStorage.removeItem('flea_oauth_signup'); // Clean up OAuth flag
           setPasswordCompleted(true);
           setShowOnboardingCarousel(true);
-          // Refresh profile so password_set is updated from DB
           await refreshProfile();
-          // Also refresh session in background so identities update for future checks
           supabase.auth.refreshSession();
         }}
       />
