@@ -71,7 +71,7 @@ const PaymentMethodsSection = () => {
 
       if (error) throw error;
 
-      if (data?.chargesEnabled && data?.accountId) {
+      if ((data?.chargesEnabled || data?.detailsSubmitted) && data?.accountId) {
         setLocalConnected(true);
         setLocalAccountId(data.accountId);
         if (user) localStorage.setItem(`flea_stripe_connected_${user.id}`, 'true');
@@ -81,10 +81,13 @@ const PaymentMethodsSection = () => {
           .update({ stripe_onboarding_complete: true, stripe_account_id: data.accountId } as any)
           .eq('user_id', user.id);
         await refreshProfile();
-        if (!silent) toast.success('Stripe account connected successfully!');
-      } else if (data?.detailsSubmitted) {
-        if (data?.accountId) setLocalAccountId(data.accountId);
-        if (!silent) toast('Stripe is reviewing your account. Check back soon.');
+        if (!silent) {
+          if (data?.chargesEnabled) {
+            toast.success('Stripe account connected successfully!');
+          } else {
+            toast.success('Stripe onboarding complete! Payments will be enabled shortly.');
+          }
+        }
       } else if (data?.accountId) {
         setLocalAccountId(data.accountId);
         if (!silent) toast('Stripe onboarding incomplete. Please finish setup.');
