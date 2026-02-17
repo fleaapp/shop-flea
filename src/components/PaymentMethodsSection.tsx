@@ -25,8 +25,6 @@ const PaymentMethodsSection = () => {
     try {
       const { data, error } = await cloudSupabase.functions.invoke('stripe-connect-onboard', {
         body: {
-          userEmail: user.email,
-          userId: user.id,
           stripeAccountId: stripeAccountId || undefined,
           returnUrl: window.location.origin + '/settings',
         },
@@ -61,7 +59,6 @@ const PaymentMethodsSection = () => {
       const { data, error } = await cloudSupabase.functions.invoke('stripe-connect-status', {
         body: { 
           stripeAccountId: stripeAccountId || undefined,
-          userEmail: user.email,
         },
       });
 
