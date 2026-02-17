@@ -451,8 +451,8 @@ const CreateListing = () => {
   const inputStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 placeholder:text-muted-foreground/60 focus-visible:ring-muted-foreground/50";
   const selectStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 [&>span]:text-muted-foreground/60 focus:ring-muted-foreground/50";
 
-  // Show loading while auth is loading OR while payment check is in progress
-  if (authLoading || (user && !paymentCheckDone && !hasPaymentMethod)) {
+  // Show loading only while auth is loading, or while verifying a Stripe return
+  if (authLoading || (user && !paymentCheckDone && isReturningFromStripe.current)) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-8">
         <span className="text-5xl">⏳</span>
