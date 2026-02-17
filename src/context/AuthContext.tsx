@@ -108,23 +108,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const stripeVerifiedRef = useRef(false);
   useEffect(() => {
     if (!profile || !user || stripeVerifiedRef.current) return;
-    // Only verify if they have an account ID but aren't marked complete
-    if (!profile.stripe_account_id || profile.stripe_onboarding_complete) return;
+    // Skip if already fully connected
+    if (profile.stripe_onboarding_complete) return;
     stripeVerifiedRef.current = true;
 
     const verify = async () => {
       try {
+        // Pass account ID if available; otherwise the function searches by email
         const { data, error } = await invokeCloudFunction('stripe-connect-status', {
-          stripeAccountId: profile.stripe_account_id,
+          stripeAccountId: profile.stripe_account_id || undefined,
         });
         if (error || !data) return;
 
-        if (data.chargesEnabled || data.detailsSubmitted) {
+        if ((data.chargesEnabled || data.detailsSubmitted) && data.accountId) {
           localStorage.setItem(`flea_stripe_connected_${user.id}`, 'true');
           localStorage.removeItem('flea_stripe_pending');
           await supabase
             .from('profiles')
-            .update({ stripe_onboarding_complete: true } as any)
+            .update({ 
+              stripe_onboarding_complete: true,
+              stripe_account_id: data.accountId,
+            } as any)
             .eq('user_id', user.id);
           await fetchProfile(user.id);
         }
