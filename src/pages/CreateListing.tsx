@@ -429,8 +429,9 @@ const CreateListing = () => {
   }
 
   // If user has no payment method, show the gate IMMEDIATELY
-  // DB flag is the source of truth — no waiting for async check
-  if (!hasPaymentMethodDB && !hasPaymentMethodStripe && user && profile) {
+  // But skip the gate if we're handling a Stripe return (let the verify useEffect run)
+  const isStripeReturn = searchParams.get('stripe_success') === 'true' || stripeReturnHandled;
+  if (!hasPaymentMethodDB && !hasPaymentMethodStripe && user && profile && !isStripeReturn) {
     return (
       <div className="min-h-screen bg-background pb-24">
         <header className="relative flex items-center justify-center px-4 py-4">
@@ -445,6 +446,11 @@ const CreateListing = () => {
           <h1 className="text-xl font-bold text-foreground">Add New Listing</h1>
         </header>
         <ConnectPaymentDialog open={true} onOpenChange={() => {}} />
+        <TieredShippingSetupModal
+          open={showShippingSetup}
+          onComplete={handleShippingSetupComplete}
+          onCancel={handleShippingSetupCancel}
+        />
         <BottomNav />
       </div>
     );
