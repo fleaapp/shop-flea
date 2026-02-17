@@ -409,8 +409,28 @@ const CreateListing = () => {
           <h1 className="text-xl font-bold text-foreground">Add New Listing</h1>
         </header>
         <ConnectPaymentDialog open={true} onOpenChange={() => {}} />
+        <BottomNav />
+      </div>
+    );
+  }
+
+  // Block form until shipping setup is complete for first-time sellers
+  if (showShippingSetup) {
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <header className="relative flex items-center justify-center px-4 py-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="absolute left-4 h-10 w-10 rounded-full"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-bold text-foreground">Add New Listing</h1>
+        </header>
         <TieredShippingSetupModal
-          open={showShippingSetup}
+          open={true}
           onComplete={handleShippingSetupComplete}
           onCancel={handleShippingSetupCancel}
         />
