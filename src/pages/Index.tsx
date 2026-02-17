@@ -56,7 +56,15 @@ const Index = () => {
   const profileLoaded = profile !== null;
   const [welcomeCompleted, setWelcomeCompleted] = useState(false);
   const [showOnboardingCarousel, setShowOnboardingCarousel] = useState(false);
-  const [passwordCompleted, setPasswordCompleted] = useState(() => localStorage.getItem('flea_pw_done') === '1');
+  const [passwordCompleted, setPasswordCompleted] = useState(false);
+  
+  // Sync passwordCompleted from user-scoped localStorage once user is available
+  useEffect(() => {
+    if (user) {
+      const done = localStorage.getItem(`flea_pw_done_${user.id}`) === '1';
+      if (done) setPasswordCompleted(true);
+    }
+  }, [user]);
   
   // PRIMARY detection: localStorage flag set BEFORE Google OAuth redirect (survives redirects unlike sessionStorage)
   const oauthSignupFlag = localStorage.getItem('flea_oauth_signup') === '1';
@@ -427,7 +435,7 @@ const Index = () => {
       <PasswordSetupDialog
         open={showPasswordDialog}
         onComplete={async () => {
-          localStorage.setItem('flea_pw_done', '1');
+          if (user) localStorage.setItem(`flea_pw_done_${user.id}`, '1');
           localStorage.removeItem('flea_oauth_signup'); // Clean up OAuth flag
           setPasswordCompleted(true);
           setShowOnboardingCarousel(true);
