@@ -243,7 +243,8 @@ const CreateListing = () => {
 
   // Check if shipping preferences need to be set and load tiered shipping state
   useEffect(() => {
-    if (!authLoading && user && profile && !shippingChecked) {
+    // Only check shipping AFTER payment gate is resolved
+    if (!authLoading && user && profile && !shippingChecked && hasPaymentMethod && paymentCheckDone) {
       setShippingChecked(true);
 
       // Check localStorage first for shipping prefs
@@ -259,7 +260,8 @@ const CreateListing = () => {
 
       // Fall back to profile data
       const needsShippingSetup =
-        profile.tiered_shipping_enabled === null ||
+        profile.shipping_preferences_set !== true &&
+        (profile.tiered_shipping_enabled === null ||
         profile.tiered_shipping_enabled === undefined ||
         (profile.tiered_shipping_enabled === true &&
           (profile.shipping_tier_1 === null ||
@@ -267,7 +269,7 @@ const CreateListing = () => {
             profile.shipping_tier_3 === null ||
             profile.shipping_tier_1 === undefined ||
             profile.shipping_tier_2 === undefined ||
-            profile.shipping_tier_3 === undefined));
+            profile.shipping_tier_3 === undefined)));
 
       if (needsShippingSetup) {
         setShowShippingSetup(true);
@@ -280,7 +282,7 @@ const CreateListing = () => {
         }
       }
     }
-  }, [user, profile, authLoading, shippingChecked]);
+  }, [user, profile, authLoading, shippingChecked, hasPaymentMethod, paymentCheckDone]);
 
   const handleShippingSetupComplete = async () => {
     setShowShippingSetup(false);
