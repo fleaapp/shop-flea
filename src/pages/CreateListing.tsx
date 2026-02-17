@@ -123,18 +123,7 @@ const CreateListing = () => {
     if (!authLoading && user && profile && !shippingChecked && hasPaymentMethod) {
       setShippingChecked(true);
 
-      // Check localStorage first for shipping prefs
-      const localPrefs = loadShippingPrefs(user.id);
-      if (localPrefs) {
-        setTieredShippingEnabled(localPrefs.tieredEnabled);
-        if (localPrefs.tieredEnabled) {
-          setTier1Price(localPrefs.tier1);
-          setShippingPrice(localPrefs.tier1.toString());
-        }
-        return;
-      }
-
-      // Fall back to profile data
+      // First-time sellers MUST complete shipping setup regardless of localStorage
       const needsShippingSetup =
         profile.shipping_preferences_set !== true &&
         (profile.tiered_shipping_enabled === null ||
@@ -149,13 +138,25 @@ const CreateListing = () => {
 
       if (needsShippingSetup) {
         setShowShippingSetup(true);
-      } else {
-        // Load tiered shipping settings from profile
-        setTieredShippingEnabled(profile.tiered_shipping_enabled ?? false);
-        if (profile.tiered_shipping_enabled && profile.shipping_tier_1 != null) {
-          setTier1Price(profile.shipping_tier_1);
-          setShippingPrice(profile.shipping_tier_1.toString());
+        return;
+      }
+
+      // Only use cached/profile shipping data for returning sellers
+      const localPrefs = loadShippingPrefs(user.id);
+      if (localPrefs) {
+        setTieredShippingEnabled(localPrefs.tieredEnabled);
+        if (localPrefs.tieredEnabled) {
+          setTier1Price(localPrefs.tier1);
+          setShippingPrice(localPrefs.tier1.toString());
         }
+        return;
+      }
+
+      // Fall back to profile data
+      setTieredShippingEnabled(profile.tiered_shipping_enabled ?? false);
+      if (profile.tiered_shipping_enabled && profile.shipping_tier_1 != null) {
+        setTier1Price(profile.shipping_tier_1);
+        setShippingPrice(profile.shipping_tier_1.toString());
       }
     }
   }, [user, profile, authLoading, shippingChecked, hasPaymentMethod]);
