@@ -58,41 +58,34 @@ const Index = () => {
   const [showOnboardingCarousel, setShowOnboardingCarousel] = useState(false);
   const [passwordCompleted, setPasswordCompleted] = useState(() => sessionStorage.getItem('flea_pw_done') === '1');
   
-  // Check if user signed up via Google OAuth — check multiple fields for robustness
-  const isGoogleUser = 
+  // Check if user signed up via OAuth (Google, Apple, etc.) — NOT email/password
+  const hasEmailIdentity = user?.identities?.some((id: any) => id.provider === 'email') ?? false;
+  const isOAuthUser = 
     user?.app_metadata?.provider === 'google' ||
     user?.app_metadata?.providers?.includes('google') ||
     user?.identities?.some((id: any) => id.provider === 'google') ||
+    // CRITICAL FALLBACK: if user has identities but NONE are 'email', they're OAuth-only
+    (!!user?.identities && user.identities.length > 0 && !hasEmailIdentity) ||
     false;
+  // Keep isGoogleUser as alias for backward compatibility (prop passed to WelcomeSetupDialog)
+  const isGoogleUser = isOAuthUser;
   const passwordSetInMeta = user?.user_metadata?.password_set === true;
   const passwordSetInProfile = profile?.password_set === true;
   const passwordAlreadySet = passwordSetInMeta || passwordSetInProfile;
 
   // Once we determine the password dialog needs to show, lock it so reactive changes can't dismiss it
   const [passwordDialogLocked, setPasswordDialogLocked] = useState(false);
-  
-  // Flag set synchronously from welcome onComplete — survives re-renders unlike stale closures
-  const [welcomeJustCompleted, setWelcomeJustCompleted] = useState(false);
 
-  // Single effect handles BOTH cases: returning Google users AND fresh signups after welcome
+  // Effect ONLY for returning OAuth users who already have a profile (not fresh signups)
   useEffect(() => {
     if (passwordDialogLocked || passwordCompleted || passwordAlreadySet) return;
-    if (!isGoogleUser) return;
-    
-    // Case 1: Returning Google user who already has profile set up
-    if (profileLoaded && !needsProfileSetup) {
-      console.log('[PW_DEBUG] ✅ LOCKING password dialog (returning user)');
+    if (!isOAuthUser || !profileLoaded) return;
+    // Returning user: profile exists and username is already set
+    if (!needsProfileSetup) {
+      console.log('[PW_DEBUG] ✅ LOCKING password dialog (returning OAuth user)');
       setPasswordDialogLocked(true);
-      return;
     }
-    
-    // Case 2: Fresh signup — welcome dialog just completed
-    if (welcomeJustCompleted) {
-      console.log('[PW_DEBUG] ✅ LOCKING password dialog (after welcome)');
-      setPasswordDialogLocked(true);
-      return;
-    }
-  }, [profileLoaded, needsProfileSetup, isGoogleUser, passwordAlreadySet, passwordCompleted, passwordDialogLocked, welcomeJustCompleted]);
+  }, [profileLoaded, needsProfileSetup, isOAuthUser, passwordAlreadySet, passwordCompleted, passwordDialogLocked]);
 
   // Welcome dialog shows when profile needs setup
   const showWelcomeDialog = needsProfileSetup && !welcomeCompleted;
@@ -414,12 +407,18 @@ const Index = () => {
         isGoogleUser={isGoogleUser}
         onComplete={() => {
           setWelcomeCompleted(true);
-          // Set flag so the effect can lock the password dialog on next render
-          setWelcomeJustCompleted(true);
-          refreshProfile();
-          if (!isGoogleUser) {
+          // DIRECTLY lock the password dialog for OAuth users — no effects, no race conditions
+          // Check identities at THIS moment (user object is fully loaded by now)
+          const oauthOnly = !user?.identities?.some((id: any) => id.provider === 'email');
+          const needsPw = !passwordCompleted && !passwordAlreadySet && 
+            (isOAuthUser || (!!user?.identities && user.identities.length > 0 && oauthOnly));
+          console.log('[PW_DEBUG] onComplete fired:', { isOAuthUser, oauthOnly, needsPw, passwordCompleted, passwordAlreadySet, identities: user?.identities?.map((id: any) => id.provider) });
+          if (needsPw) {
+            setPasswordDialogLocked(true);
+          } else {
             setShowOnboardingCarousel(true);
           }
+          refreshProfile();
         }}
       />
       <PasswordSetupDialog
