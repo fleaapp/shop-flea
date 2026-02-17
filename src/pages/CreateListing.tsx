@@ -52,10 +52,21 @@ const CreateListing = () => {
   // Use localStorage as persistent fallback to survive component remounts
   const hasPaymentMethodDB = profile?.stripe_onboarding_complete === true;
   const stripeLocalKey = user ? `flea_stripe_connected_${user.id}` : null;
-  const hasPaymentMethodLocal = typeof window !== 'undefined' && !!stripeLocalKey && localStorage.getItem(stripeLocalKey) === 'true';
-  const [hasPaymentMethodStripe, setHasPaymentMethodStripe] = useState(hasPaymentMethodLocal);
-  const [paymentCheckDone, setPaymentCheckDone] = useState(hasPaymentMethodDB || hasPaymentMethodLocal);
-  const hasPaymentMethod = hasPaymentMethodDB || hasPaymentMethodStripe || hasPaymentMethodLocal;
+  const getLocalFlag = () => typeof window !== 'undefined' && !!stripeLocalKey && localStorage.getItem(stripeLocalKey) === 'true';
+  const [hasPaymentMethodStripe, setHasPaymentMethodStripe] = useState(false);
+  const [paymentCheckDone, setPaymentCheckDone] = useState(hasPaymentMethodDB);
+
+  // Sync localStorage flag when user ID becomes available (fixes race where user is null at mount)
+  useEffect(() => {
+    if (user) {
+      const stored = getLocalFlag();
+      if (stored) {
+        setHasPaymentMethodStripe(true);
+        setPaymentCheckDone(true);
+      }
+    }
+  }, [user]);
+  const hasPaymentMethod = hasPaymentMethodDB || hasPaymentMethodStripe;
 
   // Handle return from Stripe onboarding
   useEffect(() => {
@@ -134,7 +145,7 @@ const CreateListing = () => {
 
   // Check Stripe directly for connection status (only if not returning from Stripe)
   useEffect(() => {
-    if (hasPaymentMethodDB || hasPaymentMethodLocal) {
+    if (hasPaymentMethodDB || hasPaymentMethodStripe) {
       setPaymentCheckDone(true);
       return;
     }
@@ -168,7 +179,7 @@ const CreateListing = () => {
     };
     
     checkStripe();
-  }, [user?.email, hasPaymentMethodDB, hasPaymentMethodLocal, authLoading, searchParams]);
+  }, [user?.email, hasPaymentMethodDB, hasPaymentMethodStripe, authLoading, searchParams]);
 
   // Show payment gate only AFTER check completes
   useEffect(() => {

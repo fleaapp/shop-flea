@@ -9,10 +9,16 @@ const PaymentMethodsSection = () => {
   const { user, profile, refreshProfile } = useAuth();
   const [isConnecting, setIsConnecting] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
-  const [localConnected, setLocalConnected] = useState(
-    () => user ? localStorage.getItem(`flea_stripe_connected_${user.id}`) === 'true' : false
-  );
+  const [localConnected, setLocalConnected] = useState(false);
   const [localAccountId, setLocalAccountId] = useState<string | null>(null);
+
+  // Re-sync localStorage when user ID becomes available (fixes useState initializer race)
+  useEffect(() => {
+    if (user) {
+      const stored = localStorage.getItem(`flea_stripe_connected_${user.id}`) === 'true';
+      if (stored) setLocalConnected(true);
+    }
+  }, [user]);
 
   const stripeConnected = profile?.stripe_onboarding_complete === true || localConnected;
   const stripeAccountId = profile?.stripe_account_id || localAccountId;
