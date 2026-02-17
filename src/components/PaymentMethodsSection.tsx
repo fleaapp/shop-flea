@@ -10,7 +10,7 @@ const PaymentMethodsSection = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [localConnected, setLocalConnected] = useState(
-    () => localStorage.getItem('flea_stripe_connected') === 'true'
+    () => user ? localStorage.getItem(`flea_stripe_connected_${user.id}`) === 'true' : false
   );
   const [localAccountId, setLocalAccountId] = useState<string | null>(null);
 
@@ -68,7 +68,7 @@ const PaymentMethodsSection = () => {
       if (data?.chargesEnabled && data?.accountId) {
         setLocalConnected(true);
         setLocalAccountId(data.accountId);
-        localStorage.setItem('flea_stripe_connected', 'true');
+        if (user) localStorage.setItem(`flea_stripe_connected_${user.id}`, 'true');
         // Try to persist to DB
         await supabase
           .from('profiles')
