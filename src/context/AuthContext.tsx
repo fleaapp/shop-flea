@@ -104,29 +104,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, [fetchProfile]);
 
-  // Auto-verify Stripe connection on login so sellers stay connected across sessions.
-  // ONLY runs if the user already has a stripe_account_id saved — never searches by email
-  // to prevent new signups from auto-inheriting unrelated Stripe accounts.
+  // Reset stripe verification when user changes (e.g. logout → login)
   const stripeVerifiedRef = useRef(false);
+  const lastVerifiedUserId = useRef<string | null>(null);
+
   useEffect(() => {
-    if (!profile || !user || stripeVerifiedRef.current) return;
+    if (!profile || !user) return;
+
+    // Reset ref when user changes so re-login triggers verification
+    if (lastVerifiedUserId.current !== user.id) {
+      stripeVerifiedRef.current = false;
+      lastVerifiedUserId.current = user.id;
+    }
+
+    if (stripeVerifiedRef.current) return;
+
     // Skip if already fully connected in DB
     if (profile.stripe_onboarding_complete) {
-      // Ensure localStorage is in sync even if we skip the API call
       localStorage.setItem(`flea_stripe_connected_${user.id}`, 'true');
       localStorage.removeItem('flea_stripe_pending');
+      stripeVerifiedRef.current = true;
       return;
     }
-    // CRITICAL: Only verify if there's an existing account ID in DB.
-    // Without this guard, the edge function searches by email and can
-    // auto-connect unrelated Stripe accounts to brand new signups.
-    if (!profile.stripe_account_id) return;
+
+    // Determine if this is a brand-new signup (auto-generated username like @user_xxx)
+    const isNewSignup = profile.username?.startsWith('@user_');
+
+    // For new signups WITHOUT a stored account ID, skip to prevent
+    // email-based lookup from auto-inheriting unrelated Stripe accounts.
+    // For established users (who completed profile setup), allow email-based
+    // lookup as a fallback in case the DB update for stripe_account_id failed.
+    if (!profile.stripe_account_id && isNewSignup) return;
+
     stripeVerifiedRef.current = true;
 
     const verify = async () => {
       try {
         const { data, error } = await invokeCloudFunction('stripe-connect-status', {
-          stripeAccountId: profile.stripe_account_id,
+          stripeAccountId: profile.stripe_account_id || undefined,
         });
         if (error || !data) return;
 
@@ -143,7 +158,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (updateError) {
             console.error('Failed to persist Stripe status to DB:', updateError);
           }
-          // Use setTimeout to avoid disrupting other in-flight UI flows (e.g. password dialog)
           setTimeout(() => fetchProfile(user.id), 500);
         }
       } catch (e) {

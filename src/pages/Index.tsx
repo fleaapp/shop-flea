@@ -97,9 +97,11 @@ const Index = () => {
   const showPasswordDialog = passwordDialogLocked && !passwordCompleted;
 
   // Check if we should start onboarding (for new users after signup)
+  // Delay for OAuth users until password is set so onboarding doesn't appear behind password dialog
   useEffect(() => {
+    if (isOAuthUser && !passwordCompleted && !passwordAlreadySet) return;
     checkAndTriggerOnboarding();
-  }, [checkAndTriggerOnboarding]);
+  }, [checkAndTriggerOnboarding, isOAuthUser, passwordCompleted, passwordAlreadySet]);
 
   const [pendingExitId, setPendingExitId] = useState<string | null>(null);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
