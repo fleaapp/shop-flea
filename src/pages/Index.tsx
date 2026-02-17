@@ -53,6 +53,7 @@ const Index = () => {
 
   // Check if user needs to set up their profile (new users get auto-generated usernames)
   const needsProfileSetup = profile?.username?.startsWith('@user_') || false;
+  const profileLoaded = profile !== null;
   const [welcomeCompleted, setWelcomeCompleted] = useState(false);
   const [showOnboardingCarousel, setShowOnboardingCarousel] = useState(false);
   const [passwordCompleted, setPasswordCompleted] = useState(() => sessionStorage.getItem('flea_pw_done') === '1');
@@ -70,13 +71,15 @@ const Index = () => {
   const [passwordDialogLocked, setPasswordDialogLocked] = useState(false);
   
   useEffect(() => {
+    // CRITICAL: Don't evaluate until profile is loaded — otherwise needsProfileSetup is falsely false
+    if (!profileLoaded) return;
+    
     console.log('[PW_DEBUG] Effect check:', {
       passwordDialogLocked, passwordCompleted, isGoogleUser,
-      passwordSetInMeta, passwordSetInProfile, welcomeCompleted, needsProfileSetup,
+      passwordSetInMeta, passwordSetInProfile, welcomeCompleted, needsProfileSetup, profileLoaded,
       userProvider: user?.app_metadata?.provider,
       userProviders: user?.app_metadata?.providers,
       userIdentities: user?.identities?.map((id: any) => id.provider),
-      profilePasswordSet: profile?.password_set,
     });
     // Lock the password dialog open when conditions are met (only lock once, never unlock via this effect)
     if (!passwordDialogLocked && !passwordCompleted && isGoogleUser && !passwordSetInMeta && !passwordSetInProfile) {
@@ -86,14 +89,12 @@ const Index = () => {
         setPasswordDialogLocked(true);
       }
     }
-  }, [welcomeCompleted, needsProfileSetup, isGoogleUser, passwordSetInMeta, passwordSetInProfile, passwordCompleted, passwordDialogLocked]);
+  }, [profileLoaded, welcomeCompleted, needsProfileSetup, isGoogleUser, passwordSetInMeta, passwordSetInProfile, passwordCompleted, passwordDialogLocked]);
 
   // Welcome dialog shows when profile needs setup
   const showWelcomeDialog = needsProfileSetup && !welcomeCompleted;
   // Password dialog: once locked, stays open until explicitly completed
   const showPasswordDialog = passwordDialogLocked && !passwordCompleted;
-  
-  console.log('[PW_DEBUG] Render:', { showWelcomeDialog, showPasswordDialog, passwordDialogLocked, passwordCompleted });
 
   // Check if we should start onboarding (for new users after signup)
   useEffect(() => {
