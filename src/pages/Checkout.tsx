@@ -10,7 +10,7 @@ import { Listing } from '@/types/listing';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { supabase as cloudSupabase } from '@/integrations/supabase/client';
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import BlockedUserBanner from '@/components/BlockedUserBanner';
@@ -180,17 +180,15 @@ const Checkout = () => {
       }
 
       // Call Stripe Connect checkout edge function (on Cloud project)
-      const { data, error } = await cloudSupabase.functions.invoke('stripe-connect-checkout', {
-        body: {
-          items: validItems.map(item => ({
-            id: item.id,
-            title: item.title,
-            price: item.price,
-            image: item.image,
-          })),
-          shipping: totalShipping,
-          sellerStripeAccountId,
-        },
+      const { data, error } = await invokeCloudFunction('stripe-connect-checkout', {
+        items: validItems.map(item => ({
+          id: item.id,
+          title: item.title,
+          price: item.price,
+          image: item.image,
+        })),
+        shipping: totalShipping,
+        sellerStripeAccountId,
       });
 
       if (error) throw error;
