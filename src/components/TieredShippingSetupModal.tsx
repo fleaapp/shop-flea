@@ -50,6 +50,7 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
     try {
       const updateData: Record<string, any> = {
         tiered_shipping_enabled: tieredEnabled,
+        shipping_preferences_set: true,
       };
 
       if (tieredEnabled) {
