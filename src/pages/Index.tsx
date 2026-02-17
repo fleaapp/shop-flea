@@ -58,7 +58,7 @@ const Index = () => {
   const [showOnboardingCarousel, setShowOnboardingCarousel] = useState(false);
   const [passwordCompleted, setPasswordCompleted] = useState(() => sessionStorage.getItem('flea_pw_done') === '1');
   
-  // Check if user signed up via Google OAuth
+  // Check if user signed up via Google OAuth — check multiple fields for robustness
   const isGoogleUser = 
     user?.app_metadata?.provider === 'google' ||
     user?.app_metadata?.providers?.includes('google') ||
@@ -66,30 +66,37 @@ const Index = () => {
     false;
   const passwordSetInMeta = user?.user_metadata?.password_set === true;
   const passwordSetInProfile = profile?.password_set === true;
+  const passwordAlreadySet = passwordSetInMeta || passwordSetInProfile;
 
   // Once we determine the password dialog needs to show, lock it so reactive changes can't dismiss it
   const [passwordDialogLocked, setPasswordDialogLocked] = useState(false);
   
-  useEffect(() => {
-    // CRITICAL: Don't evaluate until profile is loaded — otherwise needsProfileSetup is falsely false
-    if (!profileLoaded) return;
-    
-    console.log('[PW_DEBUG] Effect check:', {
-      passwordDialogLocked, passwordCompleted, isGoogleUser,
-      passwordSetInMeta, passwordSetInProfile, welcomeCompleted, needsProfileSetup, profileLoaded,
-      userProvider: user?.app_metadata?.provider,
-      userProviders: user?.app_metadata?.providers,
-      userIdentities: user?.identities?.map((id: any) => id.provider),
-    });
-    // Lock the password dialog open when conditions are met (only lock once, never unlock via this effect)
-    if (!passwordDialogLocked && !passwordCompleted && isGoogleUser && !passwordSetInMeta && !passwordSetInProfile) {
-      // Only lock after welcome is done (either this session or profile already set up)
-      if (welcomeCompleted || !needsProfileSetup) {
-        console.log('[PW_DEBUG] ✅ LOCKING password dialog');
-        setPasswordDialogLocked(true);
-      }
+  // Explicit function to lock the password dialog — called directly from welcome onComplete
+  const lockPasswordDialogIfNeeded = useCallback(() => {
+    if (passwordCompleted || passwordAlreadySet || passwordDialogLocked) return;
+    // Check Google user status at call time using the user object directly
+    const googleUser = 
+      user?.app_metadata?.provider === 'google' ||
+      user?.app_metadata?.providers?.includes('google') ||
+      user?.identities?.some((id: any) => id.provider === 'google') ||
+      false;
+    console.log('[PW_DEBUG] lockPasswordDialogIfNeeded called:', { googleUser, passwordCompleted, passwordAlreadySet });
+    if (googleUser) {
+      console.log('[PW_DEBUG] ✅ LOCKING password dialog from explicit call');
+      setPasswordDialogLocked(true);
     }
-  }, [profileLoaded, welcomeCompleted, needsProfileSetup, isGoogleUser, passwordSetInMeta, passwordSetInProfile, passwordCompleted, passwordDialogLocked]);
+  }, [user, passwordCompleted, passwordAlreadySet, passwordDialogLocked]);
+
+  // Also try to lock via effect for returning Google users who already have a profile set up
+  useEffect(() => {
+    if (!profileLoaded || passwordDialogLocked || passwordCompleted) return;
+    if (!isGoogleUser || passwordAlreadySet) return;
+    // Only for users who DON'T need profile setup (returning users or after welcome)
+    if (!needsProfileSetup || welcomeCompleted) {
+      console.log('[PW_DEBUG] ✅ LOCKING password dialog from effect (returning user)');
+      setPasswordDialogLocked(true);
+    }
+  }, [profileLoaded, welcomeCompleted, needsProfileSetup, isGoogleUser, passwordAlreadySet, passwordCompleted, passwordDialogLocked]);
 
   // Welcome dialog shows when profile needs setup
   const showWelcomeDialog = needsProfileSetup && !welcomeCompleted;
@@ -411,6 +418,8 @@ const Index = () => {
         isGoogleUser={isGoogleUser}
         onComplete={() => {
           setWelcomeCompleted(true);
+          // Explicitly trigger password dialog for Google users — don't rely solely on effect timing
+          lockPasswordDialogIfNeeded();
           refreshProfile();
           if (!isGoogleUser) {
             setShowOnboardingCarousel(true);
