@@ -71,32 +71,28 @@ const Index = () => {
   // Once we determine the password dialog needs to show, lock it so reactive changes can't dismiss it
   const [passwordDialogLocked, setPasswordDialogLocked] = useState(false);
   
-  // Explicit function to lock the password dialog — called directly from welcome onComplete
-  const lockPasswordDialogIfNeeded = useCallback(() => {
-    if (passwordCompleted || passwordAlreadySet || passwordDialogLocked) return;
-    // Check Google user status at call time using the user object directly
-    const googleUser = 
-      user?.app_metadata?.provider === 'google' ||
-      user?.app_metadata?.providers?.includes('google') ||
-      user?.identities?.some((id: any) => id.provider === 'google') ||
-      false;
-    console.log('[PW_DEBUG] lockPasswordDialogIfNeeded called:', { googleUser, passwordCompleted, passwordAlreadySet });
-    if (googleUser) {
-      console.log('[PW_DEBUG] ✅ LOCKING password dialog from explicit call');
-      setPasswordDialogLocked(true);
-    }
-  }, [user, passwordCompleted, passwordAlreadySet, passwordDialogLocked]);
+  // Flag set synchronously from welcome onComplete — survives re-renders unlike stale closures
+  const [welcomeJustCompleted, setWelcomeJustCompleted] = useState(false);
 
-  // Also try to lock via effect for returning Google users who already have a profile set up
+  // Single effect handles BOTH cases: returning Google users AND fresh signups after welcome
   useEffect(() => {
-    if (!profileLoaded || passwordDialogLocked || passwordCompleted) return;
-    if (!isGoogleUser || passwordAlreadySet) return;
-    // Only for users who DON'T need profile setup (returning users or after welcome)
-    if (!needsProfileSetup || welcomeCompleted) {
-      console.log('[PW_DEBUG] ✅ LOCKING password dialog from effect (returning user)');
+    if (passwordDialogLocked || passwordCompleted || passwordAlreadySet) return;
+    if (!isGoogleUser) return;
+    
+    // Case 1: Returning Google user who already has profile set up
+    if (profileLoaded && !needsProfileSetup) {
+      console.log('[PW_DEBUG] ✅ LOCKING password dialog (returning user)');
       setPasswordDialogLocked(true);
+      return;
     }
-  }, [profileLoaded, welcomeCompleted, needsProfileSetup, isGoogleUser, passwordAlreadySet, passwordCompleted, passwordDialogLocked]);
+    
+    // Case 2: Fresh signup — welcome dialog just completed
+    if (welcomeJustCompleted) {
+      console.log('[PW_DEBUG] ✅ LOCKING password dialog (after welcome)');
+      setPasswordDialogLocked(true);
+      return;
+    }
+  }, [profileLoaded, needsProfileSetup, isGoogleUser, passwordAlreadySet, passwordCompleted, passwordDialogLocked, welcomeJustCompleted]);
 
   // Welcome dialog shows when profile needs setup
   const showWelcomeDialog = needsProfileSetup && !welcomeCompleted;
@@ -418,8 +414,8 @@ const Index = () => {
         isGoogleUser={isGoogleUser}
         onComplete={() => {
           setWelcomeCompleted(true);
-          // Explicitly trigger password dialog for Google users — don't rely solely on effect timing
-          lockPasswordDialogIfNeeded();
+          // Set flag so the effect can lock the password dialog on next render
+          setWelcomeJustCompleted(true);
           refreshProfile();
           if (!isGoogleUser) {
             setShowOnboardingCarousel(true);
