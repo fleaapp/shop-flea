@@ -106,14 +106,16 @@ const PaymentMethodsSection = () => {
     }
   }, [user, stripeAccountId, refreshProfile]);
 
-  // Only auto-check if returning from Stripe redirect, not on every mount
-  // Keep flea_stripe_pending flag until connection is confirmed so CreateListing can detect pending state
+  // Auto-check in two cases:
+  // 1. Returning from Stripe redirect (flea_stripe_pending flag set)
+  // 2. UI shows connected (localStorage) but DB is missing stripe_account_id — fixes all affected users automatically
   useEffect(() => {
     const pending = localStorage.getItem('flea_stripe_pending');
-    if (pending && user?.email && !stripeConnected) {
+    const missingFromDb = stripeConnected && !profile?.stripe_account_id;
+    if ((pending && user?.email && !stripeConnected) || missingFromDb) {
       handleCheckStatus(true);
     }
-  }, [user?.email, stripeConnected, handleCheckStatus]);
+  }, [user?.email, stripeConnected, profile?.stripe_account_id, handleCheckStatus]);
 
   // Only clear the pending flag once Stripe is fully connected
   useEffect(() => {
