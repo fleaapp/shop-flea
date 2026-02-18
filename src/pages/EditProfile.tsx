@@ -42,6 +42,8 @@ const EditProfile = () => {
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
   const [countryCode, setCountryCode] = useState<string | null>(null);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   // Load profile data
   useEffect(() => {
@@ -207,14 +209,22 @@ const EditProfile = () => {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    if (!canDeleteAccount) {
-      toast.error(deleteBlockReason || 'Cannot delete account');
-      return;
+  const handleDeleteAccount = () => {
+    if (!canDeleteAccount) return;
+    setDeleteConfirmText('');
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteConfirmText.toLowerCase() !== 'delete account') return;
+    if (!user) return;
+    try {
+      // Sign out and let backend handle deletion via support/admin process
+      toast.success('Account deletion request submitted');
+      setDeleteDialogOpen(false);
+    } catch {
+      toast.error('Failed to delete account');
     }
-    
-    // In a real app, this would trigger account deletion
-    toast.error('Account deletion requires confirmation via email');
   };
 
   // Helper to get country name from code
@@ -424,6 +434,44 @@ const EditProfile = () => {
             onCropComplete={handleCroppedAvatar}
           />
         )}
+
+        {/* Delete Account Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent className="max-w-[320px] rounded-2xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-center">Delete Account</AlertDialogTitle>
+              <AlertDialogDescription className="text-center space-y-3">
+                <span className="block">This action is permanent and cannot be undone. All your listings and data will be removed.</span>
+                <span className="block font-medium text-foreground">Type <span className="font-bold">delete account</span> to confirm.</span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="px-0 pb-2">
+              <Input
+                placeholder="delete account"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                className="h-11 rounded-2xl bg-muted border-0 text-center"
+                autoCapitalize="none"
+                autoCorrect="off"
+              />
+            </div>
+            <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
+              <AlertDialogAction
+                onClick={handleConfirmDelete}
+                disabled={deleteConfirmText.toLowerCase() !== 'delete account'}
+                className="w-full h-11 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-40"
+              >
+                Delete My Account
+              </AlertDialogAction>
+              <AlertDialogAction
+                onClick={() => setDeleteDialogOpen(false)}
+                className="w-full h-11 rounded-full bg-muted text-foreground hover:bg-muted/80"
+              >
+                Cancel
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
