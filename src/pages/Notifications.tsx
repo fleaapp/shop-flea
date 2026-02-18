@@ -94,6 +94,21 @@ const Notifications = () => {
       markAsRead.mutate(notification.id);
     }
     
+    // Shipping reminders → switch to sales tab and open the relevant order
+    if (notification.type === 'shipping_reminder_3d' || notification.type === 'shipping_reminder_6d') {
+      setActiveTab('sales');
+      if (notification.related_listing_id) {
+        const matchingGroup = sellerOrderGroups.find(g =>
+          g.orders.some(o => o.listing_id === notification.related_listing_id)
+        );
+        if (matchingGroup) {
+          setSelectedGroup(matchingGroup);
+          setSaleSheetOpen(true);
+        }
+      }
+      return;
+    }
+
     // Navigate based on notification type
     if (notification.related_listing_id) {
       navigate(`/listing/${notification.related_listing_id}`);
@@ -167,12 +182,15 @@ const Notifications = () => {
     const username = notification.related_user?.username;
     const emoji = getNotificationEmoji(notification.type as any);
     const itemName = notification.listing?.title || null;
+    const isUrgent = notification.type === 'shipping_reminder_6d';
 
     // For sold-type and legacy notifications, use the listing title from joined data (not the raw message column)
     // For comment notifications, pass the raw message (which contains the formatted comment text)
+    // For shipping reminders, use the fixed message from the helper
     const isSoldOrLegacy = ['cart_item_sold', 'wishlist_item_sold', 'cart_wishlist_item_sold', 'listing_sold'].includes(notification.type);
     const isCommentType = ['new_comment', 'comment_reply'].includes(notification.type);
-    const messageArg = isSoldOrLegacy ? itemName : isCommentType ? notification.message : itemName;
+    const isShippingReminder = ['shipping_reminder_3d', 'shipping_reminder_6d'].includes(notification.type);
+    const messageArg = isSoldOrLegacy ? itemName : isCommentType ? notification.message : isShippingReminder ? null : itemName;
     const message = getNotificationMessage(notification.type as any, username, messageArg);
 
     const renderMessage = () => {
@@ -190,7 +208,10 @@ const Notifications = () => {
     return (
       <div 
         onClick={() => handleNotificationClick(notification)}
-        className="relative flex items-start gap-4 rounded-2xl bg-card p-4 cursor-pointer"
+        className={cn(
+          "relative flex items-start gap-4 rounded-2xl bg-card p-4 cursor-pointer",
+          isUrgent && "border-2 border-destructive"
+        )}
       >
         <ProductThumbnail image={listingImage} avatar={userAvatar} fallbackEmoji={emoji} />
 

@@ -14,7 +14,9 @@ export type NotificationType =
   | 'order_shipped'
   | 'order_delivered'
   | 'new_comment'
-  | 'comment_reply';
+  | 'comment_reply'
+  | 'shipping_reminder_3d'
+  | 'shipping_reminder_6d';
 
 export interface Notification {
   id: string;
@@ -171,6 +173,10 @@ export const getNotificationMessage = (type: string, username?: string, listingT
       return displayUsername ? `${displayUsername} commented on your listing.` : 'Someone commented on your listing.';
     case 'comment_reply':
       return displayUsername ? `${displayUsername} replied to your comment.` : 'Someone replied to your comment.';
+    case 'shipping_reminder_3d':
+      return '🚨 Reminder: Your buyer is waiting 👀 Ship now & update tracking. 📦';
+    case 'shipping_reminder_6d':
+      return '🚨 Urgent action needed: Your sale is 6 days overdue. Ship today to avoid issues. 🚚';
     default:
       return 'New notification';
   }
@@ -199,6 +205,9 @@ export const getNotificationEmoji = (type: string): string => {
       return '💬';
     case 'comment_reply':
       return '↩️';
+    case 'shipping_reminder_3d':
+    case 'shipping_reminder_6d':
+      return '🚨';
     default:
       return '🔔';
   }
