@@ -1,7 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-// Cloud DB client — profiles live here, not on the external DB
-import { supabase as cloudSupabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
 export interface Review {
@@ -48,9 +46,9 @@ export function useUserReviews(userId: string | undefined) {
       
       // Fetch reviewer profiles
       const reviewerIds = [...new Set(reviewsData.map(r => r.reviewer_id))];
-      // Profiles live in the Cloud DB, not the external reviews DB
-      const { data: profiles } = await cloudSupabase
-        .from('profiles')
+      // Use profiles_public view — no RLS restrictions, so cross-region reviewer profiles load correctly
+      const { data: profiles } = await supabase
+        .from('profiles_public')
         .select('user_id, username, avatar_url')
         .in('user_id', reviewerIds);
       
