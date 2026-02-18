@@ -148,7 +148,13 @@ const PaymentMethodsSection = () => {
             {isConnecting ? (
               <span className="text-xs text-muted-foreground">Connecting...</span>
             ) : stripeConnected ? (
-              <span className="text-xs text-green-600 font-medium">Active</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); handleCheckStatus(false); }}
+                disabled={isChecking}
+                className="text-xs text-green-600 font-medium hover:text-green-700 disabled:opacity-50"
+              >
+                {isChecking ? 'Syncing...' : 'Active ↻'}
+              </button>
             ) : stripePending || isChecking ? (
               <span className="text-xs text-amber-600 font-medium">Verifying</span>
             ) : (
