@@ -33,7 +33,7 @@ const SizeSelectionDrawer = ({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[85vh] rounded-t-3xl border-0 bg-background">
+      <DrawerContent className="max-h-[85dvh] rounded-t-3xl border-0 bg-background">
         <DrawerHeader className="pb-2">
           <DrawerTitle className="text-center text-xl font-semibold">Select Size</DrawerTitle>
         </DrawerHeader>

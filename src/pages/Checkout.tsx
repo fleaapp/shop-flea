@@ -228,7 +228,7 @@ const Checkout = () => {
   }];
   return <div className="min-h-screen bg-background">
       <Drawer open={open} onOpenChange={isOpen => !isOpen && handleClose()} shouldScaleBackground={false}>
-        <DrawerContent className="max-h-[85vh] bg-background" style={{ maxHeight: '85dvh' }}>
+        <DrawerContent className="max-h-[85dvh] bg-background">
           {/* Sticky Header */}
           <div className="sticky top-0 z-10 bg-background">
             <h1 className="text-center text-xl font-bold text-foreground py-4">Checkout</h1>

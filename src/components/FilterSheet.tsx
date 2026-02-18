@@ -197,7 +197,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[90vh] rounded-t-3xl border-0 bg-background">
+      <DrawerContent className="max-h-[90dvh] rounded-t-3xl border-0 bg-background">
         <div className="px-6 pb-4 flex-shrink-0">
           <h2 className="text-center text-xl font-semibold">Filter</h2>
         </div>

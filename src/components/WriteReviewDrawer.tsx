@@ -84,7 +84,7 @@ function WriteReviewDrawer({
 
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
-      <DrawerContent className="max-h-[90vh]">
+      <DrawerContent className="max-h-[90dvh]">
         <div className="overflow-y-auto">
           <DrawerHeader className="text-center pb-4">
             <DrawerTitle className="text-xl font-semibold">
