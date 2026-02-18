@@ -6,6 +6,7 @@ import { useUserReviews } from '@/hooks/useReviews';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
+import { getDefaultAvatar } from '@/utils/defaultAvatars';
 
 interface ReviewsDrawerProps {
   userId: string;
@@ -116,10 +117,8 @@ function ReviewsDrawer({ userId, username, open, onOpenChange }: ReviewsDrawerPr
                             }}
                             className="shrink-0"
                           >
-                            <Avatar className="h-10 w-10">
-                              {reviewerAvatar ? (
-                                <AvatarImage src={reviewerAvatar} alt={displayReviewerName} />
-                              ) : null}
+                             <Avatar className="h-10 w-10">
+                              <AvatarImage src={reviewerAvatar || getDefaultAvatar(reviewerUserId)} alt={displayReviewerName} />
                               <AvatarFallback>
                                 {reviewerUsername.replace('@', '').charAt(0).toUpperCase()}
                               </AvatarFallback>

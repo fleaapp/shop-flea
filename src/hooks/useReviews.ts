@@ -46,13 +46,24 @@ export function useUserReviews(userId: string | undefined) {
       
       // Fetch reviewer profiles
       const reviewerIds = [...new Set(reviewsData.map(r => r.reviewer_id))];
-      // Use profiles_public view — no RLS restrictions, so cross-region reviewer profiles load correctly
-      const { data: profiles } = await supabase
+      // Try profiles_public view first (bypasses RLS for cross-region lookups)
+      const { data: profilesPublic, error: profilesPublicError } = await supabase
         .from('profiles_public')
         .select('user_id, username, avatar_url')
         .in('user_id', reviewerIds);
-      
-      const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+
+      let profiles = (profilesPublic || []).filter(p => p.user_id != null);
+
+      // Fall back to profiles table if profiles_public returned nothing
+      if (profilesPublicError || profiles.length === 0) {
+        const { data: profilesDirect } = await supabase
+          .from('profiles')
+          .select('user_id, username, avatar_url')
+          .in('user_id', reviewerIds);
+        profiles = (profilesDirect || []).filter(p => p.user_id != null);
+      }
+
+      const profileMap = new Map(profiles.map(p => [p.user_id, p]));
 
       
       // Fetch order listings and buyer/seller info
