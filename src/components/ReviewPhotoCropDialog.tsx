@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Cropper, { Area } from 'react-easy-crop';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -62,8 +63,8 @@ const ReviewPhotoCropDialog = ({ open, imageSrc, onCropComplete, onCancel }: Rev
 
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex flex-col bg-black">
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-safe-top pt-4 pb-3 shrink-0">
         <button
@@ -82,7 +83,7 @@ const ReviewPhotoCropDialog = ({ open, imageSrc, onCropComplete, onCancel }: Rev
         </Button>
       </div>
 
-      {/* Cropper — fills remaining space as a square */}
+      {/* Cropper — fills remaining space */}
       <div className="relative flex-1 w-full">
         <Cropper
           image={imageSrc}
@@ -112,7 +113,8 @@ const ReviewPhotoCropDialog = ({ open, imageSrc, onCropComplete, onCancel }: Rev
           className="flex-1"
         />
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
