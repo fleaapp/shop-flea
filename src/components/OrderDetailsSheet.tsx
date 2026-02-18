@@ -140,13 +140,16 @@ const OrderDetailsSheet = ({
             {/* Shipping Address Section */}
             <div className="rounded-xl bg-card overflow-hidden">
               <SectionHeader>Shipping Address</SectionHeader>
-              <div className="p-4 space-y-1">
+              <div className="p-4 space-y-0.5">
                 <p className="font-medium text-foreground">
                   {primaryOrder.shipping_first_name} {primaryOrder.shipping_last_name}
                 </p>
                 <p className="text-muted-foreground">{primaryOrder.shipping_address}</p>
+                {primaryOrder.shipping_city && (
+                  <p className="text-muted-foreground">{primaryOrder.shipping_city}</p>
+                )}
                 <p className="text-muted-foreground">
-                  {primaryOrder.shipping_city}, {primaryOrder.shipping_state} {primaryOrder.shipping_postcode}
+                  {[primaryOrder.shipping_state, primaryOrder.shipping_postcode].filter(Boolean).join(' ')}
                 </p>
               </div>
             </div>
