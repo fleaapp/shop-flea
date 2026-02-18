@@ -592,6 +592,7 @@ export type Database = {
           created_at: string
           id: string
           order_id: string
+          photo_url: string | null
           rating: number
           reviewed_user_id: string
           reviewer_id: string
@@ -602,6 +603,7 @@ export type Database = {
           created_at?: string
           id?: string
           order_id: string
+          photo_url?: string | null
           rating: number
           reviewed_user_id: string
           reviewer_id: string
@@ -612,6 +614,7 @@ export type Database = {
           created_at?: string
           id?: string
           order_id?: string
+          photo_url?: string | null
           rating?: number
           reviewed_user_id?: string
           reviewer_id?: string

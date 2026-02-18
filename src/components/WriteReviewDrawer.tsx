@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useCreateReview } from '@/hooks/useReviews';
 import { toast } from 'sonner';
+import { Camera, X } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
+import { compressImage } from '@/utils/imageCompression';
 
 interface WriteReviewDrawerProps {
   orderId: string;
@@ -49,11 +53,32 @@ function WriteReviewDrawer({
 }: WriteReviewDrawerProps) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const createReview = useCreateReview();
+  const { user } = useAuth();
   
   const displayUsername = reviewedUsername.startsWith('@') 
     ? reviewedUsername 
     : `@${reviewedUsername}`;
+
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const compressed = await compressImage(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.8 });
+    setPhotoFile(compressed);
+    const reader = new FileReader();
+    reader.onload = (ev) => setPhotoPreview(ev.target?.result as string);
+    reader.readAsDataURL(compressed);
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    if (photoInputRef.current) photoInputRef.current.value = '';
+  };
 
   const handleSubmit = async () => {
     if (rating === 0) {
@@ -62,16 +87,34 @@ function WriteReviewDrawer({
     }
     
     try {
+      let photoUrl: string | undefined;
+
+      if (photoFile && user) {
+        setUploadingPhoto(true);
+        const ext = photoFile.name.split('.').pop() || 'jpg';
+        const path = `${user.id}/reviews/${Date.now()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from('listings')
+          .upload(path, photoFile, { upsert: true });
+        setUploadingPhoto(false);
+        if (uploadError) throw uploadError;
+        const { data: urlData } = supabase.storage.from('listings').getPublicUrl(path);
+        photoUrl = urlData.publicUrl;
+      }
+
       await createReview.mutateAsync({
         orderId,
         reviewedUserId,
         rating,
         comment,
+        photoUrl,
       });
       
       toast.success('Review submitted!');
       setRating(0);
       setComment('');
+      setPhotoFile(null);
+      setPhotoPreview(null);
       onOpenChange(false);
     } catch (error) {
       toast.error('Failed to submit review');
@@ -82,6 +125,8 @@ function WriteReviewDrawer({
     if (!newOpen) {
       setRating(0);
       setComment('');
+      setPhotoFile(null);
+      setPhotoPreview(null);
     }
     onOpenChange(newOpen);
   };
@@ -130,14 +175,51 @@ function WriteReviewDrawer({
               </p>
             </div>
 
+            {/* Photo Upload */}
+            <div className="rounded-xl bg-card p-4 card-shadow">
+              <p className="font-medium text-foreground mb-3">Add a photo (optional)</p>
+              {photoPreview ? (
+                <div className="relative inline-block">
+                  <img
+                    src={photoPreview}
+                    alt="Review photo"
+                    className="h-24 w-24 rounded-lg object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemovePhoto}
+                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => photoInputRef.current?.click()}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full border border-border text-muted-foreground hover:bg-muted transition-colors text-sm"
+                >
+                  <Camera className="h-4 w-4" />
+                  Upload photo
+                </button>
+              )}
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoSelect}
+              />
+            </div>
+
             {/* Submit Button */}
             <div className="flex flex-col items-center pt-4">
               <Button
                 onClick={handleSubmit}
-                disabled={rating === 0 || createReview.isPending}
-                className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8 w-full max-w-xs"
+                disabled={rating === 0 || createReview.isPending || uploadingPhoto}
+                className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8 w-40"
               >
-                {createReview.isPending ? 'Submitting...' : 'Submit Review'}
+                {createReview.isPending || uploadingPhoto ? 'Submitting...' : 'Submit Review'}
               </Button>
             </div>
           </div>
@@ -148,3 +230,4 @@ function WriteReviewDrawer({
 }
 
 export default WriteReviewDrawer;
+
