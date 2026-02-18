@@ -12,7 +12,6 @@ async function persistStripeStatus(userId: string, accountId: string) {
   const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '';
   const serviceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-  // Use raw REST API call to bypass PostgREST schema cache issues (PGRST204)
   const response = await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
     method: 'PATCH',
     headers: {
@@ -38,7 +37,6 @@ serve(async (req) => {
   }
 
   try {
-    // Authenticate against the external Supabase project where users sign in
     const supabaseClient = createClient(
       Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '',
       Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY') ?? '',
@@ -53,32 +51,59 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { stripeAccountId } = body;
-    const userEmail = user.email;
+    const { stripeAccountId, sellerUserId } = body;
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
 
+    const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '';
+    const serviceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
     let accountId = stripeAccountId;
+    let lookupUserId = user.id;
+    let lookupEmail = user.email;
+
+    // If checking a different seller (e.g. from checkout flow), fetch their email via service role
+    if (sellerUserId && sellerUserId !== user.id) {
+      console.log(`[stripe-connect-status] Looking up seller profile for userId: ${sellerUserId}`);
+      const profileResp = await fetch(
+        `${externalUrl}/rest/v1/profiles?user_id=eq.${sellerUserId}&select=email,stripe_account_id`,
+        {
+          headers: {
+            'apikey': serviceKey,
+            'Authorization': `Bearer ${serviceKey}`,
+          }
+        }
+      );
+      if (profileResp.ok) {
+        const profiles = await profileResp.json();
+        if (profiles[0]?.email) {
+          lookupEmail = profiles[0].email;
+          console.log(`[stripe-connect-status] Found seller email: ${lookupEmail}`);
+        }
+        if (!accountId && profiles[0]?.stripe_account_id) {
+          accountId = profiles[0].stripe_account_id;
+        }
+      }
+      lookupUserId = sellerUserId;
+    }
 
     // If no account ID provided, search by email in connected accounts
-    if (!accountId && userEmail) {
-      console.log(`[stripe-connect-status] Searching for account by email: ${userEmail}`);
+    if (!accountId && lookupEmail) {
+      console.log(`[stripe-connect-status] Searching for account by email: ${lookupEmail}`);
       const accounts = await stripe.accounts.list({ limit: 100 });
-      // Find the BEST match: prefer one with details_submitted, then charges_enabled, then any match
       const matches = accounts.data.filter(
-        (a) => a.email?.toLowerCase() === userEmail.toLowerCase()
+        (a) => a.email?.toLowerCase() === lookupEmail!.toLowerCase()
       );
       if (matches.length > 0) {
-        // Prefer the most "complete" account
-        const best = matches.find(a => a.charges_enabled) 
+        const best = matches.find(a => a.charges_enabled)
           || matches.find(a => a.details_submitted)
           || matches[0];
         accountId = best.id;
         console.log(`[stripe-connect-status] Found ${matches.length} account(s), using best: ${accountId}`);
       } else {
-        console.log(`[stripe-connect-status] No account found for email: ${userEmail}`);
+        console.log(`[stripe-connect-status] No account found for email: ${lookupEmail}`);
       }
     }
 
@@ -94,12 +119,10 @@ serve(async (req) => {
 
     const account = await stripe.accounts.retrieve(accountId);
 
-    console.log(`[stripe-connect-status] Account ${accountId} state: charges_enabled=${account.charges_enabled}, details_submitted=${account.details_submitted}, payouts_enabled=${account.payouts_enabled}, disabled_reason=${account.requirements?.disabled_reason}`);
+    console.log(`[stripe-connect-status] Account ${accountId} state: charges_enabled=${account.charges_enabled}, details_submitted=${account.details_submitted}, payouts_enabled=${account.payouts_enabled}`);
 
-    // If the account is active, persist stripe_account_id and stripe_onboarding_complete
-    // Uses raw fetch to bypass PostgREST schema cache issues (PGRST204)
     if (account.charges_enabled || account.details_submitted) {
-      await persistStripeStatus(user.id, accountId);
+      await persistStripeStatus(lookupUserId, accountId);
     }
 
     return new Response(

@@ -80,29 +80,28 @@ const Checkout = () => {
         .in('user_id', sellerIds);
       
       const accounts = new Map<string, string>();
-      const needsVerification: { userId: string; accountId: string }[] = [];
       
+      // Build confirmed accounts from DB
       data?.forEach((p: any) => {
         if (p.stripe_account_id && p.stripe_onboarding_complete) {
           accounts.set(p.user_id, p.stripe_account_id);
-        } else if (p.stripe_account_id && !p.stripe_onboarding_complete) {
-          needsVerification.push({ userId: p.user_id, accountId: p.stripe_account_id });
         }
       });
 
-      // For sellers with stale DB flags, verify directly with Stripe and fix the flag
-      for (const seller of needsVerification) {
+      // For ALL sellers not yet confirmed, do real-time Stripe verification.
+      // This handles: (1) stale DB flags, (2) DB write failures, (3) missing stripe_account_id.
+      const unconfirmedSellerIds = sellerIds.filter(id => !accounts.has(id));
+      
+      for (const sellerId of unconfirmedSellerIds) {
         try {
+          const dbEntry = data?.find((p: any) => p.user_id === sellerId);
           const { data: statusData, error } = await invokeCloudFunction('stripe-connect-status', {
-            stripeAccountId: seller.accountId,
+            stripeAccountId: dbEntry?.stripe_account_id || undefined,
+            sellerUserId: sellerId,
           });
-          if (!error && statusData && (statusData.chargesEnabled || statusData.detailsSubmitted)) {
-            accounts.set(seller.userId, seller.accountId);
-            supabase
-              .from('profiles')
-              .update({ stripe_onboarding_complete: true } as any)
-              .eq('user_id', seller.userId)
-              .then(() => {});
+          if (!error && statusData && (statusData.chargesEnabled || statusData.detailsSubmitted) && statusData.accountId) {
+            accounts.set(sellerId, statusData.accountId);
+            console.log(`[checkout] Verified seller ${sellerId} via real-time Stripe check: ${statusData.accountId}`);
           }
         } catch (e) {
           console.error('Seller Stripe verify failed:', e);
