@@ -160,25 +160,43 @@ export function useCreateReview() {
       photoUrl?: string;
     }) => {
       if (!user?.id) throw new Error('Not authenticated');
-      
-      const { data, error } = await supabase
-        .from('reviews')
-        .insert({
-          order_id: orderId,
-          reviewer_id: user.id,
-          reviewed_user_id: reviewedUserId,
-          rating,
-          comment: comment || null,
-          photo_url: photoUrl || null,
-        })
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Review insert error:', error);
-        throw error;
+
+      // Use raw REST API to bypass PostgREST schema cache issues (PGRST204)
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error('Not authenticated');
+
+      const externalUrl = 'https://dzglehiopfgfjmxtejve.supabase.co';
+      const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6Z2xlaGlvcGZnZmpteHRlanZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzI0MjUsImV4cCI6MjA4NDU0ODQyNX0.qfOBjubnuod5iGF_G_gH2ZhMDJ1fVwAO9p5BZSxG0xI';
+
+      const payload: Record<string, unknown> = {
+        order_id: orderId,
+        reviewer_id: user.id,
+        reviewed_user_id: reviewedUserId,
+        rating,
+        comment: comment || null,
+        photo_url: photoUrl || null,
+      };
+
+      const res = await fetch(`${externalUrl}/rest/v1/reviews`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': anonKey,
+          'Authorization': `Bearer ${token}`,
+          'Prefer': 'return=representation',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        console.error('Review insert error:', errBody);
+        throw new Error(errBody.message || errBody.details || `HTTP ${res.status}`);
       }
-      return data;
+
+      const data = await res.json();
+      return Array.isArray(data) ? data[0] : data;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['reviews', variables.reviewedUserId] });
