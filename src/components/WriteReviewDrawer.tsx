@@ -8,6 +8,7 @@ import { Camera, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { compressImage } from '@/utils/imageCompression';
+import ReviewPhotoCropDialog from '@/components/ReviewPhotoCropDialog';
 
 interface WriteReviewDrawerProps {
   orderId: string;
@@ -56,6 +57,7 @@ function WriteReviewDrawer({
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const createReview = useCreateReview();
   const { user } = useAuth();
@@ -64,16 +66,29 @@ function WriteReviewDrawer({
     ? reviewedUsername 
     : `@${reviewedUsername}`;
 
-  const handlePhotoSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Step 1: user picks file → open full-screen crop dialog
+  const handlePhotoSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Compress directly — no crop step
+    const reader = new FileReader();
+    reader.onload = (ev) => setCropSrc(ev.target?.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }, []);
+
+  // Step 2: crop confirmed → compress and set preview
+  const handleCropComplete = useCallback(async (blob: Blob) => {
+    setCropSrc(null);
+    const file = new File([blob], 'review-photo.jpg', { type: 'image/jpeg' });
     const compressed = await compressImage(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.85 });
     setPhotoFile(compressed);
     const reader = new FileReader();
     reader.onload = (ev) => setPhotoPreview(ev.target?.result as string);
     reader.readAsDataURL(compressed);
-    e.target.value = '';
+  }, []);
+
+  const handleCropCancel = useCallback(() => {
+    setCropSrc(null);
   }, []);
 
   const handleRemovePhoto = () => {
@@ -137,11 +152,19 @@ function WriteReviewDrawer({
       setComment('');
       setPhotoFile(null);
       setPhotoPreview(null);
+      setCropSrc(null);
     }
     onOpenChange(newOpen);
   };
 
   return (
+    <>
+      <ReviewPhotoCropDialog
+        open={!!cropSrc}
+        imageSrc={cropSrc || ''}
+        onCropComplete={handleCropComplete}
+        onCancel={handleCropCancel}
+      />
     <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerContent className="max-h-[90dvh]">
         <div className="overflow-y-auto">
@@ -236,6 +259,7 @@ function WriteReviewDrawer({
         </div>
       </DrawerContent>
     </Drawer>
+    </>
   );
 }
 
