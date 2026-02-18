@@ -112,7 +112,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[85vh] overflow-y-auto outline-none focus:outline-none">
+      <DrawerContent className="max-h-[85dvh] overflow-y-auto outline-none focus:outline-none">
         <DrawerHeader>
           <DrawerTitle className="text-center">Filter Preferences</DrawerTitle>
         </DrawerHeader>

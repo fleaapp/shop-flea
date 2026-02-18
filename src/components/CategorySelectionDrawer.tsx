@@ -57,7 +57,7 @@ const CategorySelectionDrawer = ({
 
   return (
     <Drawer open={open} onOpenChange={handleClose}>
-      <DrawerContent className="max-h-[85vh] rounded-t-3xl border-0 bg-background">
+      <DrawerContent className="max-h-[85dvh] rounded-t-3xl border-0 bg-background">
         <DrawerHeader className="pb-2">
           <div className="flex items-center justify-center relative">
             {viewingCategory && (

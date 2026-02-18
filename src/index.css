@@ -140,6 +140,16 @@
   }
 }
 
+/* Global keyboard-safe height: use dvh so the viewport shrinks when the keyboard opens */
+:root {
+  --keyboard-safe-height: 100dvh;
+}
+
+/* Ensure drawers never exceed the visual viewport (shrinks with keyboard on iOS) */
+[vaul-drawer] > [vaul-drawer-content] {
+  max-height: 90dvh !important;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
