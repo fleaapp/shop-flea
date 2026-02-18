@@ -49,7 +49,6 @@ const Checkout = () => {
   const [shippingLastName, setShippingLastName] = useState('');
   const [shippingAddress, setShippingAddress] = useState('');
   const [shippingSuburb, setShippingSuburb] = useState('');
-  const [shippingCity, setShippingCity] = useState('');
   const [shippingState, setShippingState] = useState('');
   const [shippingPostcode, setShippingPostcode] = useState('');
 
@@ -143,7 +142,7 @@ const Checkout = () => {
   const processingFee = subtotal * 0.02;
   const total = subtotal + processingFee;
   
-  const isShippingComplete = shippingFirstName.trim() && shippingLastName.trim() && shippingAddress.trim() && shippingSuburb.trim() && shippingCity.trim() && shippingState.trim() && shippingPostcode.trim();
+  const isShippingComplete = shippingFirstName.trim() && shippingLastName.trim() && shippingAddress.trim() && shippingSuburb.trim() && shippingState.trim() && shippingPostcode.trim();
   
   if (items.length === 0) {
     return <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
@@ -174,12 +173,11 @@ const Checkout = () => {
     
     try {
       // Save shipping details to sessionStorage for use after Stripe redirect
-      const shippingDetails = {
+        const shippingDetails = {
         shippingFirstName: shippingFirstName.trim(),
         shippingLastName: shippingLastName.trim(),
         shippingAddress: shippingAddress.trim(),
-        shippingSuburb: shippingSuburb.trim(),
-        shippingCity: shippingCity.trim(),
+        shippingCity: shippingSuburb.trim(),
         shippingState,
         shippingPostcode: shippingPostcode.trim(),
       };
@@ -316,22 +314,15 @@ const Checkout = () => {
                     onSelect={(addr) => {
                       setShippingAddress(addr.street);
                       if (addr.suburb) setShippingSuburb(addr.suburb);
-                      if (addr.city) setShippingCity(addr.city);
                       if (addr.state) setShippingState(addr.state);
                       if (addr.postcode) setShippingPostcode(addr.postcode);
                     }}
                     placeholder="Start typing your address..."
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">Suburb</label>
-                    <Input value={shippingSuburb} onChange={e => setShippingSuburb(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Suburb" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">City</label>
-                    <Input value={shippingCity} onChange={e => setShippingCity(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="City" />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Suburb</label>
+                  <Input value={shippingSuburb} onChange={e => setShippingSuburb(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Suburb" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
