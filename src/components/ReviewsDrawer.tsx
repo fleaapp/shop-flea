@@ -2,6 +2,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/u
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useUserReviews } from '@/hooks/useReviews';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 interface ReviewsDrawerProps {
   userId: string;
@@ -10,12 +11,16 @@ interface ReviewsDrawerProps {
   onOpenChange: (open: boolean) => void;
 }
 
-function StarRating({ rating }: { rating: number }) {
+function FilledStarRating({ rating }: { rating: number }) {
   return (
     <div className="flex gap-0.5">
       {[1, 2, 3, 4, 5].map((star) => (
-        <span key={star} className="text-sm">
-          {star <= rating ? '⭐' : '☆'}
+        <span
+          key={star}
+          className="text-sm"
+          style={{ color: star <= rating ? '#9ca3af' : '#e5e7eb' }}
+        >
+          ★
         </span>
       ))}
     </div>
@@ -24,6 +29,7 @@ function StarRating({ rating }: { rating: number }) {
 
 function ReviewsDrawer({ userId, username, open, onOpenChange }: ReviewsDrawerProps) {
   const { data: reviews, isLoading } = useUserReviews(userId);
+  const navigate = useNavigate();
   
   const averageRating = reviews && reviews.length > 0
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
@@ -63,22 +69,47 @@ function ReviewsDrawer({ userId, username, open, onOpenChange }: ReviewsDrawerPr
                   ? reviewerUsername 
                   : `@${reviewerUsername}`;
                 const reviewerAvatar = review.reviewer_profile?.avatar_url || '';
+                const reviewerUserId = review.reviewer_profile?.user_id || review.reviewer_id;
                 const formattedDate = format(new Date(review.created_at), 'dd/MM/yyyy');
                 const listingImage = review.order?.listing?.images?.[0];
+                const roleLabel = review.reviewer_role === 'buyer' ? 'Buyer' : review.reviewer_role === 'seller' ? 'Seller' : null;
 
                 return (
                   <div key={review.id} className="rounded-xl bg-card p-4 card-shadow">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={reviewerAvatar} alt={displayReviewerName} />
-                          <AvatarFallback>
-                            {reviewerUsername.replace('@', '').charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
+                        <button
+                          onClick={() => {
+                            onOpenChange(false);
+                            navigate(`/seller/${reviewerUserId}`);
+                          }}
+                          className="shrink-0"
+                        >
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={reviewerAvatar} alt={displayReviewerName} />
+                            <AvatarFallback>
+                              {reviewerUsername.replace('@', '').charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        </button>
                         <div>
-                          <p className="font-medium text-foreground">{displayReviewerName}</p>
-                          <StarRating rating={review.rating} />
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                onOpenChange(false);
+                                navigate(`/seller/${reviewerUserId}`);
+                              }}
+                              className="font-medium text-foreground hover:underline text-left"
+                            >
+                              {displayReviewerName}
+                            </button>
+                            {roleLabel && (
+                              <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">
+                                {roleLabel}
+                              </span>
+                            )}
+                          </div>
+                          <FilledStarRating rating={review.rating} />
                         </div>
                       </div>
                       <span className="text-sm text-muted-foreground">{formattedDate}</span>
@@ -114,3 +145,4 @@ function ReviewsDrawer({ userId, username, open, onOpenChange }: ReviewsDrawerPr
 }
 
 export default ReviewsDrawer;
+

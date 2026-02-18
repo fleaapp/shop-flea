@@ -11,9 +11,11 @@ export interface Review {
   comment: string | null;
   created_at: string;
   updated_at: string;
+  reviewer_role?: 'buyer' | 'seller';
   reviewer_profile?: {
     username: string;
     avatar_url: string | null;
+    user_id: string;
   };
   order?: {
     listing?: {
@@ -47,12 +49,13 @@ export function useUserReviews(userId: string | undefined) {
         .in('user_id', reviewerIds);
       
       const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+
       
-      // Fetch order listings
+      // Fetch order listings and buyer/seller info
       const orderIds = [...new Set(reviewsData.map(r => r.order_id))];
       const { data: orders } = await supabase
         .from('orders')
-        .select('id, listing_id')
+        .select('id, listing_id, buyer_id, seller_id')
         .in('id', orderIds);
       
       const listingIds = [...new Set((orders || []).map(o => o.listing_id))];
@@ -63,14 +66,22 @@ export function useUserReviews(userId: string | undefined) {
       
       const listingMap = new Map((listings || []).map(l => [l.id, l]));
       const orderListingMap = new Map((orders || []).map(o => [o.id, listingMap.get(o.listing_id)]));
+      const orderMap = new Map((orders || []).map(o => [o.id, o]));
       
-      return reviewsData.map(review => ({
-        ...review,
-        reviewer_profile: profileMap.get(review.reviewer_id) || { username: '@user', avatar_url: null },
-        order: {
-          listing: orderListingMap.get(review.order_id) || undefined
-        }
-      })) as Review[];
+      return reviewsData.map(review => {
+        const order = orderMap.get(review.order_id);
+        const reviewerRole: 'buyer' | 'seller' | undefined = order
+          ? (order.buyer_id === review.reviewer_id ? 'buyer' : 'seller')
+          : undefined;
+        return {
+          ...review,
+          reviewer_role: reviewerRole,
+          reviewer_profile: profileMap.get(review.reviewer_id) || { username: '@user', avatar_url: null, user_id: review.reviewer_id },
+          order: {
+            listing: orderListingMap.get(review.order_id) || undefined
+          }
+        };
+      }) as Review[];
     },
     enabled: !!userId,
   });
