@@ -8,6 +8,30 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function persistStripeStatus(userId: string, accountId: string) {
+  const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '';
+  const serviceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+  // Use raw REST API call to bypass PostgREST schema cache issues (PGRST204)
+  const response = await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
+    method: 'PATCH',
+    headers: {
+      'apikey': serviceKey,
+      'Authorization': `Bearer ${serviceKey}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal',
+    },
+    body: JSON.stringify({ stripe_account_id: accountId, stripe_onboarding_complete: true }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    console.error(`[stripe-connect-status] Failed to persist Stripe status: ${response.status} ${text}`);
+  } else {
+    console.log(`[stripe-connect-status] Persisted stripe_account_id=${accountId}, stripe_onboarding_complete=true for user ${userId}`);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -73,21 +97,9 @@ serve(async (req) => {
     console.log(`[stripe-connect-status] Account ${accountId} state: charges_enabled=${account.charges_enabled}, details_submitted=${account.details_submitted}, payouts_enabled=${account.payouts_enabled}, disabled_reason=${account.requirements?.disabled_reason}`);
 
     // If the account is active, persist stripe_account_id and stripe_onboarding_complete
-    // to the external Supabase DB using service role (bypasses RLS, reliable server-side write)
+    // Uses raw fetch to bypass PostgREST schema cache issues (PGRST204)
     if (account.charges_enabled || account.details_submitted) {
-      const externalServiceClient = createClient(
-        Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '',
-        Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      );
-      const { error: updateError } = await externalServiceClient
-        .from('profiles')
-        .update({ stripe_account_id: accountId, stripe_onboarding_complete: true })
-        .eq('user_id', user.id);
-      if (updateError) {
-        console.error('[stripe-connect-status] Failed to persist Stripe status to DB:', updateError);
-      } else {
-        console.log(`[stripe-connect-status] Persisted stripe_account_id=${accountId} for user ${user.id}`);
-      }
+      await persistStripeStatus(user.id, accountId);
     }
 
     return new Response(
