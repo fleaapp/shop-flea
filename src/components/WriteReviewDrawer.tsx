@@ -19,18 +19,22 @@ function StarRatingInput({ rating, onChange }: { rating: number; onChange: (rati
   
   return (
     <div className="flex gap-2 justify-center">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          type="button"
-          className="text-4xl transition-transform hover:scale-110 focus:outline-none"
-          onMouseEnter={() => setHoverRating(star)}
-          onMouseLeave={() => setHoverRating(0)}
-          onClick={() => onChange(star)}
-        >
-          {star <= (hoverRating || rating) ? '⭐' : '☆'}
-        </button>
-      ))}
+      {[1, 2, 3, 4, 5].map((star) => {
+        const active = star <= (hoverRating || rating);
+        return (
+          <button
+            key={star}
+            type="button"
+            className="text-4xl transition-transform hover:scale-110 focus:outline-none"
+            style={{ color: active ? '#9ca3af' : '#e5e7eb' }}
+            onMouseEnter={() => setHoverRating(star)}
+            onMouseLeave={() => setHoverRating(0)}
+            onClick={() => onChange(star)}
+          >
+            ★
+          </button>
+        );
+      })}
     </div>
   );
 }
