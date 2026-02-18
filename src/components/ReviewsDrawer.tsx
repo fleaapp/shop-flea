@@ -15,12 +15,8 @@ function FilledStarRating({ rating }: { rating: number }) {
   return (
     <div className="flex gap-0.5">
       {[1, 2, 3, 4, 5].map((star) => (
-        <span
-          key={star}
-          className="text-sm"
-          style={{ color: star <= rating ? '#9ca3af' : '#e5e7eb' }}
-        >
-          ★
+        <span key={star} className="text-sm" style={star > rating ? { color: '#d1d5db' } : undefined}>
+          {star <= rating ? '⭐' : '★'}
         </span>
       ))}
     </div>
