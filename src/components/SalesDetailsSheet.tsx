@@ -137,13 +137,16 @@ const SalesDetailsSheet = ({
             {/* Shipping Address Section - Where to ship */}
             <div className="rounded-xl bg-card overflow-hidden">
               <SectionHeader>Ship To</SectionHeader>
-              <div className="p-4 space-y-1">
+              <div className="p-4 space-y-0.5">
                 <p className="font-medium text-foreground">
                   {primaryOrder.shipping_first_name} {primaryOrder.shipping_last_name}
                 </p>
                 <p className="text-muted-foreground">{primaryOrder.shipping_address}</p>
+                {primaryOrder.shipping_city && (
+                  <p className="text-muted-foreground">{primaryOrder.shipping_city}</p>
+                )}
                 <p className="text-muted-foreground">
-                  {primaryOrder.shipping_city}, {primaryOrder.shipping_state} {primaryOrder.shipping_postcode}
+                  {[primaryOrder.shipping_state, primaryOrder.shipping_postcode].filter(Boolean).join(' ')}
                 </p>
               </div>
             </div>
@@ -235,22 +238,26 @@ const SalesDetailsSheet = ({
             {/* Payment & Payout Section */}
             <div className="rounded-xl bg-card overflow-hidden">
               <SectionHeader>Payment & Payout</SectionHeader>
-              <div className="p-4 space-y-3">
-                <button
-                  className="w-full text-left text-sm text-foreground underline"
-                  onClick={() => {
-                    window.open('https://dashboard.stripe.com/payments', '_blank');
-                  }}
-                >
-                  View order on Stripe →
-                </button>
-                <div className="border-t border-border pt-3">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Need your funds faster? Request an instant payout for a 1.5% fee.
+              <div className="p-4 space-y-4">
+                <div className="flex justify-center">
+                  <button
+                    className="text-sm text-foreground underline"
+                    onClick={() => {
+                      window.open('https://dashboard.stripe.com/payments', '_blank');
+                    }}
+                  >
+                    View order on Stripe →
+                  </button>
+                </div>
+                <div className="border-t border-border mx-0" />
+                <div className="flex flex-col items-center space-y-3">
+                  <p className="text-sm text-center">
+                    <span className="font-semibold text-foreground">Need your funds faster?</span>
+                    <br />
+                    <span className="text-muted-foreground">Request an instant payout for a 1.5% fee.</span>
                   </p>
                   <Button
-                    variant="outline"
-                    className="rounded-full h-10 px-6 text-sm"
+                    className="rounded-full h-10 px-6 text-sm bg-primary text-primary-foreground hover:bg-primary/90"
                     onClick={() => {
                       window.open('https://dashboard.stripe.com/payouts', '_blank');
                     }}
@@ -263,22 +270,22 @@ const SalesDetailsSheet = ({
 
             {/* Actions */}
             {primaryOrder.status === 'awaiting' && (
-              <div className="flex flex-col items-center space-y-3 pt-4">
+              <div className="flex flex-col items-center space-y-4 pt-4 pb-2">
                 <Button
                   onClick={handleMarkShipped}
                   className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
                 >
                   Mark as shipped
                 </Button>
-              <button
-                className="text-center text-sm text-foreground underline"
-                onClick={() => {
-                  onOpenChange(false);
-                  setTimeout(() => navigate('/contact-support'), 300);
-                }}
-              >
-                Need help?
-              </button>
+                <button
+                  className="text-center text-sm text-foreground underline mt-2"
+                  onClick={() => {
+                    onOpenChange(false);
+                    setTimeout(() => navigate('/contact-support'), 300);
+                  }}
+                >
+                  Need help?
+                </button>
               </div>
             )}
             {primaryOrder.status === 'delivered' && !existingReview && (
