@@ -91,15 +91,21 @@ function WriteReviewDrawer({
 
       if (photoFile && user) {
         setUploadingPhoto(true);
-        const ext = photoFile.name.split('.').pop() || 'jpg';
-        const path = `${user.id}/reviews/${Date.now()}.${ext}`;
-        const { error: uploadError } = await supabase.storage
-          .from('listings')
-          .upload(path, photoFile, { upsert: true });
-        setUploadingPhoto(false);
-        if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage.from('listings').getPublicUrl(path);
-        photoUrl = urlData.publicUrl;
+        try {
+          const ext = photoFile.name.split('.').pop() || 'jpg';
+          const path = `${user.id}/reviews/${Date.now()}.${ext}`;
+          const { error: uploadError } = await supabase.storage
+            .from('listings')
+            .upload(path, photoFile, { upsert: true });
+          if (uploadError) {
+            console.warn('Photo upload failed, submitting review without photo:', uploadError);
+          } else {
+            const { data: urlData } = supabase.storage.from('listings').getPublicUrl(path);
+            photoUrl = urlData.publicUrl;
+          }
+        } finally {
+          setUploadingPhoto(false);
+        }
       }
 
       await createReview.mutateAsync({
