@@ -26,12 +26,12 @@ function StarRatingInput({ rating, onChange }: { rating: number; onChange: (rati
             key={star}
             type="button"
             className="text-4xl transition-transform hover:scale-110 focus:outline-none"
-            style={{ color: active ? '#9ca3af' : '#e5e7eb' }}
+            style={!active ? { color: '#d1d5db' } : undefined}
             onMouseEnter={() => setHoverRating(star)}
             onMouseLeave={() => setHoverRating(0)}
             onClick={() => onChange(star)}
           >
-            ★
+            {active ? '⭐' : '★'}
           </button>
         );
       })}
