@@ -24,7 +24,7 @@ import {
 
 const EditProfile = () => {
   const navigate = useNavigate();
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, signOut } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [firstName, setFirstName] = useState('');
@@ -219,11 +219,25 @@ const EditProfile = () => {
     if (deleteConfirmText.toLowerCase() !== 'delete account') return;
     if (!user) return;
     try {
-      // Sign out and let backend handle deletion via support/admin process
-      toast.success('Account deletion request submitted');
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error('No session');
+
+      const { error } = await supabase.functions.invoke('delete-account', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (error) {
+        toast.error(error.message || 'Failed to delete account');
+        return;
+      }
+
+      toast.success('Account deleted');
       setDeleteDialogOpen(false);
-    } catch {
-      toast.error('Failed to delete account');
+      await signOut();
+      navigate('/auth');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete account');
     }
   };
 
