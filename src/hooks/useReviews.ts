@@ -19,7 +19,9 @@ export interface Review {
     user_id: string;
   };
   order?: {
+    listing_id?: string;
     listing?: {
+      id: string;
       images: string[];
       title: string;
     };
@@ -66,7 +68,6 @@ export function useUserReviews(userId: string | undefined) {
         .in('id', listingIds);
       
       const listingMap = new Map((listings || []).map(l => [l.id, l]));
-      const orderListingMap = new Map((orders || []).map(o => [o.id, listingMap.get(o.listing_id)]));
       const orderMap = new Map((orders || []).map(o => [o.id, o]));
       
       return reviewsData.map(review => {
@@ -74,12 +75,14 @@ export function useUserReviews(userId: string | undefined) {
         const reviewerRole: 'buyer' | 'seller' | undefined = order
           ? (order.buyer_id === review.reviewer_id ? 'buyer' : 'seller')
           : undefined;
+        const listing = order ? listingMap.get(order.listing_id) : undefined;
         return {
           ...review,
           reviewer_role: reviewerRole,
           reviewer_profile: profileMap.get(review.reviewer_id) || { username: '@user', avatar_url: null, user_id: review.reviewer_id },
           order: {
-            listing: orderListingMap.get(review.order_id) || undefined
+            listing_id: order?.listing_id,
+            listing: listing ? { ...listing } : undefined,
           }
         };
       }) as Review[];

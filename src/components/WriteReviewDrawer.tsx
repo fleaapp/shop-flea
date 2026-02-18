@@ -8,7 +8,6 @@ import { Camera, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { compressImage } from '@/utils/imageCompression';
-import ReviewPhotoCropDialog from '@/components/ReviewPhotoCropDialog';
 
 interface WriteReviewDrawerProps {
   orderId: string;
@@ -57,8 +56,6 @@ function WriteReviewDrawer({
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [cropDialogOpen, setCropDialogOpen] = useState(false);
-  const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const createReview = useCreateReview();
   const { user } = useAuth();
@@ -70,25 +67,13 @@ function WriteReviewDrawer({
   const handlePhotoSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setRawImageSrc(ev.target?.result as string);
-      setCropDialogOpen(true);
-    };
-    reader.readAsDataURL(file);
-    // Reset input so same file can be re-selected
-    e.target.value = '';
-  }, []);
-
-  const handleCropComplete = useCallback(async (blob: Blob) => {
-    setCropDialogOpen(false);
-    setRawImageSrc(null);
-    const file = new File([blob], 'review-photo.jpg', { type: 'image/jpeg' });
-    const compressed = await compressImage(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.8 });
+    // Compress directly — no crop step
+    const compressed = await compressImage(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.85 });
     setPhotoFile(compressed);
     const reader = new FileReader();
     reader.onload = (ev) => setPhotoPreview(ev.target?.result as string);
     reader.readAsDataURL(compressed);
+    e.target.value = '';
   }, []);
 
   const handleRemovePhoto = () => {
@@ -152,124 +137,106 @@ function WriteReviewDrawer({
       setComment('');
       setPhotoFile(null);
       setPhotoPreview(null);
-      setRawImageSrc(null);
-      setCropDialogOpen(false);
     }
     onOpenChange(newOpen);
   };
 
   return (
-    <>
-      <Drawer open={open} onOpenChange={handleOpenChange}>
-        <DrawerContent className="max-h-[90dvh]">
-          <div className="overflow-y-auto">
-            <DrawerHeader className="text-center pb-4">
-              <DrawerTitle className="text-xl font-semibold">
-                Review {reviewType === 'seller' ? 'Seller' : 'Buyer'}
-              </DrawerTitle>
-              <p className="text-muted-foreground mt-1">{displayUsername}</p>
-            </DrawerHeader>
+    <Drawer open={open} onOpenChange={handleOpenChange}>
+      <DrawerContent className="max-h-[90dvh]">
+        <div className="overflow-y-auto">
+          <DrawerHeader className="text-center pb-4">
+            <DrawerTitle className="text-xl font-semibold">
+              Review {reviewType === 'seller' ? 'Seller' : 'Buyer'}
+            </DrawerTitle>
+            <p className="text-muted-foreground mt-1">{displayUsername}</p>
+          </DrawerHeader>
 
-            <div className="px-4 pb-8 space-y-6">
-              {/* Star Rating */}
-              <div className="rounded-xl bg-card p-6 card-shadow">
-                <p className="text-center font-medium text-foreground mb-4">
-                  How was your experience?
+          <div className="px-4 pb-8 space-y-6">
+            {/* Star Rating */}
+            <div className="rounded-xl bg-card p-6 card-shadow">
+              <p className="text-center font-medium text-foreground mb-4">
+                How was your experience?
+              </p>
+              <StarRatingInput rating={rating} onChange={setRating} />
+              {rating > 0 && (
+                <p className="text-center text-muted-foreground mt-2">
+                  {rating === 1 && 'Poor'}
+                  {rating === 2 && 'Fair'}
+                  {rating === 3 && 'Good'}
+                  {rating === 4 && 'Great'}
+                  {rating === 5 && 'Excellent'}
                 </p>
-                <StarRatingInput rating={rating} onChange={setRating} />
-                {rating > 0 && (
-                  <p className="text-center text-muted-foreground mt-2">
-                    {rating === 1 && 'Poor'}
-                    {rating === 2 && 'Fair'}
-                    {rating === 3 && 'Good'}
-                    {rating === 4 && 'Great'}
-                    {rating === 5 && 'Excellent'}
-                  </p>
-                )}
-              </div>
+              )}
+            </div>
 
-              {/* Comment */}
-              <div className="rounded-xl bg-card p-4 card-shadow">
-                <p className="font-medium text-foreground mb-3">Add a comment (optional)</p>
-                <Textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Share your experience..."
-                  className="bg-background min-h-[100px] resize-none"
-                  maxLength={500}
-                />
-                <p className="text-xs text-muted-foreground mt-2 text-right">
-                  {comment.length}/500
-                </p>
-              </div>
+            {/* Comment */}
+            <div className="rounded-xl bg-card p-4 card-shadow">
+              <p className="font-medium text-foreground mb-3">Add a comment (optional)</p>
+              <Textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Share your experience..."
+                className="bg-background min-h-[100px] resize-none"
+                maxLength={500}
+              />
+              <p className="text-xs text-muted-foreground mt-2 text-right">
+                {comment.length}/500
+              </p>
+            </div>
 
-              {/* Photo Upload */}
-              <div className="rounded-xl bg-card p-4 card-shadow">
-                <p className="font-medium text-foreground mb-3">Add a photo (optional)</p>
-                {photoPreview ? (
-                  <div className="relative inline-block">
-                    <img
-                      src={photoPreview}
-                      alt="Review photo"
-                      className="h-24 w-24 rounded-lg object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleRemovePhoto}
-                      className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ) : (
+            {/* Photo Upload */}
+            <div className="rounded-xl bg-card p-4 card-shadow">
+              <p className="font-medium text-foreground mb-3">Add a photo (optional)</p>
+              {photoPreview ? (
+                <div className="relative inline-block">
+                  <img
+                    src={photoPreview}
+                    alt="Review photo"
+                    className="h-24 w-24 rounded-lg object-cover"
+                  />
                   <button
                     type="button"
-                    onClick={() => photoInputRef.current?.click()}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full border border-border text-muted-foreground hover:bg-muted transition-colors text-sm"
+                    onClick={handleRemovePhoto}
+                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5"
                   >
-                    <Camera className="h-4 w-4" />
-                    Upload photo
+                    <X className="h-3.5 w-3.5" />
                   </button>
-                )}
-                <input
-                  ref={photoInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handlePhotoSelect}
-                />
-              </div>
-
-              {/* Submit Button */}
-              <div className="flex flex-col items-center pt-4">
-                <Button
-                  onClick={handleSubmit}
-                  disabled={rating === 0 || createReview.isPending || uploadingPhoto}
-                  className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8 w-40"
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => photoInputRef.current?.click()}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full border border-border text-muted-foreground hover:bg-muted transition-colors text-sm"
                 >
-                  {createReview.isPending || uploadingPhoto ? 'Submitting...' : 'Submit Review'}
-                </Button>
-              </div>
+                  <Camera className="h-4 w-4" />
+                  Upload photo
+                </button>
+              )}
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoSelect}
+              />
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex flex-col items-center pt-4">
+              <Button
+                onClick={handleSubmit}
+                disabled={rating === 0 || createReview.isPending || uploadingPhoto}
+                className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8 w-40"
+              >
+                {createReview.isPending || uploadingPhoto ? 'Submitting...' : 'Submit Review'}
+              </Button>
             </div>
           </div>
-        </DrawerContent>
-      </Drawer>
-
-      {rawImageSrc && (
-        <ReviewPhotoCropDialog
-          open={cropDialogOpen}
-          imageSrc={rawImageSrc}
-          onCropComplete={handleCropComplete}
-          onCancel={() => {
-            setCropDialogOpen(false);
-            setRawImageSrc(null);
-          }}
-        />
-      )}
-    </>
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
 
 export default WriteReviewDrawer;
-
-
