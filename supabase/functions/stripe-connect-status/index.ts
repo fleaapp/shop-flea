@@ -12,20 +12,38 @@ async function persistStripeStatus(userId: string, accountId: string) {
   const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '';
   const serviceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-  const response = await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
-    method: 'PATCH',
-    headers: {
-      'apikey': serviceKey,
-      'Authorization': `Bearer ${serviceKey}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=minimal',
-    },
-    body: JSON.stringify({ stripe_account_id: accountId, stripe_onboarding_complete: true }),
-  });
+  // Use service-role client for DB writes (bypasses RLS)
+  const serviceClient = createClient(externalUrl, serviceKey);
 
-  if (!response.ok) {
-    const text = await response.text();
-    console.error(`[stripe-connect-status] Failed to persist Stripe status: ${response.status} ${text}`);
+  const { error } = await serviceClient
+    .from('profiles')
+    .update({ stripe_account_id: accountId, stripe_onboarding_complete: true })
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error(`[stripe-connect-status] Failed to persist via SDK: ${error.message} (${error.code})`);
+
+    // If PGRST204 schema cache issue, fall back to raw REST with schema-reload header
+    if (error.code === 'PGRST204') {
+      console.log(`[stripe-connect-status] Attempting raw REST fallback for PGRST204...`);
+      const response = await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': serviceKey,
+          'Authorization': `Bearer ${serviceKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+          'Accept-Profile': 'public',
+        },
+        body: JSON.stringify({ stripe_account_id: accountId, stripe_onboarding_complete: true }),
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        console.error(`[stripe-connect-status] Raw REST fallback failed: ${response.status} ${text}`);
+      } else {
+        console.log(`[stripe-connect-status] Raw REST fallback succeeded for user ${userId}`);
+      }
+    }
   } else {
     console.log(`[stripe-connect-status] Persisted stripe_account_id=${accountId}, stripe_onboarding_complete=true for user ${userId}`);
   }
@@ -64,27 +82,22 @@ serve(async (req) => {
     let lookupUserId = user.id;
     let lookupEmail = user.email;
 
-    // If checking a different seller (e.g. from checkout flow), fetch their email via service role
+    // If checking a different seller (e.g. from checkout flow), fetch their profile via service role
     if (sellerUserId && sellerUserId !== user.id) {
       console.log(`[stripe-connect-status] Looking up seller profile for userId: ${sellerUserId}`);
-      const profileResp = await fetch(
-        `${externalUrl}/rest/v1/profiles?user_id=eq.${sellerUserId}&select=email,stripe_account_id`,
-        {
-          headers: {
-            'apikey': serviceKey,
-            'Authorization': `Bearer ${serviceKey}`,
-          }
-        }
-      );
-      if (profileResp.ok) {
-        const profiles = await profileResp.json();
-        if (profiles[0]?.email) {
-          lookupEmail = profiles[0].email;
-          console.log(`[stripe-connect-status] Found seller email: ${lookupEmail}`);
-        }
-        if (!accountId && profiles[0]?.stripe_account_id) {
-          accountId = profiles[0].stripe_account_id;
-        }
+      const serviceClient = createClient(externalUrl, serviceKey);
+      const { data: sellerProfile } = await serviceClient
+        .from('profiles')
+        .select('email, stripe_account_id')
+        .eq('user_id', sellerUserId)
+        .single();
+
+      if (sellerProfile?.email) {
+        lookupEmail = sellerProfile.email;
+        console.log(`[stripe-connect-status] Found seller email: ${lookupEmail}`);
+      }
+      if (!accountId && sellerProfile?.stripe_account_id) {
+        accountId = sellerProfile.stripe_account_id;
       }
       lookupUserId = sellerUserId;
     }
