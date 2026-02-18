@@ -116,8 +116,10 @@ function WriteReviewDrawer({
       setPhotoFile(null);
       setPhotoPreview(null);
       onOpenChange(false);
-    } catch (error) {
-      toast.error('Failed to submit review');
+    } catch (error: unknown) {
+      console.error('Review submission error:', error);
+      const msg = error instanceof Error ? error.message : (typeof error === 'object' && error !== null && 'message' in error ? String((error as { message: unknown }).message) : 'Unknown error');
+      toast.error(`Failed to submit review: ${msg}`);
     }
   };
 
