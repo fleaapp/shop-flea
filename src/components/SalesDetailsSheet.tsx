@@ -141,10 +141,9 @@ const SalesDetailsSheet = ({
                 <p className="font-medium text-foreground">
                   {primaryOrder.shipping_first_name} {primaryOrder.shipping_last_name}
                 </p>
-                <p className="text-muted-foreground">{primaryOrder.shipping_address}</p>
-                {primaryOrder.shipping_city && (
-                  <p className="text-muted-foreground">{primaryOrder.shipping_city}</p>
-                )}
+                <p className="text-muted-foreground">
+                  {[primaryOrder.shipping_address, primaryOrder.shipping_city].filter(Boolean).join(', ')}
+                </p>
                 <p className="text-muted-foreground">
                   {[primaryOrder.shipping_state, primaryOrder.shipping_postcode].filter(Boolean).join(' ')}
                 </p>
@@ -239,7 +238,7 @@ const SalesDetailsSheet = ({
             <div className="rounded-xl bg-card overflow-hidden">
               <SectionHeader>Payment & Payout</SectionHeader>
               <div className="p-4 space-y-4">
-                <div className="flex justify-center">
+              <div className="flex justify-center">
                   <button
                     className="text-sm text-foreground underline"
                     onClick={() => {
@@ -249,8 +248,8 @@ const SalesDetailsSheet = ({
                     View order on Stripe →
                   </button>
                 </div>
-                <div className="border-t border-border mx-0" />
-                <div className="flex flex-col items-center space-y-3">
+                <div className="border-t border-border -mx-4" />
+                <div className="flex flex-col items-center space-y-3 py-2">
                   <p className="text-sm text-center">
                     <span className="font-semibold text-foreground">Need your funds faster?</span>
                     <br />

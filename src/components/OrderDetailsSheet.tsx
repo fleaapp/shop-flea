@@ -144,10 +144,9 @@ const OrderDetailsSheet = ({
                 <p className="font-medium text-foreground">
                   {primaryOrder.shipping_first_name} {primaryOrder.shipping_last_name}
                 </p>
-                <p className="text-muted-foreground">{primaryOrder.shipping_address}</p>
-                {primaryOrder.shipping_city && (
-                  <p className="text-muted-foreground">{primaryOrder.shipping_city}</p>
-                )}
+                <p className="text-muted-foreground">
+                  {[primaryOrder.shipping_address, primaryOrder.shipping_city].filter(Boolean).join(', ')}
+                </p>
                 <p className="text-muted-foreground">
                   {[primaryOrder.shipping_state, primaryOrder.shipping_postcode].filter(Boolean).join(' ')}
                 </p>
