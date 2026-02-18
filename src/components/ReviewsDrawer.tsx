@@ -115,13 +115,22 @@ function ReviewsDrawer({ userId, username, open, onOpenChange }: ReviewsDrawerPr
                       <p className="text-foreground mt-3">{review.comment}</p>
                     )}
                     
-                    {listingImage && (
-                      <div className="mt-3">
-                        <img
-                          src={listingImage}
-                          alt="Product"
-                          className="h-16 w-16 rounded-lg object-cover"
-                        />
+                    {(review.photo_url || listingImage) && (
+                      <div className="mt-3 flex gap-2">
+                        {review.photo_url && (
+                          <img
+                            src={review.photo_url}
+                            alt="Review photo"
+                            className="h-16 w-16 rounded-lg object-cover"
+                          />
+                        )}
+                        {listingImage && (
+                          <img
+                            src={listingImage}
+                            alt="Product"
+                            className="h-16 w-16 rounded-lg object-cover opacity-60"
+                          />
+                        )}
                       </div>
                     )}
                   </div>

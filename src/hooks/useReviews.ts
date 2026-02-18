@@ -9,6 +9,7 @@ export interface Review {
   reviewed_user_id: string;
   rating: number;
   comment: string | null;
+  photo_url: string | null;
   created_at: string;
   updated_at: string;
   reviewer_role?: 'buyer' | 'seller';
@@ -150,11 +151,13 @@ export function useCreateReview() {
       reviewedUserId,
       rating,
       comment,
+      photoUrl,
     }: {
       orderId: string;
       reviewedUserId: string;
       rating: number;
       comment: string;
+      photoUrl?: string;
     }) => {
       if (!user?.id) throw new Error('Not authenticated');
       
@@ -166,6 +169,7 @@ export function useCreateReview() {
           reviewed_user_id: reviewedUserId,
           rating,
           comment: comment || null,
+          photo_url: photoUrl || null,
         })
         .select()
         .single();
