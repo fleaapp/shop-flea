@@ -8,6 +8,30 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function persistStripeAccount(userId: string, accountId: string) {
+  const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '';
+  const serviceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+  // Use raw REST API call to bypass PostgREST schema cache issues
+  const response = await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
+    method: 'PATCH',
+    headers: {
+      'apikey': serviceKey,
+      'Authorization': `Bearer ${serviceKey}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal',
+    },
+    body: JSON.stringify({ stripe_account_id: accountId }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    console.error(`[stripe-connect-onboard] Failed to persist stripe_account_id: ${response.status} ${text}`);
+  } else {
+    console.log(`[stripe-connect-onboard] Persisted stripe_account_id=${accountId} for user ${userId}`);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -76,6 +100,9 @@ serve(async (req) => {
         console.log(`[stripe-connect-onboard] Created new account: ${accountId}`);
       }
     }
+
+    // Persist stripe_account_id to DB immediately server-side
+    await persistStripeAccount(userId, accountId);
 
     // Create an account link for onboarding
     const accountLink = await stripe.accountLinks.create({
