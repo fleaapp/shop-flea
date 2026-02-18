@@ -174,7 +174,10 @@ export function useCreateReview() {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Review insert error:', error);
+        throw error;
+      }
       return data;
     },
     onSuccess: (_, variables) => {
