@@ -1,9 +1,8 @@
 import { useState, useCallback } from 'react';
-import { createPortal } from 'react-dom';
 import Cropper, { Area } from 'react-easy-crop';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { X, ZoomIn } from 'lucide-react';
 
 interface ReviewPhotoCropDialogProps {
   open: boolean;
@@ -61,60 +60,62 @@ const ReviewPhotoCropDialog = ({ open, imageSrc, onCropComplete, onCancel }: Rev
     }
   };
 
-  if (!open) return null;
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
+      <DialogContent
+        hideCloseButton
+        className="max-w-[340px] p-0 rounded-3xl overflow-hidden bg-background border-0"
+      >
+        <DialogTitle className="sr-only">Crop photo</DialogTitle>
 
-  return createPortal(
-    <div className="fixed inset-0 z-[9999] flex flex-col bg-black">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-safe-top pt-4 pb-3 shrink-0">
-        <button
-          onClick={onCancel}
-          className="flex items-center justify-center h-10 w-10 rounded-full bg-white/10 text-white"
-        >
-          <X className="h-5 w-5" />
-        </button>
-        <span className="text-white font-semibold text-base">Crop Photo</span>
-        <Button
-          onClick={handleSave}
-          disabled={saving}
-          className="h-9 px-5 rounded-full bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-60"
-        >
-          {saving ? 'Saving…' : 'Use Photo'}
-        </Button>
-      </div>
+        {/* Crop area */}
+        <div className="relative w-full aspect-square bg-black">
+          <Cropper
+            image={imageSrc}
+            crop={crop}
+            zoom={zoom}
+            aspect={1}
+            cropShape="rect"
+            showGrid={false}
+            onCropChange={setCrop}
+            onZoomChange={setZoom}
+            onCropComplete={onCropAreaComplete}
+          />
+        </div>
 
-      {/* Cropper — fills remaining space */}
-      <div className="relative flex-1 w-full">
-        <Cropper
-          image={imageSrc}
-          crop={crop}
-          zoom={zoom}
-          aspect={1}
-          cropShape="rect"
-          showGrid={false}
-          onCropChange={setCrop}
-          onZoomChange={setZoom}
-          onCropComplete={onCropAreaComplete}
-          style={{
-            containerStyle: { background: '#000' },
-          }}
-        />
-      </div>
+        {/* Controls */}
+        <div className="px-6 pb-5 pt-4 space-y-4">
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground">🔍</span>
+            <Slider
+              value={[zoom]}
+              min={1}
+              max={3}
+              step={0.05}
+              onValueChange={([v]) => setZoom(v)}
+              className="flex-1"
+            />
+          </div>
 
-      {/* Zoom slider */}
-      <div className="shrink-0 px-6 pt-5 pb-safe-bottom pb-8 flex items-center gap-4">
-        <ZoomIn className="h-5 w-5 text-white/60 shrink-0" />
-        <Slider
-          value={[zoom]}
-          min={1}
-          max={3}
-          step={0.05}
-          onValueChange={([v]) => setZoom(v)}
-          className="flex-1"
-        />
-      </div>
-    </div>,
-    document.body
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={onCancel}
+              className="flex-1 h-11 rounded-full"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex-1 h-11 rounded-full bg-primary text-primary-foreground"
+            >
+              {saving ? 'Saving…' : 'Use Photo'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
