@@ -69,9 +69,9 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused
             
             {/* Sold/Paused overlay */}
             {isUnavailable && (
-              <div className="absolute inset-0 flex items-center justify-center bg-charcoal/70 rounded-2xl">
+              <div className={`absolute inset-0 flex items-center justify-center rounded-2xl ${isSold ? 'bg-charcoal/40' : 'bg-charcoal/70'}`}>
                 {isSold ? (
-                  <img src={soldSticker} alt="SOLD" className="w-[100px] h-[100px] drop-shadow-lg" />
+                  <img src={soldSticker} alt="SOLD" className="w-[130px] h-[130px] drop-shadow-lg" />
                 ) : (
                   <span className="text-2xl font-bold text-white tracking-wider">⏸️ Paused</span>
                 )}
