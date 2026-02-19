@@ -90,12 +90,11 @@ const CartItemRow = ({
     <>
     <div
       className={cn(
-        "relative",
+        "relative overflow-hidden",
         !isLast && !isSold && "border-b border-border",
-        isSold && "border-[3px] border-[hsl(4,90%,58%)] rounded-xl"
+        isSold && "ring-[3px] ring-[hsl(4,90%,58%)] rounded-xl"
       )}
     >
-      <div className="overflow-hidden relative rounded-[inherit]">
       {/* Swipe background indicators */}
       <motion.div 
         className="absolute inset-0 bg-muted-foreground/50 flex items-center justify-end pr-6"
@@ -207,7 +206,6 @@ const CartItemRow = ({
           </div>
         </div>
       </motion.div>
-      </div>
     </div>
 
     {/* Confirmation Dialog */}
