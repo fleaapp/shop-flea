@@ -285,7 +285,7 @@ const Cart = () => {
                 const allSold = items.every(item => item.status === 'sold');
                 
                 return (
-                  <div key={sellerId} className="rounded-2xl bg-card overflow-hidden card-shadow">
+                  <div key={sellerId} className={cn("rounded-2xl bg-card overflow-hidden card-shadow", allSold && "ring-2 ring-inset ring-[hsl(4,90%,58%)]")}>
                     {/* Item rows within the same seller card */}
                     {items.map((item, index) => (
                       <CartItemRow
