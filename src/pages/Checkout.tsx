@@ -256,20 +256,45 @@ const Checkout = () => {
                     
                     return (
                       <div key={sellerId} className="space-y-4">
-                        {sellerItems.map((item, idx) => (
-                          <div key={item.id} className="flex gap-4">
-                            <img src={item.image} alt={item.title} className="h-20 w-20 rounded-xl object-cover bg-muted" />
-                            <div className="flex-1 flex flex-col justify-between">
-                              <h3 className="font-semibold text-foreground">{item.title}</h3>
-                              <div className="text-right">
-                                <p className="text-lg font-semibold">${item.price}</p>
-                                {idx === sellerItems.length - 1 && (
-                                  <p className="text-sm text-muted-foreground">+ ${shipping.toFixed(2)} shipping</p>
+                        {sellerItems.map((item, idx) => {
+                          const isSold = item.status === 'sold';
+                          return (
+                            <div
+                              key={item.id}
+                              className={`flex gap-4 rounded-xl p-1 -mx-1 transition-colors ${isSold ? 'border border-[hsl(4,90%,55%)]' : ''}`}
+                            >
+                              {/* Photo with optional SOLD sticker */}
+                              <div className="relative h-20 w-20 flex-shrink-0">
+                                <img src={item.image} alt={item.title} className="h-20 w-20 rounded-xl object-cover bg-muted" />
+                                {isSold && (
+                                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    {/* Sticker badge */}
+                                    <div
+                                      className="flex items-center justify-center"
+                                      style={{
+                                        width: 56,
+                                        height: 56,
+                                        background: 'hsl(4,90%,55%)',
+                                        clipPath: 'polygon(50% 0%,56% 4%,63% 2%,68% 7%,75% 7%,78% 13%,85% 16%,86% 23%,92% 28%,91% 35%,96% 41%,93% 48%,96% 55%,91% 61%,92% 68%,85% 72%,84% 79%,77% 81%,74% 88%,67% 89%,62% 94%,55% 93%,50% 97%,45% 93%,38% 94%,33% 89%,26% 88%,23% 81%,16% 79%,15% 72%,8% 68%,9% 61%,4% 55%,7% 48%,4% 41%,9% 35%,8% 28%,14% 23%,13% 16%,20% 13%,22% 7%,29% 7%,32% 2%,39% 4%,44% 0%)',
+                                      }}
+                                    >
+                                      <span className="text-white font-black text-[10px] tracking-wide leading-none">SOLD</span>
+                                    </div>
+                                  </div>
                                 )}
                               </div>
+                              <div className="flex-1 flex flex-col justify-between">
+                                <h3 className="font-semibold text-foreground">{item.title}</h3>
+                                <div className="text-right">
+                                  <p className="text-lg font-semibold">${item.price}</p>
+                                  {idx === sellerItems.length - 1 && (
+                                    <p className="text-sm text-muted-foreground">+ ${shipping.toFixed(2)} shipping</p>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     );
                   });
@@ -351,19 +376,21 @@ const Checkout = () => {
               </div>
             </div>
 
-            {/* Confirm Button */}
-            <div className="mt-8">
-              <Button 
-                onClick={handlePlaceOrder} 
-                disabled={isSubmitting || !isShippingComplete}
-                className="w-full h-12 rounded-full bg-charcoal text-white hover:bg-charcoal-light font-medium disabled:opacity-50"
-              >
-                {isSubmitting ? 'Redirecting to payment...' : 'Proceed to payment'}
-              </Button>
-              <p className="text-xs text-muted-foreground text-center mt-3">
-                You'll be redirected to Stripe to complete payment securely.
-              </p>
-            </div>
+            {/* Confirm Button — hidden if all items are sold */}
+            {validItems.some(item => item.status !== 'sold') && (
+              <div className="mt-8">
+                <Button 
+                  onClick={handlePlaceOrder} 
+                  disabled={isSubmitting || !isShippingComplete}
+                  className="w-full h-12 rounded-full bg-charcoal text-white hover:bg-charcoal-light font-medium disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Redirecting to payment...' : 'Proceed to payment'}
+                </Button>
+                <p className="text-xs text-muted-foreground text-center mt-3">
+                  You'll be redirected to Stripe to complete payment securely.
+                </p>
+              </div>
+            )}
           </div>
         </DrawerContent>
       </Drawer>
