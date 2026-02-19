@@ -199,7 +199,7 @@ const CartItemRow = ({
             )}
           </div>
           <div className="pb-1">
-            <p className={cn("text-lg font-bold leading-tight", isSold ? "text-[hsl(4,90%,58%)]" : "text-foreground")}>
+            <p className="text-lg font-bold leading-tight text-foreground">
               ${item.price}
             </p>
             <p className="text-sm text-muted-foreground leading-tight">
