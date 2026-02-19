@@ -71,7 +71,7 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused
             {isUnavailable && (
               <div className={`absolute inset-0 flex items-center justify-center rounded-2xl ${isSold ? 'bg-charcoal/40' : 'bg-charcoal/70'}`}>
                 {isSold ? (
-                  <img src={soldSticker} alt="SOLD" className="w-[130px] h-[130px] drop-shadow-lg" />
+                  <img src={soldSticker} alt="SOLD" className="w-[160px] h-[160px] drop-shadow-lg" />
                 ) : (
                   <span className="text-2xl font-bold text-white tracking-wider">⏸️ Paused</span>
                 )}
