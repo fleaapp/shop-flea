@@ -281,6 +281,8 @@ const Cart = () => {
               {Object.entries(itemsBySeller).map(([sellerId, items]) => {
                 // Check if all items in this seller group are unavailable (sold or paused)
                 const allUnavailable = items.every(item => item.status === 'sold' || item.isPaused);
+                // Hide checkout only when all items are sold (paused still shows checkout)
+                const allSold = items.every(item => item.status === 'sold');
                 
                 return (
                   <div key={sellerId} className="rounded-2xl bg-card overflow-hidden card-shadow">
@@ -290,7 +292,7 @@ const Cart = () => {
                         key={item.id}
                         item={item}
                         isSelected={selectedItems.has(item.id)}
-                        isLast={index === items.length - 1 && allUnavailable}
+                        isLast={index === items.length - 1 && (allSold || allUnavailable)}
                         showSellerAvatar={index === 0}
                         showCheckbox={sellersWithMultipleItems.has(sellerId) && item.status !== 'sold' && !item.isPaused}
                         onToggleSelect={() => toggleSelect(item.id, sellerId)}
@@ -300,8 +302,8 @@ const Cart = () => {
                       />
                     ))}
 
-                    {/* Tiered shipping label + Checkout button - only show if not all items are unavailable */}
-                    {!allUnavailable && (() => {
+                    {/* Tiered shipping label + Checkout button - hide if all sold */}
+                    {!allSold && !allUnavailable && (() => {
                       const availableItems = items.filter(i => i.status !== 'sold' && !i.isPaused);
                       const settings = sellerSettings.get(sellerId);
                       const showTierLabel = settings?.tieredEnabled && availableItems.length > 1;
