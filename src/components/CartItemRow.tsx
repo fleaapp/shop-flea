@@ -156,7 +156,10 @@ const CartItemRow = ({
 
         {/* Image - tappable to open listing details */}
         <div
-          className="relative h-24 w-24 flex-shrink-0 cursor-pointer"
+          className={cn(
+            "relative h-24 w-24 flex-shrink-0 cursor-pointer rounded-xl",
+            isSold && "ring-2 ring-[hsl(4,90%,58%)]"
+          )}
           onClick={onCardClick}
         >
           <img
@@ -182,7 +185,7 @@ const CartItemRow = ({
           isPaused && "opacity-50"
         )}>
           <div className="flex items-start justify-between pt-1">
-            <h3 className="font-semibold text-foreground">{item.title}</h3>
+            <h3 className={cn("font-semibold", isSold ? "text-[hsl(4,90%,58%)]" : "text-foreground")}>{item.title}</h3>
             {showSellerAvatar && (
               <img
                 src={item.sellerAvatar}
@@ -196,7 +199,7 @@ const CartItemRow = ({
             )}
           </div>
           <div className="pb-1">
-            <p className="text-lg font-bold text-foreground leading-tight">
+            <p className={cn("text-lg font-bold leading-tight", isSold ? "text-[hsl(4,90%,58%)]" : "text-foreground")}>
               ${item.price}
             </p>
             <p className="text-sm text-muted-foreground leading-tight">
