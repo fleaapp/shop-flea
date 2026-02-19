@@ -91,9 +91,9 @@ const CartItemRow = ({
     <div
       className={cn(
         "relative overflow-hidden",
-        !isLast && !isSold && "border-b border-border",
-        isSold && "ring-[3px] ring-[hsl(4,90%,58%)] rounded-xl"
+        !isLast && "border-b border-border",
       )}
+      onClick={onCardClick}
     >
       {/* Swipe background indicators */}
       <motion.div 
@@ -124,7 +124,7 @@ const CartItemRow = ({
         animate={isRemoving ? { x: xRef.current < 0 ? -400 : 400, opacity: 0 } : {}}
         transition={{ duration: 0.2 }}
         className={cn(
-          "flex gap-4 p-4 bg-card relative z-10 cursor-grab active:cursor-grabbing",
+          "flex gap-4 p-4 bg-card relative z-10 cursor-grab active:cursor-grabbing cursor-pointer",
           isUnavailable && "relative"
         )}
       >
@@ -155,10 +155,9 @@ const CartItemRow = ({
           </div>
         )}
 
-        {/* Image - tappable to open listing details */}
+        {/* Image */}
         <div
-          className="relative h-24 w-24 flex-shrink-0 cursor-pointer rounded-xl"
-          onClick={onCardClick}
+          className="relative h-24 w-24 flex-shrink-0 rounded-xl"
         >
           <img
             src={item.image}
@@ -171,7 +170,7 @@ const CartItemRow = ({
               <img
                 src={soldSticker}
                 alt="SOLD"
-                className="w-[72px] h-[72px] drop-shadow-lg"
+                className="w-[88px] h-[88px] drop-shadow-lg"
               />
             </div>
           )}

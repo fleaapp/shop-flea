@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import soldSticker from '@/assets/sold-sticker.png';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -69,9 +70,11 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused
             {/* Sold/Paused overlay */}
             {isUnavailable && (
               <div className="absolute inset-0 flex items-center justify-center bg-charcoal/70 rounded-2xl">
-                <span className="text-2xl font-bold text-white tracking-wider">
-                  {isSold ? 'SOLD' : '⏸️ Paused'}
-                </span>
+                {isSold ? (
+                  <img src={soldSticker} alt="SOLD" className="w-[100px] h-[100px] drop-shadow-lg" />
+                ) : (
+                  <span className="text-2xl font-bold text-white tracking-wider">⏸️ Paused</span>
+                )}
               </div>
             )}
             
@@ -106,7 +109,7 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused
           <div className="px-2 max-[375px]:px-1.5 pt-3 max-[375px]:pt-2 pb-1 flex-shrink-0">
             <div className="flex items-end justify-between">
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg max-[375px]:text-base font-semibold text-foreground truncate">{listing.title}</h3>
+                <h3 className={`text-lg max-[375px]:text-base font-semibold truncate ${isSold ? 'text-[hsl(4,90%,58%)]' : 'text-foreground'}`}>{listing.title}</h3>
                 <div className="mt-1.5 max-[375px]:mt-1 flex flex-nowrap gap-1.5 max-[375px]:gap-1 overflow-x-auto scrollbar-hide">
                   <ListingTag label={listing.size} isSize />
                   <ListingTag label={listing.brand} />
