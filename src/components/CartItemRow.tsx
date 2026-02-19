@@ -90,7 +90,8 @@ const CartItemRow = ({
     <div
       className={cn(
         "relative overflow-hidden",
-        !isLast && "border-b border-border"
+        !isLast && "border-b border-border",
+        isSold && "ring-2 ring-inset ring-[hsl(4,90%,58%)]"
       )}
     >
       {/* Swipe background indicators */}
@@ -126,12 +127,10 @@ const CartItemRow = ({
           isUnavailable && "relative"
         )}
       >
-        {/* Sold/Paused overlay */}
-        {isUnavailable && (
+        {/* Paused overlay (full card) - only for paused, not sold */}
+        {isPaused && (
           <div className="absolute inset-0 bg-charcoal/70 backdrop-blur-sm z-20 flex items-center justify-center">
-            <span className="text-2xl font-bold text-white tracking-wider">
-              {isSold ? 'SOLD' : '⏸️ Paused'}
-            </span>
+            <span className="text-2xl font-bold text-white tracking-wider">⏸️ Paused</span>
           </div>
         )}
 
@@ -157,25 +156,31 @@ const CartItemRow = ({
 
         {/* Image - tappable to open listing details */}
         <div
-          className={cn(
-            "relative h-24 w-24 flex-shrink-0 cursor-pointer"
-          )}
-          onClick={() => !isUnavailable && onCardClick()}
+          className="relative h-24 w-24 flex-shrink-0 cursor-pointer"
+          onClick={onCardClick}
         >
           <img
             src={item.image}
             alt={item.title}
-            className={cn(
-              "h-full w-full rounded-xl object-cover",
-              isUnavailable && "opacity-50"
-            )}
+            className="h-full w-full rounded-xl object-cover"
           />
+          {/* SOLD sticker over image only */}
+          {isSold && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="relative flex items-center justify-center">
+                <svg viewBox="0 0 100 100" className="w-16 h-16 drop-shadow-md" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M50,5 L57,18 L71,12 L72,27 L87,26 L83,40 L97,44 L88,55 L97,66 L83,70 L87,84 L72,83 L71,98 L57,92 L50,105 L43,92 L29,98 L28,83 L13,84 L17,70 L3,66 L12,55 L3,44 L17,40 L13,26 L28,27 L29,12 L43,18 Z" fill="hsl(4,90%,58%)" />
+                </svg>
+                <span className="absolute text-white font-black text-[11px] tracking-wider leading-none">SOLD</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Content */}
         <div className={cn(
           "flex flex-1 flex-col justify-between h-24",
-          isUnavailable && "opacity-50"
+          isPaused && "opacity-50"
         )}>
           <div className="flex items-start justify-between pt-1">
             <h3 className="font-semibold text-foreground">{item.title}</h3>
