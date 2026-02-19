@@ -90,10 +90,12 @@ const CartItemRow = ({
     <>
     <div
       className={cn(
-        "relative overflow-hidden",
-        !isLast && "border-b border-border"
+        "relative",
+        !isLast && !isSold && "border-b border-border",
+        isSold && "border-[3px] border-[hsl(4,90%,58%)] rounded-xl"
       )}
     >
+      <div className="overflow-hidden relative rounded-[inherit]">
       {/* Swipe background indicators */}
       <motion.div 
         className="absolute inset-0 bg-muted-foreground/50 flex items-center justify-end pr-6"
@@ -156,10 +158,7 @@ const CartItemRow = ({
 
         {/* Image - tappable to open listing details */}
         <div
-          className={cn(
-            "relative h-24 w-24 flex-shrink-0 cursor-pointer rounded-xl",
-            isSold && "ring-2 ring-[hsl(4,90%,58%)]"
-          )}
+          className="relative h-24 w-24 flex-shrink-0 cursor-pointer rounded-xl"
           onClick={onCardClick}
         >
           <img
@@ -208,6 +207,7 @@ const CartItemRow = ({
           </div>
         </div>
       </motion.div>
+      </div>
     </div>
 
     {/* Confirmation Dialog */}
