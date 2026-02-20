@@ -19,10 +19,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify the user's JWT and get their identity
+    const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL')!;
+    const externalAnonKey = Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY')!;
+
     const supabaseUser = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
+      externalUrl,
+      externalAnonKey,
       { global: { headers: { Authorization: authHeader } } }
     );
 
@@ -75,8 +77,8 @@ Deno.serve(async (req) => {
 
     // Use service role key to perform privileged deletions
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      externalUrl,
+      Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY')!
     );
 
     // Delete user data in order (profile will cascade or be cleaned up)
