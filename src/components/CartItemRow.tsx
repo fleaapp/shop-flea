@@ -1,6 +1,5 @@
 import { useState, useRef } from 'react';
 import soldSticker from '@/assets/sold-sticker.png';
-import pausedSticker from '@/assets/paused-sticker.png';
 import { useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { Check } from 'lucide-react';
@@ -169,14 +168,10 @@ const CartItemRow = ({
               />
             </div>
           )}
-          {/* PAUSED sticker over image only */}
+          {/* PAUSED emoji over image only */}
           {isPaused && !isSold && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <img
-                src={pausedSticker}
-                alt="PAUSED"
-                className="w-[88px] h-[88px] drop-shadow-lg"
-              />
+              <span className="text-[56px] drop-shadow-lg">⏸️</span>
             </div>
           )}
         </div>
