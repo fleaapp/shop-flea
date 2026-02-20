@@ -171,7 +171,7 @@ const CartItemRow = ({
           {/* PAUSED emoji over image only */}
           {isPaused && !isSold && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-[56px] drop-shadow-lg">⏸️</span>
+              <span className="text-[44px] drop-shadow-lg">⏸️</span>
             </div>
           )}
         </div>
