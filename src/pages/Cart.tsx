@@ -326,7 +326,7 @@ const Cart = () => {
                           )}
                           {allPaused ? (
                             <Button
-                              className="w-full rounded-none rounded-b-2xl bg-[#5C5C5C] text-white h-12 cursor-not-allowed pointer-events-none font-semibold hover:bg-[#5C5C5C]"
+                              className="w-full rounded-none rounded-b-2xl bg-[#787878] text-white h-12 cursor-not-allowed pointer-events-none font-semibold hover:bg-[#787878]"
                             >
                               ⏸️ Paused
                             </Button>
