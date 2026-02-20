@@ -327,7 +327,7 @@ const Cart = () => {
                           {allPaused ? (
                             <Button
                               disabled
-                              className="w-full rounded-none rounded-b-2xl bg-[#787878] text-white h-12 cursor-not-allowed opacity-100 font-semibold"
+                              className="w-full rounded-none rounded-b-2xl bg-[#5C5C5C] text-white h-12 cursor-not-allowed opacity-100 font-semibold"
                             >
                               ⏸️ Paused
                             </Button>
