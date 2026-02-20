@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/utils/imageCompression';
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import AvatarCropDialog from '@/components/AvatarCropDialog';
 import ChangeEmailSheet from '@/components/ChangeEmailSheet';
@@ -219,13 +220,7 @@ const EditProfile = () => {
     if (deleteConfirmText.toLowerCase() !== 'delete account') return;
     if (!user) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      if (!token) throw new Error('No session');
-
-      const { error } = await supabase.functions.invoke('delete-account', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const { error } = await invokeCloudFunction('delete-account', {});
 
       if (error) {
         toast.error(error.message || 'Failed to delete account');
