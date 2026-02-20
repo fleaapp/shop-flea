@@ -64,17 +64,20 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused
             <img 
               src={listing.image} 
               alt={listing.title} 
-              className={`h-full w-full object-cover block rounded-2xl ${isUnavailable ? 'blur-[2px]' : ''}`}
+            className={`h-full w-full object-cover block rounded-2xl ${isSold ? 'blur-[2px]' : ''}`}
             />
             
-            {/* Sold/Paused overlay */}
-            {isUnavailable && (
-              <div className={`absolute inset-0 flex items-center justify-center rounded-2xl ${isSold ? 'bg-charcoal/40' : 'bg-charcoal/70'}`}>
-                {isSold ? (
-                  <img src={soldSticker} alt="SOLD" className="w-[160px] h-[160px] drop-shadow-lg" />
-                ) : (
-                  <span className="text-2xl font-bold text-white tracking-wider">⏸️ Paused</span>
-                )}
+            {/* Sold overlay with sticker */}
+            {isSold && (
+              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-charcoal/40">
+                <img src={soldSticker} alt="SOLD" className="w-[160px] h-[160px] drop-shadow-lg" />
+              </div>
+            )}
+
+            {/* Paused overlay with emoji (same style as sold) */}
+            {isPaused && !isSold && (
+              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-charcoal/40">
+                <span className="text-[80px] drop-shadow-lg">⏸️</span>
               </div>
             )}
             
