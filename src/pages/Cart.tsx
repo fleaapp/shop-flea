@@ -292,7 +292,7 @@ const Cart = () => {
                         key={item.id}
                         item={item}
                         isSelected={selectedItems.has(item.id)}
-                        isLast={index === items.length - 1 && (allSold || allUnavailable)}
+                        isLast={index === items.length - 1 && allSold}
                         showSellerAvatar={index === 0}
                         showCheckbox={sellersWithMultipleItems.has(sellerId) && item.status !== 'sold' && !item.isPaused}
                         onToggleSelect={() => toggleSelect(item.id, sellerId)}
@@ -302,11 +302,12 @@ const Cart = () => {
                       />
                     ))}
 
-                    {/* Tiered shipping label + Checkout button - hide if all sold */}
-                    {!allSold && !allUnavailable && (() => {
+                    {/* Tiered shipping label + Checkout button */}
+                    {!allSold && (() => {
+                      const allPaused = items.every(item => item.isPaused);
                       const availableItems = items.filter(i => i.status !== 'sold' && !i.isPaused);
                       const settings = sellerSettings.get(sellerId);
-                      const showTierLabel = settings?.tieredEnabled && availableItems.length > 1;
+                      const showTierLabel = !allPaused && settings?.tieredEnabled && availableItems.length > 1;
                       const tierText = showTierLabel
                         ? availableItems.length <= 3
                           ? `2–3 items: $${settings!.tier2.toFixed(2)} combined shipping`
@@ -323,22 +324,31 @@ const Cart = () => {
                               }</span>
                             </div>
                           )}
-                          <Button
-                            onClick={() => {
-                              const selectedFromSeller = items.filter(i => selectedItems.has(i.id) && i.status !== 'sold' && !i.isPaused);
-                              if (selectedFromSeller.length > 0) {
-                                handleCheckout(selectedFromSeller.map(i => i.id));
-                              } else {
-                                handleCheckout(availableItems.map(i => i.id));
+                          {allPaused ? (
+                            <Button
+                              disabled
+                              className="w-full rounded-none rounded-b-2xl bg-muted-foreground/50 text-white h-12 cursor-not-allowed opacity-100"
+                            >
+                              ⏸️ Paused
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={() => {
+                                const selectedFromSeller = items.filter(i => selectedItems.has(i.id) && i.status !== 'sold' && !i.isPaused);
+                                if (selectedFromSeller.length > 0) {
+                                  handleCheckout(selectedFromSeller.map(i => i.id));
+                                } else {
+                                  handleCheckout(availableItems.map(i => i.id));
+                                }
+                              }}
+                              className="w-full rounded-none rounded-b-2xl bg-charcoal text-white hover:bg-charcoal-light h-12"
+                            >
+                              {selectedItems.size > 0 && items.some(i => selectedItems.has(i.id)) 
+                                ? `Checkout ${items.filter(i => selectedItems.has(i.id) && i.status !== 'sold' && !i.isPaused).length} selected`
+                                : 'Checkout'
                               }
-                            }}
-                            className="w-full rounded-none rounded-b-2xl bg-charcoal text-white hover:bg-charcoal-light h-12"
-                          >
-                            {selectedItems.size > 0 && items.some(i => selectedItems.has(i.id)) 
-                              ? `Checkout ${items.filter(i => selectedItems.has(i.id) && i.status !== 'sold' && !i.isPaused).length} selected`
-                              : 'Checkout'
-                            }
-                          </Button>
+                            </Button>
+                          )}
                         </>
                       );
                     })()}

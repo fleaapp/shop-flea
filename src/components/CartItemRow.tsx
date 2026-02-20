@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import soldSticker from '@/assets/sold-sticker.png';
+import pausedSticker from '@/assets/paused-sticker.png';
 import { useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { Check } from 'lucide-react';
@@ -128,12 +129,6 @@ const CartItemRow = ({
           isUnavailable && "relative"
         )}
       >
-        {/* Paused overlay (full card) - only for paused, not sold */}
-        {isPaused && (
-          <div className="absolute inset-0 bg-charcoal/70 backdrop-blur-sm z-20 flex items-center justify-center">
-            <span className="text-2xl font-bold text-white tracking-wider">⏸️ Paused</span>
-          </div>
-        )}
 
         {/* Checkbox - only shown for sellers with multiple items */}
         {showCheckbox && (
@@ -174,13 +169,20 @@ const CartItemRow = ({
               />
             </div>
           )}
+          {/* PAUSED sticker over image only */}
+          {isPaused && !isSold && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <img
+                src={pausedSticker}
+                alt="PAUSED"
+                className="w-[88px] h-[88px] drop-shadow-lg"
+              />
+            </div>
+          )}
         </div>
 
         {/* Content */}
-        <div className={cn(
-          "flex flex-1 flex-col justify-between h-24",
-          isPaused && "opacity-50"
-        )}>
+        <div className="flex flex-1 flex-col justify-between h-24">
           <div className="flex items-start justify-between pt-1">
             <h3 className={cn("font-semibold", isSold ? "text-[hsl(4,90%,58%)]" : "text-foreground")}>{item.title}</h3>
             {showSellerAvatar && (
