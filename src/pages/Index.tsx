@@ -63,8 +63,14 @@ const Index = () => {
     if (user) {
       const done = localStorage.getItem(`flea_pw_done_${user.id}`) === '1';
       if (done) setPasswordCompleted(true);
+      // Clean up stale OAuth flag if password is already set in profile/meta
+      const pwInMeta = user.user_metadata?.password_set === true;
+      const pwInProfile = profile?.password_set === true;
+      if ((pwInMeta || pwInProfile || done) && localStorage.getItem('flea_oauth_signup') === '1') {
+        localStorage.removeItem('flea_oauth_signup');
+      }
     }
-  }, [user]);
+  }, [user, profile]);
   
   // PRIMARY detection: localStorage flag set BEFORE Google OAuth redirect (survives redirects unlike sessionStorage)
   const oauthSignupFlag = localStorage.getItem('flea_oauth_signup') === '1';
