@@ -71,15 +71,19 @@ const Index = () => {
   
   // SECONDARY detection: app_metadata checks (fallback for returning users)
   const hasEmailIdentity = user?.identities?.some((id: any) => id.provider === 'email') ?? false;
-  const isOAuthUserFromMeta = 
-    user?.app_metadata?.provider === 'google' ||
-    user?.app_metadata?.providers?.includes('google') ||
-    user?.identities?.some((id: any) => id.provider === 'google') ||
-    (!!user?.identities && user.identities.length > 0 && !hasEmailIdentity) ||
-    false;
   
-  // Combined: either the sessionStorage flag OR metadata detection
-  const isOAuthUser = oauthSignupFlag || isOAuthUserFromMeta;
+  // Only treat as OAuth if they actually signed up via Google/Apple AND have no email identity
+  const isOAuthUserFromMeta = 
+    !hasEmailIdentity && (
+      user?.app_metadata?.provider === 'google' ||
+      user?.app_metadata?.provider === 'apple' ||
+      user?.app_metadata?.providers?.includes('google') ||
+      user?.app_metadata?.providers?.includes('apple') ||
+      user?.identities?.some((id: any) => id.provider === 'google' || id.provider === 'apple')
+    );
+  
+  // Combined: either the localStorage flag OR metadata detection — but never for email-signup users
+  const isOAuthUser = !hasEmailIdentity && (oauthSignupFlag || isOAuthUserFromMeta);
   const isGoogleUser = isOAuthUser;
   
   const passwordSetInMeta = user?.user_metadata?.password_set === true;
