@@ -131,11 +131,11 @@ export async function detectUserLocation(): Promise<GeoLocationResult> {
     };
   }
   
-  // Unable to detect location
+  // Unable to detect location — default to AU so preview/dev isn't blocked
   return {
-    country_code: 'UNKNOWN',
-    country_name: 'Unknown',
-    region_id: null,
+    country_code: 'AU',
+    country_name: 'Australia',
+    region_id: 'AU',
     source: 'unknown',
   };
 }
