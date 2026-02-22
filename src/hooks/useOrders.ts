@@ -9,6 +9,7 @@ export type OrderStatus = 'awaiting' | 'shipped' | 'delivered';
 export interface Order {
   id: string;
   order_group_id: string | null;
+  order_number: string | null;
   listing_id: string;
   buyer_id: string;
   seller_id: string;

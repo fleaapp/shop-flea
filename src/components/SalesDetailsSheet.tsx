@@ -106,7 +106,7 @@ const SalesDetailsSheet = ({
           <DrawerHeader className="text-center pb-4">
             <DrawerTitle className="text-xl font-semibold">Sale details</DrawerTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Order #{(primaryOrder.order_group_id || primaryOrder.id).slice(0, 8).toUpperCase()} • {formattedDate}
+              Order #{primaryOrder.order_number || (primaryOrder.order_group_id || primaryOrder.id).slice(0, 8).toUpperCase()} • {formattedDate}
             </p>
             <div className="flex justify-center mt-1 mb-2">
               <Badge variant={statusBadge.variant}>

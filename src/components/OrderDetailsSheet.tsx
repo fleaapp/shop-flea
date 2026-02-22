@@ -59,7 +59,7 @@ const OrderDetailsSheet = ({
   const sellerUsername = rawUsername.startsWith('@') ? rawUsername.slice(1) : rawUsername;
   const sellerAvatar = primaryOrder.seller_profile?.avatar_url || getDefaultAvatar(primaryOrder.seller_id);
 
-  const displayId = (primaryOrder.order_group_id || primaryOrder.id).slice(0, 8).toUpperCase();
+  const displayId = primaryOrder.order_number || (primaryOrder.order_group_id || primaryOrder.id).slice(0, 8).toUpperCase();
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
