@@ -208,15 +208,20 @@ const Notifications = () => {
     return (
       <div 
         onClick={() => handleNotificationClick(notification)}
-        className={cn(
-          "relative flex items-start gap-4 rounded-2xl bg-card p-4 cursor-pointer",
-          isUrgent && "border-2 border-destructive"
-        )}
+        className="relative flex items-start gap-4 rounded-2xl bg-card p-4 cursor-pointer"
       >
         <ProductThumbnail image={listingImage} avatar={userAvatar} fallbackEmoji={emoji} />
 
         <div className="flex-1 min-w-0 pb-5 pr-10">
-          <p className="text-sm text-foreground pt-2">{renderMessage()}</p>
+          <p className="text-sm text-foreground pt-2">
+            {isUrgent && message.includes('Urgent action:') ? (
+              <>
+                {message.split('Urgent action:')[0]}
+                <span className="font-bold text-destructive">Urgent action:</span>
+                {message.split('Urgent action:').slice(1).join('Urgent action:')}
+              </>
+            ) : renderMessage()}
+          </p>
         </div>
 
         <div className="absolute bottom-4 right-4">

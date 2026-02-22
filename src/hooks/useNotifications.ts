@@ -176,7 +176,7 @@ export const getNotificationMessage = (type: string, username?: string, listingT
     case 'shipping_reminder_3d':
       return '🚨 Reminder: Your buyer is waiting 👀 Ship now & update tracking. 📦';
     case 'shipping_reminder_6d':
-      return '🚨 Urgent action needed: Your sale is 6 days overdue. Ship today to avoid issues. 🚚';
+      return '🚨 Urgent action: Your sale is 6 days overdue. Ship today to avoid issues. 🚚';
     default:
       return 'New notification';
   }
