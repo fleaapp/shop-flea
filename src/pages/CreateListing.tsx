@@ -11,6 +11,7 @@ import SizeSelectionDrawer from '@/components/SizeSelectionDrawer';
 import CategorySelectionDrawer from '@/components/CategorySelectionDrawer';
 import TieredShippingSetupModal from '@/components/TieredShippingSetupModal';
 import BlockedUserBanner from '@/components/BlockedUserBanner';
+import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
 import ConnectPaymentDialog from '@/components/ConnectPaymentDialog';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
@@ -48,6 +49,7 @@ const CreateListing = () => {
   const [showShippingSetup, setShowShippingSetup] = useState(false);
   const [shippingChecked, setShippingChecked] = useState(false);
   const [showVerifyingDialog, setShowVerifyingDialog] = useState(false);
+  const [showShippingSettings, setShowShippingSettings] = useState(false);
 
   // Check if seller has connected a payment method
   const hasPaymentMethodDB = profile?.stripe_onboarding_complete === true;
@@ -681,7 +683,7 @@ const CreateListing = () => {
         </div>
 
         {/* Shipping Price */}
-        <div className="relative">
+        <div className="relative" onClick={tieredShippingEnabled ? () => setShowShippingSettings(true) : undefined}>
           <span className={`absolute left-4 top-1/2 -translate-y-1/2 font-medium ${tieredShippingEnabled ? 'text-muted-foreground/40' : 'text-muted-foreground/60'}`}>$</span>
           <Input
             type="number"
@@ -689,11 +691,12 @@ const CreateListing = () => {
             value={shippingPrice}
             onChange={(e) => setShippingPrice(e.target.value)}
             disabled={tieredShippingEnabled === true}
-            className={`${inputStyles} pl-8 ${tieredShippingEnabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+            className={`${inputStyles} pl-8 ${tieredShippingEnabled ? 'opacity-60 cursor-pointer' : ''}`}
+            style={tieredShippingEnabled ? { pointerEvents: 'none' } : undefined}
           />
           {tieredShippingEnabled && (
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60">
-              Tiered shipping
+              Tiered shipping ›
             </span>
           )}
         </div>
@@ -740,8 +743,24 @@ const CreateListing = () => {
         onComplete={handleShippingSetupComplete}
         onCancel={handleShippingSetupCancel}
       />
-      
-      {/* Payment gate now handled by early return above */}
+
+      <ShippingSettingsSheet
+        open={showShippingSettings}
+        onOpenChange={(open) => {
+          setShowShippingSettings(open);
+          if (!open) {
+            // Reload shipping prefs after closing
+            if (user) {
+              const localPrefs = loadShippingPrefs(user.id);
+              if (localPrefs && localPrefs.tieredEnabled) {
+                setTier1Price(localPrefs.tier1);
+                setShippingPrice(localPrefs.tier1.toString());
+              }
+              refreshProfile();
+            }
+          }
+        }}
+      />
       
       <BottomNav />
     </div>

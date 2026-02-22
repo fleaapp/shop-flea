@@ -117,7 +117,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
           <DrawerTitle className="text-center">Filter Preferences</DrawerTitle>
         </DrawerHeader>
         
-        <div className="mt-6 space-y-6 pb-8 px-4">
+        <div className="mt-6 space-y-6 pb-24 px-4">
           {/* Gender Preferences */}
           <div>
             <label className="text-sm font-medium text-foreground mb-3 block">Preferred Fit</label>
@@ -262,15 +262,17 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
             </Collapsible>
           </div>
 
-          <div className="flex justify-center">
-            <Button 
-              onClick={handleSave}
-              disabled={isLoading}
-              className="w-40 h-12 rounded-full bg-primary text-primary-foreground font-medium"
-            >
-              {isLoading ? 'Saving...' : 'Save Preferences'}
-            </Button>
-          </div>
+        </div>
+
+        {/* Sticky Save Button */}
+        <div className="sticky bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-4 flex justify-center">
+          <Button 
+            onClick={handleSave}
+            disabled={isLoading}
+            className="w-40 h-12 rounded-full bg-primary text-primary-foreground font-medium"
+          >
+            {isLoading ? 'Saving...' : 'Save Preferences'}
+          </Button>
         </div>
       </DrawerContent>
     </Drawer>

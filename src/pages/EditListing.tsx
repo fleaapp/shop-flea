@@ -10,6 +10,7 @@ import BottomNav from '@/components/BottomNav';
 import SizeSelectionDrawer from '@/components/SizeSelectionDrawer';
 import CategorySelectionDrawer from '@/components/CategorySelectionDrawer';
 import BlockedUserBanner from '@/components/BlockedUserBanner';
+import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { loadShippingPrefs } from '@/utils/shippingPrefs';
@@ -44,6 +45,7 @@ const EditListing = () => {
   const [isMarkingSold, setIsMarkingSold] = useState(false);
   const [sizeDrawerOpen, setSizeDrawerOpen] = useState(false);
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
+  const [showShippingSettings, setShowShippingSettings] = useState(false);
   
   // Tiered shipping state
   const [tieredShippingEnabled, setTieredShippingEnabled] = useState<boolean | null>(null);
@@ -593,7 +595,7 @@ const EditListing = () => {
         </div>
 
         {/* Shipping Price */}
-        <div className="relative">
+        <div className="relative" onClick={tieredShippingEnabled ? () => setShowShippingSettings(true) : undefined}>
           <span className={`absolute left-4 top-1/2 -translate-y-1/2 font-medium ${tieredShippingEnabled ? 'text-muted-foreground/40' : 'text-muted-foreground/60'}`}>$</span>
           <Input
             type="number"
@@ -601,11 +603,12 @@ const EditListing = () => {
             value={shippingPrice}
             onChange={(e) => setShippingPrice(e.target.value)}
             disabled={tieredShippingEnabled === true}
-            className={`${inputStyles} pl-8 ${tieredShippingEnabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+            className={`${inputStyles} pl-8 ${tieredShippingEnabled ? 'opacity-60 cursor-pointer' : ''}`}
+            style={tieredShippingEnabled ? { pointerEvents: 'none' } : undefined}
           />
           {tieredShippingEnabled && (
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60">
-              Tiered shipping
+              Tiered shipping ›
             </span>
           )}
         </div>
@@ -688,6 +691,19 @@ const EditListing = () => {
         selectedCategory={category}
         selectedSubcategory={subcategory}
         onSelectCategory={handleCategorySelect}
+      />
+
+      <ShippingSettingsSheet
+        open={showShippingSettings}
+        onOpenChange={(open) => {
+          setShowShippingSettings(open);
+          if (!open && user) {
+            const localPrefs = loadShippingPrefs(user.id);
+            if (localPrefs && localPrefs.tieredEnabled) {
+              setShippingPrice(localPrefs.tier1.toString());
+            }
+          }
+        }}
       />
       
       <BottomNav />
