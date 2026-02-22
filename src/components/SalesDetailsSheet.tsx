@@ -268,35 +268,33 @@ const SalesDetailsSheet = ({
             </div>
 
             {/* Actions */}
-            {primaryOrder.status === 'awaiting' && (
-              <div className="flex flex-col items-center space-y-4 pt-4 pb-2">
+            <div className="flex flex-col items-center space-y-3 pt-4">
+              {primaryOrder.status === 'awaiting' && (
                 <Button
                   onClick={handleMarkShipped}
                   className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
                 >
                   Mark as shipped
                 </Button>
-                <button
-                  className="text-center text-sm text-foreground underline mt-2"
-                  onClick={() => {
-                    onOpenChange(false);
-                    setTimeout(() => navigate('/contact-support'), 300);
-                  }}
-                >
-                  Need help?
-                </button>
-              </div>
-            )}
-            {primaryOrder.status === 'delivered' && !existingReview && (
-              <div className="flex flex-col items-center space-y-3 pt-4">
+              )}
+              {primaryOrder.status === 'delivered' && !existingReview && (
                 <Button
                   onClick={() => setReviewDrawerOpen(true)}
                   className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
                 >
                   Review Buyer
                 </Button>
-              </div>
-            )}
+              )}
+              <button
+                className="text-center text-sm text-foreground underline"
+                onClick={() => {
+                  onOpenChange(false);
+                  setTimeout(() => navigate('/contact-support'), 300);
+                }}
+              >
+                Need help?
+              </button>
+            </div>
           </div>
         </div>
       </DrawerContent>
