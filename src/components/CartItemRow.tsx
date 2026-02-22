@@ -219,7 +219,7 @@ const CartItemRow = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="flex-row gap-2">
-          <AlertDialogCancel className="flex-1 m-0 rounded-full">Cancel</AlertDialogCancel>
+          <AlertDialogCancel className="flex-1 m-0 rounded-full border-border bg-card text-foreground hover:bg-muted">Cancel</AlertDialogCancel>
           <AlertDialogAction 
             onClick={handleConfirmAction}
             className="flex-1 m-0 rounded-full"
