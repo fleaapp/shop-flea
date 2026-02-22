@@ -222,12 +222,20 @@ const SalesDetailsSheet = ({
                 ) : (
                   <>
                     <div>
-                      <p className="font-semibold text-foreground">Service Provider:</p>
-                      <p className="text-muted-foreground">{trackingProviderDisplay || 'N/A'}</p>
+                      <p className="font-semibold text-foreground mb-1.5">Service Provider:</p>
+                      <Input
+                        value={trackingProviderDisplay || 'N/A'}
+                        disabled
+                        className="bg-background disabled:opacity-70"
+                      />
                     </div>
                     <div>
-                      <p className="font-semibold text-foreground">Tracking number:</p>
-                      <p className="text-muted-foreground">{trackingNumberDisplay || 'N/A'}</p>
+                      <p className="font-semibold text-foreground mb-1.5">Tracking number:</p>
+                      <Input
+                        value={trackingNumberDisplay || 'N/A'}
+                        disabled
+                        className="bg-background disabled:opacity-70"
+                      />
                     </div>
                   </>
                 )}

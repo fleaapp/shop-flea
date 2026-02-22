@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Order, OrderStatus } from '@/hooks/useOrders';
 import { format } from 'date-fns';
@@ -158,20 +159,20 @@ const OrderDetailsSheet = ({
               <SectionHeader>Tracking Details</SectionHeader>
               <div className="p-4 space-y-3">
                 <div>
-                  <p className="font-semibold text-foreground">Service Provider:</p>
-                  <p className="text-muted-foreground">
-                    {primaryOrder.status === 'awaiting'
-                      ? 'Awaiting shipping'
-                      : (primaryOrder.tracking_provider || 'N/A')}
-                  </p>
+                  <p className="font-semibold text-foreground mb-1.5">Service Provider:</p>
+                  <Input
+                    value={primaryOrder.status === 'awaiting' ? 'Awaiting shipping' : (primaryOrder.tracking_provider || 'N/A')}
+                    disabled
+                    className="bg-background disabled:opacity-70"
+                  />
                 </div>
                 <div>
-                  <p className="font-semibold text-foreground">Tracking number:</p>
-                  <p className="text-muted-foreground">
-                    {primaryOrder.status === 'awaiting'
-                      ? 'Awaiting shipping'
-                      : (primaryOrder.tracking_number || 'N/A')}
-                  </p>
+                  <p className="font-semibold text-foreground mb-1.5">Tracking number:</p>
+                  <Input
+                    value={primaryOrder.status === 'awaiting' ? 'Awaiting shipping' : (primaryOrder.tracking_number || 'N/A')}
+                    disabled
+                    className="bg-background disabled:opacity-70"
+                  />
                 </div>
               </div>
             </div>
