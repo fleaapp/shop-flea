@@ -178,12 +178,7 @@ const Notifications = () => {
 
   const NotificationCard = ({ notification }: { notification: Notification }) => {
     const listingImage = notification.listing?.images?.[0] || '';
-    // Types that should always show a profile circle
-    const typesWithUser = ['new_comment', 'comment_reply', 'new_review', 'item_sold', 'cart_item_sold', 'wishlist_item_sold', 'cart_wishlist_item_sold', 'listing_sold', 'order_shipped', 'order_delivered'];
-    const shouldShowAvatar = typesWithUser.includes(notification.type);
-    const userAvatar = notification.related_user?.avatar_url 
-      || (notification.related_user_id ? getDefaultAvatar(notification.related_user_id) : undefined)
-      || (shouldShowAvatar ? getDefaultAvatar(notification.id) : undefined);
+    const userAvatar = notification.related_user?.avatar_url || (notification.related_user_id ? getDefaultAvatar(notification.related_user_id) : undefined);
     const username = notification.related_user?.username;
     const emoji = getNotificationEmoji(notification.type as any);
     const itemName = notification.listing?.title || null;
