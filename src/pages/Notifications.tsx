@@ -220,6 +220,12 @@ const Notifications = () => {
                 <span className="font-bold text-destructive">Urgent action:</span>
                 {message.split('Urgent action:').slice(1).join('Urgent action:')}
               </>
+            ) : notification.type === 'shipping_reminder_3d' && message.includes('Reminder:') ? (
+              <>
+                {message.split('Reminder:')[0]}
+                <span className="font-bold">Reminder:</span>
+                {message.split('Reminder:').slice(1).join('Reminder:')}
+              </>
             ) : renderMessage()}
           </p>
         </div>
