@@ -95,11 +95,41 @@
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Poppins', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Normalize emoji sizing across platforms (Android emojis render larger/smaller) */
+  .text-lg > span,
+  span[role="img"] {
+    font-size: inherit;
+    line-height: inherit;
+  }
+
+  /* Normalize input/button sizing across Android & iOS */
+  input, button, select, textarea {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+  }
+
+  /* Prevent Android from inflating touch targets differently */
+  button {
+    touch-action: manipulation;
   }
 }
 
