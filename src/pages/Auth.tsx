@@ -330,21 +330,21 @@ const Auth = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-primary flex flex-col overflow-hidden">
-      {/* Logo - positioned at top */}
-      <div className="absolute top-20 max-[375px]:top-12 left-0 right-0 flex justify-center">
-        <img 
-          src={fleaLogoAuth} 
-          alt="FLEA" 
-          width={232}
-          height={84}
-          loading="eager"
-          className="h-12 max-[375px]:h-10 object-contain"
-        />
-      </div>
-      
+    <div className="fixed inset-0 bg-primary flex flex-col overflow-y-auto">
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 max-[375px]:px-4 pt-16 pb-10 max-[375px]:pt-12 max-[375px]:pb-8">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 max-[375px]:px-4 pt-6 pb-10 max-[375px]:pt-4 max-[375px]:pb-8">
+        
+        {/* Logo - in flow so it scrolls with content */}
+        <div className="flex justify-center mb-4 max-[375px]:mb-3 flex-shrink-0">
+          <img 
+            src={fleaLogoAuth} 
+            alt="FLEA" 
+            width={232}
+            height={84}
+            loading="eager"
+            className="h-12 max-[375px]:h-10 object-contain"
+          />
+        </div>
         
         {/* Tab Toggle */}
         <div className="flex bg-[#423D3D] rounded-full p-1 mb-6 max-[375px]:mb-4 h-9">
