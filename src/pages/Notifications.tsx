@@ -194,15 +194,24 @@ const Notifications = () => {
     const message = getNotificationMessage(notification.type as any, username, messageArg);
 
     const renderMessage = () => {
+      // Bold usernames (@username) in the message
+      const boldUsernames = (text: string) => {
+        const parts = text.split(/(@\w+)/g);
+        if (parts.length === 1) return text;
+        return parts.map((part, i) =>
+          part.startsWith('@') ? <span key={i} className="font-bold">{part}</span> : part
+        );
+      };
+
       if (isSoldOrLegacy && itemName && message.includes(itemName)) {
         const parts = message.split(itemName);
         return (
           <>
-            {parts[0]}<span className="font-bold">{itemName}</span>{parts.slice(1).join(itemName)}
+            {boldUsernames(parts[0])}<span className="font-bold">{itemName}</span>{parts.slice(1).map(p => boldUsernames(p))}
           </>
         );
       }
-      return message;
+      return boldUsernames(message);
     };
 
     return (
