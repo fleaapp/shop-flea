@@ -335,10 +335,10 @@ const Auth = () => {
       <div className="flex-1 flex flex-col items-center px-6 max-[375px]:px-4 pb-10 max-[375px]:pb-8">
         
         {/* Spacer to push logo to ~30% from top */}
-        <div className="flex-[3] min-h-[60px]" />
+        <div className="flex-[2] min-h-[100px]" />
         
         {/* Logo */}
-        <div className="flex justify-center mb-8 max-[375px]:mb-6 flex-shrink-0">
+        <div className="flex justify-center mb-14 max-[375px]:mb-10 flex-shrink-0">
           <img 
             src={fleaLogoAuth} 
             alt="FLEA" 
