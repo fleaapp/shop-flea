@@ -112,12 +112,12 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[85dvh] overflow-y-auto outline-none focus:outline-none">
-        <DrawerHeader>
+      <DrawerContent className="max-h-[85dvh] outline-none focus:outline-none flex flex-col">
+        <DrawerHeader className="flex-shrink-0">
           <DrawerTitle className="text-center">Filter Preferences</DrawerTitle>
         </DrawerHeader>
         
-        <div className="mt-6 space-y-6 pb-24 px-4">
+        <div className="flex-1 overflow-y-auto overscroll-contain mt-6 space-y-6 pb-6 px-4">
           {/* Gender Preferences */}
           <div>
             <label className="text-sm font-medium text-foreground mb-3 block">Preferred Fit</label>
@@ -265,7 +265,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
         </div>
 
         {/* Sticky Save Button */}
-        <div className="sticky bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-4 flex justify-center">
+        <div className="flex-shrink-0 bg-background border-t border-border px-4 py-4 flex justify-center">
           <Button 
             onClick={handleSave}
             disabled={isLoading}
