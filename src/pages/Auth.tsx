@@ -332,10 +332,13 @@ const Auth = () => {
   return (
     <div className="fixed inset-0 bg-primary flex flex-col overflow-y-auto">
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 max-[375px]:px-4 pt-6 pb-10 max-[375px]:pt-4 max-[375px]:pb-8 -mt-16 max-[375px]:-mt-12">
+      <div className="flex-1 flex flex-col items-center px-6 max-[375px]:px-4 pb-10 max-[375px]:pb-8">
         
-        {/* Logo - in flow so it scrolls with content */}
-        <div className="flex justify-center mb-4 max-[375px]:mb-3 flex-shrink-0">
+        {/* Spacer to push logo to ~30% from top */}
+        <div className="flex-[3] min-h-[60px]" />
+        
+        {/* Logo */}
+        <div className="flex justify-center mb-8 max-[375px]:mb-6 flex-shrink-0">
           <img 
             src={fleaLogoAuth} 
             alt="FLEA" 
@@ -543,9 +546,12 @@ const Auth = () => {
               */}
             </div>
           </div>
+          </div>
         </div>
+        
+        {/* Bottom spacer to balance layout */}
+        <div className="flex-[5] min-h-[40px]" />
       </div>
-    </div>
   );
 };
 
