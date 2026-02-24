@@ -449,7 +449,7 @@ export type Database = {
           location: string | null
           password_set: boolean
           pause_selling: boolean
-          preferred_gender: string | null
+          preferred_gender: string[] | null
           preferred_sizes: string[] | null
           rating: number | null
           region_id: string | null
@@ -478,7 +478,7 @@ export type Database = {
           location?: string | null
           password_set?: boolean
           pause_selling?: boolean
-          preferred_gender?: string | null
+          preferred_gender?: string[] | null
           preferred_sizes?: string[] | null
           rating?: number | null
           region_id?: string | null
@@ -507,7 +507,7 @@ export type Database = {
           location?: string | null
           password_set?: boolean
           pause_selling?: boolean
-          preferred_gender?: string | null
+          preferred_gender?: string[] | null
           preferred_sizes?: string[] | null
           rating?: number | null
           region_id?: string | null

@@ -21,7 +21,7 @@ export interface FilterState {
   hideSoldItems: boolean;
   sizes: string[]; // Multi-select sizes
   categories: string[]; // Multi-select categories (includes subcategories)
-  gender: string; // Gender/Fit filter
+  genders: string[]; // Multi-select Gender/Fit filter
   condition: string;
   colours: string[]; // Multi-select colours
   styles: string[]; // Multi-select styles
@@ -34,7 +34,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
     hideSoldItems: false,
     sizes: [],
     categories: [],
-    gender: '',
+    genders: [],
     condition: '',
     colours: [],
     styles: [],
@@ -48,6 +48,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
     women: false,
     men: false,
     unisex: false,
+    kids: false,
     colours: false,
     styles: false,
   });
@@ -139,19 +140,28 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
     setFilters(prev => ({ ...prev, styles: [] }));
   };
 
+  const toggleGender = (value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      genders: prev.genders.includes(value)
+        ? prev.genders.filter(g => g !== value)
+        : [...prev.genders, value],
+    }));
+  };
+
   const handleReset = () => {
     setFilters({
       preferences: false,
       hideSoldItems: false,
       sizes: [],
       categories: [],
-      gender: '',
+      genders: [],
       condition: '',
       colours: [],
       styles: [],
       priceRange: [0, 1000],
     });
-    setExpandedSections({ categories: false, sizes: false, women: false, men: false, unisex: false, colours: false, styles: false });
+    setExpandedSections({ categories: false, sizes: false, women: false, men: false, unisex: false, kids: false, colours: false, styles: false });
     setExpandedCategories({});
   };
 
@@ -231,7 +241,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
             />
           </div>
 
-          {/* Gender/Fit Section */}
+          {/* Gender/Fit Section - Multi-select */}
           <div className="py-3 border-t border-border">
             <label className="text-lg font-medium mb-3 block">Fit</label>
             <div className="flex flex-wrap gap-2">
@@ -239,12 +249,9 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                 <button
                   key={fit.value}
                   type="button"
-                  onClick={() => setFilters(prev => ({ 
-                    ...prev, 
-                    gender: prev.gender === fit.value ? '' : fit.value 
-                  }))}
+                  onClick={() => toggleGender(fit.value)}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    filters.gender === fit.value ? 'bg-primary text-foreground' : 'bg-muted text-foreground'
+                    filters.genders.includes(fit.value) ? 'bg-primary text-foreground' : 'bg-muted text-foreground'
                   }`}
                 >
                   {fit.label}
@@ -481,6 +488,31 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
+
+                {/* Kids Section */}
+                <Collapsible open={expandedSections.kids} onOpenChange={() => toggleSection('kids')}>
+                  <SectionHeader label="Kids" section="kids" />
+                  <CollapsibleContent className="pb-3">
+                    <div className="space-y-3 pl-2">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-2">Clothing</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {FILTER_SIZES.kids.clothing.sizes.map(size => (
+                            <SizeChip key={`k-clothing-${size}`} size={size} category="clothing" fit="kids" selected={filters.sizes.includes(makeSizeKey('kids', 'clothing', size))} />
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-2">Shoes (AU)</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {FILTER_SIZES.kids.shoes.map(size => (
+                            <SizeChip key={`k-shoes-${size}`} size={size} category="shoes" fit="kids" selected={filters.sizes.includes(makeSizeKey('kids', 'shoes', size))} />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               </CollapsibleContent>
             </Collapsible>
           </div>
@@ -614,11 +646,11 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
           {(() => {
             const selectedFilters: { label: string; type: string; value: string }[] = [];
             
-            // Add gender/fit
-            if (filters.gender) {
-              const fitLabel = FIT_OPTIONS.find(f => f.value === filters.gender)?.label || filters.gender;
-              selectedFilters.push({ label: fitLabel, type: 'gender', value: filters.gender });
-            }
+            // Add genders
+            filters.genders.forEach(g => {
+              const fitLabel = FIT_OPTIONS.find(f => f.value === g)?.label || g;
+              selectedFilters.push({ label: fitLabel, type: 'gender', value: g });
+            });
             
             // Add sizes
             filters.sizes.forEach(sizeKey => {
@@ -656,7 +688,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                       type="button"
                       onClick={() => {
                         if (filter.type === 'gender') {
-                          setFilters(prev => ({ ...prev, gender: '' }));
+                          toggleGender(filter.value);
                         } else if (filter.type === 'size') {
                           toggleSizeKey(filter.value);
                         } else if (filter.type === 'category') {
