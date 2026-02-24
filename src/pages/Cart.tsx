@@ -428,7 +428,7 @@ const Cart = () => {
                 <div className="space-y-6">
                   {overdue.length > 0 && (
                     <div>
-                      <h2 className="mb-3 text-base font-semibold text-destructive">⚠️ Overdue</h2>
+                      <h2 className="mb-3 text-base font-semibold text-destructive">🚨 Overdue</h2>
                       <div className="space-y-3">
                         {overdue.map((order) => renderOrderCard(order, true))}
                       </div>
