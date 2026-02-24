@@ -71,6 +71,7 @@ const UnreadIndicator = () => (
 const Notifications = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'activity' | 'sales'>('activity');
+  const [salesStatusFilter, setSalesStatusFilter] = useState<'awaiting' | 'shipped' | 'delivered'>('awaiting');
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
   const { sellerOrderGroups, loadingSellerOrders, markAsShipped } = useOrders();
@@ -294,6 +295,32 @@ const Notifications = () => {
         </div>
       </div>
 
+      {/* Status segmented toggle for sales */}
+      {activeTab === 'sales' && (
+        <div className="px-4 pb-4">
+          <div className="flex items-center rounded-full bg-muted p-1">
+            {([
+              { key: 'awaiting' as const, label: 'To Ship' },
+              { key: 'shipped' as const, label: 'Shipped' },
+              { key: 'delivered' as const, label: 'Delivered' },
+            ]).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setSalesStatusFilter(key)}
+                className={cn(
+                  'flex-1 rounded-full py-2 text-sm font-medium transition-all',
+                  salesStatusFilter === key
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground'
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Content */}
       <div className="px-4 space-y-3">
         {activeTab === 'activity' ? (
@@ -320,51 +347,25 @@ const Notifications = () => {
               <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
                 <span className="text-5xl mb-4">⏳</span>
               </div>
-            ) : sellerOrderGroups.length === 0 ? (
-              <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-                <span className="text-6xl opacity-50 mb-4">💸</span>
-                <p className="text-lg font-medium text-muted-foreground">No sales yet</p>
-                <p className="mt-2 text-sm text-muted-foreground">Your sales will appear here</p>
-              </div>
-            ) : (
-              <>
-                {/* Awaiting Shipping */}
-                {awaitingShipping.length > 0 && (
-                  <div>
-                    <h2 className="mb-3 text-base font-semibold text-foreground">Awaiting shipping</h2>
-                    <div className="space-y-3">
-                      {awaitingShipping.map(group => (
-                        <SaleCard key={group.id} group={group} showShadow />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Shipped */}
-                {shipped.length > 0 && (
-                  <div>
-                    <h2 className="mb-3 text-base font-semibold text-foreground">Shipped</h2>
-                    <div className="space-y-3">
-                      {shipped.map(group => (
-                        <SaleCard key={group.id} group={group} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Delivered */}
-                {delivered.length > 0 && (
-                  <div>
-                    <h2 className="mb-3 text-base font-semibold text-foreground">Delivered</h2>
-                    <div className="space-y-3">
-                      {delivered.map(group => (
-                        <SaleCard key={group.id} group={group} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
+            ) : (() => {
+              const filteredSales = sellerOrderGroups.filter(g => g.status === salesStatusFilter);
+              return filteredSales.length === 0 ? (
+                <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
+                  <span className="text-6xl opacity-50 mb-4">💸</span>
+                  <p className="text-lg font-medium text-muted-foreground">
+                    {salesStatusFilter === 'awaiting' && 'No sales to ship yet'}
+                    {salesStatusFilter === 'shipped' && 'No shipped sales yet'}
+                    {salesStatusFilter === 'delivered' && 'No delivered sales yet'}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredSales.map(group => (
+                    <SaleCard key={group.id} group={group} showShadow={salesStatusFilter === 'awaiting'} />
+                  ))}
+                </div>
+              );
+            })()}
           </>
         )}
       </div>
