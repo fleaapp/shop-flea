@@ -88,7 +88,7 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
       const normalizedSizeKeys = normalizeSizeKeys(filters?.sizes);
       const sizeKeySet = normalizedSizeKeys.length > 0 ? new Set(normalizedSizeKeys) : null;
       const sizeFiltered = sizeKeySet
-        ? data.filter((l) => sizeKeySet.has(listingSizeKey(l.size, l.category)))
+        ? data.filter((l) => sizeKeySet.has(listingSizeKey(l.size, l.category, l.gender)))
         : data;
 
       // Get unique user_ids and fetch all profiles in a single query, including pause_selling
