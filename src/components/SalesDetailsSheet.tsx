@@ -242,6 +242,18 @@ const SalesDetailsSheet = ({
               </div>
             </div>
 
+            {/* Mark as shipped - between tracking and payment */}
+            {primaryOrder.status === 'awaiting' && (
+              <div className="flex justify-center">
+                <Button
+                  onClick={handleMarkShipped}
+                  className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
+                >
+                  Mark as shipped
+                </Button>
+              </div>
+            )}
+
             {/* Payment & Payout Section */}
             <div className="rounded-xl bg-card overflow-hidden">
               <SectionHeader>Payment & Payout</SectionHeader>
@@ -277,22 +289,25 @@ const SalesDetailsSheet = ({
 
             {/* Actions */}
             <div className="flex flex-col items-center space-y-3 pt-4">
-              {primaryOrder.status === 'awaiting' && (
+              <div className="flex items-center gap-3">
                 <Button
-                  onClick={handleMarkShipped}
-                  className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
+                  onClick={() => {
+                    window.open('https://dashboard.stripe.com/payments', '_blank');
+                  }}
+                  variant="outline"
+                  className="rounded-full h-12 px-8"
                 >
-                  Mark as shipped
+                  Refund sale
                 </Button>
-              )}
-              {primaryOrder.status === 'delivered' && !existingReview && (
-                <Button
-                  onClick={() => setReviewDrawerOpen(true)}
-                  className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
-                >
-                  Review Buyer
-                </Button>
-              )}
+                {primaryOrder.status === 'delivered' && !existingReview && (
+                  <Button
+                    onClick={() => setReviewDrawerOpen(true)}
+                    className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
+                  >
+                    Review Buyer
+                  </Button>
+                )}
+              </div>
               <button
                 className="text-center text-sm text-foreground underline"
                 onClick={() => {
