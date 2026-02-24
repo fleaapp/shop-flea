@@ -338,7 +338,7 @@ const Auth = () => {
         <div className="flex-[2] min-h-[100px]" />
         
         {/* Logo */}
-        <div className="flex justify-center mb-14 max-[375px]:mb-10 flex-shrink-0">
+        <div className="flex justify-center mb-24 max-[375px]:mb-16 flex-shrink-0">
           <img 
             src={fleaLogoAuth} 
             alt="FLEA" 
