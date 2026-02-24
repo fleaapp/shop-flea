@@ -1,13 +1,14 @@
 // Centralized size and category configuration for Flea
 // Single source of truth for both listings and filters
 
-export type FitType = 'women' | 'men' | 'unisex';
+export type FitType = 'women' | 'men' | 'unisex' | 'kids';
 export type CategoryType = 'clothing' | 'shoes';
 
 export const FIT_OPTIONS = [
   { value: 'women', label: "Women's" },
   { value: 'men', label: "Men's" },
   { value: 'unisex', label: 'Unisex' },
+  { value: 'kids', label: 'Kids' },
 ] as const;
 
 // Hierarchical category structure with subcategories
@@ -135,6 +136,17 @@ const UNISEX_SHOES = [
   'F15.5 / M14', 'F16 / M14.5', 'F16.5 / M15', 'F17 / M15.5', 'F17.5 / M16'
 ];
 
+// ===== KIDS SIZES =====
+const KIDS_CLOTHING = [
+  '00000', '0000', '000', '00', '0',
+  '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '16'
+];
+
+const KIDS_SHOES = [
+  '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13',
+  '1Y', '2Y', '3Y', '4Y', '5Y', '6Y', '7Y'
+];
+
 // Size configuration map for listings (single select by fit)
 export const SIZE_CONFIG: Record<FitType, Record<CategoryType, string[]>> = {
   women: {
@@ -148,6 +160,10 @@ export const SIZE_CONFIG: Record<FitType, Record<CategoryType, string[]>> = {
   unisex: {
     clothing: UNISEX_CLOTHING,
     shoes: UNISEX_SHOES,
+  },
+  kids: {
+    clothing: KIDS_CLOTHING,
+    shoes: KIDS_SHOES,
   },
 };
 
@@ -181,6 +197,14 @@ export const LISTING_SIZE_SECTIONS = {
     },
     shoes: {
       'Shoes (AU F / M)': UNISEX_SHOES,
+    },
+  },
+  kids: {
+    clothing: {
+      'Clothing': KIDS_CLOTHING,
+    },
+    shoes: {
+      'Shoes (AU)': KIDS_SHOES,
     },
   },
 } as const;
@@ -230,6 +254,12 @@ export const FILTER_SIZES = {
       inches: UNISEX_BOTTOMS_INCHES,
     },
     shoes: UNISEX_SHOES,
+  },
+  kids: {
+    clothing: {
+      sizes: KIDS_CLOTHING,
+    },
+    shoes: KIDS_SHOES,
   },
 } as const;
 

@@ -1,11 +1,11 @@
 import { isShoeCategory } from "@/config/sizeConfig";
 
 export type SizeCategoryKey = "clothing" | "shoes";
-export type FitKey = "women" | "men" | "unisex";
+export type FitKey = "women" | "men" | "unisex" | "kids";
 
 /**
  * Creates a 3-part size key: fit:category:size
- * e.g. "women:clothing:m", "men:shoes:10"
+ * e.g. "women:clothing:m", "men:shoes:10", "kids:clothing:4"
  */
 export const makeSizeKey = (fit: FitKey, category: SizeCategoryKey, size: string) =>
   `${fit}:${category}:${String(size ?? "")}`.toLowerCase();
@@ -26,7 +26,7 @@ export const parseSizeKey = (
   if (parts.length >= 3) {
     const [fit, cat, ...rest] = parts;
     if (
-      (fit === "women" || fit === "men" || fit === "unisex") &&
+      (fit === "women" || fit === "men" || fit === "unisex" || fit === "kids") &&
       (cat === "clothing" || cat === "shoes") &&
       rest.length > 0
     ) {
@@ -85,7 +85,7 @@ export const formatSizeKeyLabel = (key: string) => {
   if (!parsed) return String(key ?? "").toUpperCase();
 
   const sizeLabel = parsed.size.toUpperCase();
-  const fitPrefix = parsed.fit === "women" ? "W" : parsed.fit === "men" ? "M" : "U";
+  const fitPrefix = parsed.fit === "women" ? "W" : parsed.fit === "men" ? "M" : parsed.fit === "kids" ? "K" : "U";
   if (parsed.category === "shoes") return `${fitPrefix} Shoes ${sizeLabel}`;
   return `${fitPrefix} ${sizeLabel}`;
 };

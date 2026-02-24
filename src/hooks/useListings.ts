@@ -41,6 +41,7 @@ export interface ListingFilters {
   sizes?: string[]; // Multi-select sizes
   condition?: string;
   gender?: string;
+  genders?: string[]; // Multi-select genders
   colours?: string[]; // Multi-select colours
   styles?: string[]; // Multi-select styles
   minPrice?: number;
@@ -91,6 +92,10 @@ export const useListings = (filters?: ListingFilters) => {
     }
     if (filters?.gender) {
       query = query.eq('gender', filters.gender.toLowerCase());
+    }
+    // Multi-select genders filter
+    if (filters?.genders && filters.genders.length > 0) {
+      query = query.in('gender', filters.genders.map(g => g.toLowerCase()));
     }
     // Multi-select colours filter
     if (filters?.colours && filters.colours.length > 0) {
@@ -162,7 +167,7 @@ export const useListings = (filters?: ListingFilters) => {
       setListings([]);
     }
     setLoading(false);
-  }, [user, filters?.category, filters?.categories, filters?.size, filters?.sizes, filters?.condition, filters?.gender, filters?.colours, filters?.styles, filters?.minPrice, filters?.maxPrice, filters?.search]);
+  }, [user, filters?.category, filters?.categories, filters?.size, filters?.sizes, filters?.condition, filters?.gender, filters?.genders, filters?.colours, filters?.styles, filters?.minPrice, filters?.maxPrice, filters?.search]);
 
   useEffect(() => {
     fetchListings();

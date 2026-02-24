@@ -17,7 +17,7 @@ interface FilterPreferencesSheetProps {
 const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetProps) => {
   const { user, refreshProfile, profile } = useAuth();
   const [preferredSizes, setPreferredSizes] = useState<string[]>([]);
-  const [preferredGender, setPreferredGender] = useState<string | null>(null);
+  const [preferredGenders, setPreferredGenders] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Track which sections are expanded
@@ -25,6 +25,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
     women: false,
     men: false,
     unisex: false,
+    kids: false,
   });
 
   // Load profile data when opened
@@ -32,7 +33,15 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
     if (open && profile) {
       const profileData = profile as any;
       setPreferredSizes(normalizeSizeKeys(profileData.preferred_sizes));
-      setPreferredGender(profileData.preferred_gender || null);
+      // Support both old string and new array format
+      const pg = profileData.preferred_gender;
+      if (Array.isArray(pg)) {
+        setPreferredGenders(pg.filter(Boolean));
+      } else if (pg) {
+        setPreferredGenders([pg]);
+      } else {
+        setPreferredGenders([]);
+      }
     }
   }, [open, profile]);
 
@@ -40,10 +49,14 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
-  // toggleSize moved to SizeChip component area for category-aware toggling
-
   const clearAllSizes = () => {
     setPreferredSizes([]);
+  };
+
+  const toggleGender = (value: string) => {
+    setPreferredGenders(prev =>
+      prev.includes(value) ? prev.filter(g => g !== value) : [...prev, value]
+    );
   };
 
   const handleSave = async () => {
@@ -55,7 +68,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
         .from('profiles')
         .update({
           preferred_sizes: preferredSizes,
-          preferred_gender: preferredGender,
+          preferred_gender: preferredGenders,
         } as any)
         .eq('user_id', user.id);
 
@@ -118,16 +131,16 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
         </DrawerHeader>
         
         <div className="flex-1 overflow-y-auto overscroll-contain mt-6 space-y-6 pb-6 px-4">
-          {/* Gender Preferences */}
+          {/* Gender Preferences - Multi-select */}
           <div>
             <label className="text-sm font-medium text-foreground mb-3 block">Preferred Fit</label>
             <div className="flex flex-wrap gap-2">
               {FIT_OPTIONS.map((fit) => (
                 <button
                   key={fit.value}
-                  onClick={() => setPreferredGender(preferredGender === fit.value ? null : fit.value)}
+                  onClick={() => toggleGender(fit.value)}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    preferredGender === fit.value
+                    preferredGenders.includes(fit.value)
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted text-muted-foreground'
                   }`}
@@ -254,6 +267,31 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.unisex.shoes.map(size => (
                         <SizeChip key={`u-shoes-${size}`} size={size} selected={isSizeSelected(size, 'shoes', 'unisex')} category="shoes" fit="unisex" />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Kids Section */}
+            <Collapsible open={expandedSections.kids} onOpenChange={() => toggleSection('kids')}>
+              <SectionHeader label="Kids" section="kids" />
+              <CollapsibleContent className="pb-3">
+                <div className="space-y-3 pl-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Clothing</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {FILTER_SIZES.kids.clothing.sizes.map(size => (
+                        <SizeChip key={`k-clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing', 'kids')} category="clothing" fit="kids" />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Shoes (AU)</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {FILTER_SIZES.kids.shoes.map(size => (
+                        <SizeChip key={`k-shoes-${size}`} size={size} selected={isSizeSelected(size, 'shoes', 'kids')} category="shoes" fit="kids" />
                       ))}
                     </div>
                   </div>

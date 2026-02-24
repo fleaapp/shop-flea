@@ -131,7 +131,7 @@ const Index = () => {
     hideSoldItems: false,
     sizes: [],
     categories: [],
-    gender: '',
+    genders: [],
     condition: '',
     colours: [],
     styles: [],
@@ -158,8 +158,8 @@ const Index = () => {
     if (appliedFilters.categories.length > 0) {
       filterObj.categories = appliedFilters.categories;
     }
-    if (appliedFilters.gender) {
-      filterObj.gender = appliedFilters.gender;
+    if (appliedFilters.genders.length > 0) {
+      filterObj.genders = appliedFilters.genders;
     }
     if (appliedFilters.condition) {
       filterObj.condition = appliedFilters.condition;
@@ -261,11 +261,10 @@ const Index = () => {
     const chips: { label: string; type: string; value: string }[] = [];
     
     // Add gender/fit first
-    if (appliedFilters.gender) {
-      const fitLabel = appliedFilters.gender === 'women' ? "Women's" : 
-                       appliedFilters.gender === 'men' ? "Men's" : 'Unisex';
-      chips.push({ label: fitLabel, type: 'gender', value: appliedFilters.gender });
-    }
+    appliedFilters.genders.forEach(g => {
+      const fitLabel = g === 'women' ? "Women's" : g === 'men' ? "Men's" : g === 'kids' ? 'Kids' : 'Unisex';
+      chips.push({ label: fitLabel, type: 'gender', value: g });
+    });
     
     appliedFilters.sizes.forEach(size => {
       chips.push({ label: formatSizeKeyLabel(size), type: 'size', value: size });
@@ -289,7 +288,7 @@ const Index = () => {
   const removeFilter = (type: string, value: string) => {
     setAppliedFilters(prev => {
       if (type === 'gender') {
-        return { ...prev, gender: '' };
+        return { ...prev, genders: prev.genders.filter(g => g !== value) };
       } else if (type === 'size') {
         return { ...prev, sizes: prev.sizes.filter(s => s !== value) };
       } else if (type === 'category') {
@@ -363,11 +362,11 @@ const Index = () => {
                   hideSoldItems: false,
                   sizes: [],
                   categories: [],
-                  gender: '',
-                  condition: '',
-                  colours: [],
-                  styles: [],
-                  priceRange: [0, 1000],
+                    genders: [],
+                    condition: '',
+                    colours: [],
+                    styles: [],
+                    priceRange: [0, 1000],
                 })}
                 className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-muted"
               >
