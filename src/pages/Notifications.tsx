@@ -297,8 +297,8 @@ const Notifications = () => {
 
       {/* Status segmented toggle for sales */}
       {activeTab === 'sales' && (
-        <div className="px-4 pb-4">
-          <div className="flex items-center rounded-full bg-muted p-1">
+        <div className="flex justify-center px-4 pb-4">
+          <div className="inline-flex items-center rounded-full bg-muted p-1">
             {([
               { key: 'awaiting' as const, label: 'To Ship' },
               { key: 'shipped' as const, label: 'Shipped' },
@@ -308,7 +308,7 @@ const Notifications = () => {
                 key={key}
                 onClick={() => setSalesStatusFilter(key)}
                 className={cn(
-                  'flex-1 rounded-full py-2 text-sm font-medium transition-all',
+                  'rounded-full px-4 py-1.5 text-sm font-medium transition-all',
                   salesStatusFilter === key
                     ? 'bg-card text-foreground shadow-sm'
                     : 'text-muted-foreground'
