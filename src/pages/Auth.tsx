@@ -332,7 +332,7 @@ const Auth = () => {
   return (
     <div className="fixed inset-0 bg-primary flex flex-col overflow-y-auto">
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 max-[375px]:px-4 pt-6 pb-10 max-[375px]:pt-4 max-[375px]:pb-8">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 max-[375px]:px-4 pt-6 pb-10 max-[375px]:pt-4 max-[375px]:pb-8 -mt-16 max-[375px]:-mt-12">
         
         {/* Logo - in flow so it scrolls with content */}
         <div className="flex justify-center mb-4 max-[375px]:mb-3 flex-shrink-0">
