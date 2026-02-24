@@ -288,7 +288,7 @@ const Cart = () => {
                 key={key}
                 onClick={() => setOrderStatusFilter(key)}
                 className={cn(
-                  'rounded-full px-4 py-1.5 text-sm font-medium transition-all',
+                  'rounded-full w-24 py-2 text-sm font-medium transition-all',
                   orderStatusFilter === key
                     ? 'bg-card text-foreground shadow-sm'
                     : 'text-muted-foreground'
