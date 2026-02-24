@@ -61,6 +61,7 @@ const Cart = () => {
   const { removeDiscarded } = useDiscardedListings();
   const { buyerOrderGroups, loadingBuyerOrders, markAsDelivered } = useOrders();
   const [activeTab, setActiveTab] = useState<'cart' | 'orders'>('cart');
+  const [orderStatusFilter, setOrderStatusFilter] = useState<'awaiting' | 'shipped' | 'delivered'>('awaiting');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [sellerSettings, setSellerSettings] = useState<Map<string, SellerShippingInfo>>(new Map());
@@ -274,6 +275,32 @@ const Cart = () => {
         </div>
       </div>
 
+      {/* Status segmented toggle for orders */}
+      {activeTab === 'orders' && (
+        <div className="px-4 max-[375px]:px-3 pb-4">
+          <div className="flex items-center rounded-full bg-muted p-1">
+            {([
+              { key: 'awaiting' as const, label: 'To Ship' },
+              { key: 'shipped' as const, label: 'Shipped' },
+              { key: 'delivered' as const, label: 'Delivered' },
+            ]).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setOrderStatusFilter(key)}
+                className={cn(
+                  'flex-1 rounded-full py-2 text-sm font-medium transition-all',
+                  orderStatusFilter === key
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground'
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {activeTab === 'cart' ? (
         <div className="px-4 max-[375px]:px-3 space-y-4 max-[375px]:space-y-3" data-onboarding="cart-items-area">
           {cartItems.length > 0 ? (
@@ -376,45 +403,23 @@ const Cart = () => {
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
               <span className="text-5xl mb-4">⏳</span>
             </div>
-          ) : buyerOrderGroups.length === 0 ? (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-              <span className="text-6xl opacity-50 mb-4">🧾</span>
-              <p className="text-lg font-medium text-muted-foreground">No orders yet</p>
-              <p className="mt-2 text-sm text-muted-foreground">Your purchases will appear here</p>
-            </div>
-          ) : (
-            <>
-              {/* Awaiting Shipping */}
-              {awaitingOrders.length > 0 && (
-                <div>
-                  <h2 className="mb-3 text-base font-semibold text-foreground">Awaiting shipping</h2>
-                  <div className="space-y-3">
-                    {awaitingOrders.map((order) => renderOrderCard(order, true))}
-                  </div>
-                </div>
-              )}
-
-              {/* Shipped */}
-              {shippedOrders.length > 0 && (
-                <div>
-                  <h2 className="mb-3 text-base font-semibold text-foreground">Shipped</h2>
-                  <div className="space-y-3">
-                    {shippedOrders.map((order) => renderOrderCard(order, false))}
-                  </div>
-                </div>
-              )}
-
-              {/* Delivered */}
-              {deliveredOrders.length > 0 && (
-                <div>
-                  <h2 className="mb-3 text-base font-semibold text-foreground">Delivered</h2>
-                  <div className="space-y-3">
-                    {deliveredOrders.map((order) => renderOrderCard(order, false))}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+          ) : (() => {
+            const filteredOrders = buyerOrderGroups.filter((g) => g.status === orderStatusFilter);
+            return filteredOrders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
+                <span className="text-6xl opacity-50 mb-4">🧾</span>
+                <p className="text-lg font-medium text-muted-foreground">
+                  {orderStatusFilter === 'awaiting' && 'No orders to ship yet'}
+                  {orderStatusFilter === 'shipped' && 'No shipped orders yet'}
+                  {orderStatusFilter === 'delivered' && 'No delivered orders yet'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredOrders.map((order) => renderOrderCard(order, orderStatusFilter === 'awaiting'))}
+              </div>
+            );
+          })()}
         </div>
       )}
 
