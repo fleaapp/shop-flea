@@ -295,7 +295,7 @@ const SalesDetailsSheet = ({
                     window.open('https://dashboard.stripe.com/payments', '_blank');
                   }}
                   variant="outline"
-                  className="rounded-full h-12 px-8"
+                  className="rounded-full h-12 px-8 bg-muted-foreground/60 text-white hover:bg-muted-foreground/70 border-none"
                 >
                   Refund sale
                 </Button>
