@@ -405,18 +405,52 @@ const Cart = () => {
             </div>
           ) : (() => {
             const filteredOrders = buyerOrderGroups.filter((g) => g.status === orderStatusFilter);
-            return filteredOrders.length === 0 ? (
-              <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-                <span className="text-6xl opacity-50 mb-4">🧾</span>
-                <p className="text-lg font-medium text-muted-foreground">
-                  {orderStatusFilter === 'awaiting' && 'No orders to ship yet'}
-                  {orderStatusFilter === 'shipped' && 'No shipped orders yet'}
-                  {orderStatusFilter === 'delivered' && 'No delivered orders yet'}
-                </p>
-              </div>
-            ) : (
+            if (filteredOrders.length === 0) {
+              return (
+                <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
+                  <span className="text-6xl opacity-50 mb-4">🧾</span>
+                  <p className="text-lg font-medium text-muted-foreground">
+                    {orderStatusFilter === 'awaiting' && 'No orders to ship yet'}
+                    {orderStatusFilter === 'shipped' && 'No shipped orders yet'}
+                    {orderStatusFilter === 'delivered' && 'No delivered orders yet'}
+                  </p>
+                </div>
+              );
+            }
+
+            if (orderStatusFilter === 'awaiting') {
+              const now = Date.now();
+              const FOUR_DAYS = 4 * 24 * 60 * 60 * 1000;
+              const overdue = filteredOrders.filter((g) => now - new Date(g.created_at).getTime() >= FOUR_DAYS);
+              const onTime = filteredOrders.filter((g) => now - new Date(g.created_at).getTime() < FOUR_DAYS);
+
+              return (
+                <div className="space-y-6">
+                  {overdue.length > 0 && (
+                    <div>
+                      <h2 className="mb-3 text-base font-semibold text-destructive">⚠️ Overdue</h2>
+                      <div className="space-y-3">
+                        {overdue.map((order) => renderOrderCard(order, true))}
+                      </div>
+                    </div>
+                  )}
+                  {onTime.length > 0 && (
+                    <div>
+                      {overdue.length > 0 && (
+                        <h2 className="mb-3 text-base font-semibold text-foreground">Awaiting Shipping</h2>
+                      )}
+                      <div className="space-y-3">
+                        {onTime.map((order) => renderOrderCard(order, true))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            return (
               <div className="space-y-3">
-                {filteredOrders.map((order) => renderOrderCard(order, orderStatusFilter === 'awaiting'))}
+                {filteredOrders.map((order) => renderOrderCard(order, false))}
               </div>
             );
           })()}

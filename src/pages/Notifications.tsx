@@ -349,19 +349,57 @@ const Notifications = () => {
               </div>
             ) : (() => {
               const filteredSales = sellerOrderGroups.filter(g => g.status === salesStatusFilter);
-              return filteredSales.length === 0 ? (
-                <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-                  <span className="text-6xl opacity-50 mb-4">💸</span>
-                  <p className="text-lg font-medium text-muted-foreground">
-                    {salesStatusFilter === 'awaiting' && 'No sales to ship yet'}
-                    {salesStatusFilter === 'shipped' && 'No shipped sales yet'}
-                    {salesStatusFilter === 'delivered' && 'No delivered sales yet'}
-                  </p>
-                </div>
-              ) : (
+              if (filteredSales.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
+                    <span className="text-6xl opacity-50 mb-4">💸</span>
+                    <p className="text-lg font-medium text-muted-foreground">
+                      {salesStatusFilter === 'awaiting' && 'No sales to ship yet'}
+                      {salesStatusFilter === 'shipped' && 'No shipped sales yet'}
+                      {salesStatusFilter === 'delivered' && 'No delivered sales yet'}
+                    </p>
+                  </div>
+                );
+              }
+
+              if (salesStatusFilter === 'awaiting') {
+                const now = Date.now();
+                const FOUR_DAYS = 4 * 24 * 60 * 60 * 1000;
+                const overdue = filteredSales.filter((g) => now - new Date(g.created_at).getTime() >= FOUR_DAYS);
+                const onTime = filteredSales.filter((g) => now - new Date(g.created_at).getTime() < FOUR_DAYS);
+
+                return (
+                  <div className="space-y-6">
+                    {overdue.length > 0 && (
+                      <div>
+                        <h2 className="mb-3 text-base font-semibold text-destructive">⚠️ Overdue</h2>
+                        <div className="space-y-3">
+                          {overdue.map(group => (
+                            <SaleCard key={group.id} group={group} showShadow />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {onTime.length > 0 && (
+                      <div>
+                        {overdue.length > 0 && (
+                          <h2 className="mb-3 text-base font-semibold text-foreground">Awaiting Shipping</h2>
+                        )}
+                        <div className="space-y-3">
+                          {onTime.map(group => (
+                            <SaleCard key={group.id} group={group} showShadow />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
                 <div className="space-y-3">
                   {filteredSales.map(group => (
-                    <SaleCard key={group.id} group={group} showShadow={salesStatusFilter === 'awaiting'} />
+                    <SaleCard key={group.id} group={group} showShadow={false} />
                   ))}
                 </div>
               );
