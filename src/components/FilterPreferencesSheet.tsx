@@ -7,7 +7,7 @@ import { FILTER_SIZES, FIT_OPTIONS } from '@/config/sizeConfig';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { normalizeSizeKeys } from '@/utils/sizeKeys';
+import { normalizeSizeKeys, FitKey } from '@/utils/sizeKeys';
 
 interface FilterPreferencesSheetProps {
   open: boolean;
@@ -71,11 +71,11 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
     }
   };
 
-  // Create unique size key with category prefix to differentiate clothing vs shoes
-  const getSizeKey = (size: string, category: 'clothing' | 'shoes') => `${category}:${size}`;
+  // Create unique size key with fit + category prefix to differentiate across fits
+  const getSizeKey = (size: string, category: 'clothing' | 'shoes', fit: FitKey) => `${fit}:${category}:${size}`.toLowerCase();
   
-  const toggleSize = (size: string, category: 'clothing' | 'shoes') => {
-    const sizeKey = getSizeKey(size, category);
+  const toggleSize = (size: string, category: 'clothing' | 'shoes', fit: FitKey) => {
+    const sizeKey = getSizeKey(size, category, fit);
     setPreferredSizes(prev => 
       prev.includes(sizeKey) 
         ? prev.filter(s => s !== sizeKey)
@@ -83,14 +83,14 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
     );
   };
 
-  const isSizeSelected = (size: string, category: 'clothing' | 'shoes') => {
-    return preferredSizes.includes(getSizeKey(size, category));
+  const isSizeSelected = (size: string, category: 'clothing' | 'shoes', fit: FitKey) => {
+    return preferredSizes.includes(getSizeKey(size, category, fit));
   };
 
-  const SizeChip = ({ size, selected, category }: { size: string; selected: boolean; category: 'clothing' | 'shoes' }) => (
+  const SizeChip = ({ size, selected, category, fit }: { size: string; selected: boolean; category: 'clothing' | 'shoes'; fit: FitKey }) => (
     <button
       type="button"
-      onClick={() => toggleSize(size, category)}
+      onClick={() => toggleSize(size, category, fit)}
       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
         selected ? 'bg-primary text-foreground' : 'bg-muted text-foreground hover:bg-muted/80'
       }`}
@@ -163,7 +163,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <p className="text-xs text-muted-foreground mb-2">Clothing (Alpha)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.women.clothing.alpha.map(size => (
-                        <SizeChip key={`clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing')} category="clothing" />
+                        <SizeChip key={`w-clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing', 'women')} category="clothing" fit="women" />
                       ))}
                     </div>
                   </div>
@@ -171,7 +171,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <p className="text-xs text-muted-foreground mb-2">Clothing (Numeric)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.women.clothing.numeric.map(size => (
-                        <SizeChip key={`clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing')} category="clothing" />
+                        <SizeChip key={`w-clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing', 'women')} category="clothing" fit="women" />
                       ))}
                     </div>
                   </div>
@@ -179,7 +179,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <p className="text-xs text-muted-foreground mb-2">Bottoms (Inches)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.women.clothing.inches.map(size => (
-                        <SizeChip key={`clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing')} category="clothing" />
+                        <SizeChip key={`w-clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing', 'women')} category="clothing" fit="women" />
                       ))}
                     </div>
                   </div>
@@ -187,7 +187,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <p className="text-xs text-muted-foreground mb-2">Shoes (AU)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.women.shoes.map(size => (
-                        <SizeChip key={`shoes-${size}`} size={size} selected={isSizeSelected(size, 'shoes')} category="shoes" />
+                        <SizeChip key={`w-shoes-${size}`} size={size} selected={isSizeSelected(size, 'shoes', 'women')} category="shoes" fit="women" />
                       ))}
                     </div>
                   </div>
@@ -204,7 +204,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <p className="text-xs text-muted-foreground mb-2">Clothing (Alpha)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.men.clothing.alpha.map(size => (
-                        <SizeChip key={`clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing')} category="clothing" />
+                        <SizeChip key={`m-clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing', 'men')} category="clothing" fit="men" />
                       ))}
                     </div>
                   </div>
@@ -212,7 +212,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <p className="text-xs text-muted-foreground mb-2">Bottoms (Inches)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.men.clothing.inches.map(size => (
-                        <SizeChip key={`clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing')} category="clothing" />
+                        <SizeChip key={`m-clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing', 'men')} category="clothing" fit="men" />
                       ))}
                     </div>
                   </div>
@@ -220,7 +220,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <p className="text-xs text-muted-foreground mb-2">Shoes (AU)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.men.shoes.map(size => (
-                        <SizeChip key={`shoes-${size}`} size={size} selected={isSizeSelected(size, 'shoes')} category="shoes" />
+                        <SizeChip key={`m-shoes-${size}`} size={size} selected={isSizeSelected(size, 'shoes', 'men')} category="shoes" fit="men" />
                       ))}
                     </div>
                   </div>
@@ -237,7 +237,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <p className="text-xs text-muted-foreground mb-2">Clothing (Alpha)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.unisex.clothing.alpha.map(size => (
-                        <SizeChip key={`clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing')} category="clothing" />
+                        <SizeChip key={`u-clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing', 'unisex')} category="clothing" fit="unisex" />
                       ))}
                     </div>
                   </div>
@@ -245,7 +245,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <p className="text-xs text-muted-foreground mb-2">Bottoms (Inches)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.unisex.clothing.inches.map(size => (
-                        <SizeChip key={`clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing')} category="clothing" />
+                        <SizeChip key={`u-clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing', 'unisex')} category="clothing" fit="unisex" />
                       ))}
                     </div>
                   </div>
@@ -253,7 +253,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     <p className="text-xs text-muted-foreground mb-2">Shoes (AU F / M)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.unisex.shoes.map(size => (
-                        <SizeChip key={`shoes-${size}`} size={size} selected={isSizeSelected(size, 'shoes')} category="shoes" />
+                        <SizeChip key={`u-shoes-${size}`} size={size} selected={isSizeSelected(size, 'shoes', 'unisex')} category="shoes" fit="unisex" />
                       ))}
                     </div>
                   </div>
