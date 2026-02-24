@@ -277,8 +277,8 @@ const Cart = () => {
 
       {/* Status segmented toggle for orders */}
       {activeTab === 'orders' && (
-        <div className="px-4 max-[375px]:px-3 pb-4">
-          <div className="flex items-center rounded-full bg-muted p-1">
+        <div className="flex justify-center px-4 max-[375px]:px-3 pb-4">
+          <div className="inline-flex items-center rounded-full bg-muted p-1">
             {([
               { key: 'awaiting' as const, label: 'To Ship' },
               { key: 'shipped' as const, label: 'Shipped' },
@@ -288,7 +288,7 @@ const Cart = () => {
                 key={key}
                 onClick={() => setOrderStatusFilter(key)}
                 className={cn(
-                  'flex-1 rounded-full py-2 text-sm font-medium transition-all',
+                  'rounded-full px-4 py-1.5 text-sm font-medium transition-all',
                   orderStatusFilter === key
                     ? 'bg-card text-foreground shadow-sm'
                     : 'text-muted-foreground'
