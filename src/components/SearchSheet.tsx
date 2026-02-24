@@ -252,15 +252,15 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
         {/* Top (always visible) */}
         <div className="shrink-0 bg-background pt-[env(safe-area-inset-top,12px)]">
           {/* Header */}
-          <div className="flex items-center gap-4 px-6 py-4">
-            <button onClick={() => onOpenChange(false)} className="p-1">
+          <div className="flex items-center px-6 py-4">
+            <button onClick={() => onOpenChange(false)} className="p-1 w-8 flex-shrink-0">
               <ArrowLeft className="h-6 w-6 text-foreground" />
             </button>
-          <div className="flex-1 flex items-center justify-center">
+            <div className="flex-1 flex items-center justify-center">
               <span className="text-lg">🔍</span>
               <span className="text-lg font-semibold ml-2">Search</span>
             </div>
-            <div className="w-6" />
+            <div className="w-8 flex-shrink-0" />
           </div>
 
           {/* Search Input */}
