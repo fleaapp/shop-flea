@@ -131,6 +131,17 @@
   button {
     touch-action: manipulation;
   }
+
+  /* Android-only: hide auth logo when keyboard is open to prevent overlap */
+  html.android .auth-screen:has(input:focus) .auth-logo {
+    display: none;
+  }
+
+  /* Android-only: reduce notification text to match iOS proportions */
+  html.android .notification-text {
+    font-size: 13px;
+    line-height: 1.4;
+  }
 }
 
 @layer utilities {
