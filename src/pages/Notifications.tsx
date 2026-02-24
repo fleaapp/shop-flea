@@ -222,7 +222,7 @@ const Notifications = () => {
         <ProductThumbnail image={listingImage} avatar={userAvatar} fallbackEmoji={emoji} />
 
         <div className="flex-1 min-w-0 pb-5 pr-10">
-          <p className="text-sm text-foreground pt-2">
+          <p className="text-sm text-foreground pt-2 notification-text">
             {isUrgent && message.includes('Urgent action:') ? (
               <>
                 {message.split('Urgent action:')[0]}
