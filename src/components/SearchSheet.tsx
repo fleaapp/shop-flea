@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, X, Clock, TrendingUp, User } from 'lucide-react';
 import { Listing } from '@/types/listing';
@@ -24,6 +25,7 @@ interface SellerSuggestion {
 
 const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -119,13 +121,9 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
     setQuery('');
   };
 
-  const handleSellerClick = (username: string) => {
-    // Navigate to seller profile or search for seller
-    // Usernames in DB already have @ prefix, avoid double @@
-    const cleanUsername = username.startsWith('@') ? username : `@${username}`;
-    onSearch(cleanUsername);
+  const handleSellerClick = (userId: string) => {
     onOpenChange(false);
-    setQuery('');
+    setTimeout(() => navigate(`/seller/${userId}`), 300);
   };
 
   const handleRemoveRecent = (searchTerm: string) => {
@@ -328,7 +326,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
                   {matchingSellers.map((seller) => (
                     <button
                       key={seller.user_id}
-                      onClick={() => handleSellerClick(seller.username)}
+                      onClick={() => handleSellerClick(seller.user_id)}
                       className="flex items-center gap-3 w-full text-left py-2.5"
                     >
                       <Avatar className="h-8 w-8">
