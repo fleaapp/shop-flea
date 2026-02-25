@@ -31,16 +31,16 @@ const BottomNav = () => {
     return count || undefined;
   }, [buyerOrders, orderMessagesUnread]);
 
-  // Sales badge: new orders (awaiting) only for seller
-  const salesBadge = useMemo(() => {
-    const count = sellerOrders.filter(o => o.status === 'awaiting').length;
-    return count || undefined;
+  // Sales badge: awaiting + shipped for seller
+  const salesBadgeCount = useMemo(() => {
+    return sellerOrders.filter(o => o.status === 'awaiting' || o.status === 'shipped').length;
   }, [sellerOrders]);
 
-  // Alerts badge: Only activity notifications not yet "seen" on the Alerts screen
+  // Alerts badge: activity + sales combined
   const alertsBadge = useMemo(() => {
-    return activityBadgeCount || undefined;
-  }, [activityBadgeCount]);
+    const count = activityBadgeCount + salesBadgeCount;
+    return count || undefined;
+  }, [activityBadgeCount, salesBadgeCount]);
 
   const profileIcon = (
     <div className="h-5 w-5 rounded-full overflow-hidden bg-background flex items-center justify-center">
