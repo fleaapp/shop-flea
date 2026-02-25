@@ -39,7 +39,6 @@ import tapToExpandGif from '@/assets/onboarding/tap-to-expand.gif';
 import swipeLeftPass from '@/assets/onboarding/swipe-left-pass.svg';
 import swipeUpCart from '@/assets/onboarding/swipe-up-cart.svg';
 import swipeRightWishlist from '@/assets/onboarding/swipe-right-wishlist.svg';
-import wishlistSpotlight from '@/assets/onboarding/wishlist-spotlight.svg';
 import cartSwipeActionsGif from '@/assets/onboarding/cart-swipe-actions.gif';
 
 // Listing showcase images
@@ -63,7 +62,6 @@ const staticAssets = [
   swipeLeftPass,
   swipeUpCart,
   swipeRightWishlist,
-  wishlistSpotlight,
   cartSwipeActionsGif,
   listingBag,
   listingJacket,
