@@ -10,7 +10,6 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/lib/supabase';
 import FilterPreferencesSheet from '@/components/FilterPreferencesSheet';
-import FAQSection from '@/components/FAQSection';
 import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
 import OnboardingCarousel from '@/components/OnboardingCarousel';
 import PaymentMethodsSection from '@/components/PaymentMethodsSection';
@@ -29,7 +28,6 @@ const Settings = () => {
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [shippingOpen, setShippingOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [faqExpanded, setFaqExpanded] = useState(false);
   const {
     total: supportUnread
   } = useUnreadSupport();
@@ -77,7 +75,7 @@ const Settings = () => {
   }, {
     icon: <span className="text-base">❓</span>,
     label: 'FAQ',
-    expandable: true
+    action: () => navigate('/faq')
   }, {
     icon: <span className="text-base">📮</span>,
     label: 'Suggestion Box',
@@ -220,10 +218,6 @@ const Settings = () => {
                     {(item as any).isExpanded && <div className="ml-6 mt-2 space-y-2">
                         {helpCentreItems.map(subItem => <div key={subItem.label}>
                             <div className="flex items-center justify-between rounded-2xl bg-card p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow cursor-pointer" onClick={async () => {
-                    if (subItem.expandable) {
-                      setFaqExpanded(!faqExpanded);
-                      return;
-                    }
                     if (subItem.action) {
                       await subItem.action();
                     } else {
@@ -238,10 +232,9 @@ const Settings = () => {
                                 {(subItem as any).badge && <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
                                     {(subItem as any).badge}
                                   </span>}
-                                {subItem.expandable ? faqExpanded ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
+                                <ChevronRight className="h-5 w-5 text-muted-foreground" />
                               </div>
                             </div>
-                            {subItem.expandable && faqExpanded && <div className="ml-4 mt-2"><FAQSection /></div>}
                           </div>)}
                       </div>}
                   </div>)}
