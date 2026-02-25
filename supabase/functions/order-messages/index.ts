@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
       const { data, error } = await cloud
         .from("order_messages")
         .select("*")
-        .eq("order_id", orderId)
+        .eq("order_group_id", orderId)
         .order("created_at", { ascending: true });
       if (error) throw error;
       return new Response(JSON.stringify({ messages: data || [] }), {
@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
       await cloud
         .from("order_messages")
         .update({ read: true })
-        .eq("order_id", orderId)
+        .eq("order_group_id", orderId)
         .neq("sender_id", userId)
         .eq("read", false);
       return new Response(JSON.stringify({ success: true }), {
@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
       const { data, error } = await cloud
         .from("order_messages")
         .insert({
-          order_id: orderId,
+          order_group_id: orderId,
           sender_id: userId,
           message: message || "",
           attachment_url: attachment_url || null,
