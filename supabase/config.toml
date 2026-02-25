@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.shipping-reminders]
 verify_jwt = false
+
+[functions.order-messages]
+verify_jwt = false
