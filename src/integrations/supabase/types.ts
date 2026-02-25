@@ -357,6 +357,36 @@ export type Database = {
           },
         ]
       }
+      order_messages: {
+        Row: {
+          attachment_url: string | null
+          created_at: string
+          id: string
+          message: string
+          order_group_id: string
+          read: boolean
+          sender_id: string
+        }
+        Insert: {
+          attachment_url?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          order_group_id: string
+          read?: boolean
+          sender_id: string
+        }
+        Update: {
+          attachment_url?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          order_group_id?: string
+          read?: boolean
+          sender_id?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           buyer_id: string

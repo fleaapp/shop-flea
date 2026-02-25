@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { useExistingReview } from '@/hooks/useReviews';
 import WriteReviewDrawer from '@/components/WriteReviewDrawer';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
+import OrderReceiptDialog from '@/components/OrderReceiptDialog';
 
 interface SalesDetailsSheetProps {
   orders: Order[] | null;
@@ -46,6 +47,7 @@ const SalesDetailsSheet = ({
   const [trackingNumber, setTrackingNumber] = useState('');
   const [validationError, setValidationError] = useState('');
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
+  const [receiptOpen, setReceiptOpen] = useState(false);
   
   const primaryOrder = orders?.[0];
   const { data: existingReview } = useExistingReview(primaryOrder?.id);
@@ -112,6 +114,27 @@ const SalesDetailsSheet = ({
               <Badge variant={statusBadge.variant}>
                 {statusBadge.label}
               </Badge>
+            </div>
+            {/* Receipt & Message buttons */}
+            <div className="flex justify-center gap-3 mt-2">
+              <Button
+                variant="outline"
+                onClick={() => setReceiptOpen(true)}
+                className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-primary active:border-primary"
+              >
+                🧾
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const groupId = primaryOrder.order_group_id || primaryOrder.id;
+                  onOpenChange(false);
+                  setTimeout(() => navigate(`/order-chat/${groupId}`), 300);
+                }}
+                className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-primary active:border-primary"
+              >
+                💬
+              </Button>
             </div>
           </DrawerHeader>
 
@@ -329,6 +352,13 @@ const SalesDetailsSheet = ({
         reviewType="buyer"
         open={reviewDrawerOpen}
         onOpenChange={setReviewDrawerOpen}
+      />
+
+      <OrderReceiptDialog
+        orders={orders}
+        open={receiptOpen}
+        onOpenChange={setReceiptOpen}
+        viewAs="seller"
       />
     </Drawer>
   );
