@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
 import { useCart } from '@/context/CartContext';
@@ -222,12 +221,21 @@ const Cart = () => {
             {getOrderStatusBadge(group.status).label}
           </span>
         </div>
-        {unread > 0 && (
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground flex-shrink-0">
-            {unread}
-          </span>
-        )}
-        <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const groupId = primaryOrder.order_group_id || primaryOrder.id;
+            navigate(`/order-chat/${groupId}`);
+          }}
+          className="relative flex h-10 w-10 items-center justify-center rounded-full bg-muted flex-shrink-0"
+        >
+          <span className="text-base">💬</span>
+          {unread > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+              {unread}
+            </span>
+          )}
+        </button>
       </div>
     );
   };
