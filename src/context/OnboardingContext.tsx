@@ -21,6 +21,9 @@ interface OnboardingContextValue {
   isOnboardingActive: boolean;
   hasCompletedOnboarding: boolean;
   isNewUser: boolean;
+  showCarousel: boolean;
+  openCarousel: () => void;
+  closeCarousel: () => void;
   startOnboarding: () => void;
   startTour: () => void;
   nextStep: () => void;
@@ -57,6 +60,10 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   const [currentStep, setCurrentStep] = useState<OnboardingStep | null>(null);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
+  const [showCarousel, setShowCarousel] = useState(false);
+
+  const openCarousel = useCallback(() => setShowCarousel(true), []);
+  const closeCarousel = useCallback(() => setShowCarousel(false), []);
 
   useEffect(() => {
     const completed = localStorage.getItem(STORAGE_KEY);
@@ -137,20 +144,23 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <OnboardingContext.Provider
-      value={{
-        currentStep,
-        isOnboardingActive: currentStep !== null && currentStep !== 'complete',
-        hasCompletedOnboarding,
-        isNewUser,
-        startOnboarding,
-        startTour,
-        nextStep,
-        skipOnboarding,
-        resetOnboarding,
-        goToStep,
-        markUserAsOnboarded,
-        checkAndTriggerOnboarding,
-      }}
+       value={{
+         currentStep,
+         isOnboardingActive: currentStep !== null && currentStep !== 'complete',
+         hasCompletedOnboarding,
+         isNewUser,
+         showCarousel,
+         openCarousel,
+         closeCarousel,
+         startOnboarding,
+         startTour,
+         nextStep,
+         skipOnboarding,
+         resetOnboarding,
+         goToStep,
+         markUserAsOnboarded,
+         checkAndTriggerOnboarding,
+       }}
     >
       {children}
     </OnboardingContext.Provider>
