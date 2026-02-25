@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import ReportDialog from '@/components/ReportDialog';
 import { useReporting } from '@/hooks/useReporting';
 import { compressImage } from '@/utils/imageCompression';
+import { useOrders } from '@/hooks/useOrders';
 
 interface OrderMessage {
   id: string;
@@ -22,17 +23,6 @@ interface OrderMessage {
   attachment_url: string | null;
   created_at: string;
   read: boolean;
-}
-
-interface OrderInfo {
-  buyer_id: string;
-  seller_id: string;
-  delivered_at: string | null;
-  order_number: string | null;
-  buyer_username: string;
-  seller_username: string;
-  buyer_avatar: string | null;
-  seller_avatar: string | null;
 }
 
 const OrderChat = () => {
@@ -46,70 +36,28 @@ const OrderChat = () => {
   const [sending, setSending] = useState(false);
   const { openReport, submitPendingReport, closeReport, pendingReport, isReporting } = useReporting();
 
-  // Fetch order info
-  const { data: orderInfo } = useQuery({
-    queryKey: ['order-chat-info', orderGroupId],
-    queryFn: async (): Promise<OrderInfo | null> => {
-      if (!orderGroupId || !user?.id) return null;
+  // Use the working useOrders hook to get order info
+  const { buyerOrderGroups, sellerOrderGroups } = useOrders();
 
-      let { data: orders, error: err1 } = await supabase
-        .from('orders')
-        .select('buyer_id, seller_id, delivered_at, order_number')
-        .eq('order_group_id', orderGroupId)
-        .limit(1);
+  const orderInfo = useMemo(() => {
+    if (!orderGroupId || !user?.id) return null;
 
-      console.log('[OrderChat] Query by order_group_id:', { orders, err1 });
+    const group = buyerOrderGroups.find(g => g.id === orderGroupId) 
+      || sellerOrderGroups.find(g => g.id === orderGroupId);
 
-      if (!orders?.length) {
-        const { data: orders2, error: err2 } = await supabase
-          .from('orders')
-          .select('buyer_id, seller_id, delivered_at, order_number')
-          .eq('id', orderGroupId)
-          .limit(1);
-        console.log('[OrderChat] Query by id:', { orders2, err2 });
-        orders = orders2;
-      }
+    if (!group) return null;
 
-      if (!orders?.length) { console.log('[OrderChat] No orders found for', orderGroupId); return null; }
-      const order = orders[0];
-      console.log('[OrderChat] Order found:', { buyer_id: order.buyer_id, seller_id: order.seller_id, order_number: order.order_number });
-      if (order.buyer_id !== user.id && order.seller_id !== user.id) { console.log('[OrderChat] User not participant'); return null; }
-
-      const profileIds = [...new Set([order.buyer_id, order.seller_id])];
-      console.log('[OrderChat] Fetching profiles for:', profileIds);
-      
-      // Try profiles_public first (bypasses region RLS)
-      const { data: pubProfiles, error: pubError } = await supabase
-        .from('profiles_public')
-        .select('user_id, username, avatar_url')
-        .in('user_id', profileIds);
-      
-      console.log('[OrderChat] profiles_public result:', { pubProfiles, pubError });
-      
-      // Fallback to profiles table if profiles_public fails
-      let profiles = pubProfiles || [];
-      if (!profiles.length) {
-        const { data: directProfiles, error: directError } = await supabase
-          .from('profiles')
-          .select('user_id, username, avatar_url')
-          .in('user_id', profileIds);
-        console.log('[OrderChat] profiles fallback result:', { directProfiles, directError });
-        profiles = directProfiles || [];
-      }
-
-      const bp = profiles?.find(p => p.user_id === order.buyer_id);
-      const sp = profiles?.find(p => p.user_id === order.seller_id);
-
-      return {
-        ...order,
-        buyer_username: bp?.username || 'Buyer',
-        seller_username: sp?.username || 'Seller',
-        buyer_avatar: bp?.avatar_url || null,
-        seller_avatar: sp?.avatar_url || null,
-      };
-    },
-    enabled: !!orderGroupId && !!user?.id,
-  });
+    return {
+      buyer_id: group.buyer_id,
+      seller_id: group.seller_id,
+      delivered_at: group.delivered_at,
+      order_number: group.orders[0]?.order_number || null,
+      buyer_username: group.buyer_profile?.username || 'Buyer',
+      seller_username: group.seller_profile?.username || 'Seller',
+      buyer_avatar: group.buyer_profile?.avatar_url || null,
+      seller_avatar: group.seller_profile?.avatar_url || null,
+    };
+  }, [orderGroupId, user?.id, buyerOrderGroups, sellerOrderGroups]);
 
   const isReadOnly = useMemo(() => {
     if (!orderInfo?.delivered_at) return false;
