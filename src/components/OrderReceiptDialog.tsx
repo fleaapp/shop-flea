@@ -23,7 +23,7 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
       // Before capture, nudge the stripe logo down so html2canvas aligns it properly
       const stripeImg = receiptRef.current.querySelector('img[alt="Stripe"]') as HTMLImageElement | null;
       if (stripeImg) stripeImg.style.position = 'relative';
-      if (stripeImg) stripeImg.style.top = '3px';
+      if (stripeImg) stripeImg.style.top = '6px';
 
       const { default: html2canvas } = await import('html2canvas');
       const canvas = await html2canvas(receiptRef.current, {
