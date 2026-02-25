@@ -9,10 +9,8 @@ import tapToExpandGif from '@/assets/onboarding/tap-to-expand.gif';
 import swipeLeftPass from '@/assets/onboarding/swipe-left-pass.svg';
 import swipeUpCart from '@/assets/onboarding/swipe-up-cart.svg';
 import swipeRightWishlist from '@/assets/onboarding/swipe-right-wishlist.svg';
-import cartSwipeActionsGif from '@/assets/onboarding/cart-swipe-actions.gif';
-
 // Preload all onboarding assets immediately on module load
-const onboardingAssets = [tapToExpandGif, swipeLeftPass, swipeUpCart, swipeRightWishlist, cartSwipeActionsGif];
+const onboardingAssets = [tapToExpandGif, swipeLeftPass, swipeUpCart, swipeRightWishlist];
 preloadImages(onboardingAssets);
 
 interface OnboardingCarouselProps {
@@ -63,12 +61,6 @@ const slides: Slide[] = [
       route: '/cart',
       targetSelector: 'cart-wishlist-button',
     },
-  },
-  {
-    image: cartSwipeActionsGif,
-    text: 'Swipe to Delete ❌ or move to Wishlist 💌',
-    alt: 'Swipe cart items to delete or move to wishlist',
-    isGif: true,
   },
 ];
 
@@ -189,13 +181,13 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
       {/* Spotlight glow ring */}
       {isSpotlightSlide && spotlightRect && (
         <motion.div
-          className="absolute rounded-2xl border-2 border-cream/40 pointer-events-none"
+          className="absolute rounded-2xl pointer-events-none"
           style={{
             left: spotlightRect.x,
             top: spotlightRect.y,
             width: spotlightRect.w,
             height: spotlightRect.h,
-            boxShadow: '0 0 30px rgba(245,241,235,0.15)',
+            boxShadow: '0 0 24px 8px rgba(245,241,235,0.25), 0 0 48px 16px rgba(245,241,235,0.1)',
             zIndex: 1,
           }}
           initial={{ opacity: 0 }}
