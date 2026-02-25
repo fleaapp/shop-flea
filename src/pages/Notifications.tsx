@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight } from 'lucide-react';
+import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import BottomNav from '@/components/BottomNav';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
 import { useOrders, Order, OrderGroup } from '@/hooks/useOrders';
@@ -76,6 +76,7 @@ const Notifications = () => {
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
   const { sellerOrderGroups, loadingSellerOrders, markAsShipped } = useOrders();
   const { notifications, isLoading: loadingNotifications, unreadCount, markAsRead } = useNotifications();
+  const { getGroupUnread } = useUnreadOrderMessages();
   
   // Filter sales by status
   const awaitingShipping = sellerOrderGroups.filter(g => g.status === 'awaiting');
@@ -152,6 +153,7 @@ const Notifications = () => {
     const buyerAvatar = primaryOrder.buyer_profile?.avatar_url || '';
     const productImage = primaryOrder.listing?.images?.[0] || '';
     const itemCount = group.orders.length;
+    const unread = getGroupUnread(group.id);
 
     return (
       <div 
@@ -172,7 +174,21 @@ const Notifications = () => {
             {getStatusBadge(group.status).label}
           </span>
         </div>
-        <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const groupId = primaryOrder.order_group_id || primaryOrder.id;
+            navigate(`/order-chat/${groupId}`);
+          }}
+          className="relative flex h-10 w-10 items-center justify-center flex-shrink-0"
+        >
+          <span className="text-xl">💬</span>
+          {unread > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+              {unread}
+            </span>
+          )}
+        </button>
       </div>
     );
   };

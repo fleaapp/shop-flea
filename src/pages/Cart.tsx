@@ -227,9 +227,9 @@ const Cart = () => {
             const groupId = primaryOrder.order_group_id || primaryOrder.id;
             navigate(`/order-chat/${groupId}`);
           }}
-          className="relative flex h-10 w-10 items-center justify-center rounded-full bg-muted flex-shrink-0"
+          className="relative flex h-10 w-10 items-center justify-center flex-shrink-0"
         >
-          <span className="text-base">💬</span>
+          <span className="text-xl">💬</span>
           {unread > 0 && (
             <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
               {unread}
