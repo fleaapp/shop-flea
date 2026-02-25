@@ -11,7 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/lib/supabase';
 import FilterPreferencesSheet from '@/components/FilterPreferencesSheet';
 import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
-import OnboardingCarousel from '@/components/OnboardingCarousel';
+import { useOnboarding } from '@/context/OnboardingContext';
 import PaymentMethodsSection from '@/components/PaymentMethodsSection';
 import { useUnreadSupport } from '@/hooks/useUnreadSupport';
 const Settings = () => {
@@ -27,7 +27,7 @@ const Settings = () => {
   } = useDiscardedListings();
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [shippingOpen, setShippingOpen] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const { openCarousel } = useOnboarding();
   const {
     total: supportUnread
   } = useUnreadSupport();
@@ -86,7 +86,7 @@ const Settings = () => {
   }, {
     icon: <span className="text-base">📖</span>,
     label: 'App Walkthrough',
-    action: () => setShowOnboarding(true)
+    action: () => openCarousel()
   }];
   const settingsGroups = [{
     title: 'Account',
@@ -256,8 +256,6 @@ const Settings = () => {
       {/* Shipping Settings Sheet */}
       <ShippingSettingsSheet open={shippingOpen} onOpenChange={setShippingOpen} />
       
-      {/* Onboarding Carousel */}
-      <OnboardingCarousel open={showOnboarding} onComplete={() => setShowOnboarding(false)} />
       
       <BottomNav />
     </div>;

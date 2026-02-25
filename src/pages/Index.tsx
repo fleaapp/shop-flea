@@ -9,7 +9,7 @@ import FilterSheet, { FilterState } from '@/components/FilterSheet';
 import SearchSheet from '@/components/SearchSheet';
 import WelcomeSetupDialog from '@/components/WelcomeSetupDialog';
 import PasswordSetupDialog from '@/components/PasswordSetupDialog';
-import OnboardingCarousel from '@/components/OnboardingCarousel';
+
 import { useListings, DbListing } from '@/hooks/useListings';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
@@ -48,14 +48,13 @@ const Index = () => {
   const { addToCart, removeFromCart, isInCart } = useCart();
   const { addFavorite, removeFavorite, favoriteIds } = useFavorites();
   const { addDiscarded, removeDiscarded, discardedIds } = useDiscardedListings();
-  const { checkAndTriggerOnboarding } = useOnboarding();
+  const { checkAndTriggerOnboarding, openCarousel } = useOnboarding();
   const { user, profile, refreshProfile } = useAuth();
 
   // Check if user needs to set up their profile (new users get auto-generated usernames)
   const needsProfileSetup = profile?.username?.startsWith('@user_') || false;
   const profileLoaded = profile !== null;
   const [welcomeCompleted, setWelcomeCompleted] = useState(false);
-  const [showOnboardingCarousel, setShowOnboardingCarousel] = useState(false);
   const [passwordCompleted, setPasswordCompleted] = useState(false);
   
   // Sync passwordCompleted from user-scoped localStorage once user is available
@@ -436,7 +435,7 @@ const Index = () => {
           if (isOAuth && !passwordCompleted && !passwordAlreadySet) {
             setPasswordDialogLocked(true);
           } else {
-            setShowOnboardingCarousel(true);
+            openCarousel();
           }
           refreshProfile();
         }}
@@ -447,14 +446,10 @@ const Index = () => {
           if (user) localStorage.setItem(`flea_pw_done_${user.id}`, '1');
           localStorage.removeItem('flea_oauth_signup'); // Clean up OAuth flag
           setPasswordCompleted(true);
-          setShowOnboardingCarousel(true);
+          openCarousel();
           await refreshProfile();
           supabase.auth.refreshSession();
         }}
-      />
-      <OnboardingCarousel
-        open={showOnboardingCarousel}
-        onComplete={() => setShowOnboardingCarousel(false)}
       />
       <BottomNav />
     </div>
