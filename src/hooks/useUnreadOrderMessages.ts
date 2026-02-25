@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { supabase as cloudSupabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
 export const useUnreadOrderMessages = () => {
@@ -20,8 +21,8 @@ export const useUnreadOrderMessages = () => {
 
       const orderIds = orders.map(o => o.id);
 
-      // Fetch unread messages not sent by current user
-      const { data: messages } = await supabase
+      // Fetch unread messages not sent by current user (order_messages lives on Cloud)
+      const { data: messages } = await cloudSupabase
         .from('order_messages')
         .select('id, order_id')
         .in('order_id', orderIds)
