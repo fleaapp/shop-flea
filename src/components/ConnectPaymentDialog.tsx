@@ -12,6 +12,8 @@ import { useAuth } from '@/context/AuthContext';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import stripeLogo from '@/assets/logo-stripe.jpeg';
+import paypalLogo from '@/assets/logo-paypal.png';
 
 interface ConnectPaymentDialogProps {
   open: boolean;
@@ -76,14 +78,14 @@ const ConnectPaymentDialog = ({ open, onOpenChange }: ConnectPaymentDialogProps)
             disabled={isConnecting}
             className="w-64 h-11 rounded-full bg-charcoal text-white hover:bg-charcoal-light border-none shadow-none ring-0 outline-none focus-visible:ring-0"
           >
-            {isConnecting ? 'Connecting...' : '💳 Connect Stripe'}
+            {isConnecting ? 'Connecting...' : <><img src={stripeLogo} alt="Stripe" className="h-4 inline-block mr-1.5" style={{ mixBlendMode: 'darken', filter: 'brightness(0) invert(1)' }} /> Connect Stripe</>}
           </Button>
           <Button
             disabled
             className="w-64 h-11 rounded-full opacity-50 border-none shadow-none ring-0 outline-none focus-visible:ring-0 text-xs"
             variant="outline"
           >
-            🅿️ Connect PayPal (Coming Soon)
+            <img src={paypalLogo} alt="PayPal" className="h-4 inline-block mr-1.5" /> Connect PayPal (Coming Soon)
           </Button>
           <Button
             variant="ghost"
