@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { preloadImages } from '@/utils/preloadAssets';
 import { toast } from 'sonner';
 
 export type OrderStatus = 'awaiting' | 'shipped' | 'delivered';
@@ -157,6 +158,13 @@ export function useOrders() {
       const listingsMap = new Map(listingsRes.data?.map(l => [l.id, l]) || []);
       const profilesMap = new Map(profilesRes.data?.map(p => [p.user_id, p]) || []);
 
+      // Preload listing images and avatars
+      const imagesToPreload = [
+        ...(listingsRes.data?.flatMap(l => l.images?.slice(0, 1) || []) || []),
+        ...(profilesRes.data?.map(p => p.avatar_url).filter(Boolean) || []),
+      ] as string[];
+      if (imagesToPreload.length) preloadImages(imagesToPreload);
+
       return orders.map(order => ({
         ...order,
         status: order.status as OrderStatus,
@@ -195,6 +203,13 @@ export function useOrders() {
 
       const listingsMap = new Map(listingsRes.data?.map(l => [l.id, l]) || []);
       const profilesMap = new Map(profilesRes.data?.map(p => [p.user_id, p]) || []);
+
+      // Preload listing images and avatars
+      const imagesToPreload = [
+        ...(listingsRes.data?.flatMap(l => l.images?.slice(0, 1) || []) || []),
+        ...(profilesRes.data?.map(p => p.avatar_url).filter(Boolean) || []),
+      ] as string[];
+      if (imagesToPreload.length) preloadImages(imagesToPreload);
 
       return orders.map(order => ({
         ...order,
