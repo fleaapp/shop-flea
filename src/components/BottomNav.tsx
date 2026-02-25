@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useOrders } from '@/hooks/useOrders';
 import { useUnreadSupport } from '@/hooks/useUnreadSupport';
+import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 
 interface NavItem {
   icon: React.ReactNode;
@@ -22,12 +23,13 @@ const BottomNav = () => {
   const { unreadCount: activityUnreadCount } = useNotifications();
   const { buyerOrders, sellerOrders } = useOrders();
   const { total: supportUnread } = useUnreadSupport();
+  const { total: orderMessagesUnread } = useUnreadOrderMessages();
 
   // Orders badge: awaiting + shipped orders (buyer perspective)
   const ordersBadge = useMemo(() => {
-    const count = buyerOrders.filter(o => o.status === 'awaiting' || o.status === 'shipped').length;
+    const count = buyerOrders.filter(o => o.status === 'awaiting' || o.status === 'shipped').length + orderMessagesUnread;
     return count || undefined;
-  }, [buyerOrders]);
+  }, [buyerOrders, orderMessagesUnread]);
 
   // Sales badge: new orders (awaiting) only for seller
   const salesBadge = useMemo(() => {

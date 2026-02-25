@@ -16,6 +16,7 @@ import { Listing } from '@/types/listing';
 import { fetchSellerShippingSettings, SellerShippingInfo } from '@/utils/shippingCalculator';
 import { getAvatarUrl } from '@/utils/optimizedImage';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
+import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 
 const getOrderStatusBadge = (status: Order['status']) => {
   switch (status) {
@@ -60,6 +61,7 @@ const Cart = () => {
   const { addFavorite } = useFavorites();
   const { removeDiscarded } = useDiscardedListings();
   const { buyerOrderGroups, loadingBuyerOrders, markAsDelivered } = useOrders();
+  const { getGroupUnread, total: totalUnreadMessages } = useUnreadOrderMessages();
   const [activeTab, setActiveTab] = useState<'cart' | 'orders'>('cart');
   const [orderStatusFilter, setOrderStatusFilter] = useState<'awaiting' | 'shipped' | 'delivered'>('awaiting');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -175,8 +177,8 @@ const Cart = () => {
   const shippedOrders = buyerOrderGroups.filter((g) => g.status === 'shipped');
   const deliveredOrders = buyerOrderGroups.filter((g) => g.status === 'delivered');
 
-  // Orders badge: awaiting + shipped (not delivered)
-  const ordersBadgeCount = awaitingOrders.length + shippedOrders.length;
+  // Orders badge: awaiting + shipped (not delivered) + unread messages
+  const ordersBadgeCount = awaitingOrders.length + shippedOrders.length + totalUnreadMessages;
 
   const formatOrderTime = (dateString: string) => {
     try {
@@ -193,13 +195,14 @@ const Cart = () => {
     const sellerAvatar = getAvatarUrl(primaryOrder.seller_profile?.avatar_url) || getDefaultAvatar(primaryOrder.seller_id);
     const productImage = primaryOrder.listing?.images?.[0] || '';
     const itemCount = group.orders.length;
+    const unread = getGroupUnread(group.id);
 
     return (
       <div
         key={group.id}
         onClick={() => handleOrderClick(group)}
         className={cn(
-          "flex items-center gap-4 rounded-2xl bg-card p-4 cursor-pointer",
+          "relative flex items-center gap-4 rounded-2xl bg-card p-4 cursor-pointer",
           showShadow && "card-shadow"
         )}
       >
@@ -219,6 +222,11 @@ const Cart = () => {
             {getOrderStatusBadge(group.status).label}
           </span>
         </div>
+        {unread > 0 && (
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground flex-shrink-0">
+            {unread}
+          </span>
+        )}
         <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
       </div>
     );
