@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState } from 'react';
+import { useMemo, useCallback, useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -138,6 +138,17 @@ export const useNotifications = () => {
     return localStorage.getItem(`flea_alerts_seen_${user.id}`);
   });
 
+  // Sync across multiple hook instances via custom event
+  useEffect(() => {
+    const handler = () => {
+      if (user?.id) {
+        setBadgeDismissedAt(localStorage.getItem(`flea_alerts_seen_${user.id}`));
+      }
+    };
+    window.addEventListener('alerts-badge-dismissed', handler);
+    return () => window.removeEventListener('alerts-badge-dismissed', handler);
+  }, [user?.id]);
+
   const badgeCount = useMemo(() => {
     if (!user?.id) return 0;
     if (!badgeDismissedAt) return unreadCount;
@@ -150,6 +161,7 @@ export const useNotifications = () => {
       const now = new Date().toISOString();
       localStorage.setItem(`flea_alerts_seen_${user.id}`, now);
       setBadgeDismissedAt(now);
+      window.dispatchEvent(new Event('alerts-badge-dismissed'));
     }
   }, [user?.id]);
 
