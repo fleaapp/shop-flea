@@ -156,9 +156,9 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
             </div>
 
             {/* Payment processor */}
-            <div className="border-t border-dotted border-gray-300 mt-4 pt-4 pb-3 flex items-end justify-center gap-1.5">
-              <span className="text-[10px] text-gray-400">Processed by</span>
-              <img src={stripeLogo} alt="Stripe" className="h-4 object-contain" style={{ mixBlendMode: 'darken' }} />
+            <div className="border-t border-dotted border-gray-300 mt-4 pt-4 pb-3 text-center">
+              <span className="text-[10px] text-gray-400" style={{ verticalAlign: 'bottom' }}>Processed by</span>
+              <img src={stripeLogo} alt="Stripe" className="h-4 inline-block ml-1.5" style={{ mixBlendMode: 'darken', verticalAlign: 'bottom' }} />
             </div>
           </div>
 
