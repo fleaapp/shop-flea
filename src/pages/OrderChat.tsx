@@ -52,18 +52,22 @@ const OrderChat = () => {
     queryFn: async (): Promise<OrderInfo | null> => {
       if (!orderGroupId || !user?.id) return null;
 
-      let { data: orders } = await supabase
+      let { data: orders, error: err1 } = await supabase
         .from('orders')
         .select('buyer_id, seller_id, delivered_at, order_number')
         .eq('order_group_id', orderGroupId)
         .limit(1);
 
+      console.log('[OrderChat] Query by order_group_id:', { orders, err1 });
+
       if (!orders?.length) {
-        ({ data: orders } = await supabase
+        const { data: orders2, error: err2 } = await supabase
           .from('orders')
           .select('buyer_id, seller_id, delivered_at, order_number')
           .eq('id', orderGroupId)
-          .limit(1));
+          .limit(1);
+        console.log('[OrderChat] Query by id:', { orders2, err2 });
+        orders = orders2;
       }
 
       if (!orders?.length) { console.log('[OrderChat] No orders found for', orderGroupId); return null; }
