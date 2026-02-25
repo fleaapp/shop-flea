@@ -13,8 +13,6 @@ import { toast } from 'sonner';
 import ReportDialog from '@/components/ReportDialog';
 import { useReporting } from '@/hooks/useReporting';
 import { compressImage } from '@/utils/imageCompression';
-import { invokeCloudFunction } from '@/utils/cloudFunctions';
-import { supabase as cloudSupabase } from '@/integrations/supabase/client';
 
 interface OrderMessage {
   id: string;
@@ -48,7 +46,7 @@ const OrderChat = () => {
   const [sending, setSending] = useState(false);
   const { openReport, submitPendingReport, closeReport, pendingReport, isReporting } = useReporting();
 
-  // Fetch order info from external DB (where orders live)
+  // Fetch order info
   const { data: orderInfo } = useQuery({
     queryKey: ['order-chat-info', orderGroupId],
     queryFn: async (): Promise<OrderInfo | null> => {
@@ -117,39 +115,50 @@ const OrderChat = () => {
       : orderInfo.buyer_avatar || getDefaultAvatar(orderInfo.buyer_id)
     : '';
 
-  // Fetch messages via edge function (messages live on Lovable Cloud)
+  // Fetch messages directly from external DB
   const { data: messages = [], error: messagesError } = useQuery({
     queryKey: ['order-messages', orderGroupId],
     queryFn: async () => {
       if (!orderGroupId) return [];
-      const { data, error } = await invokeCloudFunction('order-messages', {}) as any;
 
-      // invokeCloudFunction doesn't pass query params, so use direct fetch
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || 'teaicrimlqdayqpmxasc';
-      const res = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/order-messages?orderGroupId=${orderGroupId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        }
-      );
+      const { data, error } = await supabase
+        .from('order_messages')
+        .select('*')
+        .eq('order_group_id', orderGroupId)
+        .order('created_at', { ascending: true });
 
-      if (!res.ok) {
-        const errBody = await res.json().catch(() => ({}));
-        throw new Error(errBody.error || 'Failed to fetch messages');
-      }
-      const result = await res.json();
-      return (result.messages || []) as OrderMessage[];
+      if (error) throw error;
+      return (data || []) as OrderMessage[];
     },
     enabled: !!orderGroupId,
     refetchInterval: 5000,
     retry: 1,
   });
+
+  // Realtime subscription
+  useEffect(() => {
+    if (!orderGroupId) return;
+
+    const channel = supabase
+      .channel(`order-messages-${orderGroupId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'order_messages',
+          filter: `order_group_id=eq.${orderGroupId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['order-messages', orderGroupId] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [orderGroupId, queryClient]);
 
   // Mark messages as read
   useEffect(() => {
@@ -157,22 +166,13 @@ const OrderChat = () => {
     const unread = messages.filter(m => !m.read && m.sender_id !== user.id);
     if (!unread.length) return;
 
-    const markRead = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || 'teaicrimlqdayqpmxasc';
-      await fetch(
-        `https://${projectId}.supabase.co/functions/v1/order-messages?orderGroupId=${orderGroupId}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        }
-      );
-    };
-    markRead();
+    supabase
+      .from('order_messages')
+      .update({ read: true })
+      .eq('order_group_id', orderGroupId)
+      .neq('sender_id', user.id)
+      .eq('read', false)
+      .then();
   }, [messages, user?.id, orderGroupId]);
 
   // Scroll to bottom on new messages
@@ -184,25 +184,16 @@ const OrderChat = () => {
     mutationFn: async ({ message, attachmentUrl }: { message: string; attachmentUrl?: string }) => {
       if (!user?.id || !orderGroupId) throw new Error('Not ready');
 
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || 'teaicrimlqdayqpmxasc';
-      const res = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/order-messages?orderGroupId=${orderGroupId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ message, attachment_url: attachmentUrl || null }),
-        }
-      );
+      const { error } = await supabase
+        .from('order_messages')
+        .insert({
+          order_group_id: orderGroupId,
+          sender_id: user.id,
+          message: message || '',
+          attachment_url: attachmentUrl || null,
+        });
 
-      if (!res.ok) {
-        const errBody = await res.json().catch(() => ({}));
-        throw new Error(errBody.error || 'Failed to send');
-      }
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order-messages', orderGroupId] });
@@ -231,13 +222,12 @@ const OrderChat = () => {
       const ext = file.name.split('.').pop() || 'jpg';
       const path = `${orderGroupId}/${user.id}/${Date.now()}.${ext}`;
 
-      // Upload to Lovable Cloud storage (where bucket exists)
-      const { error: uploadError } = await cloudSupabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('order-attachments')
         .upload(path, compressed);
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = cloudSupabase.storage.from('order-attachments').getPublicUrl(path);
+      const { data: urlData } = supabase.storage.from('order-attachments').getPublicUrl(path);
       sendMessage.mutate({ message: '', attachmentUrl: urlData.publicUrl });
     } catch (err) {
       console.error('Photo upload error:', err);
@@ -286,7 +276,7 @@ const OrderChat = () => {
       {/* Error banner */}
       {messagesError && (
         <div className="bg-destructive/10 px-4 py-2 text-sm text-destructive text-center">
-          Unable to load messages. Please try again later.
+          Unable to load messages. The order_messages table may not exist yet.
         </div>
       )}
 
