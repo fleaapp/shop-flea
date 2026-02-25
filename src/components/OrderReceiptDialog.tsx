@@ -4,6 +4,8 @@ import { Order } from '@/hooks/useOrders';
 import { format } from 'date-fns';
 import { X, Download } from 'lucide-react';
 import fleaLogo from '@/assets/flea-logo-receipt.jpeg';
+import stripeLogo from '@/assets/logo-stripe.jpeg';
+import paypalLogo from '@/assets/logo-paypal.png';
 
 interface OrderReceiptDialogProps {
   orders: Order[];
@@ -146,11 +148,7 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
               {/* Payment processor */}
               <div className="border-t border-dotted border-gray-300 mt-4 pt-4 pb-3 flex items-center justify-center gap-2">
                 <span className="text-[10px] text-gray-400">Processed by</span>
-                <svg viewBox="0 0 60 25" className="h-5 w-auto" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M24.8 4.6c-1.8 0-3.4.9-3.4 2.6 0 2 2.7 2.1 2.7 3.1 0 .4-.5.8-1.2.8-.7 0-1.5-.3-2.1-.7l-.4 1.8c.7.3 1.4.5 2.4.5 2 0 3.5-1 3.5-2.7 0-2.1-2.7-2.2-2.7-3.1 0-.3.4-.7 1.1-.7.5 0 1.2.2 1.7.5l.4-1.7c-.6-.3-1.3-.4-2-.4zm-8.2.2l-2.3 11.5h2.2L18.8 4.8h-2.2zm13 0l-1.4 7.2-1.4-7.2h-2l2.4 10.1-.1.5c-.2.5-.5.7-1 .7-.2 0-.5 0-.7-.1l-.3 1.8c.3.1.8.1 1.1.1 1.5 0 2.3-.7 3-2.5L32.8 4.8h-2.2v0h-1zm11.6 0c-.4 0-.8.2-1 .6l-3.4 8.2-.1-.1 1.3-7.7h-2l-2.2 10.5h2l1.3-3.1.4-1c.2.7.3 1 .3 1l.9 3.1H40l3.5-8.2-.7-3.5c0-.4-.3-.8-.7-.8h-1.9v.1.1-.2z" fill="#1a1f71"/>
-                  <path d="M50.5 4.6c-3.3 0-5.6 2.4-5.6 5.6 0 3.3 2.3 5.6 5.6 5.6s5.6-2.3 5.6-5.6c0-3.2-2.3-5.6-5.6-5.6zm0 9.2c-1.9 0-3.4-1.6-3.4-3.6s1.5-3.6 3.4-3.6 3.4 1.6 3.4 3.6-1.5 3.6-3.4 3.6z" fill="#1a1f71" opacity="0"/>
-                </svg>
-                <span className="text-xs font-semibold text-[#635bff]">stripe</span>
+                <img src={stripeLogo} alt="Stripe" className="h-4 object-contain" style={{ mixBlendMode: 'darken' }} />
               </div>
             </div>
 
