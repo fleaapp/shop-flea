@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import BottomNav from '@/components/BottomNav';
@@ -75,8 +75,15 @@ const Notifications = () => {
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
   const { sellerOrderGroups, loadingSellerOrders, markAsShipped } = useOrders();
-  const { notifications, isLoading: loadingNotifications, unreadCount, markAsRead } = useNotifications();
+  const { notifications, isLoading: loadingNotifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const { getGroupUnread } = useUnreadOrderMessages();
+
+  // Mark all activity notifications as read when the Activity tab is active
+  useEffect(() => {
+    if (activeTab === 'activity' && unreadCount > 0) {
+      markAllAsRead.mutate();
+    }
+  }, [activeTab]);
   
   // Filter sales by status
   const awaitingShipping = sellerOrderGroups.filter(g => g.status === 'awaiting');
