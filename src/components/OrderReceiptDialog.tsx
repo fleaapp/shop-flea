@@ -22,7 +22,7 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
     try {
       const { default: html2canvas } = await import('html2canvas');
       const canvas = await html2canvas(receiptRef.current, {
-        backgroundColor: null,
+        backgroundColor: '#ffffff',
         scale: 4,
         useCORS: true,
         width: receiptRef.current.scrollWidth,
@@ -30,10 +30,20 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
         windowWidth: receiptRef.current.scrollWidth,
         windowHeight: receiptRef.current.scrollHeight,
       });
-      const link = document.createElement('a');
-      link.download = `flea-receipt-${displayId}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      // Convert to blob and use share API to save to photos (mobile), fallback to download
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const file = new File([blob], `flea-receipt-${displayId}.png`, { type: 'image/png' });
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file] });
+        } else {
+          const link = document.createElement('a');
+          link.download = `flea-receipt-${displayId}.png`;
+          link.href = URL.createObjectURL(blob);
+          link.click();
+          URL.revokeObjectURL(link.href);
+        }
+      }, 'image/png');
     } catch {
       const text = receiptRef.current?.innerText || '';
       await navigator.clipboard.writeText(text);
@@ -146,8 +156,8 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
             </div>
 
             {/* Payment processor */}
-            <div className="border-t border-dotted border-gray-300 mt-4 pt-4 pb-3 flex items-center justify-center gap-1.5">
-              <span className="text-[10px] text-gray-400 leading-none">Processed by</span>
+            <div className="border-t border-dotted border-gray-300 mt-4 pt-4 pb-3 flex items-end justify-center gap-1.5">
+              <span className="text-[10px] text-gray-400">Processed by</span>
               <img src={stripeLogo} alt="Stripe" className="h-4 object-contain" style={{ mixBlendMode: 'darken' }} />
             </div>
           </div>
