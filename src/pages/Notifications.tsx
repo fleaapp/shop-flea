@@ -75,13 +75,13 @@ const Notifications = () => {
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
   const { sellerOrderGroups, loadingSellerOrders, markAsShipped } = useOrders();
-  const { notifications, isLoading: loadingNotifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, isLoading: loadingNotifications, unreadCount, markAsRead, dismissBadge } = useNotifications();
   const { getGroupUnread } = useUnreadOrderMessages();
 
-  // Mark all activity notifications as read when the Activity tab is active
+  // Dismiss the nav badge when the Activity tab is viewed, but keep green dots
   useEffect(() => {
-    if (activeTab === 'activity' && unreadCount > 0) {
-      markAllAsRead.mutate();
+    if (activeTab === 'activity') {
+      dismissBadge();
     }
   }, [activeTab]);
   

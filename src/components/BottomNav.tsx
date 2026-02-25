@@ -20,7 +20,7 @@ const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile } = useAuth();
-  const { unreadCount: activityUnreadCount } = useNotifications();
+  const { badgeCount: activityBadgeCount } = useNotifications();
   const { buyerOrders, sellerOrders } = useOrders();
   const { total: supportUnread } = useUnreadSupport();
   const { total: orderMessagesUnread } = useUnreadOrderMessages();
@@ -37,10 +37,10 @@ const BottomNav = () => {
     return count || undefined;
   }, [sellerOrders]);
 
-  // Alerts badge: Only activity notifications (not sales or order messages)
+  // Alerts badge: Only activity notifications not yet "seen" on the Alerts screen
   const alertsBadge = useMemo(() => {
-    return activityUnreadCount || undefined;
-  }, [activityUnreadCount]);
+    return activityBadgeCount || undefined;
+  }, [activityBadgeCount]);
 
   const profileIcon = (
     <div className="h-5 w-5 rounded-full overflow-hidden bg-background flex items-center justify-center">

@@ -1,3 +1,4 @@
+import { useMemo, useCallback, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -130,12 +131,36 @@ export const useNotifications = () => {
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
+  // Badge count: unread notifications created AFTER the last time
+  // the user visited the Alerts screen. Green dots (is_read) are separate.
+  const [badgeDismissedAt, setBadgeDismissedAt] = useState<string | null>(() => {
+    if (!user?.id) return null;
+    return localStorage.getItem(`flea_alerts_seen_${user.id}`);
+  });
+
+  const badgeCount = useMemo(() => {
+    if (!user?.id) return 0;
+    if (!badgeDismissedAt) return unreadCount;
+    const lastSeenDate = new Date(badgeDismissedAt);
+    return notifications.filter(n => !n.is_read && new Date(n.created_at) > lastSeenDate).length;
+  }, [notifications, unreadCount, user?.id, badgeDismissedAt]);
+
+  const dismissBadge = useCallback(() => {
+    if (user?.id) {
+      const now = new Date().toISOString();
+      localStorage.setItem(`flea_alerts_seen_${user.id}`, now);
+      setBadgeDismissedAt(now);
+    }
+  }, [user?.id]);
+
   return {
     notifications,
     isLoading,
     unreadCount,
+    badgeCount,
     markAsRead,
     markAllAsRead,
+    dismissBadge,
   };
 };
 
