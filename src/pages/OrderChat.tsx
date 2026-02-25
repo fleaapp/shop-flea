@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { supabase } from '@/lib/supabase';
-import { supabase as cloudSupabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
@@ -83,12 +82,15 @@ const OrderChat = () => {
     queryKey: ['order-messages', orderId],
     queryFn: async () => {
       if (!orderId) return [];
-      const { data, error } = await cloudSupabase
+      const { data, error } = await supabase
         .from('order_messages')
         .select('*')
         .eq('order_id', orderId)
         .order('created_at', { ascending: true });
-      if (error) throw error;
+      if (error) {
+        console.error('[OrderChat] Failed to load messages:', error.message, error.code, error.details);
+        throw error;
+      }
       return (data || []) as OrderMessage[];
     },
     enabled: !!orderId,
@@ -99,7 +101,7 @@ const OrderChat = () => {
   // Realtime subscription
   useEffect(() => {
     if (!orderId) return;
-    const channel = cloudSupabase
+    const channel = supabase
       .channel(`order-messages-${orderId}`)
       .on('postgres_changes', {
         event: '*',
@@ -110,7 +112,7 @@ const OrderChat = () => {
         queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
       })
       .subscribe();
-    return () => { cloudSupabase.removeChannel(channel); };
+    return () => { supabase.removeChannel(channel); };
   }, [orderId, queryClient]);
 
   // Mark messages as read
@@ -118,7 +120,7 @@ const OrderChat = () => {
     if (!messages.length || !user?.id || !orderId) return;
     const unread = messages.filter(m => !m.read && m.sender_id !== user.id);
     if (!unread.length) return;
-    cloudSupabase
+    supabase
       .from('order_messages')
       .update({ read: true })
       .eq('order_id', orderId)
@@ -135,7 +137,7 @@ const OrderChat = () => {
   const sendMessage = useMutation({
     mutationFn: async ({ message, attachmentUrl }: { message: string; attachmentUrl?: string }) => {
       if (!user?.id || !orderId) throw new Error('Not ready');
-      const { error } = await cloudSupabase
+      const { error } = await supabase
         .from('order_messages')
         .insert({
           order_id: orderId,
@@ -170,9 +172,9 @@ const OrderChat = () => {
       const compressed = await compressImage(file);
       const ext = file.name.split('.').pop() || 'jpg';
       const path = `${orderId}/${user.id}/${Date.now()}.${ext}`;
-      const { error: uploadError } = await cloudSupabase.storage.from('order-attachments').upload(path, compressed);
+      const { error: uploadError } = await supabase.storage.from('order-attachments').upload(path, compressed);
       if (uploadError) throw uploadError;
-      const { data: urlData } = cloudSupabase.storage.from('order-attachments').getPublicUrl(path);
+      const { data: urlData } = supabase.storage.from('order-attachments').getPublicUrl(path);
       sendMessage.mutate({ message: '', attachmentUrl: urlData.publicUrl });
     } catch (err) {
       console.error('Photo upload error:', err);
