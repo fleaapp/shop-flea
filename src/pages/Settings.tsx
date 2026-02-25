@@ -10,6 +10,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/lib/supabase';
 import FilterPreferencesSheet from '@/components/FilterPreferencesSheet';
+import FAQSection from '@/components/FAQSection';
 import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
 import OnboardingCarousel from '@/components/OnboardingCarousel';
 import PaymentMethodsSection from '@/components/PaymentMethodsSection';
@@ -240,7 +241,7 @@ const Settings = () => {
                                 {subItem.expandable ? faqExpanded ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
                               </div>
                             </div>
-                            {subItem.expandable && faqExpanded && <div className="ml-6 mt-2 space-y-2" />}
+                            {subItem.expandable && faqExpanded && <div className="ml-4 mt-2"><FAQSection /></div>}
                           </div>)}
                       </div>}
                   </div>)}
