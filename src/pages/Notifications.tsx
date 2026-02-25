@@ -75,7 +75,7 @@ const Notifications = () => {
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
   const { sellerOrderGroups, loadingSellerOrders, markAsShipped } = useOrders();
-  const { notifications, isLoading: loadingNotifications, unreadCount, markAsRead, dismissBadge } = useNotifications();
+  const { notifications, isLoading: loadingNotifications, unreadCount, badgeCount, markAsRead, dismissBadge } = useNotifications();
   const { getGroupUnread } = useUnreadOrderMessages();
 
   // Dismiss the nav badge when the Activity tab is viewed, but keep green dots
@@ -292,9 +292,9 @@ const Notifications = () => {
             >
               <span className="text-base">🔔</span>
               Activity
-              {activeTab !== 'activity' && unreadCount > 0 && (
+              {activeTab !== 'activity' && badgeCount > 0 && (
                 <span className="absolute -top-1 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                  {unreadCount}
+                  {badgeCount}
                 </span>
               )}
             </button>
