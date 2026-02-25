@@ -17,7 +17,7 @@ import { useOrders } from '@/hooks/useOrders';
 
 interface OrderMessage {
   id: string;
-  order_group_id: string;
+  order_id: string;
   sender_id: string;
   message: string;
   attachment_url: string | null;
@@ -26,7 +26,7 @@ interface OrderMessage {
 }
 
 const OrderChat = () => {
-  const { orderGroupId } = useParams<{ orderGroupId: string }>();
+  const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -36,28 +36,29 @@ const OrderChat = () => {
   const [sending, setSending] = useState(false);
   const { openReport, submitPendingReport, closeReport, pendingReport, isReporting } = useReporting();
 
-  // Use the working useOrders hook to get order info
   const { buyerOrderGroups, sellerOrderGroups } = useOrders();
 
+  // Find the specific order across all groups
   const orderInfo = useMemo(() => {
-    if (!orderGroupId || !user?.id) return null;
+    if (!orderId || !user?.id) return null;
 
-    const group = buyerOrderGroups.find(g => g.id === orderGroupId) 
-      || sellerOrderGroups.find(g => g.id === orderGroupId);
-
-    if (!group) return null;
-
-    return {
-      buyer_id: group.buyer_id,
-      seller_id: group.seller_id,
-      delivered_at: group.delivered_at,
-      order_number: group.orders[0]?.order_number || null,
-      buyer_username: group.buyer_profile?.username || 'Buyer',
-      seller_username: group.seller_profile?.username || 'Seller',
-      buyer_avatar: group.buyer_profile?.avatar_url || null,
-      seller_avatar: group.seller_profile?.avatar_url || null,
-    };
-  }, [orderGroupId, user?.id, buyerOrderGroups, sellerOrderGroups]);
+    for (const group of [...buyerOrderGroups, ...sellerOrderGroups]) {
+      const order = group.orders.find(o => o.id === orderId);
+      if (order) {
+        return {
+          buyer_id: group.buyer_id,
+          seller_id: group.seller_id,
+          delivered_at: order.delivered_at,
+          order_number: order.order_number || null,
+          buyer_username: group.buyer_profile?.username || 'Buyer',
+          seller_username: group.seller_profile?.username || 'Seller',
+          buyer_avatar: group.buyer_profile?.avatar_url || null,
+          seller_avatar: group.seller_profile?.avatar_url || null,
+        };
+      }
+    }
+    return null;
+  }, [orderId, user?.id, buyerOrderGroups, sellerOrderGroups]);
 
   const isReadOnly = useMemo(() => {
     if (!orderInfo?.delivered_at) return false;
@@ -76,88 +77,75 @@ const OrderChat = () => {
       : orderInfo.buyer_avatar || getDefaultAvatar(orderInfo.buyer_id)
     : '';
 
-  // Fetch messages directly from external DB
+  // Fetch messages
   const { data: messages = [], error: messagesError } = useQuery({
-    queryKey: ['order-messages', orderGroupId],
+    queryKey: ['order-messages', orderId],
     queryFn: async () => {
-      if (!orderGroupId) return [];
-
+      if (!orderId) return [];
       const { data, error } = await supabase
         .from('order_messages')
         .select('*')
-        .eq('order_group_id', orderGroupId)
+        .eq('order_id', orderId)
         .order('created_at', { ascending: true });
-
       if (error) throw error;
       return (data || []) as OrderMessage[];
     },
-    enabled: !!orderGroupId,
+    enabled: !!orderId,
     refetchInterval: 5000,
     retry: 1,
   });
 
   // Realtime subscription
   useEffect(() => {
-    if (!orderGroupId) return;
-
+    if (!orderId) return;
     const channel = supabase
-      .channel(`order-messages-${orderGroupId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'order_messages',
-          filter: `order_group_id=eq.${orderGroupId}`,
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['order-messages', orderGroupId] });
-        }
-      )
+      .channel(`order-messages-${orderId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'order_messages',
+        filter: `order_id=eq.${orderId}`,
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
+      })
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [orderGroupId, queryClient]);
+    return () => { supabase.removeChannel(channel); };
+  }, [orderId, queryClient]);
 
   // Mark messages as read
   useEffect(() => {
-    if (!messages.length || !user?.id || !orderGroupId) return;
+    if (!messages.length || !user?.id || !orderId) return;
     const unread = messages.filter(m => !m.read && m.sender_id !== user.id);
     if (!unread.length) return;
-
     supabase
       .from('order_messages')
       .update({ read: true })
-      .eq('order_group_id', orderGroupId)
+      .eq('order_id', orderId)
       .neq('sender_id', user.id)
       .eq('read', false)
       .then();
-  }, [messages, user?.id, orderGroupId]);
+  }, [messages, user?.id, orderId]);
 
-  // Scroll to bottom on new messages
+  // Scroll to bottom
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages.length]);
 
   const sendMessage = useMutation({
     mutationFn: async ({ message, attachmentUrl }: { message: string; attachmentUrl?: string }) => {
-      if (!user?.id || !orderGroupId) throw new Error('Not ready');
-
+      if (!user?.id || !orderId) throw new Error('Not ready');
       const { error } = await supabase
         .from('order_messages')
         .insert({
-          order_group_id: orderGroupId,
+          order_id: orderId,
           sender_id: user.id,
           message: message || '',
           attachment_url: attachmentUrl || null,
         });
-
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['order-messages', orderGroupId] });
+      queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
       setNewMessage('');
     },
     onError: (err) => {
@@ -175,19 +163,14 @@ const OrderChat = () => {
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user?.id || !orderGroupId) return;
-
+    if (!file || !user?.id || !orderId) return;
     setSending(true);
     try {
       const compressed = await compressImage(file);
       const ext = file.name.split('.').pop() || 'jpg';
-      const path = `${orderGroupId}/${user.id}/${Date.now()}.${ext}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('order-attachments')
-        .upload(path, compressed);
+      const path = `${orderId}/${user.id}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from('order-attachments').upload(path, compressed);
       if (uploadError) throw uploadError;
-
       const { data: urlData } = supabase.storage.from('order-attachments').getPublicUrl(path);
       sendMessage.mutate({ message: '', attachmentUrl: urlData.publicUrl });
     } catch (err) {
@@ -203,7 +186,6 @@ const OrderChat = () => {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      {/* Header */}
       <header className="sticky top-0 z-40 bg-background px-4 py-3 flex items-center gap-3 border-b border-border">
         <button onClick={() => navigate(-1)}>
           <ChevronLeft className="h-6 w-6 text-foreground" />
@@ -215,18 +197,14 @@ const OrderChat = () => {
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-foreground text-sm truncate">@{cleanUsername(otherUsername)}</p>
           <p className="text-xs text-muted-foreground">
-            Order #{orderInfo?.order_number || orderGroupId?.slice(0, 8).toUpperCase()}
+            Order #{orderInfo?.order_number || orderId?.slice(0, 8).toUpperCase()}
           </p>
         </div>
-        <button
-          onClick={() => openReport('user', otherUserId, otherUserId)}
-          className="p-2"
-        >
+        <button onClick={() => openReport('user', otherUserId, otherUserId)} className="p-2">
           <Flag className="h-4 w-4 text-muted-foreground" />
         </button>
       </header>
 
-      {/* Read-only banner */}
       {isReadOnly && (
         <div className="bg-muted px-4 py-2 flex items-center gap-2 text-sm text-muted-foreground">
           <Lock className="h-4 w-4" />
@@ -234,36 +212,26 @@ const OrderChat = () => {
         </div>
       )}
 
-      {/* Error banner */}
       {messagesError && (
         <div className="bg-destructive/10 px-4 py-2 text-sm text-destructive text-center">
-          Unable to load messages. The order_messages table may not exist yet.
+          Unable to load messages.
         </div>
       )}
 
-      {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.length === 0 && !messagesError && (
-          <p className="text-center text-muted-foreground text-sm mt-8">
-            No messages yet. Start the conversation!
-          </p>
+          <p className="text-center text-muted-foreground text-sm mt-8">No messages yet. Start the conversation!</p>
         )}
         {messages.map((msg) => {
           const isMe = msg.sender_id === user?.id;
           return (
             <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
-                isMe
-                  ? 'bg-charcoal text-white rounded-br-md'
-                  : 'bg-card text-foreground rounded-bl-md card-shadow'
+                isMe ? 'bg-charcoal text-white rounded-br-md' : 'bg-card text-foreground rounded-bl-md card-shadow'
               }`}>
                 {msg.attachment_url && (
-                  <img
-                    src={msg.attachment_url}
-                    alt="Attachment"
-                    className="rounded-xl max-w-full mb-1.5 cursor-pointer"
-                    onClick={() => window.open(msg.attachment_url!, '_blank')}
-                  />
+                  <img src={msg.attachment_url} alt="Attachment" className="rounded-xl max-w-full mb-1.5 cursor-pointer"
+                    onClick={() => window.open(msg.attachment_url!, '_blank')} />
                 )}
                 {msg.message && <p className="text-sm leading-relaxed">{msg.message}</p>}
                 <p className={`text-[10px] mt-1 ${isMe ? 'text-white/60' : 'text-muted-foreground'}`}>
@@ -275,48 +243,23 @@ const OrderChat = () => {
         })}
       </div>
 
-      {/* Input */}
       {!isReadOnly && !messagesError && (
         <div className="sticky bottom-0 bg-background border-t border-border px-4 py-3 flex items-center gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handlePhotoUpload}
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="p-2 rounded-full hover:bg-muted transition-colors"
-            disabled={sending}
-          >
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+          <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-muted transition-colors" disabled={sending}>
             <Image className="h-5 w-5 text-muted-foreground" />
           </button>
-          <Input
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type a message..."
-            className="flex-1 rounded-full bg-muted border-none"
-            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-            disabled={sending}
-          />
-          <button
-            onClick={handleSend}
-            disabled={!newMessage.trim() || sending}
-            className="p-2 rounded-full bg-charcoal text-white disabled:opacity-40 transition-colors"
-          >
+          <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type a message..."
+            className="flex-1 rounded-full bg-muted border-none" onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()} disabled={sending} />
+          <button onClick={handleSend} disabled={!newMessage.trim() || sending}
+            className="p-2 rounded-full bg-charcoal text-white disabled:opacity-40 transition-colors">
             <Send className="h-5 w-5" />
           </button>
         </div>
       )}
 
-      <ReportDialog
-        open={!!pendingReport}
-        onOpenChange={(v) => { if (!v) closeReport(); }}
-        onSubmit={submitPendingReport}
-        isSubmitting={isReporting}
-        reportType={pendingReport?.reportType || 'user'}
-      />
+      <ReportDialog open={!!pendingReport} onOpenChange={(v) => { if (!v) closeReport(); }}
+        onSubmit={submitPendingReport} isSubmitting={isReporting} reportType={pendingReport?.reportType || 'user'} />
     </div>
   );
 };

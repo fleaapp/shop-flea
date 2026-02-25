@@ -363,7 +363,7 @@ export type Database = {
           created_at: string
           id: string
           message: string
-          order_group_id: string
+          order_id: string
           read: boolean
           sender_id: string
         }
@@ -372,7 +372,7 @@ export type Database = {
           created_at?: string
           id?: string
           message?: string
-          order_group_id: string
+          order_id: string
           read?: boolean
           sender_id: string
         }
@@ -381,7 +381,7 @@ export type Database = {
           created_at?: string
           id?: string
           message?: string
-          order_group_id?: string
+          order_id?: string
           read?: boolean
           sender_id?: string
         }
