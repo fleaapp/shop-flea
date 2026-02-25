@@ -20,6 +20,11 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
   const handleDownload = useCallback(async () => {
     if (!receiptRef.current) return;
     try {
+      // Before capture, nudge the stripe logo down so html2canvas aligns it properly
+      const stripeImg = receiptRef.current.querySelector('img[alt="Stripe"]') as HTMLImageElement | null;
+      if (stripeImg) stripeImg.style.position = 'relative';
+      if (stripeImg) stripeImg.style.top = '3px';
+
       const { default: html2canvas } = await import('html2canvas');
       const canvas = await html2canvas(receiptRef.current, {
         backgroundColor: '#ffffff',
@@ -30,7 +35,10 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
         windowWidth: receiptRef.current.scrollWidth,
         windowHeight: receiptRef.current.scrollHeight,
       });
-      // Convert to blob and use share API to save to photos (mobile), fallback to download
+
+      // Revert the nudge
+      if (stripeImg) { stripeImg.style.position = ''; stripeImg.style.top = ''; }
+
       canvas.toBlob(async (blob) => {
         if (!blob) return;
         const file = new File([blob], `flea-receipt-${displayId}.png`, { type: 'image/png' });
@@ -156,9 +164,9 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
             </div>
 
             {/* Payment processor */}
-            <div className="border-t border-dotted border-gray-300 mt-4 pt-4 pb-3 text-center">
-              <span className="text-[10px] text-gray-400 inline-block" style={{ lineHeight: '16px' }}>Processed by</span>
-              <img src={stripeLogo} alt="Stripe" className="inline-block ml-1.5" style={{ height: '16px', mixBlendMode: 'darken', position: 'relative', top: '3px' }} />
+            <div className="border-t border-dotted border-gray-300 mt-4 pt-4 pb-3 flex items-center justify-center gap-1.5">
+              <span className="text-[10px] text-gray-400">Processed by</span>
+              <img src={stripeLogo} alt="Stripe" className="h-4 object-contain" style={{ mixBlendMode: 'darken' }} />
             </div>
           </div>
 
