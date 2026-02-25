@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { DbListing, ListingFilters } from './useListings';
 import { getQuerySizesFromKeys, listingSizeKey, normalizeSizeKeys } from '@/utils/sizeKeys';
+import { preloadImages } from '@/utils/preloadAssets';
 
 // Extended DbListing to include pause_selling from profiles
 export interface DbListingWithPause extends DbListing {
@@ -114,6 +115,10 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
         ...listing,
         profiles: profilesMap.get(listing.user_id) || null,
       }));
+
+      // Preload listing images
+      const imagesToPreload = sizeFiltered.flatMap(l => l.images?.slice(0, 1) || []).filter(Boolean);
+      if (imagesToPreload.length) preloadImages(imagesToPreload);
 
       // Sort by the order they were added to favorites (most recent first)
       listingsWithProfiles.sort((a, b) => {

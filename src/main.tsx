@@ -1,4 +1,6 @@
 import { createRoot } from "react-dom/client";
+// Eagerly preload all static assets before React renders
+import "./utils/preloadAssets";
 import App from "./App.tsx";
 import "./index.css";
 

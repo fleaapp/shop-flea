@@ -463,7 +463,7 @@ const ListingDetails = () => {
                     src={sellerAvatar}
                     alt={sellerName}
                     className="h-9 w-9 rounded-full bg-muted flex-shrink-0"
-                    loading="lazy"
+                    loading="eager"
                   />
                   <div>
                     <p className="font-bold text-foreground text-sm underline">{sellerName}</p>

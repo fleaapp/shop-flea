@@ -2,6 +2,7 @@ import { useMemo, useCallback, useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { preloadImages } from '@/utils/preloadAssets';
 
 export type NotificationType = 
   | 'price_drop_cart'
@@ -89,11 +90,20 @@ export const useNotifications = () => {
       }
 
       // Combine data
-      return notificationsData.map(n => ({
+      const combined = notificationsData.map(n => ({
         ...n,
         listing: n.related_listing_id ? listingsMap[n.related_listing_id] || null : null,
         related_user: n.related_user_id ? usersMap[n.related_user_id] || null : null,
       })) as Notification[];
+
+      // Preload notification images (listing thumbnails + user avatars)
+      const imagesToPreload = [
+        ...Object.values(listingsMap).flatMap(l => l.images?.slice(0, 1) || []),
+        ...Object.values(usersMap).map(u => u.avatar_url).filter(Boolean),
+      ].filter(Boolean) as string[];
+      if (imagesToPreload.length > 0) preloadImages(imagesToPreload);
+
+      return combined;
     },
     enabled: !!user?.id,
   });

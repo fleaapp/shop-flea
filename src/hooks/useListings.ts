@@ -154,12 +154,15 @@ export const useListings = (filters?: ListingFilters) => {
         listingsWithProfiles = filterBySearch(listingsWithProfiles, filters.search);
       }
       
-      // Preload seller avatars in the background for instant display
+      // Preload seller avatars and listing images in the background
       const avatarUrls = listingsWithProfiles
         .map(l => l.profiles?.avatar_url)
         .filter((url): url is string => !!url);
-      if (avatarUrls.length > 0) {
-        preloadImages(avatarUrls);
+      const listingImageUrls = listingsWithProfiles
+        .flatMap(l => l.images?.slice(0, 1) || []) // First image of each listing
+        .filter(Boolean);
+      if (avatarUrls.length > 0 || listingImageUrls.length > 0) {
+        preloadImages([...avatarUrls, ...listingImageUrls]);
       }
       
       setListings(listingsWithProfiles);
