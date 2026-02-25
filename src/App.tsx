@@ -66,7 +66,7 @@ const App = () => (
                 <Route path="/contact-support" element={<ProtectedRoute><ContactSupport /></ProtectedRoute>} />
                 <Route path="/contact-support/:threadId" element={<ProtectedRoute><ChatConversation /></ProtectedRoute>} />
                 <Route path="/seller/:sellerId" element={<ProtectedRoute><SellerProfile /></ProtectedRoute>} />
-                <Route path="/order-chat/:orderGroupId" element={<ProtectedRoute><OrderChat /></ProtectedRoute>} />
+                <Route path="/order-chat/:orderId" element={<ProtectedRoute><OrderChat /></ProtectedRoute>} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

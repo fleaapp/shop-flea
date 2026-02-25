@@ -153,7 +153,7 @@ const Notifications = () => {
     const buyerAvatar = primaryOrder.buyer_profile?.avatar_url || '';
     const productImage = primaryOrder.listing?.images?.[0] || '';
     const itemCount = group.orders.length;
-    const unread = getGroupUnread(group.id);
+    const unread = group.orders.reduce((sum, o) => sum + getGroupUnread(o.id), 0);
 
     return (
       <div 
@@ -177,8 +177,7 @@ const Notifications = () => {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            const groupId = primaryOrder.order_group_id || primaryOrder.id;
-            navigate(`/order-chat/${groupId}`);
+            navigate(`/order-chat/${primaryOrder.id}`);
           }}
           className="relative flex h-10 w-10 items-center justify-center flex-shrink-0"
         >
