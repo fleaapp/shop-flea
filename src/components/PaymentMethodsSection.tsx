@@ -138,7 +138,7 @@ const PaymentMethodsSection = () => {
           onClick={stripeConnected ? undefined : handleConnectStripe}
         >
           <div className="flex items-center gap-3 max-[375px]:gap-2">
-            <img src={stripeLogo} alt="Stripe" className="h-7 w-7 object-contain" style={{ mixBlendMode: 'darken' }} />
+            <img src={stripeLogo} alt="Stripe" className="h-7 w-7 object-contain rounded-lg" />
             <div>
               <span className="text-base max-[375px]:text-sm font-medium text-foreground">
                 Stripe
