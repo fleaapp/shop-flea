@@ -147,10 +147,11 @@ export function useOrders() {
       // Fetch listing and profile data
       const listingIds = [...new Set(orders.map(o => o.listing_id))];
       const sellerIds = [...new Set(orders.map(o => o.seller_id))];
+      const allProfileIds = [...new Set([...sellerIds, user.id])];
 
       const [listingsRes, profilesRes] = await Promise.all([
         supabase.from('listings').select('id, title, images').in('id', listingIds),
-        supabase.from('profiles').select('user_id, username, avatar_url').in('user_id', sellerIds),
+        supabase.from('profiles').select('user_id, username, avatar_url').in('user_id', allProfileIds),
       ]);
 
       const listingsMap = new Map(listingsRes.data?.map(l => [l.id, l]) || []);
@@ -161,6 +162,7 @@ export function useOrders() {
         status: order.status as OrderStatus,
         listing: listingsMap.get(order.listing_id),
         seller_profile: profilesMap.get(order.seller_id),
+        buyer_profile: profilesMap.get(order.buyer_id),
       })) as Order[];
     },
     enabled: !!user?.id,
@@ -184,10 +186,11 @@ export function useOrders() {
       // Fetch listing and profile data
       const listingIds = [...new Set(orders.map(o => o.listing_id))];
       const buyerIds = [...new Set(orders.map(o => o.buyer_id))];
+      const allProfileIds = [...new Set([...buyerIds, user.id])];
 
       const [listingsRes, profilesRes] = await Promise.all([
         supabase.from('listings').select('id, title, images').in('id', listingIds),
-        supabase.from('profiles').select('user_id, username, avatar_url').in('user_id', buyerIds),
+        supabase.from('profiles').select('user_id, username, avatar_url').in('user_id', allProfileIds),
       ]);
 
       const listingsMap = new Map(listingsRes.data?.map(l => [l.id, l]) || []);
@@ -198,6 +201,7 @@ export function useOrders() {
         status: order.status as OrderStatus,
         listing: listingsMap.get(order.listing_id),
         buyer_profile: profilesMap.get(order.buyer_id),
+        seller_profile: profilesMap.get(order.seller_id),
       })) as Order[];
     },
     enabled: !!user?.id,

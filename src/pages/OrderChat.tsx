@@ -46,7 +46,7 @@ const OrderChat = () => {
   const [sending, setSending] = useState(false);
   const { openReport, submitPendingReport, closeReport, pendingReport, isReporting } = useReporting();
 
-  // Fetch order info
+  // Fetch order info with profiles
   const { data: orderInfo } = useQuery({
     queryKey: ['order-chat-info', orderGroupId],
     queryFn: async (): Promise<OrderInfo | null> => {
@@ -73,11 +73,22 @@ const OrderChat = () => {
       // Verify user is participant
       if (order.buyer_id !== user.id && order.seller_id !== user.id) return null;
 
-      // Fetch profiles
-      const { data: profiles } = await supabase
+      // Fetch profiles for both buyer and seller
+      const profileIds = [...new Set([order.buyer_id, order.seller_id])];
+      
+      // Try profiles table first, fall back to profiles_public
+      let { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, username, avatar_url')
-        .in('user_id', [order.buyer_id, order.seller_id]);
+        .in('user_id', profileIds);
+
+      if (!profiles?.length) {
+        const { data: publicProfiles } = await supabase
+          .from('profiles_public')
+          .select('user_id, username, avatar_url')
+          .in('user_id', profileIds);
+        profiles = publicProfiles || [];
+      }
 
       const buyerProfile = profiles?.find(p => p.user_id === order.buyer_id);
       const sellerProfile = profiles?.find(p => p.user_id === order.seller_id);
@@ -86,8 +97,8 @@ const OrderChat = () => {
         ...order,
         buyer_username: buyerProfile?.username || 'Buyer',
         seller_username: sellerProfile?.username || 'Seller',
-        buyer_avatar: buyerProfile?.avatar_url,
-        seller_avatar: sellerProfile?.avatar_url,
+        buyer_avatar: buyerProfile?.avatar_url || null,
+        seller_avatar: sellerProfile?.avatar_url || null,
       };
     },
     enabled: !!orderGroupId && !!user?.id,
@@ -113,7 +124,7 @@ const OrderChat = () => {
     : '';
 
   // Fetch messages
-  const { data: messages = [] } = useQuery({
+  const { data: messages = [], error: messagesError } = useQuery({
     queryKey: ['order-messages', orderGroupId],
     queryFn: async () => {
       if (!orderGroupId) return [];
@@ -122,11 +133,15 @@ const OrderChat = () => {
         .select('*')
         .eq('order_group_id', orderGroupId)
         .order('created_at', { ascending: true });
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching order messages:', error);
+        throw error;
+      }
       return (data || []) as OrderMessage[];
     },
     enabled: !!orderGroupId,
     refetchInterval: 5000,
+    retry: 1,
   });
 
   // Mark messages as read
@@ -176,13 +191,19 @@ const OrderChat = () => {
         message,
         attachment_url: attachmentUrl || null,
       });
-      if (error) throw error;
+      if (error) {
+        console.error('Send message error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order-messages', orderGroupId] });
       setNewMessage('');
     },
-    onError: () => toast.error('Failed to send message'),
+    onError: (err) => {
+      console.error('Failed to send message:', err);
+      toast.error('Failed to send message. Please try again.');
+    },
   });
 
   const handleSend = () => {
@@ -208,7 +229,8 @@ const OrderChat = () => {
 
       const { data: urlData } = supabase.storage.from('order-attachments').getPublicUrl(path);
       sendMessage.mutate({ message: '', attachmentUrl: urlData.publicUrl });
-    } catch {
+    } catch (err) {
+      console.error('Photo upload error:', err);
       toast.error('Failed to upload photo');
     } finally {
       setSending(false);
@@ -251,9 +273,16 @@ const OrderChat = () => {
         </div>
       )}
 
+      {/* Error banner */}
+      {messagesError && (
+        <div className="bg-destructive/10 px-4 py-2 text-sm text-destructive text-center">
+          Unable to load messages. The messaging feature may not be available yet.
+        </div>
+      )}
+
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        {messages.length === 0 && (
+        {messages.length === 0 && !messagesError && (
           <p className="text-center text-muted-foreground text-sm mt-8">
             No messages yet. Start the conversation!
           </p>
@@ -286,7 +315,7 @@ const OrderChat = () => {
       </div>
 
       {/* Input */}
-      {!isReadOnly && (
+      {!isReadOnly && !messagesError && (
         <div className="sticky bottom-0 bg-background border-t border-border px-4 py-3 flex items-center gap-2">
           <input
             ref={fileInputRef}
