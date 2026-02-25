@@ -23,8 +23,8 @@ export const useUnreadOrderMessages = () => {
       // Fetch unread messages not sent by current user
       const { data: messages } = await supabase
         .from('order_messages')
-        .select('id, order_id')
-        .in('order_id', orderIds)
+        .select('id, order_group_id')
+        .in('order_group_id', orderIds)
         .neq('sender_id', user.id)
         .eq('read', false);
 
@@ -32,7 +32,8 @@ export const useUnreadOrderMessages = () => {
 
       const perOrder = new Map<string, number>();
       for (const msg of messages) {
-        perOrder.set(msg.order_id, (perOrder.get(msg.order_id) || 0) + 1);
+        const oid = (msg as any).order_group_id;
+        perOrder.set(oid, (perOrder.get(oid) || 0) + 1);
       }
 
       return { total: messages.length, perOrder };

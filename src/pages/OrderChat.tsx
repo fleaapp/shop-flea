@@ -85,7 +85,7 @@ const OrderChat = () => {
       const { data, error } = await supabase
         .from('order_messages')
         .select('*')
-        .eq('order_id', orderId)
+        .eq('order_group_id', orderId)
         .order('created_at', { ascending: true });
       if (error) {
         console.error('[OrderChat] Failed to load messages:', error.message, error.code, error.details);
@@ -107,7 +107,7 @@ const OrderChat = () => {
         event: '*',
         schema: 'public',
         table: 'order_messages',
-        filter: `order_id=eq.${orderId}`,
+        filter: `order_group_id=eq.${orderId}`,
       }, () => {
         queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
       })
@@ -123,7 +123,7 @@ const OrderChat = () => {
     supabase
       .from('order_messages')
       .update({ read: true })
-      .eq('order_id', orderId)
+      .eq('order_group_id', orderId)
       .neq('sender_id', user.id)
       .eq('read', false)
       .then();
@@ -140,7 +140,7 @@ const OrderChat = () => {
       const { error } = await supabase
         .from('order_messages')
         .insert({
-          order_id: orderId,
+          order_group_id: orderId,
           sender_id: user.id,
           message: message || '',
           attachment_url: attachmentUrl || null,
