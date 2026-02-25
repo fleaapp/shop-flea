@@ -151,10 +151,10 @@ export const useNotifications = () => {
 
   const badgeCount = useMemo(() => {
     if (!user?.id) return 0;
-    if (!badgeDismissedAt) return unreadCount;
+    if (!badgeDismissedAt) return notifications.length;
     const lastSeenDate = new Date(badgeDismissedAt);
-    return notifications.filter(n => !n.is_read && new Date(n.created_at) > lastSeenDate).length;
-  }, [notifications, unreadCount, user?.id, badgeDismissedAt]);
+    return notifications.filter(n => new Date(n.created_at) > lastSeenDate).length;
+  }, [notifications, user?.id, badgeDismissedAt]);
 
   const dismissBadge = useCallback(() => {
     if (user?.id) {
