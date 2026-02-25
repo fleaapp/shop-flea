@@ -36,6 +36,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useOrders, OrderGroup } from '@/hooks/useOrders';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
 import OrderSuccessDialog from '@/components/OrderSuccessDialog';
+import OrderReceiptDialog from '@/components/OrderReceiptDialog';
 
 interface DbListing {
   id: string;
@@ -713,10 +714,18 @@ const ListingDetails = () => {
       />
 
       {/* Receipt Dialog */}
-      <OrderSuccessDialog
-        open={showReceiptDialog}
-        onClose={() => setShowReceiptDialog(false)}
-      />
+      {(() => {
+        const receiptOrders = sellerOrders.filter(o => o.listing_id === listing?.id);
+        if (!receiptOrders.length) return null;
+        return (
+          <OrderReceiptDialog
+            orders={receiptOrders}
+            open={showReceiptDialog}
+            onOpenChange={setShowReceiptDialog}
+            viewAs="seller"
+          />
+        );
+      })()}
 
       <ReportDialog
         open={!!pendingReport}

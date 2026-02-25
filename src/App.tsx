@@ -30,6 +30,7 @@ import ChatConversation from "./pages/ChatConversation";
 import NotFound from "./pages/NotFound";
 import SellerProfile from "./pages/SellerProfile";
 import FAQ from "./pages/FAQ";
+import OrderChat from "./pages/OrderChat";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +66,7 @@ const App = () => (
                 <Route path="/contact-support" element={<ProtectedRoute><ContactSupport /></ProtectedRoute>} />
                 <Route path="/contact-support/:threadId" element={<ProtectedRoute><ChatConversation /></ProtectedRoute>} />
                 <Route path="/seller/:sellerId" element={<ProtectedRoute><SellerProfile /></ProtectedRoute>} />
+                <Route path="/order-chat/:orderGroupId" element={<ProtectedRoute><OrderChat /></ProtectedRoute>} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
