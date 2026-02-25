@@ -29,6 +29,7 @@ import ContactSupport from "./pages/ContactSupport";
 import ChatConversation from "./pages/ChatConversation";
 import NotFound from "./pages/NotFound";
 import SellerProfile from "./pages/SellerProfile";
+import FAQ from "./pages/FAQ";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,7 @@ const App = () => (
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/settings/profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
                 <Route path="/suggestion-box" element={<ProtectedRoute><SuggestionBox /></ProtectedRoute>} />
+                <Route path="/faq" element={<ProtectedRoute><FAQ /></ProtectedRoute>} />
                 <Route path="/contact-support" element={<ProtectedRoute><ContactSupport /></ProtectedRoute>} />
                 <Route path="/contact-support/:threadId" element={<ProtectedRoute><ChatConversation /></ProtectedRoute>} />
                 <Route path="/seller/:sellerId" element={<ProtectedRoute><SellerProfile /></ProtectedRoute>} />
