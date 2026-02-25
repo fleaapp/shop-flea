@@ -37,11 +37,11 @@ const BottomNav = () => {
     return count || undefined;
   }, [sellerOrders]);
 
-  // Alerts badge: Activity notifications + Sales notifications
+  // Alerts badge: Activity notifications + Sales notifications + unread order messages
   const alertsBadge = useMemo(() => {
-    const total = activityUnreadCount + (salesBadge || 0);
+    const total = activityUnreadCount + (salesBadge || 0) + orderMessagesUnread;
     return total || undefined;
-  }, [activityUnreadCount, salesBadge]);
+  }, [activityUnreadCount, salesBadge, orderMessagesUnread]);
 
   const profileIcon = (
     <div className="h-5 w-5 rounded-full overflow-hidden bg-background flex items-center justify-center">
