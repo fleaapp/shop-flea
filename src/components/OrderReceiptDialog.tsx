@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Order } from '@/hooks/useOrders';
 import { format } from 'date-fns';
 import { X, Download } from 'lucide-react';
-import fleaLogo from '@/assets/flea-logo.png';
+import fleaLogo from '@/assets/flea-logo-receipt.jpeg';
 
 interface OrderReceiptDialogProps {
   orders: Order[];
@@ -74,7 +74,7 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
               {/* Logo */}
               <div className="flex justify-center mb-6">
                 <div className="bg-white">
-                  <img src={fleaLogo} alt="Flea" className="h-8 object-contain" style={{ mixBlendMode: 'darken' }} />
+                  <img src={fleaLogo} alt="Flea" className="h-8 object-contain" />
                 </div>
               </div>
 
