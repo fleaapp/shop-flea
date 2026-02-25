@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <!-- Mock cart header bar -->
+  <rect x="20" y="120" width="360" height="60" rx="16" fill="rgba(255,255,255,0.08)"/>
+  <text x="200" y="158" text-anchor="middle" fill="rgba(245,241,235,0.7)" font-family="system-ui, sans-serif" font-size="22" font-weight="600">Cart</text>
+  
+  <!-- Spotlight glow ring around wishlist button -->
+  <circle cx="340" cy="150" r="36" fill="rgba(245,241,235,0.08)" stroke="rgba(245,241,235,0.5)" stroke-width="2"/>
+  <circle cx="340" cy="150" r="28" fill="rgba(50,50,50,1)" stroke="rgba(245,241,235,0.8)" stroke-width="2.5"/>
+  
+  <!-- Heart envelope emoji placeholder -->
+  <text x="340" y="158" text-anchor="middle" font-size="24">💌</text>
+  
+  <!-- Arrow pointing to the button -->
+  <path d="M260 220 Q290 190 318 175" stroke="rgba(245,241,235,0.6)" stroke-width="2.5" fill="none" stroke-dasharray="6 4"/>
+  <polygon points="316,178 324,172 318,182" fill="rgba(245,241,235,0.6)"/>
+  
+  <!-- Hint text near arrow -->
+  <text x="200" y="250" text-anchor="middle" fill="rgba(245,241,235,0.5)" font-family="system-ui, sans-serif" font-size="16" font-weight="500">Tap to view your Wishlist</text>
+</svg>

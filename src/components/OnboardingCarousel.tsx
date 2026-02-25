@@ -4,13 +4,15 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
  import { preloadImages } from '@/utils/preloadAssets';
  
  // Import onboarding assets
- import tapToExpandGif from '@/assets/onboarding/tap-to-expand.gif';
- import swipeLeftPass from '@/assets/onboarding/swipe-left-pass.svg';
- import swipeUpCart from '@/assets/onboarding/swipe-up-cart.svg';
- import swipeRightWishlist from '@/assets/onboarding/swipe-right-wishlist.svg';
- 
- // Preload all onboarding assets immediately on module load
- const onboardingAssets = [tapToExpandGif, swipeLeftPass, swipeUpCart, swipeRightWishlist];
+import tapToExpandGif from '@/assets/onboarding/tap-to-expand.gif';
+import swipeLeftPass from '@/assets/onboarding/swipe-left-pass.svg';
+import swipeUpCart from '@/assets/onboarding/swipe-up-cart.svg';
+import swipeRightWishlist from '@/assets/onboarding/swipe-right-wishlist.svg';
+import wishlistSpotlight from '@/assets/onboarding/wishlist-spotlight.svg';
+import cartSwipeActionsGif from '@/assets/onboarding/cart-swipe-actions.gif';
+
+// Preload all onboarding assets immediately on module load
+const onboardingAssets = [tapToExpandGif, swipeLeftPass, swipeUpCart, swipeRightWishlist, wishlistSpotlight, cartSwipeActionsGif];
  preloadImages(onboardingAssets);
  
  interface OnboardingCarouselProps {
@@ -47,12 +49,24 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
     imageOffset: '-translate-y-4',
    },
    {
-     image: swipeRightWishlist,
-     text: 'Swipe 👉 to add to Wishlist 💌',
-     alt: 'Swipe right to add to wishlist',
-     isGif: false,
-   },
- ];
+    image: swipeRightWishlist,
+    text: 'Swipe 👉 to add to Wishlist 💌',
+    alt: 'Swipe right to add to wishlist',
+    isGif: false,
+  },
+  {
+    image: wishlistSpotlight,
+    text: 'Find your Wishlist here 💌',
+    alt: 'Wishlist button location in cart',
+    isGif: false,
+  },
+  {
+    image: cartSwipeActionsGif,
+    text: 'Swipe to Delete ❌ or move to Wishlist 💌',
+    alt: 'Swipe cart items to delete or move to wishlist',
+    isGif: true,
+  },
+];
  
  const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
    const [currentSlide, setCurrentSlide] = useState(0);
