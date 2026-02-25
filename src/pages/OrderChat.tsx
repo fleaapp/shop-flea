@@ -66,19 +66,32 @@ const OrderChat = () => {
           .limit(1));
       }
 
-      if (!orders?.length) return null;
+      if (!orders?.length) { console.log('[OrderChat] No orders found for', orderGroupId); return null; }
       const order = orders[0];
-      if (order.buyer_id !== user.id && order.seller_id !== user.id) return null;
+      console.log('[OrderChat] Order found:', { buyer_id: order.buyer_id, seller_id: order.seller_id, order_number: order.order_number });
+      if (order.buyer_id !== user.id && order.seller_id !== user.id) { console.log('[OrderChat] User not participant'); return null; }
 
       const profileIds = [...new Set([order.buyer_id, order.seller_id])];
+      console.log('[OrderChat] Fetching profiles for:', profileIds);
       
-      // Always use profiles_public to avoid cross-region RLS blocking
-      const { data: pubProfiles } = await supabase
+      // Try profiles_public first (bypasses region RLS)
+      const { data: pubProfiles, error: pubError } = await supabase
         .from('profiles_public')
         .select('user_id, username, avatar_url')
         .in('user_id', profileIds);
       
-      const profiles = pubProfiles || [];
+      console.log('[OrderChat] profiles_public result:', { pubProfiles, pubError });
+      
+      // Fallback to profiles table if profiles_public fails
+      let profiles = pubProfiles || [];
+      if (!profiles.length) {
+        const { data: directProfiles, error: directError } = await supabase
+          .from('profiles')
+          .select('user_id, username, avatar_url')
+          .in('user_id', profileIds);
+        console.log('[OrderChat] profiles fallback result:', { directProfiles, directError });
+        profiles = directProfiles || [];
+      }
 
       const bp = profiles?.find(p => p.user_id === order.buyer_id);
       const sp = profiles?.find(p => p.user_id === order.seller_id);
