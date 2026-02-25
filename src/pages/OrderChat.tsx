@@ -71,18 +71,14 @@ const OrderChat = () => {
       if (order.buyer_id !== user.id && order.seller_id !== user.id) return null;
 
       const profileIds = [...new Set([order.buyer_id, order.seller_id])];
-      let { data: profiles } = await supabase
-        .from('profiles')
+      
+      // Always use profiles_public to avoid cross-region RLS blocking
+      const { data: pubProfiles } = await supabase
+        .from('profiles_public')
         .select('user_id, username, avatar_url')
         .in('user_id', profileIds);
-
-      if (!profiles?.length) {
-        const { data: pub } = await supabase
-          .from('profiles_public')
-          .select('user_id, username, avatar_url')
-          .in('user_id', profileIds);
-        profiles = pub || [];
-      }
+      
+      const profiles = pubProfiles || [];
 
       const bp = profiles?.find(p => p.user_id === order.buyer_id);
       const sp = profiles?.find(p => p.user_id === order.seller_id);
