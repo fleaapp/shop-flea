@@ -177,7 +177,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
           </defs>
           <rect
             x="0" y="0" width="100%" height="100%"
-            fill="rgba(30,30,30,0.92)"
+            fill="hsl(220 15% 25% / 0.90)"
             mask="url(#carousel-spotlight-mask)"
           />
         </svg>
@@ -248,7 +248,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
 
             {/* Video container */}
             {!isSpotlightSlide && slide.video && (
-              <div className={`flex items-center justify-center w-[min(92vw,52vh,400px)] ${slide.imageOffset || ''}`}>
+              <div className={`flex items-center justify-center w-[min(72vw,40vh,300px)] ${slide.imageOffset || ''}`}>
                 <video
                   src={slide.video}
                   autoPlay
@@ -262,7 +262,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
 
             {/* Text */}
             {Array.isArray(slide.text) ? (
-              <div className={`flex flex-col items-center gap-1 ${!isSpotlightSlide && (slide.image || slide.video) ? '-mt-6 max-[375px]:-mt-4' : ''}`}>
+              <div className={`flex flex-col items-center gap-1 ${!isSpotlightSlide && (slide.image || slide.video) ? 'mt-6' : ''}`}>
                 {slide.text.map((line, i) => (
                   <p key={i} className="text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg">
                     {line}
