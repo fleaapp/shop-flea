@@ -57,7 +57,7 @@ const slides: Slide[] = [
     alt: 'Swipe right to add to wishlist',
   },
   {
-    text: 'Find your Wishlist here 💌',
+    text: 'Find your Wishlist here ➜',
     alt: 'Wishlist button location',
     spotlight: {
       route: '/cart',
@@ -203,20 +203,23 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
         />
       )}
 
-      {/* Bouncing arrow pointing at spotlight */}
+      {/* Spotlight text — positioned to the left of the target */}
       {isSpotlightSlide && spotlightRect && (
-        <motion.div
-          className="absolute text-cream text-2xl pointer-events-none"
+        <motion.p
+          className="absolute text-cream text-xl font-semibold pointer-events-none max-[375px]:text-lg"
           style={{
-            left: spotlightRect.x + spotlightRect.w / 2 - 12,
-            top: spotlightRect.y - 32,
+            right: `calc(100% - ${spotlightRect.x}px + 12px)`,
+            top: spotlightRect.y + spotlightRect.h / 2,
+            transform: 'translateY(-50%)',
+            whiteSpace: 'nowrap',
             zIndex: 2,
           }}
-          animate={{ y: [0, 6, 0] }}
-          transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
         >
-          ↓
-        </motion.div>
+          {slide.text}
+        </motion.p>
       )}
 
       {/* Main content area */}
@@ -248,7 +251,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
 
             {/* Video container */}
             {!isSpotlightSlide && slide.video && (
-              <div className={`flex items-center justify-center w-[min(72vw,40vh,300px)] ${slide.imageOffset || ''}`}>
+              <div className={`flex items-center justify-center w-[min(72vw,40vh,300px)] mt-8 ${slide.imageOffset || ''}`}>
                 <video
                   src={slide.video}
                   autoPlay
@@ -262,7 +265,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
 
             {/* Text */}
             {Array.isArray(slide.text) ? (
-              <div className={`flex flex-col items-center gap-1 ${!isSpotlightSlide && (slide.image || slide.video) ? 'mt-6' : ''}`}>
+              <div className={`flex flex-col items-center gap-1 ${!isSpotlightSlide && (slide.image || slide.video) ? 'mt-10' : ''}`}>
                 {slide.text.map((line, i) => (
                   <p key={i} className="text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg">
                     {line}
@@ -270,7 +273,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
                 ))}
               </div>
             ) : (
-              <p className={`text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg ${!isSpotlightSlide && (slide.image || slide.video) ? '-mt-6 max-[375px]:-mt-4' : ''}`}>
+              <p className={`text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg ${!isSpotlightSlide && (slide.image || slide.video) ? '-mt-6 max-[375px]:-mt-4' : ''} ${isSpotlightSlide ? 'hidden' : ''}`}>
                 {slide.text}
               </p>
             )}
