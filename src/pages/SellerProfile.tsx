@@ -26,6 +26,7 @@ interface SellerProfile {
   avatar_url: string | null;
   rating: number | null;
   pause_selling?: boolean;
+  last_sign_in_at?: string | null;
 }
 
 interface DbListing {
@@ -77,10 +78,10 @@ const SellerProfile = () => {
     setLoading(true);
     setListingsLoading(true);
 
-    // Fetch seller profile including pause_selling
+    // Fetch seller profile including pause_selling and last_sign_in_at
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
-      .select('user_id, username, avatar_url, rating, pause_selling')
+      .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at')
       .eq('user_id', sellerId)
       .single();
 
@@ -281,7 +282,23 @@ const SellerProfile = () => {
               This seller has temporarily paused their listings.
             </p>
           </div>
-        ) : displayListings.length > 0 ? (
+        ) : (() => {
+          const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
+          const lastSignIn = sellerProfile.last_sign_in_at ? new Date(sellerProfile.last_sign_in_at).getTime() : Date.now();
+          const isInactive = (Date.now() - lastSignIn) >= TEN_DAYS_MS;
+          if (isInactive && activeTab === 'listings') {
+            return (
+              <div className="flex flex-col items-center justify-center px-4 py-12">
+                <span className="text-5xl mb-4">🕰️</span>
+                <p className="text-lg font-medium text-muted-foreground">Inactive</p>
+                <p className="mt-2 text-sm text-muted-foreground text-center">
+                  This seller hasn't been active recently.
+                </p>
+              </div>
+            );
+          }
+          return null;
+        })() || (displayListings.length > 0 ? (
           <div className="flex gap-4 max-[430px]:gap-3 max-[375px]:gap-2.5">
             <div className="flex-shrink-0 w-[calc(50vw-128px)] max-[430px]:w-[calc(50vw-120px)] max-[393px]:w-[calc(50vw-104px)] max-[375px]:w-[calc(50vw-88px)]" />
             {displayListings.map((listing) => (
@@ -322,7 +339,7 @@ const SellerProfile = () => {
           <div className="flex flex-col items-center justify-center px-4 py-12">
             <p className="text-muted-foreground">{activeTab === 'listings' ? 'No listings yet' : 'No sold items yet'}</p>
           </div>
-        )}
+        ))}
       </div>
 
       <ReviewsDrawer

@@ -476,6 +476,7 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          last_sign_in_at: string | null
           location: string | null
           password_set: boolean
           pause_selling: boolean
@@ -505,6 +506,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          last_sign_in_at?: string | null
           location?: string | null
           password_set?: boolean
           pause_selling?: boolean
@@ -534,6 +536,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          last_sign_in_at?: string | null
           location?: string | null
           password_set?: boolean
           pause_selling?: boolean

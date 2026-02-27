@@ -21,14 +21,15 @@ interface WishlistCardProps {
   onAddToCart?: () => void;
   isSold?: boolean;
   isPaused?: boolean;
+  isInactive?: boolean;
   isInCart?: boolean;
 }
 
-const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused = false, isInCart = false }: WishlistCardProps) => {
+const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused = false, isInactive = false, isInCart = false }: WishlistCardProps) => {
   const navigate = useNavigate();
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const isUnavailable = isSold || isPaused;
+  const isUnavailable = isSold || isPaused || isInactive;
 
   const handleCardClick = () => {
     navigate(`/listing/${listing.id}`, { state: { listing, isSold, fromWishlist: true } });
@@ -78,6 +79,13 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused
             {isPaused && !isSold && (
               <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-charcoal/40">
                 <span className="text-[80px] drop-shadow-lg">⏸️</span>
+              </div>
+            )}
+
+            {/* Inactive overlay with emoji (same style as paused) */}
+            {isInactive && !isSold && !isPaused && (
+              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-charcoal/40">
+                <span className="text-[80px] drop-shadow-lg">🕰️</span>
               </div>
             )}
             
