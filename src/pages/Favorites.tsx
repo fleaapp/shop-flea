@@ -18,7 +18,10 @@ import { toast } from '@/hooks/use-toast';
 interface DisplayListing extends Listing {
   isSold: boolean;
   isPaused: boolean;
+  isInactive: boolean;
 }
+
+const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
 
 const toDisplayListing = (dbListing: DbListingWithPause): DisplayListing => {
   const conditionMap: Record<string, 'new' | 'like-new' | 'good' | 'fair'> = {
@@ -28,6 +31,10 @@ const toDisplayListing = (dbListing: DbListingWithPause): DisplayListing => {
     'good': 'good',
     'fair': 'fair',
   };
+  
+  const lastSignIn = dbListing.profiles?.last_sign_in_at 
+    ? new Date(dbListing.profiles.last_sign_in_at).getTime() 
+    : Date.now();
   
   return {
     id: dbListing.id,
@@ -49,6 +56,7 @@ const toDisplayListing = (dbListing: DbListingWithPause): DisplayListing => {
     createdAt: new Date(dbListing.created_at),
     isSold: dbListing.status === 'sold',
     isPaused: dbListing.profiles?.pause_selling || false,
+    isInactive: (Date.now() - lastSignIn) >= TEN_DAYS_MS,
   };
 };
 
@@ -79,11 +87,11 @@ const Favorites = () => {
   }, [removeFavorite, removeDiscarded, refetch]);
 
   const handleAddToCart = useCallback((listing: DisplayListing) => {
-    // Don't allow adding paused or sold items to cart
-    if (listing.isPaused || listing.isSold) {
+    // Don't allow adding paused, inactive, or sold items to cart
+    if (listing.isPaused || listing.isSold || listing.isInactive) {
       toast({
         title: "Item unavailable",
-        description: listing.isSold ? "This item has been sold" : "This seller has paused selling",
+        description: listing.isSold ? "This item has been sold" : listing.isPaused ? "This seller has paused selling" : "This seller is inactive",
         variant: "destructive",
       });
       return;
@@ -150,6 +158,7 @@ const Favorites = () => {
                   onAddToCart={() => handleAddToCart(listing)}
                   isSold={listing.isSold}
                   isPaused={listing.isPaused}
+                  isInactive={listing.isInactive}
                   isInCart={isInCart(listing.id)}
                 />
               </div>

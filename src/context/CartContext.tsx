@@ -6,9 +6,10 @@ import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { getAvatarUrl } from '@/utils/optimizedImage';
 import { preloadImages } from '@/utils/preloadAssets';
 
-// Extended Listing type to include pause status
+// Extended Listing type to include pause/inactive status
 interface CartListing extends Listing {
   isPaused?: boolean;
+  isInactive?: boolean;
 }
 
 interface CartContextType {
@@ -69,11 +70,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // Fetch seller profiles including pause_selling
+    // Fetch seller profiles including pause_selling and last_sign_in_at
     const userIds = [...new Set(listingsData.map(l => l.user_id))];
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('user_id, username, avatar_url, rating, pause_selling')
+      .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at')
       .in('user_id', userIds);
 
     const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
@@ -84,8 +85,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     );
 
     // Transform to Listing type
+    const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
     const transformedListings: CartListing[] = listingsData.map(listing => {
       const seller = profileMap.get(listing.user_id);
+      const lastSignIn = seller?.last_sign_in_at ? new Date(seller.last_sign_in_at).getTime() : now;
       return {
         id: listing.id,
         title: listing.title,
@@ -106,6 +110,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         createdAt: new Date(listing.created_at),
         status: listing.status,
         isPaused: seller?.pause_selling || false,
+        isInactive: (now - lastSignIn) >= TEN_DAYS_MS,
       };
     });
 
