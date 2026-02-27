@@ -9,6 +9,7 @@ import tapToExpandGif from '@/assets/onboarding/tap-to-expand.gif';
 import swipeLeftPass from '@/assets/onboarding/swipe-left-pass.svg';
 import swipeUpCart from '@/assets/onboarding/swipe-up-cart.svg';
 import swipeRightWishlist from '@/assets/onboarding/swipe-right-wishlist.svg';
+import cartSwipeVideo from '@/assets/onboarding/cart-swipe-actions.mov';
 // Preload all onboarding assets immediately on module load
 const onboardingAssets = [tapToExpandGif, swipeLeftPass, swipeUpCart, swipeRightWishlist];
 preloadImages(onboardingAssets);
@@ -20,7 +21,8 @@ interface OnboardingCarouselProps {
 
 interface Slide {
   image?: string;
-  text: string;
+  video?: string;
+  text: string | string[];
   alt: string;
   isGif?: boolean;
   imageOffset?: string;
@@ -61,6 +63,11 @@ const slides: Slide[] = [
       route: '/cart',
       targetSelector: 'cart-wishlist-button',
     },
+  },
+  {
+    video: cartSwipeVideo,
+    text: ['Slide 👉 to remove from Cart', 'Slide 👈 to move to Wishlist'],
+    alt: 'Cart swipe actions',
   },
 ];
 
@@ -239,10 +246,34 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
               </div>
             )}
 
+            {/* Video container */}
+            {!isSpotlightSlide && slide.video && (
+              <div className={`flex items-center justify-center w-[min(92vw,52vh,400px)] ${slide.imageOffset || ''}`}>
+                <video
+                  src={slide.video}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full rounded-xl object-contain"
+                />
+              </div>
+            )}
+
             {/* Text */}
-            <p className={`text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg ${!isSpotlightSlide && slide.image ? '-mt-6 max-[375px]:-mt-4' : ''}`}>
-              {slide.text}
-            </p>
+            {Array.isArray(slide.text) ? (
+              <div className={`flex flex-col items-center gap-1 ${!isSpotlightSlide && (slide.image || slide.video) ? '-mt-6 max-[375px]:-mt-4' : ''}`}>
+                {slide.text.map((line, i) => (
+                  <p key={i} className="text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg">
+                    {line}
+                  </p>
+                ))}
+              </div>
+            ) : (
+              <p className={`text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg ${!isSpotlightSlide && (slide.image || slide.video) ? '-mt-6 max-[375px]:-mt-4' : ''}`}>
+                {slide.text}
+              </p>
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
