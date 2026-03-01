@@ -85,7 +85,7 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
         {/* Receipt card */}
         <div className="relative">
           {/* Jagged top edge - visual only, excluded from download */}
-          <svg className="w-full block" height="12" preserveAspectRatio="none" viewBox="0 0 360 12">
+          <svg className="w-full block" height="12" preserveAspectRatio="none" viewBox="0 0 360 12" style={{ display: 'block', marginBottom: '-1px' }}>
             <path d="M0,12 L0,6 L6,0 L12,6 L18,0 L24,6 L30,0 L36,6 L42,0 L48,6 L54,0 L60,6 L66,0 L72,6 L78,0 L84,6 L90,0 L96,6 L102,0 L108,6 L114,0 L120,6 L126,0 L132,6 L138,0 L144,6 L150,0 L156,6 L162,0 L168,6 L174,0 L180,6 L186,0 L192,6 L198,0 L204,6 L210,0 L216,6 L222,0 L228,6 L234,0 L240,6 L246,0 L252,6 L258,0 L264,6 L270,0 L276,6 L282,0 L288,6 L294,0 L300,6 L306,0 L312,6 L318,0 L324,6 L330,0 L336,6 L342,0 L348,6 L354,0 L360,6 L360,12 Z" fill="white"/>
           </svg>
 
@@ -171,7 +171,7 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
           </div>
 
           {/* Jagged bottom edge - visual only, excluded from download */}
-          <svg className="w-full block" height="12" preserveAspectRatio="none" viewBox="0 0 360 12">
+          <svg className="w-full block -mt-px" height="12" preserveAspectRatio="none" viewBox="0 0 360 12" style={{ display: 'block', margin: '-1px auto 0' }}>
             <path d="M0,0 L0,6 L6,12 L12,6 L18,12 L24,6 L30,12 L36,6 L42,12 L48,6 L54,12 L60,6 L66,12 L72,6 L78,12 L84,6 L90,12 L96,6 L102,12 L108,6 L114,12 L120,6 L126,12 L132,6 L138,12 L144,6 L150,12 L156,6 L162,12 L168,6 L174,12 L180,6 L186,12 L192,6 L198,12 L204,6 L210,12 L216,6 L222,12 L228,6 L234,12 L240,6 L246,12 L252,6 L258,12 L264,6 L270,12 L276,6 L282,12 L288,6 L294,12 L300,6 L306,12 L312,6 L318,12 L324,6 L330,12 L336,6 L342,12 L348,6 L354,12 L360,6 L360,0 Z" fill="white"/>
           </svg>
 
