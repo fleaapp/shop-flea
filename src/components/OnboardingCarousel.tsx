@@ -9,10 +9,19 @@ import tapToExpandGif from '@/assets/onboarding/tap-to-expand.gif';
 import swipeLeftPass from '@/assets/onboarding/swipe-left-pass.svg';
 import swipeUpCart from '@/assets/onboarding/swipe-up-cart.svg';
 import swipeRightWishlist from '@/assets/onboarding/swipe-right-wishlist.svg';
-import cartSwipeGif from '@/assets/onboarding/cart-swipe-actions.gif';
+import cartSwipeVideo from '@/assets/onboarding/cart-swipe-actions.mov';
 // Preload all onboarding assets immediately on module load
 const onboardingAssets = [tapToExpandGif, swipeLeftPass, swipeUpCart, swipeRightWishlist];
 preloadImages(onboardingAssets);
+
+// Preload video so it's cached before slide 6
+const preloadVideo = (src: string) => {
+  const video = document.createElement('video');
+  video.preload = 'auto';
+  video.src = src;
+  video.load();
+};
+preloadVideo(cartSwipeVideo);
 
 interface OnboardingCarouselProps {
   open: boolean;
@@ -65,10 +74,9 @@ const slides: Slide[] = [
     },
   },
   {
-    image: cartSwipeGif,
+    video: cartSwipeVideo,
     text: ['Slide 👉 to remove from Cart', 'Slide 👈 to move to Wishlist'],
     alt: 'Cart swipe actions',
-    isGif: true,
   },
 ];
 
@@ -254,12 +262,20 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
             {!isSpotlightSlide && slide.video && (
               <div className={`flex items-center justify-center w-[min(72vw,40vh,300px)] mt-8 ${slide.imageOffset || ''}`}>
                 <video
+                  key={slide.video}
                   src={slide.video}
                   autoPlay
                   loop
                   muted
                   playsInline
+                  preload="auto"
+                  onEnded={(e) => {
+                    const vid = e.currentTarget;
+                    vid.currentTime = 0;
+                    vid.play();
+                  }}
                   className="w-full rounded-xl object-contain"
+                  style={{ mixBlendMode: 'screen' }}
                 />
               </div>
             )}
