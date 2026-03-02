@@ -11,7 +11,7 @@ const faqItems = [
     questions: [
       {
         q: 'How do I buy an item?',
-        a: 'Browse listings by swiping — swipe right to add to your Wishlist, or swipe up to add straight to your Cart. You can also tap a listing to view details and add to cart from there.',
+        a: 'Browse listings by swiping - swipe right to add to your Wishlist, or swipe up to add straight to your Cart. You can also tap a listing to view details and add to cart from there.',
       },
       {
         q: 'Where do I find my Wishlist?',
@@ -19,19 +19,19 @@ const faqItems = [
       },
       {
         q: 'How do I remove an item from my Cart?',
-        a: 'Swipe left on an item to remove it completely — it\'ll go back into the card stack for browsing. Swipe right to move it to your Wishlist instead.',
+        a: 'Swipe left on an item to remove it completely - it\'ll go back into the card stack for browsing. Swipe right to move it to your Wishlist instead.',
       },
       {
         q: 'How do I pay for my order?',
-        a: 'At checkout, you\'ll pay via the seller\'s connected payment method (Stripe or PayPal). Payments go directly to the seller — Flea does not hold your funds.',
+        a: 'At checkout, you\'ll pay via the seller\'s connected payment method. Payments go directly to the seller - Flea does not hold your funds.',
       },
       {
         q: 'What fees do I pay as a buyer?',
-        a: 'A small payment processing fee is added at checkout: 2% for Stripe payments or 3% for PayPal payments. Shipping costs are set by the seller.',
+        a: 'A small payment processing fee is added at checkout. Shipping costs are set by the seller.',
       },
       {
-        q: 'What happens if my order doesn\'t arrive?',
-        a: 'First, message the seller directly through the app to try and resolve it. If that doesn\'t work, you can request a refund and open a dispute through whichever payment provider was used (Stripe or PayPal) via their dashboard.',
+        q: 'Can I get a refund?',
+        a: 'If there\'s an issue with your order, start by messaging the seller directly through the app. If you can\'t resolve it, you can request a refund and open a dispute through whichever payment provider was used via their dashboard.',
       },
     ],
   },
@@ -40,19 +40,19 @@ const faqItems = [
     questions: [
       {
         q: 'How do I list an item for sale?',
-        a: 'Tap the "+" button on your profile page to create a listing. Add photos, set a title, price, category, size, condition, and description. You\'ll need to connect either Stripe or PayPal before you can list.',
+        a: 'Tap the "+" button on your profile page to create a listing. Add photos, set a title, price, category, size, condition, and description. You\'ll need to connect a payment method before you can list.',
       },
       {
         q: 'What fees do I pay as a seller?',
-        a: 'Flea charges a 7% platform fee, deducted from your item\'s total sale price including shipping. This prevents the fee being avoided by inflating shipping costs. Payment processing fees are covered by the buyer. If you use Stripe, there\'s also an optional 1.5% fee for instant payouts.',
+        a: 'Flea charges a 7% platform fee, deducted from your item\'s total sale price including shipping. This prevents the fee being avoided by inflating shipping costs. Payment processing fees are covered by the buyer.',
       },
       {
         q: 'How do I get paid?',
-        a: 'Payments go directly to your connected Stripe or PayPal account. You can access your payouts and transaction history through your payment provider\'s dashboard.',
+        a: 'Payments go directly to your connected payment account. You can access your payouts and transaction history through your payment provider\'s dashboard.',
       },
       {
         q: 'What does "Pause Selling" do?',
-        a: 'Pausing selling temporarily hides all your active listings from buyers. Your listings aren\'t deleted — they\'ll reappear when you resume. Find this toggle in Settings.',
+        a: 'Pausing selling temporarily hides all your active listings from buyers. Your listings aren\'t deleted - they\'ll reappear when you resume. Find this toggle in Settings.',
       },
       {
         q: 'How long do I have to ship an order?',
@@ -65,11 +65,11 @@ const faqItems = [
     questions: [
       {
         q: 'How do I filter listings?',
-        a: 'Use the filter icon on the home screen to filter by gender/fit, category, size, colour, condition, style, and price range. You can also save default filter preferences in Settings → Filter Preferences.',
+        a: 'Use the filter icon on the home screen to filter by gender/fit, category, size, colour, condition, style, and price range. You can also save default filter preferences in Settings.',
       },
       {
         q: 'What if I want to retrieve an item I passed on?',
-        a: 'You can either press the undo button in the top right of the home screen, or go to Settings → Refresh Passed Listings to bring back all previously passed items.',
+        a: 'You can either press the undo button in the top right of the home screen, or go to Settings and tap Refresh Passed Listings to bring back all previously passed items.',
       },
       {
         q: 'Can I search for specific items?',
@@ -91,19 +91,15 @@ const faqItems = [
     ],
   },
   {
-    category: '💳 Payments & Stripe',
+    category: '💳 Payments',
     questions: [
       {
         q: 'How do I connect a payment method to sell?',
-        a: 'Go to Settings and find the Payment Methods section. Tap "Connect Stripe" or "Connect PayPal" to set up your seller account. You\'ll be guided through the onboarding process.',
+        a: 'Go to Settings and find the Payment Methods section. You\'ll be guided through the onboarding process to connect your preferred payment provider.',
       },
       {
-        q: 'What is Stripe Connect?',
-        a: 'Stripe Connect is the payment system Flea uses to send payments directly from buyers to sellers. It\'s secure, widely used, and handles all payment processing.',
-      },
-      {
-        q: 'My Stripe status says "Verifying" — what does that mean?',
-        a: 'This means Stripe is still reviewing your account details. You can still create listings while verification is pending. Once approved, your status will update to "Active".',
+        q: 'My payment account status says "Verifying" - what does that mean?',
+        a: 'This means your payment provider is still reviewing your account details. You can still create listings while verification is pending. Once approved, your status will update to "Active".',
       },
     ],
   },
@@ -112,7 +108,7 @@ const faqItems = [
     questions: [
       {
         q: 'How do I change my email or password?',
-        a: 'Go to Settings → Edit Profile. You\'ll find options to change your email and password. Email changes require verification, and password changes require re-authentication.',
+        a: 'Go to Settings then Edit Profile. You\'ll find options to change your email and password. Email changes require verification, and password changes require re-authentication.',
       },
       {
         q: 'Can I delete my account?',
