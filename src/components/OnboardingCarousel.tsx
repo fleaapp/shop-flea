@@ -9,7 +9,7 @@ import tapToExpandGif from '@/assets/onboarding/tap-to-expand.gif';
 import swipeLeftPass from '@/assets/onboarding/swipe-left-pass.svg';
 import swipeUpCart from '@/assets/onboarding/swipe-up-cart.svg';
 import swipeRightWishlist from '@/assets/onboarding/swipe-right-wishlist.svg';
-import cartSwipeVideo from '@/assets/onboarding/cart-swipe-actions.mov';
+import cartSwipeGif from '@/assets/onboarding/cart-swipe-actions.gif';
 // Preload all onboarding assets immediately on module load
 const onboardingAssets = [tapToExpandGif, swipeLeftPass, swipeUpCart, swipeRightWishlist];
 preloadImages(onboardingAssets);
@@ -65,9 +65,10 @@ const slides: Slide[] = [
     },
   },
   {
-    video: cartSwipeVideo,
+    image: cartSwipeGif,
     text: ['Slide 👉 to remove from Cart', 'Slide 👈 to move to Wishlist'],
     alt: 'Cart swipe actions',
+    isGif: true,
   },
 ];
 

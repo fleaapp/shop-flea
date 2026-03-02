@@ -84,12 +84,11 @@ import avatarCoin from '@/assets/avatars/coin.png';
 import avatarDartboard from '@/assets/avatars/dartboard.png';
 import avatarPlate from '@/assets/avatars/plate.png';
 import avatarGolfBall from '@/assets/avatars/golf-ball.png';
-import avatarYarn from '@/assets/avatars/yarn.png';
 
 const avatarAssets = [
   avatarButton, avatar8ball, avatarCd, avatarVinyl, avatarBowling,
   avatarWatch, avatarPokerChip, avatarPearl, avatarMarble, avatarDiscoBall,
-  avatarCoin, avatarDartboard, avatarPlate, avatarGolfBall, avatarYarn,
+  avatarCoin, avatarDartboard, avatarPlate, avatarGolfBall,
 ];
 
 // Fire-and-forget preload all static assets
