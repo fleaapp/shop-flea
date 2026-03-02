@@ -12,7 +12,6 @@ import avatarCoin from '@/assets/avatars/coin.png';
 import avatarDartboard from '@/assets/avatars/dartboard.png';
 import avatarPlate from '@/assets/avatars/plate.png';
 import avatarGolfBall from '@/assets/avatars/golf-ball.png';
-import avatarYarn from '@/assets/avatars/yarn.png';
 
 const DEFAULT_AVATARS = [
   avatarButton,
@@ -29,7 +28,6 @@ const DEFAULT_AVATARS = [
   avatarDartboard,
   avatarPlate,
   avatarGolfBall,
-  avatarYarn,
 ];
 
 /**
