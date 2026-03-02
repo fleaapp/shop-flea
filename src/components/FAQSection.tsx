@@ -14,6 +14,14 @@ const faqItems = [
         a: 'Browse listings by swiping — swipe right to add to your Wishlist, or swipe up to add straight to your Cart. You can also tap a listing to view details and add to cart from there.',
       },
       {
+        q: 'Where do I find my Wishlist?',
+        a: 'Tap the heart icon in the bottom navigation bar to view your Wishlist. This is where all the items you\'ve swiped right on are saved.',
+      },
+      {
+        q: 'How do I remove an item from my Cart?',
+        a: 'Swipe left on an item to remove it completely — it\'ll go back into the card stack for browsing. Swipe right to move it to your Wishlist instead.',
+      },
+      {
         q: 'How do I pay for my order?',
         a: 'At checkout, you\'ll pay via the seller\'s connected payment method (Stripe or PayPal). Payments go directly to the seller — Flea does not hold your funds.',
       },
@@ -22,12 +30,8 @@ const faqItems = [
         a: 'A small payment processing fee is added at checkout: 2% for Stripe payments or 3% for PayPal payments. Shipping costs are set by the seller.',
       },
       {
-        q: 'Can I cancel or get a refund?',
-        a: 'Since payments go directly to sellers, refunds and disputes are handled through the payment provider (Stripe or PayPal). Contact the seller first via the app, and if unresolved, open a dispute through your payment provider\'s dashboard.',
-      },
-      {
-        q: 'How does shipping work?',
-        a: 'Sellers set their own shipping prices. Some sellers use tiered shipping based on item weight/size. Shipping costs are shown at checkout before you pay.',
+        q: 'What happens if my order doesn\'t arrive?',
+        a: 'First, message the seller directly through the app to try and resolve it. If that doesn\'t work, you can request a refund and open a dispute through whichever payment provider was used (Stripe or PayPal) via their dashboard.',
       },
     ],
   },
@@ -36,15 +40,15 @@ const faqItems = [
     questions: [
       {
         q: 'How do I list an item for sale?',
-        a: 'Tap the "+" button in the bottom navigation to create a listing. Add photos, set a title, price, category, size, condition, and description. You\'ll need a connected payment method to list.',
+        a: 'Tap the "+" button on your profile page to create a listing. Add photos, set a title, price, category, size, condition, and description. You\'ll need to connect either Stripe or PayPal before you can list.',
       },
       {
         q: 'What fees do I pay as a seller?',
-        a: 'Flea charges a 7% platform fee, which is deducted from your item\'s sale price. Payment processing fees are covered by the buyer.',
+        a: 'Flea charges a 7% platform fee, deducted from your item\'s total sale price including shipping. This prevents the fee being avoided by inflating shipping costs. Payment processing fees are covered by the buyer. If you use Stripe, there\'s also an optional 1.5% fee for instant payouts.',
       },
       {
         q: 'How do I get paid?',
-        a: 'Payments go directly to your connected Stripe or PayPal account. You can access your payouts and transaction history through your payment provider\'s dashboard. Instant payouts are available via Stripe for a 1.5% fee.',
+        a: 'Payments go directly to your connected Stripe or PayPal account. You can access your payouts and transaction history through your payment provider\'s dashboard.',
       },
       {
         q: 'What does "Pause Selling" do?',
@@ -64,8 +68,8 @@ const faqItems = [
         a: 'Use the filter icon on the home screen to filter by gender/fit, category, size, colour, condition, style, and price range. You can also save default filter preferences in Settings → Filter Preferences.',
       },
       {
-        q: 'What does swiping left do?',
-        a: 'Swiping left passes on a listing. You won\'t see it again unless you refresh your passed listings in Settings → Refresh Passed Listings.',
+        q: 'What if I want to retrieve an item I passed on?',
+        a: 'You can either press the undo button in the top right of the home screen, or go to Settings → Refresh Passed Listings to bring back all previously passed items.',
       },
       {
         q: 'Can I search for specific items?',
@@ -74,11 +78,24 @@ const faqItems = [
     ],
   },
   {
+    category: '📦 Shipping',
+    questions: [
+      {
+        q: 'How does shipping work?',
+        a: 'Sellers set their own shipping prices. Shipping costs are shown at checkout before you pay.',
+      },
+      {
+        q: 'How does tiered shipping work?',
+        a: 'Sellers can enable tiered shipping in their settings. When turned on, all of a seller\'s items share the same shipping price tiers. This means when you buy multiple items from the same seller, you get cheaper combined shipping.',
+      },
+    ],
+  },
+  {
     category: '💳 Payments & Stripe',
     questions: [
       {
         q: 'How do I connect a payment method to sell?',
-        a: 'Go to Settings and find the Payment Methods section. Tap "Connect Stripe" to set up your seller account. You\'ll be guided through Stripe\'s onboarding process.',
+        a: 'Go to Settings and find the Payment Methods section. Tap "Connect Stripe" or "Connect PayPal" to set up your seller account. You\'ll be guided through the onboarding process.',
       },
       {
         q: 'What is Stripe Connect?',
@@ -112,7 +129,6 @@ const faqItems = [
     ],
   },
 ];
-
 const FAQSection = () => {
   return (
     <div className="space-y-4 pb-2">
