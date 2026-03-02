@@ -21,7 +21,7 @@ const BottomNav = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { badgeCount: activityBadgeCount } = useNotifications();
-  const { buyerOrders, sellerOrders } = useOrders();
+  const { buyerOrders, sellerOrderGroups } = useOrders();
   const { total: supportUnread } = useUnreadSupport();
   const { total: orderMessagesUnread } = useUnreadOrderMessages();
 
@@ -31,10 +31,10 @@ const BottomNav = () => {
     return count || undefined;
   }, [buyerOrders, orderMessagesUnread]);
 
-  // Sales badge: awaiting + shipped for seller
+  // Sales badge: awaiting + shipped order groups for seller (matches Notifications page)
   const salesBadgeCount = useMemo(() => {
-    return sellerOrders.filter(o => o.status === 'awaiting' || o.status === 'shipped').length;
-  }, [sellerOrders]);
+    return sellerOrderGroups.filter(g => g.status === 'awaiting' || g.status === 'shipped').length;
+  }, [sellerOrderGroups]);
 
   // Alerts badge: activity + sales combined
   const alertsBadge = useMemo(() => {
