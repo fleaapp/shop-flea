@@ -84,9 +84,9 @@ const ShippingStatusTracker = ({
                 {/* Circle indicator */}
                 <div
                   className={cn(
-                    'flex h-8 w-8 items-center justify-center rounded-full text-sm transition-colors duration-500',
+                    'flex h-8 w-8 items-center justify-center rounded-full text-sm transition-colors duration-500 shrink-0',
                     isCompleted
-                      ? 'bg-[hsl(var(--mint))]'
+                      ? 'bg-primary'
                       : 'bg-muted'
                   )}
                 >
@@ -96,9 +96,9 @@ const ShippingStatusTracker = ({
                 {!isLast && (
                   <div
                     className={cn(
-                      'w-0.5 flex-1 min-h-[24px] transition-colors duration-500',
+                      'w-1 flex-1 min-h-[24px] rounded-full transition-colors duration-500',
                       isCompleted && nextCompleted
-                        ? 'bg-[hsl(var(--mint))]'
+                        ? 'bg-primary'
                         : 'bg-border'
                     )}
                   />
@@ -106,10 +106,10 @@ const ShippingStatusTracker = ({
               </div>
 
               {/* Content column */}
-              <div className={cn('pb-4', isLast && 'pb-0')}>
+              <div className={cn('pb-4 pt-1', isLast && 'pb-0')}>
                 <p
                   className={cn(
-                    'text-sm leading-8 transition-all duration-300',
+                    'text-sm leading-5 transition-all duration-300',
                     isCompleted
                       ? isCurrent
                         ? 'font-semibold text-foreground'
@@ -120,7 +120,7 @@ const ShippingStatusTracker = ({
                   {step.label}
                 </p>
                 {isCompleted && step.timestamp && (
-                  <p className="text-xs text-muted-foreground animate-in fade-in duration-500">
+                  <p className="text-xs text-muted-foreground mt-0.5 animate-in fade-in duration-500">
                     {formatTimestamp(step.timestamp)}
                   </p>
                 )}
