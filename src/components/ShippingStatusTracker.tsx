@@ -78,7 +78,7 @@ const ShippingStatusTracker = ({
           const nextCompleted = !isLast && completedKeys.has(steps[i + 1].key);
 
           return (
-            <div key={step.key} className="flex gap-3">
+            <div key={step.key} className="flex gap-3 items-start">
               {/* Timeline column */}
               <div className="flex flex-col items-center">
                 {/* Circle indicator */}
@@ -106,7 +106,7 @@ const ShippingStatusTracker = ({
               </div>
 
               {/* Content column */}
-              <div className={cn('pb-4 pt-1', isLast && 'pb-0')}>
+              <div className={cn('pb-4', isLast && 'pb-0')}>
                 <p
                   className={cn(
                     'text-sm leading-5 transition-all duration-300',
