@@ -84,7 +84,7 @@ const ShippingStatusTracker = ({
                 {/* Circle indicator */}
                 <div
                   className={cn(
-                    'flex h-8 w-8 items-center justify-center rounded-full text-sm transition-colors duration-500 shrink-0',
+                    'flex h-8 w-8 items-center justify-center rounded-full text-[15px] transition-colors duration-500 shrink-0',
                     isCompleted
                       ? 'bg-primary'
                       : 'bg-muted'
@@ -96,7 +96,7 @@ const ShippingStatusTracker = ({
                 {!isLast && (
                   <div
                     className={cn(
-                      'w-1 flex-1 min-h-[24px] rounded-full transition-colors duration-500',
+                      'w-1 flex-1 min-h-[24px] transition-colors duration-500',
                       isCompleted && nextCompleted
                         ? 'bg-primary'
                         : 'bg-border'
