@@ -12,6 +12,7 @@ import WriteReviewDrawer from '@/components/WriteReviewDrawer';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import OrderReceiptDialog from '@/components/OrderReceiptDialog';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
+import ShippingStatusTracker from '@/components/ShippingStatusTracker';
 
 interface SalesDetailsSheetProps {
   orders: Order[] | null;
@@ -274,7 +275,14 @@ const SalesDetailsSheet = ({
               </div>
             </div>
 
-            {/* Mark as shipped - between tracking and payment */}
+            {/* Shipping Status Tracker - visible once shipped */}
+            {(primaryOrder.status === 'shipped' || primaryOrder.status === 'delivered') && (
+              <ShippingStatusTracker
+                shippedAt={primaryOrder.shipped_at}
+                deliveredAt={primaryOrder.delivered_at}
+                status={primaryOrder.status}
+              />
+            )}
             {primaryOrder.status === 'awaiting' && (
               <div className="flex justify-center">
                 <Button

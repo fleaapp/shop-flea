@@ -12,6 +12,7 @@ import WriteReviewDrawer from '@/components/WriteReviewDrawer';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import OrderReceiptDialog from '@/components/OrderReceiptDialog';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
+import ShippingStatusTracker from '@/components/ShippingStatusTracker';
 
 interface OrderDetailsSheetProps {
   orders: Order[] | null;
@@ -209,7 +210,12 @@ const OrderDetailsSheet = ({
               </div>
             </div>
 
-            {/* Actions */}
+            {/* Shipping Status Tracker */}
+            <ShippingStatusTracker
+              shippedAt={primaryOrder.shipped_at}
+              deliveredAt={primaryOrder.delivered_at}
+              status={primaryOrder.status}
+            />
             <div className="flex flex-col items-center space-y-3 pt-4">
               {primaryOrder.status === 'shipped' && (
                 <Button
