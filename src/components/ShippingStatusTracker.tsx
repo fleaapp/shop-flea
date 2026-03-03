@@ -106,7 +106,7 @@ const ShippingStatusTracker = ({
               </div>
 
               {/* Content column */}
-              <div className={cn('pb-4 -mt-1', isLast && 'pb-0')}>
+              <div className={cn('pb-4', isLast && 'pb-0')}>
                 <p
                   className={cn(
                     'text-sm leading-5 transition-all duration-300',
