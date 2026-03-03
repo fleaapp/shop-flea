@@ -212,6 +212,7 @@ const OrderDetailsSheet = ({
 
             {/* Shipping Status Tracker */}
             <ShippingStatusTracker
+              createdAt={primaryOrder.created_at}
               shippedAt={primaryOrder.shipped_at}
               deliveredAt={primaryOrder.delivered_at}
               status={primaryOrder.status}
