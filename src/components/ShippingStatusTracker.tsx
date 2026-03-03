@@ -9,6 +9,7 @@ export interface ShippingStep {
 }
 
 interface ShippingStatusTrackerProps {
+  createdAt?: string | null;
   shippedAt: string | null;
   inTransitAt?: string | null;
   deliveredAt: string | null;
@@ -21,6 +22,7 @@ const formatTimestamp = (ts: string) => {
 };
 
 const ShippingStatusTracker = ({
+  createdAt,
   shippedAt,
   inTransitAt,
   deliveredAt,
@@ -30,16 +32,15 @@ const ShippingStatusTracker = ({
   const steps: ShippingStep[] = [
     {
       key: 'shipped',
-      label: 'Shipped',
-      icon: '📦',
-      timestamp: shippedAt,
+      label: 'Purchased',
+      icon: '🛍️',
+      timestamp: createdAt || shippedAt,
     },
     {
       key: 'in_transit',
-      label: 'In Transit',
-      icon: '🚚',
-      // For now, auto-set to shipped time if shipped; future: carrier API
-      timestamp: inTransitAt ?? shippedAt,
+      label: 'Shipped',
+      icon: '📦',
+      timestamp: shippedAt,
     },
     {
       key: 'delivered',
@@ -50,9 +51,10 @@ const ShippingStatusTracker = ({
   ];
 
   // Determine which steps are completed
+  // "purchased" is always completed once the order exists
   const completedKeys = new Set<string>();
-  if (shippedAt) completedKeys.add('shipped');
-  if (shippedAt) completedKeys.add('in_transit'); // auto-active after shipped
+  completedKeys.add('shipped'); // purchased step always done
+  if (shippedAt) completedKeys.add('in_transit');
   if (deliveredAt) completedKeys.add('delivered');
 
   // Current step is the last completed one
@@ -61,7 +63,7 @@ const ShippingStatusTracker = ({
       ? 'delivered'
       : status === 'shipped'
         ? 'in_transit'
-        : null;
+        : 'shipped';
 
   return (
     <div className="rounded-xl bg-card overflow-hidden">
@@ -78,7 +80,7 @@ const ShippingStatusTracker = ({
           const nextCompleted = !isLast && completedKeys.has(steps[i + 1].key);
 
           return (
-            <div key={step.key} className="flex gap-3 items-start">
+             <div key={step.key} className="flex gap-3 items-start">
               {/* Timeline column */}
               <div className="flex flex-col items-center">
                 {/* Circle indicator */}
@@ -107,23 +109,28 @@ const ShippingStatusTracker = ({
 
               {/* Content column */}
               <div className={cn('pb-4', isLast && 'pb-0')}>
-                <p
-                  className={cn(
-                    'text-sm leading-5 transition-all duration-300',
-                    isCompleted
-                      ? isCurrent
-                        ? 'font-semibold text-foreground'
-                        : 'font-medium text-foreground'
-                      : 'font-medium text-muted-foreground/50'
-                  )}
-                >
-                  {step.label}
-                </p>
-                {isCompleted && step.timestamp && (
-                  <p className="text-xs text-muted-foreground mt-0.5 animate-in fade-in duration-500">
-                    {formatTimestamp(step.timestamp)}
+                <div className={cn(
+                  'flex flex-col justify-center',
+                  !(isCompleted && step.timestamp) && 'min-h-[32px]'
+                )}>
+                  <p
+                    className={cn(
+                      'text-sm leading-5 transition-all duration-300',
+                      isCompleted
+                        ? isCurrent
+                          ? 'font-semibold text-foreground'
+                          : 'font-medium text-foreground'
+                        : 'font-medium text-muted-foreground/50'
+                    )}
+                  >
+                    {step.label}
                   </p>
-                )}
+                  {isCompleted && step.timestamp && (
+                    <p className="text-xs text-muted-foreground mt-0.5 animate-in fade-in duration-500">
+                      {formatTimestamp(step.timestamp)}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           );
