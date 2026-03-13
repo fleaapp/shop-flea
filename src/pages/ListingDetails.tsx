@@ -37,6 +37,7 @@ import { useOrders, OrderGroup } from '@/hooks/useOrders';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
 import OrderSuccessDialog from '@/components/OrderSuccessDialog';
 import OrderReceiptDialog from '@/components/OrderReceiptDialog';
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
 
 interface DbListing {
   id: string;
