@@ -314,7 +314,28 @@ const ListingDetails = () => {
       toast.error('This item has already been sold');
       return;
     }
-    const success = await addFavorite(listing.id);
+
+    const success = await addFavorite(listing.id, {
+      id: listing.id,
+      title: listing.title,
+      price: Number(listing.price ?? 0),
+      shippingPrice: Number(listing.shipping_price ?? 0),
+      description: listing.description || '',
+      image: listing.images?.[0] || '',
+      images: listing.images || [],
+      category: listing.category || '',
+      size: listing.size || '',
+      brand: listing.brand || '',
+      tags: listing.tags || [],
+      sellerId: listing.user_id,
+      sellerName: seller?.username || 'Unknown Seller',
+      sellerAvatar,
+      location: sellerLocation,
+      createdAt: new Date(),
+      condition: (listing.condition as Listing['condition']) || 'good',
+      status: listing.status || listingStatus,
+    });
+
     if (success) {
       toast.success('Added to wishlist!');
       handleClose();
