@@ -5,6 +5,7 @@ import { preloadImages } from '@/utils/preloadAssets';
 import { getQuerySizesFromKeys, listingSizeKey, normalizeSizeKeys } from '@/utils/sizeKeys';
 import { filterBySearch } from '@/utils/searchUtils';
 import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
 
 export interface DbListing {
   id: string;
