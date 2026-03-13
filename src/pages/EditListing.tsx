@@ -638,9 +638,9 @@ const EditListing = () => {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete listing?</AlertDialogTitle>
+                <AlertDialogTitle>Remove listing?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete your listing.
+                  This will hide your listing and mark it as removed.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
