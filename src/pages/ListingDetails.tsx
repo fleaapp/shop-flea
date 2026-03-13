@@ -161,6 +161,45 @@ const ListingDetails = () => {
         setLoading(false);
         return true;
       };
+
+      const hydrateFromSnapshot = () => {
+        if (!user || !id) return false;
+
+        const snapshot = loadSavedListingSnapshot(user.id, id);
+        if (!snapshot) return false;
+
+        setListing({
+          id: snapshot.listing.id,
+          title: snapshot.listing.title || 'Removed listing',
+          description: snapshot.listing.description ?? '',
+          brand: snapshot.listing.brand || '',
+          size: snapshot.listing.size || '',
+          price: Number(snapshot.listing.price ?? 0),
+          shipping_price: Number(snapshot.listing.shipping_price ?? 0),
+          images: snapshot.listing.images ?? [],
+          tags: snapshot.listing.tags ?? [],
+          condition: snapshot.listing.condition || 'good',
+          colour: snapshot.listing.colour ?? null,
+          style: snapshot.listing.style ?? null,
+          gender: snapshot.listing.gender ?? null,
+          category: snapshot.listing.category || '',
+          user_id: snapshot.listing.user_id || 'unknown',
+          status: 'removed',
+        });
+
+        setSeller(snapshot.seller
+          ? {
+              username: snapshot.seller.username || 'Unknown Seller',
+              avatar_url: snapshot.seller.avatar_url,
+              location: snapshot.seller.location,
+              country_code: null,
+            }
+          : null);
+
+        setListingStatus('removed');
+        setLoading(false);
+        return true;
+      };
       
       // First fetch the listing
       const { data: listingData, error: listingError } = await supabase
@@ -170,7 +209,7 @@ const ListingDetails = () => {
         .maybeSingle();
       
       if (listingError || !listingData) {
-        if (hydrateFromState('removed')) {
+        if (hydrateFromState('removed') || hydrateFromSnapshot()) {
           return;
         }
         console.error('Error fetching listing:', listingError);
