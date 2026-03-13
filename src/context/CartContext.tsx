@@ -74,7 +74,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     const userIds = [...new Set(listingsData.map(l => l.user_id))];
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at')
+      .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at, status')
       .in('user_id', userIds);
 
     const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
@@ -85,9 +85,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     );
 
     // Transform to Listing type
+    // Filter out listings from deleted users (no profile) or blocked users
+    const validListingsData = listingsData.filter(listing => {
+      const profile = profileMap.get(listing.user_id);
+      return profile && profile.status !== 'blocked';
+    });
+
     const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
     const now = Date.now();
-    const transformedListings: CartListing[] = listingsData.map(listing => {
+    const transformedListings: CartListing[] = validListingsData.map(listing => {
       const seller = profileMap.get(listing.user_id);
       const lastSignIn = seller?.last_sign_in_at ? new Date(seller.last_sign_in_at).getTime() : now;
       return {
