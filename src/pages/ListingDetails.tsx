@@ -831,7 +831,7 @@ const ListingDetails = () => {
           </AlertDialog>
           {/* Remove from Cart/Wishlist for removed listings */}
           <AlertDialog open={showRemoveFromBothDialog} onOpenChange={setShowRemoveFromBothDialog}>
-            <AlertDialogContent className="max-w-[300px] rounded-2xl px-8 py-6">
+            <AlertDialogContent className="max-w-[340px] rounded-2xl px-7 py-6">
               <AlertDialogHeader className="space-y-2">
                 <AlertDialogTitle className="text-base text-center">Remove this item?</AlertDialogTitle>
                 <AlertDialogDescription className="text-sm text-center text-balance leading-relaxed">
