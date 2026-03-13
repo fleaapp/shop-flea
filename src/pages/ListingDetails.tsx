@@ -79,9 +79,11 @@ const ListingDetails = () => {
   const [seller, setSeller] = useState<SellerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [listingStatus, setListingStatus] = useState<string>('active');
+  const [showRemoveFromBothDialog, setShowRemoveFromBothDialog] = useState(false);
   
   // Check if listing is sold - check both navigation state AND database status
   const isSold = location.state?.isSold || listingStatus === 'sold';
+  const isRemoved = listingStatus === 'removed' || listingStatus === 'deleted' || (listingStatus !== 'active' && listingStatus !== 'sold');
   // Check if we came from the favorites/wishlist page
   const fromWishlist = location.state?.fromWishlist || false;
 
