@@ -214,12 +214,12 @@ const Index = () => {
     setLastAction({ listingId, type: 'discard' });
   }, [addDiscarded, pendingExitId]);
 
-  const handleSwipeRight = useCallback(async (listingId: string) => {
+  const handleSwipeRight = useCallback(async (listing: DbListing) => {
     if (pendingExitId) return;
 
-    setPendingExitId(listingId);
-    await addFavorite(listingId);
-    setLastAction({ listingId, type: 'favorite' });
+    setPendingExitId(listing.id);
+    await addFavorite(listing.id, toDisplayListing(listing));
+    setLastAction({ listingId: listing.id, type: 'favorite' });
   }, [addFavorite, pendingExitId]);
 
   const handleSwipeUp = useCallback(async (listing: DbListing) => {
