@@ -7,10 +7,11 @@ import { getAvatarUrl } from '@/utils/optimizedImage';
 import { preloadImages } from '@/utils/preloadAssets';
 import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
-// Extended Listing type to include pause/inactive status
+// Extended Listing type to include pause/inactive/removed status
 interface CartListing extends Listing {
   isPaused?: boolean;
   isInactive?: boolean;
+  isRemoved?: boolean;
 }
 
 interface CartContextType {
