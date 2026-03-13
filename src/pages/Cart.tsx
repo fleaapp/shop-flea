@@ -353,7 +353,7 @@ const Cart = () => {
                         item={item}
                         isSelected={selectedItems.has(item.id)}
                         isLast={index === items.length - 1 && (allSold || allRemoved)}
-                        showSellerAvatar={index === 0 && !isRemovedGroup}
+                        showSellerAvatar={index === 0 && item.sellerId !== 'unknown'}
                         showCheckbox={sellersWithMultipleItems.has(groupKey) && item.status !== 'sold' && !item.isPaused && !item.isInactive && !item.isRemoved}
                         onToggleSelect={() => toggleSelect(item.id, groupKey)}
                         onSwipeLeft={() => handleSwipeLeft(item.id)}
