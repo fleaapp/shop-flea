@@ -856,7 +856,7 @@ const ListingDetails = () => {
                   }}
                   className="flex-1 bg-destructive hover:bg-destructive/90"
                 >
-                  Remove from 🛒 Cart and/or 💌 Wishlist
+                  Remove
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
