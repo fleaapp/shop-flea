@@ -94,12 +94,15 @@ const SellerProfile = () => {
     if (profileErrorWithLastSeen?.code === '42703') {
       const fallbackResult = await supabase
         .from('profiles')
-        .select('user_id, username, avatar_url, rating, pause_selling')
+        .select('user_id, username, avatar_url, rating, pause_selling, created_at, updated_at')
         .eq('user_id', sellerId)
         .maybeSingle();
 
       profileData = fallbackResult.data
-        ? { ...fallbackResult.data, last_sign_in_at: null }
+        ? {
+            ...fallbackResult.data,
+            last_sign_in_at: fallbackResult.data.updated_at || fallbackResult.data.created_at || null,
+          }
         : null;
       profileError = fallbackResult.error;
     }
