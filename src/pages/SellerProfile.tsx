@@ -84,7 +84,7 @@ const SellerProfile = () => {
     // Fetch seller profile, with fallback for backends missing last_sign_in_at
     const { data: profileDataWithLastSeen, error: profileErrorWithLastSeen } = await supabase
       .from('profiles')
-      .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at')
+      .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at, created_at, updated_at, status')
       .eq('user_id', sellerId)
       .maybeSingle();
 
