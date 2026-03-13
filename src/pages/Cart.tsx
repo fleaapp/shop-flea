@@ -90,12 +90,13 @@ const Cart = () => {
     setSelectedOrderGroup(null);
   };
 
-  // Use actual listing status from database including isPaused and isInactive
+  // Use actual listing status from database including isPaused, isInactive, and isRemoved
   const cartItemsWithStatus = cartItems.map((item) => ({
     ...item,
     status: item.status || 'active',
     isPaused: (item as any).isPaused || false,
     isInactive: (item as any).isInactive || false,
+    isRemoved: (item as any).isRemoved || item.status === 'removed',
   }));
 
   const toggleSelect = (id: string, sellerId: string) => {
