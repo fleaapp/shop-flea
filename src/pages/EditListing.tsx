@@ -644,18 +644,18 @@ const EditListing = () => {
                 <Trash2 className="h-5 w-5" />
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Remove listing?</AlertDialogTitle>
-                <AlertDialogDescription>
+            <AlertDialogContent className="max-w-[280px] rounded-2xl p-5">
+              <AlertDialogHeader className="space-y-2">
+                <AlertDialogTitle className="text-base text-center">Remove listing?</AlertDialogTitle>
+                <AlertDialogDescription className="text-sm text-center text-balance">
                   This will hide your listing and mark it as removed.
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogFooter className="flex-row gap-2 sm:flex-row">
+                <AlertDialogCancel className="flex-1 mt-0 h-9 rounded-lg text-sm">Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDelete}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  className="flex-1 h-9 rounded-lg text-sm bg-destructive text-white hover:bg-destructive/90"
                 >
                   Remove
                 </AlertDialogAction>
