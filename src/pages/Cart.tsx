@@ -90,12 +90,13 @@ const Cart = () => {
     setSelectedOrderGroup(null);
   };
 
-  // Use actual listing status from database including isPaused and isInactive
+  // Use actual listing status from database including isPaused, isInactive, and isRemoved
   const cartItemsWithStatus = cartItems.map((item) => ({
     ...item,
     status: item.status || 'active',
     isPaused: (item as any).isPaused || false,
     isInactive: (item as any).isInactive || false,
+    isRemoved: (item as any).isRemoved || item.status === 'removed',
   }));
 
   const toggleSelect = (id: string, sellerId: string) => {
@@ -122,13 +123,15 @@ const Cart = () => {
   };
 
   const handleCheckout = (itemIds: string[]) => {
-    // Filter out sold, paused, or inactive items
+    // Filter out sold, paused, inactive, or removed items
     const validItems = cartItems.filter((item) => {
       const itemWithStatus = item as any;
       return itemIds.includes(item.id) && 
              itemWithStatus.status !== 'sold' && 
+             itemWithStatus.status !== 'removed' &&
              !itemWithStatus.isPaused &&
-             !itemWithStatus.isInactive;
+             !itemWithStatus.isInactive &&
+             !itemWithStatus.isRemoved;
     });
     
     if (validItems.length === 0) {
@@ -157,20 +160,23 @@ const Cart = () => {
     toast.success('Moved to wishlist');
   };
 
-  // Group items by seller for combined checkout - moved before toggleSelect for proper usage
-  const itemsBySeller = cartItemsWithStatus.reduce((acc, item) => {
-    if (!acc[item.sellerId]) {
-      acc[item.sellerId] = [];
+  // Group items by seller for combined checkout
+  // Split removed items into separate groups so they get their own card
+  const itemsBySeller: Record<string, typeof cartItemsWithStatus> = {};
+  cartItemsWithStatus.forEach((item) => {
+    const groupKey = item.isRemoved ? `${item.sellerId}__removed__${item.id}` : item.sellerId;
+    if (!itemsBySeller[groupKey]) {
+      itemsBySeller[groupKey] = [];
     }
-    acc[item.sellerId].push(item);
-    return acc;
-  }, {} as Record<string, typeof cartItemsWithStatus>);
+    itemsBySeller[groupKey].push(item);
+  });
 
   // Check which sellers have multiple items (for checkbox visibility)
+  // Only count non-removed items for checkbox logic
   const sellersWithMultipleItems = new Set(
     Object.entries(itemsBySeller)
-      .filter(([_, items]) => items.filter(i => i.status !== 'sold' && !i.isPaused && !i.isInactive).length > 1)
-      .map(([sellerId]) => sellerId)
+      .filter(([key, items]) => !key.includes('__removed__') && items.filter(i => i.status !== 'sold' && !i.isPaused && !i.isInactive && !i.isRemoved).length > 1)
+      .map(([key]) => key)
   );
 
   // Filter order groups by status
@@ -322,36 +328,48 @@ const Cart = () => {
         <div className="px-4 max-[375px]:px-3 space-y-4 max-[375px]:space-y-3" data-onboarding="cart-items-area">
           {cartItems.length > 0 ? (
             <>
-              {Object.entries(itemsBySeller).map(([sellerId, items]) => {
-                // Check if all items in this seller group are unavailable (sold, paused, or inactive)
-                const allUnavailable = items.every(item => item.status === 'sold' || item.isPaused || item.isInactive);
+              {Object.entries(itemsBySeller).map(([groupKey, items]) => {
+                const sellerId = items[0].sellerId;
+                const isRemovedGroup = groupKey.includes('__removed__');
+                // Check if all items in this seller group are unavailable (sold, paused, inactive, or removed)
+                const allUnavailable = items.every(item => item.status === 'sold' || item.isPaused || item.isInactive || item.isRemoved);
                 // Hide checkout only when all items are sold (paused/inactive still shows button)
                 const allSold = items.every(item => item.status === 'sold');
+                const allRemoved = items.every(item => item.isRemoved);
                 
                 return (
-                  <div key={sellerId} className="rounded-2xl bg-card overflow-hidden card-shadow">
+                  <div key={groupKey} className="rounded-2xl bg-card overflow-hidden card-shadow">
                     {/* Item rows within the same seller card */}
                     {items.map((item, index) => (
                       <CartItemRow
                         key={item.id}
                         item={item}
                         isSelected={selectedItems.has(item.id)}
-                        isLast={index === items.length - 1 && allSold}
-                        showSellerAvatar={index === 0}
-                        showCheckbox={sellersWithMultipleItems.has(sellerId) && item.status !== 'sold' && !item.isPaused && !item.isInactive}
-                        onToggleSelect={() => toggleSelect(item.id, sellerId)}
+                        isLast={index === items.length - 1 && (allSold || allRemoved)}
+                        showSellerAvatar={index === 0 && !isRemovedGroup}
+                        showCheckbox={sellersWithMultipleItems.has(groupKey) && item.status !== 'sold' && !item.isPaused && !item.isInactive && !item.isRemoved}
+                        onToggleSelect={() => toggleSelect(item.id, groupKey)}
                         onSwipeLeft={() => handleSwipeLeft(item.id)}
                         onSwipeRight={() => handleSwipeRight(item.id)}
                         onCardClick={() => handleListingClick(item)}
                       />
                     ))}
 
-                    {/* Tiered shipping label + Checkout button */}
-                    {!allSold && (() => {
+                    {/* Removed item red button */}
+                    {allRemoved && (
+                      <Button
+                        className="w-full rounded-none rounded-b-2xl bg-[hsl(4,90%,58%)] text-white h-12 cursor-not-allowed pointer-events-none font-semibold hover:bg-[hsl(4,90%,58%)]"
+                      >
+                        ⛔️ Item removed
+                      </Button>
+                    )}
+
+                    {/* Tiered shipping label + Checkout button (only for non-removed groups) */}
+                    {!allSold && !allRemoved && (() => {
                       const allPaused = items.every(item => item.isPaused);
                       const allInactive = items.every(item => item.isInactive);
                       const allPausedOrInactive = items.every(item => item.isPaused || item.isInactive);
-                      const availableItems = items.filter(i => i.status !== 'sold' && !i.isPaused && !i.isInactive);
+                      const availableItems = items.filter(i => i.status !== 'sold' && !i.isPaused && !i.isInactive && !i.isRemoved);
                       const settings = sellerSettings.get(sellerId);
                       const showTierLabel = !allPausedOrInactive && settings?.tieredEnabled && availableItems.length > 1;
                       const tierText = showTierLabel
@@ -379,7 +397,7 @@ const Cart = () => {
                           ) : (
                             <Button
                               onClick={() => {
-                                const selectedFromSeller = items.filter(i => selectedItems.has(i.id) && i.status !== 'sold' && !i.isPaused && !i.isInactive);
+                                const selectedFromSeller = items.filter(i => selectedItems.has(i.id) && i.status !== 'sold' && !i.isPaused && !i.isInactive && !i.isRemoved);
                                 if (selectedFromSeller.length > 0) {
                                   handleCheckout(selectedFromSeller.map(i => i.id));
                                 } else {
@@ -389,7 +407,7 @@ const Cart = () => {
                               className="w-full rounded-none rounded-b-2xl bg-charcoal text-white hover:bg-charcoal-light h-12"
                             >
                               {selectedItems.size > 0 && items.some(i => selectedItems.has(i.id)) 
-                                ? `Checkout ${items.filter(i => selectedItems.has(i.id) && i.status !== 'sold' && !i.isPaused && !i.isInactive).length} selected`
+                                ? `Checkout ${items.filter(i => selectedItems.has(i.id) && i.status !== 'sold' && !i.isPaused && !i.isInactive && !i.isRemoved).length} selected`
                                 : 'Checkout'
                               }
                             </Button>

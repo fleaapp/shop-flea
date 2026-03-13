@@ -7,10 +7,11 @@ import { getAvatarUrl } from '@/utils/optimizedImage';
 import { preloadImages } from '@/utils/preloadAssets';
 import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
-// Extended Listing type to include pause/inactive status
+// Extended Listing type to include pause/inactive/removed status
 interface CartListing extends Listing {
   isPaused?: boolean;
   isInactive?: boolean;
+  isRemoved?: boolean;
 }
 
 interface CartContextType {
@@ -66,12 +67,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     const listingIds = cartData.map(c => c.listing_id);
 
-    // Fetch full listing data (include sold items to show with SOLD overlay)
+    // Fetch full listing data (include all statuses to detect removed/deleted)
     const { data: listingsData, error: listingsError } = await supabase
       .from('listings')
       .select('*')
-      .in('id', listingIds)
-      .in('status', ['active', 'sold']);
+      .in('id', listingIds);
 
     if (listingsError || !listingsData) {
       setCartItems([]);
@@ -115,9 +115,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
     const now = Date.now();
+
+    // Detect listing IDs that exist in cart but not in fetched listings (fully deleted rows)
+    const fetchedListingIds = new Set(validListingsData.map(l => l.id));
+    const missingListingIds = listingIds.filter(id => !fetchedListingIds.has(id));
+
     const transformedListings: CartListing[] = validListingsData.map(listing => {
       const seller = profileMap.get(listing.user_id);
       const lastSignIn = seller?.last_sign_in_at ? new Date(seller.last_sign_in_at).getTime() : now;
+      const isRemovedStatus = listing.status !== 'active' && listing.status !== 'sold';
       return {
         id: listing.id,
         title: listing.title,
@@ -136,11 +142,39 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         tags: listing.tags || [],
         location: '',
         createdAt: new Date(listing.created_at),
-        status: listing.status,
-        isPaused: seller?.pause_selling || false,
-        isInactive: (now - lastSignIn) >= TEN_DAYS_MS,
+        status: isRemovedStatus ? 'removed' : listing.status,
+        isPaused: isRemovedStatus ? false : (seller?.pause_selling || false),
+        isInactive: isRemovedStatus ? false : ((now - lastSignIn) >= TEN_DAYS_MS),
+        isRemoved: isRemovedStatus,
       };
     });
+
+    // Create placeholder entries for fully deleted listings
+    for (const missingId of missingListingIds) {
+      transformedListings.push({
+        id: missingId,
+        title: 'Removed listing',
+        brand: '',
+        size: '',
+        price: 0,
+        shippingPrice: 0,
+        image: '',
+        images: [],
+        sellerId: 'unknown',
+        sellerName: 'Unknown',
+        sellerAvatar: getDefaultAvatar(missingId),
+        condition: 'good',
+        category: '',
+        description: '',
+        tags: [],
+        location: '',
+        createdAt: new Date(),
+        status: 'removed',
+        isPaused: false,
+        isInactive: false,
+        isRemoved: true,
+      });
+    }
 
     // Sort by the order they were added to cart (most recent first)
     transformedListings.sort((a, b) => {

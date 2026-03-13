@@ -79,9 +79,11 @@ const ListingDetails = () => {
   const [seller, setSeller] = useState<SellerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [listingStatus, setListingStatus] = useState<string>('active');
+  const [showRemoveFromBothDialog, setShowRemoveFromBothDialog] = useState(false);
   
   // Check if listing is sold - check both navigation state AND database status
   const isSold = location.state?.isSold || listingStatus === 'sold';
+  const isRemoved = listingStatus === 'removed' || listingStatus === 'deleted' || (listingStatus !== 'active' && listingStatus !== 'sold');
   // Check if we came from the favorites/wishlist page
   const fromWishlist = location.state?.fromWishlist || false;
 
@@ -122,16 +124,22 @@ const ListingDetails = () => {
         return;
       }
       
-      setListingStatus(listingData.status || 'active');
+      const status = listingData.status || 'active';
+      setListingStatus(status);
 
-      // Validate seller existence/status server-side so orphan listings never render
-      const listingIsAccessible = await canOpenListing(listingData.id);
+      // For removed/deleted listings, still allow rendering (user sees ⛔️ UI)
+      const isRemovedListing = status !== 'active' && status !== 'sold';
 
-      if (!listingIsAccessible) {
-        setListing(null);
-        setSeller(null);
-        setLoading(false);
-        return;
+      if (!isRemovedListing) {
+        // Validate seller existence/status server-side so orphan listings never render
+        const listingIsAccessible = await canOpenListing(listingData.id);
+
+        if (!listingIsAccessible) {
+          setListing(null);
+          setSeller(null);
+          setLoading(false);
+          return;
+        }
       }
 
       setListing(listingData);
@@ -501,7 +509,21 @@ const ListingDetails = () => {
 
           {/* Sticky Footer Actions */}
           <div className="sticky bottom-0 left-0 right-0 flex gap-3 bg-background px-4 py-4 border-t border-border justify-center">
-            {isOwner ? (
+            {isRemoved && !isOwner ? (
+              // Removed listing footer
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowRemoveFromBothDialog(true)}
+                  className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent"
+                >
+                  🗑️
+                </Button>
+                <span className="text-base font-semibold text-muted-foreground pointer-events-none select-none">
+                  ⛔️ Item removed
+                </span>
+              </div>
+            ) : isOwner ? (
               // Owner footer
               isSold ? (
                 // Sold listing owner footer
@@ -690,6 +712,43 @@ const ListingDetails = () => {
                   className="flex-1"
                 >
                   Mark as sold
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          {/* Remove from Cart/Wishlist for removed listings */}
+          <AlertDialog open={showRemoveFromBothDialog} onOpenChange={setShowRemoveFromBothDialog}>
+            <AlertDialogContent className="max-w-[280px] rounded-2xl">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remove this item?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This listing has been removed. Clean it up from your saved items.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-row gap-2">
+                <AlertDialogCancel className="flex-1 mt-0">Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={async () => {
+                    const promises: Promise<any>[] = [];
+                    if (isInCart(listing.id)) {
+                      promises.push(removeFromCart(listing.id));
+                    }
+                    if (isFavorite(listing.id)) {
+                      promises.push(removeFavorite(listing.id));
+                    }
+                    await Promise.all(promises);
+                    toast.success('Item removed');
+                    setShowRemoveFromBothDialog(false);
+                    handleClose();
+                  }}
+                  className="flex-1 bg-destructive hover:bg-destructive/90"
+                >
+                  Remove from {isInCart(listing.id) && isFavorite(listing.id) 
+                    ? '🛒 Cart & 💌 Wishlist' 
+                    : isInCart(listing.id) 
+                      ? '🛒 Cart' 
+                      : '💌 Wishlist'
+                  }
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

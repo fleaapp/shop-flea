@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 interface CartItemRowProps {
-  item: Listing & { status?: string; isPaused?: boolean; isInactive?: boolean };
+  item: Listing & { status?: string; isPaused?: boolean; isInactive?: boolean; isRemoved?: boolean };
   isSelected: boolean;
   isLast: boolean;
   showSellerAvatar: boolean;
@@ -50,7 +50,8 @@ const CartItemRow = ({
   const isSold = item.status === 'sold';
   const isPaused = item.isPaused || false;
   const isInactive = item.isInactive || false;
-  const isUnavailable = isSold || isPaused || isInactive;
+  const isRemoved = item.isRemoved || item.status === 'removed';
+  const isUnavailable = isSold || isPaused || isInactive || isRemoved;
   
   // Background colors based on swipe direction
   const leftBgOpacity = useTransform(x, [-SWIPE_THRESHOLD, 0], [1, 0]); 
@@ -176,9 +177,15 @@ const CartItemRow = ({
             </div>
           )}
           {/* INACTIVE emoji over image only */}
-          {isInactive && !isSold && !isPaused && (
+          {isInactive && !isSold && !isPaused && !isRemoved && (
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="text-[44px] drop-shadow-lg">🕰️</span>
+            </div>
+          )}
+          {/* REMOVED emoji over image only */}
+          {isRemoved && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-[44px] drop-shadow-lg">⛔️</span>
             </div>
           )}
         </div>
@@ -186,7 +193,7 @@ const CartItemRow = ({
         {/* Content */}
         <div className="flex flex-1 flex-col justify-between h-24">
           <div className="flex items-start justify-between pt-1">
-            <h3 className={cn("font-semibold", isSold ? "text-[hsl(4,90%,58%)]" : "text-foreground")}>{item.title}</h3>
+            <h3 className={cn("font-semibold", isSold ? "text-[hsl(4,90%,58%)]" : isRemoved ? "text-[hsl(4,90%,58%)]" : "text-foreground")}>{item.title}</h3>
             {showSellerAvatar && (
               <img
                 src={item.sellerAvatar}

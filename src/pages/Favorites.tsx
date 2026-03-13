@@ -19,6 +19,7 @@ interface DisplayListing extends Listing {
   isSold: boolean;
   isPaused: boolean;
   isInactive: boolean;
+  isRemoved: boolean;
 }
 
 const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
@@ -35,6 +36,8 @@ const toDisplayListing = (dbListing: DbListingWithPause): DisplayListing => {
   const lastSignIn = dbListing.profiles?.last_sign_in_at 
     ? new Date(dbListing.profiles.last_sign_in_at).getTime() 
     : Date.now();
+  
+  const isRemovedStatus = dbListing.status !== 'active' && dbListing.status !== 'sold';
   
   return {
     id: dbListing.id,
@@ -55,8 +58,9 @@ const toDisplayListing = (dbListing: DbListingWithPause): DisplayListing => {
     tags: dbListing.tags || [],
     createdAt: new Date(dbListing.created_at),
     isSold: dbListing.status === 'sold',
-    isPaused: dbListing.profiles?.pause_selling || false,
-    isInactive: (Date.now() - lastSignIn) >= TEN_DAYS_MS,
+    isPaused: isRemovedStatus ? false : (dbListing.profiles?.pause_selling || false),
+    isInactive: isRemovedStatus ? false : ((Date.now() - lastSignIn) >= TEN_DAYS_MS),
+    isRemoved: isRemovedStatus,
   };
 };
 
@@ -87,11 +91,11 @@ const Favorites = () => {
   }, [removeFavorite, removeDiscarded, refetch]);
 
   const handleAddToCart = useCallback(async (listing: DisplayListing) => {
-    // Don't allow adding paused, inactive, or sold items to cart
-    if (listing.isPaused || listing.isSold || listing.isInactive) {
+    // Don't allow adding paused, inactive, sold, or removed items to cart
+    if (listing.isPaused || listing.isSold || listing.isInactive || listing.isRemoved) {
       toast({
         title: "Item unavailable",
-        description: listing.isSold ? "This item has been sold" : listing.isPaused ? "This seller has paused selling" : "This seller is inactive",
+        description: listing.isSold ? "This item has been sold" : listing.isRemoved ? "This item has been removed" : listing.isPaused ? "This seller has paused selling" : "This seller is inactive",
         variant: "destructive",
       });
       return;
@@ -170,6 +174,7 @@ const Favorites = () => {
                   isSold={listing.isSold}
                   isPaused={listing.isPaused}
                   isInactive={listing.isInactive}
+                  isRemoved={listing.isRemoved}
                   isInCart={isInCart(listing.id)}
                 />
               </div>

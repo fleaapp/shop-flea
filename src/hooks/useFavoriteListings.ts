@@ -57,12 +57,11 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
 
     const favoriteIds = favorites.map(f => f.listing_id);
 
-    // Now fetch the actual listings (include sold items to show with SOLD overlay)
+    // Now fetch the actual listings (include all statuses to detect removed)
     let query = supabase
       .from('listings')
       .select('*')
       .in('id', favoriteIds)
-      .in('status', ['active', 'sold'])
       .order('created_at', { ascending: false })
       .limit(100); // Limit to prevent DoS via large result sets
 
@@ -151,6 +150,36 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
           ...listing,
           profiles: profilesMap.get(listing.user_id) || null,
         }));
+
+      // Detect missing listing IDs (fully deleted rows) and create placeholders
+      const fetchedIds = new Set(sizeFiltered.map(l => l.id));
+      const missingIds = favoriteIds.filter(id => !fetchedIds.has(id));
+      for (const missingId of missingIds) {
+        listingsWithProfiles.push({
+          id: missingId,
+          title: 'Removed listing',
+          brand: '',
+          size: '',
+          price: 0,
+          shipping_price: 0,
+          images: [],
+          tags: [],
+          condition: 'good',
+          category: '',
+          description: '',
+          user_id: 'unknown',
+          status: 'removed',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          report_count: 0,
+          colour: null,
+          style: null,
+          gender: null,
+          country_code: null,
+          region_id: null,
+          profiles: null,
+        } as any);
+      }
 
       // Preload listing images
       const imagesToPreload = listingsWithProfiles.flatMap(l => l.images?.slice(0, 1) || []).filter(Boolean);
