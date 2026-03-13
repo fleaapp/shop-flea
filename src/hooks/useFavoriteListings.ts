@@ -5,7 +5,6 @@ import { DbListing, ListingFilters } from './useListings';
 import { getQuerySizesFromKeys, listingSizeKey, normalizeSizeKeys } from '@/utils/sizeKeys';
 import { preloadImages } from '@/utils/preloadAssets';
 import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
-import { invokeCloudFunction } from '@/utils/cloudFunctions';
 // Extended DbListing to include pause_selling from profiles
 export interface DbListingWithPause extends DbListing {
   profiles?: {
@@ -33,15 +32,8 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
 
     setLoading(true);
 
-    // Server-side purge for deleted/blocked sellers before loading wishlist rows
-    try {
-      const { error: cleanupError } = await invokeCloudFunction('cleanup-stale-saved-listings', {});
-      if (cleanupError) {
-        console.error('Failed to run wishlist stale-cleanup:', cleanupError);
-      }
-    } catch (cleanupError) {
-      console.error('Failed to run wishlist stale-cleanup:', cleanupError);
-    }
+    // Keep wishlist rows intact so removed/deleted listings can render as ⛔ placeholders.
+
     // First get the user's favorite listing IDs
     const { data: favorites, error: favError } = await supabase
       .from('favorites')
@@ -118,30 +110,9 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
         return canTrustMissing && !profile;
       };
 
-      // Identify entries that should no longer exist for this user
-      const invalidListingIds = sizeFiltered
+      const invalidSellerIds = sizeFiltered
         .filter((listing) => isInvalidSeller(listing))
         .map((listing) => listing.id);
-
-      if (invalidListingIds.length > 0) {
-        await Promise.all([
-          supabase
-            .from('favorites')
-            .delete()
-            .eq('user_id', user.id)
-            .in('listing_id', invalidListingIds),
-          supabase
-            .from('discarded_listings')
-            .delete()
-            .eq('user_id', user.id)
-            .in('listing_id', invalidListingIds),
-        ]);
-      }
-
-      // Create a map for favorite order (most recent first)
-      const favoriteOrderMap = new Map(
-        favorites.map((f, index) => [f.listing_id, index])
-      );
 
       // Keep only listings from existing, non-blocked sellers
       const listingsWithProfiles = sizeFiltered
@@ -151,9 +122,12 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
           profiles: profilesMap.get(listing.user_id) || null,
         }));
 
-      // Detect missing listing IDs (fully deleted rows) and create placeholders
+      // Detect missing listing IDs (fully deleted rows) and invalid-seller IDs; create placeholders
       const fetchedIds = new Set(sizeFiltered.map(l => l.id));
-      const missingIds = favoriteIds.filter(id => !fetchedIds.has(id));
+      const missingIds = Array.from(new Set([
+        ...favoriteIds.filter(id => !fetchedIds.has(id)),
+        ...invalidSellerIds,
+      ]));
       for (const missingId of missingIds) {
         listingsWithProfiles.push({
           id: missingId,
@@ -180,6 +154,11 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
           profiles: null,
         } as any);
       }
+
+      // Create a map for favorite order (most recent first)
+      const favoriteOrderMap = new Map(
+        favorites.map((f, index) => [f.listing_id, index])
+      );
 
       // Preload listing images
       const imagesToPreload = listingsWithProfiles.flatMap(l => l.images?.slice(0, 1) || []).filter(Boolean);
