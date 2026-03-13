@@ -794,12 +794,7 @@ const ListingDetails = () => {
                   }}
                   className="flex-1 bg-destructive hover:bg-destructive/90"
                 >
-                  Remove from {isInCart(listing.id) && isFavorite(listing.id) 
-                    ? '🛒 Cart & 💌 Wishlist' 
-                    : isInCart(listing.id) 
-                      ? '🛒 Cart' 
-                      : '💌 Wishlist'
-                  }
+                  Remove from 🛒 Cart and/or 💌 Wishlist
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

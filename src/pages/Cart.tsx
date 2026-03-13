@@ -365,7 +365,7 @@ const Cart = () => {
                     {/* Removed item red button */}
                     {allRemoved && (
                       <Button
-                        className="w-full rounded-none rounded-b-2xl bg-[hsl(4,90%,58%)] text-white h-12 cursor-not-allowed pointer-events-none font-semibold hover:bg-[hsl(4,90%,58%)]"
+                        className="w-full rounded-none rounded-b-2xl bg-destructive text-destructive-foreground h-12 cursor-not-allowed pointer-events-none font-semibold hover:bg-destructive"
                       >
                         ⛔️ Item removed
                       </Button>
