@@ -122,8 +122,37 @@ const ListingDetails = () => {
         return;
       }
       
-      setListing(listingData);
       setListingStatus(listingData.status || 'active');
+
+      // Validate seller existence/status server-side so orphan listings never render
+      try {
+        const { data: validationData, error: validationError } = await invokeCloudFunction(
+          'cleanup-stale-saved-listings',
+          {
+            listingIds: [listingData.id],
+            performCleanup: false,
+          }
+        );
+
+        if (!validationError) {
+          const invalidListingIds = new Set<string>(
+            Array.isArray((validationData as { invalidListingIds?: string[] } | null)?.invalidListingIds)
+              ? ((validationData as { invalidListingIds: string[] }).invalidListingIds as string[])
+              : []
+          );
+
+          if (invalidListingIds.has(listingData.id)) {
+            setListing(null);
+            setSeller(null);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (validationError) {
+        console.error('Failed to validate listing seller existence:', validationError);
+      }
+
+      setListing(listingData);
       
       // Then fetch the seller's profile
       const { data: profileData, error: profileError } = await supabase
