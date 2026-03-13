@@ -123,13 +123,15 @@ const Cart = () => {
   };
 
   const handleCheckout = (itemIds: string[]) => {
-    // Filter out sold, paused, or inactive items
+    // Filter out sold, paused, inactive, or removed items
     const validItems = cartItems.filter((item) => {
       const itemWithStatus = item as any;
       return itemIds.includes(item.id) && 
              itemWithStatus.status !== 'sold' && 
+             itemWithStatus.status !== 'removed' &&
              !itemWithStatus.isPaused &&
-             !itemWithStatus.isInactive;
+             !itemWithStatus.isInactive &&
+             !itemWithStatus.isRemoved;
     });
     
     if (validItems.length === 0) {
