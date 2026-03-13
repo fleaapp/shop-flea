@@ -155,6 +155,11 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
         } as any);
       }
 
+      // Create a map for favorite order (most recent first)
+      const favoriteOrderMap = new Map(
+        favorites.map((f, index) => [f.listing_id, index])
+      );
+
       // Preload listing images
       const imagesToPreload = listingsWithProfiles.flatMap(l => l.images?.slice(0, 1) || []).filter(Boolean);
       if (imagesToPreload.length) preloadImages(imagesToPreload);
