@@ -27,6 +27,9 @@ interface SellerProfile {
   rating: number | null;
   pause_selling?: boolean;
   last_sign_in_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  status?: string;
 }
 
 interface DbListing {
@@ -81,7 +84,7 @@ const SellerProfile = () => {
     // Fetch seller profile, with fallback for backends missing last_sign_in_at
     const { data: profileDataWithLastSeen, error: profileErrorWithLastSeen } = await supabase
       .from('profiles')
-      .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at')
+      .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at, created_at, updated_at, status')
       .eq('user_id', sellerId)
       .maybeSingle();
 
@@ -92,7 +95,7 @@ const SellerProfile = () => {
     if (profileErrorWithLastSeen?.code === '42703') {
       const fallbackResult = await supabase
         .from('profiles')
-        .select('user_id, username, avatar_url, rating, pause_selling')
+        .select('user_id, username, avatar_url, rating, pause_selling, created_at, updated_at, status')
         .eq('user_id', sellerId)
         .maybeSingle();
 
@@ -292,8 +295,9 @@ const SellerProfile = () => {
           </div>
         ) : (() => {
           const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
-          const lastSignIn = sellerProfile.last_sign_in_at ? new Date(sellerProfile.last_sign_in_at).getTime() : Date.now();
-          const isInactive = (Date.now() - lastSignIn) >= TEN_DAYS_MS;
+          const lastActivityAt = sellerProfile.last_sign_in_at ?? sellerProfile.updated_at ?? sellerProfile.created_at ?? null;
+          const lastActivityMs = lastActivityAt ? new Date(lastActivityAt).getTime() : NaN;
+          const isInactive = Number.isFinite(lastActivityMs) && (Date.now() - lastActivityMs) >= TEN_DAYS_MS;
           if (isInactive) {
             return (
               <div className="flex flex-col items-center justify-center px-4 py-12">
