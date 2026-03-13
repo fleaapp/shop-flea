@@ -6,8 +6,10 @@ import SalesDetailsSheet from '@/components/SalesDetailsSheet';
 import { useOrders, Order, OrderGroup } from '@/hooks/useOrders';
 import { useNotifications, getNotificationMessage, getNotificationEmoji, Notification } from '@/hooks/useNotifications';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
+import { canOpenListing } from '@/utils/listingAccess';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 
 const getStatusBadge = (status: Order['status']) => {
   switch (status) {

@@ -17,6 +17,15 @@ type ValidationRequestBody = {
   performCleanup?: boolean;
 };
 
+type SellerProfileRow = Record<string, unknown>;
+
+const removedSellerStatuses = new Set(['blocked', 'deleted', 'removed']);
+
+const isRemovedSellerStatus = (status: unknown): boolean => {
+  if (typeof status !== 'string') return false;
+  return removedSellerStatuses.has(status.trim().toLowerCase());
+};
+
 const toUniqueIds = (ids: unknown): string[] => {
   if (!Array.isArray(ids)) return [];
 
