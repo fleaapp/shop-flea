@@ -710,6 +710,43 @@ const ListingDetails = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          {/* Remove from Cart/Wishlist for removed listings */}
+          <AlertDialog open={showRemoveFromBothDialog} onOpenChange={setShowRemoveFromBothDialog}>
+            <AlertDialogContent className="max-w-[280px] rounded-2xl">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remove this item?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This listing has been removed. Clean it up from your saved items.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-row gap-2">
+                <AlertDialogCancel className="flex-1 mt-0">Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={async () => {
+                    const promises: Promise<any>[] = [];
+                    if (isInCart(listing.id)) {
+                      promises.push(removeFromCart(listing.id));
+                    }
+                    if (isFavorite(listing.id)) {
+                      promises.push(removeFavorite(listing.id));
+                    }
+                    await Promise.all(promises);
+                    toast.success('Item removed');
+                    setShowRemoveFromBothDialog(false);
+                    handleClose();
+                  }}
+                  className="flex-1 bg-destructive hover:bg-destructive/90"
+                >
+                  Remove from {isInCart(listing.id) && isFavorite(listing.id) 
+                    ? '🛒 Cart & 💌 Wishlist' 
+                    : isInCart(listing.id) 
+                      ? '🛒 Cart' 
+                      : '💌 Wishlist'
+                  }
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </DrawerContent>
       </Drawer>
 
