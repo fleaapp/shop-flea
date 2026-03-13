@@ -38,6 +38,7 @@ import SalesDetailsSheet from '@/components/SalesDetailsSheet';
 import OrderSuccessDialog from '@/components/OrderSuccessDialog';
 import OrderReceiptDialog from '@/components/OrderReceiptDialog';
 import { canOpenListing } from '@/utils/listingAccess';
+import { loadSavedListingSnapshot } from '@/utils/savedListingSnapshots';
 import type { Listing } from '@/types/listing';
 
 interface DbListing {
