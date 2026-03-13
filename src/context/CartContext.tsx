@@ -94,7 +94,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
     const now = Date.now();
 
-    // Detect listing IDs that exist in cart but not in fetched listings (fully deleted rows)
+    // Detect listing IDs that exist in cart but not in fetched listings (fully deleted rows or RLS-hidden rows)
     const fetchedListingIds = new Set(listingsData.map(l => l.id));
     const missingListingIds = listingIds.filter(id => !fetchedListingIds.has(id));
 
@@ -121,7 +121,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         category: listing.category,
         description: listing.description || '',
         tags: listing.tags || [],
-        location: '',
+        location: seller?.location || '',
         createdAt: new Date(listing.created_at),
         status: isRemovedStatus ? 'removed' : listing.status,
         isPaused: isRemovedStatus ? false : (seller?.pause_selling || false),
@@ -130,8 +130,74 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       };
     });
 
-    // Create placeholder entries only for fully deleted listings
+    const snapshotsToSave: SavedListingSnapshot[] = listingsData.map((listing) => ({
+      listing: {
+        id: listing.id,
+        user_id: listing.user_id,
+        title: listing.title,
+        description: listing.description ?? null,
+        brand: listing.brand,
+        size: listing.size,
+        category: listing.category,
+        condition: listing.condition,
+        colour: listing.colour ?? null,
+        style: listing.style ?? null,
+        gender: listing.gender ?? null,
+        price: Number(listing.price),
+        shipping_price: listing.shipping_price ?? 0,
+        images: listing.images ?? [],
+        tags: listing.tags ?? [],
+        status: listing.status ?? null,
+        created_at: listing.created_at,
+        updated_at: listing.updated_at,
+        country_code: listing.country_code ?? null,
+        region_id: listing.region_id ?? null,
+      },
+      seller: profileMap.get(listing.user_id) ?? null,
+      saved_at: new Date().toISOString(),
+    }));
+
+    saveSavedListingSnapshots(user.id, snapshotsToSave);
+
+    // For IDs we can no longer fetch directly, restore from local snapshots first.
+    const snapshotMap = loadSavedListingSnapshots(user.id, missingListingIds);
+
     for (const missingId of missingListingIds) {
+      const snapshot = snapshotMap.get(missingId);
+
+      if (snapshot) {
+        const seller = snapshot.seller;
+        const createdAt = snapshot.listing.created_at
+          ? new Date(snapshot.listing.created_at)
+          : new Date();
+
+        transformedListings.push({
+          id: snapshot.listing.id,
+          title: snapshot.listing.title || 'Removed listing',
+          brand: snapshot.listing.brand || '',
+          size: snapshot.listing.size || '',
+          price: Number(snapshot.listing.price || 0),
+          shippingPrice: Number(snapshot.listing.shipping_price || 0),
+          image: snapshot.listing.images?.[0] || '',
+          images: snapshot.listing.images || [],
+          sellerId: snapshot.listing.user_id || 'unknown',
+          sellerName: seller?.username || 'Unknown Seller',
+          sellerAvatar: getAvatarUrl(seller?.avatar_url) || getDefaultAvatar(snapshot.listing.user_id || missingId),
+          condition: (snapshot.listing.condition as Listing['condition']) || 'good',
+          category: snapshot.listing.category || '',
+          description: snapshot.listing.description || '',
+          tags: snapshot.listing.tags || [],
+          location: seller?.location || '',
+          createdAt,
+          status: 'removed',
+          isPaused: false,
+          isInactive: false,
+          isRemoved: true,
+        });
+        continue;
+      }
+
+      // Last-resort placeholder (only when no snapshot exists)
       transformedListings.push({
         id: missingId,
         title: 'Removed listing',
