@@ -147,9 +147,8 @@ Deno.serve(async (req) => {
       const status = listing.status ?? '';
       if (status !== 'active' && status !== 'sold') return true;
 
-      const sellerProfile = profileMap.get(listing.user_id);
-      if (!sellerProfile) return true; // deleted profile
-      if (sellerProfile.status === 'blocked') return true;
+      // If seller profile doesn't exist, they were deleted
+      if (!existingSellerIds.has(listing.user_id)) return true;
 
       return false;
     };
