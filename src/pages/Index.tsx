@@ -393,7 +393,7 @@ const Index = () => {
                   key={dbListing.id}
                   listing={toDisplayListing(dbListing)}
                   onSwipeLeft={() => handleSwipeLeft(dbListing.id)}
-                  onSwipeRight={() => handleSwipeRight(dbListing.id)}
+                  onSwipeRight={() => handleSwipeRight(dbListing)}
                   onSwipeUp={() => handleSwipeUp(dbListing)}
                   onExitComplete={index === 0 ? handleTopExitComplete : undefined}
                   onClick={() => handleCardClick(dbListing)}
