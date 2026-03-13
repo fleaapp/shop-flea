@@ -831,10 +831,10 @@ const ListingDetails = () => {
           </AlertDialog>
           {/* Remove from Cart/Wishlist for removed listings */}
           <AlertDialog open={showRemoveFromBothDialog} onOpenChange={setShowRemoveFromBothDialog}>
-            <AlertDialogContent className="max-w-[300px] rounded-2xl p-6">
+            <AlertDialogContent className="max-w-[300px] rounded-2xl px-8 py-6">
               <AlertDialogHeader className="space-y-2">
                 <AlertDialogTitle className="text-base text-center">Remove this item?</AlertDialogTitle>
-                <AlertDialogDescription className="text-sm text-center text-balance">
+                <AlertDialogDescription className="text-sm text-center text-balance leading-relaxed">
                   This item has been deleted. Clean it up from your 🛒 Cart and/or 💌 Wishlist.
                 </AlertDialogDescription>
               </AlertDialogHeader>
@@ -854,7 +854,7 @@ const ListingDetails = () => {
                     setShowRemoveFromBothDialog(false);
                     handleClose();
                   }}
-                  className="flex-1 h-9 rounded-lg text-sm bg-destructive hover:bg-destructive/90"
+                  className="flex-1 h-9 rounded-lg text-sm bg-destructive text-white hover:bg-destructive/90"
                 >
                   Remove
                 </AlertDialogAction>
