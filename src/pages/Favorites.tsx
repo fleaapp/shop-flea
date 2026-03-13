@@ -37,6 +37,8 @@ const toDisplayListing = (dbListing: DbListingWithPause): DisplayListing => {
     ? new Date(dbListing.profiles.last_sign_in_at).getTime() 
     : Date.now();
   
+  const isRemovedStatus = dbListing.status !== 'active' && dbListing.status !== 'sold';
+  
   return {
     id: dbListing.id,
     title: dbListing.title,
@@ -56,8 +58,9 @@ const toDisplayListing = (dbListing: DbListingWithPause): DisplayListing => {
     tags: dbListing.tags || [],
     createdAt: new Date(dbListing.created_at),
     isSold: dbListing.status === 'sold',
-    isPaused: dbListing.profiles?.pause_selling || false,
-    isInactive: (Date.now() - lastSignIn) >= TEN_DAYS_MS,
+    isPaused: isRemovedStatus ? false : (dbListing.profiles?.pause_selling || false),
+    isInactive: isRemovedStatus ? false : ((Date.now() - lastSignIn) >= TEN_DAYS_MS),
+    isRemoved: isRemovedStatus,
   };
 };
 
