@@ -158,20 +158,23 @@ const Cart = () => {
     toast.success('Moved to wishlist');
   };
 
-  // Group items by seller for combined checkout - moved before toggleSelect for proper usage
-  const itemsBySeller = cartItemsWithStatus.reduce((acc, item) => {
-    if (!acc[item.sellerId]) {
-      acc[item.sellerId] = [];
+  // Group items by seller for combined checkout
+  // Split removed items into separate groups so they get their own card
+  const itemsBySeller: Record<string, typeof cartItemsWithStatus> = {};
+  cartItemsWithStatus.forEach((item) => {
+    const groupKey = item.isRemoved ? `${item.sellerId}__removed__${item.id}` : item.sellerId;
+    if (!itemsBySeller[groupKey]) {
+      itemsBySeller[groupKey] = [];
     }
-    acc[item.sellerId].push(item);
-    return acc;
-  }, {} as Record<string, typeof cartItemsWithStatus>);
+    itemsBySeller[groupKey].push(item);
+  });
 
   // Check which sellers have multiple items (for checkbox visibility)
+  // Only count non-removed items for checkbox logic
   const sellersWithMultipleItems = new Set(
     Object.entries(itemsBySeller)
-      .filter(([_, items]) => items.filter(i => i.status !== 'sold' && !i.isPaused && !i.isInactive).length > 1)
-      .map(([sellerId]) => sellerId)
+      .filter(([key, items]) => !key.includes('__removed__') && items.filter(i => i.status !== 'sold' && !i.isPaused && !i.isInactive && !i.isRemoved).length > 1)
+      .map(([key]) => key)
   );
 
   // Filter order groups by status
