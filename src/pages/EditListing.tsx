@@ -324,18 +324,18 @@ const EditListing = () => {
     try {
       const { error } = await supabase
         .from('listings')
-        .delete()
+        .update({ status: 'removed' })
         .eq('id', id);
       
       if (error) {
         throw error;
       }
       
-      toast.success('Listing deleted');
+      toast.success('Listing removed');
       navigate('/profile');
     } catch (error) {
-      console.error('Error deleting listing:', error);
-      toast.error('Failed to delete listing');
+      console.error('Error removing listing:', error);
+      toast.error('Failed to remove listing');
     } finally {
       setIsDeleting(false);
     }
