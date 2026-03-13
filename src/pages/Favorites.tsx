@@ -86,7 +86,7 @@ const Favorites = () => {
     refetch();
   }, [removeFavorite, removeDiscarded, refetch]);
 
-  const handleAddToCart = useCallback((listing: DisplayListing) => {
+  const handleAddToCart = useCallback(async (listing: DisplayListing) => {
     // Don't allow adding paused, inactive, or sold items to cart
     if (listing.isPaused || listing.isSold || listing.isInactive) {
       toast({
@@ -96,12 +96,23 @@ const Favorites = () => {
       });
       return;
     }
-    addToCart(listing);
+
+    const added = await addToCart(listing);
+    if (!added) {
+      toast({
+        title: "Item unavailable",
+        description: "This listing can no longer be added to cart",
+        variant: "destructive",
+      });
+      await refetch();
+      return;
+    }
+
     toast({
       title: "Added to cart",
       description: `${listing.title} has been added to your cart`,
     });
-  }, [addToCart]);
+  }, [addToCart, refetch]);
 
   const handleApplyFilters = useCallback((filters: FilterState) => {
     const newFilters: ListingFilters = {};
