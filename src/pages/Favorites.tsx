@@ -91,11 +91,11 @@ const Favorites = () => {
   }, [removeFavorite, removeDiscarded, refetch]);
 
   const handleAddToCart = useCallback(async (listing: DisplayListing) => {
-    // Don't allow adding paused, inactive, or sold items to cart
-    if (listing.isPaused || listing.isSold || listing.isInactive) {
+    // Don't allow adding paused, inactive, sold, or removed items to cart
+    if (listing.isPaused || listing.isSold || listing.isInactive || listing.isRemoved) {
       toast({
         title: "Item unavailable",
-        description: listing.isSold ? "This item has been sold" : listing.isPaused ? "This seller has paused selling" : "This seller is inactive",
+        description: listing.isSold ? "This item has been sold" : listing.isRemoved ? "This item has been removed" : listing.isPaused ? "This seller has paused selling" : "This seller is inactive",
         variant: "destructive",
       });
       return;
