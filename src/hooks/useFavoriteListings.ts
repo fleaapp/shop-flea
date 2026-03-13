@@ -5,7 +5,7 @@ import { DbListing, ListingFilters } from './useListings';
 import { getQuerySizesFromKeys, listingSizeKey, normalizeSizeKeys } from '@/utils/sizeKeys';
 import { preloadImages } from '@/utils/preloadAssets';
 import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
-
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
 // Extended DbListing to include pause_selling from profiles
 export interface DbListingWithPause extends DbListing {
   profiles?: {
@@ -33,6 +33,15 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
 
     setLoading(true);
 
+    // Server-side purge for deleted/blocked sellers before loading wishlist rows
+    try {
+      const { error: cleanupError } = await invokeCloudFunction('cleanup-stale-saved-listings', {});
+      if (cleanupError) {
+        console.error('Failed to run wishlist stale-cleanup:', cleanupError);
+      }
+    } catch (cleanupError) {
+      console.error('Failed to run wishlist stale-cleanup:', cleanupError);
+    }
     // First get the user's favorite listing IDs
     const { data: favorites, error: favError } = await supabase
       .from('favorites')

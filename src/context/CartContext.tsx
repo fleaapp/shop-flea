@@ -6,7 +6,7 @@ import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { getAvatarUrl } from '@/utils/optimizedImage';
 import { preloadImages } from '@/utils/preloadAssets';
 import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
-
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
 // Extended Listing type to include pause/inactive status
 interface CartListing extends Listing {
   isPaused?: boolean;
@@ -41,6 +41,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     setLoading(true);
 
+    // Server-side purge for deleted/blocked sellers before loading cart rows
+    try {
+      const { error: cleanupError } = await invokeCloudFunction('cleanup-stale-saved-listings', {});
+      if (cleanupError) {
+        console.error('Failed to run cart stale-cleanup:', cleanupError);
+      }
+    } catch (cleanupError) {
+      console.error('Failed to run cart stale-cleanup:', cleanupError);
+    }
     // Fetch cart item IDs
     const { data: cartData, error: cartError } = await supabase
       .from('cart_items')
