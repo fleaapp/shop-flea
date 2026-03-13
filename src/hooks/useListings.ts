@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { preloadImages } from '@/utils/preloadAssets';
 import { getQuerySizesFromKeys, listingSizeKey, normalizeSizeKeys } from '@/utils/sizeKeys';
 import { filterBySearch } from '@/utils/searchUtils';
+import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
 
 export interface DbListing {
   id: string;
@@ -29,8 +30,9 @@ export interface DbListing {
     username: string;
     avatar_url: string | null;
     location: string | null;
-    rating: number;
+    rating: number | null;
     pause_selling?: boolean;
+    status?: string | null;
   } | null;
 }
 
