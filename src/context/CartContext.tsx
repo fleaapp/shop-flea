@@ -6,6 +6,7 @@ import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { getAvatarUrl } from '@/utils/optimizedImage';
 import { preloadImages } from '@/utils/preloadAssets';
 import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
+import { loadSavedListingSnapshots, saveSavedListingSnapshots, type SavedListingSnapshot } from '@/utils/savedListingSnapshots';
 // Extended Listing type to include pause/inactive/removed status
 interface CartListing extends Listing {
   isPaused?: boolean;
