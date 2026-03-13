@@ -38,20 +38,22 @@ const Profile = () => {
   const displayListings = activeTab === 'listings' ? activeListings : soldListings;
   const isLoading = activeTab === 'listings' ? activeLoading : soldLoading;
 
-  // Create a map of listing_id to order for quick lookup
+  // Create maps for quick lookup
   const ordersByListingId = new Map(sellerOrders.map(order => [order.listing_id, order]));
+  const ordersByOrderId = new Map(sellerOrders.map(order => [order.id, order]));
 
-  // Create a map of listing_id to order group for quick lookup
   const orderGroupByListingId = new Map<string, OrderGroup>();
+  const orderGroupByOrderId = new Map<string, OrderGroup>();
   for (const group of sellerOrderGroups) {
     for (const order of group.orders) {
       orderGroupByListingId.set(order.listing_id, group);
+      orderGroupByOrderId.set(order.id, group);
     }
   }
 
-  const getOrderStatusButton = (listingId: string) => {
-    const order = ordersByListingId.get(listingId);
-    const group = orderGroupByListingId.get(listingId);
+  const getOrderStatusButton = (listingId: string, orderId?: string) => {
+    const order = orderId ? ordersByOrderId.get(orderId) : ordersByListingId.get(listingId);
+    const group = orderId ? orderGroupByOrderId.get(orderId) : orderGroupByListingId.get(listingId);
     if (!order || !group) return null;
 
     if (order.status === 'awaiting') {
@@ -205,8 +207,8 @@ const Profile = () => {
         ) : displayListings.length > 0 ? (
           <div className="flex gap-4 max-[430px]:gap-3 max-[375px]:gap-2.5">
             <div className="flex-shrink-0 w-[calc(50vw-128px)] max-[430px]:w-[calc(50vw-120px)] max-[393px]:w-[calc(50vw-104px)] max-[375px]:w-[calc(50vw-88px)]" />
-            {displayListings.map((listing) => (
-              <div key={listing.id} className="relative w-64 max-[430px]:w-60 max-[393px]:w-52 max-[375px]:w-44 flex-shrink-0 overflow-hidden rounded-3xl max-[375px]:rounded-2xl bg-card p-2.5 max-[430px]:p-2 max-[375px]:p-1.5 card-shadow snap-center">
+            {displayListings.map((listing, index) => (
+              <div key={`${listing.id}-${index}`} className="relative w-64 max-[430px]:w-60 max-[393px]:w-52 max-[375px]:w-44 flex-shrink-0 overflow-hidden rounded-3xl max-[375px]:rounded-2xl bg-card p-2.5 max-[430px]:p-2 max-[375px]:p-1.5 card-shadow snap-center">
                 {/* Edit button - only show for active listings */}
                 {activeTab === 'listings' && (
                   <button 
@@ -223,11 +225,11 @@ const Profile = () => {
                 {/* Image */}
                 <div 
                   className="relative aspect-[3/4] max-[430px]:aspect-[3/4] max-[393px]:aspect-[4/5] max-[375px]:aspect-[1/1] w-full overflow-hidden rounded-2xl max-[375px]:rounded-xl cursor-pointer"
-                  onClick={() => navigate(`/listing/${listing.id}`)}
+                  onClick={() => navigate(`/listing/${(listing as any).source_listing_id || listing.id}`)}
                 >
                   <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
                   {/* Shipping status button - only show for sold items */}
-                  {activeTab === 'sold' && getOrderStatusButton(listing.id)}
+                  {activeTab === 'sold' && getOrderStatusButton((listing as any).source_listing_id || listing.id, (listing as any).order_id)}
                 </div>
                 
                 {/* Content */}
