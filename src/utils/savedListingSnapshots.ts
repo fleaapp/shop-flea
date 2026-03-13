@@ -87,8 +87,11 @@ export const createSavedListingSnapshotFromListing = (
 };
 
 const STORAGE_PREFIX = 'saved-listing-snapshots';
+const GLOBAL_STORAGE_SUFFIX = 'global';
+const MAX_SNAPSHOTS_PER_BUCKET = 800;
 
 const storageKey = (userId: string) => `${STORAGE_PREFIX}:${userId}`;
+const globalStorageKey = () => `${STORAGE_PREFIX}:${GLOBAL_STORAGE_SUFFIX}`;
 
 const canUseStorage = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 
@@ -103,19 +106,79 @@ const parseSnapshots = (raw: string | null): Record<string, SavedListingSnapshot
   }
 };
 
-export const loadSavedListingSnapshots = (
-  userId: string,
+const snapshotTimestamp = (snapshot: SavedListingSnapshot | undefined): number => {
+  if (!snapshot?.saved_at) return 0;
+  const timestamp = Date.parse(snapshot.saved_at);
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+};
+
+const shouldReplaceSnapshot = (
+  previous: SavedListingSnapshot | undefined,
+  next: SavedListingSnapshot,
+): boolean => {
+  if (!previous) return true;
+  return snapshotTimestamp(next) >= snapshotTimestamp(previous);
+};
+
+const boundedSnapshots = (
+  snapshots: Record<string, SavedListingSnapshot>,
+): Record<string, SavedListingSnapshot> => {
+  const entries = Object.entries(snapshots)
+    .sort(([, a], [, b]) => snapshotTimestamp(a) - snapshotTimestamp(b));
+
+  const bounded = entries.slice(Math.max(entries.length - MAX_SNAPSHOTS_PER_BUCKET, 0));
+  return Object.fromEntries(bounded);
+};
+
+const writeSnapshots = (key: string, snapshots: Record<string, SavedListingSnapshot>) => {
+  if (!canUseStorage()) return;
+
+  try {
+    localStorage.setItem(key, JSON.stringify(boundedSnapshots(snapshots)));
+  } catch (error) {
+    console.warn('Failed to persist saved listing snapshots:', error);
+  }
+};
+
+const listSnapshotKeys = (): string[] => {
+  if (!canUseStorage()) return [];
+
+  const keys: string[] = [];
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+    if (key && key.startsWith(`${STORAGE_PREFIX}:`)) {
+      keys.push(key);
+    }
+  }
+  return keys;
+};
+
+const mergeSnapshotRecords = (
+  ...records: Array<Record<string, SavedListingSnapshot>>
+): Record<string, SavedListingSnapshot> => {
+  const merged: Record<string, SavedListingSnapshot> = {};
+
+  for (const record of records) {
+    for (const [listingId, snapshot] of Object.entries(record)) {
+      if (shouldReplaceSnapshot(merged[listingId], snapshot)) {
+        merged[listingId] = snapshot;
+      }
+    }
+  }
+
+  return merged;
+};
+
+const toSnapshotMap = (
+  allSnapshots: Record<string, SavedListingSnapshot>,
   listingIds?: string[],
 ): Map<string, SavedListingSnapshot> => {
-  if (!userId || !canUseStorage()) return new Map<string, SavedListingSnapshot>();
-
-  const allSnapshots = parseSnapshots(localStorage.getItem(storageKey(userId)));
-
   if (!listingIds || listingIds.length === 0) {
     return new Map(Object.entries(allSnapshots));
   }
 
   const filtered = new Map<string, SavedListingSnapshot>();
+
   for (const listingId of listingIds) {
     const snapshot = allSnapshots[listingId];
     if (snapshot) {
@@ -126,27 +189,89 @@ export const loadSavedListingSnapshots = (
   return filtered;
 };
 
-export const saveSavedListingSnapshots = (
-  userId: string,
+const upsertSnapshotsIntoStore = (
+  key: string,
   snapshots: SavedListingSnapshot[],
 ): void => {
-  if (!userId || snapshots.length === 0 || !canUseStorage()) return;
+  if (!canUseStorage()) return;
 
-  const existing = parseSnapshots(localStorage.getItem(storageKey(userId)));
+  const existing = parseSnapshots(localStorage.getItem(key));
 
   for (const snapshot of snapshots) {
     if (!snapshot?.listing?.id) continue;
+
     existing[snapshot.listing.id] = {
       ...snapshot,
       saved_at: new Date().toISOString(),
     };
   }
 
-  const entries = Object.entries(existing);
-  // Keep storage bounded to avoid unbounded growth.
-  const bounded = entries.slice(Math.max(entries.length - 800, 0));
+  writeSnapshots(key, existing);
+};
 
-  localStorage.setItem(storageKey(userId), JSON.stringify(Object.fromEntries(bounded)));
+export const loadSavedListingSnapshots = (
+  userId: string,
+  listingIds?: string[],
+): Map<string, SavedListingSnapshot> => {
+  if (!userId || !canUseStorage()) return new Map<string, SavedListingSnapshot>();
+
+  const userKey = storageKey(userId);
+  const userSnapshots = parseSnapshots(localStorage.getItem(userKey));
+  const globalSnapshots = parseSnapshots(localStorage.getItem(globalStorageKey()));
+
+  let mergedSnapshots = mergeSnapshotRecords(userSnapshots, globalSnapshots);
+  const missingListingIds = (listingIds ?? []).filter((listingId) => !mergedSnapshots[listingId]);
+
+  if (missingListingIds.length > 0 || Object.keys(mergedSnapshots).length === 0) {
+    const fallbackKeys = listSnapshotKeys().filter(
+      (key) => key !== userKey && key !== globalStorageKey(),
+    );
+
+    for (const key of fallbackKeys) {
+      const fallbackSnapshots = parseSnapshots(localStorage.getItem(key));
+      mergedSnapshots = mergeSnapshotRecords(mergedSnapshots, fallbackSnapshots);
+
+      if (listingIds && listingIds.every((listingId) => !!mergedSnapshots[listingId])) {
+        break;
+      }
+    }
+  }
+
+  // Self-heal current user scope with recovered snapshots from global/legacy keys.
+  if (listingIds && listingIds.length > 0) {
+    const recovered: Record<string, SavedListingSnapshot> = {};
+
+    for (const listingId of listingIds) {
+      if (!userSnapshots[listingId] && mergedSnapshots[listingId]) {
+        recovered[listingId] = mergedSnapshots[listingId];
+      }
+    }
+
+    if (Object.keys(recovered).length > 0) {
+      writeSnapshots(userKey, { ...userSnapshots, ...recovered });
+    }
+  }
+
+  return toSnapshotMap(mergedSnapshots, listingIds);
+};
+
+export const loadSavedListingSnapshot = (
+  userId: string,
+  listingId: string,
+): SavedListingSnapshot | null => {
+  if (!listingId) return null;
+
+  return loadSavedListingSnapshots(userId, [listingId]).get(listingId) ?? null;
+};
+
+export const saveSavedListingSnapshots = (
+  userId: string,
+  snapshots: SavedListingSnapshot[],
+): void => {
+  if (!userId || snapshots.length === 0 || !canUseStorage()) return;
+
+  upsertSnapshotsIntoStore(storageKey(userId), snapshots);
+  upsertSnapshotsIntoStore(globalStorageKey(), snapshots);
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
