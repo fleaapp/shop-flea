@@ -177,9 +177,15 @@ const CartItemRow = ({
             </div>
           )}
           {/* INACTIVE emoji over image only */}
-          {isInactive && !isSold && !isPaused && (
+          {isInactive && !isSold && !isPaused && !isRemoved && (
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="text-[44px] drop-shadow-lg">🕰️</span>
+            </div>
+          )}
+          {/* REMOVED emoji over image only */}
+          {isRemoved && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-[44px] drop-shadow-lg">⛔️</span>
             </div>
           )}
         </div>
