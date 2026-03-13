@@ -131,32 +131,13 @@ export const useListings = (filters?: ListingFilters) => {
         ? data.filter((l) => sizeKeySet.has(listingSizeKey(l.size, l.category, l.gender)))
         : data;
 
-      let validatedListings = sizeFiltered;
-      try {
-        const { data: validationData, error: validationError } = await invokeCloudFunction(
-          'cleanup-stale-saved-listings',
-          {
-            listingIds: sizeFiltered.map((listing) => listing.id),
-            performCleanup: false,
-          }
-        );
+      const invalidListingIds = await getInvalidListingIds(
+        sizeFiltered.map((listing) => listing.id),
+      );
 
-        if (validationError) {
-          console.error('Failed to validate Home listings against seller existence:', validationError);
-        } else {
-          const invalidListingIds = new Set<string>(
-            Array.isArray((validationData as { invalidListingIds?: string[] } | null)?.invalidListingIds)
-              ? ((validationData as { invalidListingIds: string[] }).invalidListingIds as string[])
-              : []
-          );
-
-          if (invalidListingIds.size > 0) {
-            validatedListings = sizeFiltered.filter((listing) => !invalidListingIds.has(listing.id));
-          }
-        }
-      } catch (validationError) {
-        console.error('Failed to validate Home listings against seller existence:', validationError);
-      }
+      const validatedListings = invalidListingIds.size > 0
+        ? sizeFiltered.filter((listing) => !invalidListingIds.has(listing.id))
+        : sizeFiltered;
 
       // Get unique user_ids and fetch seller profiles (schema-safe + RLS-aware)
       const uniqueUserIds = [...new Set(validatedListings.map(listing => listing.user_id))];

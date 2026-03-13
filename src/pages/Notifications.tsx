@@ -100,7 +100,7 @@ const Notifications = () => {
     setSaleSheetOpen(true);
   };
 
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = async (notification: Notification) => {
     if (!notification.is_read) {
       markAsRead.mutate(notification.id);
     }
@@ -122,6 +122,12 @@ const Notifications = () => {
 
     // Navigate based on notification type
     if (notification.related_listing_id) {
+      const listingIsAccessible = await canOpenListing(notification.related_listing_id);
+      if (!listingIsAccessible) {
+        toast.error('This listing is no longer available.');
+        return;
+      }
+
       navigate(`/listing/${notification.related_listing_id}`);
     }
   };
