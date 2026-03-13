@@ -831,15 +831,15 @@ const ListingDetails = () => {
           </AlertDialog>
           {/* Remove from Cart/Wishlist for removed listings */}
           <AlertDialog open={showRemoveFromBothDialog} onOpenChange={setShowRemoveFromBothDialog}>
-            <AlertDialogContent className="max-w-[320px] rounded-2xl p-8">
-              <AlertDialogHeader className="space-y-4">
-                <AlertDialogTitle>Remove this item?</AlertDialogTitle>
-                <AlertDialogDescription>
+            <AlertDialogContent className="max-w-[300px] rounded-2xl p-6">
+              <AlertDialogHeader className="space-y-2">
+                <AlertDialogTitle className="text-base text-center">Remove this item?</AlertDialogTitle>
+                <AlertDialogDescription className="text-sm text-center text-balance">
                   Clean it up from your 🛒 Cart and/or 💌 Wishlist.
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <AlertDialogFooter className="flex-row gap-3 mt-6">
-                <AlertDialogCancel className="flex-1 mt-0">Cancel</AlertDialogCancel>
+              <AlertDialogFooter className="flex-row gap-2 mt-4 sm:flex-row">
+                <AlertDialogCancel className="flex-1 mt-0 h-9 rounded-lg text-sm">Cancel</AlertDialogCancel>
                 <AlertDialogAction 
                   onClick={async () => {
                     const promises: Promise<any>[] = [];
@@ -854,7 +854,7 @@ const ListingDetails = () => {
                     setShowRemoveFromBothDialog(false);
                     handleClose();
                   }}
-                  className="flex-1 bg-destructive hover:bg-destructive/90"
+                  className="flex-1 h-9 rounded-lg text-sm bg-destructive hover:bg-destructive/90"
                 >
                   Remove
                 </AlertDialogAction>
