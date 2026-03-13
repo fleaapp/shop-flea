@@ -29,7 +29,7 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused
   const navigate = useNavigate();
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const isUnavailable = isSold || isPaused || isInactive || isSellerGone;
+  const isUnavailable = isSold || isPaused || isInactive;
 
   const handleCardClick = () => {
     navigate(`/listing/${listing.id}`, { state: { listing, isSold, fromWishlist: true } });
@@ -83,16 +83,9 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused
             )}
 
             {/* Inactive overlay with emoji (same style as paused) */}
-            {isInactive && !isSold && !isPaused && !isSellerGone && (
+            {isInactive && !isSold && !isPaused && (
               <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-charcoal/40">
                 <span className="text-[80px] drop-shadow-lg">🕰️</span>
-              </div>
-            )}
-
-            {/* Seller gone overlay */}
-            {isSellerGone && !isSold && (
-              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-charcoal/40">
-                <span className="text-[80px] drop-shadow-lg">👻</span>
               </div>
             )}
             
