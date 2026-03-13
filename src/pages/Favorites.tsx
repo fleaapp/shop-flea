@@ -19,7 +19,6 @@ interface DisplayListing extends Listing {
   isSold: boolean;
   isPaused: boolean;
   isInactive: boolean;
-  isSellerGone: boolean;
 }
 
 const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
@@ -58,7 +57,6 @@ const toDisplayListing = (dbListing: DbListingWithPause): DisplayListing => {
     isSold: dbListing.status === 'sold',
     isPaused: dbListing.profiles?.pause_selling || false,
     isInactive: (Date.now() - lastSignIn) >= TEN_DAYS_MS,
-    isSellerGone: !dbListing.profiles,
   };
 };
 
@@ -89,11 +87,11 @@ const Favorites = () => {
   }, [removeFavorite, removeDiscarded, refetch]);
 
   const handleAddToCart = useCallback((listing: DisplayListing) => {
-    // Don't allow adding paused, inactive, sold, or deleted-seller items to cart
-    if (listing.isPaused || listing.isSold || listing.isInactive || listing.isSellerGone) {
+    // Don't allow adding paused, inactive, or sold items to cart
+    if (listing.isPaused || listing.isSold || listing.isInactive) {
       toast({
         title: "Item unavailable",
-        description: listing.isSold ? "This item has been sold" : listing.isSellerGone ? "This seller's account no longer exists" : listing.isPaused ? "This seller has paused selling" : "This seller is inactive",
+        description: listing.isSold ? "This item has been sold" : listing.isPaused ? "This seller has paused selling" : "This seller is inactive",
         variant: "destructive",
       });
       return;
@@ -161,7 +159,6 @@ const Favorites = () => {
                   isSold={listing.isSold}
                   isPaused={listing.isPaused}
                   isInactive={listing.isInactive}
-                  isSellerGone={listing.isSellerGone}
                   isInCart={isInCart(listing.id)}
                 />
               </div>
