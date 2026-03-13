@@ -97,19 +97,22 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
 
       // Get unique user_ids and fetch profiles (with fallback if profiles_public is unavailable)
       const uniqueUserIds = [...new Set(sizeFiltered.map(listing => listing.user_id))];
-      const profilesData = await fetchSellerProfiles(uniqueUserIds);
+      const { profiles: profilesData, canTrustMissing } = await fetchSellerProfiles(uniqueUserIds);
 
       // Create a map for quick profile lookup
       const profilesMap = new Map(
         (profilesData || []).map(profile => [profile.user_id, profile])
       );
 
+      const isInvalidSeller = (listing: DbListingWithPause) => {
+        const profile = profilesMap.get(listing.user_id);
+        if (profile?.status === 'blocked') return true;
+        return canTrustMissing && !profile;
+      };
+
       // Identify entries that should no longer exist for this user
       const invalidListingIds = sizeFiltered
-        .filter((listing) => {
-          const profile = profilesMap.get(listing.user_id);
-          return !profile || profile.status === 'blocked';
-        })
+        .filter((listing) => isInvalidSeller(listing))
         .map((listing) => listing.id);
 
       if (invalidListingIds.length > 0) {
@@ -134,10 +137,7 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
 
       // Keep only listings from existing, non-blocked sellers
       const listingsWithProfiles = sizeFiltered
-        .filter((listing) => {
-          const profile = profilesMap.get(listing.user_id);
-          return !!profile && profile.status !== 'blocked';
-        })
+        .filter((listing) => !isInvalidSeller(listing))
         .map(listing => ({
           ...listing,
           profiles: profilesMap.get(listing.user_id) || null,
@@ -159,7 +159,7 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
       setListings([]);
     }
     setLoading(false);
-  }, [user, filters?.category, filters?.size, filters?.condition, filters?.gender, filters?.minPrice, filters?.maxPrice, filters?.search]);
+  }, [user, filters?.category, filters?.size, filters?.sizes, filters?.condition, filters?.gender, filters?.minPrice, filters?.maxPrice, filters?.search]);
 
   useEffect(() => {
     fetchFavoriteListings();

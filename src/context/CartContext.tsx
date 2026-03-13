@@ -73,7 +73,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     // Fetch seller profiles (with fallback if profiles_public is unavailable)
     const userIds = [...new Set(listingsData.map(l => l.user_id))];
-    const profiles = await fetchSellerProfiles(userIds);
+    const { profiles, canTrustMissing } = await fetchSellerProfiles(userIds);
 
     const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
@@ -82,12 +82,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       cartData.map((c, index) => [c.listing_id, index])
     );
 
+    const isInvalidSeller = (listing: (typeof listingsData)[number]) => {
+      const profile = profileMap.get(listing.user_id);
+      if (profile?.status === 'blocked') return true;
+      return canTrustMissing && !profile;
+    };
+
     // Remove stale cart rows from deleted/blocked sellers for this user
     const invalidListingIds = listingsData
-      .filter((listing) => {
-        const profile = profileMap.get(listing.user_id);
-        return !profile || profile.status === 'blocked';
-      })
+      .filter((listing) => isInvalidSeller(listing))
       .map((listing) => listing.id);
 
     if (invalidListingIds.length > 0) {
@@ -99,10 +102,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // Keep only listings from existing, non-blocked sellers
-    const validListingsData = listingsData.filter(listing => {
-      const profile = profileMap.get(listing.user_id);
-      return !!profile && profile.status !== 'blocked';
-    });
+    const validListingsData = listingsData.filter((listing) => !isInvalidSeller(listing));
 
     const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
     const now = Date.now();
@@ -159,6 +159,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const addToCart = useCallback(async (listing: Listing): Promise<boolean> => {
     if (!user) return false;
+
+    const { profiles: sellerProfiles, canTrustMissing } = await fetchSellerProfiles([listing.sellerId]);
+    const seller = sellerProfiles[0];
+    if ((canTrustMissing && !seller) || seller?.status === 'blocked') {
+      return false;
+    }
 
     const { error } = await supabase
       .from('cart_items')

@@ -11,11 +11,18 @@ export interface SellerProfileLookup {
   status: string | null;
 }
 
+export interface FetchSellerProfilesResult {
+  profiles: SellerProfileLookup[];
+  canTrustMissing: boolean;
+}
+
 const PROFILE_SELECT =
   'user_id, username, avatar_url, location, rating, pause_selling, last_sign_in_at, status';
 
-export const fetchSellerProfiles = async (userIds: string[]): Promise<SellerProfileLookup[]> => {
-  if (userIds.length === 0) return [];
+export const fetchSellerProfiles = async (userIds: string[]): Promise<FetchSellerProfilesResult> => {
+  if (userIds.length === 0) {
+    return { profiles: [], canTrustMissing: true };
+  }
 
   const profilesPublicResponse = await supabase
     .from('profiles_public')
@@ -23,7 +30,10 @@ export const fetchSellerProfiles = async (userIds: string[]): Promise<SellerProf
     .in('user_id', userIds);
 
   if (!profilesPublicResponse.error) {
-    return (profilesPublicResponse.data as SellerProfileLookup[]) || [];
+    return {
+      profiles: (profilesPublicResponse.data as SellerProfileLookup[]) || [],
+      canTrustMissing: true,
+    };
   }
 
   const shouldFallbackToProfiles =
@@ -32,7 +42,7 @@ export const fetchSellerProfiles = async (userIds: string[]): Promise<SellerProf
 
   if (!shouldFallbackToProfiles) {
     console.error('Failed to fetch seller profiles:', profilesPublicResponse.error);
-    return [];
+    return { profiles: [], canTrustMissing: false };
   }
 
   const profilesFallbackResponse = await supabase
@@ -42,8 +52,11 @@ export const fetchSellerProfiles = async (userIds: string[]): Promise<SellerProf
 
   if (profilesFallbackResponse.error) {
     console.error('Failed to fetch seller profiles from fallback source:', profilesFallbackResponse.error);
-    return [];
+    return { profiles: [], canTrustMissing: false };
   }
 
-  return (profilesFallbackResponse.data as SellerProfileLookup[]) || [];
+  return {
+    profiles: (profilesFallbackResponse.data as SellerProfileLookup[]) || [],
+    canTrustMissing: true,
+  };
 };
