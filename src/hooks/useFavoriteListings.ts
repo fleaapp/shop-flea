@@ -5,6 +5,7 @@ import { DbListing, ListingFilters } from './useListings';
 import { getQuerySizesFromKeys, listingSizeKey, normalizeSizeKeys } from '@/utils/sizeKeys';
 import { preloadImages } from '@/utils/preloadAssets';
 import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
+import { loadSavedListingSnapshots, saveSavedListingSnapshots, type SavedListingSnapshot } from '@/utils/savedListingSnapshots';
 // Extended DbListing to include pause_selling from profiles
 export interface DbListingWithPause extends DbListing {
   profiles?: {
