@@ -625,7 +625,7 @@ const ListingDetails = () => {
             {isRemoved && !isOwner ? (
               // Removed listing footer
               <div className="flex flex-col items-center gap-3">
-                <span className="text-sm font-medium text-muted-foreground">
+                <span className="text-sm font-bold text-muted-foreground">
                   ⛔️ Item removed
                 </span>
                 <Button
