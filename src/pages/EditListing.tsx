@@ -324,18 +324,18 @@ const EditListing = () => {
     try {
       const { error } = await supabase
         .from('listings')
-        .delete()
+        .update({ status: 'removed' })
         .eq('id', id);
       
       if (error) {
         throw error;
       }
       
-      toast.success('Listing deleted');
+      toast.success('Listing removed');
       navigate('/profile');
     } catch (error) {
-      console.error('Error deleting listing:', error);
-      toast.error('Failed to delete listing');
+      console.error('Error removing listing:', error);
+      toast.error('Failed to remove listing');
     } finally {
       setIsDeleting(false);
     }
@@ -638,9 +638,9 @@ const EditListing = () => {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete listing?</AlertDialogTitle>
+                <AlertDialogTitle>Remove listing?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete your listing.
+                  This will hide your listing and mark it as removed.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -649,7 +649,7 @@ const EditListing = () => {
                   onClick={handleDelete}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  Delete
+                  Remove
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
