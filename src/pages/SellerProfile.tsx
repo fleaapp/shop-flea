@@ -26,6 +26,8 @@ interface SellerProfile {
   avatar_url: string | null;
   rating: number | null;
   pause_selling?: boolean;
+  created_at?: string | null;
+  updated_at?: string | null;
   last_sign_in_at?: string | null;
 }
 
