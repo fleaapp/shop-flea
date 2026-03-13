@@ -89,8 +89,19 @@ Deno.serve(async (req) => {
     await supabaseAdmin.from('listing_comments').delete().eq('user_id', userId);
     await supabaseAdmin.from('search_queries').delete().eq('user_id', userId);
 
-    // Set user's listings to removed
-    await supabaseAdmin.from('listings').update({ status: 'removed' }).eq('user_id', userId);
+    // Archive user's listings (hidden from app-wide discovery)
+    const { error: archiveListingsError } = await supabaseAdmin
+      .from('listings')
+      .update({ status: 'archived' })
+      .eq('user_id', userId);
+
+    if (archiveListingsError) {
+      console.error('Failed to archive user listings:', archiveListingsError);
+      return new Response(JSON.stringify({ error: 'Failed to delete account. Please contact support.' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Delete the profile
     await supabaseAdmin.from('profiles').delete().eq('user_id', userId);
