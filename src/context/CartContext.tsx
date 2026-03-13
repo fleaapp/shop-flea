@@ -42,15 +42,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     setLoading(true);
 
-    // Server-side purge for deleted/blocked sellers before loading cart rows
-    try {
-      const { error: cleanupError } = await invokeCloudFunction('cleanup-stale-saved-listings', {});
-      if (cleanupError) {
-        console.error('Failed to run cart stale-cleanup:', cleanupError);
-      }
-    } catch (cleanupError) {
-      console.error('Failed to run cart stale-cleanup:', cleanupError);
-    }
+    // Keep cart rows intact so removed/deleted listings can render as ⛔ placeholders.
+    // We validate access at navigation time instead of deleting saved rows here.
+
     // Fetch cart item IDs
     const { data: cartData, error: cartError } = await supabase
       .from('cart_items')
@@ -97,20 +91,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return canTrustMissing && !profile;
     };
 
-    // Remove stale cart rows from deleted/blocked sellers for this user
-    const invalidListingIds = listingsData
-      .filter((listing) => isInvalidSeller(listing))
-      .map((listing) => listing.id);
-
-    if (invalidListingIds.length > 0) {
-      await supabase
-        .from('cart_items')
-        .delete()
-        .eq('user_id', user.id)
-        .in('listing_id', invalidListingIds);
-    }
-
-    // Keep only listings from existing, non-blocked sellers
+    // Keep listings from existing, non-blocked sellers.
+    // Invalid sellers are represented below as removed placeholders so items do not disappear.
     const validListingsData = listingsData.filter((listing) => !isInvalidSeller(listing));
 
     const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
