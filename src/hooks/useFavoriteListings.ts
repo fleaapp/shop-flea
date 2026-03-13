@@ -110,24 +110,21 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
         return canTrustMissing && !profile;
       };
 
-      const invalidSellerIds = sizeFiltered
-        .filter((listing) => isInvalidSeller(listing))
-        .map((listing) => listing.id);
+      // Keep listing details even when seller is invalid; just mark these items as removed for UI
+      const listingsWithProfiles = sizeFiltered.map(listing => {
+        const profile = profilesMap.get(listing.user_id) || null;
+        const removedBySeller = isInvalidSeller(listing);
 
-      // Keep only listings from existing, non-blocked sellers
-      const listingsWithProfiles = sizeFiltered
-        .filter((listing) => !isInvalidSeller(listing))
-        .map(listing => ({
+        return {
           ...listing,
-          profiles: profilesMap.get(listing.user_id) || null,
-        }));
+          status: removedBySeller ? 'removed' : listing.status,
+          profiles: profile,
+        };
+      });
 
-      // Detect missing listing IDs (fully deleted rows) and invalid-seller IDs; create placeholders
+      // Detect missing listing IDs (fully deleted rows) and create placeholders
       const fetchedIds = new Set(sizeFiltered.map(l => l.id));
-      const missingIds = Array.from(new Set([
-        ...favoriteIds.filter(id => !fetchedIds.has(id)),
-        ...invalidSellerIds,
-      ]));
+      const missingIds = favoriteIds.filter(id => !fetchedIds.has(id));
       for (const missingId of missingIds) {
         listingsWithProfiles.push({
           id: missingId,

@@ -90,21 +90,20 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return canTrustMissing && !profile;
     };
 
-    // Keep listings from existing, non-blocked sellers.
-    // Invalid sellers are represented below as removed placeholders so items do not disappear.
-    const validListingsData = listingsData.filter((listing) => !isInvalidSeller(listing));
-
     const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
     const now = Date.now();
 
     // Detect listing IDs that exist in cart but not in fetched listings (fully deleted rows)
-    const fetchedListingIds = new Set(validListingsData.map(l => l.id));
+    const fetchedListingIds = new Set(listingsData.map(l => l.id));
     const missingListingIds = listingIds.filter(id => !fetchedListingIds.has(id));
 
-    const transformedListings: CartListing[] = validListingsData.map(listing => {
+    const transformedListings: CartListing[] = listingsData.map(listing => {
       const seller = profileMap.get(listing.user_id);
       const lastSignIn = seller?.last_sign_in_at ? new Date(seller.last_sign_in_at).getTime() : now;
-      const isRemovedStatus = listing.status !== 'active' && listing.status !== 'sold';
+      const removedByStatus = listing.status !== 'active' && listing.status !== 'sold';
+      const removedBySeller = isInvalidSeller(listing);
+      const isRemovedStatus = removedByStatus || removedBySeller;
+
       return {
         id: listing.id,
         title: listing.title,
@@ -115,7 +114,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         image: listing.images?.[0] || '',
         images: listing.images || [],
         sellerId: listing.user_id,
-        sellerName: seller?.username || 'Unknown',
+        sellerName: seller?.username || 'Unknown Seller',
         sellerAvatar: getAvatarUrl(seller?.avatar_url) || getDefaultAvatar(listing.user_id),
         condition: listing.condition as Listing['condition'],
         category: listing.category,
@@ -130,7 +129,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       };
     });
 
-    // Create placeholder entries for fully deleted listings
+    // Create placeholder entries only for fully deleted listings
     for (const missingId of missingListingIds) {
       transformedListings.push({
         id: missingId,
