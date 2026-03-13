@@ -831,14 +831,14 @@ const ListingDetails = () => {
           </AlertDialog>
           {/* Remove from Cart/Wishlist for removed listings */}
           <AlertDialog open={showRemoveFromBothDialog} onOpenChange={setShowRemoveFromBothDialog}>
-            <AlertDialogContent className="max-w-[280px] rounded-2xl">
-              <AlertDialogHeader>
+            <AlertDialogContent className="max-w-[320px] rounded-2xl p-8">
+              <AlertDialogHeader className="space-y-4">
                 <AlertDialogTitle>Remove this item?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This listing has been removed. Clean it up from your saved items.
+                  Clean it up from your 🛒 Cart and/or 💌 Wishlist.
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <AlertDialogFooter className="flex-row gap-2">
+              <AlertDialogFooter className="flex-row gap-3 mt-6">
                 <AlertDialogCancel className="flex-1 mt-0">Cancel</AlertDialogCancel>
                 <AlertDialogAction 
                   onClick={async () => {
