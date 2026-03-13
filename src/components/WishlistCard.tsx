@@ -84,9 +84,16 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused
             )}
 
             {/* Inactive overlay with emoji (same style as paused) */}
-            {isInactive && !isSold && !isPaused && (
+            {isInactive && !isSold && !isPaused && !isRemoved && (
               <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-charcoal/40">
                 <span className="text-[80px] drop-shadow-lg">🕰️</span>
+              </div>
+            )}
+
+            {/* Removed overlay with emoji */}
+            {isRemoved && (
+              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-charcoal/40">
+                <span className="text-[80px] drop-shadow-lg">⛔️</span>
               </div>
             )}
             
