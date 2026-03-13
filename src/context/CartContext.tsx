@@ -73,7 +73,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     // Fetch seller profiles including pause_selling and last_sign_in_at
     const userIds = [...new Set(listingsData.map(l => l.user_id))];
     const { data: profiles } = await supabase
-      .from('profiles')
+      .from('profiles_public')
       .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at, status')
       .in('user_id', userIds);
 

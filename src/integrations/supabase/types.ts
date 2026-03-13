@@ -730,6 +730,7 @@ export type Database = {
           country_code: string | null
           created_at: string | null
           id: string | null
+          last_sign_in_at: string | null
           location: string | null
           pause_selling: boolean | null
           rating: number | null
@@ -751,6 +752,7 @@ export type Database = {
           country_code?: string | null
           created_at?: string | null
           id?: string | null
+          last_sign_in_at?: string | null
           location?: string | null
           pause_selling?: boolean | null
           rating?: number | null
@@ -772,6 +774,7 @@ export type Database = {
           country_code?: string | null
           created_at?: string | null
           id?: string | null
+          last_sign_in_at?: string | null
           location?: string | null
           pause_selling?: boolean | null
           rating?: number | null

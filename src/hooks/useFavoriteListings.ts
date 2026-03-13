@@ -97,7 +97,7 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
       const uniqueUserIds = [...new Set(sizeFiltered.map(listing => listing.user_id))];
       
       const { data: profilesData } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('user_id, username, avatar_url, location, rating, pause_selling, last_sign_in_at, status')
         .in('user_id', uniqueUserIds);
       
