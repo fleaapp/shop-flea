@@ -19,6 +19,7 @@ interface DisplayListing extends Listing {
   isSold: boolean;
   isPaused: boolean;
   isInactive: boolean;
+  isRemoved: boolean;
 }
 
 const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
