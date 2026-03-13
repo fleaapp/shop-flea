@@ -159,7 +159,6 @@ const Favorites = () => {
                   isSold={listing.isSold}
                   isPaused={listing.isPaused}
                   isInactive={listing.isInactive}
-                  isSellerGone={listing.isSellerGone}
                   isInCart={isInCart(listing.id)}
                 />
               </div>
