@@ -85,10 +85,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     );
 
     // Transform to Listing type
-    // Filter out listings from deleted users (no profile) or blocked users
+    // Filter out listings from explicitly blocked/banned users
     const validListingsData = listingsData.filter(listing => {
       const profile = profileMap.get(listing.user_id);
-      return profile && profile.status !== 'blocked';
+      // Only exclude if profile exists and is blocked; missing profile may be RLS
+      return !profile || profile.status !== 'blocked';
     });
 
     const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
