@@ -58,6 +58,7 @@ const toDisplayListing = (dbListing: DbListingWithPause): DisplayListing => {
     isSold: dbListing.status === 'sold',
     isPaused: dbListing.profiles?.pause_selling || false,
     isInactive: (Date.now() - lastSignIn) >= TEN_DAYS_MS,
+    isSellerGone: !dbListing.profiles,
   };
 };
 
