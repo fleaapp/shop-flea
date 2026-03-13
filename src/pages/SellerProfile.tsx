@@ -78,14 +78,31 @@ const SellerProfile = () => {
     setLoading(true);
     setListingsLoading(true);
 
-    // Fetch seller profile including pause_selling and last_sign_in_at
-    const { data: profileData, error: profileError } = await supabase
+    // Fetch seller profile, with fallback for backends missing last_sign_in_at
+    const { data: profileDataWithLastSeen, error: profileErrorWithLastSeen } = await supabase
       .from('profiles')
       .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at')
       .eq('user_id', sellerId)
-      .single();
+      .maybeSingle();
 
-    if (profileError) {
+    let profileData: SellerProfile | null = profileDataWithLastSeen;
+    let profileError = profileErrorWithLastSeen;
+
+    // Some environments may not have last_sign_in_at yet
+    if (profileErrorWithLastSeen?.code === '42703') {
+      const fallbackResult = await supabase
+        .from('profiles')
+        .select('user_id, username, avatar_url, rating, pause_selling')
+        .eq('user_id', sellerId)
+        .maybeSingle();
+
+      profileData = fallbackResult.data
+        ? { ...fallbackResult.data, last_sign_in_at: null }
+        : null;
+      profileError = fallbackResult.error;
+    }
+
+    if (profileError || !profileData) {
       console.error('Error fetching seller profile:', profileError);
       setLoading(false);
       return;
