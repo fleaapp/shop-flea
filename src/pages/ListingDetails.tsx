@@ -259,7 +259,7 @@ const ListingDetails = () => {
     };
     
     fetchListing();
-  }, [id, location.state]);
+  }, [id, location.state, user?.id]);
 
   // Fetch cart and wishlist counts for this listing
   useEffect(() => {
