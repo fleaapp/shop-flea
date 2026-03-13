@@ -30,7 +30,7 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused
   const navigate = useNavigate();
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const isUnavailable = isSold || isPaused || isInactive;
+  const isUnavailable = isSold || isPaused || isInactive || isSellerGone;
 
   const handleCardClick = () => {
     navigate(`/listing/${listing.id}`, { state: { listing, isSold, fromWishlist: true } });
