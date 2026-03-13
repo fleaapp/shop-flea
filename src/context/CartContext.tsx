@@ -115,9 +115,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
     const now = Date.now();
+
+    // Detect listing IDs that exist in cart but not in fetched listings (fully deleted rows)
+    const fetchedListingIds = new Set(validListingsData.map(l => l.id));
+    const missingListingIds = listingIds.filter(id => !fetchedListingIds.has(id));
+
     const transformedListings: CartListing[] = validListingsData.map(listing => {
       const seller = profileMap.get(listing.user_id);
       const lastSignIn = seller?.last_sign_in_at ? new Date(seller.last_sign_in_at).getTime() : now;
+      const isRemovedStatus = listing.status !== 'active' && listing.status !== 'sold';
       return {
         id: listing.id,
         title: listing.title,
@@ -136,11 +142,39 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         tags: listing.tags || [],
         location: '',
         createdAt: new Date(listing.created_at),
-        status: listing.status,
-        isPaused: seller?.pause_selling || false,
-        isInactive: (now - lastSignIn) >= TEN_DAYS_MS,
+        status: isRemovedStatus ? 'removed' : listing.status,
+        isPaused: isRemovedStatus ? false : (seller?.pause_selling || false),
+        isInactive: isRemovedStatus ? false : ((now - lastSignIn) >= TEN_DAYS_MS),
+        isRemoved: isRemovedStatus,
       };
     });
+
+    // Create placeholder entries for fully deleted listings
+    for (const missingId of missingListingIds) {
+      transformedListings.push({
+        id: missingId,
+        title: 'Removed listing',
+        brand: '',
+        size: '',
+        price: 0,
+        shippingPrice: 0,
+        image: '',
+        images: [],
+        sellerId: 'unknown',
+        sellerName: 'Unknown',
+        sellerAvatar: getDefaultAvatar(missingId),
+        condition: 'good',
+        category: '',
+        description: '',
+        tags: [],
+        location: '',
+        createdAt: new Date(),
+        status: 'removed',
+        isPaused: false,
+        isInactive: false,
+        isRemoved: true,
+      });
+    }
 
     // Sort by the order they were added to cart (most recent first)
     transformedListings.sort((a, b) => {
