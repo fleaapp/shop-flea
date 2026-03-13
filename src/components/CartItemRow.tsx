@@ -193,7 +193,7 @@ const CartItemRow = ({
         {/* Content */}
         <div className="flex flex-1 flex-col justify-between h-24">
           <div className="flex items-start justify-between pt-1">
-            <h3 className={cn("font-semibold", isSold ? "text-[hsl(4,90%,58%)]" : "text-foreground")}>{item.title}</h3>
+            <h3 className={cn("font-semibold", isSold ? "text-[hsl(4,90%,58%)]" : isRemoved ? "text-[hsl(4,90%,58%)]" : "text-foreground")}>{item.title}</h3>
             {showSellerAvatar && (
               <img
                 src={item.sellerAvatar}
