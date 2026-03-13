@@ -127,12 +127,35 @@ export const useListings = (filters?: ListingFilters) => {
       const normalizedSizeKeys = normalizeSizeKeys(filters?.sizes);
       const sizeKeySet = normalizedSizeKeys.length > 0 ? new Set(normalizedSizeKeys) : null;
 
-      const sizeFiltered = sizeKeySet
-        ? data.filter((l) => sizeKeySet.has(listingSizeKey(l.size, l.category, l.gender)))
-        : data;
+      let validatedListings = sizeFiltered;
+      try {
+        const { data: validationData, error: validationError } = await invokeCloudFunction(
+          'cleanup-stale-saved-listings',
+          {
+            listingIds: sizeFiltered.map((listing) => listing.id),
+            performCleanup: false,
+          }
+        );
+
+        if (validationError) {
+          console.error('Failed to validate Home listings against seller existence:', validationError);
+        } else {
+          const invalidListingIds = new Set(
+            Array.isArray((validationData as { invalidListingIds?: string[] } | null)?.invalidListingIds)
+              ? (validationData as { invalidListingIds: string[] }).invalidListingIds
+              : []
+          );
+
+          if (invalidListingIds.size > 0) {
+            validatedListings = sizeFiltered.filter((listing) => !invalidListingIds.has(listing.id));
+          }
+        }
+      } catch (validationError) {
+        console.error('Failed to validate Home listings against seller existence:', validationError);
+      }
 
       // Get unique user_ids and fetch seller profiles (schema-safe + RLS-aware)
-      const uniqueUserIds = [...new Set(sizeFiltered.map(listing => listing.user_id))];
+      const uniqueUserIds = [...new Set(validatedListings.map(listing => listing.user_id))];
       const { profiles: profilesData, canTrustMissing } = await fetchSellerProfiles(uniqueUserIds);
 
       // Create a map for quick profile lookup
@@ -148,7 +171,7 @@ export const useListings = (filters?: ListingFilters) => {
       };
 
       // Merge listings with profiles and exclude deleted/blocked/paused sellers
-      let listingsWithProfiles = sizeFiltered
+      let listingsWithProfiles = validatedListings
         .filter((listing) => !isInvalidSeller(listing))
         .map(listing => ({
           ...listing,
