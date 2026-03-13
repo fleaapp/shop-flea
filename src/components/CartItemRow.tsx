@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 interface CartItemRowProps {
-  item: Listing & { status?: string; isPaused?: boolean; isInactive?: boolean };
+  item: Listing & { status?: string; isPaused?: boolean; isInactive?: boolean; isRemoved?: boolean };
   isSelected: boolean;
   isLast: boolean;
   showSellerAvatar: boolean;
