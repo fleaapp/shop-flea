@@ -27,6 +27,9 @@ interface SellerProfile {
   rating: number | null;
   pause_selling?: boolean;
   last_sign_in_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  status?: string;
 }
 
 interface DbListing {
