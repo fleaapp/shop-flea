@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { preloadImages } from '@/utils/preloadAssets';
 import { getQuerySizesFromKeys, listingSizeKey, normalizeSizeKeys } from '@/utils/sizeKeys';
 import { filterBySearch } from '@/utils/searchUtils';
+import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
 
 export interface DbListing {
   id: string;
@@ -29,8 +30,9 @@ export interface DbListing {
     username: string;
     avatar_url: string | null;
     location: string | null;
-    rating: number;
+    rating: number | null;
     pause_selling?: boolean;
+    status?: string | null;
   } | null;
 }
 
@@ -128,26 +130,29 @@ export const useListings = (filters?: ListingFilters) => {
         ? data.filter((l) => sizeKeySet.has(listingSizeKey(l.size, l.category, l.gender)))
         : data;
 
-      // Get unique user_ids and fetch all profiles in a single query
+      // Get unique user_ids and fetch seller profiles (schema-safe + RLS-aware)
       const uniqueUserIds = [...new Set(sizeFiltered.map(listing => listing.user_id))];
-      
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('user_id, username, avatar_url, location, rating, pause_selling')
-        .in('user_id', uniqueUserIds);
-      
+      const { profiles: profilesData, canTrustMissing } = await fetchSellerProfiles(uniqueUserIds);
+
       // Create a map for quick profile lookup
       const profilesMap = new Map(
         (profilesData || []).map(profile => [profile.user_id, profile])
       );
-      
-      // Merge listings with profiles, filter out paused sellers
+
+      const isInvalidSeller = (listing: DbListing) => {
+        const profile = profilesMap.get(listing.user_id);
+        if (profile?.status === 'blocked') return true;
+        if (canTrustMissing && !profile) return true;
+        return !!profile?.pause_selling;
+      };
+
+      // Merge listings with profiles and exclude deleted/blocked/paused sellers
       let listingsWithProfiles = sizeFiltered
+        .filter((listing) => !isInvalidSeller(listing))
         .map(listing => ({
           ...listing,
           profiles: profilesMap.get(listing.user_id) || null,
-        }))
-        .filter(listing => !listing.profiles?.pause_selling);
+        }));
       
       // Apply client-side search filtering for multi-word, token-based search
       if (filters?.search) {
