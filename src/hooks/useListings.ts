@@ -207,20 +207,47 @@ export const useUserListings = (status?: 'active' | 'sold' | 'archived') => {
 
     const fetchUserListings = async () => {
       setLoading(true);
-      let query = supabase
-        .from('listings')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
 
-      if (status) {
-        query = query.eq('status', status);
-      }
+      if (status === 'sold') {
+        // Derive sold listings from orders table to stay consistent with Sales tab
+        const { data: orders, error: ordersError } = await supabase
+          .from('orders')
+          .select('listing_id')
+          .eq('seller_id', user.id);
 
-      const { data, error } = await query;
-      
-      if (!error && data) {
-        setListings(data);
+        if (ordersError || !orders || orders.length === 0) {
+          setListings([]);
+          setLoading(false);
+          return;
+        }
+
+        const listingIds = [...new Set(orders.map(o => o.listing_id))];
+        const { data, error } = await supabase
+          .from('listings')
+          .select('*')
+          .in('id', listingIds)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          setListings(data);
+        }
+      } else {
+        let query = supabase
+          .from('listings')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (status) {
+          query = query.eq('status', status);
+        }
+
+        const { data, error } = await query;
+
+        if (!error && data) {
+          setListings(data);
+        }
       }
       setLoading(false);
     };
