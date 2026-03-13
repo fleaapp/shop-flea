@@ -1,3 +1,5 @@
+import type { Listing } from '@/types/listing';
+
 export interface SavedListingSnapshot {
   listing: {
     id: string;
@@ -33,6 +35,56 @@ export interface SavedListingSnapshot {
   } | null;
   saved_at: string;
 }
+
+type SnapshotSeller = NonNullable<SavedListingSnapshot['seller']>;
+
+export const createSavedListingSnapshotFromListing = (
+  listing: Listing,
+  seller?: Partial<SnapshotSeller> | null,
+): SavedListingSnapshot => {
+  const nowIso = new Date().toISOString();
+  const createdAt = listing.createdAt instanceof Date
+    ? listing.createdAt.toISOString()
+    : nowIso;
+
+  return {
+    listing: {
+      id: listing.id,
+      user_id: listing.sellerId,
+      title: listing.title,
+      description: listing.description || null,
+      brand: listing.brand,
+      size: listing.size,
+      category: listing.category,
+      condition: listing.condition,
+      colour: null,
+      style: null,
+      gender: null,
+      price: Number(listing.price || 0),
+      shipping_price: Number(listing.shippingPrice || 0),
+      images: listing.images && listing.images.length > 0
+        ? listing.images
+        : (listing.image ? [listing.image] : []),
+      tags: listing.tags || [],
+      status: listing.status || 'active',
+      created_at: createdAt,
+      updated_at: nowIso,
+      country_code: null,
+      region_id: null,
+    },
+    seller: {
+      user_id: seller?.user_id || listing.sellerId,
+      username: seller?.username ?? listing.sellerName ?? null,
+      avatar_url: seller?.avatar_url ?? listing.sellerAvatar ?? null,
+      location: seller?.location ?? listing.location ?? null,
+      rating: typeof seller?.rating === 'number' ? seller.rating : null,
+      pause_selling: typeof seller?.pause_selling === 'boolean' ? seller.pause_selling : null,
+      last_sign_in_at: typeof seller?.last_sign_in_at === 'string' ? seller.last_sign_in_at : null,
+      status: typeof seller?.status === 'string' ? seller.status : null,
+    },
+    saved_at: nowIso,
+  };
+};
 
 const STORAGE_PREFIX = 'saved-listing-snapshots';
 

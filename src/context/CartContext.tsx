@@ -6,7 +6,12 @@ import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { getAvatarUrl } from '@/utils/optimizedImage';
 import { preloadImages } from '@/utils/preloadAssets';
 import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
-import { loadSavedListingSnapshots, saveSavedListingSnapshots, type SavedListingSnapshot } from '@/utils/savedListingSnapshots';
+import {
+  createSavedListingSnapshotFromListing,
+  loadSavedListingSnapshots,
+  saveSavedListingSnapshots,
+  type SavedListingSnapshot,
+} from '@/utils/savedListingSnapshots';
 // Extended Listing type to include pause/inactive/removed status
 interface CartListing extends Listing {
   isPaused?: boolean;
@@ -256,6 +261,23 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
 
+    const persistSnapshot = () => {
+      saveSavedListingSnapshots(user.id, [
+        createSavedListingSnapshotFromListing(listing, seller
+          ? {
+              user_id: seller.user_id,
+              username: seller.username,
+              avatar_url: seller.avatar_url,
+              location: seller.location,
+              rating: seller.rating,
+              pause_selling: seller.pause_selling,
+              last_sign_in_at: seller.last_sign_in_at,
+              status: seller.status,
+            }
+          : null),
+      ]);
+    };
+
     const { error } = await supabase
       .from('cart_items')
       .insert({ user_id: user.id, listing_id: listing.id });
@@ -263,11 +285,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     if (error) {
       if (error.code === '23505') {
         // Already in cart
+        persistSnapshot();
         return true;
       }
       console.error('Failed to add to cart:', error);
       return false;
     }
+
+    persistSnapshot();
 
     setCartItems(prev => [...prev, listing]);
     setCartIds(prev => new Set([...prev, listing.id]));

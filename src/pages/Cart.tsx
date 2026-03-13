@@ -160,10 +160,10 @@ const Cart = () => {
     toast.success('Removed from cart');
   };
 
-  const handleSwipeRight = async (itemId: string) => {
-    await removeFromCart(itemId);
-    await removeDiscarded(itemId);
-    await addFavorite(itemId);
+  const handleSwipeRight = async (item: Listing & { status?: string; isRemoved?: boolean; isPaused?: boolean; isInactive?: boolean }) => {
+    await removeFromCart(item.id);
+    await removeDiscarded(item.id);
+    await addFavorite(item.id, item);
     toast.success('Moved to wishlist');
   };
 
@@ -357,7 +357,7 @@ const Cart = () => {
                         showCheckbox={sellersWithMultipleItems.has(groupKey) && item.status !== 'sold' && !item.isPaused && !item.isInactive && !item.isRemoved}
                         onToggleSelect={() => toggleSelect(item.id, groupKey)}
                         onSwipeLeft={() => handleSwipeLeft(item.id)}
-                        onSwipeRight={() => handleSwipeRight(item.id)}
+                        onSwipeRight={() => handleSwipeRight(item)}
                         onCardClick={() => handleListingClick(item)}
                       />
                     ))}
