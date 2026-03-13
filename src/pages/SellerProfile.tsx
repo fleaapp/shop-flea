@@ -273,26 +273,28 @@ const SellerProfile = () => {
           <div className="flex justify-center py-12">
             <span className="text-5xl">⏳</span>
           </div>
-        ) : sellerProfile.pause_selling && activeTab === 'listings' ? (
-          // Show paused selling state for seller
-          <div className="flex flex-col items-center justify-center px-4 py-12">
-            <span className="text-5xl mb-4">⏸️</span>
-            <p className="text-lg font-medium text-muted-foreground">Paused</p>
-            <p className="mt-2 text-sm text-muted-foreground text-center">
-              This seller has temporarily paused their listings.
-            </p>
-          </div>
         ) : (() => {
           const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
           const lastSignIn = sellerProfile.last_sign_in_at ? new Date(sellerProfile.last_sign_in_at).getTime() : Date.now();
           const isInactive = (Date.now() - lastSignIn) >= TEN_DAYS_MS;
-          if (isInactive && activeTab === 'listings') {
+          if (isInactive) {
             return (
               <div className="flex flex-col items-center justify-center px-4 py-12">
                 <span className="text-5xl mb-4">🕰️</span>
                 <p className="text-lg font-medium text-muted-foreground">Inactive</p>
                 <p className="mt-2 text-sm text-muted-foreground text-center">
                   This seller hasn't been active recently.
+                </p>
+              </div>
+            );
+          }
+          if (sellerProfile.pause_selling) {
+            return (
+              <div className="flex flex-col items-center justify-center px-4 py-12">
+                <span className="text-5xl mb-4">⏸️</span>
+                <p className="text-lg font-medium text-muted-foreground">Paused</p>
+                <p className="mt-2 text-sm text-muted-foreground text-center">
+                  This seller has temporarily paused their listings.
                 </p>
               </div>
             );
