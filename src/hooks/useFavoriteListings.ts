@@ -98,7 +98,7 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
       
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('user_id, username, avatar_url, location, rating, pause_selling, last_sign_in_at')
+        .select('user_id, username, avatar_url, location, rating, pause_selling, last_sign_in_at, status')
         .in('user_id', uniqueUserIds);
       
       // Create a map for quick profile lookup

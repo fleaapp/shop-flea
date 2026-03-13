@@ -74,7 +74,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     const userIds = [...new Set(listingsData.map(l => l.user_id))];
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at')
+      .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at, status')
       .in('user_id', userIds);
 
     const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
