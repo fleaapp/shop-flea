@@ -42,7 +42,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
 
     // Server-side purge for deleted/blocked sellers before loading cart rows
-    await invokeCloudFunction('cleanup-stale-saved-listings', {});
+    try {
+      const { error: cleanupError } = await invokeCloudFunction('cleanup-stale-saved-listings', {});
+      if (cleanupError) {
+        console.error('Failed to run cart stale-cleanup:', cleanupError);
+      }
+    } catch (cleanupError) {
+      console.error('Failed to run cart stale-cleanup:', cleanupError);
+    }
     // Fetch cart item IDs
     const { data: cartData, error: cartError } = await supabase
       .from('cart_items')

@@ -34,7 +34,14 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
     setLoading(true);
 
     // Server-side purge for deleted/blocked sellers before loading wishlist rows
-    await invokeCloudFunction('cleanup-stale-saved-listings', {});
+    try {
+      const { error: cleanupError } = await invokeCloudFunction('cleanup-stale-saved-listings', {});
+      if (cleanupError) {
+        console.error('Failed to run wishlist stale-cleanup:', cleanupError);
+      }
+    } catch (cleanupError) {
+      console.error('Failed to run wishlist stale-cleanup:', cleanupError);
+    }
     // First get the user's favorite listing IDs
     const { data: favorites, error: favError } = await supabase
       .from('favorites')
