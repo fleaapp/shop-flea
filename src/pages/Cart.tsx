@@ -160,10 +160,10 @@ const Cart = () => {
     toast.success('Removed from cart');
   };
 
-  const handleSwipeRight = async (itemId: string) => {
-    await removeFromCart(itemId);
-    await removeDiscarded(itemId);
-    await addFavorite(itemId);
+  const handleSwipeRight = async (item: Listing & { status?: string; isRemoved?: boolean; isPaused?: boolean; isInactive?: boolean }) => {
+    await removeFromCart(item.id);
+    await removeDiscarded(item.id);
+    await addFavorite(item.id, item);
     toast.success('Moved to wishlist');
   };
 
