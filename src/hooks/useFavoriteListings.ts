@@ -111,11 +111,17 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
         favorites.map((f, index) => [f.listing_id, index])
       );
       
-      // Merge listings with profiles
-      const listingsWithProfiles = sizeFiltered.map(listing => ({
-        ...listing,
-        profiles: profilesMap.get(listing.user_id) || null,
-      }));
+      // Merge listings with profiles, filter out deleted/blocked users
+      const listingsWithProfiles = sizeFiltered
+        .filter(listing => {
+          const profile = profilesMap.get(listing.user_id);
+          // Exclude listings from deleted users (no profile) or blocked users
+          return profile && profile.status !== 'blocked';
+        })
+        .map(listing => ({
+          ...listing,
+          profiles: profilesMap.get(listing.user_id) || null,
+        }));
 
       // Preload listing images
       const imagesToPreload = sizeFiltered.flatMap(l => l.images?.slice(0, 1) || []).filter(Boolean);
