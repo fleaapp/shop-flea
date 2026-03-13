@@ -110,6 +110,55 @@ const ListingDetails = () => {
   useEffect(() => {
     const fetchListing = async () => {
       if (!id) return;
+
+      const stateListing = location.state?.listing as (Partial<DbListing> & {
+        image?: string;
+        shippingPrice?: number;
+        sellerId?: string;
+        sellerName?: string;
+        sellerAvatar?: string;
+        location?: string;
+      }) | undefined;
+
+      const hydrateFromState = (forcedStatus: 'removed' | 'sold' = 'removed') => {
+        if (!stateListing) return false;
+
+        const fallbackImages = stateListing.images?.length
+          ? stateListing.images
+          : stateListing.image
+            ? [stateListing.image]
+            : [];
+
+        setListing({
+          id: id,
+          title: stateListing.title || 'Removed listing',
+          description: stateListing.description ?? '',
+          brand: stateListing.brand || '',
+          size: stateListing.size || '',
+          price: Number(stateListing.price ?? 0),
+          shipping_price: Number(stateListing.shipping_price ?? stateListing.shippingPrice ?? 0),
+          images: fallbackImages,
+          tags: stateListing.tags || [],
+          condition: stateListing.condition || 'good',
+          colour: stateListing.colour ?? null,
+          style: stateListing.style ?? null,
+          gender: stateListing.gender ?? null,
+          category: stateListing.category || '',
+          user_id: stateListing.user_id || stateListing.sellerId || 'unknown',
+          status: forcedStatus,
+        });
+
+        setSeller({
+          username: stateListing.sellerName || 'Unknown',
+          avatar_url: stateListing.sellerAvatar || null,
+          location: stateListing.location || null,
+          country_code: null,
+        });
+
+        setListingStatus(forcedStatus);
+        setLoading(false);
+        return true;
+      };
       
       // First fetch the listing
       const { data: listingData, error: listingError } = await supabase
@@ -119,30 +168,32 @@ const ListingDetails = () => {
         .maybeSingle();
       
       if (listingError || !listingData) {
+        if (hydrateFromState('removed')) {
+          return;
+        }
         console.error('Error fetching listing:', listingError);
         setLoading(false);
         return;
       }
       
       const status = listingData.status || 'active';
+      let normalizedListing = listingData;
       setListingStatus(status);
 
       // For removed/deleted listings, still allow rendering (user sees ⛔️ UI)
       const isRemovedListing = status !== 'active' && status !== 'sold';
 
       if (!isRemovedListing) {
-        // Validate seller existence/status server-side so orphan listings never render
+        // If listing is not generally accessible anymore, keep details but force removed state for saved-item cleanup
         const listingIsAccessible = await canOpenListing(listingData.id);
 
         if (!listingIsAccessible) {
-          setListing(null);
-          setSeller(null);
-          setLoading(false);
-          return;
+          normalizedListing = { ...listingData, status: 'removed' };
+          setListingStatus('removed');
         }
       }
 
-      setListing(listingData);
+      setListing(normalizedListing);
       
       // Then fetch the seller's profile
       const { data: profileData, error: profileError } = await supabase
@@ -167,7 +218,7 @@ const ListingDetails = () => {
     };
     
     fetchListing();
-  }, [id]);
+  }, [id, location.state]);
 
   // Fetch cart and wishlist counts for this listing
   useEffect(() => {
