@@ -503,7 +503,21 @@ const ListingDetails = () => {
 
           {/* Sticky Footer Actions */}
           <div className="sticky bottom-0 left-0 right-0 flex gap-3 bg-background px-4 py-4 border-t border-border justify-center">
-            {isOwner ? (
+            {isRemoved && !isOwner ? (
+              // Removed listing footer
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowRemoveFromBothDialog(true)}
+                  className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent"
+                >
+                  🗑️
+                </Button>
+                <span className="text-base font-semibold text-muted-foreground pointer-events-none select-none">
+                  ⛔️ Item removed
+                </span>
+              </div>
+            ) : isOwner ? (
               // Owner footer
               isSold ? (
                 // Sold listing owner footer
