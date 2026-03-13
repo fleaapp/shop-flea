@@ -22,11 +22,10 @@ interface WishlistCardProps {
   isSold?: boolean;
   isPaused?: boolean;
   isInactive?: boolean;
-  isSellerGone?: boolean;
   isInCart?: boolean;
 }
 
-const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused = false, isInactive = false, isSellerGone = false, isInCart = false }: WishlistCardProps) => {
+const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused = false, isInactive = false, isInCart = false }: WishlistCardProps) => {
   const navigate = useNavigate();
   const [showConfirm, setShowConfirm] = useState(false);
 
