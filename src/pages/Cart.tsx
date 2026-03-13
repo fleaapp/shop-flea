@@ -118,8 +118,15 @@ const Cart = () => {
     });
   };
 
-  const handleListingClick = (item: Listing & { status?: string }) => {
-    navigate(`/listing/${item.id}`);
+  const handleListingClick = (item: Listing & { status?: string; isRemoved?: boolean }) => {
+    navigate(`/listing/${item.id}`, {
+      state: {
+        listing: item,
+        isSold: item.status === 'sold',
+        isRemoved: item.isRemoved || item.status === 'removed',
+        fromCart: true,
+      },
+    });
   };
 
   const handleCheckout = (itemIds: string[]) => {
