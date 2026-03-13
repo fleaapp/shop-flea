@@ -67,12 +67,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     const listingIds = cartData.map(c => c.listing_id);
 
-    // Fetch full listing data (include sold items to show with SOLD overlay)
+    // Fetch full listing data (include all statuses to detect removed/deleted)
     const { data: listingsData, error: listingsError } = await supabase
       .from('listings')
       .select('*')
-      .in('id', listingIds)
-      .in('status', ['active', 'sold']);
+      .in('id', listingIds);
 
     if (listingsError || !listingsData) {
       setCartItems([]);
