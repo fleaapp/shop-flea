@@ -295,9 +295,9 @@ const SellerProfile = () => {
           </div>
         ) : (() => {
           const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
-          const lastSignIn = sellerProfile.last_sign_in_at ? new Date(sellerProfile.last_sign_in_at).getTime() : Date.now();
-          const isInactive = (Date.now() - lastSignIn) >= TEN_DAYS_MS;
-          if (isInactive) {
+          const lastActivityAt = sellerProfile.last_sign_in_at ?? sellerProfile.updated_at ?? sellerProfile.created_at ?? null;
+          const lastActivityMs = lastActivityAt ? new Date(lastActivityAt).getTime() : NaN;
+          const isInactive = Number.isFinite(lastActivityMs) && (Date.now() - lastActivityMs) >= TEN_DAYS_MS;
             return (
               <div className="flex flex-col items-center justify-center px-4 py-12">
                 <span className="text-5xl mb-4">🕰️</span>
