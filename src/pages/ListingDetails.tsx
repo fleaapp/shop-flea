@@ -124,16 +124,22 @@ const ListingDetails = () => {
         return;
       }
       
-      setListingStatus(listingData.status || 'active');
+      const status = listingData.status || 'active';
+      setListingStatus(status);
 
-      // Validate seller existence/status server-side so orphan listings never render
-      const listingIsAccessible = await canOpenListing(listingData.id);
+      // For removed/deleted listings, still allow rendering (user sees ⛔️ UI)
+      const isRemovedListing = status !== 'active' && status !== 'sold';
 
-      if (!listingIsAccessible) {
-        setListing(null);
-        setSeller(null);
-        setLoading(false);
-        return;
+      if (!isRemovedListing) {
+        // Validate seller existence/status server-side so orphan listings never render
+        const listingIsAccessible = await canOpenListing(listingData.id);
+
+        if (!listingIsAccessible) {
+          setListing(null);
+          setSeller(null);
+          setLoading(false);
+          return;
+        }
       }
 
       setListing(listingData);
