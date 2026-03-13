@@ -5,6 +5,7 @@ import { DbListing, ListingFilters } from './useListings';
 import { getQuerySizesFromKeys, listingSizeKey, normalizeSizeKeys } from '@/utils/sizeKeys';
 import { preloadImages } from '@/utils/preloadAssets';
 import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
+import { loadSavedListingSnapshots, saveSavedListingSnapshots, type SavedListingSnapshot } from '@/utils/savedListingSnapshots';
 // Extended DbListing to include pause_selling from profiles
 export interface DbListingWithPause extends DbListing {
   profiles?: {
@@ -122,10 +123,82 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
         };
       });
 
-      // Detect missing listing IDs (fully deleted rows) and create placeholders
+      const snapshotsToSave: SavedListingSnapshot[] = sizeFiltered.map((listing) => ({
+        listing: {
+          id: listing.id,
+          user_id: listing.user_id,
+          title: listing.title,
+          description: listing.description ?? null,
+          brand: listing.brand,
+          size: listing.size,
+          category: listing.category,
+          condition: listing.condition,
+          colour: listing.colour ?? null,
+          style: listing.style ?? null,
+          gender: listing.gender ?? null,
+          price: Number(listing.price),
+          shipping_price: listing.shipping_price ?? 0,
+          images: listing.images ?? [],
+          tags: listing.tags ?? [],
+          status: listing.status ?? null,
+          created_at: listing.created_at,
+          updated_at: listing.updated_at,
+          country_code: listing.country_code ?? null,
+          region_id: listing.region_id ?? null,
+        },
+        seller: profilesMap.get(listing.user_id) ?? null,
+        saved_at: new Date().toISOString(),
+      }));
+
+      saveSavedListingSnapshots(user.id, snapshotsToSave);
+
+      // Detect missing listing IDs (fully deleted rows or RLS-hidden rows) and recover from local snapshots
       const fetchedIds = new Set(sizeFiltered.map(l => l.id));
       const missingIds = favoriteIds.filter(id => !fetchedIds.has(id));
+      const snapshotMap = loadSavedListingSnapshots(user.id, missingIds);
+
       for (const missingId of missingIds) {
+        const snapshot = snapshotMap.get(missingId);
+
+        if (snapshot) {
+          listingsWithProfiles.push({
+            id: snapshot.listing.id,
+            title: snapshot.listing.title || 'Removed listing',
+            brand: snapshot.listing.brand || '',
+            size: snapshot.listing.size || '',
+            price: Number(snapshot.listing.price || 0),
+            shipping_price: Number(snapshot.listing.shipping_price || 0),
+            images: snapshot.listing.images || [],
+            tags: snapshot.listing.tags || [],
+            condition: snapshot.listing.condition || 'good',
+            category: snapshot.listing.category || '',
+            description: snapshot.listing.description || '',
+            user_id: snapshot.listing.user_id || 'unknown',
+            status: 'removed',
+            created_at: snapshot.listing.created_at || new Date().toISOString(),
+            updated_at: snapshot.listing.updated_at || new Date().toISOString(),
+            report_count: 0,
+            colour: snapshot.listing.colour ?? null,
+            style: snapshot.listing.style ?? null,
+            gender: snapshot.listing.gender ?? null,
+            country_code: snapshot.listing.country_code ?? null,
+            region_id: snapshot.listing.region_id ?? null,
+            profiles: snapshot.seller
+              ? {
+                  username: snapshot.seller.username || 'Unknown Seller',
+                  avatar_url: snapshot.seller.avatar_url,
+                  location: snapshot.seller.location,
+                  rating: snapshot.seller.rating,
+                  pause_selling: false,
+                  last_sign_in_at: snapshot.seller.last_sign_in_at,
+                  status: snapshot.seller.status,
+                }
+              : null,
+          } as DbListingWithPause);
+          continue;
+        }
+
+        // Last-resort placeholder when no snapshot exists.
         listingsWithProfiles.push({
           id: missingId,
           title: 'Removed listing',
