@@ -50,7 +50,8 @@ const CartItemRow = ({
   const isSold = item.status === 'sold';
   const isPaused = item.isPaused || false;
   const isInactive = item.isInactive || false;
-  const isUnavailable = isSold || isPaused || isInactive;
+  const isRemoved = item.isRemoved || item.status === 'removed';
+  const isUnavailable = isSold || isPaused || isInactive || isRemoved;
   
   // Background colors based on swipe direction
   const leftBgOpacity = useTransform(x, [-SWIPE_THRESHOLD, 0], [1, 0]); 
