@@ -111,12 +111,12 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
         favorites.map((f, index) => [f.listing_id, index])
       );
       
-      // Merge listings with profiles, filter out deleted/blocked users
+      // Merge listings with profiles, filter out blocked/banned users
       const listingsWithProfiles = sizeFiltered
         .filter(listing => {
           const profile = profilesMap.get(listing.user_id);
-          // Exclude listings from deleted users (no profile) or blocked users
-          return profile && profile.status !== 'blocked';
+          // Only exclude listings from explicitly blocked users
+          return !profile || profile.status !== 'blocked';
         })
         .map(listing => ({
           ...listing,
