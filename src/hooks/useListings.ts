@@ -127,6 +127,10 @@ export const useListings = (filters?: ListingFilters) => {
       const normalizedSizeKeys = normalizeSizeKeys(filters?.sizes);
       const sizeKeySet = normalizedSizeKeys.length > 0 ? new Set(normalizedSizeKeys) : null;
 
+      const sizeFiltered = sizeKeySet
+        ? data.filter((l) => sizeKeySet.has(listingSizeKey(l.size, l.category, l.gender)))
+        : data;
+
       let validatedListings = sizeFiltered;
       try {
         const { data: validationData, error: validationError } = await invokeCloudFunction(
@@ -140,9 +144,9 @@ export const useListings = (filters?: ListingFilters) => {
         if (validationError) {
           console.error('Failed to validate Home listings against seller existence:', validationError);
         } else {
-          const invalidListingIds = new Set(
+          const invalidListingIds = new Set<string>(
             Array.isArray((validationData as { invalidListingIds?: string[] } | null)?.invalidListingIds)
-              ? (validationData as { invalidListingIds: string[] }).invalidListingIds
+              ? ((validationData as { invalidListingIds: string[] }).invalidListingIds as string[])
               : []
           );
 
