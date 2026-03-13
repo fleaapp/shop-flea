@@ -17,6 +17,15 @@ type ValidationRequestBody = {
   performCleanup?: boolean;
 };
 
+type SellerProfileRow = Record<string, unknown>;
+
+const removedSellerStatuses = new Set(['blocked', 'deleted', 'removed']);
+
+const isRemovedSellerStatus = (status: unknown): boolean => {
+  if (typeof status !== 'string') return false;
+  return removedSellerStatuses.has(status.trim().toLowerCase());
+};
+
 const toUniqueIds = (ids: unknown): string[] => {
   if (!Array.isArray(ids)) return [];
 
@@ -140,11 +149,27 @@ Deno.serve(async (req) => {
 
     const uniqueSellerIds = Array.from(new Set(listings.map((listing) => listing.user_id)));
 
+    const { data: purchasedOrdersData, error: purchasedOrdersError } = await adminClient
+      .from('orders')
+      .select('listing_id')
+      .eq('buyer_id', user.id)
+      .in('listing_id', uniqueListingIds);
+
+    if (purchasedOrdersError) {
+      console.error('Failed to fetch purchased listings for stale cleanup', purchasedOrdersError);
+    }
+
+    const purchasedListingIds = new Set(
+      (purchasedOrdersData ?? []).map((order) => String(order.listing_id)),
+    );
+
     let existingSellerIds = new Set<string>();
+    let sellerStatusById = new Map<string, string | null>();
+
     if (uniqueSellerIds.length > 0) {
       const { data: profilesData, error: profilesError } = await adminClient
         .from('profiles')
-        .select('user_id')
+        .select('*')
         .in('user_id', uniqueSellerIds);
 
       if (profilesError) {
@@ -155,8 +180,18 @@ Deno.serve(async (req) => {
         });
       }
 
-      existingSellerIds = new Set(
-        (profilesData ?? []).map((profile) => String(profile.user_id)),
+      const normalizedProfiles = (profilesData ?? [])
+        .map((profile) => {
+          const row = profile as SellerProfileRow;
+          const userId = typeof row.user_id === 'string' ? row.user_id : '';
+          const status = typeof row.status === 'string' ? row.status : null;
+          return { userId, status };
+        })
+        .filter((profile) => profile.userId);
+
+      existingSellerIds = new Set(normalizedProfiles.map((profile) => profile.userId));
+      sellerStatusById = new Map(
+        normalizedProfiles.map((profile) => [profile.userId, profile.status]),
       );
     }
 
@@ -164,10 +199,15 @@ Deno.serve(async (req) => {
       const listing = listingMap.get(listingId);
       if (!listing) return true;
 
+      // Keep purchased items accessible for the buyer, even if seller account was removed.
+      if (purchasedListingIds.has(listingId)) return false;
+
       const listingStatus = listing.status ?? '';
       if (listingStatus !== 'active' && listingStatus !== 'sold') return true;
 
-      return !existingSellerIds.has(listing.user_id);
+      if (!existingSellerIds.has(listing.user_id)) return true;
+
+      return isRemovedSellerStatus(sellerStatusById.get(listing.user_id));
     });
 
     if (invalidListingIds.length === 0 || !shouldPerformCleanup) {
