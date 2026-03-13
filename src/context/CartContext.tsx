@@ -41,6 +41,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     setLoading(true);
 
+    // Server-side purge for deleted/blocked sellers before loading cart rows
+    await invokeCloudFunction('cleanup-stale-saved-listings', {});
     // Fetch cart item IDs
     const { data: cartData, error: cartError } = await supabase
       .from('cart_items')

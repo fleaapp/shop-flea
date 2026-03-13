@@ -33,6 +33,8 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
 
     setLoading(true);
 
+    // Server-side purge for deleted/blocked sellers before loading wishlist rows
+    await invokeCloudFunction('cleanup-stale-saved-listings', {});
     // First get the user's favorite listing IDs
     const { data: favorites, error: favError } = await supabase
       .from('favorites')
