@@ -16,24 +16,34 @@ export interface FetchSellerProfilesResult {
   canTrustMissing: boolean;
 }
 
-const PROFILE_SELECT =
-  'user_id, username, avatar_url, location, rating, pause_selling, last_sign_in_at, status';
+const normalizeProfile = (row: Record<string, unknown>): SellerProfileLookup => ({
+  user_id: String(row.user_id ?? ''),
+  username: (row.username as string | null) ?? null,
+  avatar_url: (row.avatar_url as string | null) ?? null,
+  location: (row.location as string | null) ?? null,
+  rating: (row.rating as number | null) ?? null,
+  pause_selling: (row.pause_selling as boolean | null) ?? null,
+  last_sign_in_at: (row.last_sign_in_at as string | null) ?? null,
+  status: (row.status as string | null) ?? null,
+});
 
 export const fetchSellerProfiles = async (userIds: string[]): Promise<FetchSellerProfilesResult> => {
   if (userIds.length === 0) {
     return { profiles: [], canTrustMissing: true };
   }
 
+  // Use wildcard select so this works across environments even if view columns differ.
   const profilesPublicResponse = await supabase
     .from('profiles_public')
-    .select(PROFILE_SELECT)
+    .select('*')
     .in('user_id', userIds);
 
   if (!profilesPublicResponse.error) {
-    return {
-      profiles: (profilesPublicResponse.data as SellerProfileLookup[]) || [],
-      canTrustMissing: true,
-    };
+    const profiles = ((profilesPublicResponse.data as Record<string, unknown>[] | null) ?? [])
+      .map(normalizeProfile)
+      .filter((p) => p.user_id);
+
+    return { profiles, canTrustMissing: true };
   }
 
   const shouldFallbackToProfiles =
@@ -45,9 +55,10 @@ export const fetchSellerProfiles = async (userIds: string[]): Promise<FetchSelle
     return { profiles: [], canTrustMissing: false };
   }
 
+  // Fallback for legacy environments without profiles_public.
   const profilesFallbackResponse = await supabase
     .from('profiles')
-    .select(PROFILE_SELECT)
+    .select('*')
     .in('user_id', userIds);
 
   if (profilesFallbackResponse.error) {
@@ -55,8 +66,10 @@ export const fetchSellerProfiles = async (userIds: string[]): Promise<FetchSelle
     return { profiles: [], canTrustMissing: false };
   }
 
-  return {
-    profiles: (profilesFallbackResponse.data as SellerProfileLookup[]) || [],
-    canTrustMissing: true,
-  };
+  const profiles = ((profilesFallbackResponse.data as Record<string, unknown>[] | null) ?? [])
+    .map(normalizeProfile)
+    .filter((p) => p.user_id);
+
+  // IMPORTANT: Do not trust missing rows from profiles fallback because table RLS can hide active users.
+  return { profiles, canTrustMissing: false };
 };
