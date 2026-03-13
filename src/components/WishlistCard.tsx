@@ -22,6 +22,7 @@ interface WishlistCardProps {
   isSold?: boolean;
   isPaused?: boolean;
   isInactive?: boolean;
+  isRemoved?: boolean;
   isInCart?: boolean;
 }
 
