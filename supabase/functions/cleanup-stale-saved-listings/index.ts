@@ -12,9 +12,33 @@ type ListingRow = {
   status: string | null;
 };
 
-type ProfileRow = {
-  user_id: string;
-  status: string | null;
+type ValidationRequestBody = {
+  listingIds?: string[];
+  performCleanup?: boolean;
+};
+
+const toUniqueIds = (ids: unknown): string[] => {
+  if (!Array.isArray(ids)) return [];
+
+  const unique = new Set<string>();
+  for (const value of ids) {
+    if (typeof value !== 'string') continue;
+    const trimmed = value.trim();
+    if (!trimmed) continue;
+    unique.add(trimmed);
+  }
+
+  return Array.from(unique);
+};
+
+const parseBody = async (req: Request): Promise<ValidationRequestBody> => {
+  try {
+    const body = await req.json();
+    if (!body || typeof body !== 'object') return {};
+    return body as ValidationRequestBody;
+  } catch {
+    return {};
+  }
 };
 
 Deno.serve(async (req) => {
@@ -58,42 +82,44 @@ Deno.serve(async (req) => {
       });
     }
 
+    const body = await parseBody(req);
+    const requestedListingIds = toUniqueIds(body.listingIds);
+    const shouldPerformCleanup = body.performCleanup !== false;
+
     const adminClient = createClient(externalUrl, externalServiceRoleKey);
 
-    const [favoritesResponse, cartResponse] = await Promise.all([
-      adminClient
-        .from('favorites')
-        .select('listing_id')
-        .eq('user_id', user.id),
-      adminClient
-        .from('cart_items')
-        .select('listing_id')
-        .eq('user_id', user.id),
-    ]);
+    const uniqueListingIds = requestedListingIds.length > 0
+      ? requestedListingIds
+      : await (async () => {
+          const [favoritesResponse, cartResponse] = await Promise.all([
+            adminClient.from('favorites').select('listing_id').eq('user_id', user.id),
+            adminClient.from('cart_items').select('listing_id').eq('user_id', user.id),
+          ]);
 
-    if (favoritesResponse.error || cartResponse.error) {
-      console.error('Failed to fetch user saved listing ids', {
-        favoritesError: favoritesResponse.error,
-        cartError: cartResponse.error,
-      });
-      return new Response(JSON.stringify({ error: 'Failed to load saved items' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+          if (favoritesResponse.error || cartResponse.error) {
+            console.error('Failed to fetch user saved listing ids', {
+              favoritesError: favoritesResponse.error,
+              cartError: cartResponse.error,
+            });
+            throw new Error('FAILED_TO_LOAD_SAVED_ITEMS');
+          }
 
-    const savedListingIds = [
-      ...(favoritesResponse.data ?? []).map((row) => row.listing_id),
-      ...(cartResponse.data ?? []).map((row) => row.listing_id),
-    ];
+          const savedListingIds = [
+            ...(favoritesResponse.data ?? []).map((row) => row.listing_id),
+            ...(cartResponse.data ?? []).map((row) => row.listing_id),
+          ];
 
-    const uniqueListingIds = Array.from(new Set(savedListingIds));
+          return Array.from(new Set(savedListingIds));
+        })();
 
     if (uniqueListingIds.length === 0) {
-      return new Response(JSON.stringify({ success: true, removedCount: 0 }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({ success: true, removedCount: 0, invalidListingIds: [] }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      );
     }
 
     const { data: listingsData, error: listingsError } = await adminClient
@@ -114,12 +140,9 @@ Deno.serve(async (req) => {
 
     const uniqueSellerIds = Array.from(new Set(listings.map((listing) => listing.user_id)));
 
-    // Query only user_id to avoid missing-column errors on external DB;
-    // also try to grab status if it exists via select('*')
-    let profilesData: Record<string, unknown>[] = [];
+    let existingSellerIds = new Set<string>();
     if (uniqueSellerIds.length > 0) {
-      // First try with user_id only (guaranteed to exist)
-      const { data, error: profilesError } = await adminClient
+      const { data: profilesData, error: profilesError } = await adminClient
         .from('profiles')
         .select('user_id')
         .in('user_id', uniqueSellerIds);
@@ -131,35 +154,30 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      profilesData = (data ?? []) as Record<string, unknown>[];
+
+      existingSellerIds = new Set(
+        (profilesData ?? []).map((profile) => String(profile.user_id)),
+      );
     }
 
-    // Build a set of existing seller user_ids
-    const existingSellerIds = new Set(
-      profilesData.map((p) => String(p.user_id)),
-    );
-
-    const isInvalidListing = (listingId: string) => {
+    const invalidListingIds = uniqueListingIds.filter((listingId) => {
       const listing = listingMap.get(listingId);
+      if (!listing) return true;
 
-      if (!listing) return true; // listing row removed
+      const listingStatus = listing.status ?? '';
+      if (listingStatus !== 'active' && listingStatus !== 'sold') return true;
 
-      const status = listing.status ?? '';
-      if (status !== 'active' && status !== 'sold') return true;
+      return !existingSellerIds.has(listing.user_id);
+    });
 
-      // If seller profile doesn't exist, they were deleted
-      if (!existingSellerIds.has(listing.user_id)) return true;
-
-      return false;
-    };
-
-    const invalidListingIds = uniqueListingIds.filter(isInvalidListing);
-
-    if (invalidListingIds.length === 0) {
-      return new Response(JSON.stringify({ success: true, removedCount: 0 }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (invalidListingIds.length === 0 || !shouldPerformCleanup) {
+      return new Response(
+        JSON.stringify({ success: true, removedCount: 0, invalidListingIds }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      );
     }
 
     const [favoritesDelete, cartDelete, discardedDelete] = await Promise.all([
@@ -193,13 +211,20 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, removedCount: invalidListingIds.length }),
+      JSON.stringify({ success: true, removedCount: invalidListingIds.length, invalidListingIds }),
       {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
     );
   } catch (error) {
+    if (error instanceof Error && error.message === 'FAILED_TO_LOAD_SAVED_ITEMS') {
+      return new Response(JSON.stringify({ error: 'Failed to load saved items' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     console.error('Unexpected cleanup-stale-saved-listings error:', error);
     return new Response(JSON.stringify({ error: 'Unexpected error occurred.' }), {
       status: 500,
