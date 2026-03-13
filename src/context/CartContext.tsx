@@ -5,6 +5,7 @@ import { Listing } from '@/types/listing';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { getAvatarUrl } from '@/utils/optimizedImage';
 import { preloadImages } from '@/utils/preloadAssets';
+import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
 
 // Extended Listing type to include pause/inactive status
 interface CartListing extends Listing {
@@ -41,7 +42,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
 
     // Fetch cart item IDs
-    const { data: cartData, error: cartError } = await supabase 
+    const { data: cartData, error: cartError } = await supabase
       .from('cart_items')
       .select('listing_id, created_at')
       .eq('user_id', user.id)
@@ -55,7 +56,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const listingIds = cartData.map(c => c.listing_id);
-    setCartIds(new Set(listingIds));
 
     // Fetch full listing data (include sold items to show with SOLD overlay)
     const { data: listingsData, error: listingsError } = await supabase
@@ -66,16 +66,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     if (listingsError || !listingsData) {
       setCartItems([]);
+      setCartIds(new Set());
       setLoading(false);
       return;
     }
 
-    // Fetch seller profiles including pause_selling and last_sign_in_at
+    // Fetch seller profiles (with fallback if profiles_public is unavailable)
     const userIds = [...new Set(listingsData.map(l => l.user_id))];
-    const { data: profiles } = await supabase
-      .from('profiles_public')
-      .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at, status')
-      .in('user_id', userIds);
+    const profiles = await fetchSellerProfiles(userIds);
 
     const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
@@ -84,12 +82,26 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       cartData.map((c, index) => [c.listing_id, index])
     );
 
-    // Transform to Listing type
-    // Filter out listings from explicitly blocked/banned users
+    // Remove stale cart rows from deleted/blocked sellers for this user
+    const invalidListingIds = listingsData
+      .filter((listing) => {
+        const profile = profileMap.get(listing.user_id);
+        return !profile || profile.status === 'blocked';
+      })
+      .map((listing) => listing.id);
+
+    if (invalidListingIds.length > 0) {
+      await supabase
+        .from('cart_items')
+        .delete()
+        .eq('user_id', user.id)
+        .in('listing_id', invalidListingIds);
+    }
+
+    // Keep only listings from existing, non-blocked sellers
     const validListingsData = listingsData.filter(listing => {
       const profile = profileMap.get(listing.user_id);
-      // Only exclude if profile exists and is blocked; missing profile may be RLS
-      return !profile || profile.status !== 'blocked';
+      return !!profile && profile.status !== 'blocked';
     });
 
     const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
@@ -136,6 +148,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       preloadImages(avatarUrls);
     }
 
+    setCartIds(new Set(transformedListings.map(item => item.id)));
     setCartItems(transformedListings);
     setLoading(false);
   }, [user]);
@@ -211,13 +224,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, [cartIds]);
 
   return (
-    <CartContext.Provider value={{ 
-      cartItems, 
+    <CartContext.Provider value={{
+      cartItems,
       cartIds,
       loading,
-      addToCart, 
-      removeFromCart, 
-      isInCart, 
+      addToCart,
+      removeFromCart,
+      isInCart,
       clearCart,
       refetch: fetchCart,
     }}>

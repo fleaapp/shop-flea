@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { DbListing, ListingFilters } from './useListings';
 import { getQuerySizesFromKeys, listingSizeKey, normalizeSizeKeys } from '@/utils/sizeKeys';
 import { preloadImages } from '@/utils/preloadAssets';
+import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
 
 // Extended DbListing to include pause_selling from profiles
 export interface DbListingWithPause extends DbListing {
@@ -14,6 +15,7 @@ export interface DbListingWithPause extends DbListing {
     rating: number;
     pause_selling?: boolean;
     last_sign_in_at?: string | null;
+    status?: string | null;
   } | null;
 }
 
@@ -34,9 +36,9 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
     // First get the user's favorite listing IDs
     const { data: favorites, error: favError } = await supabase
       .from('favorites')
-        .select('listing_id, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      .select('listing_id, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
 
     if (favError || !favorites || favorites.length === 0) {
       setListings([]);
@@ -93,30 +95,48 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
         ? data.filter((l) => sizeKeySet.has(listingSizeKey(l.size, l.category, l.gender)))
         : data;
 
-      // Get unique user_ids and fetch all profiles in a single query, including pause_selling
+      // Get unique user_ids and fetch profiles (with fallback if profiles_public is unavailable)
       const uniqueUserIds = [...new Set(sizeFiltered.map(listing => listing.user_id))];
-      
-      const { data: profilesData } = await supabase
-        .from('profiles_public')
-        .select('user_id, username, avatar_url, location, rating, pause_selling, last_sign_in_at, status')
-        .in('user_id', uniqueUserIds);
-      
+      const profilesData = await fetchSellerProfiles(uniqueUserIds);
+
       // Create a map for quick profile lookup
       const profilesMap = new Map(
         (profilesData || []).map(profile => [profile.user_id, profile])
       );
 
+      // Identify entries that should no longer exist for this user
+      const invalidListingIds = sizeFiltered
+        .filter((listing) => {
+          const profile = profilesMap.get(listing.user_id);
+          return !profile || profile.status === 'blocked';
+        })
+        .map((listing) => listing.id);
+
+      if (invalidListingIds.length > 0) {
+        await Promise.all([
+          supabase
+            .from('favorites')
+            .delete()
+            .eq('user_id', user.id)
+            .in('listing_id', invalidListingIds),
+          supabase
+            .from('discarded_listings')
+            .delete()
+            .eq('user_id', user.id)
+            .in('listing_id', invalidListingIds),
+        ]);
+      }
+
       // Create a map for favorite order (most recent first)
       const favoriteOrderMap = new Map(
         favorites.map((f, index) => [f.listing_id, index])
       );
-      
-      // Merge listings with profiles, filter out blocked/banned users
+
+      // Keep only listings from existing, non-blocked sellers
       const listingsWithProfiles = sizeFiltered
-        .filter(listing => {
+        .filter((listing) => {
           const profile = profilesMap.get(listing.user_id);
-          // Only exclude listings from explicitly blocked users
-          return !profile || profile.status !== 'blocked';
+          return !!profile && profile.status !== 'blocked';
         })
         .map(listing => ({
           ...listing,
@@ -124,7 +144,7 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
         }));
 
       // Preload listing images
-      const imagesToPreload = sizeFiltered.flatMap(l => l.images?.slice(0, 1) || []).filter(Boolean);
+      const imagesToPreload = listingsWithProfiles.flatMap(l => l.images?.slice(0, 1) || []).filter(Boolean);
       if (imagesToPreload.length) preloadImages(imagesToPreload);
 
       // Sort by the order they were added to favorites (most recent first)
@@ -133,7 +153,7 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
         const orderB = favoriteOrderMap.get(b.id) ?? Number.MAX_VALUE;
         return orderA - orderB;
       });
-      
+
       setListings(listingsWithProfiles);
     } else {
       setListings([]);
