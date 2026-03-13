@@ -38,20 +38,22 @@ const Profile = () => {
   const displayListings = activeTab === 'listings' ? activeListings : soldListings;
   const isLoading = activeTab === 'listings' ? activeLoading : soldLoading;
 
-  // Create a map of listing_id to order for quick lookup
+  // Create maps for quick lookup
   const ordersByListingId = new Map(sellerOrders.map(order => [order.listing_id, order]));
+  const ordersByOrderId = new Map(sellerOrders.map(order => [order.id, order]));
 
-  // Create a map of listing_id to order group for quick lookup
   const orderGroupByListingId = new Map<string, OrderGroup>();
+  const orderGroupByOrderId = new Map<string, OrderGroup>();
   for (const group of sellerOrderGroups) {
     for (const order of group.orders) {
       orderGroupByListingId.set(order.listing_id, group);
+      orderGroupByOrderId.set(order.id, group);
     }
   }
 
-  const getOrderStatusButton = (listingId: string) => {
-    const order = ordersByListingId.get(listingId);
-    const group = orderGroupByListingId.get(listingId);
+  const getOrderStatusButton = (listingId: string, orderId?: string) => {
+    const order = orderId ? ordersByOrderId.get(orderId) : ordersByListingId.get(listingId);
+    const group = orderId ? orderGroupByOrderId.get(orderId) : orderGroupByListingId.get(listingId);
     if (!order || !group) return null;
 
     if (order.status === 'awaiting') {
