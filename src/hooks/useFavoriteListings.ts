@@ -57,12 +57,11 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
 
     const favoriteIds = favorites.map(f => f.listing_id);
 
-    // Now fetch the actual listings (include sold items to show with SOLD overlay)
+    // Now fetch the actual listings (include all statuses to detect removed)
     let query = supabase
       .from('listings')
       .select('*')
       .in('id', favoriteIds)
-      .in('status', ['active', 'sold'])
       .order('created_at', { ascending: false })
       .limit(100); // Limit to prevent DoS via large result sets
 
