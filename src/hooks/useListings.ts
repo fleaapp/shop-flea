@@ -209,11 +209,12 @@ export const useUserListings = (status?: 'active' | 'sold' | 'archived') => {
       setLoading(true);
 
       if (status === 'sold') {
-        // Derive sold listings from orders table to stay consistent with Sales tab
+        // Derive sold items from orders and preserve one card per sale transaction
         const { data: orders, error: ordersError } = await supabase
           .from('orders')
-          .select('listing_id')
-          .eq('seller_id', user.id);
+          .select('id, listing_id, created_at')
+          .eq('seller_id', user.id)
+          .order('created_at', { ascending: false });
 
         if (ordersError || !orders || orders.length === 0) {
           setListings([]);
@@ -226,11 +227,26 @@ export const useUserListings = (status?: 'active' | 'sold' | 'archived') => {
           .from('listings')
           .select('*')
           .in('id', listingIds)
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+          .eq('user_id', user.id);
 
         if (!error && data) {
-          setListings(data);
+          const listingMap = new Map(data.map((listing) => [listing.id, listing]));
+          const orderedSoldListings = orders
+            .map((order) => {
+              const listing = listingMap.get(order.listing_id);
+              if (!listing) return null;
+
+              return {
+                ...listing,
+                id: `${listing.id}::${order.id}`,
+                source_listing_id: listing.id,
+                order_id: order.id,
+                created_at: order.created_at,
+              };
+            })
+            .filter((listing): listing is DbListing => !!listing);
+
+          setListings(orderedSoldListings);
         }
       } else {
         let query = supabase
