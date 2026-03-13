@@ -318,19 +318,27 @@ const EditListing = () => {
 
   const handleDelete = async () => {
     if (!id) return;
-    
+
     setIsDeleting(true);
-    
+
     try {
-      const { error } = await supabase
+      const { error: removeError } = await supabase
         .from('listings')
         .update({ status: 'removed' })
         .eq('id', id);
-      
-      if (error) {
-        throw error;
+
+      // Some environments still enforce older status checks; fallback to archived.
+      if (removeError?.code === '23514') {
+        const { error: archiveError } = await supabase
+          .from('listings')
+          .update({ status: 'archived' })
+          .eq('id', id);
+
+        if (archiveError) throw archiveError;
+      } else if (removeError) {
+        throw removeError;
       }
-      
+
       toast.success('Listing removed');
       navigate('/profile');
     } catch (error) {
