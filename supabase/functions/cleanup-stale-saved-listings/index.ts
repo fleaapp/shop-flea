@@ -114,23 +114,29 @@ Deno.serve(async (req) => {
 
     const uniqueSellerIds = Array.from(new Set(listings.map((listing) => listing.user_id)));
 
-    const { data: profilesData, error: profilesError } = uniqueSellerIds.length
-      ? await adminClient
-          .from('profiles')
-          .select('user_id, status')
-          .in('user_id', uniqueSellerIds)
-      : { data: [], error: null };
+    // Query only user_id to avoid missing-column errors on external DB;
+    // also try to grab status if it exists via select('*')
+    let profilesData: Record<string, unknown>[] = [];
+    if (uniqueSellerIds.length > 0) {
+      // First try with user_id only (guaranteed to exist)
+      const { data, error: profilesError } = await adminClient
+        .from('profiles')
+        .select('user_id')
+        .in('user_id', uniqueSellerIds);
 
-    if (profilesError) {
-      console.error('Failed to fetch profiles for stale cleanup', profilesError);
-      return new Response(JSON.stringify({ error: 'Failed to load seller profiles' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      if (profilesError) {
+        console.error('Failed to fetch profiles for stale cleanup', profilesError);
+        return new Response(JSON.stringify({ error: 'Failed to load seller profiles' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      profilesData = (data ?? []) as Record<string, unknown>[];
     }
 
-    const profileMap = new Map(
-      ((profilesData ?? []) as ProfileRow[]).map((profile) => [profile.user_id, profile]),
+    // Build a set of existing seller user_ids
+    const existingSellerIds = new Set(
+      profilesData.map((p) => String(p.user_id)),
     );
 
     const isInvalidListing = (listingId: string) => {
