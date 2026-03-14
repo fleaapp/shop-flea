@@ -201,7 +201,7 @@ const CartItemRow = ({
                 className="h-8 w-8 rounded-full bg-muted cursor-pointer active:scale-95 transition-transform"
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(`/seller/${item.sellerId}`);
+                  navigate(item.sellerId === user?.id ? '/profile' : `/seller/${item.sellerId}`);
                 }}
               />
             )}

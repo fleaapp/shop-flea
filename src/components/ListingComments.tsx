@@ -334,7 +334,7 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
             part.startsWith('@') ? (
               <Link 
                 key={i} 
-                to={`/seller/${encodeURIComponent(part)}`}
+                to={profile?.username && part.slice(1).toLowerCase() === profile.username.toLowerCase() ? '/profile' : `/seller/${encodeURIComponent(part)}`}
                 className="text-foreground font-bold underline hover:opacity-80"
                 onClick={(e) => e.stopPropagation()}
               >

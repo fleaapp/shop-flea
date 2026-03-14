@@ -119,7 +119,7 @@ const OrderDetailsSheet = ({
                 className="flex items-center gap-3 p-4 cursor-pointer active:bg-muted/50 transition-colors"
                 onClick={() => {
                   onOpenChange(false);
-                  setTimeout(() => navigate(`/seller/${primaryOrder.seller_id}`), 300);
+                  setTimeout(() => navigate(user?.id === primaryOrder.seller_id ? '/profile' : `/seller/${primaryOrder.seller_id}`), 300);
                 }}
               >
                 <Avatar className="h-10 w-10">
