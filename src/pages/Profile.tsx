@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useUserListings } from '@/hooks/useListings';
 import { formatTagLabel } from '@/components/ListingTag';
 import { useOrders, Order, OrderGroup } from '@/hooks/useOrders';
+import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
 import ReviewsDrawer from '@/components/ReviewsDrawer';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
