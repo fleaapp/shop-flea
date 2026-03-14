@@ -652,8 +652,8 @@ const EditListing = () => {
             <AlertDialogContent className="max-w-[280px] rounded-2xl p-5">
               <AlertDialogHeader className="space-y-2">
                 <AlertDialogTitle className="text-base text-center">Remove listing?</AlertDialogTitle>
-                <AlertDialogDescription className="text-sm text-center leading-relaxed text-pretty">
-                  This will hide your listing and{'\u00A0'}mark{'\u00A0'}it{'\u00A0'}as{'\u00A0'}removed.
+                <AlertDialogDescription className="text-sm text-center leading-relaxed">
+                  This will hide your listing&nbsp;and<br />mark it as removed.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="flex-row gap-2 sm:flex-row">
