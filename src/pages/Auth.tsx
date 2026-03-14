@@ -391,10 +391,10 @@ const Auth = () => {
         autoPlay
         muted
         playsInline
-        preload="auto"
-        controls={false}
+        preload="metadata"
         disablePictureInPicture
-        className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+        disableRemotePlayback
+        className="splash-video absolute inset-0 w-full h-full object-cover pointer-events-none"
       />
     </div>
   ) : null;
