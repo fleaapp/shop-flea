@@ -194,11 +194,21 @@ const Profile = () => {
           <Plus className="h-5 w-5" />
         </button>
         <div className="flex items-center rounded-full bg-muted p-1">
-          <button onClick={() => setActiveTab('listings')} className={`rounded-full w-24 py-2.5 text-sm font-medium transition-all ${activeTab === 'listings' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
-            Listings{activeListings.length > 0 ? ` (${activeListings.length})` : ''}
+          <button onClick={() => setActiveTab('listings')} className={`relative rounded-full w-24 py-2.5 text-sm font-medium transition-all ${activeTab === 'listings' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
+            Listings
+            {activeListings.length > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-[10px] font-bold text-background">
+                {activeListings.length}
+              </span>
+            )}
           </button>
-          <button onClick={() => setActiveTab('sold')} className={`rounded-full min-w-[6rem] px-4 py-2.5 text-sm font-medium transition-all ${activeTab === 'sold' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
-            Sold{soldListings.length > 0 ? ` (${soldListings.length})` : ''}
+          <button onClick={() => setActiveTab('sold')} className={`relative rounded-full min-w-[6rem] px-4 py-2.5 text-sm font-medium transition-all ${activeTab === 'sold' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
+            Sold
+            {soldListings.length > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-[10px] font-bold text-background">
+                {soldListings.length}
+              </span>
+            )}
           </button>
         </div>
         <Button
