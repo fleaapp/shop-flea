@@ -860,8 +860,8 @@ const ListingDetails = () => {
             <AlertDialogContent className="max-w-[340px] rounded-2xl px-7 py-6">
               <AlertDialogHeader className="space-y-2">
                 <AlertDialogTitle className="text-base text-center">Remove this item?</AlertDialogTitle>
-                <AlertDialogDescription className="text-sm text-center text-balance leading-relaxed">
-                  This item has been deleted. Clean it up from your 🛒 Cart and/or 💌 Wishlist.
+                <AlertDialogDescription className="text-sm text-center text-balance leading-relaxed text-pretty">
+                  This item has been deleted by the seller. Clean it up from your 🛒 Cart and/or 💌 Wishlist.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="flex-row gap-2 mt-4 sm:flex-row">
