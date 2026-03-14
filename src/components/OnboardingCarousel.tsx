@@ -94,7 +94,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
   const location = useLocation();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [spotlightRect, setSpotlightRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [spotlightRects, setSpotlightRects] = useState<{ x: number; y: number; w: number; h: number }[]>([]);
 
   const slide = slides[currentSlide];
 
