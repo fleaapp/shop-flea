@@ -142,7 +142,7 @@ function ReviewsDrawer({ userId, username, open, onOpenChange }: ReviewsDrawerPr
                             onClick={(e) => {
                               e.stopPropagation();
                               onOpenChange(false);
-                              navigate(`/seller/${reviewerUserId}`);
+                              navigate(user?.id === reviewerUserId ? '/profile' : `/seller/${reviewerUserId}`);
                             }}
                             className="shrink-0"
                           >
