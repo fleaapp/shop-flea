@@ -584,15 +584,15 @@ const ListingDetails = () => {
             {(() => {
               const secondary = [
                 listing.style && { label: listing.style },
-                listing.colour && { label: listing.colour },
+                listing.colour && { label: listing.colour, isColour: true },
                 listing.category && { label: listing.category },
                 listing.gender && { label: listing.gender },
-              ].filter(Boolean) as { label: string }[];
+              ].filter(Boolean) as { label: string; isColour?: boolean }[];
               if (secondary.length === 0) return null;
               return (
                 <div className="mt-2 gap-2 flex flex-row overflow-x-auto scrollbar-hide">
                   {secondary.map((tag) => (
-                    <ListingTag key={tag.label} label={tag.label} variant="muted" />
+                    <ListingTag key={tag.label} label={tag.label} variant="muted" colourSwatch={tag.isColour ? tag.label : undefined} />
                   ))}
                 </div>
               );

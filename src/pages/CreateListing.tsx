@@ -29,6 +29,7 @@ import {
   STYLES,
   isShoeCategory
 } from '@/config/sizeConfig';
+import { COLOUR_SWATCHES } from '@/utils/colourSwatches';
 
 interface ImageFile {
   file: File;
@@ -629,10 +630,14 @@ const CreateListing = () => {
                       setColours([...colours, c.toLowerCase()]);
                     }
                   }}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                     isSelected ? 'bg-primary text-foreground' : 'bg-muted text-foreground hover:bg-muted/80'
                   }`}
                 >
+                  <span
+                    className="h-2.5 w-2.5 rounded-full flex-shrink-0 border border-border/40"
+                    style={{ background: COLOUR_SWATCHES[c] || 'conic-gradient(red, yellow, lime, aqua, blue, magenta, red)' }}
+                  />
                   {c}
                 </button>
               );
