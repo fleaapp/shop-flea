@@ -42,22 +42,35 @@ const Auth = () => {
   // Splash screen: end on video finish or fallback timeout
   useEffect(() => {
     const video = videoRef.current;
+    let ended = false;
     
     const endSplash = () => {
+      if (ended) return;
+      ended = true;
       setSplashFading(true);
       setTimeout(() => setShowSplash(false), 600);
     };
     
     if (video) {
-      video.play().catch(() => {
-        // Video failed to play (autoplay blocked), skip splash
-        endSplash();
-      });
+      // Force playback attributes
+      video.muted = true;
+      video.playsInline = true;
+      video.setAttribute('webkit-playsinline', '');
+      
+      const playPromise = video.play();
+      if (playPromise) {
+        playPromise.catch(() => {
+          // Autoplay blocked — skip splash immediately
+          endSplash();
+        });
+      }
       video.addEventListener('ended', endSplash);
+    } else {
+      endSplash();
     }
     
-    // Fallback: if video is too long or stalls, end after 6s
-    const fallback = setTimeout(endSplash, 6000);
+    // Fallback: generous timeout so video can finish (20s)
+    const fallback = setTimeout(endSplash, 20000);
     
     return () => {
       clearTimeout(fallback);
