@@ -314,7 +314,7 @@ const SellerProfile = () => {
           variant="outline"
           size="icon"
           onClick={() => setViewMode(v => v === 'single' ? 'grid' : 'single')}
-          className="h-10 w-10 rounded-full border-2 border-border bg-card hover:bg-secondary"
+          className="h-10 w-10 rounded-xl border-2 border-border bg-card hover:bg-secondary"
         >
           {viewMode === 'single' ? <LayoutGrid className="h-4 w-4" /> : <Rows3 className="h-4 w-4" />}
         </Button>
