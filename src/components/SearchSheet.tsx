@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
@@ -30,7 +30,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
   const [query, setQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [sellers, setSellers] = useState<SellerSuggestion[]>([]);
-  const { trending, recordSearch } = useTrendingSearches();
+  const { trending, recordSearch, refreshTrending } = useTrendingSearches();
 
   // User-specific localStorage key for recent searches
   const storageKey = user ? `recentSearches_${user.id}` : null;
@@ -52,6 +52,13 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
     }
   }, [recentSearches, storageKey]);
 
+  // Refresh trending each time the sheet opens
+  useEffect(() => {
+    if (open) {
+      void refreshTrending();
+    }
+  }, [open, refreshTrending]);
+
   // Fetch sellers for suggestions
   useEffect(() => {
     const fetchSellers = async () => {
@@ -60,12 +67,12 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
         .select('user_id, username, avatar_url')
         .not('username', 'like', '@user_%')
         .limit(50);
-      
+
       if (data) {
         setSellers(data);
       }
     };
-    
+
     if (open) {
       fetchSellers();
     }
@@ -74,48 +81,48 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
   // Extract searchable terms from listings
   const searchableTerms = useMemo(() => {
     const terms = new Set<string>();
-    
-    listings.forEach(listing => {
+
+    listings.forEach((listing) => {
       // Add title words (split and clean)
-      listing.title.split(/\s+/).forEach(word => {
+      listing.title.split(/\s+/).forEach((word) => {
         const cleaned = word.toLowerCase().replace(/[^a-z0-9]/g, '');
         if (cleaned.length > 2) terms.add(cleaned);
       });
-      
+
       // Add full title as a term
       terms.add(listing.title.toLowerCase());
-      
+
       // Add category
       if (listing.category) {
         terms.add(listing.category.toLowerCase());
       }
-      
+
       // Add brand
       if (listing.brand) {
         terms.add(listing.brand.toLowerCase());
       }
-      
+
       // Add tags
-      listing.tags?.forEach(tag => {
+      listing.tags?.forEach((tag) => {
         terms.add(tag.toLowerCase());
       });
     });
-    
+
     return Array.from(terms);
   }, [listings]);
 
   const handleSearch = (searchTerm: string) => {
     if (!searchTerm.trim()) return;
-    
+
     // Record search for trending
     recordSearch(searchTerm, user?.id);
-    
+
     // Add to recent searches (avoid duplicates, keep max 10)
-    setRecentSearches(prev => {
-      const filtered = prev.filter(s => s.toLowerCase() !== searchTerm.toLowerCase());
+    setRecentSearches((prev) => {
+      const filtered = prev.filter((s) => s.toLowerCase() !== searchTerm.toLowerCase());
       return [searchTerm, ...filtered].slice(0, 10);
     });
-    
+
     onSearch(searchTerm);
     onOpenChange(false);
     setQuery('');
@@ -127,7 +134,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
   };
 
   const handleRemoveRecent = (searchTerm: string) => {
-    setRecentSearches(prev => prev.filter(s => s !== searchTerm));
+    setRecentSearches((prev) => prev.filter((s) => s !== searchTerm));
   };
 
   const clearQuery = () => setQuery('');
@@ -135,11 +142,11 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
   // Filter matching sellers
   const matchingSellers = useMemo(() => {
     if (!query.trim()) return [];
-    
+
     const lowerQuery = query.toLowerCase().trim();
-    
+
     return sellers
-      .filter(seller => {
+      .filter((seller) => {
         const username = seller.username.toLowerCase();
         return username.includes(lowerQuery) || isSimilar(username, lowerQuery);
       })
@@ -149,13 +156,13 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
   // Generate search suggestions based on query
   const suggestions = useMemo(() => {
     if (!query.trim()) return [];
-    
+
     const lowerQuery = query.toLowerCase().trim();
     const scored: { text: string; score: number }[] = [];
     const seen = new Set<string>();
-    
+
     // Find matching listing titles with fuzzy matching
-    listings.forEach(listing => {
+    listings.forEach((listing) => {
       const titleLower = listing.title.toLowerCase();
       if (!seen.has(titleLower) && (titleLower.includes(lowerQuery) || isSimilar(titleLower, lowerQuery))) {
         seen.add(titleLower);
@@ -163,10 +170,10 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
         scored.push({ text: listing.title, score });
       }
     });
-    
+
     // Find matching categories with fuzzy matching
-    const categories = [...new Set(listings.map(l => l.category))];
-    categories.forEach(cat => {
+    const categories = [...new Set(listings.map((l) => l.category))];
+    categories.forEach((cat) => {
       const catLower = cat.toLowerCase();
       if (!seen.has(catLower) && (catLower.includes(lowerQuery) || isSimilar(catLower, lowerQuery))) {
         seen.add(catLower);
@@ -174,10 +181,10 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
         scored.push({ text: cat.charAt(0).toUpperCase() + cat.slice(1), score });
       }
     });
-    
+
     // Find matching brands with fuzzy matching
-    const brands = [...new Set(listings.map(l => l.brand).filter(Boolean))];
-    brands.forEach(brand => {
+    const brands = [...new Set(listings.map((l) => l.brand).filter(Boolean))];
+    brands.forEach((brand) => {
       const brandLower = brand.toLowerCase();
       if (!seen.has(brandLower) && (brandLower.includes(lowerQuery) || isSimilar(brandLower, lowerQuery))) {
         seen.add(brandLower);
@@ -185,10 +192,10 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
         scored.push({ text: brand, score });
       }
     });
-    
+
     // Find matching tags with fuzzy matching
-    const allTags = [...new Set(listings.flatMap(l => l.tags || []))];
-    allTags.forEach(tag => {
+    const allTags = [...new Set(listings.flatMap((l) => l.tags || []))];
+    allTags.forEach((tag) => {
       const tagLower = tag.toLowerCase();
       if (!seen.has(tagLower) && (tagLower.includes(lowerQuery) || isSimilar(tagLower, lowerQuery))) {
         seen.add(tagLower);
@@ -196,21 +203,21 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
         scored.push({ text: tag.charAt(0).toUpperCase() + tag.slice(1), score });
       }
     });
-    
+
     // Find partial word matches from searchable terms with fuzzy matching
-    searchableTerms.forEach(term => {
+    searchableTerms.forEach((term) => {
       if (!seen.has(term) && term !== lowerQuery && (term.startsWith(lowerQuery) || isSimilar(term, lowerQuery))) {
         seen.add(term);
         const score = term.startsWith(lowerQuery) ? 0.8 : 0.5;
         scored.push({ text: term.charAt(0).toUpperCase() + term.slice(1), score });
       }
     });
-    
+
     // Sort by score and return top results
     return scored
       .sort((a, b) => b.score - a.score)
       .slice(0, 8)
-      .map(item => item.text);
+      .map((item) => item.text);
   }, [query, listings, searchableTerms]);
 
   // Helper to render suggestion with query highlighted
@@ -218,15 +225,15 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
     const lowerSuggestion = suggestion.toLowerCase();
     const lowerQuery = query.toLowerCase().trim();
     const index = lowerSuggestion.indexOf(lowerQuery);
-    
+
     if (index === -1) {
       return <span className="text-muted-foreground">{suggestion}</span>;
     }
-    
+
     const before = suggestion.slice(0, index);
     const match = suggestion.slice(index, index + query.trim().length);
     const after = suggestion.slice(index + query.trim().length);
-    
+
     return (
       <>
         {before && <span className="text-muted-foreground">{before}</span>}
@@ -343,7 +350,30 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
             </div>
           )}
 
-          {/* Trending Searches (shown before typing) */}
+          {/* Recent Searches */}
+          {recentSearches.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-foreground mb-3">Recent searches</h3>
+              <div className="bg-card rounded-2xl p-4 space-y-1">
+                {recentSearches.map((search) => (
+                  <div key={search} className="flex items-center justify-between py-2">
+                    <button
+                      onClick={() => handleSearch(search)}
+                      className="flex items-center gap-3 flex-1 text-left"
+                    >
+                      <Clock className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-foreground font-medium">{search}</span>
+                    </button>
+                    <button onClick={() => handleRemoveRecent(search)} className="p-1">
+                      <X className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Trending Searches (shown before typing, below Recent Searches) */}
           {!query && trending.length > 0 && (
             <div className="mb-6">
               <h3 className="text-sm font-medium text-foreground mb-3">Trending Searches</h3>
@@ -357,35 +387,6 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
                     <span className="text-base">🔥</span>
                     <span className="text-foreground font-medium capitalize">{item.query}</span>
                   </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Recent Searches */}
-          {recentSearches.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-sm font-medium text-foreground mb-3">Recent searches</h3>
-              <div className="bg-card rounded-2xl p-4 space-y-1">
-                {recentSearches.map((search) => (
-                  <div
-                    key={search}
-                    className="flex items-center justify-between py-2"
-                  >
-                    <button
-                      onClick={() => handleSearch(search)}
-                      className="flex items-center gap-3 flex-1 text-left"
-                    >
-                      <Clock className="h-5 w-5 text-muted-foreground" />
-                      <span className="text-foreground font-medium">{search}</span>
-                    </button>
-                    <button
-                      onClick={() => handleRemoveRecent(search)}
-                      className="p-1"
-                    >
-                      <X className="h-4 w-4 text-muted-foreground" />
-                    </button>
-                  </div>
                 ))}
               </div>
             </div>
