@@ -120,16 +120,20 @@ const WishlistGridCard = ({ listing, onRemove, onAddToCart, isSold = false, isPa
 
           {/* Content */}
           <div className="px-1 pt-2 pb-0.5">
-            <h3 className={`text-sm font-semibold truncate ${isSold ? 'text-[hsl(4,90%,58%)]' : 'text-foreground'}`}>
-              {listing.title}
-            </h3>
-            <div className="mt-1 flex flex-nowrap gap-1 overflow-x-auto scrollbar-hide">
-              <ListingTag label={listing.size} isSize />
-              <ListingTag label={listing.brand} />
-            </div>
-            <div className="mt-1.5 flex items-center justify-between">
-              <p className="text-sm font-bold text-foreground">${listing.price}</p>
-              <p className="text-[10px] text-muted-foreground">+ ${listing.shippingPrice} ship</p>
+            <div className="flex items-end justify-between">
+              <div className="flex-1 min-w-0">
+                <h3 className={`text-sm font-semibold truncate ${isSold ? 'text-[hsl(4,90%,58%)]' : 'text-foreground'}`}>
+                  {listing.title}
+                </h3>
+                <div className="mt-1 flex flex-nowrap gap-1 overflow-x-auto scrollbar-hide whitespace-nowrap">
+                  <ListingTag label={listing.size} isSize />
+                  <ListingTag label={listing.brand} />
+                </div>
+              </div>
+              <div className="text-right flex-shrink-0 ml-2">
+                <p className="text-sm font-bold text-foreground">${listing.price}</p>
+                <p className="text-[10px] text-muted-foreground">+ ${listing.shippingPrice} shipping</p>
+              </div>
             </div>
           </div>
         </div>
