@@ -45,7 +45,7 @@ export const CATEGORY_OPTIONS = [
     ],
   },
   { value: 'dresses', label: 'Dresses', subcategories: [] },
-  { value: 'playsuits-jumpsuits', label: 'Playsuits / Jumpsuits', subcategories: [] },
+  { value: 'playsuits-jumpsuits', label: 'Playsuit/Jumpsuit', subcategories: [] },
   { value: 'sleepwear', label: 'Sleepwear', subcategories: [] },
   { value: 'underwear', label: 'Underwear', subcategories: [] },
   { value: 'activewear', label: 'Activewear', subcategories: [] },
@@ -287,5 +287,5 @@ export const COLOURS = [
 
 export const STYLES = [
   'Active', 'Casual', 'Vintage', 'Y2K', 'Boho', 'Surf', 
-  'Summer', 'Winter', 'Streetwear', 'Lounge', 'Formal', 'Office', 'Other'
+  'Summer', 'Winter', 'Streetwear', 'Lounge', 'Formal', 'Office', 'Festival', 'Other'
 ];
