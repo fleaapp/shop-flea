@@ -21,6 +21,7 @@ const BottomNav = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { badgeCount: activityBadgeCount } = useNotifications();
+  const { buyerOrders } = useOrders();
   const { total: supportUnread } = useUnreadSupport();
   const { total: orderMessagesUnread } = useUnreadOrderMessages();
 
