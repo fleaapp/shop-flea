@@ -301,7 +301,7 @@ const SellerProfile = () => {
       <div className="mt-5 max-[430px]:mt-4 max-[393px]:mt-3 max-[375px]:mt-2 flex justify-center items-center">
         <div className="flex items-center rounded-full bg-muted p-1">
           <button onClick={() => setActiveTab('listings')} className={`rounded-full w-24 py-2.5 text-sm font-medium transition-all ${activeTab === 'listings' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
-            Listings
+            Listings{activeListings.length > 0 ? ` (${activeListings.length})` : ''}
           </button>
           <button onClick={() => setActiveTab('sold')} className={`rounded-full min-w-[6rem] px-4 py-2.5 text-sm font-medium transition-all ${activeTab === 'sold' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
             Sold{soldListings.length > 0 ? ` (${soldListings.length})` : ''}
