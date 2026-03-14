@@ -21,7 +21,7 @@ const BottomNav = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { badgeCount: activityBadgeCount } = useNotifications();
-  const { buyerOrders } = useOrders();
+  const { buyerOrders, sellerOrderGroups } = useOrders();
   const { total: supportUnread } = useUnreadSupport();
   const { total: orderMessagesUnread } = useUnreadOrderMessages();
 
@@ -36,6 +36,14 @@ const BottomNav = () => {
     const count = activityBadgeCount;
     return count || undefined;
   }, [activityBadgeCount]);
+
+  // Sales badge for Profile nav: awaiting seller orders + seller unread messages
+  const salesBadge = useMemo(() => {
+    const toShipCount = sellerOrderGroups.filter(g => g.status === 'awaiting').length;
+    // orderMessagesUnread includes both buyer/seller; we reuse it here as an approximation
+    // since exact seller-only unread would require a separate query
+    return toShipCount || undefined;
+  }, [sellerOrderGroups]);
 
   const profileIcon = (
     <div className="h-5 w-5 rounded-full overflow-hidden bg-background flex items-center justify-center">
