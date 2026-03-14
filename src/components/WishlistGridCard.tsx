@@ -123,11 +123,13 @@ const WishlistGridCard = ({ listing, onRemove, onAddToCart, isSold = false, isPa
             <h3 className={`text-sm font-semibold truncate ${isSold ? 'text-[hsl(4,90%,58%)]' : 'text-foreground'}`}>
               {listing.title}
             </h3>
-            <div className="mt-1 flex items-center justify-between">
-              <div className="flex gap-1 overflow-hidden">
-                <ListingTag label={listing.size} isSize />
-              </div>
-              <p className="text-sm font-bold text-foreground flex-shrink-0">${listing.price}</p>
+            <div className="mt-1 flex flex-nowrap gap-1 overflow-x-auto scrollbar-hide">
+              <ListingTag label={listing.size} isSize />
+              <ListingTag label={listing.brand} />
+            </div>
+            <div className="mt-1.5 flex items-center justify-between">
+              <p className="text-sm font-bold text-foreground">${listing.price}</p>
+              <p className="text-[10px] text-muted-foreground">+ ${listing.shippingPrice} ship</p>
             </div>
           </div>
         </div>
