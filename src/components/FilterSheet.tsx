@@ -567,7 +567,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                   >
                     <span
                       className="h-3 w-3 rounded-full flex-shrink-0 border border-border/40"
-                      style={{ background: COLOUR_SWATCHES[colour] || 'conic-gradient(red, yellow, lime, aqua, blue, magenta, red)' }}
+                      style={{ background: COLOUR_SWATCHES[colour] || COLOUR_SWATCHES['Multi / Patterned'] }}
                     />
                     {colour}
                   </button>

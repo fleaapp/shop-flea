@@ -16,4 +16,5 @@ export const COLOUR_SWATCHES: Record<string, string> = {
   'Silver': '#C0C0C0',
   'Gold': '#FFD700',
   'Tan': '#D2B48C',
+  'Multi / Patterned': 'linear-gradient(90deg, #ff0033 0 14.28%, #ff8a00 14.28% 28.56%, #ffd400 28.56% 42.84%, #39d353 42.84% 57.12%, #00c2ff 57.12% 71.4%, #2f6bff 71.4% 85.68%, #c13cff 85.68% 100%)',
 };
