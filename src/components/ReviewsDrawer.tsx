@@ -51,6 +51,7 @@ function PhotoLightbox({ src, onClose }: { src: string; onClose: () => void }) {
 function ReviewsDrawer({ userId, username, open, onOpenChange }: ReviewsDrawerProps) {
   const { data: reviews, isLoading } = useUserReviews(userId);
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'buyer' | 'seller'>('all');
   

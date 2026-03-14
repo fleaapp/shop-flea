@@ -46,6 +46,7 @@ const SalesDetailsSheet = ({
   onMarkShipped,
 }: SalesDetailsSheetProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [serviceProvider, setServiceProvider] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [validationError, setValidationError] = useState('');

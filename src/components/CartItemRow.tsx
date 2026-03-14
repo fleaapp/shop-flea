@@ -43,6 +43,7 @@ const CartItemRow = ({
   onCardClick,
 }: CartItemRowProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isRemoving, setIsRemoving] = useState(false);
   const [pendingAction, setPendingAction] = useState<'left' | 'right' | null>(null);
   const x = useMotionValue(0);
