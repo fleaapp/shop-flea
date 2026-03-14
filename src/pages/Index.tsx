@@ -257,7 +257,7 @@ const Index = () => {
 
   // Build display chips from applied filters
   const activeFilterChips = useMemo(() => {
-    const chips: { label: string; type: string; value: string }[] = [];
+    const chips: { label: string; type: string; value: string; colourSwatch?: string }[] = [];
     
     // Add gender/fit first
     appliedFilters.genders.forEach(g => {
@@ -275,7 +275,7 @@ const Index = () => {
       chips.push({ label: appliedFilters.condition.charAt(0).toUpperCase() + appliedFilters.condition.slice(1), type: 'condition', value: appliedFilters.condition });
     }
     appliedFilters.colours.forEach(colour => {
-      chips.push({ label: colour.charAt(0).toUpperCase() + colour.slice(1), type: 'colour', value: colour });
+      chips.push({ label: colour.charAt(0).toUpperCase() + colour.slice(1), type: 'colour', value: colour, colourSwatch: colour });
     });
     appliedFilters.styles.forEach(style => {
       chips.push({ label: style.charAt(0).toUpperCase() + style.slice(1), type: 'style', value: style });
