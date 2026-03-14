@@ -84,8 +84,8 @@ const Auth = () => {
     const playPromise = video.play();
     if (playPromise) {
       playPromise.catch(() => {
-        // If autoplay fails, keep a short grace period instead of abrupt cut
-        fallbackTimeout = window.setTimeout(endSplash, 2000);
+        // Autoplay blocked on this device/browser: never show a play button overlay
+        endSplash();
       });
     }
 
@@ -391,10 +391,10 @@ const Auth = () => {
         autoPlay
         muted
         playsInline
-        preload="auto"
-        controls={false}
+        preload="metadata"
         disablePictureInPicture
-        className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+        disableRemotePlayback
+        className="splash-video absolute inset-0 w-full h-full object-cover pointer-events-none"
       />
     </div>
   ) : null;
