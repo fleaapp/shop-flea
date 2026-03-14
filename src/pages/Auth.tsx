@@ -378,49 +378,56 @@ const Auth = () => {
     toast.info('Facebook login is not yet available');
   };
 
+  const splashOverlay = showSplash ? (
+    <div
+      className={`fixed inset-0 z-[9999] bg-black flex items-center justify-center transition-opacity duration-[600ms] ${
+        splashFading ? 'opacity-0' : 'opacity-100'
+      }`}
+      aria-hidden="true"
+    >
+      <video
+        ref={videoRef}
+        src="/splash-screen.mov"
+        autoPlay
+        muted
+        playsInline
+        preload="auto"
+        controls={false}
+        disablePictureInPicture
+        className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+      />
+    </div>
+  ) : null;
+
   // Show loading while detecting location
   if (authLoading || isDetectingLocation) {
     return (
-      <div className="fixed inset-0 bg-primary flex items-center justify-center overflow-hidden">
-        <span className="text-5xl">⏳</span>
-      </div>
+      <>
+        {splashOverlay}
+        <div className="fixed inset-0 bg-primary flex items-center justify-center overflow-hidden">
+          <span className="text-5xl">⏳</span>
+        </div>
+      </>
     );
   }
 
   // Show region blocked screen if user is outside active regions
   if (isRegionBlocked && detectedCountry) {
     return (
-      <RegionBlockedScreen 
-        countryCode={detectedCountry.code} 
-        countryName={detectedCountry.name} 
-      />
+      <>
+        {splashOverlay}
+        <RegionBlockedScreen
+          countryCode={detectedCountry.code}
+          countryName={detectedCountry.name}
+        />
+      </>
     );
   }
 
   return (
     <>
-      {/* Splash Screen Video Overlay */}
-      {showSplash && (
-        <div 
-          className={`fixed inset-0 z-[9999] bg-black flex items-center justify-center transition-opacity duration-[600ms] ${
-            splashFading ? 'opacity-0' : 'opacity-100'
-          }`}
-        >
-          <video
-            ref={videoRef}
-            src="/splash-screen.mov"
-            autoPlay
-            muted
-            playsInline
-            preload="auto"
-            controls={false}
-            disablePictureInPicture
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-            style={{ objectFit: 'cover' }}
-          />
-        </div>
-      )}
-    <div className="auth-screen fixed inset-0 bg-primary flex flex-col overflow-hidden">
+      {splashOverlay}
+      <div className="auth-screen fixed inset-0 bg-primary flex flex-col overflow-hidden">
       {/* Logo - positioned at top */}
       <div className="auth-logo absolute top-20 max-[375px]:top-12 left-0 right-0 flex justify-center">
         <img 
