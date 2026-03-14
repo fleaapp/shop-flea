@@ -60,7 +60,7 @@ const BottomNav = () => {
 
   const navItems: NavItem[] = useMemo(() => [
     { icon: <span className="text-lg">⚙️</span>, label: 'Settings', path: '/settings', badge: supportUnread || undefined },
-    { icon: profileIcon, label: 'Profile', path: '/profile' },
+    { icon: profileIcon, label: 'Profile', path: '/profile', badge: salesBadge },
     { icon: <span className="text-lg">🏠</span>, label: 'Home', path: '/' },
     { icon: <span className="text-lg">🛒</span>, label: 'Cart', path: '/cart', badge: ordersBadge },
     { icon: <span className="text-lg">🔔</span>, label: 'Alerts', path: '/notifications', badge: alertsBadge },
