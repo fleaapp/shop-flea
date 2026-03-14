@@ -60,7 +60,7 @@ const WishlistGridCard = ({ listing, onRemove, onAddToCart, isSold = false, isPa
         <div className="flex flex-col overflow-hidden rounded-2xl bg-card p-2 card-shadow">
           {/* Image */}
           <div
-            className="relative aspect-square overflow-hidden rounded-xl"
+            className="relative aspect-[5/6] overflow-hidden rounded-xl"
             style={{ clipPath: 'inset(0 round calc(var(--radius) + 4px))' }}
           >
             <img
@@ -119,8 +119,8 @@ const WishlistGridCard = ({ listing, onRemove, onAddToCart, isSold = false, isPa
           </div>
 
           {/* Content */}
-          <div className="px-1 pt-1.5 pb-0.5">
-            <div className="flex items-start justify-between gap-1">
+          <div className="px-1 pt-2 pb-0.5">
+            <div className="flex items-end justify-between gap-1">
               <div className="flex-1 min-w-0">
                 <h3 className={`text-sm font-semibold truncate ${isSold ? 'text-[hsl(4,90%,58%)]' : 'text-foreground'}`}>
                   {listing.title}
