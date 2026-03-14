@@ -123,7 +123,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
 
   const handleSellerClick = (userId: string) => {
     onOpenChange(false);
-    setTimeout(() => navigate(`/seller/${userId}`), 300);
+    setTimeout(() => navigate(user?.id === userId ? '/profile' : `/seller/${userId}`), 300);
   };
 
   const handleRemoveRecent = (searchTerm: string) => {

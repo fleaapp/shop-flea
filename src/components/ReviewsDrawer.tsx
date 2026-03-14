@@ -6,6 +6,7 @@ import { useUserReviews } from '@/hooks/useReviews';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 
 interface ReviewsDrawerProps {
@@ -50,6 +51,7 @@ function PhotoLightbox({ src, onClose }: { src: string; onClose: () => void }) {
 function ReviewsDrawer({ userId, username, open, onOpenChange }: ReviewsDrawerProps) {
   const { data: reviews, isLoading } = useUserReviews(userId);
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'buyer' | 'seller'>('all');
   
@@ -142,7 +144,7 @@ function ReviewsDrawer({ userId, username, open, onOpenChange }: ReviewsDrawerPr
                             onClick={(e) => {
                               e.stopPropagation();
                               onOpenChange(false);
-                              navigate(`/seller/${reviewerUserId}`);
+                              navigate(user?.id === reviewerUserId ? '/profile' : `/seller/${reviewerUserId}`);
                             }}
                             className="shrink-0"
                           >
@@ -159,7 +161,7 @@ function ReviewsDrawer({ userId, username, open, onOpenChange }: ReviewsDrawerPr
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   onOpenChange(false);
-                                  navigate(`/seller/${reviewerUserId}`);
+                                  navigate(user?.id === reviewerUserId ? '/profile' : `/seller/${reviewerUserId}`);
                                 }}
                                 className="font-medium text-foreground hover:underline text-left"
                               >

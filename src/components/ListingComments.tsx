@@ -53,7 +53,7 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
   const [mentionIndex, setMentionIndex] = useState(0);
   const [cursorPosition, setCursorPosition] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const { openReport, submitPendingReport, closeReport, pendingReport, isReporting } = useReporting();
   const { checkCommentContent, isChecking } = useContentModeration();
@@ -334,7 +334,7 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
             part.startsWith('@') ? (
               <Link 
                 key={i} 
-                to={`/seller/${encodeURIComponent(part)}`}
+                to={profile?.username && part.slice(1).toLowerCase() === profile.username.toLowerCase() ? '/profile' : `/seller/${encodeURIComponent(part)}`}
                 className="text-foreground font-bold underline hover:opacity-80"
                 onClick={(e) => e.stopPropagation()}
               >

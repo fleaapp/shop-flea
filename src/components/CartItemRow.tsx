@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 import { Listing } from '@/types/listing';
 import {
   AlertDialog,
@@ -42,6 +43,7 @@ const CartItemRow = ({
   onCardClick,
 }: CartItemRowProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isRemoving, setIsRemoving] = useState(false);
   const [pendingAction, setPendingAction] = useState<'left' | 'right' | null>(null);
   const x = useMotionValue(0);
@@ -201,7 +203,7 @@ const CartItemRow = ({
                 className="h-8 w-8 rounded-full bg-muted cursor-pointer active:scale-95 transition-transform"
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(`/seller/${item.sellerId}`);
+                  navigate(item.sellerId === user?.id ? '/profile' : `/seller/${item.sellerId}`);
                 }}
               />
             )}

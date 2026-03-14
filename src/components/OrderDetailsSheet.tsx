@@ -11,6 +11,7 @@ import { useExistingReview } from '@/hooks/useReviews';
 import WriteReviewDrawer from '@/components/WriteReviewDrawer';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import OrderReceiptDialog from '@/components/OrderReceiptDialog';
+import { useAuth } from '@/context/AuthContext';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import ShippingStatusTracker from '@/components/ShippingStatusTracker';
 
@@ -45,6 +46,7 @@ const OrderDetailsSheet = ({
   onMarkDelivered,
 }: OrderDetailsSheetProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const { getGroupUnread } = useUnreadOrderMessages();
@@ -119,7 +121,7 @@ const OrderDetailsSheet = ({
                 className="flex items-center gap-3 p-4 cursor-pointer active:bg-muted/50 transition-colors"
                 onClick={() => {
                   onOpenChange(false);
-                  setTimeout(() => navigate(`/seller/${primaryOrder.seller_id}`), 300);
+                  setTimeout(() => navigate(user?.id === primaryOrder.seller_id ? '/profile' : `/seller/${primaryOrder.seller_id}`), 300);
                 }}
               >
                 <Avatar className="h-10 w-10">
