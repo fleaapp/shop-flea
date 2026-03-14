@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, X, Clock, TrendingUp, User } from 'lucide-react';
+import { ArrowLeft, X, Clock, User } from 'lucide-react';
 import { Listing } from '@/types/listing';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -343,9 +343,28 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
             </div>
           )}
 
+          {/* Trending Searches (shown before typing) */}
+          {!query && trending.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-foreground mb-3">Trending Searches</h3>
+              <div className="bg-card rounded-2xl p-4 space-y-1">
+                {trending.map((item, index) => (
+                  <button
+                    key={`${item.query}-${index}`}
+                    onClick={() => handleSearch(item.query)}
+                    className="flex items-center gap-3 w-full text-left py-2.5"
+                  >
+                    <span className="text-base">🔥</span>
+                    <span className="text-foreground font-medium capitalize">{item.query}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Recent Searches */}
           {recentSearches.length > 0 && (
-            <div>
+            <div className="mb-6">
               <h3 className="text-sm font-medium text-foreground mb-3">Recent searches</h3>
               <div className="bg-card rounded-2xl p-4 space-y-1">
                 {recentSearches.map((search) => (
@@ -367,25 +386,6 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
                       <X className="h-4 w-4 text-muted-foreground" />
                     </button>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Trending Searches */}
-          {!query && trending.length > 0 && (
-            <div className="mt-6 mb-6">
-              <h3 className="text-sm font-medium text-foreground mb-3">Trending</h3>
-              <div className="bg-card rounded-2xl p-4 space-y-1">
-                {trending.map((item, index) => (
-                  <button
-                    key={`${item.query}-${index}`}
-                    onClick={() => handleSearch(item.query)}
-                    className="flex items-center gap-3 w-full text-left py-2.5"
-                  >
-                    <TrendingUp className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-foreground font-medium capitalize">{item.query}</span>
-                  </button>
                 ))}
               </div>
             </div>
