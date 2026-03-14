@@ -13,9 +13,9 @@
    useEffect(() => {
      const fetchTrending = async () => {
        try {
-         const { data, error } = await supabase.rpc('get_trending_searches', {
-           limit_count: 8
-         });
+          const { data, error } = await supabase.rpc('get_trending_searches', {
+            limit_count: 10
+          });
          
          if (error) {
            console.error('Error fetching trending searches:', error);
