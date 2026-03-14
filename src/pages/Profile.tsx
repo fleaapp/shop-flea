@@ -211,7 +211,7 @@ const Profile = () => {
         >
           <Plus className="h-5 w-5" />
         </button>
-        <div className="flex items-center rounded-full bg-muted p-1">
+        <div className="flex items-center rounded-full bg-muted p-1 w-48">
           <button onClick={() => setActiveTab('listings')} className={`flex items-center justify-center gap-1.5 rounded-full flex-1 px-4 py-2.5 text-sm font-medium transition-all ${activeTab === 'listings' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
             Listings
             {activeListings.length > 0 && (
