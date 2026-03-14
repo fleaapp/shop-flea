@@ -361,6 +361,25 @@ const Auth = () => {
   }
 
   return (
+    <>
+      {/* Splash Screen Video Overlay */}
+      {showSplash && (
+        <div 
+          className={`fixed inset-0 z-[9999] bg-black flex items-center justify-center transition-opacity duration-[600ms] ${
+            splashFading ? 'opacity-0' : 'opacity-100'
+          }`}
+        >
+          <video
+            ref={videoRef}
+            src="/splash-screen.mov"
+            autoPlay
+            muted
+            playsInline
+            preload="auto"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        </div>
+      )}
     <div className="auth-screen fixed inset-0 bg-primary flex flex-col overflow-hidden">
       {/* Logo - positioned at top */}
       <div className="auth-logo absolute top-20 max-[375px]:top-12 left-0 right-0 flex justify-center">
