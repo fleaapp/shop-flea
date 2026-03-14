@@ -562,7 +562,7 @@ const ListingDetails = () => {
             </div>
 
             {/* Primary Tags – Size, Condition, Brand */}
-            <div className="mt-4 flex gap-2">
+            <div className="mt-4 flex justify-between gap-3">
               {[
                 { label: 'Size', value: listing.size, isSize: true },
                 { label: 'Condition', value: listing.condition },
