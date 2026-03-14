@@ -70,6 +70,7 @@ const Favorites = () => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<ListingFilters>({});
   const [hideSoldItems, setHideSoldItems] = useState(false);
+  const [viewMode, setViewMode] = useState<'single' | 'grid'>('single');
   
   const { listings, loading, refetch } = useFavoriteListings(appliedFilters);
   const { removeFavorite } = useFavorites();
