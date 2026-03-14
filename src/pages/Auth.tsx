@@ -389,7 +389,10 @@ const Auth = () => {
             muted
             playsInline
             preload="auto"
-            className="absolute inset-0 w-full h-full object-cover"
+            controls={false}
+            disablePictureInPicture
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+            style={{ objectFit: 'cover' }}
           />
         </div>
       )}
