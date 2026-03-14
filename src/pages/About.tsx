@@ -73,7 +73,7 @@ const About = () => {
 
       {/* Market rack graphic */}
       <div className="bg-primary px-6 -mt-8 pb-4">
-        <img src={marketRack} alt="Listing cards hanging on a market rack" className="max-w-lg mx-auto w-full" />
+        <MarketRack />
       </div>
 
       {/* Tagline strip */}
