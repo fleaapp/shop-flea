@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useOrders } from '@/hooks/useOrders';
 import { useUnreadSupport } from '@/hooks/useUnreadSupport';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 
