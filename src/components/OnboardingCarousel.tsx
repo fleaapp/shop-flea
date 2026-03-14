@@ -213,16 +213,15 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
         <div className="absolute inset-0 bg-charcoal/90" />
       )}
 
-      {/* Spotlight glow rings */}
-      {isSpotlightSlide && spotlightRects.map((r, i) => (
+      {/* Spotlight glow rings - only for primary target (index 0) */}
+      {isSpotlightSlide && spotlightRects.length > 0 && (
         <motion.div
-          key={i}
           className="absolute rounded-2xl pointer-events-none"
           style={{
-            left: r.x,
-            top: r.y,
-            width: r.w,
-            height: r.h,
+            left: spotlightRects[0].x,
+            top: spotlightRects[0].y,
+            width: spotlightRects[0].w,
+            height: spotlightRects[0].h,
             boxShadow: '0 0 24px 8px rgba(245,241,235,0.25), 0 0 48px 16px rgba(245,241,235,0.1)',
             zIndex: 1,
           }}
@@ -230,7 +229,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4 }}
         />
-      ))}
+      )}
 
       {/* Spotlight text — positioned to the left of the primary target */}
       {isSpotlightSlide && primaryRect && (
