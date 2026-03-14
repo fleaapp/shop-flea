@@ -1,6 +1,6 @@
 import { Plus, Camera, LayoutGrid, Rows3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/context/AuthContext';
