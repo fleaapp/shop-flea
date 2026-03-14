@@ -28,6 +28,26 @@ export interface FilterState {
   priceRange: [number, number];
 }
 
+const COLOUR_SWATCHES: Record<string, string> = {
+  'Black': '#000000',
+  'White': '#FFFFFF',
+  'Grey': '#9E9E9E',
+  'Navy': '#1B2A4A',
+  'Blue': '#2979FF',
+  'Green': '#4CAF50',
+  'Khaki': '#BDB76B',
+  'Beige / Cream': '#F5F0E1',
+  'Brown': '#795548',
+  'Red': '#E53935',
+  'Pink': '#F48FB1',
+  'Purple': '#9C27B0',
+  'Yellow': '#FFEB3B',
+  'Orange': '#FF9800',
+  'Silver': '#C0C0C0',
+  'Gold': '#FFD700',
+  'Tan': '#D2B48C',
+};
+
 const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = false, preferredSizes }: FilterSheetProps) => {
   const [filters, setFilters] = useState<FilterState>({
     preferences: false,
