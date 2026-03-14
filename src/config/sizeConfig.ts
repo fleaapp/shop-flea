@@ -287,5 +287,5 @@ export const COLOURS = [
 
 export const STYLES = [
   'Active', 'Casual', 'Vintage', 'Y2K', 'Boho', 'Surf', 
-  'Summer', 'Winter', 'Streetwear', 'Lounge', 'Formal', 'Office', 'Other'
+  'Summer', 'Winter', 'Streetwear', 'Lounge', 'Formal', 'Office', 'Festival', 'Other'
 ];
