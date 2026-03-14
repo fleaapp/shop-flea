@@ -76,9 +76,9 @@ const ConnectPaymentDialog = ({ open, onOpenChange }: ConnectPaymentDialogProps)
           <Button
             onClick={handleConnectStripe}
             disabled={isConnecting}
-            className="w-64 h-11 rounded-full bg-charcoal text-white hover:bg-charcoal-light border-none shadow-none ring-0 outline-none focus-visible:ring-0"
+            className="w-64 h-11 rounded-full bg-charcoal text-white hover:bg-charcoal-light border-none shadow-none ring-0 outline-none focus-visible:ring-0 flex items-center justify-center gap-2"
           >
-            {isConnecting ? 'Connecting...' : <><img src={stripeLogo} alt="Stripe" className="h-4 inline-block mr-1.5" style={{ mixBlendMode: 'darken', filter: 'brightness(0) invert(1)' }} /> Connect Stripe</>}
+            {isConnecting ? 'Connecting...' : <><img src={stripeLogo} alt="Stripe" className="h-5 w-auto object-contain" /> Connect Stripe</>}
           </Button>
           <Button
             disabled
