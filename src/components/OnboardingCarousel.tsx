@@ -28,6 +28,11 @@ interface OnboardingCarouselProps {
   onComplete: () => void;
 }
 
+interface SpotlightTarget {
+  targetSelector: string; // data-onboarding attribute value
+  showText?: boolean; // whether to show the slide text next to this target (default true)
+}
+
 interface Slide {
   image?: string;
   video?: string;
@@ -35,10 +40,11 @@ interface Slide {
   alt: string;
   isGif?: boolean;
   imageOffset?: string;
-  // Spotlight mode — navigate to route and highlight a real element
+  // Spotlight mode — navigate to route and highlight real elements
   spotlight?: {
     route: string;
-    targetSelector: string; // data-onboarding attribute value
+    targetSelector: string; // primary target (legacy)
+    additionalTargets?: SpotlightTarget[]; // extra spotlights (no text by default)
   };
 }
 
@@ -71,6 +77,9 @@ const slides: Slide[] = [
     spotlight: {
       route: '/cart',
       targetSelector: 'cart-wishlist-button',
+      additionalTargets: [
+        { targetSelector: 'nav-cart', showText: false },
+      ],
     },
   },
   {
@@ -85,7 +94,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
   const location = useLocation();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [spotlightRect, setSpotlightRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [spotlightRects, setSpotlightRects] = useState<{ x: number; y: number; w: number; h: number }[]>([]);
 
   const slide = slides[currentSlide];
 
@@ -93,7 +102,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
   useEffect(() => {
     if (!open) {
       setCurrentSlide(0);
-      setSpotlightRect(null);
+      setSpotlightRects([]);
     }
   }, [open]);
 
@@ -105,25 +114,31 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
     }
   }, [open, slide, location.pathname, navigate]);
 
-  // Find and measure the spotlight target element
+  // Find and measure all spotlight target elements
   const measureSpotlight = useCallback(() => {
     if (!slide.spotlight) {
-      setSpotlightRect(null);
+      setSpotlightRects([]);
       return;
     }
-    const el = document.querySelector(`[data-onboarding="${slide.spotlight.targetSelector}"]`);
-    if (el) {
-      const rect = el.getBoundingClientRect();
-      const pad = 10;
-      setSpotlightRect({
-        x: rect.left - pad,
-        y: rect.top - pad,
-        w: rect.width + pad * 2,
-        h: rect.height + pad * 2,
-      });
-    } else {
-      setSpotlightRect(null);
+    const allSelectors = [
+      slide.spotlight.targetSelector,
+      ...(slide.spotlight.additionalTargets?.map(t => t.targetSelector) || []),
+    ];
+    const rects: { x: number; y: number; w: number; h: number }[] = [];
+    const pad = 10;
+    for (const sel of allSelectors) {
+      const el = document.querySelector(`[data-onboarding="${sel}"]`);
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        rects.push({
+          x: rect.left - pad,
+          y: rect.top - pad,
+          w: rect.width + pad * 2,
+          h: rect.height + pad * 2,
+        });
+      }
     }
+    setSpotlightRects(rects);
   }, [slide]);
 
   useEffect(() => {
@@ -165,23 +180,27 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
 
   const isLastSlide = currentSlide === slides.length - 1;
   const isSpotlightSlide = !!slide.spotlight;
+  const primaryRect = spotlightRects[0] || null;
 
   return (
     <div className="fixed inset-0 z-[999] flex flex-col">
       {/* Overlay — with or without spotlight cutout */}
-      {isSpotlightSlide && spotlightRect ? (
+      {isSpotlightSlide && spotlightRects.length > 0 ? (
         <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
           <defs>
             <mask id="carousel-spotlight-mask">
               <rect x="0" y="0" width="100%" height="100%" fill="white" />
-              <rect
-                x={spotlightRect.x}
-                y={spotlightRect.y}
-                width={spotlightRect.w}
-                height={spotlightRect.h}
-                rx="16"
-                fill="black"
-              />
+              {spotlightRects.map((r, i) => (
+                <rect
+                  key={i}
+                  x={r.x}
+                  y={r.y}
+                  width={r.w}
+                  height={r.h}
+                  rx="16"
+                  fill="black"
+                />
+              ))}
             </mask>
           </defs>
           <rect
@@ -194,15 +213,16 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
         <div className="absolute inset-0 bg-charcoal/90" />
       )}
 
-      {/* Spotlight glow ring */}
-      {isSpotlightSlide && spotlightRect && (
+      {/* Spotlight glow rings */}
+      {isSpotlightSlide && spotlightRects.map((r, i) => (
         <motion.div
+          key={i}
           className="absolute rounded-2xl pointer-events-none"
           style={{
-            left: spotlightRect.x,
-            top: spotlightRect.y,
-            width: spotlightRect.w,
-            height: spotlightRect.h,
+            left: r.x,
+            top: r.y,
+            width: r.w,
+            height: r.h,
             boxShadow: '0 0 24px 8px rgba(245,241,235,0.25), 0 0 48px 16px rgba(245,241,235,0.1)',
             zIndex: 1,
           }}
@@ -210,15 +230,15 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4 }}
         />
-      )}
+      ))}
 
-      {/* Spotlight text — positioned to the left of the target */}
-      {isSpotlightSlide && spotlightRect && (
+      {/* Spotlight text — positioned to the left of the primary target */}
+      {isSpotlightSlide && primaryRect && (
         <motion.p
           className="absolute text-cream text-xl font-semibold pointer-events-none max-[375px]:text-lg"
           style={{
-            right: `calc(100% - ${spotlightRect.x}px + 12px)`,
-            top: spotlightRect.y + spotlightRect.h / 2,
+            right: `calc(100% - ${primaryRect.x}px + 12px)`,
+            top: primaryRect.y + primaryRect.h / 2,
             transform: 'translateY(-50%)',
             whiteSpace: 'nowrap',
             zIndex: 2,
