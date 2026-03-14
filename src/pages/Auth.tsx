@@ -20,6 +20,11 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
+  // Splash screen state
+  const [showSplash, setShowSplash] = useState(true);
+  const [splashFading, setSplashFading] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
   // Region detection state
   const [isDetectingLocation, setIsDetectingLocation] = useState(true);
   const [detectedCountry, setDetectedCountry] = useState<{ code: string; name: string } | null>(null);
