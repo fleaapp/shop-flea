@@ -35,6 +35,17 @@ const Profile = () => {
   const { listings: activeListings, loading: activeLoading } = useUserListings('active');
   const { listings: soldListings, loading: soldLoading } = useUserListings('sold');
   const { sellerOrders, sellerOrderGroups, markAsShipped } = useOrders();
+  const { perOrder } = useUnreadOrderMessages();
+
+  // Sales badge: to-ship count + seller unread messages
+  const salesBadge = useMemo(() => {
+    const toShipCount = sellerOrderGroups.filter(g => g.status === 'awaiting').length;
+    const sellerUnread = sellerOrderGroups.reduce((sum, g) => {
+      return sum + g.orders.reduce((s, o) => s + (perOrder.get(o.id) || 0), 0);
+    }, 0);
+    const count = toShipCount + sellerUnread;
+    return count || undefined;
+  }, [sellerOrderGroups, perOrder]);
 
   // Get pause_selling from profile
   const pauseSelling = (profile as any)?.pause_selling || false;
