@@ -23,7 +23,7 @@ const BottomNav = () => {
   const { badgeCount: activityBadgeCount } = useNotifications();
   const { buyerOrders, sellerOrderGroups } = useOrders();
   const { total: supportUnread } = useUnreadSupport();
-  const { total: orderMessagesUnread } = useUnreadOrderMessages();
+  const { total: orderMessagesUnread, perOrder } = useUnreadOrderMessages();
 
   // Orders badge: awaiting + shipped orders (buyer perspective)
   const ordersBadge = useMemo(() => {
