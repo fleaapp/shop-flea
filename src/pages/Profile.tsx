@@ -26,6 +26,7 @@ const Profile = () => {
   const [uploading, setUploading] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'listings' | 'sold'>('listings');
+  const [viewMode, setViewMode] = useState<'single' | 'grid'>('single');
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [salesSheetOpen, setSalesSheetOpen] = useState(false);
   const [reviewsOpen, setReviewsOpen] = useState(false);
