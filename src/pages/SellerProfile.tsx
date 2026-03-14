@@ -13,7 +13,9 @@ import { getAvatarUrl } from '@/utils/optimizedImage';
 import { toast } from 'sonner';
 import { Listing } from '@/types/listing';
 import ReviewsDrawer from '@/components/ReviewsDrawer';
-import { ArrowLeft, MoreVertical } from 'lucide-react';
+import { ArrowLeft, MoreVertical, LayoutGrid, Rows3 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import ProfileGridCard from '@/components/ProfileGridCard';
 import {
   DropdownMenu,
   DropdownMenuContent,
