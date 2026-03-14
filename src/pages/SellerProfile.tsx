@@ -13,7 +13,9 @@ import { getAvatarUrl } from '@/utils/optimizedImage';
 import { toast } from 'sonner';
 import { Listing } from '@/types/listing';
 import ReviewsDrawer from '@/components/ReviewsDrawer';
-import { ArrowLeft, MoreVertical } from 'lucide-react';
+import { ArrowLeft, MoreVertical, LayoutGrid, Rows3 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import ProfileGridCard from '@/components/ProfileGridCard';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,6 +60,7 @@ const SellerProfile = () => {
   const [loading, setLoading] = useState(true);
   const [listingsLoading, setListingsLoading] = useState(true);
   const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'single' | 'grid'>('single');
   const [hasOutstandingOrder, setHasOutstandingOrder] = useState(false);
   
   const { addToCart, isInCart } = useCart();
@@ -298,7 +301,7 @@ const SellerProfile = () => {
         </button>
       </div>
 
-      <div className="mt-5 max-[430px]:mt-4 max-[393px]:mt-3 max-[375px]:mt-2 flex justify-center items-center">
+      <div className="mt-5 max-[430px]:mt-4 max-[393px]:mt-3 max-[375px]:mt-2 flex justify-center items-center gap-2">
         <div className="flex items-center rounded-full bg-muted p-1">
           <button onClick={() => setActiveTab('listings')} className={`rounded-full w-24 py-2.5 text-sm font-medium transition-all ${activeTab === 'listings' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
             Listings{activeListings.length > 0 ? ` (${activeListings.length})` : ''}
@@ -307,9 +310,17 @@ const SellerProfile = () => {
             Sold{soldListings.length > 0 ? ` (${soldListings.length})` : ''}
           </button>
         </div>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setViewMode(v => v === 'single' ? 'grid' : 'single')}
+          className="h-10 w-10 rounded-full border-2 border-border bg-card hover:bg-secondary"
+        >
+          {viewMode === 'single' ? <LayoutGrid className="h-4 w-4" /> : <Rows3 className="h-4 w-4" />}
+        </Button>
       </div>
 
-      <div className="flex-1 min-h-0 flex flex-col justify-center overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide py-6 max-[430px]:py-5 max-[393px]:py-4 max-[375px]:py-3" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <div className={`flex-1 min-h-0 flex flex-col ${viewMode === 'single' ? 'justify-center overflow-x-auto overflow-y-hidden snap-x snap-mandatory' : 'overflow-y-auto overflow-x-hidden'} scrollbar-hide py-6 max-[430px]:py-5 max-[393px]:py-4 max-[375px]:py-3`} style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {listingsLoading ? (
           <div className="flex justify-center py-12">
             <span className="text-5xl">⏳</span>
@@ -342,42 +353,54 @@ const SellerProfile = () => {
           }
           return null;
         })() || (displayListings.length > 0 ? (
-          <div className="flex gap-4 max-[430px]:gap-3 max-[375px]:gap-2.5">
-            <div className="flex-shrink-0 w-[calc(50vw-128px)] max-[430px]:w-[calc(50vw-120px)] max-[393px]:w-[calc(50vw-104px)] max-[375px]:w-[calc(50vw-88px)]" />
-            {displayListings.map((listing) => (
-              <div key={listing.id} className="relative w-64 max-[430px]:w-60 max-[393px]:w-52 max-[375px]:w-44 flex-shrink-0 overflow-hidden rounded-3xl max-[375px]:rounded-2xl bg-card p-2.5 max-[430px]:p-2 max-[375px]:p-1.5 card-shadow snap-center">
-                {/* Image */}
-                <div 
-                  className="aspect-[3/4] max-[430px]:aspect-[3/4] max-[393px]:aspect-[4/5] max-[375px]:aspect-[1/1] w-full overflow-hidden rounded-2xl max-[375px]:rounded-xl cursor-pointer"
-                  onClick={() => navigate(`/listing/${listing.id}`)}
-                >
-                  <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
-                </div>
-                
-                {/* Content */}
-                <div className="px-2 max-[393px]:px-1.5 max-[375px]:px-1 pt-3 max-[393px]:pt-1.5 max-[375px]:pt-1.5 pb-2.5 max-[393px]:pb-2 max-[375px]:pb-1.5">
-                  <div className="flex items-end justify-between">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-base max-[393px]:text-sm max-[375px]:text-xs font-semibold text-foreground truncate">{listing.title}</h3>
-                      <div className="mt-1.5 max-[393px]:mt-0.5 max-[375px]:mt-0.5 flex flex-nowrap gap-1.5 max-[393px]:gap-1 max-[375px]:gap-1 overflow-x-auto scrollbar-hide">
-                        <span className="rounded-full bg-muted px-2.5 max-[393px]:px-1.5 max-[375px]:px-1.5 py-0.5 text-xs max-[393px]:text-[10px] max-[375px]:text-[9px] font-medium text-muted-foreground whitespace-nowrap">
-                          {formatTagLabel(listing.size, true)}
-                        </span>
-                        <span className="rounded-full bg-muted px-2.5 max-[393px]:px-1.5 max-[375px]:px-1.5 py-0.5 text-xs max-[393px]:text-[10px] max-[375px]:text-[9px] font-medium text-muted-foreground whitespace-nowrap">
-                          {listing.brand}
-                        </span>
+          viewMode === 'single' ? (
+            <div className="flex gap-4 max-[430px]:gap-3 max-[375px]:gap-2.5">
+              <div className="flex-shrink-0 w-[calc(50vw-128px)] max-[430px]:w-[calc(50vw-120px)] max-[393px]:w-[calc(50vw-104px)] max-[375px]:w-[calc(50vw-88px)]" />
+              {displayListings.map((listing) => (
+                <div key={listing.id} className="relative w-64 max-[430px]:w-60 max-[393px]:w-52 max-[375px]:w-44 flex-shrink-0 overflow-hidden rounded-3xl max-[375px]:rounded-2xl bg-card p-2.5 max-[430px]:p-2 max-[375px]:p-1.5 card-shadow snap-center">
+                  <div 
+                    className="aspect-[3/4] max-[430px]:aspect-[3/4] max-[393px]:aspect-[4/5] max-[375px]:aspect-[1/1] w-full overflow-hidden rounded-2xl max-[375px]:rounded-xl cursor-pointer"
+                    onClick={() => navigate(`/listing/${listing.id}`)}
+                  >
+                    <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
+                  </div>
+                  <div className="px-2 max-[393px]:px-1.5 max-[375px]:px-1 pt-3 max-[393px]:pt-1.5 max-[375px]:pt-1.5 pb-2.5 max-[393px]:pb-2 max-[375px]:pb-1.5">
+                    <div className="flex items-end justify-between">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-base max-[393px]:text-sm max-[375px]:text-xs font-semibold text-foreground truncate">{listing.title}</h3>
+                        <div className="mt-1.5 max-[393px]:mt-0.5 max-[375px]:mt-0.5 flex flex-nowrap gap-1.5 max-[393px]:gap-1 max-[375px]:gap-1 overflow-x-auto scrollbar-hide">
+                          <span className="rounded-full bg-muted px-2.5 max-[393px]:px-1.5 max-[375px]:px-1.5 py-0.5 text-xs max-[393px]:text-[10px] max-[375px]:text-[9px] font-medium text-muted-foreground whitespace-nowrap">
+                            {formatTagLabel(listing.size, true)}
+                          </span>
+                          <span className="rounded-full bg-muted px-2.5 max-[393px]:px-1.5 max-[375px]:px-1.5 py-0.5 text-xs max-[393px]:text-[10px] max-[375px]:text-[9px] font-medium text-muted-foreground whitespace-nowrap">
+                            {listing.brand}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-right flex-shrink-0 ml-1.5 max-[393px]:ml-0.5 max-[375px]:ml-0.5">
-                      <p className="text-lg max-[393px]:text-base max-[375px]:text-sm font-bold text-foreground leading-none">${listing.price}</p>
-                      <p className="text-xs max-[393px]:text-[10px] max-[375px]:text-[9px] text-muted-foreground whitespace-nowrap leading-tight mt-0.5">+ ${listing.shipping_price || 0} shipping</p>
+                      <div className="text-right flex-shrink-0 ml-1.5 max-[393px]:ml-0.5 max-[375px]:ml-0.5">
+                        <p className="text-lg max-[393px]:text-base max-[375px]:text-sm font-bold text-foreground leading-none">${listing.price}</p>
+                        <p className="text-xs max-[393px]:text-[10px] max-[375px]:text-[9px] text-muted-foreground whitespace-nowrap leading-tight mt-0.5">+ ${listing.shipping_price || 0} shipping</p>
+                      </div>
                     </div>
                   </div>
                 </div>
+              ))}
+              <div className="flex-shrink-0 w-[calc(50vw-128px)] max-[430px]:w-[calc(50vw-120px)] max-[393px]:w-[calc(50vw-104px)] max-[375px]:w-[calc(50vw-88px)]" />
+            </div>
+          ) : (
+            <div className="w-full px-4 pt-2">
+              <div className="grid grid-cols-2 gap-3">
+                {displayListings.map((listing) => (
+                  <ProfileGridCard
+                    key={listing.id}
+                    listing={listing}
+                    activeTab={activeTab}
+                  />
+                ))}
               </div>
-            ))}
-            <div className="flex-shrink-0 w-[calc(50vw-128px)] max-[430px]:w-[calc(50vw-120px)] max-[393px]:w-[calc(50vw-104px)] max-[375px]:w-[calc(50vw-88px)]" />
-          </div>
+              <div className="h-4" />
+            </div>
+          )
         ) : (
           <div className="flex flex-col items-center justify-center px-4 py-12">
             <p className="text-muted-foreground">{activeTab === 'listings' ? 'No listings yet' : 'No sold items yet'}</p>
