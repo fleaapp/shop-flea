@@ -253,7 +253,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
                   src={slide.image}
                   alt={slide.alt}
                   className={`object-contain w-full h-full ${slide.isGif ? '' : ''}`}
-                  style={slide.isGif ? { mixBlendMode: 'screen' } : undefined}
+                  style={undefined}
                 />
               </div>
             )}
