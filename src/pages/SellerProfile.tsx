@@ -127,15 +127,34 @@ const SellerProfile = () => {
       setActiveListings(activeData);
     }
 
-    // Fetch sold listings
-    const { data: soldData } = await supabase
-      .from('listings')
-      .select('*')
-      .eq('user_id', sellerId)
-      .eq('status', 'sold');
+    // Fetch sold listings via orders (one card per transaction)
+    const { data: orders } = await supabase
+      .from('orders')
+      .select('id, listing_id, created_at')
+      .eq('seller_id', sellerId)
+      .order('created_at', { ascending: false });
 
-    if (soldData) {
-      setSoldListings(soldData);
+    if (orders && orders.length > 0) {
+      const listingIds = [...new Set(orders.map(o => o.listing_id))];
+      const { data: soldData } = await supabase
+        .from('listings')
+        .select('*')
+        .in('id', listingIds)
+        .eq('user_id', sellerId);
+
+      if (soldData) {
+        const listingMap = new Map(soldData.map(l => [l.id, l]));
+        const orderedSold = orders
+          .map(order => {
+            const listing = listingMap.get(order.listing_id);
+            if (!listing) return null;
+            return { ...listing, id: `${listing.id}::${order.id}`, created_at: order.created_at };
+          })
+          .filter((l): l is DbListing => !!l);
+        setSoldListings(orderedSold);
+      }
+    } else {
+      setSoldListings([]);
     }
 
     setListingsLoading(false);
