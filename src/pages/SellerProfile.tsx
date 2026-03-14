@@ -60,6 +60,7 @@ const SellerProfile = () => {
   const [loading, setLoading] = useState(true);
   const [listingsLoading, setListingsLoading] = useState(true);
   const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'single' | 'grid'>('single');
   const [hasOutstandingOrder, setHasOutstandingOrder] = useState(false);
   
   const { addToCart, isInCart } = useCart();
