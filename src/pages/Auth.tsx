@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import fleaLogoAuth from '@/assets/flea-logo-auth.jpeg';
@@ -20,6 +20,11 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
+  // Splash screen state
+  const [showSplash, setShowSplash] = useState(true);
+  const [splashFading, setSplashFading] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
   // Region detection state
   const [isDetectingLocation, setIsDetectingLocation] = useState(true);
   const [detectedCountry, setDetectedCountry] = useState<{ code: string; name: string } | null>(null);
@@ -33,6 +38,32 @@ const Auth = () => {
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [passwordFocused, setPasswordFocused] = useState(false);
+  
+  // Splash screen: end on video finish or fallback timeout
+  useEffect(() => {
+    const video = videoRef.current;
+    
+    const endSplash = () => {
+      setSplashFading(true);
+      setTimeout(() => setShowSplash(false), 600);
+    };
+    
+    if (video) {
+      video.play().catch(() => {
+        // Video failed to play (autoplay blocked), skip splash
+        endSplash();
+      });
+      video.addEventListener('ended', endSplash);
+    }
+    
+    // Fallback: if video is too long or stalls, end after 6s
+    const fallback = setTimeout(endSplash, 6000);
+    
+    return () => {
+      clearTimeout(fallback);
+      video?.removeEventListener('ended', endSplash);
+    };
+  }, []);
   
   // Detect user location on mount
   useEffect(() => {
@@ -330,6 +361,25 @@ const Auth = () => {
   }
 
   return (
+    <>
+      {/* Splash Screen Video Overlay */}
+      {showSplash && (
+        <div 
+          className={`fixed inset-0 z-[9999] bg-black flex items-center justify-center transition-opacity duration-[600ms] ${
+            splashFading ? 'opacity-0' : 'opacity-100'
+          }`}
+        >
+          <video
+            ref={videoRef}
+            src="/splash-screen.mov"
+            autoPlay
+            muted
+            playsInline
+            preload="auto"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        </div>
+      )}
     <div className="auth-screen fixed inset-0 bg-primary flex flex-col overflow-hidden">
       {/* Logo - positioned at top */}
       <div className="auth-logo absolute top-20 max-[375px]:top-12 left-0 right-0 flex justify-center">
@@ -546,6 +596,7 @@ const Auth = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
