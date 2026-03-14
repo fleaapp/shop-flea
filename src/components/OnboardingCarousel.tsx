@@ -253,7 +253,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
                   src={slide.image}
                   alt={slide.alt}
                   className={`object-contain w-full h-full ${slide.isGif ? '' : ''}`}
-                  style={slide.isGif ? { mixBlendMode: 'screen' } : undefined}
+                  style={undefined}
                 />
               </div>
             )}
@@ -275,7 +275,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
                     vid.play();
                   }}
                   className="w-full rounded-xl object-contain"
-                  style={{ mixBlendMode: 'screen' }}
+                  style={undefined}
                 />
               </div>
             )}
