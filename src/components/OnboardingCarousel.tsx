@@ -197,7 +197,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
                   y={r.y}
                   width={r.w}
                   height={r.h}
-                  rx="16"
+                  rx="999"
                   fill="black"
                 />
               ))}
