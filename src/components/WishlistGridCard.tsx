@@ -126,8 +126,8 @@ const WishlistGridCard = ({ listing, onRemove, onAddToCart, isSold = false, isPa
                   {listing.title}
                 </h3>
                 <div className="mt-1 flex flex-nowrap gap-1 overflow-x-auto scrollbar-hide whitespace-nowrap">
-                  <ListingTag label={listing.size} isSize />
-                  <ListingTag label={listing.brand} />
+                  <ListingTag label={listing.size} isSize size="sm" />
+                  <ListingTag label={listing.brand} size="sm" />
                 </div>
               </div>
               <div className="text-right flex-shrink-0 ml-2">
