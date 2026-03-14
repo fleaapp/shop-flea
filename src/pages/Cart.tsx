@@ -310,7 +310,7 @@ const Cart = () => {
         <div className="flex justify-center px-4 max-[375px]:px-3 pb-4">
           <div className="inline-flex items-center rounded-full bg-muted p-1">
             {([
-              { key: 'awaiting' as const, label: 'To Ship' },
+              { key: 'awaiting' as const, label: 'Ordered' },
               { key: 'shipped' as const, label: 'Shipped' },
               { key: 'delivered' as const, label: 'Delivered' },
             ]).map(({ key, label }) => (
@@ -454,10 +454,14 @@ const Cart = () => {
                 <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
                   <span className="text-6xl opacity-50 mb-4">🧾</span>
                   <p className="text-lg font-medium text-muted-foreground">
-                    {orderStatusFilter === 'awaiting' && 'No orders to ship yet'}
-                    {orderStatusFilter === 'shipped' && 'No shipped orders yet'}
-                    {orderStatusFilter === 'delivered' && 'No delivered orders yet'}
+                    No orders yet.
                   </p>
+                  <Button
+                    onClick={() => navigate('/')}
+                    className="mt-6 rounded-full bg-primary text-primary-foreground"
+                  >
+                    Browse Listings
+                  </Button>
                 </div>
               );
             }
