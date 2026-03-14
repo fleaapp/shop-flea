@@ -84,8 +84,8 @@ const Auth = () => {
     const playPromise = video.play();
     if (playPromise) {
       playPromise.catch(() => {
-        // If autoplay fails, keep a short grace period instead of abrupt cut
-        fallbackTimeout = window.setTimeout(endSplash, 2000);
+        // Autoplay blocked on this device/browser: never show a play button overlay
+        endSplash();
       });
     }
 
