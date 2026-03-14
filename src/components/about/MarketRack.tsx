@@ -10,7 +10,7 @@ const cards = [
   { title: 'Cream Knit Sweater', size: 'ONE SIZE', brand: 'Zara', price: 35, shipping: 7, image: sweaterImg, rotate: 4 },
 ];
 
-/** A miniature replica of the real SwipeCard, hanging from a hanger on a pole. */
+/** Exact scaled-down replica of SwipeCard, hanging from a hanger on a pole. */
 const MiniListingCard = ({ card }: { card: typeof cards[number] }) => (
   <div
     className="flex flex-col items-center flex-shrink-0"
@@ -23,37 +23,39 @@ const MiniListingCard = ({ card }: { card: typeof cards[number] }) => (
       <path d="M24 1 L45 15 H3 Z" />
     </svg>
 
-    {/* Card — exact same structure as SwipeCard */}
-    <div className="w-[88px] md:w-[140px] flex flex-col overflow-hidden rounded-xl md:rounded-2xl bg-card p-[5px] md:p-2 card-shadow">
-      {/* Image */}
-      <div className="aspect-[4/5] overflow-hidden rounded-lg md:rounded-xl">
-        <img
-          src={card.image}
-          alt={card.title}
-          className="h-full w-full object-cover"
-          draggable={false}
-        />
+    {/* Card — identical structure to SwipeCard, scaled down */}
+    <div className="w-[88px] md:w-[140px] flex flex-col overflow-hidden rounded-2xl md:rounded-3xl bg-card p-[4px] md:p-[6px] card-shadow">
+      {/* Image — matches SwipeCard's rounded-2xl inner image */}
+      <div className="overflow-hidden rounded-xl md:rounded-2xl">
+        <div className="aspect-[4/5] overflow-hidden">
+          <img
+            src={card.image}
+            alt={card.title}
+            className="h-full w-full object-cover"
+            draggable={false}
+          />
+        </div>
       </div>
 
-      {/* Content — mirrors SwipeCard layout */}
-      <div className="px-[3px] md:px-1.5 pt-1.5 md:pt-2 pb-[2px] md:pb-1">
+      {/* Content — mirrors SwipeCard: px-2 pt-3 pb-1, scaled down */}
+      <div className="px-[3px] md:px-[5px] pt-[5px] md:pt-[7px] pb-[2px] md:pb-[3px]">
         <div className="flex items-end justify-between">
           <div className="flex-1 min-w-0">
-            <h3 className="text-[8px] md:text-xs font-semibold text-foreground truncate leading-tight">
+            <h3 className="text-[7px] md:text-[11px] font-semibold text-foreground truncate leading-tight">
               {card.title}
             </h3>
-            <div className="mt-[3px] md:mt-1 flex flex-nowrap gap-[3px] md:gap-1 overflow-hidden">
-              <span className="rounded-full bg-tag px-[5px] md:px-2 py-[1px] md:py-0.5 text-[5.5px] md:text-[9px] font-medium text-charcoal-light whitespace-nowrap">
+            <div className="mt-[2px] md:mt-[3px] flex flex-nowrap gap-[2px] md:gap-[3px] overflow-hidden">
+              <span className="rounded-full bg-tag px-[4px] md:px-[7px] py-[1px] md:py-[2px] text-[5px] md:text-[8px] font-medium text-charcoal-light whitespace-nowrap">
                 {card.size}
               </span>
-              <span className="rounded-full bg-tag px-[5px] md:px-2 py-[1px] md:py-0.5 text-[5.5px] md:text-[9px] font-medium text-charcoal-light whitespace-nowrap truncate">
+              <span className="rounded-full bg-tag px-[4px] md:px-[7px] py-[1px] md:py-[2px] text-[5px] md:text-[8px] font-medium text-charcoal-light whitespace-nowrap truncate">
                 {card.brand}
               </span>
             </div>
           </div>
-          <div className="text-right flex-shrink-0 ml-1 md:ml-2">
-            <p className="text-[9px] md:text-sm font-bold text-foreground leading-tight">${card.price}</p>
-            <p className="text-[5px] md:text-[8px] text-muted-foreground whitespace-nowrap">+ ${card.shipping} 📦</p>
+          <div className="text-right flex-shrink-0 ml-[3px] md:ml-[5px]">
+            <p className="text-[8px] md:text-[12px] font-bold text-foreground leading-tight">${card.price}</p>
+            <p className="text-[4.5px] md:text-[7px] text-muted-foreground whitespace-nowrap">+ ${card.shipping} shipping</p>
           </div>
         </div>
       </div>
