@@ -64,7 +64,7 @@ const BottomNav = () => {
     { icon: <span className="text-lg">🏠</span>, label: 'Home', path: '/' },
     { icon: <span className="text-lg">🛒</span>, label: 'Cart', path: '/cart', badge: ordersBadge },
     { icon: <span className="text-lg">🔔</span>, label: 'Alerts', path: '/notifications', badge: alertsBadge },
-  ], [profile?.avatar_url, profileIcon, ordersBadge, alertsBadge]);
+  ], [profile?.avatar_url, profileIcon, ordersBadge, alertsBadge, salesBadge]);
 
   // Map paths to onboarding IDs
   const getOnboardingId = (path: string) => {
