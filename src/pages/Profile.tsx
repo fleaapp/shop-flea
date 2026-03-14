@@ -199,13 +199,12 @@ const Profile = () => {
         </Button>
       </div>
 
-      <div className="flex-1 min-h-0 flex flex-col justify-center overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide py-6 max-[430px]:py-5 max-[393px]:py-4 max-[375px]:py-3" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <div className={`flex-1 min-h-0 flex flex-col ${viewMode === 'single' ? 'justify-center overflow-x-auto overflow-y-hidden snap-x snap-mandatory' : 'overflow-y-auto overflow-x-hidden'} scrollbar-hide py-6 max-[430px]:py-5 max-[393px]:py-4 max-[375px]:py-3`} style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {isLoading ? (
           <div className="flex justify-center py-12">
             <span className="text-5xl">⏳</span>
           </div>
         ) : pauseSelling && activeTab === 'listings' ? (
-          // Show paused selling state
           <div className="flex flex-col items-center justify-center px-4 py-12">
             <span className="text-5xl mb-4">⏸️</span>
             <p className="text-lg font-medium text-muted-foreground">Paused</p>
@@ -216,57 +215,67 @@ const Profile = () => {
             </p>
           </div>
         ) : displayListings.length > 0 ? (
-          <div className="flex gap-4 max-[430px]:gap-3 max-[375px]:gap-2.5">
-            <div className="flex-shrink-0 w-[calc(50vw-128px)] max-[430px]:w-[calc(50vw-120px)] max-[393px]:w-[calc(50vw-104px)] max-[375px]:w-[calc(50vw-88px)]" />
-            {displayListings.map((listing, index) => (
-              <div key={`${listing.id}-${index}`} className="relative w-64 max-[430px]:w-60 max-[393px]:w-52 max-[375px]:w-44 flex-shrink-0 overflow-hidden rounded-3xl max-[375px]:rounded-2xl bg-card p-2.5 max-[430px]:p-2 max-[375px]:p-1.5 card-shadow snap-center">
-                {/* Edit button - only show for active listings */}
-                {activeTab === 'listings' && (
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/listing/${listing.id}/edit`);
-                    }} 
-                    className="absolute right-4 max-[430px]:right-3 max-[375px]:right-2.5 top-4 max-[430px]:top-3 max-[375px]:top-2.5 z-10 flex h-8 w-8 max-[430px]:h-7 max-[430px]:w-7 max-[375px]:h-6 max-[375px]:w-6 items-center justify-center rounded-lg max-[375px]:rounded-md bg-card/80 backdrop-blur-sm"
+          viewMode === 'single' ? (
+            <div className="flex gap-4 max-[430px]:gap-3 max-[375px]:gap-2.5">
+              <div className="flex-shrink-0 w-[calc(50vw-128px)] max-[430px]:w-[calc(50vw-120px)] max-[393px]:w-[calc(50vw-104px)] max-[375px]:w-[calc(50vw-88px)]" />
+              {displayListings.map((listing, index) => (
+                <div key={`${listing.id}-${index}`} className="relative w-64 max-[430px]:w-60 max-[393px]:w-52 max-[375px]:w-44 flex-shrink-0 overflow-hidden rounded-3xl max-[375px]:rounded-2xl bg-card p-2.5 max-[430px]:p-2 max-[375px]:p-1.5 card-shadow snap-center">
+                  {activeTab === 'listings' && (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/listing/${listing.id}/edit`);
+                      }} 
+                      className="absolute right-4 max-[430px]:right-3 max-[375px]:right-2.5 top-4 max-[430px]:top-3 max-[375px]:top-2.5 z-10 flex h-8 w-8 max-[430px]:h-7 max-[430px]:w-7 max-[375px]:h-6 max-[375px]:w-6 items-center justify-center rounded-lg max-[375px]:rounded-md bg-card/80 backdrop-blur-sm"
+                    >
+                      <span className="text-sm max-[430px]:text-xs max-[375px]:text-[10px]">✏️</span>
+                    </button>
+                  )}
+                  <div 
+                    className="relative aspect-[3/4] max-[430px]:aspect-[3/4] max-[393px]:aspect-[4/5] max-[375px]:aspect-[1/1] w-full overflow-hidden rounded-2xl max-[375px]:rounded-xl cursor-pointer"
+                    onClick={() => navigate(`/listing/${(listing as any).source_listing_id || listing.id}`)}
                   >
-                    <span className="text-sm max-[430px]:text-xs max-[375px]:text-[10px]">✏️</span>
-                  </button>
-                )}
-
-                {/* Image */}
-                <div 
-                  className="relative aspect-[3/4] max-[430px]:aspect-[3/4] max-[393px]:aspect-[4/5] max-[375px]:aspect-[1/1] w-full overflow-hidden rounded-2xl max-[375px]:rounded-xl cursor-pointer"
-                  onClick={() => navigate(`/listing/${(listing as any).source_listing_id || listing.id}`)}
-                >
-                  <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
-                  {/* Shipping status button - only show for sold items */}
-                  {activeTab === 'sold' && getOrderStatusButton((listing as any).source_listing_id || listing.id, (listing as any).order_id)}
-                </div>
-                
-                {/* Content */}
-                <div className="px-2 max-[393px]:px-1.5 max-[375px]:px-1 pt-3 max-[393px]:pt-1.5 max-[375px]:pt-1.5 pb-2.5 max-[393px]:pb-2 max-[375px]:pb-1.5">
-                  <div className="flex items-end justify-between">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-base max-[393px]:text-sm max-[375px]:text-xs font-semibold text-foreground truncate">{listing.title}</h3>
-                      <div className="mt-1.5 max-[393px]:mt-0.5 max-[375px]:mt-0.5 flex flex-nowrap gap-1.5 max-[393px]:gap-1 max-[375px]:gap-1 overflow-x-auto scrollbar-hide">
-                        <span className="rounded-full bg-muted px-2.5 max-[393px]:px-1.5 max-[375px]:px-1.5 py-0.5 text-xs max-[393px]:text-[10px] max-[375px]:text-[9px] font-medium text-muted-foreground whitespace-nowrap">
-                          {formatTagLabel(listing.size, true)}
-                        </span>
-                        <span className="rounded-full bg-muted px-2.5 max-[393px]:px-1.5 max-[375px]:px-1.5 py-0.5 text-xs max-[393px]:text-[10px] max-[375px]:text-[9px] font-medium text-muted-foreground whitespace-nowrap">
-                          {listing.brand}
-                        </span>
+                    <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
+                    {activeTab === 'sold' && getOrderStatusButton((listing as any).source_listing_id || listing.id, (listing as any).order_id)}
+                  </div>
+                  <div className="px-2 max-[393px]:px-1.5 max-[375px]:px-1 pt-3 max-[393px]:pt-1.5 max-[375px]:pt-1.5 pb-2.5 max-[393px]:pb-2 max-[375px]:pb-1.5">
+                    <div className="flex items-end justify-between">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-base max-[393px]:text-sm max-[375px]:text-xs font-semibold text-foreground truncate">{listing.title}</h3>
+                        <div className="mt-1.5 max-[393px]:mt-0.5 max-[375px]:mt-0.5 flex flex-nowrap gap-1.5 max-[393px]:gap-1 max-[375px]:gap-1 overflow-x-auto scrollbar-hide">
+                          <span className="rounded-full bg-muted px-2.5 max-[393px]:px-1.5 max-[375px]:px-1.5 py-0.5 text-xs max-[393px]:text-[10px] max-[375px]:text-[9px] font-medium text-muted-foreground whitespace-nowrap">
+                            {formatTagLabel(listing.size, true)}
+                          </span>
+                          <span className="rounded-full bg-muted px-2.5 max-[393px]:px-1.5 max-[375px]:px-1.5 py-0.5 text-xs max-[393px]:text-[10px] max-[375px]:text-[9px] font-medium text-muted-foreground whitespace-nowrap">
+                            {listing.brand}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-right flex-shrink-0 ml-1.5 max-[393px]:ml-0.5 max-[375px]:ml-0.5">
-                      <p className="text-lg max-[393px]:text-base max-[375px]:text-sm font-bold text-foreground leading-none">${listing.price}</p>
-                      <p className="text-xs max-[393px]:text-[10px] max-[375px]:text-[9px] text-muted-foreground whitespace-nowrap leading-tight mt-0.5">+ ${listing.shipping_price || 0} shipping</p>
+                      <div className="text-right flex-shrink-0 ml-1.5 max-[393px]:ml-0.5 max-[375px]:ml-0.5">
+                        <p className="text-lg max-[393px]:text-base max-[375px]:text-sm font-bold text-foreground leading-none">${listing.price}</p>
+                        <p className="text-xs max-[393px]:text-[10px] max-[375px]:text-[9px] text-muted-foreground whitespace-nowrap leading-tight mt-0.5">+ ${listing.shipping_price || 0} shipping</p>
+                      </div>
                     </div>
                   </div>
                 </div>
+              ))}
+              <div className="flex-shrink-0 w-[calc(50vw-128px)] max-[430px]:w-[calc(50vw-120px)] max-[393px]:w-[calc(50vw-104px)] max-[375px]:w-[calc(50vw-88px)]" />
+            </div>
+          ) : (
+            <div className="w-full px-4 pt-2">
+              <div className="grid grid-cols-2 gap-3">
+                {displayListings.map((listing, index) => (
+                  <ProfileGridCard
+                    key={`${listing.id}-${index}`}
+                    listing={listing}
+                    activeTab={activeTab}
+                    getOrderStatusButton={getOrderStatusButton}
+                  />
+                ))}
               </div>
-            ))}
-            <div className="flex-shrink-0 w-[calc(50vw-128px)] max-[430px]:w-[calc(50vw-120px)] max-[393px]:w-[calc(50vw-104px)] max-[375px]:w-[calc(50vw-88px)]" />
-          </div>
+              <div className="h-4" />
+            </div>
+          )
         ) : (
           <div className="flex flex-col items-center justify-center px-4 py-12">
             <p className="text-muted-foreground">{activeTab === 'listings' ? 'No listings yet' : 'No sold items yet'}</p>
