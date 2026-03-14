@@ -33,6 +33,7 @@ import SellerProfile from "./pages/SellerProfile";
 import FAQ from "./pages/FAQ";
 import OrderChat from "./pages/OrderChat";
 import Sales from "./pages/Sales";
+import About from "./pages/About";
 
 const queryClient = new QueryClient();
 
