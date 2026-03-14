@@ -302,8 +302,8 @@ const SellerProfile = () => {
       </div>
 
       <div className="mt-5 max-[430px]:mt-4 max-[393px]:mt-3 max-[375px]:mt-2 flex justify-center items-center gap-2">
-        <div className="flex items-center rounded-full bg-muted p-1 w-48 overflow-hidden">
-          <button onClick={() => setActiveTab('listings')} className={`flex flex-1 basis-0 items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-sm font-medium transition-all ${activeTab === 'listings' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
+        <div className="flex items-center rounded-full bg-muted p-1 w-[220px]">
+          <button onClick={() => setActiveTab('listings')} className={`flex w-1/2 items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-sm font-medium transition-all ${activeTab === 'listings' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
             Listings
             {activeListings.length > 0 && (
               <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold leading-none ${activeTab === 'listings' ? 'bg-muted text-muted-foreground' : 'bg-card text-foreground/70'}`}>
@@ -311,7 +311,7 @@ const SellerProfile = () => {
               </span>
             )}
           </button>
-          <button onClick={() => setActiveTab('sold')} className={`flex flex-1 basis-0 items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-sm font-medium transition-all ${activeTab === 'sold' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
+          <button onClick={() => setActiveTab('sold')} className={`flex w-1/2 items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-sm font-medium transition-all ${activeTab === 'sold' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
             Sold
             {soldListings.length > 0 && (
               <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold leading-none ${activeTab === 'sold' ? 'bg-muted text-muted-foreground' : 'bg-card text-foreground/70'}`}>
