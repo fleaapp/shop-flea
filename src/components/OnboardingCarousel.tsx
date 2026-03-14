@@ -77,6 +77,9 @@ const slides: Slide[] = [
     spotlight: {
       route: '/cart',
       targetSelector: 'cart-wishlist-button',
+      additionalTargets: [
+        { targetSelector: 'nav-cart', showText: false },
+      ],
     },
   },
   {
