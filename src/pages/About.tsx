@@ -10,7 +10,7 @@ import cutoutJacket from '@/assets/about/cutout-jacket.png';
 import cutoutSneakers from '@/assets/about/cutout-sneakers.png';
 import cutoutSweater from '@/assets/about/cutout-sweater.png';
 import cutoutBag from '@/assets/about/cutout-bag.png';
-import marketRack from '@/assets/about/market-rack-listings.png';
+import MarketRack from '@/components/about/MarketRack';
 
 const About = () => {
   const navigate = useNavigate();
@@ -73,7 +73,7 @@ const About = () => {
 
       {/* Market rack graphic */}
       <div className="bg-primary px-6 -mt-8 pb-4">
-        <img src={marketRack} alt="Listing cards hanging on a market rack" className="max-w-lg mx-auto w-full" />
+        <MarketRack />
       </div>
 
       {/* Tagline strip */}
