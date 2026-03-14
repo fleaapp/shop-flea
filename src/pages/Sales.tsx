@@ -177,7 +177,6 @@ const Sales = () => {
                 >
                   Create Listing
                 </Button>
-                </p>
               </div>
             );
           }
