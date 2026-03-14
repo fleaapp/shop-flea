@@ -28,6 +28,11 @@ interface OnboardingCarouselProps {
   onComplete: () => void;
 }
 
+interface SpotlightTarget {
+  targetSelector: string; // data-onboarding attribute value
+  showText?: boolean; // whether to show the slide text next to this target (default true)
+}
+
 interface Slide {
   image?: string;
   video?: string;
@@ -35,10 +40,11 @@ interface Slide {
   alt: string;
   isGif?: boolean;
   imageOffset?: string;
-  // Spotlight mode — navigate to route and highlight a real element
+  // Spotlight mode — navigate to route and highlight real elements
   spotlight?: {
     route: string;
-    targetSelector: string; // data-onboarding attribute value
+    targetSelector: string; // primary target (legacy)
+    additionalTargets?: SpotlightTarget[]; // extra spotlights (no text by default)
   };
 }
 
