@@ -9,7 +9,7 @@ interface FilterChipProps {
 
 const FilterChip = ({ label, onRemove, colourSwatch }: FilterChipProps) => {
   const swatchBg = colourSwatch
-    ? COLOUR_SWATCHES[colourSwatch] || 'repeating-linear-gradient(45deg, #ff6b6b, #ff6b6b 10px, #ffd93d 10px, #ffd93d 20px, #6bcf7f 20px, #6bcf7f 30px, #4d96ff 30px, #4d96ff 40px)'
+    ? COLOUR_SWATCHES[colourSwatch] || 'repeating-linear-gradient(90deg, #ff6b6b, #ff6b6b 10px, #ffd93d 10px, #ffd93d 20px, #6bcf7f 20px, #6bcf7f 30px, #4d96ff 30px, #4d96ff 40px)'
     : null;
 
   return (
