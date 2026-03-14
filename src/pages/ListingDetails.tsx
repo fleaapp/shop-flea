@@ -570,7 +570,7 @@ const ListingDetails = () => {
               ].map((tag) => (
                 <div
                   key={tag.label}
-                  className="flex-1 flex flex-col items-center justify-center rounded-2xl bg-muted-foreground/20 px-2 py-2.5"
+                  className="flex-1 flex flex-col items-center justify-center rounded-lg bg-muted-foreground/20 px-2 py-2.5"
                 >
                   <span className="text-[10px] font-bold text-muted-foreground leading-tight">{tag.label}</span>
                   <span className="text-xs font-medium text-muted-foreground leading-snug mt-0.5 text-center">
