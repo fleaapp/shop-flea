@@ -6,6 +6,7 @@ interface ListingTagProps {
   variant?: 'default' | 'highlight' | 'muted';
   isSize?: boolean;
   colourSwatch?: string; // colour name to show a swatch circle
+  size?: 'default' | 'sm';
 }
 
 // Size values that should be fully uppercased
