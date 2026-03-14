@@ -6,6 +6,7 @@ interface ListingTagProps {
   variant?: 'default' | 'highlight' | 'muted';
   isSize?: boolean;
   colourSwatch?: string; // colour name to show a swatch circle
+  size?: 'default' | 'sm';
 }
 
 // Size values that should be fully uppercased
@@ -18,7 +19,7 @@ export const formatTagLabel = (label: string, isSize = false): string => {
   return label.charAt(0).toUpperCase() + label.slice(1);
 };
 
-const ListingTag = ({ label, variant = 'default', isSize = false, colourSwatch }: ListingTagProps) => {
+const ListingTag = ({ label, variant = 'default', isSize = false, colourSwatch, size = 'default' }: ListingTagProps) => {
   const formattedLabel = formatTagLabel(label, isSize);
   
   const swatchBg = colourSwatch
@@ -28,7 +29,8 @@ const ListingTag = ({ label, variant = 'default', isSize = false, colourSwatch }
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap',
+        'inline-flex items-center gap-1 rounded-full font-medium whitespace-nowrap',
+        size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-1 text-xs gap-1.5',
         variant === 'default' && 'bg-tag text-charcoal-light',
         variant === 'highlight' && 'bg-primary text-primary-foreground',
         variant === 'muted' && 'bg-muted-foreground/20 text-muted-foreground'
