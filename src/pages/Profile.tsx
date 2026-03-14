@@ -189,6 +189,14 @@ const Profile = () => {
             Sold{soldListings.length > 0 ? ` (${soldListings.length})` : ''}
           </button>
         </div>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setViewMode(v => v === 'single' ? 'grid' : 'single')}
+          className="h-10 w-10 rounded-full border-2 border-border bg-card hover:bg-secondary"
+        >
+          {viewMode === 'single' ? <LayoutGrid className="h-4 w-4" /> : <Rows3 className="h-4 w-4" />}
+        </Button>
       </div>
 
       <div className="flex-1 min-h-0 flex flex-col justify-center overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide py-6 max-[430px]:py-5 max-[393px]:py-4 max-[375px]:py-3" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
