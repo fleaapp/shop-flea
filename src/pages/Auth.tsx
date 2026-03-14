@@ -39,6 +39,32 @@ const Auth = () => {
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [passwordFocused, setPasswordFocused] = useState(false);
   
+  // Splash screen: end on video finish or fallback timeout
+  useEffect(() => {
+    const video = videoRef.current;
+    
+    const endSplash = () => {
+      setSplashFading(true);
+      setTimeout(() => setShowSplash(false), 600);
+    };
+    
+    if (video) {
+      video.play().catch(() => {
+        // Video failed to play (autoplay blocked), skip splash
+        endSplash();
+      });
+      video.addEventListener('ended', endSplash);
+    }
+    
+    // Fallback: if video is too long or stalls, end after 6s
+    const fallback = setTimeout(endSplash, 6000);
+    
+    return () => {
+      clearTimeout(fallback);
+      video?.removeEventListener('ended', endSplash);
+    };
+  }, []);
+  
   // Detect user location on mount
   useEffect(() => {
     const detectLocation = async () => {
