@@ -306,7 +306,7 @@ const SellerProfile = () => {
           <button onClick={() => setActiveTab('listings')} className={`flex items-center gap-1.5 rounded-full w-auto px-4 py-2.5 text-sm font-medium transition-all ${activeTab === 'listings' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
             Listings
             {activeListings.length > 0 && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">
+              <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold ${activeTab === 'listings' ? 'bg-muted text-muted-foreground' : 'bg-card text-foreground/70'}`}>
                 {activeListings.length}
               </span>
             )}
@@ -314,7 +314,7 @@ const SellerProfile = () => {
           <button onClick={() => setActiveTab('sold')} className={`flex items-center gap-1.5 rounded-full w-auto px-4 py-2.5 text-sm font-medium transition-all ${activeTab === 'sold' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
             Sold
             {soldListings.length > 0 && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">
+              <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold ${activeTab === 'sold' ? 'bg-muted text-muted-foreground' : 'bg-card text-foreground/70'}`}>
                 {soldListings.length}
               </span>
             )}
