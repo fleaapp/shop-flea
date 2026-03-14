@@ -1,13 +1,25 @@
 import { X } from 'lucide-react';
+import { COLOUR_SWATCHES } from '@/utils/colourSwatches';
 
 interface FilterChipProps {
   label: string;
   onRemove: () => void;
+  colourSwatch?: string; // colour name to show a swatch circle
 }
 
-const FilterChip = ({ label, onRemove }: FilterChipProps) => {
+const FilterChip = ({ label, onRemove, colourSwatch }: FilterChipProps) => {
+  const swatchBg = colourSwatch
+    ? COLOUR_SWATCHES[colourSwatch] || 'conic-gradient(red, yellow, lime, aqua, blue, magenta, red)'
+    : null;
+
   return (
     <div className="inline-flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-sm text-secondary-foreground">
+      {swatchBg && (
+        <span
+          className="h-3 w-3 rounded-full flex-shrink-0 border border-border/40"
+          style={{ background: swatchBg }}
+        />
+      )}
       <span>{label}</span>
       <button
         onClick={onRemove}
