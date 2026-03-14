@@ -1,4 +1,4 @@
-import { Plus, Camera } from 'lucide-react';
+import { Plus, Camera, LayoutGrid, Rows3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -15,6 +15,8 @@ import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/utils/imageCompression';
 import { toast } from 'sonner';
 import AvatarCropDialog from '@/components/AvatarCropDialog';
+import ProfileGridCard from '@/components/ProfileGridCard';
+import { Button } from '@/components/ui/button';
 
 const Profile = () => {
   const navigate = useNavigate();
