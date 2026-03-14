@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, X, Clock, TrendingUp, User } from 'lucide-react';
+import { ArrowLeft, X, Clock, User } from 'lucide-react';
 import { Listing } from '@/types/listing';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
