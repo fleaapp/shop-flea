@@ -310,7 +310,7 @@ const Cart = () => {
         <div className="flex justify-center px-4 max-[375px]:px-3 pb-4">
           <div className="inline-flex items-center rounded-full bg-muted p-1">
             {([
-              { key: 'awaiting' as const, label: 'To Ship' },
+              { key: 'awaiting' as const, label: 'Ordered' },
               { key: 'shipped' as const, label: 'Shipped' },
               { key: 'delivered' as const, label: 'Delivered' },
             ]).map(({ key, label }) => (
