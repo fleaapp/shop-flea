@@ -573,7 +573,7 @@ const ListingDetails = () => {
                   className="flex-1 flex flex-col items-center justify-center rounded-2xl bg-muted-foreground/20 px-3 py-2.5"
                 >
                   <span className="text-[10px] font-medium text-muted-foreground leading-tight">{tag.label}</span>
-                  <span className="text-sm font-semibold text-foreground leading-snug mt-0.5 text-center">
+                  <span className="text-xs font-medium text-muted-foreground leading-snug mt-0.5 text-center">
                     {tag.isSize ? tag.value.toUpperCase() : tag.value.charAt(0).toUpperCase() + tag.value.slice(1)}
                   </span>
                 </div>
