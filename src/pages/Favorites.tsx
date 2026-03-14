@@ -1,9 +1,10 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal, LayoutGrid, Rows3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
 import WishlistCard from '@/components/WishlistCard';
+import WishlistGridCard from '@/components/WishlistGridCard';
 import FilterSheet, { FilterState } from '@/components/FilterSheet';
 import { useFavoriteListings, DbListingWithPause } from '@/hooks/useFavoriteListings';
 import { useFavorites } from '@/hooks/useFavorites';
