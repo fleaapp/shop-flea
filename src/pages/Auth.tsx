@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import fleaLogoAuth from '@/assets/flea-logo-auth.jpeg';
@@ -11,8 +11,11 @@ import { useOnboarding } from '@/context/OnboardingContext';
 import { supabase } from '@/lib/supabase';
 import { detectUserLocation, checkRegionActive } from '@/services/geolocation';
 import RegionBlockedScreen from '@/components/RegionBlockedScreen';
+import SplashScreen from '@/components/SplashScreen';
 
 const Auth = () => {
+  const [showSplash, setShowSplash] = useState(true);
+  const handleSplashComplete = useCallback(() => setShowSplash(false), []);
   const navigate = useNavigate();
   const { user, signIn, signUp, loading: authLoading } = useAuth();
   const { markUserAsOnboarded } = useOnboarding();
@@ -330,6 +333,8 @@ const Auth = () => {
   }
 
   return (
+    <>
+      {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
     <div className="auth-screen fixed inset-0 bg-primary flex flex-col overflow-hidden">
       {/* Logo - positioned at top */}
       <div className="auth-logo absolute top-20 max-[375px]:top-12 left-0 right-0 flex justify-center">
@@ -546,6 +551,7 @@ const Auth = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
