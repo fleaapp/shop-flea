@@ -168,28 +168,53 @@ const Favorites = () => {
             <span className="text-5xl">⏳</span>
           </div>
         ) : displayListings.length > 0 ? (
-          <div 
-            className="flex gap-4 max-[375px]:gap-3 overflow-x-auto snap-x snap-mandatory h-full items-center"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
-            <style>{`.flex::-webkit-scrollbar { display: none; }`}</style>
-            <div className="flex-shrink-0 w-[calc(50vw-min(170px,42.5vw))] max-[393px]:w-[calc(50vw-min(150px,40vw))] max-[375px]:w-[calc(50vw-min(140px,39vw))]" />
-            {displayListings.map((listing) => (
-              <div key={listing.id} className="flex-shrink-0 snap-center">
-                <WishlistCard 
-                  listing={listing} 
-                  onRemove={() => handleRemoveFavorite(listing.id)}
-                  onAddToCart={() => handleAddToCart(listing)}
-                  isSold={listing.isSold}
-                  isPaused={listing.isPaused}
-                  isInactive={listing.isInactive}
-                  isRemoved={listing.isRemoved}
-                  isInCart={isInCart(listing.id)}
-                />
+          viewMode === 'single' ? (
+            <div 
+              className="flex gap-4 max-[375px]:gap-3 overflow-x-auto snap-x snap-mandatory h-full items-center"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              <style>{`.flex::-webkit-scrollbar { display: none; }`}</style>
+              <div className="flex-shrink-0 w-[calc(50vw-min(170px,42.5vw))] max-[393px]:w-[calc(50vw-min(150px,40vw))] max-[375px]:w-[calc(50vw-min(140px,39vw))]" />
+              {displayListings.map((listing) => (
+                <div key={listing.id} className="flex-shrink-0 snap-center">
+                  <WishlistCard 
+                    listing={listing} 
+                    onRemove={() => handleRemoveFavorite(listing.id)}
+                    onAddToCart={() => handleAddToCart(listing)}
+                    isSold={listing.isSold}
+                    isPaused={listing.isPaused}
+                    isInactive={listing.isInactive}
+                    isRemoved={listing.isRemoved}
+                    isInCart={isInCart(listing.id)}
+                  />
+                </div>
+              ))}
+              <div className="flex-shrink-0 w-[calc(50vw-min(170px,42.5vw))] max-[393px]:w-[calc(50vw-min(150px,40vw))] max-[375px]:w-[calc(50vw-min(140px,39vw))]" />
+            </div>
+          ) : (
+            <div 
+              className="w-full h-full overflow-y-auto px-4 pt-2"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              <style>{`.overflow-y-auto::-webkit-scrollbar { display: none; }`}</style>
+              <div className="grid grid-cols-2 gap-3">
+                {displayListings.map((listing) => (
+                  <WishlistGridCard
+                    key={listing.id}
+                    listing={listing}
+                    onRemove={() => handleRemoveFavorite(listing.id)}
+                    onAddToCart={() => handleAddToCart(listing)}
+                    isSold={listing.isSold}
+                    isPaused={listing.isPaused}
+                    isInactive={listing.isInactive}
+                    isRemoved={listing.isRemoved}
+                    isInCart={isInCart(listing.id)}
+                  />
+                ))}
               </div>
-            ))}
-            <div className="flex-shrink-0 w-[calc(50vw-min(170px,42.5vw))] max-[393px]:w-[calc(50vw-min(150px,40vw))] max-[375px]:w-[calc(50vw-min(140px,39vw))]" />
-          </div>
+              <div className="h-4" />
+            </div>
+          )
         ) : (
           <div className="flex flex-col items-center justify-center w-full text-center px-4">
             <span className="text-6xl mb-4">💌</span>
