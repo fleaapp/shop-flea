@@ -561,16 +561,42 @@ const ListingDetails = () => {
               )}
             </div>
 
-            {/* Tags */}
-            <div className="mt-4 gap-2 flex flex-row overflow-x-auto scrollbar-hide">
-              <ListingTag label={listing.size} isSize variant="muted" />
-              <ListingTag label={listing.brand} variant="muted" />
-              <ListingTag label={listing.condition} variant="muted" />
-              {listing.gender && <ListingTag label={listing.gender} variant="muted" />}
-              {listing.colour && <ListingTag label={listing.colour} variant="muted" />}
-              {listing.style && <ListingTag label={listing.style} variant="muted" />}
-              <ListingTag label={listing.category} variant="muted" />
+            {/* Primary Tags – Size, Condition, Brand */}
+            <div className="mt-4 flex gap-2">
+              {[
+                { label: 'Size', value: listing.size, isSize: true },
+                { label: 'Condition', value: listing.condition },
+                { label: 'Brand', value: listing.brand },
+              ].map((tag) => (
+                <div
+                  key={tag.label}
+                  className="flex-1 flex flex-col items-center justify-center rounded-2xl bg-muted-foreground/20 px-3 py-2.5"
+                >
+                  <span className="text-[10px] font-medium text-muted-foreground leading-tight">{tag.label}</span>
+                  <span className="text-sm font-semibold text-foreground leading-snug mt-0.5 text-center">
+                    {tag.isSize ? tag.value.toUpperCase() : tag.value.charAt(0).toUpperCase() + tag.value.slice(1)}
+                  </span>
+                </div>
+              ))}
             </div>
+
+            {/* Secondary Tags – remaining filters */}
+            {(() => {
+              const secondary = [
+                listing.style && { label: listing.style },
+                listing.colour && { label: listing.colour },
+                listing.category && { label: listing.category },
+                listing.gender && { label: listing.gender },
+              ].filter(Boolean) as { label: string }[];
+              if (secondary.length === 0) return null;
+              return (
+                <div className="mt-2 gap-2 flex flex-row overflow-x-auto scrollbar-hide">
+                  {secondary.map((tag) => (
+                    <ListingTag key={tag.label} label={tag.label} variant="muted" />
+                  ))}
+                </div>
+              );
+            })()}
 
             {/* Content */}
             <div className="pt-4">
