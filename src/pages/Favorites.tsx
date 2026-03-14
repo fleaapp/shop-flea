@@ -139,7 +139,14 @@ const Favorites = () => {
     <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
       {/* Sticky Header */}
       <header className="flex items-center justify-between px-6 py-4 flex-shrink-0">
-        <div className="w-12" /> {/* Spacer for centering */}
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setViewMode(v => v === 'single' ? 'grid' : 'single')}
+          className="h-12 w-12 rounded-xl border-2 border-border bg-card hover:bg-secondary"
+        >
+          {viewMode === 'single' ? <LayoutGrid className="h-5 w-5" /> : <Rows3 className="h-5 w-5" />}
+        </Button>
         <div className="flex items-center gap-2">
           <span className="text-xl">💌</span>
           <h1 className="text-xl font-bold text-foreground">Wishlist</h1>
