@@ -135,6 +135,18 @@ const Profile = () => {
 
   return (
     <div className="fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col" style={{ touchAction: 'pan-x', overscrollBehavior: 'none' }}>
+      {/* Sales button - top right */}
+      <div className="absolute top-6 right-4 z-10">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => navigate('/sales')}
+          className="h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-xl border-2 border-border bg-card hover:bg-secondary text-lg max-[375px]:text-base"
+        >
+          💸
+        </Button>
+      </div>
+
       <div className="flex flex-col items-center px-4 pt-6">
         <div className="relative">
           <div className="h-20 w-20 max-[430px]:h-16 max-[430px]:w-16 max-[375px]:h-14 max-[375px]:w-14 rounded-full p-0.5 bg-gradient-to-br from-muted to-border">

@@ -21,7 +21,7 @@ const BottomNav = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { badgeCount: activityBadgeCount } = useNotifications();
-  const { buyerOrders, sellerOrderGroups } = useOrders();
+  const { buyerOrders } = useOrders();
   const { total: supportUnread } = useUnreadSupport();
   const { total: orderMessagesUnread } = useUnreadOrderMessages();
 
@@ -31,16 +31,11 @@ const BottomNav = () => {
     return count || undefined;
   }, [buyerOrders, orderMessagesUnread]);
 
-  // Sales badge: awaiting + shipped order groups for seller (matches Notifications page)
-  const salesBadgeCount = useMemo(() => {
-    return sellerOrderGroups.filter(g => g.status === 'awaiting' || g.status === 'shipped').length;
-  }, [sellerOrderGroups]);
-
-  // Alerts badge: activity + sales combined
+  // Alerts badge: activity only (sales moved to separate page)
   const alertsBadge = useMemo(() => {
-    const count = activityBadgeCount + salesBadgeCount;
+    const count = activityBadgeCount;
     return count || undefined;
-  }, [activityBadgeCount, salesBadgeCount]);
+  }, [activityBadgeCount]);
 
   const profileIcon = (
     <div className="h-5 w-5 rounded-full overflow-hidden bg-background flex items-center justify-center">

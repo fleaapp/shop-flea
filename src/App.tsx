@@ -32,6 +32,7 @@ import NotFound from "./pages/NotFound";
 import SellerProfile from "./pages/SellerProfile";
 import FAQ from "./pages/FAQ";
 import OrderChat from "./pages/OrderChat";
+import Sales from "./pages/Sales";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +66,7 @@ const AppContent = () => {
         <Route path="/contact-support" element={<ProtectedRoute><ContactSupport /></ProtectedRoute>} />
         <Route path="/contact-support/:threadId" element={<ProtectedRoute><ChatConversation /></ProtectedRoute>} />
         <Route path="/seller/:sellerId" element={<ProtectedRoute><SellerProfile /></ProtectedRoute>} />
+        <Route path="/sales" element={<ProtectedRoute><Sales /></ProtectedRoute>} />
         <Route path="/order-chat/:orderId" element={<ProtectedRoute><OrderChat /></ProtectedRoute>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
