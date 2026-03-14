@@ -213,24 +213,34 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
         <div className="absolute inset-0 bg-charcoal/90" />
       )}
 
-      {/* Spotlight glow rings */}
-      {isSpotlightSlide && spotlightRects.map((r, i) => (
-        <motion.div
-          key={i}
-          className="absolute rounded-full pointer-events-none"
-          style={{
-            left: r.x,
-            top: r.y,
-            width: r.w,
-            height: r.h,
-            boxShadow: '0 0 24px 8px rgba(245,241,235,0.25), 0 0 48px 16px rgba(245,241,235,0.1)',
-            zIndex: 1,
-          }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4 }}
-        />
-      ))}
+      {/* Spotlight glow — soft outer glow via SVG filter, no extra div border */}
+      {isSpotlightSlide && spotlightRects.length > 0 && (
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 1 }}>
+          <defs>
+            <filter id="spotlight-glow">
+              <feGaussianBlur stdDeviation="12" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          {spotlightRects.map((r, i) => (
+            <rect
+              key={i}
+              x={r.x}
+              y={r.y}
+              width={r.w}
+              height={r.h}
+              rx="999"
+              fill="none"
+              stroke="rgba(245,241,235,0.2)"
+              strokeWidth="2"
+              filter="url(#spotlight-glow)"
+            />
+          ))}
+        </svg>
+      )}
 
       {/* Spotlight text — positioned to the left of the primary target */}
       {isSpotlightSlide && primaryRect && (
