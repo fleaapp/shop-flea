@@ -29,6 +29,7 @@ import {
   STYLES,
   isShoeCategory
 } from '@/config/sizeConfig';
+import { COLOUR_SWATCHES } from '@/utils/colourSwatches';
 
 interface ImageFile {
   file: File;
