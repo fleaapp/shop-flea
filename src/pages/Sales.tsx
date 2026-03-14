@@ -169,9 +169,14 @@ const Sales = () => {
               <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
                 <span className="text-6xl opacity-50 mb-4">💸</span>
                 <p className="text-lg font-medium text-muted-foreground">
-                  {salesStatusFilter === 'awaiting' && 'No sales to ship yet'}
-                  {salesStatusFilter === 'shipped' && 'No shipped sales yet'}
-                  {salesStatusFilter === 'delivered' && 'No delivered sales yet'}
+                  No sales yet.
+                </p>
+                <Button
+                  onClick={() => navigate('/create-listing')}
+                  className="mt-6 rounded-full bg-primary text-primary-foreground"
+                >
+                  Create Listing
+                </Button>
                 </p>
               </div>
             );

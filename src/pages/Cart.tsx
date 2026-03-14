@@ -454,10 +454,14 @@ const Cart = () => {
                 <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
                   <span className="text-6xl opacity-50 mb-4">🧾</span>
                   <p className="text-lg font-medium text-muted-foreground">
-                    {orderStatusFilter === 'awaiting' && 'No orders to ship yet'}
-                    {orderStatusFilter === 'shipped' && 'No shipped orders yet'}
-                    {orderStatusFilter === 'delivered' && 'No delivered orders yet'}
+                    No orders yet.
                   </p>
+                  <Button
+                    onClick={() => navigate('/')}
+                    className="mt-6 rounded-full bg-primary text-primary-foreground"
+                  >
+                    Browse Listings
+                  </Button>
                 </div>
               );
             }
