@@ -1,12 +1,13 @@
 import { Plus, Camera, LayoutGrid, Rows3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/context/AuthContext';
 import { useUserListings } from '@/hooks/useListings';
 import { formatTagLabel } from '@/components/ListingTag';
 import { useOrders, Order, OrderGroup } from '@/hooks/useOrders';
+import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
 import ReviewsDrawer from '@/components/ReviewsDrawer';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
@@ -34,6 +35,17 @@ const Profile = () => {
   const { listings: activeListings, loading: activeLoading } = useUserListings('active');
   const { listings: soldListings, loading: soldLoading } = useUserListings('sold');
   const { sellerOrders, sellerOrderGroups, markAsShipped } = useOrders();
+  const { perOrder } = useUnreadOrderMessages();
+
+  // Sales badge: to-ship count + seller unread messages
+  const salesBadge = useMemo(() => {
+    const toShipCount = sellerOrderGroups.filter(g => g.status === 'awaiting').length;
+    const sellerUnread = sellerOrderGroups.reduce((sum, g) => {
+      return sum + g.orders.reduce((s, o) => s + (perOrder.get(o.id) || 0), 0);
+    }, 0);
+    const count = toShipCount + sellerUnread;
+    return count || undefined;
+  }, [sellerOrderGroups, perOrder]);
 
   // Get pause_selling from profile
   const pauseSelling = (profile as any)?.pause_selling || false;
@@ -135,16 +147,22 @@ const Profile = () => {
 
   return (
     <div className="fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col" style={{ touchAction: 'pan-x', overscrollBehavior: 'none' }}>
-      {/* Sales button - top right */}
       <div className="absolute top-6 right-4 z-10">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => navigate('/sales')}
-          className="h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-xl border-2 border-border bg-card hover:bg-secondary text-lg max-[375px]:text-base"
-        >
-          💸
-        </Button>
+        <div className="relative">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => navigate('/sales')}
+            className="h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-xl border-2 border-border bg-card hover:bg-secondary text-lg max-[375px]:text-base"
+          >
+            💸
+          </Button>
+          {salesBadge && (
+            <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+              {salesBadge}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col items-center px-4 pt-6">
