@@ -39,44 +39,68 @@ const Auth = () => {
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [passwordFocused, setPasswordFocused] = useState(false);
   
-  // Splash screen: end on video finish or fallback timeout
+  // Splash screen: end on video finish or safe fallback timeout
   useEffect(() => {
+    if (!showSplash) return;
+
     const video = videoRef.current;
-    let ended = false;
-    
+    if (!video) return;
+
+    let hasEnded = false;
+    let fallbackTimeout: number | null = null;
+
     const endSplash = () => {
-      if (ended) return;
-      ended = true;
+      if (hasEnded) return;
+      hasEnded = true;
       setSplashFading(true);
-      setTimeout(() => setShowSplash(false), 600);
+      window.setTimeout(() => setShowSplash(false), 600);
     };
-    
-    if (video) {
-      // Force playback attributes
-      video.muted = true;
-      video.playsInline = true;
-      video.setAttribute('webkit-playsinline', '');
-      
-      const playPromise = video.play();
-      if (playPromise) {
-        playPromise.catch(() => {
-          // Autoplay blocked — skip splash immediately
-          endSplash();
-        });
+
+    const scheduleFallback = () => {
+      if (fallbackTimeout !== null) {
+        window.clearTimeout(fallbackTimeout);
       }
-      video.addEventListener('ended', endSplash);
-    } else {
-      endSplash();
-    }
-    
-    // Fallback: generous timeout so video can finish (20s)
-    const fallback = setTimeout(endSplash, 20000);
-    
-    return () => {
-      clearTimeout(fallback);
-      video?.removeEventListener('ended', endSplash);
+
+      const durationMs = Number.isFinite(video.duration) && video.duration > 0
+        ? Math.ceil(video.duration * 1000) + 1200
+        : 20000;
+
+      fallbackTimeout = window.setTimeout(endSplash, Math.min(durationMs, 30000));
     };
-  }, []);
+
+    // Force autoplay-compatible attributes
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
+
+    if (video.readyState >= 1) {
+      scheduleFallback();
+    } else {
+      video.addEventListener('loadedmetadata', scheduleFallback, { once: true });
+    }
+
+    const playPromise = video.play();
+    if (playPromise) {
+      playPromise.catch(() => {
+        // If autoplay fails, keep a short grace period instead of abrupt cut
+        fallbackTimeout = window.setTimeout(endSplash, 2000);
+      });
+    }
+
+    video.addEventListener('ended', endSplash);
+    video.addEventListener('error', endSplash);
+
+    return () => {
+      if (fallbackTimeout !== null) {
+        window.clearTimeout(fallbackTimeout);
+      }
+      video.removeEventListener('ended', endSplash);
+      video.removeEventListener('error', endSplash);
+      video.removeEventListener('loadedmetadata', scheduleFallback);
+    };
+  }, [showSplash]);
   
   // Detect user location on mount
   useEffect(() => {
