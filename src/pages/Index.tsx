@@ -344,7 +344,8 @@ const Index = () => {
           {activeFilterChips.length === 1 && (
             <FilterChip 
               label={activeFilterChips[0].label} 
-              onRemove={() => removeFilter(activeFilterChips[0].type, activeFilterChips[0].value)} 
+              onRemove={() => removeFilter(activeFilterChips[0].type, activeFilterChips[0].value)}
+              colourSwatch={activeFilterChips[0].colourSwatch}
             />
           )}
           {activeFilterChips.length > 1 && (
