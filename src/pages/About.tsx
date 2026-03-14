@@ -10,6 +10,7 @@ import cutoutJacket from '@/assets/about/cutout-jacket.png';
 import cutoutSneakers from '@/assets/about/cutout-sneakers.png';
 import cutoutSweater from '@/assets/about/cutout-sweater.png';
 import cutoutBag from '@/assets/about/cutout-bag.png';
+import marketRack from '@/assets/about/market-rack-listings.png';
 
 const About = () => {
   const navigate = useNavigate();
