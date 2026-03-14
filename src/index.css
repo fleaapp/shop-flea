@@ -232,14 +232,3 @@
 .animate-card-enter {
   animation: card-enter 0.3s ease-out;
 }
-
-/* Hide native video UI for splash across WebKit-based browsers */
-.splash-video::-webkit-media-controls,
-.splash-video::-webkit-media-controls-enclosure,
-.splash-video::-webkit-media-controls-panel,
-.splash-video::-webkit-media-controls-start-playback-button {
-  display: none !important;
-  -webkit-appearance: none;
-  opacity: 0;
-  pointer-events: none;
-}

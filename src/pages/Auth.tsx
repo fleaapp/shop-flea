@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import fleaLogoAuth from '@/assets/flea-logo-auth.jpeg';
@@ -20,11 +20,6 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Splash screen state
-  const [showSplash, setShowSplash] = useState(true);
-  const [splashFading, setSplashFading] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  
   // Region detection state
   const [isDetectingLocation, setIsDetectingLocation] = useState(true);
   const [detectedCountry, setDetectedCountry] = useState<{ code: string; name: string } | null>(null);
@@ -38,69 +33,6 @@ const Auth = () => {
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [passwordFocused, setPasswordFocused] = useState(false);
-  
-  // Splash screen: end on video finish or safe fallback timeout
-  useEffect(() => {
-    if (!showSplash) return;
-
-    const video = videoRef.current;
-    if (!video) return;
-
-    let hasEnded = false;
-    let fallbackTimeout: number | null = null;
-
-    const endSplash = () => {
-      if (hasEnded) return;
-      hasEnded = true;
-      setSplashFading(true);
-      window.setTimeout(() => setShowSplash(false), 600);
-    };
-
-    const scheduleFallback = () => {
-      if (fallbackTimeout !== null) {
-        window.clearTimeout(fallbackTimeout);
-      }
-
-      const durationMs = Number.isFinite(video.duration) && video.duration > 0
-        ? Math.ceil(video.duration * 1000) + 1200
-        : 20000;
-
-      fallbackTimeout = window.setTimeout(endSplash, Math.min(durationMs, 30000));
-    };
-
-    // Force autoplay-compatible attributes
-    video.muted = true;
-    video.defaultMuted = true;
-    video.playsInline = true;
-    video.setAttribute('playsinline', '');
-    video.setAttribute('webkit-playsinline', '');
-
-    if (video.readyState >= 1) {
-      scheduleFallback();
-    } else {
-      video.addEventListener('loadedmetadata', scheduleFallback, { once: true });
-    }
-
-    const playPromise = video.play();
-    if (playPromise) {
-      playPromise.catch(() => {
-        // Autoplay blocked on this device/browser: never show a play button overlay
-        endSplash();
-      });
-    }
-
-    video.addEventListener('ended', endSplash);
-    video.addEventListener('error', endSplash);
-
-    return () => {
-      if (fallbackTimeout !== null) {
-        window.clearTimeout(fallbackTimeout);
-      }
-      video.removeEventListener('ended', endSplash);
-      video.removeEventListener('error', endSplash);
-      video.removeEventListener('loadedmetadata', scheduleFallback);
-    };
-  }, [showSplash]);
   
   // Detect user location on mount
   useEffect(() => {
@@ -378,56 +310,27 @@ const Auth = () => {
     toast.info('Facebook login is not yet available');
   };
 
-  const splashOverlay = showSplash ? (
-    <div
-      className={`fixed inset-0 z-[9999] bg-black flex items-center justify-center transition-opacity duration-[600ms] ${
-        splashFading ? 'opacity-0' : 'opacity-100'
-      }`}
-      aria-hidden="true"
-    >
-      <video
-        ref={videoRef}
-        src="/splash-screen.mov"
-        autoPlay
-        muted
-        playsInline
-        preload="metadata"
-        disablePictureInPicture
-        disableRemotePlayback
-        className="splash-video absolute inset-0 w-full h-full object-cover pointer-events-none"
-      />
-    </div>
-  ) : null;
-
   // Show loading while detecting location
   if (authLoading || isDetectingLocation) {
     return (
-      <>
-        {splashOverlay}
-        <div className="fixed inset-0 bg-primary flex items-center justify-center overflow-hidden">
-          <span className="text-5xl">⏳</span>
-        </div>
-      </>
+      <div className="fixed inset-0 bg-primary flex items-center justify-center overflow-hidden">
+        <span className="text-5xl">⏳</span>
+      </div>
     );
   }
 
   // Show region blocked screen if user is outside active regions
   if (isRegionBlocked && detectedCountry) {
     return (
-      <>
-        {splashOverlay}
-        <RegionBlockedScreen
-          countryCode={detectedCountry.code}
-          countryName={detectedCountry.name}
-        />
-      </>
+      <RegionBlockedScreen 
+        countryCode={detectedCountry.code} 
+        countryName={detectedCountry.name} 
+      />
     );
   }
 
   return (
-    <>
-      {splashOverlay}
-      <div className="auth-screen fixed inset-0 bg-primary flex flex-col overflow-hidden">
+    <div className="auth-screen fixed inset-0 bg-primary flex flex-col overflow-hidden">
       {/* Logo - positioned at top */}
       <div className="auth-logo absolute top-20 max-[375px]:top-12 left-0 right-0 flex justify-center">
         <img 
@@ -643,7 +546,6 @@ const Auth = () => {
         </div>
       </div>
     </div>
-    </>
   );
 };
 
