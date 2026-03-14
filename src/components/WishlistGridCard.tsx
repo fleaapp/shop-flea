@@ -132,7 +132,7 @@ const WishlistGridCard = ({ listing, onRemove, onAddToCart, isSold = false, isPa
               </div>
               <div className="text-right flex-shrink-0 ml-2">
                 <p className="text-sm font-bold text-foreground">${listing.price}</p>
-                <p className="text-[10px] text-muted-foreground">+ ${listing.shippingPrice} shipping</p>
+                <p className="text-[10px] text-muted-foreground">+ ${listing.shippingPrice} 📦</p>
               </div>
             </div>
           </div>
