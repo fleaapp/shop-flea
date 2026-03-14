@@ -197,7 +197,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
                   y={r.y}
                   width={r.w}
                   height={r.h}
-                  rx="16"
+                  rx="999"
                   fill="black"
                 />
               ))}
@@ -217,7 +217,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
       {isSpotlightSlide && spotlightRects.map((r, i) => (
         <motion.div
           key={i}
-          className="absolute rounded-2xl pointer-events-none"
+          className="absolute rounded-full pointer-events-none"
           style={{
             left: r.x,
             top: r.y,
