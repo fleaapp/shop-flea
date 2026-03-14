@@ -275,7 +275,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
                     vid.play();
                   }}
                   className="w-full rounded-xl object-contain"
-                  style={{ mixBlendMode: 'screen' }}
+                  style={undefined}
                 />
               </div>
             )}
