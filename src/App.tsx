@@ -33,6 +33,7 @@ import SellerProfile from "./pages/SellerProfile";
 import FAQ from "./pages/FAQ";
 import OrderChat from "./pages/OrderChat";
 import Sales from "./pages/Sales";
+import About from "./pages/About";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const AppContent = () => {
       <OnboardingOverlay />
       <OnboardingCarousel open={showCarousel} onComplete={closeCarousel} />
       <Routes>
+        <Route path="/about" element={<About />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
