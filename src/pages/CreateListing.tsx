@@ -636,7 +636,7 @@ const CreateListing = () => {
                 >
                   <span
                     className="h-2.5 w-2.5 rounded-full flex-shrink-0 border border-border/40"
-                    style={{ background: COLOUR_SWATCHES[c] || 'conic-gradient(red, yellow, lime, aqua, blue, magenta, red)' }}
+                    style={{ background: COLOUR_SWATCHES[c] || COLOUR_SWATCHES['Multi / Patterned'] }}
                   />
                   {c}
                 </button>

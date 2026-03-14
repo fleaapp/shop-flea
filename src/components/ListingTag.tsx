@@ -23,7 +23,7 @@ const ListingTag = ({ label, variant = 'default', isSize = false, colourSwatch, 
   const formattedLabel = formatTagLabel(label, isSize);
   
   const swatchBg = colourSwatch
-    ? COLOUR_SWATCHES[colourSwatch] || COLOUR_SWATCHES[colourSwatch.charAt(0).toUpperCase() + colourSwatch.slice(1)] || 'repeating-linear-gradient(90deg, #ff6b6b, #ff6b6b 8px, #ffd93d 8px, #ffd93d 16px, #6bcf7f 16px, #6bcf7f 24px, #4d96ff 24px, #4d96ff 32px)'
+    ? COLOUR_SWATCHES[colourSwatch] || COLOUR_SWATCHES[colourSwatch.charAt(0).toUpperCase() + colourSwatch.slice(1)] || COLOUR_SWATCHES['Multi / Patterned']
     : null;
 
   return (
