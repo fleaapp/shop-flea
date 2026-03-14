@@ -53,7 +53,7 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
   const [mentionIndex, setMentionIndex] = useState(0);
   const [cursorPosition, setCursorPosition] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const { openReport, submitPendingReport, closeReport, pendingReport, isReporting } = useReporting();
   const { checkCommentContent, isChecking } = useContentModeration();

@@ -6,6 +6,7 @@ import { useUserReviews } from '@/hooks/useReviews';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 
 interface ReviewsDrawerProps {
