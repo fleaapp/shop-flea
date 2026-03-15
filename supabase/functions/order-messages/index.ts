@@ -136,6 +136,47 @@ Deno.serve(async (req) => {
         .single();
 
       if (error) throw error;
+
+      // Create notification for the other party on the external DB
+      try {
+        const extService = getExternalServiceClient();
+        
+        // Get sender username
+        const { data: senderProfile } = await extService
+          .from("profiles")
+          .select("username")
+          .eq("user_id", userId)
+          .single();
+        const senderUsername = senderProfile?.username || "user";
+
+        // Get listing_id from the order
+        const { data: orderData } = await extService
+          .from("orders")
+          .select("listing_id, buyer_id, seller_id")
+          .eq("id", orderId)
+          .single();
+
+        if (orderData) {
+          const recipientId = isBuyer ? orderData.seller_id : orderData.buyer_id;
+          const notifType = isBuyer ? "order_message_buyer" : "order_message_seller";
+          const notifMessage = isBuyer
+            ? `📩 New message from your buyer @${senderUsername}! Tap to view.`
+            : `💬 New message from @${senderUsername} about your order! Tap to view.`;
+
+          await extService.from("notifications").insert({
+            user_id: recipientId,
+            type: notifType,
+            title: "New Message",
+            message: notifMessage,
+            related_listing_id: orderData.listing_id,
+            related_user_id: userId,
+          });
+        }
+      } catch (notifErr) {
+        console.error("[order-messages] Notification error:", notifErr);
+        // Don't fail the message send if notification fails
+      }
+
       return new Response(JSON.stringify({ message: data }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
