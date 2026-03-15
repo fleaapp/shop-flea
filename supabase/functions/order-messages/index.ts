@@ -24,6 +24,12 @@ function getServiceClient() {
   return createClient(url, serviceKey);
 }
 
+function getExternalServiceClient() {
+  const url = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
+  const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  return createClient(url, serviceKey);
+}
+
 async function isOrderParticipant(
   userId: string,
   orderId: string
