@@ -271,14 +271,22 @@ export const getNotificationEmoji = (type: string): string => {
     case 'order_shipped':
       return '📦';
     case 'order_delivered':
-      return '✅';
+      return '🏠';
     case 'new_comment':
       return '💬';
     case 'comment_reply':
       return '↩️';
+    case 'mention':
+      return '📣';
     case 'shipping_reminder_3d':
     case 'shipping_reminder_6d':
       return '🚨';
+    case 'order_message_seller':
+      return '💬';
+    case 'order_message_buyer':
+      return '📩';
+    case 'support_message':
+      return '🛎️';
     default:
       return '🔔';
   }
