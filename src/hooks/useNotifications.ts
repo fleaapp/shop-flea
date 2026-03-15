@@ -17,8 +17,12 @@ export type NotificationType =
   | 'order_delivered'
   | 'new_comment'
   | 'comment_reply'
+  | 'mention'
   | 'shipping_reminder_3d'
-  | 'shipping_reminder_6d';
+  | 'shipping_reminder_6d'
+  | 'order_message_seller'
+  | 'order_message_buyer'
+  | 'support_message';
 
 export interface Notification {
   id: string;
