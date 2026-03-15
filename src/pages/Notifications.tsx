@@ -107,11 +107,7 @@ const Notifications = () => {
       return;
     }
 
-    // Support message → navigate to support thread
-    if (notification.type === 'support_message' && notification.related_thread_id) {
-      navigate(`/contact-support/${notification.related_thread_id}`);
-      return;
-    }
+    // Support message → navigate to support
     if (notification.type === 'support_message') {
       navigate('/contact-support');
       return;
