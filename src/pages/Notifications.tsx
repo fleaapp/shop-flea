@@ -93,7 +93,7 @@ const Notifications = () => {
     if (notification.type === 'order_message_seller' || notification.type === 'order_message_buyer') {
       if (notification.related_listing_id) {
         // Find the order for this listing across buyer and seller groups
-        const allGroups = [...(sellerOrderGroups || [])];
+        const allGroups = [...(sellerOrderGroups || []), ...(buyerOrderGroups || [])];
         // Also check buyer orders from useOrders
         const matchingOrder = allGroups
           .flatMap(g => g.orders)
