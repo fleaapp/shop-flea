@@ -83,7 +83,35 @@ const Notifications = () => {
       return;
     }
 
-    // Navigate based on notification type
+    // Item sold → navigate to sales
+    if (notification.type === 'item_sold') {
+      navigate('/sales');
+      return;
+    }
+
+    // Order message notifications → navigate to order chat
+    if ((notification.type === 'order_message_seller' || notification.type === 'order_message_buyer') && notification.related_order_id) {
+      navigate(`/order-chat/${notification.related_order_id}`);
+      return;
+    }
+
+    // Support message → navigate to support thread
+    if (notification.type === 'support_message' && notification.related_thread_id) {
+      navigate(`/contact-support/${notification.related_thread_id}`);
+      return;
+    }
+    if (notification.type === 'support_message') {
+      navigate('/contact-support');
+      return;
+    }
+
+    // Order shipped/delivered → navigate to cart (orders tab)
+    if (notification.type === 'order_shipped' || notification.type === 'order_delivered') {
+      navigate('/cart');
+      return;
+    }
+
+    // Navigate based on notification type (comments, mentions, wishlist/cart sold, etc.)
     if (notification.related_listing_id) {
       const listingIsAccessible = await canOpenListing(notification.related_listing_id);
       if (!listingIsAccessible) {
