@@ -52,7 +52,7 @@ const UnreadIndicator = () => (
 
 const Notifications = () => {
   const navigate = useNavigate();
-  const { sellerOrderGroups, markAsShipped } = useOrders();
+  const { sellerOrderGroups, buyerOrderGroups, markAsShipped } = useOrders();
   const { notifications, isLoading: loadingNotifications, unreadCount, badgeCount, markAsRead, dismissBadge } = useNotifications();
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
