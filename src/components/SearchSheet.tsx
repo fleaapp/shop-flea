@@ -52,12 +52,6 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
     }
   }, [recentSearches, storageKey]);
 
-  // Refresh trending each time the sheet opens
-  useEffect(() => {
-    if (open) {
-      void refreshTrending();
-    }
-  }, [open, refreshTrending]);
 
   // Fetch sellers for suggestions
   useEffect(() => {
