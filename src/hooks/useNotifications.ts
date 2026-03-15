@@ -33,8 +33,6 @@ export interface Notification {
   created_at: string;
   related_listing_id: string | null;
   related_user_id: string | null;
-  related_order_id: string | null;
-  related_thread_id: string | null;
   listing?: {
     id: string;
     title: string;
