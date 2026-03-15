@@ -17,8 +17,12 @@ export type NotificationType =
   | 'order_delivered'
   | 'new_comment'
   | 'comment_reply'
+  | 'mention'
   | 'shipping_reminder_3d'
-  | 'shipping_reminder_6d';
+  | 'shipping_reminder_6d'
+  | 'order_message_seller'
+  | 'order_message_buyer'
+  | 'support_message';
 
 export interface Notification {
   id: string;
@@ -192,10 +196,15 @@ export const useNotifications = () => {
   };
 };
 
-export const getNotificationMessage = (type: string, username?: string, listingTitle?: string | null): string => {
+export const getNotificationMessage = (type: string, username?: string, listingTitle?: string | null, rawMessage?: string | null): string => {
   // For comment notifications, use the message from the database which includes context
   if ((type === 'new_comment' || type === 'comment_reply') && listingTitle) {
     return listingTitle;
+  }
+
+  // For message-type notifications, use the pre-built message from the trigger
+  if ((type === 'order_message_seller' || type === 'order_message_buyer' || type === 'support_message' || type === 'order_shipped' || type === 'order_delivered') && rawMessage) {
+    return rawMessage;
   }
   
   const displayUsername = username?.startsWith('@') ? username : username ? `@${username}` : undefined;
@@ -212,24 +221,31 @@ export const getNotificationMessage = (type: string, username?: string, listingT
     case 'cart_wishlist_item_sold':
       return listingTitle ? `Double heartbreak 💔 – ${listingTitle} from your Cart & Wishlist has sold.` : 'An item from your Cart & Wishlist has sold.';
     case 'listing_sold':
-      // Legacy type from old trigger — use listing title if available
       return listingTitle ? `${listingTitle} has been sold.` : 'An item you saved was sold.';
     case 'new_review':
       return displayUsername ? `${displayUsername} left you a review.` : 'You received a new review.';
     case 'item_sold':
-      return displayUsername ? `Sold to ${displayUsername}!` : 'Your item was sold!';
+      return '🎉🤑 Cha-ching! Your item has just sold. Tap to view the order.';
     case 'order_shipped':
-      return 'Your order has been shipped!';
+      return '📦 Your order is on the way! Tap for details.';
     case 'order_delivered':
-      return 'Your order has been delivered!';
+      return 'Delivered! Your order is home safe 🏠 Tap for details.';
     case 'new_comment':
       return displayUsername ? `${displayUsername} commented on your listing.` : 'Someone commented on your listing.';
     case 'comment_reply':
       return displayUsername ? `${displayUsername} replied to your comment.` : 'Someone replied to your comment.';
+    case 'mention':
+      return displayUsername ? `${displayUsername} mentioned you in a comment.` : 'Someone mentioned you in a comment.';
     case 'shipping_reminder_3d':
       return '🚨 Reminder: Your buyer is waiting 👀 Ship now & update tracking. 📦';
     case 'shipping_reminder_6d':
       return '🚨 Urgent action: Your sale is 6 days overdue. Ship today to avoid issues. 🚚';
+    case 'order_message_seller':
+      return displayUsername ? `💬 New message from ${displayUsername} about your order! Tap to view.` : '💬 New message about your order! Tap to view.';
+    case 'order_message_buyer':
+      return displayUsername ? `📩 New message from your buyer ${displayUsername}! Tap to view.` : '📩 New message from your buyer! Tap to view.';
+    case 'support_message':
+      return '🛎️ New message from Flea support. Tap to view.';
     default:
       return 'New notification';
   }
@@ -253,14 +269,22 @@ export const getNotificationEmoji = (type: string): string => {
     case 'order_shipped':
       return '📦';
     case 'order_delivered':
-      return '✅';
+      return '🏠';
     case 'new_comment':
       return '💬';
     case 'comment_reply':
       return '↩️';
+    case 'mention':
+      return '📣';
     case 'shipping_reminder_3d':
     case 'shipping_reminder_6d':
       return '🚨';
+    case 'order_message_seller':
+      return '💬';
+    case 'order_message_buyer':
+      return '📩';
+    case 'support_message':
+      return '🛎️';
     default:
       return '🔔';
   }

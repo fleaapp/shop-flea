@@ -5,7 +5,7 @@ import { useNotifications, getNotificationMessage, getNotificationEmoji, Notific
 import { useOrders } from '@/hooks/useOrders';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { canOpenListing } from '@/utils/listingAccess';
-import { cn } from '@/lib/utils';
+
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
@@ -52,7 +52,7 @@ const UnreadIndicator = () => (
 
 const Notifications = () => {
   const navigate = useNavigate();
-  const { sellerOrderGroups, markAsShipped } = useOrders();
+  const { sellerOrderGroups, buyerOrderGroups, markAsShipped } = useOrders();
   const { notifications, isLoading: loadingNotifications, unreadCount, badgeCount, markAsRead, dismissBadge } = useNotifications();
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
@@ -83,7 +83,43 @@ const Notifications = () => {
       return;
     }
 
-    // Navigate based on notification type
+    // Item sold → navigate to sales
+    if (notification.type === 'item_sold') {
+      navigate('/sales');
+      return;
+    }
+
+    // Order message notifications → find order by listing_id and navigate to order chat
+    if (notification.type === 'order_message_seller' || notification.type === 'order_message_buyer') {
+      if (notification.related_listing_id) {
+        // Find the order for this listing across buyer and seller groups
+        const allGroups = [...(sellerOrderGroups || []), ...(buyerOrderGroups || [])];
+        // Also check buyer orders from useOrders
+        const matchingOrder = allGroups
+          .flatMap(g => g.orders)
+          .find(o => o.listing_id === notification.related_listing_id);
+        if (matchingOrder) {
+          navigate(`/order-chat/${matchingOrder.id}`);
+          return;
+        }
+      }
+      navigate('/cart');
+      return;
+    }
+
+    // Support message → navigate to support
+    if (notification.type === 'support_message') {
+      navigate('/contact-support');
+      return;
+    }
+
+    // Order shipped/delivered → navigate to cart (orders tab)
+    if (notification.type === 'order_shipped' || notification.type === 'order_delivered') {
+      navigate('/cart');
+      return;
+    }
+
+    // Navigate based on notification type (comments, mentions, wishlist/cart sold, etc.)
     if (notification.related_listing_id) {
       const listingIsAccessible = await canOpenListing(notification.related_listing_id);
       if (!listingIsAccessible) {
@@ -132,8 +168,9 @@ const Notifications = () => {
     const isSoldOrLegacy = ['cart_item_sold', 'wishlist_item_sold', 'cart_wishlist_item_sold', 'listing_sold'].includes(notification.type);
     const isCommentType = ['new_comment', 'comment_reply'].includes(notification.type);
     const isShippingReminder = ['shipping_reminder_3d', 'shipping_reminder_6d'].includes(notification.type);
+    const isMessageType = ['order_message_seller', 'order_message_buyer', 'support_message', 'order_shipped', 'order_delivered'].includes(notification.type);
     const messageArg = isSoldOrLegacy ? itemName : isCommentType ? notification.message : isShippingReminder ? null : itemName;
-    const message = getNotificationMessage(notification.type as any, username, messageArg);
+    const message = getNotificationMessage(notification.type as any, username, messageArg, isMessageType ? notification.message : null);
 
     const renderMessage = () => {
       const boldUsernames = (text: string) => {
