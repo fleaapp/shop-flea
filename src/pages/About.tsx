@@ -78,7 +78,7 @@ const About = () => {
         <div className="flex whitespace-nowrap animate-marquee">
           {Array.from({ length: 6 }).map((_, i) =>
           <span key={i} className="text-primary text-sm md:text-base font-semibold mx-8 tracking-wide">
-              SWIPE · SELL · SHOP · SECONDHAND · SUSTAINABLE ·
+              The future of fashion is circular. ·
             </span>
           )}
         </div>
