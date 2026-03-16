@@ -27,7 +27,7 @@ const About = () => {
     }
     setSending(true);
     // Simulate send
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise((r) => setTimeout(r, 1000));
     toast.success('Message sent! We\'ll get back to you soon 💌');
     setContactName('');
     setContactEmail('');
@@ -47,9 +47,9 @@ const About = () => {
 
         <div className="relative z-10 max-w-2xl mx-auto text-center">
           <img src={fleaLogo} alt="Flea" className="h-14 md:h-20 mx-auto mb-8" />
-          <h1 className="text-3xl md:text-5xl font-extrabold text-foreground leading-tight tracking-tight">
-            Swipe. Sell. Shop.<br />
-            <span className="text-charcoal-light">Secondhand. Sustainable.</span>
+          <h1 className="text-3xl md:text-5xl font-extrabold text-foreground leading-tight tracking-tight">Shop & sell secondhand with swipe.
+<br />
+            
           </h1>
           <p className="mt-6 text-base md:text-lg text-muted-foreground max-w-lg mx-auto leading-relaxed">
             Flea is here to shake up the secondhand fashion scene with a swipe. <em>Literally.</em>
@@ -60,8 +60,8 @@ const About = () => {
           <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
             <Button
               onClick={() => navigate('/auth')}
-              className="h-12 px-8 rounded-full bg-foreground text-background font-semibold text-base hover:bg-foreground/90 gap-2"
-            >
+              className="h-12 px-8 rounded-full bg-foreground text-background font-semibold text-base hover:bg-foreground/90 gap-2">
+              
               Sign up now <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
@@ -79,11 +79,11 @@ const About = () => {
       {/* Tagline strip */}
       <div className="bg-foreground py-4 overflow-hidden">
         <div className="flex whitespace-nowrap animate-marquee">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <span key={i} className="text-primary text-sm md:text-base font-semibold mx-8 tracking-wide">
+          {Array.from({ length: 6 }).map((_, i) =>
+          <span key={i} className="text-primary text-sm md:text-base font-semibold mx-8 tracking-wide">
               SWIPE · SELL · SHOP · SECONDHAND · SUSTAINABLE ·
             </span>
-          ))}
+          )}
         </div>
       </div>
 
@@ -157,18 +157,18 @@ const About = () => {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <a
               href="#"
-              onClick={(e) => { e.preventDefault(); toast.info('Coming soon to the App Store! 🍎'); }}
-              className="inline-flex items-center justify-center gap-3 bg-foreground text-background rounded-xl px-6 py-3 font-medium text-sm hover:bg-foreground/90 transition-colors"
-            >
-              <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+              onClick={(e) => {e.preventDefault();toast.info('Coming soon to the App Store! 🍎');}}
+              className="inline-flex items-center justify-center gap-3 bg-foreground text-background rounded-xl px-6 py-3 font-medium text-sm hover:bg-foreground/90 transition-colors">
+              
+              <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" /></svg>
               App Store
             </a>
             <a
               href="#"
-              onClick={(e) => { e.preventDefault(); toast.info('Coming soon to Google Play! 🤖'); }}
-              className="inline-flex items-center justify-center gap-3 bg-foreground text-background rounded-xl px-6 py-3 font-medium text-sm hover:bg-foreground/90 transition-colors"
-            >
-              <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current"><path d="M3 20.5v-17c0-.59.34-1.11.84-1.35L13.69 12l-9.85 9.85c-.5-.24-.84-.76-.84-1.35m13.81-5.38L6.05 21.34l8.49-8.49 2.27 2.27m3.35-4.31c.34.27.56.69.56 1.19s-.22.92-.57 1.19l-1.69.95-2.5-2.5 2.5-2.5 1.7.95M6.05 2.66l10.76 6.22-2.27 2.27-8.49-8.49z"/></svg>
+              onClick={(e) => {e.preventDefault();toast.info('Coming soon to Google Play! 🤖');}}
+              className="inline-flex items-center justify-center gap-3 bg-foreground text-background rounded-xl px-6 py-3 font-medium text-sm hover:bg-foreground/90 transition-colors">
+              
+              <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current"><path d="M3 20.5v-17c0-.59.34-1.11.84-1.35L13.69 12l-9.85 9.85c-.5-.24-.84-.76-.84-1.35m13.81-5.38L6.05 21.34l8.49-8.49 2.27 2.27m3.35-4.31c.34.27.56.69.56 1.19s-.22.92-.57 1.19l-1.69.95-2.5-2.5 2.5-2.5 1.7.95M6.05 2.66l10.76 6.22-2.27 2.27-8.49-8.49z" /></svg>
               Google Play
             </a>
           </div>
@@ -185,26 +185,26 @@ const About = () => {
               placeholder="Your name"
               value={contactName}
               onChange={(e) => setContactName(e.target.value)}
-              className="h-12 rounded-xl bg-background border-border text-foreground placeholder:text-muted-foreground"
-            />
+              className="h-12 rounded-xl bg-background border-border text-foreground placeholder:text-muted-foreground" />
+            
             <Input
               type="email"
               placeholder="Your email"
               value={contactEmail}
               onChange={(e) => setContactEmail(e.target.value)}
-              className="h-12 rounded-xl bg-background border-border text-foreground placeholder:text-muted-foreground"
-            />
+              className="h-12 rounded-xl bg-background border-border text-foreground placeholder:text-muted-foreground" />
+            
             <Textarea
               placeholder="Your message"
               value={contactMessage}
               onChange={(e) => setContactMessage(e.target.value)}
-              className="min-h-[120px] rounded-xl bg-background border-border text-foreground placeholder:text-muted-foreground resize-none"
-            />
+              className="min-h-[120px] rounded-xl bg-background border-border text-foreground placeholder:text-muted-foreground resize-none" />
+            
             <Button
               type="submit"
               disabled={sending}
-              className="h-12 w-full rounded-full bg-foreground text-background font-semibold hover:bg-foreground/90 gap-2"
-            >
+              className="h-12 w-full rounded-full bg-foreground text-background font-semibold hover:bg-foreground/90 gap-2">
+              
               {sending ? 'Sending...' : 'Send message'} <Send className="h-4 w-4" />
             </Button>
           </form>
@@ -227,14 +227,14 @@ const About = () => {
               <Twitter className="h-5 w-5 text-background" />
             </a>
             <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-background/10 flex items-center justify-center hover:bg-background/20 transition-colors">
-              <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current text-background"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.7a8.18 8.18 0 0 0 4.76 1.52v-3.4a4.85 4.85 0 0 1-1-.13z"/></svg>
+              <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current text-background"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.7a8.18 8.18 0 0 0 4.76 1.52v-3.4a4.85 4.85 0 0 1-1-.13z" /></svg>
             </a>
           </div>
 
           {/* Links */}
           <div className="flex justify-center gap-6 text-xs text-background/50">
-            <a href="#" onClick={(e) => { e.preventDefault(); toast.info('Coming soon'); }} className="hover:text-background/80 transition-colors">Terms & Conditions</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); toast.info('Coming soon'); }} className="hover:text-background/80 transition-colors">Privacy Policy</a>
+            <a href="#" onClick={(e) => {e.preventDefault();toast.info('Coming soon');}} className="hover:text-background/80 transition-colors">Terms & Conditions</a>
+            <a href="#" onClick={(e) => {e.preventDefault();toast.info('Coming soon');}} className="hover:text-background/80 transition-colors">Privacy Policy</a>
           </div>
 
           <p className="text-center text-background/30 text-xs mt-6">
@@ -253,8 +253,8 @@ const About = () => {
           animation: marquee 20s linear infinite;
         }
       `}</style>
-    </div>
-  );
+    </div>);
+
 };
 
 export default About;
