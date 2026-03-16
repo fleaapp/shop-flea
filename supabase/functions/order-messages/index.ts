@@ -196,7 +196,7 @@ Deno.serve(async (req) => {
       const { error } = await external
         .from("order_messages")
         .update({ read: true })
-        .eq("order_id", orderId)
+        .eq(orderMessageKey, orderId)
         .neq("sender_id", userId)
         .eq("read", false);
 
