@@ -72,7 +72,7 @@ const About = () => {
       </section>
 
       {/* Market rack graphic */}
-      <div className="bg-primary px-6 -mt-8 pb-4">
+      <div className="bg-primary -mt-8 pb-4 overflow-hidden">
         <MarketRack />
       </div>
 
