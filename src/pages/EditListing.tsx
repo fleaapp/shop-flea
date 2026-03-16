@@ -377,7 +377,7 @@ const EditListing = () => {
   };
 
   const inputStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 placeholder:text-muted-foreground/60 focus-visible:ring-muted-foreground/50";
-  const selectStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 [&>span]:text-muted-foreground/60 focus:ring-muted-foreground/50";
+  const selectStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 [&>span]:text-muted-foreground/60 [&>span]:text-base focus:ring-muted-foreground/50";
 
   const totalImages = existingImages.length + newImageFiles.length;
 
