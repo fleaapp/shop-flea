@@ -40,6 +40,36 @@ function getExternalServiceClient() {
   return createClient(url, serviceKey);
 }
 
+let orderMessageKeyCache: "order_id" | "order_group_id" | null = null;
+
+async function getOrderMessageKey(
+  extClient: ReturnType<typeof getExternalServiceClient>,
+): Promise<"order_id" | "order_group_id"> {
+  if (orderMessageKeyCache) return orderMessageKeyCache;
+
+  const orderIdProbe = await extClient
+    .from("order_messages")
+    .select("order_id")
+    .limit(1);
+
+  if (!orderIdProbe.error) {
+    orderMessageKeyCache = "order_id";
+    return orderMessageKeyCache;
+  }
+
+  const orderGroupIdProbe = await extClient
+    .from("order_messages")
+    .select("order_group_id")
+    .limit(1);
+
+  if (!orderGroupIdProbe.error) {
+    orderMessageKeyCache = "order_group_id";
+    return orderMessageKeyCache;
+  }
+
+  throw orderIdProbe.error ?? orderGroupIdProbe.error ?? new Error("Unable to determine order message key");
+}
+
 async function isOrderParticipant(
   userId: string,
   orderId: string,
@@ -146,12 +176,13 @@ Deno.serve(async (req) => {
     }
 
     const external = getExternalServiceClient();
+    const orderMessageKey = await getOrderMessageKey(external);
 
     if (req.method === "GET") {
       const { data, error } = await external
         .from("order_messages")
         .select("*")
-        .eq("order_id", orderId)
+        .eq(orderMessageKey, orderId)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
@@ -165,7 +196,7 @@ Deno.serve(async (req) => {
       const { error } = await external
         .from("order_messages")
         .update({ read: true })
-        .eq("order_id", orderId)
+        .eq(orderMessageKey, orderId)
         .neq("sender_id", userId)
         .eq("read", false);
 
@@ -194,14 +225,23 @@ Deno.serve(async (req) => {
       const body = await req.json();
       const { message, attachment_url } = body;
 
+      const messageInsert = orderMessageKey === "order_id"
+        ? {
+            order_id: orderId,
+            sender_id: userId,
+            message: message || "",
+            attachment_url: attachment_url || null,
+          }
+        : {
+            order_group_id: orderId,
+            sender_id: userId,
+            message: message || "",
+            attachment_url: attachment_url || null,
+          };
+
       const { data, error } = await external
         .from("order_messages")
-        .insert({
-          order_id: orderId,
-          sender_id: userId,
-          message: message || "",
-          attachment_url: attachment_url || null,
-        })
+        .insert(messageInsert)
         .select()
         .single();
 
