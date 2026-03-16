@@ -42,7 +42,7 @@ const About = () => {
         {/* Floating cutouts */}
 
         <div className="relative z-10 max-w-2xl mx-auto text-center">
-          <img alt="Flea" className="h-10 md:h-20 mx-auto mb-8" src="/lovable-uploads/8d52d6b9-59c0-490a-97c0-5ffab455f175.jpg" />
+          <img alt="Flea" className="h-10 md:h-20 mx-auto mb-8" src={fleaLogoAbout} />
           <h1 className="text-2xl md:text-5xl font-extrabold leading-tight tracking-tight text-[#423d3d]">
             Shop & sell secondhand<br />with a swipe.
           </h1>
