@@ -14,6 +14,7 @@ import ReportDialog from '@/components/ReportDialog';
 import { useReporting } from '@/hooks/useReporting';
 import { compressImage } from '@/utils/imageCompression';
 import { useOrders } from '@/hooks/useOrders';
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
 
 interface OrderMessage {
   id: string;
@@ -82,16 +83,15 @@ const OrderChat = () => {
     queryKey: ['order-messages', orderId],
     queryFn: async () => {
       if (!orderId) return [];
-      const { data, error } = await supabase
-        .from('order_messages')
-        .select('*')
-        .eq('order_id', orderId)
-        .order('created_at', { ascending: true });
+      const { data, error } = await invokeCloudFunction('order-messages', {
+        method: 'GET',
+        query: { orderId },
+      });
       if (error) {
-        console.error('[OrderChat] Failed to load messages:', error.message, error.code, error.details);
+        console.error('[OrderChat] Failed to load messages:', error.message);
         throw error;
       }
-      return (data || []) as OrderMessage[];
+      return (((data as { messages?: OrderMessage[] } | null)?.messages) || []) as OrderMessage[];
     },
     enabled: !!orderId,
     refetchInterval: 5000,
@@ -120,13 +120,13 @@ const OrderChat = () => {
     if (!messages.length || !user?.id || !orderId) return;
     const unread = messages.filter(m => !m.read && m.sender_id !== user.id);
     if (!unread.length) return;
-    supabase
-      .from('order_messages')
-      .update({ read: true })
-      .eq('order_id', orderId)
-      .neq('sender_id', user.id)
-      .eq('read', false)
-      .then();
+
+    invokeCloudFunction('order-messages', {
+      method: 'PATCH',
+      query: { orderId },
+    }).catch((error) => {
+      console.warn('[OrderChat] Failed to mark messages read:', error);
+    });
   }, [messages, user?.id, orderId]);
 
   // Scroll to bottom
@@ -137,46 +137,20 @@ const OrderChat = () => {
   const sendMessage = useMutation({
     mutationFn: async ({ message, attachmentUrl }: { message: string; attachmentUrl?: string }) => {
       if (!user?.id || !orderId) throw new Error('Not ready');
-      const { error } = await supabase
-        .from('order_messages')
-        .insert({
-          order_id: orderId,
-          sender_id: user.id,
+      const { data, error } = await invokeCloudFunction('order-messages', {
+        method: 'POST',
+        query: { orderId },
+        body: {
           message: message || '',
           attachment_url: attachmentUrl || null,
-        });
+        },
+      });
       if (error) throw error;
+      return (data as { message?: OrderMessage } | null)?.message ?? null;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
       setNewMessage('');
-
-      // Fire-and-forget notification for the other party
-      if (user?.id && orderInfo) {
-        const isBuyer = user.id === orderInfo.buyer_id;
-        const recipientId = isBuyer ? orderInfo.seller_id : orderInfo.buyer_id;
-        const senderUsername = isBuyer ? orderInfo.buyer_username : orderInfo.seller_username;
-        const notifType = isBuyer ? 'order_message_buyer' : 'order_message_seller';
-        const notifMessage = isBuyer
-          ? `📩 New message from your buyer @${senderUsername}! Tap to view.`
-          : `💬 New message from @${senderUsername} about your order! Tap to view.`;
-
-        const order = [...buyerOrderGroups, ...sellerOrderGroups]
-          .flatMap(g => g.orders)
-          .find(o => o.id === orderId);
-
-        // Use a detached promise so notification errors never affect messaging
-        supabase.from('notifications').insert({
-          user_id: recipientId,
-          type: notifType,
-          title: 'New Message',
-          message: notifMessage,
-          related_listing_id: order?.listing_id || null,
-          related_user_id: user.id,
-        }).then(({ error }) => {
-          if (error) console.warn('[OrderChat] notification insert failed:', error.message);
-        });
-      }
     },
     onError: (err) => {
       console.error('Failed to send message:', err);
