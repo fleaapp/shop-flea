@@ -225,14 +225,23 @@ Deno.serve(async (req) => {
       const body = await req.json();
       const { message, attachment_url } = body;
 
+      const messageInsert = orderMessageKey === "order_id"
+        ? {
+            order_id: orderId,
+            sender_id: userId,
+            message: message || "",
+            attachment_url: attachment_url || null,
+          }
+        : {
+            order_group_id: orderId,
+            sender_id: userId,
+            message: message || "",
+            attachment_url: attachment_url || null,
+          };
+
       const { data, error } = await external
         .from("order_messages")
-        .insert({
-          order_id: orderId,
-          sender_id: userId,
-          message: message || "",
-          attachment_url: attachment_url || null,
-        })
+        .insert(messageInsert)
         .select()
         .single();
 
