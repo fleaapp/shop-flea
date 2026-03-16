@@ -107,7 +107,7 @@ const About = () => {
           </h2>
           <div className="grid grid-cols-1 gap-4 max-w-sm mx-auto sm:max-w-none sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
             {/* Tap to expand */}
-            <div className="text-center rounded-3xl px-6 py-3 bg-charcoal">
+            <div className="flex flex-col items-center rounded-3xl px-6 py-3 bg-charcoal">
               <div className="flex items-center justify-center w-52 h-52 mx-auto">
                 <img src={tapToExpandGif} alt="Tap card to expand details" className="object-contain w-full h-full rounded-xl" />
               </div>
@@ -115,7 +115,7 @@ const About = () => {
               <p className="text-sm text-cream/70 pb-2 text-center">to expand more details</p>
             </div>
             {/* Swipe Right */}
-            <div className="text-center rounded-3xl px-6 py-3 bg-charcoal">
+            <div className="flex flex-col items-center rounded-3xl px-6 py-3 bg-charcoal">
               <div className="flex items-center justify-center w-52 h-52 mx-auto">
                 <img src={swipeRightWishlist} alt="Swipe right to add to wishlist" className="object-contain w-full h-full" />
               </div>
@@ -123,7 +123,7 @@ const About = () => {
               <p className="text-sm text-cream/70 pb-2 text-center">to add to Wishlist 💌</p>
             </div>
             {/* Swipe Up */}
-            <div className="text-center rounded-3xl px-6 py-3 bg-charcoal">
+            <div className="flex flex-col items-center rounded-3xl px-6 py-3 bg-charcoal">
               <div className="flex items-center justify-center w-52 h-52 mx-auto">
                 <img src={swipeUpCart} alt="Swipe up to add to cart" className="object-contain w-full h-full" />
               </div>
@@ -131,7 +131,7 @@ const About = () => {
               <p className="text-sm text-cream/70 pb-2 text-center">to add to Cart 🛒</p>
             </div>
             {/* Swipe Left */}
-            <div className="text-center rounded-3xl px-6 py-3 bg-charcoal">
+            <div className="flex flex-col items-center rounded-3xl px-6 py-3 bg-charcoal">
               <div className="flex items-center justify-center w-52 h-52 mx-auto">
                 <img src={swipeLeftPass} alt="Swipe left to pass" className="object-contain w-full h-full" />
               </div>
