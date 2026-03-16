@@ -40,6 +40,36 @@ function getExternalServiceClient() {
   return createClient(url, serviceKey);
 }
 
+let orderMessageKeyCache: "order_id" | "order_group_id" | null = null;
+
+async function getOrderMessageKey(
+  extClient: ReturnType<typeof getExternalServiceClient>,
+): Promise<"order_id" | "order_group_id"> {
+  if (orderMessageKeyCache) return orderMessageKeyCache;
+
+  const orderIdProbe = await extClient
+    .from("order_messages")
+    .select("order_id")
+    .limit(1);
+
+  if (!orderIdProbe.error) {
+    orderMessageKeyCache = "order_id";
+    return orderMessageKeyCache;
+  }
+
+  const orderGroupIdProbe = await extClient
+    .from("order_messages")
+    .select("order_group_id")
+    .limit(1);
+
+  if (!orderGroupIdProbe.error) {
+    orderMessageKeyCache = "order_group_id";
+    return orderMessageKeyCache;
+  }
+
+  throw orderIdProbe.error ?? orderGroupIdProbe.error ?? new Error("Unable to determine order message key");
+}
+
 async function isOrderParticipant(
   userId: string,
   orderId: string,
