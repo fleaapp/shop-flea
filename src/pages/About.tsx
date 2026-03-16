@@ -105,38 +105,38 @@ const About = () => {
           <h2 className="text-2xl md:text-3xl font-bold text-foreground text-center mb-12">
             How Flea works
           </h2>
-          <div className="grid grid-cols-1 gap-4 max-w-xs mx-auto sm:max-w-none sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
+          <div className="grid grid-cols-1 gap-4 max-w-sm mx-auto sm:max-w-none sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
             {/* Tap to expand */}
-            <div className="text-center rounded-3xl px-4 py-3 bg-charcoal">
+            <div className="text-center rounded-3xl px-6 py-3 bg-charcoal">
               <div className="flex items-center justify-center w-52 h-52 mx-auto">
                 <img src={tapToExpandGif} alt="Tap card to expand details" className="object-contain w-full h-full rounded-xl" />
               </div>
-              <h3 className="font-bold text-cream text-base mb-1">👇 Tap card</h3>
-              <p className="text-sm text-cream/70 pb-2">to expand more details</p>
+              <h3 className="font-bold text-cream text-base mb-1 text-center">👇 Tap card</h3>
+              <p className="text-sm text-cream/70 pb-2 text-center">to expand more details</p>
             </div>
             {/* Swipe Right */}
-            <div className="text-center rounded-3xl px-4 py-3 bg-charcoal">
+            <div className="text-center rounded-3xl px-6 py-3 bg-charcoal">
               <div className="flex items-center justify-center w-52 h-52 mx-auto">
                 <img src={swipeRightWishlist} alt="Swipe right to add to wishlist" className="object-contain w-full h-full" />
               </div>
-              <h3 className="font-bold text-cream text-base mb-1">👉 Swipe right</h3>
-              <p className="text-sm text-cream/70 pb-2">to add to Wishlist 💌</p>
+              <h3 className="font-bold text-cream text-base mb-1 text-center">👉 Swipe right</h3>
+              <p className="text-sm text-cream/70 pb-2 text-center">to add to Wishlist 💌</p>
             </div>
             {/* Swipe Up */}
-            <div className="text-center rounded-3xl px-4 py-3 bg-charcoal">
+            <div className="text-center rounded-3xl px-6 py-3 bg-charcoal">
               <div className="flex items-center justify-center w-52 h-52 mx-auto">
                 <img src={swipeUpCart} alt="Swipe up to add to cart" className="object-contain w-full h-full" />
               </div>
-              <h3 className="font-bold text-cream text-base mb-1">👆 Swipe up</h3>
-              <p className="text-sm text-cream/70 pb-2">to add to Cart 🛒</p>
+              <h3 className="font-bold text-cream text-base mb-1 text-center">👆 Swipe up</h3>
+              <p className="text-sm text-cream/70 pb-2 text-center">to add to Cart 🛒</p>
             </div>
             {/* Swipe Left */}
-            <div className="text-center rounded-3xl px-4 py-3 bg-charcoal">
+            <div className="text-center rounded-3xl px-6 py-3 bg-charcoal">
               <div className="flex items-center justify-center w-52 h-52 mx-auto">
                 <img src={swipeLeftPass} alt="Swipe left to pass" className="object-contain w-full h-full" />
               </div>
-              <h3 className="font-bold text-cream text-base mb-1">👈 Swipe left</h3>
-              <p className="text-sm text-cream/70 pb-2">to pass on the item ❌</p>
+              <h3 className="font-bold text-cream text-base mb-1 text-center">👈 Swipe left</h3>
+              <p className="text-sm text-cream/70 pb-2 text-center">to pass on the item ❌</p>
             </div>
           </div>
         </div>
