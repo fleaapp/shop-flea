@@ -1,9 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { DollarSign, Send, Instagram, Twitter } from 'lucide-react';
-import swipeRightWishlist from '@/assets/onboarding/swipe-right-wishlist.svg';
-import swipeUpCart from '@/assets/onboarding/swipe-up-cart.svg';
-import swipeLeftPass from '@/assets/onboarding/swipe-left-pass.svg';
+import GestureDemo from '@/components/onboarding/GestureDemo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -104,24 +102,24 @@ const About = () => {
           <h2 className="text-2xl md:text-3xl font-bold text-foreground text-center mb-12">
             How it works
           </h2>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
             {/* Wishlist */}
-            <div className="text-center">
-              <img src={swipeRightWishlist} alt="Swipe right to save" className="w-24 h-24 mx-auto mb-3 object-contain" />
-              <h3 className="font-bold text-foreground text-sm mb-1">Swipe Right</h3>
-              <p className="text-xs text-muted-foreground">Add to your Wishlist</p>
+            <div className="bg-foreground rounded-3xl p-6 text-center">
+              <GestureDemo type="swipe-left-right" />
+              <h3 className="font-bold text-cream text-base mt-4 mb-1">Swipe to Browse</h3>
+              <p className="text-sm text-cream/70">Left to pass, right to save, up to cart</p>
             </div>
-            {/* Cart */}
-            <div className="text-center">
-              <img src={swipeUpCart} alt="Swipe up to add to cart" className="w-24 h-24 mx-auto mb-3 object-contain" />
-              <h3 className="font-bold text-foreground text-sm mb-1">Swipe Up</h3>
-              <p className="text-xs text-muted-foreground">Add to your Cart</p>
+            {/* Tap */}
+            <div className="bg-foreground rounded-3xl p-6 text-center">
+              <GestureDemo type="tap" />
+              <h3 className="font-bold text-cream text-base mt-4 mb-1">Tap to View</h3>
+              <p className="text-sm text-cream/70">See full item details</p>
             </div>
-            {/* Pass */}
-            <div className="text-center">
-              <img src={swipeLeftPass} alt="Swipe left to pass" className="w-24 h-24 mx-auto mb-3 object-contain" />
-              <h3 className="font-bold text-foreground text-sm mb-1">Swipe Left</h3>
-              <p className="text-xs text-muted-foreground">Pass on it</p>
+            {/* Cart swipe */}
+            <div className="bg-foreground rounded-3xl p-6 text-center">
+              <GestureDemo type="cart-swipe" />
+              <h3 className="font-bold text-cream text-base mt-4 mb-1">Manage Cart</h3>
+              <p className="text-sm text-cream/70">Swipe to wishlist or delete</p>
             </div>
           </div>
         </div>
