@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
       await cloud
         .from("order_messages")
         .update({ read: true })
-        .eq("order_group_id", orderId)
+        .eq("order_id", orderId)
         .neq("sender_id", userId)
         .eq("read", false);
       return new Response(JSON.stringify({ success: true }), {
