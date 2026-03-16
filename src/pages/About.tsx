@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { ArrowRight, Heart, ShoppingCart, X, DollarSign, Send, Instagram, Twitter } from 'lucide-react';
+import { Heart, ShoppingCart, X, DollarSign, Send, Instagram, Twitter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
