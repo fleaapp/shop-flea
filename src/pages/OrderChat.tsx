@@ -147,38 +147,35 @@ const OrderChat = () => {
         });
       if (error) throw error;
     },
-    onSuccess: async () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
       setNewMessage('');
 
-      // Create notification for the other party
+      // Fire-and-forget notification for the other party
       if (user?.id && orderInfo) {
-        try {
-          const isBuyer = user.id === orderInfo.buyer_id;
-          const recipientId = isBuyer ? orderInfo.seller_id : orderInfo.buyer_id;
-          const senderUsername = isBuyer ? orderInfo.buyer_username : orderInfo.seller_username;
-          const notifType = isBuyer ? 'order_message_buyer' : 'order_message_seller';
-          const notifMessage = isBuyer
-            ? `📩 New message from your buyer @${senderUsername}! Tap to view.`
-            : `💬 New message from @${senderUsername} about your order! Tap to view.`;
+        const isBuyer = user.id === orderInfo.buyer_id;
+        const recipientId = isBuyer ? orderInfo.seller_id : orderInfo.buyer_id;
+        const senderUsername = isBuyer ? orderInfo.buyer_username : orderInfo.seller_username;
+        const notifType = isBuyer ? 'order_message_buyer' : 'order_message_seller';
+        const notifMessage = isBuyer
+          ? `📩 New message from your buyer @${senderUsername}! Tap to view.`
+          : `💬 New message from @${senderUsername} about your order! Tap to view.`;
 
-          // Find the listing_id from the order
-          const order = [...buyerOrderGroups, ...sellerOrderGroups]
-            .flatMap(g => g.orders)
-            .find(o => o.id === orderId);
+        const order = [...buyerOrderGroups, ...sellerOrderGroups]
+          .flatMap(g => g.orders)
+          .find(o => o.id === orderId);
 
-          await supabase.from('notifications').insert({
-            user_id: recipientId,
-            type: notifType,
-            title: 'New Message',
-            message: notifMessage,
-            related_listing_id: order?.listing_id || null,
-            related_user_id: user.id,
-            related_order_id: orderId,
-          });
-        } catch (err) {
-          console.error('Notification error:', err);
-        }
+        // Use a detached promise so notification errors never affect messaging
+        supabase.from('notifications').insert({
+          user_id: recipientId,
+          type: notifType,
+          title: 'New Message',
+          message: notifMessage,
+          related_listing_id: order?.listing_id || null,
+          related_user_id: user.id,
+        }).then(({ error }) => {
+          if (error) console.warn('[OrderChat] notification insert failed:', error.message);
+        });
       }
     },
     onError: (err) => {
