@@ -104,24 +104,24 @@ const About = () => {
           <h2 className="text-2xl md:text-3xl font-bold text-foreground text-center mb-12">
             How it works
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="grid grid-cols-3 gap-4">
             {/* Wishlist */}
-            <div className="bg-card rounded-3xl p-6 card-shadow text-center">
-              <img src={swipeRightWishlist} alt="Swipe right to save" className="w-16 h-16 mx-auto mb-4" />
-              <h3 className="font-bold text-foreground mb-2">Swipe Right</h3>
-              <p className="text-sm text-muted-foreground">Add to your Wishlist instantly</p>
+            <div className="text-center">
+              <img src={swipeRightWishlist} alt="Swipe right to save" className="w-24 h-24 mx-auto mb-3 object-contain" />
+              <h3 className="font-bold text-foreground text-sm mb-1">Swipe Right</h3>
+              <p className="text-xs text-muted-foreground">Add to your Wishlist</p>
             </div>
             {/* Cart */}
-            <div className="bg-card rounded-3xl p-6 card-shadow text-center">
-              <img src={swipeUpCart} alt="Swipe up to add to cart" className="w-16 h-16 mx-auto mb-4" />
-              <h3 className="font-bold text-foreground mb-2">Swipe Up</h3>
-              <p className="text-sm text-muted-foreground">Add straight to your Cart</p>
+            <div className="text-center">
+              <img src={swipeUpCart} alt="Swipe up to add to cart" className="w-24 h-24 mx-auto mb-3 object-contain" />
+              <h3 className="font-bold text-foreground text-sm mb-1">Swipe Up</h3>
+              <p className="text-xs text-muted-foreground">Add to your Cart</p>
             </div>
             {/* Pass */}
-            <div className="bg-card rounded-3xl p-6 card-shadow text-center">
-              <img src={swipeLeftPass} alt="Swipe left to pass" className="w-16 h-16 mx-auto mb-4" />
-              <h3 className="font-bold text-foreground mb-2">Swipe Left</h3>
-              <p className="text-sm text-muted-foreground">Pass — no hard feelings</p>
+            <div className="text-center">
+              <img src={swipeLeftPass} alt="Swipe left to pass" className="w-24 h-24 mx-auto mb-3 object-contain" />
+              <h3 className="font-bold text-foreground text-sm mb-1">Swipe Left</h3>
+              <p className="text-xs text-muted-foreground">Pass on it</p>
             </div>
           </div>
         </div>
