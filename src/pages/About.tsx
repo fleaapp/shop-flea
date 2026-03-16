@@ -56,7 +56,7 @@ const About = () => {
           <p className="mt-6 text-base md:text-lg text-muted-foreground max-w-[340px] md:max-w-lg mx-auto leading-relaxed">
             Flea is here to shake up the secondhand fashion scene with a swipe. <em>Literally.</em>
           </p>
-          <p className="mt-4 text-sm md:text-base text-muted-foreground max-w-[340px] md:max-w-md mx-auto leading-relaxed">
+          <p className="mt-4 text-sm md:text-base text-muted-foreground max-w-[320px] md:max-w-md mx-auto leading-relaxed">
             Like your favourite Sunday flea market - without the overpriced iced lattes, awkward haggling, or having to even leave your bed.
           </p>
           <div className="mt-10 flex justify-center">
