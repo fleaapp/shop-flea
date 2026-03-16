@@ -604,7 +604,7 @@ const CreateListing = () => {
         <div className="flex items-center gap-2">
           <ConditionInfoPopover />
           <Select value={condition} onValueChange={setCondition}>
-            <SelectTrigger className={`${selectStyles} flex-1 max-w-[200px] ${condition ? '[&>span]:text-foreground' : ''}`}>
+            <SelectTrigger className={`${selectStyles} flex-1 ${condition ? '[&>span]:text-foreground' : ''}`}>
               <SelectValue placeholder="Condition" />
             </SelectTrigger>
             <SelectContent>
