@@ -91,7 +91,7 @@ const Notifications = () => {
 
     // Order message notifications → navigate to order chat using related_order_id
     if (notification.type === 'order_message_seller' || notification.type === 'order_message_buyer') {
-      const orderId = (notification as any).related_order_id;
+      const orderId = notification.related_order_id;
       if (orderId) {
         navigate(`/order-chat/${orderId}`);
         return;
