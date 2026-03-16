@@ -10,6 +10,7 @@ import cutoutJacket from '@/assets/about/cutout-jacket.png';
 import cutoutSneakers from '@/assets/about/cutout-sneakers.png';
 import cutoutSweater from '@/assets/about/cutout-sweater.png';
 import cutoutBag from '@/assets/about/cutout-bag.png';
+import MarketRack from '@/components/about/MarketRack';
 
 const About = () => {
   const navigate = useNavigate();
@@ -69,6 +70,11 @@ const About = () => {
           </p>
         </div>
       </section>
+
+      {/* Market rack graphic */}
+      <div className="bg-primary -mt-8 pb-4 overflow-hidden">
+        <MarketRack />
+      </div>
 
       {/* Tagline strip */}
       <div className="bg-foreground py-4 overflow-hidden">
