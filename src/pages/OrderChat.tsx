@@ -107,7 +107,7 @@ const OrderChat = () => {
         event: '*',
         schema: 'public',
         table: 'order_messages',
-        filter: `order_group_id=eq.${orderId}`,
+        filter: `order_id=eq.${orderId}`,
       }, () => {
         queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
       })
