@@ -6,22 +6,32 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+type NotificationInsert = {
+  user_id: string;
+  type: string;
+  title: string;
+  message: string;
+  related_listing_id: string | null;
+  related_user_id: string;
+  related_order_id?: string;
+  related_thread_id?: string;
+};
+
 async function getUserId(req: Request): Promise<string | null> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return null;
+
   const externalUrl = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
   const externalAnonKey = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "";
   const client = createClient(externalUrl, externalAnonKey, {
     global: { headers: { Authorization: authHeader } },
   });
-  const { data: { user } } = await client.auth.getUser();
-  return user?.id ?? null;
-}
 
-function getServiceClient() {
-  const url = Deno.env.get("SUPABASE_URL") ?? "";
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  return createClient(url, serviceKey);
+  const {
+    data: { user },
+  } = await client.auth.getUser();
+
+  return user?.id ?? null;
 }
 
 function getExternalServiceClient() {
@@ -32,25 +42,76 @@ function getExternalServiceClient() {
 
 async function isOrderParticipant(
   userId: string,
-  orderId: string
+  orderId: string,
 ): Promise<{ isBuyer: boolean; isSeller: boolean; deliveredAt: string | null }> {
-  const externalUrl = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
-  const externalServiceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  const extClient = createClient(externalUrl, externalServiceKey);
+  const extClient = getExternalServiceClient();
 
-  const { data: orders } = await extClient
+  const { data: order } = await extClient
     .from("orders")
     .select("buyer_id, seller_id, delivered_at")
-    .eq("id", orderId);
+    .eq("id", orderId)
+    .maybeSingle();
 
-  if (!orders?.length) return { isBuyer: false, isSeller: false, deliveredAt: null };
+  if (!order) return { isBuyer: false, isSeller: false, deliveredAt: null };
 
-  const order = orders[0];
   return {
     isBuyer: order.buyer_id === userId,
     isSeller: order.seller_id === userId,
     deliveredAt: order.delivered_at,
   };
+}
+
+async function getUsername(userId: string): Promise<string> {
+  const extClient = getExternalServiceClient();
+
+  const publicProfileResponse = await extClient
+    .from("profiles_public")
+    .select("username")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (publicProfileResponse.data?.username) {
+    return publicProfileResponse.data.username;
+  }
+
+  const profileResponse = await extClient
+    .from("profiles")
+    .select("username")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  return profileResponse.data?.username ?? "user";
+}
+
+async function insertNotificationWithFallback(
+  extClient: ReturnType<typeof getExternalServiceClient>,
+  payload: NotificationInsert,
+) {
+  const { error } = await extClient.from("notifications").insert(payload);
+  if (!error) return;
+
+  const errorText = `${error.message ?? ""} ${error.details ?? ""}`;
+  const missingOptionalColumn =
+    error.code === "PGRST204" ||
+    errorText.includes("related_order_id") ||
+    errorText.includes("related_thread_id");
+
+  if (!missingOptionalColumn) throw error;
+
+  const fallbackPayload = {
+    user_id: payload.user_id,
+    type: payload.type,
+    title: payload.title,
+    message: payload.message,
+    related_listing_id: payload.related_listing_id,
+    related_user_id: payload.related_user_id,
+  };
+
+  const { error: fallbackError } = await extClient
+    .from("notifications")
+    .insert(fallbackPayload);
+
+  if (fallbackError) throw fallbackError;
 }
 
 Deno.serve(async (req) => {
@@ -84,27 +145,32 @@ Deno.serve(async (req) => {
       });
     }
 
-    const cloud = getServiceClient();
+    const external = getExternalServiceClient();
 
     if (req.method === "GET") {
-      const { data, error } = await cloud
+      const { data, error } = await external
         .from("order_messages")
         .select("*")
         .eq("order_id", orderId)
         .order("created_at", { ascending: true });
+
       if (error) throw error;
+
       return new Response(JSON.stringify({ messages: data || [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (req.method === "PATCH") {
-      await cloud
+      const { error } = await external
         .from("order_messages")
         .update({ read: true })
         .eq("order_id", orderId)
         .neq("sender_id", userId)
         .eq("read", false);
+
+      if (error) throw error;
+
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -112,19 +178,23 @@ Deno.serve(async (req) => {
 
     if (req.method === "POST") {
       if (deliveredAt) {
-        const daysSinceDelivery = (Date.now() - new Date(deliveredAt).getTime()) / (1000 * 60 * 60 * 24);
+        const daysSinceDelivery =
+          (Date.now() - new Date(deliveredAt).getTime()) / (1000 * 60 * 60 * 24);
         if (daysSinceDelivery > 10) {
-          return new Response(JSON.stringify({ error: "Chat is read-only (10+ days since delivery)" }), {
-            status: 403,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({ error: "Chat is read-only (10+ days since delivery)" }),
+            {
+              status: 403,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
         }
       }
 
       const body = await req.json();
       const { message, attachment_url } = body;
 
-      const { data, error } = await cloud
+      const { data, error } = await external
         .from("order_messages")
         .insert({
           order_id: orderId,
@@ -137,44 +207,33 @@ Deno.serve(async (req) => {
 
       if (error) throw error;
 
-      // Create notification for the other party on the external DB
       try {
-        const extService = getExternalServiceClient();
-        
-        // Get sender username
-        const { data: senderProfile } = await extService
-          .from("profiles")
-          .select("username")
-          .eq("user_id", userId)
-          .single();
-        const senderUsername = senderProfile?.username || "user";
-
-        // Get listing_id from the order
-        const { data: orderData } = await extService
+        const senderUsername = await getUsername(userId);
+        const { data: orderData } = await external
           .from("orders")
           .select("listing_id, buyer_id, seller_id")
           .eq("id", orderId)
-          .single();
+          .maybeSingle();
 
         if (orderData) {
           const recipientId = isBuyer ? orderData.seller_id : orderData.buyer_id;
           const notifType = isBuyer ? "order_message_buyer" : "order_message_seller";
           const notifMessage = isBuyer
-            ? `📩 New message from your buyer @${senderUsername}! Tap to view.`
-            : `💬 New message from @${senderUsername} about your order! Tap to view.`;
+            ? `📩 New message from your buyer ${senderUsername.startsWith("@") ? senderUsername : `@${senderUsername}`}! Tap to view.`
+            : `💬 New message from ${senderUsername.startsWith("@") ? senderUsername : `@${senderUsername}`} about your order! Tap to view.`;
 
-          await extService.from("notifications").insert({
+          await insertNotificationWithFallback(external, {
             user_id: recipientId,
             type: notifType,
             title: "New Message",
             message: notifMessage,
             related_listing_id: orderData.listing_id,
             related_user_id: userId,
+            related_order_id: orderId,
           });
         }
       } catch (notifErr) {
         console.error("[order-messages] Notification error:", notifErr);
-        // Don't fail the message send if notification fails
       }
 
       return new Response(JSON.stringify({ message: data }), {
@@ -188,7 +247,9 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error("[order-messages] Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -63,7 +63,7 @@ const Notifications = () => {
   }, []);
 
   const handleNotificationClick = async (notification: Notification) => {
-    if (!notification.is_read) {
+    if (!notification.is_read && !notification.id.startsWith('fallback-')) {
       markAsRead.mutate(notification.id);
     }
     
@@ -111,8 +111,12 @@ const Notifications = () => {
       return;
     }
 
-    // Support message → navigate to support using related_thread_id
+    // Support message → navigate to the relevant support thread
     if (notification.type === 'support_message') {
+      if (notification.related_thread_id) {
+        navigate(`/contact-support/${notification.related_thread_id}`);
+        return;
+      }
       navigate('/contact-support');
       return;
     }

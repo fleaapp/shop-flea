@@ -55,7 +55,6 @@ export const useNotifications = () => {
     queryFn: async () => {
       if (!user?.id) return [];
 
-      // Fetch notifications
       const { data: notificationsData, error } = await supabase
         .from('notifications')
         .select('*')
@@ -63,13 +62,67 @@ export const useNotifications = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      if (!notificationsData || notificationsData.length === 0) return [];
 
-      // Get unique listing IDs and user IDs
-      const listingIds = [...new Set(notificationsData.map(n => n.related_listing_id).filter(Boolean))] as string[];
-      const userIds = [...new Set(notificationsData.map(n => n.related_user_id).filter(Boolean))] as string[];
+      const fallbackNotifications: Notification[] = [];
+      const existingNotifications = notificationsData || [];
 
-      // Fetch related listings
+      const { data: threads } = await (supabase as any)
+        .from('chat_threads')
+        .select('id')
+        .eq('user_id', user.id);
+
+      if (threads?.length) {
+        const threadIds = threads.map((thread: { id: string }) => thread.id);
+        const { data: unreadSupportMessages } = await (supabase as any)
+          .from('chat_messages')
+          .select('id, thread_id, created_at')
+          .in('thread_id', threadIds)
+          .neq('sender_type', 'user')
+          .eq('read', false)
+          .order('created_at', { ascending: false });
+
+        const latestUnreadByThread = new Map<string, { id: string; thread_id: string; created_at: string }>();
+        for (const message of unreadSupportMessages || []) {
+          if (!latestUnreadByThread.has(message.thread_id)) {
+            latestUnreadByThread.set(message.thread_id, message);
+          }
+        }
+
+        for (const [threadId, message] of latestUnreadByThread) {
+          const hasExistingSupportNotification = existingNotifications.some(notification =>
+            !notification.is_read &&
+            notification.type === 'support_message' &&
+            notification.related_thread_id === threadId
+          );
+
+          if (hasExistingSupportNotification) continue;
+
+          fallbackNotifications.push({
+            id: `fallback-support-${message.id}`,
+            type: 'support_message',
+            title: 'Support Message',
+            message: '🛎️ New message from Flea support. Tap to view.',
+            is_read: false,
+            created_at: message.created_at,
+            related_listing_id: null,
+            related_user_id: null,
+            related_order_id: null,
+            related_thread_id: threadId,
+            listing: null,
+            related_user: null,
+          });
+        }
+      }
+
+      const mergedNotifications = [...existingNotifications, ...fallbackNotifications].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      if (mergedNotifications.length === 0) return [];
+
+      const listingIds = [...new Set(mergedNotifications.map(n => n.related_listing_id).filter(Boolean))] as string[];
+      const userIds = [...new Set(mergedNotifications.map(n => n.related_user_id).filter(Boolean))] as string[];
+
       let listingsMap: Record<string, { id: string; title: string; images: string[] }> = {};
       if (listingIds.length > 0) {
         const { data: listings } = await supabase
@@ -82,27 +135,31 @@ export const useNotifications = () => {
         }
       }
 
-      // Fetch related users
       let usersMap: Record<string, { username: string; avatar_url: string | null }> = {};
       if (userIds.length > 0) {
-        const { data: users } = await supabase
-          .from('profiles')
+        const profilesPublicResponse = await (supabase as any)
+          .from('profiles_public')
           .select('user_id, username, avatar_url')
           .in('user_id', userIds);
+
+        const users = !profilesPublicResponse.error && profilesPublicResponse.data?.length
+          ? profilesPublicResponse.data
+          : (await supabase
+              .from('profiles')
+              .select('user_id, username, avatar_url')
+              .in('user_id', userIds)).data;
         
         if (users) {
           usersMap = Object.fromEntries(users.map(u => [u.user_id, { username: u.username, avatar_url: u.avatar_url }]));
         }
       }
 
-      // Combine data
-      const combined = notificationsData.map(n => ({
+      const combined = mergedNotifications.map(n => ({
         ...n,
         listing: n.related_listing_id ? listingsMap[n.related_listing_id] || null : null,
         related_user: n.related_user_id ? usersMap[n.related_user_id] || null : null,
       })) as Notification[];
 
-      // Preload notification images (listing thumbnails + user avatars)
       const imagesToPreload = [
         ...Object.values(listingsMap).flatMap(l => l.images?.slice(0, 1) || []),
         ...Object.values(usersMap).map(u => u.avatar_url).filter(Boolean),
