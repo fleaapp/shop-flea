@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { DollarSign, Send, Instagram, Twitter } from 'lucide-react';
+import tapToExpandGif from '@/assets/onboarding/tap-to-expand.gif';
 import swipeRightWishlist from '@/assets/onboarding/swipe-right-wishlist.svg';
 import swipeUpCart from '@/assets/onboarding/swipe-up-cart.svg';
 import swipeLeftPass from '@/assets/onboarding/swipe-left-pass.svg';
