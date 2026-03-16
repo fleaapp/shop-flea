@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
       const { data, error } = await cloud
         .from("order_messages")
         .insert({
-          order_group_id: orderId,
+          order_id: orderId,
           sender_id: userId,
           message: message || "",
           attachment_url: attachment_url || null,
