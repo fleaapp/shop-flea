@@ -277,7 +277,7 @@ export const getAllSizes = (): string[] => {
 };
 
 // Other listing options
-export const CONDITIONS = ['New with tags', 'Like new', 'Good', 'Fair'];
+export const CONDITIONS = ['New', 'Like new', 'Good', 'Fair'];
 
 export const COLOURS = [
   'Black', 'White', 'Grey', 'Navy', 'Blue', 'Green', 'Khaki', 
