@@ -30,6 +30,7 @@ import {
   isShoeCategory
 } from '@/config/sizeConfig';
 import { COLOUR_SWATCHES } from '@/utils/colourSwatches';
+import ConditionInfoPopover from '@/components/ConditionInfoPopover';
 
 interface ImageFile {
   file: File;
