@@ -36,7 +36,7 @@ const About = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#e8e0d4] font-sans overflow-hidden">
+    <div className="min-h-screen bg-[#DBFBD5] font-sans overflow-hidden">
       {/* Market rack banner - full width at the top */}
       <MarketRack />
 
