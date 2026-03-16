@@ -123,7 +123,7 @@ const OrderChat = () => {
     supabase
       .from('order_messages')
       .update({ read: true })
-      .eq('order_group_id', orderId)
+      .eq('order_id', orderId)
       .neq('sender_id', user.id)
       .eq('read', false)
       .then();
