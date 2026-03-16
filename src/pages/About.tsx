@@ -49,9 +49,9 @@ const About = () => {
         <img src={cutoutSweater} alt="" className="absolute -bottom-8 -right-10 w-36 md:w-52 opacity-50 rotate-[-8deg] pointer-events-none select-none" />
 
         <div className="relative z-10 max-w-2xl mx-auto text-center">
-          <img alt="Flea" className="h-14 md:h-20 mx-auto mb-8" src="/lovable-uploads/8d52d6b9-59c0-490a-97c0-5ffab455f175.jpg" />
-          <h1 className="text-3xl md:text-5xl font-extrabold leading-tight tracking-tight text-[#423d3d]">
-            Shop & sell secondhand with a swipe.
+          <img alt="Flea" className="h-10 md:h-20 mx-auto mb-8" src="/lovable-uploads/8d52d6b9-59c0-490a-97c0-5ffab455f175.jpg" />
+          <h1 className="text-2xl md:text-5xl font-extrabold leading-tight tracking-tight text-[#423d3d]">
+            Shop & sell secondhand<br />with a swipe.
           </h1>
           <p className="mt-6 text-base md:text-lg text-muted-foreground max-w-lg mx-auto leading-relaxed">
             Flea is here to shake up the secondhand fashion scene with a swipe. <em>Literally.</em>
