@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { DollarSign, Send, Instagram, Twitter } from 'lucide-react';
+import tapToExpandGif from '@/assets/onboarding/tap-to-expand.gif';
 import swipeRightWishlist from '@/assets/onboarding/swipe-right-wishlist.svg';
 import swipeUpCart from '@/assets/onboarding/swipe-up-cart.svg';
 import swipeLeftPass from '@/assets/onboarding/swipe-left-pass.svg';
@@ -100,31 +101,42 @@ const About = () => {
 
       {/* How it works — Features */}
       <section className="px-6 py-16 md:py-24 bg-background">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground text-center mb-12">
-            How it works
+            How Flea works
           </h2>
-          <div className="grid grid-cols-1 gap-6 max-w-sm mx-auto sm:max-w-none sm:grid-cols-3 sm:gap-6">
-            <div className="text-center rounded-3xl px-6 py-3 bg-charcoal">
+          <div className="grid grid-cols-1 gap-4 max-w-xs mx-auto sm:max-w-none sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
+            {/* Tap to expand */}
+            <div className="text-center rounded-3xl px-4 py-3 bg-charcoal">
+              <div className="flex items-center justify-center w-52 h-52 mx-auto">
+                <img src={tapToExpandGif} alt="Tap card to expand details" className="object-contain w-full h-full rounded-xl" />
+              </div>
+              <h3 className="font-bold text-cream text-base mb-1">👇 Tap card</h3>
+              <p className="text-sm text-cream/70 pb-2">to expand more details</p>
+            </div>
+            {/* Swipe Right */}
+            <div className="text-center rounded-3xl px-4 py-3 bg-charcoal">
               <div className="flex items-center justify-center w-52 h-52 mx-auto">
                 <img src={swipeRightWishlist} alt="Swipe right to add to wishlist" className="object-contain w-full h-full" />
               </div>
-              <h3 className="font-bold text-cream text-base mb-1">Swipe Right</h3>
-              <p className="text-sm text-cream/70 pb-2">Add to your Wishlist instantly</p>
+              <h3 className="font-bold text-cream text-base mb-1">👉 Swipe right</h3>
+              <p className="text-sm text-cream/70 pb-2">to add to Wishlist 💌</p>
             </div>
-            <div className="text-center rounded-3xl px-6 py-3 bg-charcoal">
+            {/* Swipe Up */}
+            <div className="text-center rounded-3xl px-4 py-3 bg-charcoal">
               <div className="flex items-center justify-center w-52 h-52 mx-auto">
                 <img src={swipeUpCart} alt="Swipe up to add to cart" className="object-contain w-full h-full" />
               </div>
-              <h3 className="font-bold text-cream text-base mb-1">Swipe Up</h3>
-              <p className="text-sm text-cream/70 pb-2">Add straight to your Cart</p>
+              <h3 className="font-bold text-cream text-base mb-1">👆 Swipe up</h3>
+              <p className="text-sm text-cream/70 pb-2">to add to Cart 🛒</p>
             </div>
-            <div className="text-center rounded-3xl px-6 py-3 bg-charcoal">
+            {/* Swipe Left */}
+            <div className="text-center rounded-3xl px-4 py-3 bg-charcoal">
               <div className="flex items-center justify-center w-52 h-52 mx-auto">
                 <img src={swipeLeftPass} alt="Swipe left to pass" className="object-contain w-full h-full" />
               </div>
-              <h3 className="font-bold text-cream text-base mb-1">Swipe Left</h3>
-              <p className="text-sm text-cream/70 pb-2">Pass — no hard feelings</p>
+              <h3 className="font-bold text-cream text-base mb-1">👈 Swipe left</h3>
+              <p className="text-sm text-cream/70 pb-2">to pass on the item ❌</p>
             </div>
           </div>
         </div>
