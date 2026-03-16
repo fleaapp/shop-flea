@@ -89,12 +89,16 @@ const Notifications = () => {
       return;
     }
 
-    // Order message notifications → find order by listing_id and navigate to order chat
+    // Order message notifications → navigate to order chat using related_order_id
     if (notification.type === 'order_message_seller' || notification.type === 'order_message_buyer') {
+      const orderId = (notification as any).related_order_id;
+      if (orderId) {
+        navigate(`/order-chat/${orderId}`);
+        return;
+      }
+      // Fallback: find order by listing_id
       if (notification.related_listing_id) {
-        // Find the order for this listing across buyer and seller groups
         const allGroups = [...(sellerOrderGroups || []), ...(buyerOrderGroups || [])];
-        // Also check buyer orders from useOrders
         const matchingOrder = allGroups
           .flatMap(g => g.orders)
           .find(o => o.listing_id === notification.related_listing_id);
@@ -107,7 +111,7 @@ const Notifications = () => {
       return;
     }
 
-    // Support message → navigate to support
+    // Support message → navigate to support using related_thread_id
     if (notification.type === 'support_message') {
       navigate('/contact-support');
       return;

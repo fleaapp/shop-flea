@@ -174,6 +174,7 @@ const OrderChat = () => {
             message: notifMessage,
             related_listing_id: order?.listing_id || null,
             related_user_id: user.id,
+            related_order_id: orderId,
           });
         } catch (err) {
           console.error('Notification error:', err);
