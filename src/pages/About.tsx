@@ -84,20 +84,6 @@ const About = () => {
         </div>
       </div>
 
-      {/* About blurb */}
-      <section className="px-6 py-16 md:py-24 bg-card">
-        <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
-            Thrifting, reimagined 🔄
-          </h2>
-          <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
-            We've taken the thrill of thrifting, the joy of a good deal, and the mindless fun of swiping — and rolled it into one game-changing app.
-          </p>
-          <p className="mt-6 text-foreground font-semibold text-base md:text-lg">
-            The future of secondhand fashion is circular, and it starts with you. 🌍
-          </p>
-        </div>
-      </section>
 
       {/* How it works — Features */}
       <section className="px-6 py-16 md:py-24 bg-background">
