@@ -140,7 +140,7 @@ const OrderChat = () => {
       const { error } = await supabase
         .from('order_messages')
         .insert({
-          order_group_id: orderId,
+          order_id: orderId,
           sender_id: user.id,
           message: message || '',
           attachment_url: attachmentUrl || null,
