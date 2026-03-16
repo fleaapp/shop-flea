@@ -107,21 +107,21 @@ const About = () => {
           <div className="grid grid-cols-1 gap-6 max-w-sm mx-auto sm:max-w-none sm:grid-cols-3 sm:gap-6">
             <div className="text-center rounded-3xl p-6 bg-charcoal">
               <div className="flex items-center justify-center w-44 h-44 mx-auto">
-                <img src={swipeRightWishlist} alt="Swipe right to add to wishlist" className="object-contain w-full h-full mix-blend-multiply" />
+                <img src={swipeRightWishlist} alt="Swipe right to add to wishlist" className="object-contain w-full h-full" />
               </div>
               <h3 className="font-bold text-cream text-base mt-4 mb-1">Swipe Right</h3>
               <p className="text-sm text-cream/70">Add to your Wishlist instantly</p>
             </div>
             <div className="text-center rounded-3xl p-6 bg-charcoal">
               <div className="flex items-center justify-center w-44 h-44 mx-auto">
-                <img src={swipeUpCart} alt="Swipe up to add to cart" className="object-contain w-full h-full mix-blend-multiply" />
+                <img src={swipeUpCart} alt="Swipe up to add to cart" className="object-contain w-full h-full" />
               </div>
               <h3 className="font-bold text-cream text-base mt-4 mb-1">Swipe Up</h3>
               <p className="text-sm text-cream/70">Add straight to your Cart</p>
             </div>
             <div className="text-center rounded-3xl p-6 bg-charcoal">
               <div className="flex items-center justify-center w-44 h-44 mx-auto">
-                <img src={swipeLeftPass} alt="Swipe left to pass" className="object-contain w-full h-full mix-blend-multiply" />
+                <img src={swipeLeftPass} alt="Swipe left to pass" className="object-contain w-full h-full" />
               </div>
               <h3 className="font-bold text-cream text-base mt-4 mb-1">Swipe Left</h3>
               <p className="text-sm text-cream/70">Pass — no hard feelings</p>
