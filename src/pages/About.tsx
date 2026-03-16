@@ -59,17 +59,13 @@ const About = () => {
           <p className="mt-4 text-sm md:text-base text-muted-foreground max-w-md mx-auto leading-relaxed">Like your favourite Sunday flea market - without the overpriced iced lattes, awkward haggling, or having to even leave your bed.
 
           </p>
-          <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="mt-10 flex justify-center">
             <Button
               onClick={() => navigate('/auth')}
-              className="h-12 px-8 rounded-full bg-foreground text-background font-semibold text-base hover:bg-foreground/90 gap-2">
-              
-              Sign up now <ArrowRight className="h-4 w-4" />
+              className="h-12 px-6 rounded-full bg-foreground text-background font-semibold text-base hover:bg-foreground/90">
+              Sign up now
             </Button>
           </div>
-          <p className="mt-6 text-xs text-muted-foreground italic">
-            Find it on Flea ✨
-          </p>
         </div>
       </section>
 
