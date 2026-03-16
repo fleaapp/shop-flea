@@ -36,7 +36,10 @@ const About = () => {
   };
 
   return (
-    <div className="min-h-screen bg-primary font-sans">
+    <div className="min-h-screen bg-primary font-sans overflow-hidden">
+      {/* Market rack banner - full width at the top */}
+      <MarketRack />
+
       {/* Hero Section */}
       <section className="relative overflow-hidden px-6 pt-12 pb-20 md:pt-20 md:pb-32">
         {/* Floating cutouts */}
@@ -70,11 +73,6 @@ const About = () => {
           </p>
         </div>
       </section>
-
-      {/* Market rack graphic */}
-      <div className="bg-primary -mt-8 pb-4 overflow-hidden">
-        <MarketRack />
-      </div>
 
       {/* Tagline strip */}
       <div className="bg-foreground py-4 overflow-hidden">
