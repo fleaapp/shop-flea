@@ -97,32 +97,28 @@ const About = () => {
               <div className="flex items-center justify-center w-52 h-52 mx-auto">
                 <img src={tapToExpandGif} alt="Tap card to expand details" className="object-contain w-full h-full rounded-xl" />
               </div>
-              <h3 className="font-bold text-cream text-base mb-1 text-center">👇 Tap card</h3>
-              <p className="text-sm text-cream/70 pb-2 text-center">to expand more details</p>
+              <p className="text-sm text-cream/90 pb-2 text-center"><strong>👇 Tap card</strong> for more details</p>
             </div>
             {/* Swipe Right */}
             <div className="flex flex-col items-center rounded-3xl px-6 py-3 bg-charcoal">
               <div className="flex items-center justify-center w-52 h-52 mx-auto">
                 <img src={swipeRightWishlist} alt="Swipe right to add to wishlist" className="object-contain w-full h-full" />
               </div>
-              <h3 className="font-bold text-cream text-base mb-1 text-center">👉 Swipe right</h3>
-              <p className="text-sm text-cream/70 pb-2 text-center">to add to Wishlist 💌</p>
+              <p className="text-sm text-cream/90 pb-2 text-center"><strong>👉 Swipe right</strong> to add to Wishlist 💌</p>
             </div>
             {/* Swipe Up */}
             <div className="flex flex-col items-center rounded-3xl px-6 py-3 bg-charcoal">
               <div className="flex items-center justify-center w-52 h-52 mx-auto">
                 <img src={swipeUpCart} alt="Swipe up to add to cart" className="object-contain w-full h-full" />
               </div>
-              <h3 className="font-bold text-cream text-base mb-1 text-center">👆 Swipe up</h3>
-              <p className="text-sm text-cream/70 pb-2 text-center">to add to Cart 🛒</p>
+              <p className="text-sm text-cream/90 pb-2 text-center"><strong>👆 Swipe up</strong> to add to Cart 🛒</p>
             </div>
             {/* Swipe Left */}
             <div className="flex flex-col items-center rounded-3xl px-6 py-3 bg-charcoal">
               <div className="flex items-center justify-center w-52 h-52 mx-auto">
                 <img src={swipeLeftPass} alt="Swipe left to pass" className="object-contain w-full h-full" />
               </div>
-              <h3 className="font-bold text-cream text-base mb-1 text-center">👈 Swipe left</h3>
-              <p className="text-sm text-cream/70 pb-2 text-center">to pass on the item ❌</p>
+              <p className="text-sm text-cream/90 pb-2 text-center"><strong>👈 Swipe left</strong> to pass ❌</p>
             </div>
           </div>
         </div>
