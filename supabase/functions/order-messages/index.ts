@@ -176,12 +176,13 @@ Deno.serve(async (req) => {
     }
 
     const external = getExternalServiceClient();
+    const orderMessageKey = await getOrderMessageKey(external);
 
     if (req.method === "GET") {
       const { data, error } = await external
         .from("order_messages")
         .select("*")
-        .eq("order_id", orderId)
+        .eq(orderMessageKey, orderId)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
