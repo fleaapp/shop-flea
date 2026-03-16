@@ -1,6 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Heart, ShoppingCart, X, DollarSign, Send, Instagram, Twitter } from 'lucide-react';
+import { DollarSign, Send, Instagram, Twitter } from 'lucide-react';
+import swipeRightWishlist from '@/assets/onboarding/swipe-right-wishlist.svg';
+import swipeUpCart from '@/assets/onboarding/swipe-up-cart.svg';
+import swipeLeftPass from '@/assets/onboarding/swipe-left-pass.svg';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -104,25 +107,19 @@ const About = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {/* Wishlist */}
             <div className="bg-card rounded-3xl p-6 card-shadow text-center">
-              <div className="w-14 h-14 mx-auto rounded-2xl bg-[#ddfed7] flex items-center justify-center mb-4">
-                <Heart className="h-7 w-7 text-foreground" />
-              </div>
+              <img src={swipeRightWishlist} alt="Swipe right to save" className="w-16 h-16 mx-auto mb-4" />
               <h3 className="font-bold text-foreground mb-2">Swipe Right</h3>
               <p className="text-sm text-muted-foreground">Add to your Wishlist instantly</p>
             </div>
             {/* Cart */}
             <div className="bg-card rounded-3xl p-6 card-shadow text-center">
-              <div className="w-14 h-14 mx-auto rounded-2xl bg-[#ddfed7] flex items-center justify-center mb-4">
-                <ShoppingCart className="h-7 w-7 text-foreground" />
-              </div>
+              <img src={swipeUpCart} alt="Swipe up to add to cart" className="w-16 h-16 mx-auto mb-4" />
               <h3 className="font-bold text-foreground mb-2">Swipe Up</h3>
               <p className="text-sm text-muted-foreground">Add straight to your Cart</p>
             </div>
             {/* Pass */}
             <div className="bg-card rounded-3xl p-6 card-shadow text-center">
-              <div className="w-14 h-14 mx-auto rounded-2xl bg-muted flex items-center justify-center mb-4">
-                <X className="h-7 w-7 text-muted-foreground" />
-              </div>
+              <img src={swipeLeftPass} alt="Swipe left to pass" className="w-16 h-16 mx-auto mb-4" />
               <h3 className="font-bold text-foreground mb-2">Swipe Left</h3>
               <p className="text-sm text-muted-foreground">Pass — no hard feelings</p>
             </div>
