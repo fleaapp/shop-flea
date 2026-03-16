@@ -600,16 +600,19 @@ const CreateListing = () => {
         />
         
         {/* Condition */}
-        <Select value={condition} onValueChange={setCondition}>
-          <SelectTrigger className={`${selectStyles} ${condition ? '[&>span]:text-foreground' : ''}`}>
-            <SelectValue placeholder="Condition" />
-          </SelectTrigger>
-          <SelectContent>
-            {CONDITIONS.map((c) => (
-              <SelectItem key={c} value={c.toLowerCase()}>{c}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <ConditionInfoPopover />
+          <Select value={condition} onValueChange={setCondition}>
+            <SelectTrigger className={`${selectStyles} flex-1 max-w-[200px] ${condition ? '[&>span]:text-foreground' : ''}`}>
+              <SelectValue placeholder="Condition" />
+            </SelectTrigger>
+            <SelectContent>
+              {CONDITIONS.map((c) => (
+                <SelectItem key={c} value={c.toLowerCase()}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Colour - Multi-select bubbles */}
         <div className={`${inputStyles} min-h-14 h-auto py-3 px-4`}>
