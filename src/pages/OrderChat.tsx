@@ -14,6 +14,7 @@ import ReportDialog from '@/components/ReportDialog';
 import { useReporting } from '@/hooks/useReporting';
 import { compressImage } from '@/utils/imageCompression';
 import { useOrders } from '@/hooks/useOrders';
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
 
 interface OrderMessage {
   id: string;
