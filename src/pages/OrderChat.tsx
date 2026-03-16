@@ -85,7 +85,7 @@ const OrderChat = () => {
       const { data, error } = await supabase
         .from('order_messages')
         .select('*')
-        .eq('order_group_id', orderId)
+        .eq('order_id', orderId)
         .order('created_at', { ascending: true });
       if (error) {
         console.error('[OrderChat] Failed to load messages:', error.message, error.code, error.details);
