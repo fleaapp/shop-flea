@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
       const { data, error } = await cloud
         .from("order_messages")
         .select("*")
-        .eq("order_group_id", orderId)
+        .eq("order_id", orderId)
         .order("created_at", { ascending: true });
       if (error) throw error;
       return new Response(JSON.stringify({ messages: data || [] }), {
