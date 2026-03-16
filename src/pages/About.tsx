@@ -6,10 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import fleaLogo from '@/assets/flea-logo-transparent.png';
-import cutoutJacket from '@/assets/about/cutout-jacket.png';
-import cutoutSneakers from '@/assets/about/cutout-sneakers.png';
-import cutoutSweater from '@/assets/about/cutout-sweater.png';
-import cutoutBag from '@/assets/about/cutout-bag.png';
+import fleaLogoAbout from '@/assets/flea-logo-about.png';
 import MarketRack from '@/components/about/MarketRack';
 
 const About = () => {
