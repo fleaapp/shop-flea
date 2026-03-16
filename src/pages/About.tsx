@@ -1,9 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { DollarSign, Send, Instagram, Twitter } from 'lucide-react';
-import swipeRightWishlist from '@/assets/onboarding/swipe-right-wishlist.svg';
-import swipeUpCart from '@/assets/onboarding/swipe-up-cart.svg';
-import swipeLeftPass from '@/assets/onboarding/swipe-left-pass.svg';
+import GestureDemo from '@/components/onboarding/GestureDemo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
