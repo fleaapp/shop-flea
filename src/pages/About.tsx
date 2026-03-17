@@ -68,6 +68,9 @@ const About = () => {
               Sign up now
             </Button>
           </div>
+          <div className="mt-12">
+            <IPhoneMockup videoSrc="/videos/about-demo.mov" />
+          </div>
         </div>
       </section>
 
