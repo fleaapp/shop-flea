@@ -48,9 +48,9 @@ const About = () => {
         {/* Stickers — edges only, never behind text */}
         <img src={stickerLogo} alt="" className="absolute top-2 left-[-18px] w-28 md:w-40 rotate-[-15deg] pointer-events-none select-none z-[1]" style={{ clipPath: 'inset(20% 5% 20% 5%)' }} />
         <img src={stickerRecycle} alt="" className="absolute top-0 right-[-16px] w-24 md:w-36 rotate-[10deg] pointer-events-none select-none z-[1]" style={{ clipPath: 'inset(15% 5% 15% 5%)' }} />
-        <img src={stickerOldNew} alt="" className="absolute top-14 right-[-8px] w-28 md:w-36 rotate-[-3deg] pointer-events-none select-none z-[2] opacity-90" style={{ clipPath: 'inset(22% 8% 22% 8%)' }} />
-        <img src={stickerSecondhand} alt="" className="absolute top-6 left-[50%] -translate-x-1/2 w-32 md:w-40 rotate-[-4deg] pointer-events-none select-none z-[1]" style={{ clipPath: 'inset(22% 3% 22% 3%)' }} />
-        <img src={stickerThrift} alt="" className="absolute top-12 left-[-20px] w-30 md:w-38 rotate-[6deg] pointer-events-none select-none z-[2]" style={{ clipPath: 'inset(20% 3% 20% 3%)', width: '7.5rem' }} />
+        <img src={stickerOldNew} alt="" className="absolute bottom-[220px] right-[-8px] w-28 md:w-36 rotate-[-3deg] pointer-events-none select-none z-[2] opacity-90" style={{ clipPath: 'inset(22% 8% 22% 8%)' }} />
+        <img src={stickerSecondhand} alt="" className="absolute bottom-[120px] left-[-14px] w-32 md:w-40 rotate-[8deg] pointer-events-none select-none z-[1]" style={{ clipPath: 'inset(22% 3% 22% 3%)' }} />
+        <img src={stickerThrift} alt="" className="absolute bottom-[40px] right-[-10px] rotate-[-6deg] pointer-events-none select-none z-[2]" style={{ clipPath: 'inset(20% 3% 20% 3%)', width: '7.5rem' }} />
 
         <div className="relative z-10 max-w-2xl mx-auto text-center">
           <img alt="Flea" className="h-10 md:h-20 mx-auto mb-8" src="/lovable-uploads/8d52d6b9-59c0-490a-97c0-5ffab455f175.jpg" />
