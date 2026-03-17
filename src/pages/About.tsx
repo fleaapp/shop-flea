@@ -16,7 +16,7 @@ import stickerSecondhand from '@/assets/about/sticker-secondhand.png';
 import stickerOldNew from '@/assets/about/sticker-old-new.png';
 import stickerThrift from '@/assets/about/sticker-thrift.png';
 import IPhoneMockup from '@/components/about/IPhoneMockup';
-import aboutDemoVideo from '@/assets/onboarding/cart-swipe-actions.mov';
+import aboutDemoVideo from '@/assets/about/screen-record.mov';
 
 const About = () => {
   const navigate = useNavigate();
@@ -86,7 +86,7 @@ const About = () => {
           )}
         </div>
       </div>
-import IPhoneMockup from '@/components/about/IPhoneMockup';
+
 
       {/* How it works — Features */}
       <section className="px-6 py-16 md:py-24 bg-background">
