@@ -516,6 +516,15 @@ const CreateListing = () => {
     <div className="min-h-screen bg-background pb-24">
       {/* Blocked user banner */}
       {isBlocked && <BlockedUserBanner />}
+      {/* Image Crop Dialog */}
+      {currentCropSrc && (
+        <ListingImageCropDialog
+          open={true}
+          imageSrc={currentCropSrc}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+        />
+      )}
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
