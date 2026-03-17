@@ -10,11 +10,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import fleaLogo from '@/assets/flea-logo-transparent.png';
-import cutoutJacket from '@/assets/about/cutout-jacket.png';
-import cutoutSneakers from '@/assets/about/cutout-sneakers.png';
-import cutoutSweater from '@/assets/about/cutout-sweater.png';
-import cutoutBag from '@/assets/about/cutout-bag.png';
-import MarketRack from '@/components/about/MarketRack';
+import stickerLogo from '@/assets/about/sticker-logo.png';
+import stickerRecycle from '@/assets/about/sticker-recycle.png';
+import stickerSecondhand from '@/assets/about/sticker-secondhand.png';
+import stickerOldNew from '@/assets/about/sticker-old-new.png';
+import stickerThrift from '@/assets/about/sticker-thrift.png';
 
 const About = () => {
   const navigate = useNavigate();
