@@ -4,26 +4,40 @@ interface IPhoneMockupProps {
 
 const IPhoneMockup = ({ videoSrc }: IPhoneMockupProps) => {
   return (
-    <div className="relative mx-auto" style={{ width: '260px' }}>
-      {/* iPhone frame */}
-      <div className="relative rounded-[40px] border-[6px] border-[#1a1a1a] bg-[#1a1a1a] shadow-2xl overflow-hidden">
-        {/* Notch / Dynamic Island */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[90px] h-[28px] bg-[#1a1a1a] rounded-b-2xl z-20" />
-        
-        {/* Screen */}
-        <div className="relative rounded-[34px] overflow-hidden bg-black">
+    <div className="relative mx-auto" style={{ width: '280px' }}>
+      {/* Outer iPhone shell */}
+      <div
+        className="relative bg-[#1a1a1a] shadow-[0_20px_60px_rgba(0,0,0,0.3)]"
+        style={{ borderRadius: '50px', padding: '12px' }}
+      >
+        {/* Side button — power */}
+        <div className="absolute -right-[2px] top-[120px] w-[3px] h-[40px] bg-[#2a2a2a] rounded-r-sm" />
+        {/* Side buttons — volume */}
+        <div className="absolute -left-[2px] top-[100px] w-[3px] h-[28px] bg-[#2a2a2a] rounded-l-sm" />
+        <div className="absolute -left-[2px] top-[138px] w-[3px] h-[28px] bg-[#2a2a2a] rounded-l-sm" />
+        {/* Silent switch */}
+        <div className="absolute -left-[2px] top-[70px] w-[3px] h-[16px] bg-[#2a2a2a] rounded-l-sm" />
+
+        {/* Dynamic Island */}
+        <div className="absolute top-[18px] left-1/2 -translate-x-1/2 w-[100px] h-[30px] bg-[#0a0a0a] rounded-full z-30" />
+
+        {/* Screen area */}
+        <div
+          className="relative overflow-hidden bg-black"
+          style={{ borderRadius: '38px', aspectRatio: '9 / 19.5' }}
+        >
           <video
             src={videoSrc}
             autoPlay
             loop
             muted
             playsInline
-            className="w-full h-auto block"
+            className="absolute inset-0 w-full h-full object-cover"
           />
         </div>
-        
-        {/* Bottom bar indicator */}
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[100px] h-[4px] bg-white/30 rounded-full z-20" />
+
+        {/* Home indicator */}
+        <div className="absolute bottom-[10px] left-1/2 -translate-x-1/2 w-[120px] h-[5px] bg-white/20 rounded-full z-30" />
       </div>
     </div>
   );
