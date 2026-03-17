@@ -15,6 +15,7 @@ import stickerRecycle from '@/assets/about/sticker-recycle.png';
 import stickerSecondhand from '@/assets/about/sticker-secondhand.png';
 import stickerOldNew from '@/assets/about/sticker-old-new.png';
 import stickerThrift from '@/assets/about/sticker-thrift.png';
+import IPhoneMockup from '@/components/about/IPhoneMockup';
 
 const About = () => {
   const navigate = useNavigate();
