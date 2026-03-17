@@ -15,6 +15,7 @@ import stickerRecycle from '@/assets/about/sticker-recycle.png';
 import stickerSecondhand from '@/assets/about/sticker-secondhand.png';
 import stickerOldNew from '@/assets/about/sticker-old-new.png';
 import stickerThrift from '@/assets/about/sticker-thrift.png';
+import IPhoneMockup from '@/components/about/IPhoneMockup';
 
 const About = () => {
   const navigate = useNavigate();
@@ -68,6 +69,9 @@ const About = () => {
               Sign up now
             </Button>
           </div>
+          <div className="mt-12">
+            <IPhoneMockup videoSrc="/videos/about-demo.mov" />
+          </div>
         </div>
       </section>
 
@@ -81,7 +85,7 @@ const About = () => {
           )}
         </div>
       </div>
-
+import IPhoneMockup from '@/components/about/IPhoneMockup';
 
       {/* How it works — Features */}
       <section className="px-6 py-16 md:py-24 bg-background">
