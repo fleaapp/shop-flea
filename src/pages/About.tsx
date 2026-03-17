@@ -71,7 +71,7 @@ const About = () => {
             </Button>
           </div>
           <div className="mt-12">
-            <IPhoneMockup videoSrc="/assets/onboarding/cart-swipe-actions.mov" />
+            <IPhoneMockup videoSrc={aboutDemoVideo} />
           </div>
         </div>
       </section>
