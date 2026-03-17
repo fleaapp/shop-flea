@@ -43,12 +43,12 @@ const About = () => {
     <div className="min-h-screen bg-[#DBFBD5] font-sans overflow-hidden">
       {/* Hero Section */}
       <section className="relative overflow-hidden px-6 pt-28 pb-20 md:pt-36 md:pb-32">
-        {/* Stickers */}
-        <img src={stickerLogo} alt="" className="absolute top-6 left-2 w-20 md:w-32 rotate-[-12deg] pointer-events-none select-none" style={{ clipPath: 'inset(20% 5% 20% 5%)' }} />
-        <img src={stickerRecycle} alt="" className="absolute top-2 right-4 w-20 md:w-32 rotate-[8deg] pointer-events-none select-none" style={{ clipPath: 'inset(18% 8% 18% 8%)' }} />
-        <img src={stickerSecondhand} alt="" className="absolute bottom-20 left-1 w-24 md:w-36 rotate-[-6deg] pointer-events-none select-none" style={{ clipPath: 'inset(22% 5% 22% 5%)' }} />
-        <img src={stickerOldNew} alt="" className="absolute bottom-12 right-0 w-24 md:w-36 rotate-[5deg] pointer-events-none select-none" style={{ clipPath: 'inset(25% 10% 25% 10%)' }} />
-        <img src={stickerThrift} alt="" className="absolute top-[45%] -right-3 w-24 md:w-36 rotate-[4deg] pointer-events-none select-none" style={{ clipPath: 'inset(22% 5% 22% 5%)' }} />
+        {/* Stickers — spread around hero, some layered */}
+        <img src={stickerLogo} alt="" className="absolute top-4 left-0 w-16 md:w-28 rotate-[-15deg] pointer-events-none select-none z-[1]" style={{ clipPath: 'inset(20% 5% 20% 5%)' }} />
+        <img src={stickerRecycle} alt="" className="absolute top-8 right-2 w-14 md:w-24 rotate-[10deg] pointer-events-none select-none z-[1]" style={{ clipPath: 'inset(18% 8% 18% 8%)' }} />
+        <img src={stickerSecondhand} alt="" className="absolute top-[38%] -left-2 w-24 md:w-36 rotate-[-5deg] pointer-events-none select-none z-[2]" style={{ clipPath: 'inset(22% 5% 22% 5%)' }} />
+        <img src={stickerThrift} alt="" className="absolute top-[30%] -right-2 w-20 md:w-32 rotate-[6deg] pointer-events-none select-none z-[1]" style={{ clipPath: 'inset(22% 5% 22% 5%)' }} />
+        <img src={stickerOldNew} alt="" className="absolute top-[22%] right-6 w-16 md:w-28 rotate-[-3deg] pointer-events-none select-none z-[2]" style={{ clipPath: 'inset(25% 10% 25% 10%)' }} />
 
         <div className="relative z-10 max-w-2xl mx-auto text-center">
           <img alt="Flea" className="h-10 md:h-20 mx-auto mb-8" src="/lovable-uploads/8d52d6b9-59c0-490a-97c0-5ffab455f175.jpg" />
