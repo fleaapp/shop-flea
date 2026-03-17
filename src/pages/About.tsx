@@ -41,16 +41,14 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-[#DBFBD5] font-sans overflow-hidden">
-      {/* Market rack banner - full width at the top */}
-      <MarketRack />
-
       {/* Hero Section */}
-      <section className="relative overflow-hidden px-6 pt-12 pb-20 md:pt-20 md:pb-32">
-        {/* Floating cutouts */}
-        <img src={cutoutJacket} alt="" className="absolute -top-4 -left-8 w-32 md:w-48 opacity-60 rotate-[-15deg] pointer-events-none select-none" />
-        <img src={cutoutSneakers} alt="" className="absolute top-8 -right-6 w-28 md:w-44 opacity-50 rotate-[10deg] pointer-events-none select-none" />
-        <img src={cutoutBag} alt="" className="absolute bottom-4 -left-4 w-24 md:w-36 opacity-40 rotate-[20deg] pointer-events-none select-none" />
-        <img src={cutoutSweater} alt="" className="absolute -bottom-8 -right-10 w-36 md:w-52 opacity-50 rotate-[-8deg] pointer-events-none select-none" />
+      <section className="relative overflow-hidden px-6 pt-16 pb-20 md:pt-24 md:pb-32">
+        {/* Stickers */}
+        <img src={stickerLogo} alt="" className="absolute -top-2 -left-4 w-24 md:w-36 rotate-[-12deg] pointer-events-none select-none object-contain" style={{ objectPosition: 'center', clipPath: 'inset(20% 5% 20% 5%)' }} />
+        <img src={stickerRecycle} alt="" className="absolute top-4 -right-4 w-24 md:w-36 rotate-[8deg] pointer-events-none select-none object-contain" style={{ clipPath: 'inset(18% 8% 18% 8%)' }} />
+        <img src={stickerSecondhand} alt="" className="absolute bottom-16 -left-2 w-28 md:w-40 rotate-[-6deg] pointer-events-none select-none object-contain" style={{ clipPath: 'inset(22% 5% 22% 5%)' }} />
+        <img src={stickerOldNew} alt="" className="absolute bottom-8 -right-6 w-28 md:w-40 rotate-[5deg] pointer-events-none select-none object-contain" style={{ clipPath: 'inset(25% 10% 25% 10%)' }} />
+        <img src={stickerThrift} alt="" className="absolute top-1/2 -left-6 w-28 md:w-40 -translate-y-1/2 rotate-[-4deg] pointer-events-none select-none object-contain" style={{ clipPath: 'inset(22% 5% 22% 5%)' }} />
 
         <div className="relative z-10 max-w-2xl mx-auto text-center">
           <img alt="Flea" className="h-10 md:h-20 mx-auto mb-8" src="/lovable-uploads/8d52d6b9-59c0-490a-97c0-5ffab455f175.jpg" />
