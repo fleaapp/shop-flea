@@ -44,17 +44,16 @@ const About = () => {
   return (
     <div className="min-h-screen bg-[#DBFBD5] font-sans overflow-hidden">
       {/* Hero Section */}
-      <section className="relative overflow-hidden px-6 pt-32 pb-20 md:pt-40 md:pb-32">
-        {/* Stickers — edges only, never behind text */}
-        {/* Two blue stickers — top right, slightly overlapping */}
-        <img src={stickerRecycle} alt="" className="absolute top-2 right-[-10px] w-24 md:w-36 rotate-[10deg] pointer-events-none select-none z-[2]" style={{ clipPath: 'inset(15% 5% 15% 5%)' }} />
-        <img src={stickerSecondhand} alt="" className="absolute top-12 right-[10px] w-28 md:w-36 rotate-[-6deg] pointer-events-none select-none z-[1]" style={{ clipPath: 'inset(22% 3% 22% 3%)' }} />
+      <section className="relative px-6 pt-32 pb-20 md:pt-40 md:pb-32">
+        {/* Two blue stickers — top right corner, slightly overlapping */}
+        <img src={stickerRecycle} alt="" className="absolute top-6 right-2 w-24 md:w-36 rotate-[10deg] pointer-events-none select-none z-[2]" style={{ clipPath: 'inset(15% 5% 15% 5%)' }} />
+        <img src={stickerThrift} alt="" className="absolute top-16 right-8 rotate-[-4deg] pointer-events-none select-none z-[1]" style={{ clipPath: 'inset(20% 3% 20% 3%)', width: '7.5rem' }} />
         {/* Red jagged — left of 'Shop & sell' heading */}
-        <img src={stickerOldNew} alt="" className="absolute top-[155px] md:top-[200px] left-[-12px] w-28 md:w-36 rotate-[-3deg] pointer-events-none select-none z-[1] opacity-90" style={{ clipPath: 'inset(22% 8% 22% 8%)' }} />
+        <img src={stickerOldNew} alt="" className="absolute top-[180px] md:top-[220px] left-1 w-20 md:w-28 rotate-[-3deg] pointer-events-none select-none z-[1] opacity-90" style={{ clipPath: 'inset(18% 5% 18% 5%)' }} />
+        {/* White logo — top right area (where yellow was) */}
+        <img src={stickerLogo} alt="" className="absolute top-[120px] md:top-[140px] right-2 w-20 md:w-28 rotate-[-12deg] pointer-events-none select-none z-[1]" style={{ clipPath: 'inset(20% 5% 20% 5%)' }} />
         {/* Yellow — above top-right corner of phone mockup */}
-        <img src={stickerThrift} alt="" className="absolute top-[58%] right-[15px] rotate-[6deg] pointer-events-none select-none z-[2]" style={{ clipPath: 'inset(20% 3% 20% 3%)', width: '7.5rem' }} />
-        {/* White logo — where yellow was (mid-left area) */}
-        <img src={stickerLogo} alt="" className="absolute top-[55%] left-[-14px] w-28 md:w-40 rotate-[-15deg] pointer-events-none select-none z-[1]" style={{ clipPath: 'inset(20% 5% 20% 5%)' }} />
+        <img src={stickerSecondhand} alt="" className="absolute top-[60%] right-4 w-24 md:w-32 rotate-[6deg] pointer-events-none select-none z-[2]" style={{ clipPath: 'inset(18% 3% 18% 3%)' }} />
 
         <div className="relative z-10 max-w-2xl mx-auto text-center">
           <img alt="Flea" className="h-10 md:h-20 mx-auto mb-8" src="/lovable-uploads/8d52d6b9-59c0-490a-97c0-5ffab455f175.jpg" />
