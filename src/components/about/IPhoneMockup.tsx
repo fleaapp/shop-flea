@@ -4,7 +4,7 @@ interface IPhoneMockupProps {
 
 const IPhoneMockup = ({ videoSrc }: IPhoneMockupProps) => {
   return (
-    <div className="relative mx-auto" style={{ width: '200px' }}>
+    <div className="relative mx-auto" style={{ width: '280px' }}>
       {/* Outer iPhone shell */}
       <div
         className="relative bg-[#1a1a1a] shadow-[0_20px_60px_rgba(0,0,0,0.3)]"
