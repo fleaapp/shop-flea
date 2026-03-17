@@ -70,7 +70,7 @@ const About = () => {
             </Button>
           </div>
           <div className="mt-12">
-            <IPhoneMockup videoSrc="/videos/about-demo.mov" />
+            <IPhoneMockup videoSrc="/assets/onboarding/cart-swipe-actions.mov" />
           </div>
         </div>
       </section>
