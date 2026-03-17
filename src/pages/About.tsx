@@ -84,7 +84,7 @@ const About = () => {
           )}
         </div>
       </div>
-
+import IPhoneMockup from '@/components/about/IPhoneMockup';
 
       {/* How it works — Features */}
       <section className="px-6 py-16 md:py-24 bg-background">
