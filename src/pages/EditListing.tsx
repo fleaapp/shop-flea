@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import ListingImageCropDialog from '@/components/ListingImageCropDialog';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ImagePlus, X, Trash2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
