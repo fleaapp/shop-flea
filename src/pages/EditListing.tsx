@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import ListingImageCropDialog from '@/components/ListingImageCropDialog';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ImagePlus, X, Trash2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -165,7 +166,11 @@ const EditListing = () => {
     }
   }, [user, profile, authLoading]);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Crop queue state
+  const [cropQueue, setCropQueue] = useState<string[]>([]);
+  const [currentCropSrc, setCurrentCropSrc] = useState<string | null>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
@@ -173,28 +178,46 @@ const EditListing = () => {
     const remainingSlots = 5 - totalImages;
     const filesToProcess = Array.from(files).slice(0, remainingSlots);
 
-    // Compress each image before adding
-    for (const file of filesToProcess) {
-      try {
-        const compressedFile = await compressImage(file, {
-          maxWidth: 1200,
-          maxHeight: 1200,
-          quality: 0.8,
-        });
-        const preview = URL.createObjectURL(compressedFile);
-        setNewImageFiles((prev) => [...prev, { file: compressedFile, preview }]);
-      } catch (error) {
-        console.error('Failed to compress image:', error);
-        // Fallback to original file if compression fails
-        const preview = URL.createObjectURL(file);
-        setNewImageFiles((prev) => [...prev, { file, preview }]);
-      }
-    }
+    const srcs = filesToProcess.map((f) => URL.createObjectURL(f));
+    setCropQueue(srcs);
+    setCurrentCropSrc(srcs[0] || null);
 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
+
+  const handleCropComplete = useCallback(async (croppedBlob: Blob) => {
+    const croppedFile = new File([croppedBlob], `cropped-${Date.now()}.jpg`, { type: 'image/jpeg' });
+    try {
+      const compressedFile = await compressImage(croppedFile, {
+        maxWidth: 1200,
+        maxHeight: 1200,
+        quality: 0.8,
+      });
+      const preview = URL.createObjectURL(compressedFile);
+      setNewImageFiles((prev) => [...prev, { file: compressedFile, preview }]);
+    } catch {
+      const preview = URL.createObjectURL(croppedFile);
+      setNewImageFiles((prev) => [...prev, { file: croppedFile, preview }]);
+    }
+
+    if (currentCropSrc) URL.revokeObjectURL(currentCropSrc);
+    setCropQueue((prev) => {
+      const next = prev.slice(1);
+      setCurrentCropSrc(next[0] || null);
+      return next;
+    });
+  }, [currentCropSrc]);
+
+  const handleCropCancel = useCallback(() => {
+    if (currentCropSrc) URL.revokeObjectURL(currentCropSrc);
+    setCropQueue((prev) => {
+      const next = prev.slice(1);
+      setCurrentCropSrc(next[0] || null);
+      return next;
+    });
+  }, [currentCropSrc]);
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
@@ -391,6 +414,15 @@ const EditListing = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
+      {/* Image Crop Dialog */}
+      {currentCropSrc && (
+        <ListingImageCropDialog
+          open={true}
+          imageSrc={currentCropSrc}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+        />
+      )}
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
