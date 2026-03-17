@@ -16,6 +16,7 @@ import stickerSecondhand from '@/assets/about/sticker-secondhand.png';
 import stickerOldNew from '@/assets/about/sticker-old-new.png';
 import stickerThrift from '@/assets/about/sticker-thrift.png';
 import IPhoneMockup from '@/components/about/IPhoneMockup';
+import aboutDemoVideo from '@/assets/onboarding/cart-swipe-actions.mov';
 
 const About = () => {
   const navigate = useNavigate();
