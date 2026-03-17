@@ -70,7 +70,7 @@ const About = () => {
               Sign up now
             </Button>
           </div>
-          <div className="mt-12 mb-[-60px] relative z-20">
+          <div className="mt-12">
             <IPhoneMockup videoSrc={aboutDemoVideo} />
           </div>
         </div>
