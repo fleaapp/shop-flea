@@ -46,25 +46,37 @@ const About = () => {
     <div className="min-h-screen bg-[#DBFBD5] font-sans overflow-hidden">
       {/* Hero Section */}
       <section className="relative px-6 pt-32 pb-20 md:pt-40 md:pb-32">
+        {/* Mobile hero background video */}
+        <video
+          src={heroVideo}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover z-0 md:hidden"
+        />
+        {/* Dark overlay for text readability on mobile */}
+        <div className="absolute inset-0 bg-black/40 z-[1] md:hidden" />
+
         {/* Two blue stickers — top right corner, slightly overlapping */}
-        <img src={stickerRecycle} alt="" className="absolute top-6 right-2 w-24 md:w-36 rotate-[10deg] pointer-events-none select-none z-[2]" style={{ clipPath: 'inset(15% 5% 15% 5%)' }} />
-        <img src={stickerThrift} alt="" className="absolute top-16 right-8 rotate-[-4deg] pointer-events-none select-none z-[1]" style={{ clipPath: 'inset(20% 3% 20% 3%)', width: '7.5rem' }} />
+        <img src={stickerRecycle} alt="" className="absolute top-6 right-2 w-24 md:w-36 rotate-[10deg] pointer-events-none select-none z-[2] hidden md:block" style={{ clipPath: 'inset(15% 5% 15% 5%)' }} />
+        <img src={stickerThrift} alt="" className="absolute top-16 right-8 rotate-[-4deg] pointer-events-none select-none z-[1] hidden md:block" style={{ clipPath: 'inset(20% 3% 20% 3%)', width: '7.5rem' }} />
         {/* Red jagged — left of 'Shop & sell' heading */}
-        <img src={stickerOldNew} alt="" className="absolute top-[180px] md:top-[220px] left-1 w-20 md:w-28 rotate-[-3deg] pointer-events-none select-none z-[1] opacity-90" style={{ clipPath: 'inset(18% 5% 18% 5%)' }} />
+        <img src={stickerOldNew} alt="" className="absolute top-[180px] md:top-[220px] left-1 w-20 md:w-28 rotate-[-3deg] pointer-events-none select-none z-[1] opacity-90 hidden md:block" style={{ clipPath: 'inset(18% 5% 18% 5%)' }} />
         {/* White logo — top right area (where yellow was) */}
-        <img src={stickerLogo} alt="" className="absolute top-[120px] md:top-[140px] right-2 w-20 md:w-28 rotate-[-12deg] pointer-events-none select-none z-[1]" style={{ clipPath: 'inset(20% 5% 20% 5%)' }} />
+        <img src={stickerLogo} alt="" className="absolute top-[120px] md:top-[140px] right-2 w-20 md:w-28 rotate-[-12deg] pointer-events-none select-none z-[1] hidden md:block" style={{ clipPath: 'inset(20% 5% 20% 5%)' }} />
         {/* Yellow — above top-right corner of phone mockup */}
-        <img src={stickerSecondhand} alt="" className="absolute top-[60%] right-4 w-24 md:w-32 rotate-[6deg] pointer-events-none select-none z-[2]" style={{ clipPath: 'inset(18% 3% 18% 3%)' }} />
+        <img src={stickerSecondhand} alt="" className="absolute top-[60%] right-4 w-24 md:w-32 rotate-[6deg] pointer-events-none select-none z-[2] hidden md:block" style={{ clipPath: 'inset(18% 3% 18% 3%)' }} />
 
         <div className="relative z-10 max-w-2xl mx-auto text-center">
           <img alt="Flea" className="h-10 md:h-20 mx-auto mb-8" src="/lovable-uploads/8d52d6b9-59c0-490a-97c0-5ffab455f175.jpg" />
-          <h1 className="text-2xl md:text-5xl font-extrabold leading-tight tracking-tight text-[#423d3d]">
+          <h1 className="text-2xl md:text-5xl font-extrabold leading-tight tracking-tight text-white md:text-[#423d3d]">
             Shop & sell secondhand<br />with a swipe.
           </h1>
-          <p className="mt-6 text-base md:text-lg text-muted-foreground max-w-[340px] md:max-w-lg mx-auto leading-relaxed">
+          <p className="mt-6 text-base md:text-lg text-white/80 md:text-muted-foreground max-w-[340px] md:max-w-lg mx-auto leading-relaxed">
             Flea is here to shake up the secondhand fashion scene with a swipe. <em>Literally.</em>
           </p>
-          <p className="mt-4 text-sm md:text-base text-muted-foreground max-w-[320px] md:max-w-md mx-auto leading-relaxed">
+          <p className="mt-4 text-sm md:text-base text-white/70 md:text-muted-foreground max-w-[320px] md:max-w-md mx-auto leading-relaxed">
             Like your favourite Sunday flea market - without the overpriced iced lattes, awkward haggling, or having to even leave your bed.
           </p>
           <div className="mt-10 flex justify-center">
@@ -74,7 +86,7 @@ const About = () => {
               Sign up now
             </Button>
           </div>
-          <div className="mt-12">
+          <div className="mt-12 hidden md:block">
             <IPhoneMockup videoSrc={aboutDemoVideo} />
           </div>
         </div>
