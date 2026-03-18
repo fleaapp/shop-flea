@@ -58,6 +58,7 @@ const EditListing = () => {
   const [newImageFiles, setNewImageFiles] = useState<ImageFile[]>([]);
   // Existing image URLs from the listing
   const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [expandedImageSrc, setExpandedImageSrc] = useState<string | null>(null);
   
   const [productName, setProductName] = useState('');
   const [fit, setFit] = useState(''); // Gender/Fit selection
