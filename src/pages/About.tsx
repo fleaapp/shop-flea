@@ -61,6 +61,15 @@ const About = () => {
           loading="eager"
           style={{ objectFit: 'contain', objectPosition: 'top center' }}
         />
+        <video
+          src={heroVideoMobile}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute bottom-4 right-4 w-[40%] rounded-2xl z-[3]"
+          style={{ pointerEvents: 'none' }}
+        />
       </section>
 
       {/* Desktop hero section */}
