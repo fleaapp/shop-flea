@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { DollarSign, Send, Instagram, Twitter } from 'lucide-react';
 import tapToExpandGif from '@/assets/onboarding/tap-to-expand.gif';
 import swipeRightWishlist from '@/assets/onboarding/swipe-right-wishlist.svg';
