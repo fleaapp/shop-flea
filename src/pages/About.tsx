@@ -17,6 +17,7 @@ import stickerOldNew from '@/assets/about/sticker-old-new.png';
 import stickerThrift from '@/assets/about/sticker-thrift.png';
 import IPhoneMockup from '@/components/about/IPhoneMockup';
 import aboutDemoVideo from '@/assets/about/screen-record.mov';
+import heroTextMobile from '@/assets/about/hero-text-mobile.png';
 import heroBgMobile from '@/assets/about/hero-bg-mobile.png';
 
 const About = () => {
