@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { DollarSign, Send, Instagram, Twitter } from 'lucide-react';
 import tapToExpandGif from '@/assets/onboarding/tap-to-expand.gif';
 import swipeRightWishlist from '@/assets/onboarding/swipe-right-wishlist.svg';
@@ -19,7 +19,7 @@ import IPhoneMockup from '@/components/about/IPhoneMockup';
 import aboutDemoVideo from '@/assets/about/screen-record.mov';
 import heroTextMobile from '@/assets/about/hero-text-mobile.png';
 import heroBgMobile from '@/assets/about/hero-bg-mobile.png';
-import heroVideoMobile from '@/assets/about/hero-video-mobile.mp4';
+
 
 const About = () => {
   const navigate = useNavigate();
@@ -27,6 +27,14 @@ const About = () => {
   const [contactEmail, setContactEmail] = useState('');
   const [contactMessage, setContactMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.play().catch(() => {});
+    }
+  }, []);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,11 +70,13 @@ const About = () => {
           style={{ objectFit: 'contain', objectPosition: 'top center' }}
         />
         <video
-          src={heroVideoMobile}
+          ref={videoRef}
+          src="/hero-video-mobile.mp4"
           autoPlay
           loop
           muted
           playsInline
+          preload="auto"
           className="absolute bottom-0 right-0 w-[78%] z-[3]"
           style={{ pointerEvents: 'none', borderRadius: '2rem 3rem 0 3rem' }}
         />
