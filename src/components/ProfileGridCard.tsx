@@ -24,7 +24,7 @@ const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton }: ProfileGr
     <div className="w-full cursor-pointer" onClick={() => navigate(`/listing/${(listing as any).source_listing_id || listing.id}`)}>
       <div className="flex flex-col overflow-hidden rounded-2xl bg-card p-2 card-shadow">
         {/* Image */}
-        <div className="relative aspect-[5/6] overflow-hidden rounded-xl">
+        <div className="relative aspect-[4/5] overflow-hidden rounded-xl">
           <img
             src={listing.images[0]}
             alt={listing.title}

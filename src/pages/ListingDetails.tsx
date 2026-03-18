@@ -461,7 +461,7 @@ const ListingDetails = () => {
                       <img
                         src={getDetailImageUrl(src)}
                         alt={`${listing.title} photo ${index + 1}`}
-                        className="aspect-square w-full object-cover"
+                        className="aspect-[4/5] w-full object-cover"
                         loading={index === 0 ? 'eager' : 'lazy'}
                         decoding="async"
                       />
