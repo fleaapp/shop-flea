@@ -46,18 +46,19 @@ const About = () => {
   return (
     <div className="min-h-screen bg-[#DBFBD5] font-sans overflow-hidden">
       {/* Mobile hero */}
-      <section className="md:hidden bg-white">
-        <img
-          src={heroTextMobile}
-          alt="Flea — Shop & sell secondhand with a swipe"
-          className="w-full h-auto block pt-6 px-4"
-          loading="eager"
-        />
+      <section className="md:hidden bg-[#dcffd8] relative">
         <img
           src={heroBgMobile}
           alt=""
-          className="w-full h-auto block"
+          className="w-full h-auto block relative z-[1]"
           loading="eager"
+        />
+        <img
+          src={heroTextMobile}
+          alt="Flea — Shop & sell secondhand with a swipe"
+          className="absolute inset-0 w-[65%] mx-auto h-auto z-[2] pt-8"
+          loading="eager"
+          style={{ objectFit: 'contain', objectPosition: 'top center' }}
         />
       </section>
 
