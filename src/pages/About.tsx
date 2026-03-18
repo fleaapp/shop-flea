@@ -45,11 +45,17 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-[#DBFBD5] font-sans overflow-hidden">
-      {/* Mobile hero — full-width image */}
-      <section className="md:hidden">
+      {/* Mobile hero */}
+      <section className="md:hidden bg-white">
+        <img
+          src={heroTextMobile}
+          alt="Flea — Shop & sell secondhand with a swipe"
+          className="w-full h-auto block pt-6 px-4"
+          loading="eager"
+        />
         <img
           src={heroBgMobile}
-          alt="Flea hero"
+          alt=""
           className="w-full h-auto block"
           loading="eager"
         />
