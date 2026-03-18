@@ -44,21 +44,13 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-[#DBFBD5] font-sans overflow-hidden">
-      {/* Mobile hero video — crisp, silent, streams from public/ */}
+      {/* Mobile hero — background image */}
       <section className="md:hidden">
-        <video
-          ref={heroVideoRef}
-          src="/hero-video.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          controls={false}
-          disablePictureInPicture
-          controlsList="nodownload nofullscreen noremoteplayback"
-          x-webkit-airplay="deny"
-          className="pointer-events-none w-full h-auto block"
+        <img
+          src={heroBgMobile}
+          alt="Flea hero background"
+          className="w-full h-auto block"
+          loading="eager"
         />
       </section>
 
