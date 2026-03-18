@@ -44,15 +44,8 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-[#DBFBD5] font-sans overflow-hidden">
-      {/* Mobile hero — background image */}
-      <section className="md:hidden">
-        <img
-          src={heroBgMobile}
-          alt="Flea hero background"
-          className="w-full h-auto block"
-          loading="eager"
-        />
-      </section>
+      {/* Mobile hero — solid colour, same tall aspect as the old image (roughly 9:19) */}
+      <section className="md:hidden bg-[#dcffd8]" style={{ aspectRatio: '9 / 19' }} />
 
       {/* Desktop hero section */}
       <section className="relative px-6 pt-40 pb-32 hidden md:block">
