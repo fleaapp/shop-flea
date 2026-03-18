@@ -29,9 +29,28 @@ const About = () => {
 
   useEffect(() => {
     const video = heroVideoRef.current;
-    if (video) {
-      video.play().catch(() => {});
-    }
+    if (!video) return;
+
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.setAttribute('muted', '');
+    video.setAttribute('autoplay', '');
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', 'true');
+
+    const tryPlay = () => {
+      void video.play().catch(() => {});
+    };
+
+    tryPlay();
+    video.addEventListener('loadeddata', tryPlay);
+    video.addEventListener('canplay', tryPlay);
+
+    return () => {
+      video.removeEventListener('loadeddata', tryPlay);
+      video.removeEventListener('canplay', tryPlay);
+    };
   }, []);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
@@ -61,9 +80,11 @@ const About = () => {
           loop
           muted
           playsInline
+          preload="auto"
+          disablePictureInPicture
+          controlsList="nodownload nofullscreen noremoteplayback"
           controls={false}
-          webkit-playsinline="true"
-          className="w-full h-auto block"
+          className="pointer-events-none w-full h-auto block"
         />
       </section>
 
