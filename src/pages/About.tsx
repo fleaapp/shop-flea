@@ -19,7 +19,7 @@ import IPhoneMockup from '@/components/about/IPhoneMockup';
 import aboutDemoVideo from '@/assets/about/screen-record.mov';
 import heroTextMobile from '@/assets/about/hero-text-mobile.png';
 import heroBgMobile from '@/assets/about/hero-bg-mobile.png';
-import heroVideoMobile from '@/assets/about/hero-video-mobile.mp4';
+
 
 const About = () => {
   const navigate = useNavigate();
