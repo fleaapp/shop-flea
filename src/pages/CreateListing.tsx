@@ -47,6 +47,7 @@ const CreateListing = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [imageFiles, setImageFiles] = useState<ImageFile[]>([]);
+  const [expandedImageIndex, setExpandedImageIndex] = useState<number | null>(null);
   const [sizeDrawerOpen, setSizeDrawerOpen] = useState(false);
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
   const [showShippingSetup, setShowShippingSetup] = useState(false);
