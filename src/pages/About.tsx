@@ -31,9 +31,26 @@ const About = () => {
 
   useEffect(() => {
     const video = videoRef.current;
-    if (video) {
+    if (!video) return;
+
+    video.defaultMuted = true;
+    video.muted = true;
+    video.playsInline = true;
+
+    const tryPlay = () => {
       video.play().catch(() => {});
+    };
+
+    if (video.readyState >= 2) {
+      tryPlay();
+    } else {
+      video.addEventListener('canplay', tryPlay, { once: true });
+      video.load();
     }
+
+    return () => {
+      video.removeEventListener('canplay', tryPlay);
+    };
   }, []);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
@@ -71,12 +88,13 @@ const About = () => {
         />
         <video
           ref={videoRef}
-          src="/hero-video-mobile.mp4"
+          src="/hero-video-mobile-optimized.mp4"
           autoPlay
           loop
           muted
           playsInline
-          preload="auto"
+          preload="metadata"
+          disablePictureInPicture
           className="absolute bottom-0 right-0 w-[78%] z-[3]"
           style={{ pointerEvents: 'none', borderRadius: '2rem 3rem 0 3rem' }}
         />
