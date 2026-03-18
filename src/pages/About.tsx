@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { DollarSign, Send, Instagram, Twitter } from 'lucide-react';
 import tapToExpandGif from '@/assets/onboarding/tap-to-expand.gif';
 import swipeRightWishlist from '@/assets/onboarding/swipe-right-wishlist.svg';
@@ -17,7 +17,7 @@ import stickerOldNew from '@/assets/about/sticker-old-new.png';
 import stickerThrift from '@/assets/about/sticker-thrift.png';
 import IPhoneMockup from '@/components/about/IPhoneMockup';
 import aboutDemoVideo from '@/assets/about/screen-record.mov';
-import heroVideo from '@/assets/about/hero-video-mobile.webp';
+
 
 const About = () => {
   const navigate = useNavigate();
@@ -25,6 +25,20 @@ const About = () => {
   const [contactEmail, setContactEmail] = useState('');
   const [contactMessage, setContactMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const heroVideoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const el = heroVideoRef.current;
+    if (!el) return;
+    el.muted = true;
+    el.playsInline = true;
+    el.setAttribute('muted', '');
+    el.setAttribute('playsinline', '');
+    const play = () => { void el.play().catch(() => {}); };
+    play();
+    el.addEventListener('loadeddata', play);
+    return () => el.removeEventListener('loadeddata', play);
+  }, []);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,13 +58,19 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-[#DBFBD5] font-sans overflow-hidden">
-      {/* Mobile hero animation — full natural height */}
+      {/* Mobile hero video — crisp, silent, streams from public/ */}
       <section className="md:hidden">
-        <img
-          src={heroVideo}
-          alt="Flea mobile hero animation"
-          className="w-full h-auto block"
-          loading="eager"
+        <video
+          ref={heroVideoRef}
+          src="/hero-video.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          controls={false}
+          disablePictureInPicture
+          className="pointer-events-none w-full h-auto block"
         />
       </section>
 
