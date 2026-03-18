@@ -70,11 +70,13 @@ const About = () => {
           style={{ objectFit: 'contain', objectPosition: 'top center' }}
         />
         <video
-          src={heroVideoMobile}
+          ref={videoRef}
+          src="/hero-video-mobile.mp4"
           autoPlay
           loop
           muted
           playsInline
+          preload="auto"
           className="absolute bottom-0 right-0 w-[78%] z-[3]"
           style={{ pointerEvents: 'none', borderRadius: '2rem 3rem 0 3rem' }}
         />
