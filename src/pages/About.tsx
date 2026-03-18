@@ -83,6 +83,8 @@ const About = () => {
           preload="auto"
           controls={false}
           disablePictureInPicture
+          controlsList="nodownload nofullscreen noremoteplayback"
+          x-webkit-airplay="deny"
           className="pointer-events-none w-full h-auto block"
         />
       </section>
