@@ -47,6 +47,7 @@ const CreateListing = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [imageFiles, setImageFiles] = useState<ImageFile[]>([]);
+  const [expandedImageIndex, setExpandedImageIndex] = useState<number | null>(null);
   const [sizeDrawerOpen, setSizeDrawerOpen] = useState(false);
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
   const [showShippingSetup, setShowShippingSetup] = useState(false);
@@ -561,17 +562,18 @@ const CreateListing = () => {
 
         {/* Image Thumbnails */}
         {imageFiles.length > 0 && (
-          <div className="flex gap-3 overflow-x-auto pb-2">
+          <div className="flex gap-3 overflow-x-auto pb-2 pt-1 px-1 -mx-1">
             {imageFiles.map((img, index) => (
               <div key={index} className="relative flex-shrink-0">
                 <img
                   src={img.preview}
                   alt={`Upload ${index + 1}`}
-                  className="h-16 w-16 rounded-lg object-cover"
+                  className="h-16 w-16 rounded-lg object-cover cursor-pointer active:scale-95 transition-transform"
+                  onClick={() => setExpandedImageIndex(index)}
                 />
                 <button
                   type="button"
-                  onClick={() => removeImage(index)}
+                  onClick={(e) => { e.stopPropagation(); removeImage(index); }}
                   className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-foreground/80 text-background"
                 >
                   <X className="h-3 w-3" />
@@ -580,6 +582,20 @@ const CreateListing = () => {
             ))}
           </div>
         )}
+
+        {/* Expanded Image Viewer */}
+        <Dialog open={expandedImageIndex !== null} onOpenChange={(o) => { if (!o) setExpandedImageIndex(null); }}>
+          <DialogContent hideCloseButton className="max-w-[92vw] w-[400px] p-0 rounded-3xl overflow-hidden bg-background border-0">
+            <DialogTitle className="sr-only">Photo preview</DialogTitle>
+            {expandedImageIndex !== null && imageFiles[expandedImageIndex] && (
+              <img
+                src={imageFiles[expandedImageIndex].preview}
+                alt={`Photo ${expandedImageIndex + 1}`}
+                className="w-full aspect-[4/5] object-cover"
+              />
+            )}
+          </DialogContent>
+        </Dialog>
         
         {/* Product Name */}
         <Input

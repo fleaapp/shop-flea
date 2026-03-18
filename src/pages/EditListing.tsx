@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import ListingImageCropDialog from '@/components/ListingImageCropDialog';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ImagePlus, X, Trash2, ChevronRight } from 'lucide-react';
@@ -57,6 +58,7 @@ const EditListing = () => {
   const [newImageFiles, setNewImageFiles] = useState<ImageFile[]>([]);
   // Existing image URLs from the listing
   const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [expandedImageSrc, setExpandedImageSrc] = useState<string | null>(null);
   
   const [productName, setProductName] = useState('');
   const [fit, setFit] = useState(''); // Gender/Fit selection
@@ -459,18 +461,19 @@ const EditListing = () => {
 
         {/* Image Thumbnails */}
         {totalImages > 0 && (
-          <div className="flex gap-3 overflow-x-auto pb-2">
+          <div className="flex gap-3 overflow-x-auto pb-2 pt-1 px-1 -mx-1">
             {/* Existing images */}
             {existingImages.map((url, index) => (
               <div key={`existing-${index}`} className="relative flex-shrink-0">
                 <img
                   src={url}
                   alt={`Image ${index + 1}`}
-                  className="h-16 w-16 rounded-lg object-cover"
+                  className="h-16 w-16 rounded-lg object-cover cursor-pointer active:scale-95 transition-transform"
+                  onClick={() => setExpandedImageSrc(url)}
                 />
                 <button
                   type="button"
-                  onClick={() => removeExistingImage(index)}
+                  onClick={(e) => { e.stopPropagation(); removeExistingImage(index); }}
                   className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-foreground/80 text-background"
                 >
                   <X className="h-3 w-3" />
@@ -483,11 +486,12 @@ const EditListing = () => {
                 <img
                   src={img.preview}
                   alt={`New upload ${index + 1}`}
-                  className="h-16 w-16 rounded-lg object-cover"
+                  className="h-16 w-16 rounded-lg object-cover cursor-pointer active:scale-95 transition-transform"
+                  onClick={() => setExpandedImageSrc(img.preview)}
                 />
                 <button
                   type="button"
-                  onClick={() => removeNewImage(index)}
+                  onClick={(e) => { e.stopPropagation(); removeNewImage(index); }}
                   className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-foreground/80 text-background"
                 >
                   <X className="h-3 w-3" />
@@ -496,6 +500,20 @@ const EditListing = () => {
             ))}
           </div>
         )}
+
+        {/* Expanded Image Viewer */}
+        <Dialog open={expandedImageSrc !== null} onOpenChange={(o) => { if (!o) setExpandedImageSrc(null); }}>
+          <DialogContent hideCloseButton className="max-w-[92vw] w-[400px] p-0 rounded-3xl overflow-hidden bg-background border-0">
+            <DialogTitle className="sr-only">Photo preview</DialogTitle>
+            {expandedImageSrc && (
+              <img
+                src={expandedImageSrc}
+                alt="Photo preview"
+                className="w-full aspect-[4/5] object-cover"
+              />
+            )}
+          </DialogContent>
+        </Dialog>
         
         {/* Product Name */}
         <Input
