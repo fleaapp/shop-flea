@@ -44,20 +44,13 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-[#DBFBD5] font-sans overflow-hidden">
-      {/* Mobile hero video — full natural height, no overlay */}
+      {/* Mobile hero animation — full natural height */}
       <section className="md:hidden">
-        <video
-          ref={heroVideoRef}
+        <img
           src={heroVideo}
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          disablePictureInPicture
-          controlsList="nodownload nofullscreen noremoteplayback"
-          controls={false}
-          className="pointer-events-none w-full h-auto block"
+          alt="Flea mobile hero animation"
+          className="w-full h-auto block"
+          loading="eager"
         />
       </section>
 
