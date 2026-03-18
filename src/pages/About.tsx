@@ -67,8 +67,8 @@ const About = () => {
           loop
           muted
           playsInline
-          className="absolute bottom-0 right-0 w-[78%] rounded-tl-3xl z-[3]"
-          style={{ pointerEvents: 'none' }}
+          className="absolute bottom-0 right-0 w-[78%] z-[3]"
+          style={{ pointerEvents: 'none', borderRadius: '2rem 3rem 0 3rem' }}
         />
       </section>
 
