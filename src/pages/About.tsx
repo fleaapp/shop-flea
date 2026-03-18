@@ -31,9 +31,26 @@ const About = () => {
 
   useEffect(() => {
     const video = videoRef.current;
-    if (video) {
+    if (!video) return;
+
+    video.defaultMuted = true;
+    video.muted = true;
+    video.playsInline = true;
+
+    const tryPlay = () => {
       video.play().catch(() => {});
+    };
+
+    if (video.readyState >= 2) {
+      tryPlay();
+    } else {
+      video.addEventListener('canplay', tryPlay, { once: true });
+      video.load();
     }
+
+    return () => {
+      video.removeEventListener('canplay', tryPlay);
+    };
   }, []);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
