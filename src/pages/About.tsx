@@ -56,7 +56,7 @@ const About = () => {
         <img
           src={heroTextMobile}
           alt="Flea — Shop & sell secondhand with a swipe"
-          className="absolute inset-0 w-[65%] mx-auto h-auto z-[2] pt-8"
+          className="absolute inset-x-0 top-[15%] w-[55%] mx-auto h-auto z-[2]"
           loading="eager"
           style={{ objectFit: 'contain', objectPosition: 'top center' }}
         />
