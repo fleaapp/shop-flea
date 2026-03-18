@@ -25,6 +25,14 @@ const About = () => {
   const [contactEmail, setContactEmail] = useState('');
   const [contactMessage, setContactMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const heroVideoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = heroVideoRef.current;
+    if (video) {
+      video.play().catch(() => {});
+    }
+  }, []);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,11 +55,14 @@ const About = () => {
       {/* Mobile hero video — full natural height, no overlay */}
       <section className="md:hidden">
         <video
+          ref={heroVideoRef}
           src={heroVideo}
           autoPlay
           loop
           muted
           playsInline
+          controls={false}
+          webkit-playsinline="true"
           className="w-full h-auto block"
         />
       </section>
