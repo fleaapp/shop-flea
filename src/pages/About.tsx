@@ -88,12 +88,13 @@ const About = () => {
         />
         <video
           ref={videoRef}
-          src="/hero-video-mobile.mp4"
+          src="/hero-video-mobile-optimized.mp4"
           autoPlay
           loop
           muted
           playsInline
-          preload="auto"
+          preload="metadata"
+          disablePictureInPicture
           className="absolute bottom-0 right-0 w-[78%] z-[3]"
           style={{ pointerEvents: 'none', borderRadius: '2rem 3rem 0 3rem' }}
         />
