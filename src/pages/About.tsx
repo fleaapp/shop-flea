@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { DollarSign, Send, Instagram, Twitter } from 'lucide-react';
 import tapToExpandGif from '@/assets/onboarding/tap-to-expand.gif';
 import swipeRightWishlist from '@/assets/onboarding/swipe-right-wishlist.svg';
@@ -25,6 +25,14 @@ const About = () => {
   const [contactEmail, setContactEmail] = useState('');
   const [contactMessage, setContactMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const heroVideoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = heroVideoRef.current;
+    if (video) {
+      video.play().catch(() => {});
+    }
+  }, []);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,11 +55,14 @@ const About = () => {
       {/* Mobile hero video — full natural height, no overlay */}
       <section className="md:hidden">
         <video
+          ref={heroVideoRef}
           src={heroVideo}
           autoPlay
           loop
           muted
           playsInline
+          controls={false}
+          webkit-playsinline="true"
           className="w-full h-auto block"
         />
       </section>
