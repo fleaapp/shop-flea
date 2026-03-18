@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { DollarSign, Send, Instagram, Twitter } from 'lucide-react';
 import tapToExpandGif from '@/assets/onboarding/tap-to-expand.gif';
 import swipeRightWishlist from '@/assets/onboarding/swipe-right-wishlist.svg';
@@ -17,7 +17,7 @@ import stickerOldNew from '@/assets/about/sticker-old-new.png';
 import stickerThrift from '@/assets/about/sticker-thrift.png';
 import IPhoneMockup from '@/components/about/IPhoneMockup';
 import aboutDemoVideo from '@/assets/about/screen-record.mov';
-
+import heroBgMobile from '@/assets/about/hero-bg-mobile.png';
 
 const About = () => {
   const navigate = useNavigate();
@@ -25,33 +25,6 @@ const About = () => {
   const [contactEmail, setContactEmail] = useState('');
   const [contactMessage, setContactMessage] = useState('');
   const [sending, setSending] = useState(false);
-  const heroVideoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    const el = heroVideoRef.current;
-    if (!el) return;
-
-    el.muted = true;
-    el.defaultMuted = true;
-    el.playsInline = true;
-    el.autoplay = true;
-    el.loop = true;
-    el.controls = false;
-    el.setAttribute('muted', '');
-    el.setAttribute('autoplay', '');
-    el.setAttribute('playsinline', '');
-    el.setAttribute('webkit-playsinline', 'true');
-
-    const play = () => { void el.play().catch(() => {}); };
-    play();
-    el.addEventListener('loadedmetadata', play);
-    el.addEventListener('canplay', play);
-
-    return () => {
-      el.removeEventListener('loadedmetadata', play);
-      el.removeEventListener('canplay', play);
-    };
-  }, []);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,21 +44,13 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-[#DBFBD5] font-sans overflow-hidden">
-      {/* Mobile hero video — crisp, silent, streams from public/ */}
+      {/* Mobile hero — background image */}
       <section className="md:hidden">
-        <video
-          ref={heroVideoRef}
-          src="/hero-video.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          controls={false}
-          disablePictureInPicture
-          controlsList="nodownload nofullscreen noremoteplayback"
-          x-webkit-airplay="deny"
-          className="pointer-events-none w-full h-auto block"
+        <img
+          src={heroBgMobile}
+          alt="Flea hero background"
+          className="w-full h-auto block"
+          loading="eager"
         />
       </section>
 
