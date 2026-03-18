@@ -17,7 +17,7 @@ import stickerOldNew from '@/assets/about/sticker-old-new.png';
 import stickerThrift from '@/assets/about/sticker-thrift.png';
 import IPhoneMockup from '@/components/about/IPhoneMockup';
 import aboutDemoVideo from '@/assets/about/screen-record.mov';
-import heroVideo from '@/assets/about/hero-video-mobile.mp4';
+import heroVideo from '@/assets/about/hero-video-mobile.webp';
 
 const About = () => {
   const navigate = useNavigate();
