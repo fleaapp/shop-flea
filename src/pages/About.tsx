@@ -25,33 +25,6 @@ const About = () => {
   const [contactEmail, setContactEmail] = useState('');
   const [contactMessage, setContactMessage] = useState('');
   const [sending, setSending] = useState(false);
-  const heroVideoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    const el = heroVideoRef.current;
-    if (!el) return;
-
-    el.muted = true;
-    el.defaultMuted = true;
-    el.playsInline = true;
-    el.autoplay = true;
-    el.loop = true;
-    el.controls = false;
-    el.setAttribute('muted', '');
-    el.setAttribute('autoplay', '');
-    el.setAttribute('playsinline', '');
-    el.setAttribute('webkit-playsinline', 'true');
-
-    const play = () => { void el.play().catch(() => {}); };
-    play();
-    el.addEventListener('loadedmetadata', play);
-    el.addEventListener('canplay', play);
-
-    return () => {
-      el.removeEventListener('loadedmetadata', play);
-      el.removeEventListener('canplay', play);
-    };
-  }, []);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
