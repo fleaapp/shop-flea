@@ -19,6 +19,7 @@ import IPhoneMockup from '@/components/about/IPhoneMockup';
 import aboutDemoVideo from '@/assets/about/screen-record.mov';
 import heroTextMobile from '@/assets/about/hero-text-mobile.png';
 import heroBgMobile from '@/assets/about/hero-bg-mobile.png';
+import heroVideoMobile from '@/assets/about/hero-video-mobile.mp4';
 
 const About = () => {
   const navigate = useNavigate();
@@ -59,6 +60,15 @@ const About = () => {
           className="absolute inset-x-0 top-[15%] w-[55%] mx-auto h-auto z-[2]"
           loading="eager"
           style={{ objectFit: 'contain', objectPosition: 'top center' }}
+        />
+        <video
+          src={heroVideoMobile}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute bottom-4 right-4 w-[40%] rounded-2xl z-[3]"
+          style={{ pointerEvents: 'none' }}
         />
       </section>
 
