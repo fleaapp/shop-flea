@@ -25,6 +25,20 @@ const About = () => {
   const [contactEmail, setContactEmail] = useState('');
   const [contactMessage, setContactMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const heroVideoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const el = heroVideoRef.current;
+    if (!el) return;
+    el.muted = true;
+    el.playsInline = true;
+    el.setAttribute('muted', '');
+    el.setAttribute('playsinline', '');
+    const play = () => { void el.play().catch(() => {}); };
+    play();
+    el.addEventListener('loadeddata', play);
+    return () => el.removeEventListener('loadeddata', play);
+  }, []);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
