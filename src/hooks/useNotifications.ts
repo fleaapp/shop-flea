@@ -22,7 +22,10 @@ export type NotificationType =
   | 'shipping_reminder_6d'
   | 'order_message_seller'
   | 'order_message_buyer'
-  | 'support_message';
+  | 'support_message'
+  | 'refund_request'
+  | 'refund_rejected'
+  | 'refund_initiated';
 
 export interface Notification {
   id: string;
@@ -305,6 +308,12 @@ export const getNotificationMessage = (type: string, username?: string, listingT
       return displayUsername ? `📩 New message from your buyer ${displayUsername}! Tap to view.` : '📩 New message from your buyer! Tap to view.';
     case 'support_message':
       return '🛎️ New message from Flea support. Tap to view.';
+    case 'refund_request':
+      return rawMessage || 'A refund has been requested. Tap to review.';
+    case 'refund_rejected':
+      return rawMessage || 'Your refund request was rejected.';
+    case 'refund_initiated':
+      return rawMessage || 'A refund has been initiated.';
     default:
       return 'New notification';
   }
@@ -344,6 +353,12 @@ export const getNotificationEmoji = (type: string): string => {
       return '📩';
     case 'support_message':
       return '🛎️';
+    case 'refund_request':
+      return '🔄';
+    case 'refund_rejected':
+      return '❌';
+    case 'refund_initiated':
+      return '✅';
     default:
       return '🔔';
   }

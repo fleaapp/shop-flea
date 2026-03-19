@@ -162,7 +162,7 @@ async function isOrderParticipant(
     requestedIdType: "unknown" as const,
   };
 
-  const orderFields = "id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, created_at";
+  const orderFields = "id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, created_at, payment_method";
 
   const byIdResponse = await serviceClient
     .from("orders")
@@ -231,7 +231,7 @@ async function isOrderParticipant(
     buyerId: order.buyer_id,
     sellerId: order.seller_id,
     listingId: order.listing_id,
-    paymentMethod: "stripe",
+    paymentMethod: order.payment_method || "stripe",
     matchedOrderId: order.id,
     matchedOrderGroupId: order.order_group_id,
     relatedOrderIds,
@@ -500,29 +500,9 @@ Deno.serve(async (req) => {
       }
 
       if (action === "refund_initiate" && isSeller) {
-        const systemContent = JSON.stringify({
-          type: "refund_initiated",
-          seller_username: senderUsername,
-          payment_method: orderInfo.paymentMethod,
-          initiated_at: new Date().toISOString(),
-        });
-
-        await insertSystemMessage(external, orderMessageKey, threadOrderId, userId, "refund_initiated", systemContent);
-
-        try {
-          await insertNotificationWithFallback(external, {
-            user_id: orderInfo.buyerId,
-            type: "refund_initiated",
-            title: "Refund Initiated",
-            message: `${formattedUsername} has initiated a refund via ${orderInfo.paymentMethod === "paypal" ? "PayPal" : "Stripe"}.`,
-            related_listing_id: orderInfo.listingId,
-            related_user_id: userId,
-            related_order_id: orderInfo.matchedOrderId ?? threadOrderId,
-          });
-        } catch (e) {
-          console.error("[order-messages] Refund initiate notification error:", e);
-        }
-
+        // Don't insert a system message or notification on click.
+        // Just return the payment method so the frontend can open the provider URL.
+        // The refund_initiated message should only appear once the refund is actually processed.
         return new Response(JSON.stringify({ success: true, payment_method: orderInfo.paymentMethod }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
