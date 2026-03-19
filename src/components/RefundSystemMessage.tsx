@@ -134,7 +134,7 @@ const RefundSystemMessage = ({
                 disabled={isActioning}
                 className="rounded-full flex-1 h-12 bg-charcoal text-white hover:bg-charcoal-light"
               >
-                <span className="mr-1">↩️</span>
+                <span className="text-xs leading-none">↩️</span>
                 Refund Order
               </Button>
             </div>
