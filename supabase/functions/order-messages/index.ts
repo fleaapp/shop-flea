@@ -391,11 +391,13 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === "GET") {
-      const { data, error } = await external
-        .from("order_messages")
-        .select("*")
-        .eq(orderMessageKey, orderId)
-        .order("created_at", { ascending: true });
+      const messageFilter = orderInfo.requestedIdType === "group" && orderInfo.matchedOrderGroupId
+        ? external.from("order_messages").select("*").eq(orderMessageKey, orderInfo.matchedOrderGroupId)
+        : orderInfo.relatedOrderIds.length > 1
+          ? external.from("order_messages").select("*").in("order_id", orderInfo.relatedOrderIds)
+          : external.from("order_messages").select("*").eq(orderMessageKey, orderInfo.matchedOrderId ?? orderId);
+
+      const { data, error } = await messageFilter.order("created_at", { ascending: true });
 
       if (error) throw error;
 
