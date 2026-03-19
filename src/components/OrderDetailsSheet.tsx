@@ -130,15 +130,15 @@ const OrderDetailsSheet = ({
               </Button>
               <Button
                 variant="outline"
-                onClick={() => {
-                  onOpenChange(false);
-                  setTimeout(() => navigate(`/order-chat/${primaryOrder.id}`), 300);
-                }}
-                className="relative h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-primary active:border-primary"
-              >
-                💬
-                {(() => {
-                  const unread = getGroupUnread(primaryOrder.id);
+                  onClick={() => {
+                    onOpenChange(false);
+                    setTimeout(() => navigate(`/order-chat/${chatThreadId}`), 300);
+                  }}
+                  className="relative h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-primary active:border-primary"
+                >
+                  💬
+                  {(() => {
+                    const unread = orders.reduce((sum, order) => sum + getGroupUnread(order.id), 0);
                   return unread > 0 ? (
                     <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
                       {unread}
