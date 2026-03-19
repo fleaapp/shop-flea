@@ -308,6 +308,12 @@ export const getNotificationMessage = (type: string, username?: string, listingT
       return displayUsername ? `📩 New message from your buyer ${displayUsername}! Tap to view.` : '📩 New message from your buyer! Tap to view.';
     case 'support_message':
       return '🛎️ New message from Flea support. Tap to view.';
+    case 'refund_request':
+      return rawMessage || 'A refund has been requested. Tap to review.';
+    case 'refund_rejected':
+      return rawMessage || 'Your refund request was rejected.';
+    case 'refund_initiated':
+      return rawMessage || 'A refund has been initiated.';
     default:
       return 'New notification';
   }
