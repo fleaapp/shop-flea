@@ -115,6 +115,10 @@ const SalesDetailsSheet = ({
             <p className="text-sm text-muted-foreground mt-1">
               Order #{primaryOrder.order_number || (primaryOrder.order_group_id || primaryOrder.id).slice(0, 8).toUpperCase()} • {formattedDate}
             </p>
+            {(() => {
+              const chatThreadId = primaryOrder.order_group_id || primaryOrder.id;
+              const unread = orders.reduce((sum, order) => sum + getGroupUnread(order.id), 0);
+              return (
             <div className="flex justify-center mt-1 mb-2">
               <Badge variant={statusBadge.variant}>
                 {statusBadge.label}
