@@ -82,7 +82,7 @@ function isMissingColumnError(error: unknown, columnName: string): boolean {
   const candidate = error as { code?: string; message?: string; details?: string | null };
   const errorText = `${candidate.message ?? ""} ${candidate.details ?? ""}`;
 
-  return candidate.code === "PGRST204" && errorText.includes(columnName);
+  return (candidate.code === "PGRST204" || candidate.code === "42703") && errorText.includes(columnName);
 }
 
 function deriveMessageType(message: string): string {
