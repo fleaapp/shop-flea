@@ -22,7 +22,10 @@ export type NotificationType =
   | 'shipping_reminder_6d'
   | 'order_message_seller'
   | 'order_message_buyer'
-  | 'support_message';
+  | 'support_message'
+  | 'refund_request'
+  | 'refund_rejected'
+  | 'refund_initiated';
 
 export interface Notification {
   id: string;
