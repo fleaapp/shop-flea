@@ -353,6 +353,12 @@ export const getNotificationEmoji = (type: string): string => {
       return '📩';
     case 'support_message':
       return '🛎️';
+    case 'refund_request':
+      return '🔄';
+    case 'refund_rejected':
+      return '❌';
+    case 'refund_initiated':
+      return '✅';
     default:
       return '🔔';
   }
