@@ -137,7 +137,7 @@ const RefundRequestDialog = ({ open, onOpenChange, orderId, userId, onSubmit }: 
               onChange={e => setDetails(e.target.value)}
               placeholder="Provide any additional details..."
               className="rounded-xl resize-none"
-              rows={3}
+              rows={5}
               maxLength={2000}
             />
           </div>
