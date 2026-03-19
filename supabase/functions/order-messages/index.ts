@@ -17,16 +17,24 @@ type NotificationInsert = {
   related_thread_id?: string;
 };
 
+const EXTERNAL_PUBLIC_URL = "https://dzglehiopfgfjmxtejve.supabase.co";
+const EXTERNAL_PUBLIC_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2R6Z2xlaGlvcGZnZmpteHRlanZlLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJyZWYiOiJkemdsZWhpb3BmZ2ZqbXh0ZWp2ZSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzY4OTcyNDI1LCJleHAiOjIwODQ1NDg0MjV9.qfOBjubnuod5iGF_G_gH2ZhMDJ1fVwAO9p5BZSxG0xI";
+
+function getExternalClient(authHeader?: string | null) {
+  return createClient(EXTERNAL_PUBLIC_URL, EXTERNAL_PUBLIC_ANON_KEY, {
+    global: authHeader ? { headers: { Authorization: authHeader } } : undefined,
+  });
+}
+
+function getExternalServiceClient(authHeader?: string | null) {
+  return getExternalClient(authHeader);
+}
+
 async function getUserId(req: Request): Promise<string | null> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return null;
 
-  const externalUrl = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
-  const externalAnonKey = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "";
-  const client = createClient(externalUrl, externalAnonKey, {
-    global: { headers: { Authorization: authHeader } },
-  });
-
+  const client = getExternalClient(authHeader);
   const {
     data: { user },
   } = await client.auth.getUser();
@@ -34,16 +42,12 @@ async function getUserId(req: Request): Promise<string | null> {
   return user?.id ?? null;
 }
 
-function getExternalServiceClient() {
-  const url = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
-  const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  return createClient(url, serviceKey);
-}
+type ExternalClient = ReturnType<typeof getExternalClient>;
 
 let orderMessageKeyCache: "order_id" | "order_group_id" | null = null;
 
 async function getOrderMessageKey(
-  extClient: ReturnType<typeof getExternalServiceClient>,
+  extClient: ExternalClient,
 ): Promise<"order_id" | "order_group_id"> {
   if (orderMessageKeyCache) return orderMessageKeyCache;
 
@@ -73,6 +77,7 @@ async function getOrderMessageKey(
 async function isOrderParticipant(
   userId: string,
   requestedOrderId: string,
+  authHeader?: string | null,
 ): Promise<{
   isBuyer: boolean;
   isSeller: boolean;
@@ -86,7 +91,7 @@ async function isOrderParticipant(
   relatedOrderIds: string[];
   requestedIdType: "order" | "group" | "unknown";
 }> {
-  const extClient = getExternalServiceClient();
+  const extClient = getExternalServiceClient(authHeader);
   const emptyState = {
     isBuyer: false,
     isSeller: false,
@@ -151,8 +156,8 @@ async function isOrderParticipant(
   };
 }
 
-async function getUsername(userId: string): Promise<string> {
-  const extClient = getExternalServiceClient();
+async function getUsername(userId: string, authHeader?: string | null): Promise<string> {
+  const extClient = getExternalServiceClient(authHeader);
 
   const publicProfileResponse = await extClient
     .from("profiles_public")
@@ -174,7 +179,7 @@ async function getUsername(userId: string): Promise<string> {
 }
 
 async function insertNotificationWithFallback(
-  extClient: ReturnType<typeof getExternalServiceClient>,
+  extClient: ExternalClient,
   payload: NotificationInsert,
 ) {
   const { error } = await extClient.from("notifications").insert(payload);
@@ -205,7 +210,7 @@ async function insertNotificationWithFallback(
 }
 
 async function insertSystemMessage(
-  extClient: ReturnType<typeof getExternalServiceClient>,
+  extClient: ExternalClient,
   orderMessageKey: "order_id" | "order_group_id",
   orderId: string,
   senderId: string,
@@ -263,7 +268,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const orderInfo = await isOrderParticipant(userId, orderId);
+    const authHeader = req.headers.get("Authorization");
+    const orderInfo = await isOrderParticipant(userId, orderId, authHeader);
     const { isBuyer, isSeller, deliveredAt } = orderInfo;
     if (!isBuyer && !isSeller) {
       return new Response(JSON.stringify({ error: "Not a participant" }), {
@@ -272,13 +278,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    const external = getExternalServiceClient();
+    const external = getExternalServiceClient(authHeader);
     const orderMessageKey = await getOrderMessageKey(external);
 
     // Handle refund actions via POST with action param
     if (req.method === "POST" && action) {
       const body = await req.json();
-      const senderUsername = await getUsername(userId);
+      const senderUsername = await getUsername(userId, authHeader);
       const formattedUsername = formatUsername(senderUsername);
 
       if (action === "refund_request" && isBuyer) {
@@ -467,7 +473,7 @@ Deno.serve(async (req) => {
       if (error) throw error;
 
       try {
-        const senderUsername = await getUsername(userId);
+        const senderUsername = await getUsername(userId, authHeader);
         const { data: orderData } = await external
           .from("orders")
           .select("listing_id, buyer_id, seller_id")
