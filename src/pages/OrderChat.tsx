@@ -182,14 +182,14 @@ const OrderChat = () => {
     try {
       const compressed = await compressImage(file);
       const ext = file.name.split('.').pop() || 'jpg';
-      const path = `${orderId}/${user.id}/${Date.now()}.${ext}`;
+      const path = `${user.id}/${orderId}/${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage.from('order-attachments').upload(path, compressed);
-      if (uploadError) throw uploadError;
+      if (uploadError) throw new Error(uploadError.message || 'Photo upload failed');
       const { data: urlData } = supabase.storage.from('order-attachments').getPublicUrl(path);
       sendMessage.mutate({ message: '', attachmentUrl: urlData.publicUrl });
     } catch (err) {
       console.error('Photo upload error:', err);
-      toast.error('Failed to upload photo');
+      toast.error(err instanceof Error ? err.message : 'Failed to upload photo');
     } finally {
       setSending(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
