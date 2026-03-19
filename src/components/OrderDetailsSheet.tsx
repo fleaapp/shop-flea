@@ -310,6 +310,25 @@ const OrderDetailsSheet = ({
         onOpenChange={setReceiptOpen}
         viewAs="buyer"
       />
+
+      {user?.id && primaryOrder && (
+        <RefundRequestDialog
+          open={refundDialogOpen}
+          onOpenChange={setRefundDialogOpen}
+          orderId={primaryOrder.id}
+          userId={user.id}
+          onSubmit={async ({ reason, details, imageUrls }) => {
+            await invokeCloudFunction('order-messages', {
+              method: 'POST',
+              query: { orderId: primaryOrder.id, action: 'refund_request' },
+              body: { reason, details, image_urls: imageUrls },
+            });
+            queryClient.invalidateQueries({ queryKey: ['refund-status', primaryOrder.id] });
+            queryClient.invalidateQueries({ queryKey: ['order-messages', primaryOrder.id] });
+            toast.success('Refund request submitted');
+          }}
+        />
+      )}
     </Drawer>
   );
 };
