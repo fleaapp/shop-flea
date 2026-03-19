@@ -318,11 +318,20 @@ const OrderDetailsSheet = ({
           orderId={primaryOrder.id}
           userId={user.id}
           onSubmit={async ({ reason, details, imageUrls }) => {
-            await invokeCloudFunction('order-messages', {
+            const { data, error } = await invokeCloudFunction('order-messages', {
               method: 'POST',
               query: { orderId: primaryOrder.id, action: 'refund_request' },
               body: { reason, details, image_urls: imageUrls },
             });
+            if (error) {
+              console.error('[RefundRequest] Error:', error);
+              throw new Error(typeof error === 'object' && error.message ? error.message : 'Failed to submit refund request');
+            }
+            // Also check if the response body contains an error
+            if (data && typeof data === 'object' && 'error' in data) {
+              console.error('[RefundRequest] Server error:', (data as { error: string }).error);
+              throw new Error((data as { error: string }).error);
+            }
             queryClient.invalidateQueries({ queryKey: ['refund-status', primaryOrder.id] });
             queryClient.invalidateQueries({ queryKey: ['order-messages', primaryOrder.id] });
             toast.success('Refund request submitted');

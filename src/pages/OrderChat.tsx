@@ -91,8 +91,13 @@ const OrderChat = () => {
         query: { orderId },
       });
       if (error) {
-        console.error('[OrderChat] Failed to load messages:', error.message);
-        throw error;
+        console.error('[OrderChat] Failed to load messages:', error);
+        throw new Error(typeof error === 'object' && error.message ? error.message : 'Failed to load messages');
+      }
+      // Check for error in response body (e.g. 401/403 returned as JSON)
+      if (data && typeof data === 'object' && 'error' in data) {
+        console.error('[OrderChat] Server error:', (data as { error: string }).error);
+        throw new Error((data as { error: string }).error);
       }
       return (((data as { messages?: OrderMessage[] } | null)?.messages) || []) as OrderMessage[];
     },

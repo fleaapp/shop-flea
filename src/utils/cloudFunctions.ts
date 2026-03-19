@@ -41,9 +41,15 @@ export async function invokeCloudFunction(
 
   const functionPath = queryString ? `${functionName}?${queryString}` : functionName;
 
-  return cloudSupabase.functions.invoke(functionPath, {
+  const invokeOptions: Record<string, unknown> = {
     method: options.method ?? 'POST',
-    body: options.body,
     headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
+  };
+
+  // Only include body for non-GET methods
+  if (options.method !== 'GET' && options.body) {
+    invokeOptions.body = options.body;
+  }
+
+  return cloudSupabase.functions.invoke(functionPath, invokeOptions);
 }

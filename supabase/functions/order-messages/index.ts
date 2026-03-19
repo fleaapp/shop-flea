@@ -327,7 +327,11 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Fall through to normal POST handling if action not recognized
+      // Unrecognized action or unauthorized for this action
+      return new Response(JSON.stringify({ error: "Invalid action or not authorized" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     if (req.method === "GET") {
