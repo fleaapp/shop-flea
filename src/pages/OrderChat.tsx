@@ -280,6 +280,11 @@ const OrderChat = () => {
                   }
                 }}
                 onRefund={async (paymentMethod: string) => {
+                  const refundUrl = paymentMethod === 'paypal'
+                    ? 'https://www.paypal.com/disputes'
+                    : 'https://dashboard.stripe.com/payments';
+                  // Open immediately to avoid popup blocker
+                  const newTab = window.open(refundUrl, '_blank');
                   setRefundActioning(true);
                   try {
                     await invokeCloudFunction('order-messages', {
@@ -289,12 +294,9 @@ const OrderChat = () => {
                     });
                     queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
                     queryClient.invalidateQueries({ queryKey: ['refund-status', orderId] });
-                    const refundUrl = paymentMethod === 'paypal'
-                      ? 'https://www.paypal.com/disputes'
-                      : 'https://dashboard.stripe.com/payments';
-                    window.open(refundUrl, '_blank');
                   } catch {
                     toast.error('Failed to initiate refund');
+                    newTab?.close();
                   } finally {
                     setRefundActioning(false);
                   }
