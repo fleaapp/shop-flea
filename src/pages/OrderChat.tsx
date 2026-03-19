@@ -37,6 +37,7 @@ const OrderChat = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [refundActioning, setRefundActioning] = useState(false);
   const { openReport, submitPendingReport, closeReport, pendingReport, isReporting } = useReporting();
 
   const { buyerOrderGroups, sellerOrderGroups } = useOrders();
