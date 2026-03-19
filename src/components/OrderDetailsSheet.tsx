@@ -278,13 +278,13 @@ const OrderDetailsSheet = ({
                   onClick={() => setRefundDialogOpen(true)}
                   disabled={refundStatus?.hasPending || refundWindowExpired}
                   variant="outline"
-                  className="rounded-full h-12 px-8 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-60"
+                  className="rounded-full h-12 px-8 bg-muted-foreground text-white hover:bg-muted-foreground/80 border-none disabled:opacity-60"
                 >
                   {refundStatus?.hasPending ? 'Refund Requested' : refundWindowExpired ? 'Refund Window Closed' : 'Request Refund'}
                 </Button>
               )}
               <button
-                className="text-center text-sm text-foreground underline"
+                className="text-center text-sm text-foreground underline mt-2"
                 onClick={() => {
                   onOpenChange(false);
                   setTimeout(() => navigate('/contact-support'), 300);
