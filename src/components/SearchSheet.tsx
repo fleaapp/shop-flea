@@ -69,6 +69,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
 
     if (open) {
       fetchSellers();
+      refetchTrending();
     }
   }, [open]);
 
