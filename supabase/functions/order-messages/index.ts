@@ -178,7 +178,7 @@ async function getUsername(userId: string, authHeader?: string | null): Promise<
 }
 
 async function insertNotificationWithFallback(
-  extClient: ReturnType<typeof getExternalServiceClient>,
+  extClient: ExternalClient,
   payload: NotificationInsert,
 ) {
   const { error } = await extClient.from("notifications").insert(payload);
