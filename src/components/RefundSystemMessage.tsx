@@ -191,9 +191,9 @@ const RefundSystemMessage = ({
             <Button
               size="sm"
               onClick={() => window.open(getPaymentProviderUrl(d.payment_method, 'buyer'), '_blank')}
-              className="rounded-full w-full bg-charcoal text-white hover:bg-charcoal-light"
+              className="rounded-full w-3/4 h-12 bg-charcoal text-white hover:bg-charcoal-light gap-1.5 items-center justify-center"
             >
-              <ExternalLink className="h-3.5 w-3.5 mr-1" />
+              <span className="leading-none">↩️</span>
               Request Refund via {getPaymentProviderName(d.payment_method)}
             </Button>
           )}
