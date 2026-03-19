@@ -116,9 +116,11 @@ async function isOrderParticipant(
     requestedIdType: "unknown" as const,
   };
 
+  const orderFields = "id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, created_at";
+
   const orderByIdResponse = await extClient
     .from("orders")
-    .select("id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, payment_method")
+    .select(orderFields)
     .eq("id", requestedOrderId)
     .maybeSingle();
 
@@ -129,7 +131,7 @@ async function isOrderParticipant(
     requestedIdType = "group";
     const orderByGroupResponse = await extClient
       .from("orders")
-      .select("id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, payment_method")
+      .select(orderFields)
       .eq("order_group_id", requestedOrderId)
       .order("created_at", { ascending: true })
       .limit(1);
@@ -158,7 +160,7 @@ async function isOrderParticipant(
     buyerId: order.buyer_id,
     sellerId: order.seller_id,
     listingId: order.listing_id,
-    paymentMethod: order.payment_method || "stripe",
+    paymentMethod: "stripe",
     matchedOrderId: order.id,
     matchedOrderGroupId: order.order_group_id,
     relatedOrderIds,
@@ -253,6 +255,18 @@ function formatUsername(username: string): string {
   return username.startsWith("@") ? username : `@${username}`;
 }
 
+function getThreadOrderId(
+  orderInfo: Awaited<ReturnType<typeof isOrderParticipant>>,
+  orderMessageKey: "order_id" | "order_group_id",
+  requestedOrderId: string,
+): string {
+  if (orderMessageKey === "order_group_id") {
+    return orderInfo.matchedOrderGroupId ?? orderInfo.matchedOrderId ?? requestedOrderId;
+  }
+
+  return orderInfo.matchedOrderId ?? requestedOrderId;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -293,6 +307,7 @@ Deno.serve(async (req) => {
 
     const external = getExternalServiceClient(authHeader);
     const orderMessageKey = await getOrderMessageKey(external);
+    const threadOrderId = getThreadOrderId(orderInfo, orderMessageKey, orderId);
 
     // Handle refund actions via POST with action param
     if (req.method === "POST" && action) {
@@ -320,7 +335,7 @@ Deno.serve(async (req) => {
           requested_at: new Date().toISOString(),
         });
 
-        await insertSystemMessage(external, orderMessageKey, orderId, userId, "refund_request", systemContent);
+        await insertSystemMessage(external, orderMessageKey, threadOrderId, userId, "refund_request", systemContent);
 
         // Notify seller
         try {
@@ -331,7 +346,7 @@ Deno.serve(async (req) => {
             message: `${formattedUsername} has requested a refund. Tap to review.`,
             related_listing_id: orderInfo.listingId,
             related_user_id: userId,
-            related_order_id: orderId,
+            related_order_id: orderInfo.matchedOrderId ?? threadOrderId,
           });
         } catch (e) {
           console.error("[order-messages] Refund notification error:", e);
@@ -350,7 +365,7 @@ Deno.serve(async (req) => {
           rejected_at: new Date().toISOString(),
         });
 
-        await insertSystemMessage(external, orderMessageKey, orderId, userId, "refund_rejected", systemContent);
+        await insertSystemMessage(external, orderMessageKey, threadOrderId, userId, "refund_rejected", systemContent);
 
         // Notify buyer
         try {
@@ -361,7 +376,7 @@ Deno.serve(async (req) => {
             message: `${formattedUsername} has rejected your refund request.`,
             related_listing_id: orderInfo.listingId,
             related_user_id: userId,
-            related_order_id: orderId,
+            related_order_id: orderInfo.matchedOrderId ?? threadOrderId,
           });
         } catch (e) {
           console.error("[order-messages] Refund reject notification error:", e);
@@ -380,7 +395,7 @@ Deno.serve(async (req) => {
           initiated_at: new Date().toISOString(),
         });
 
-        await insertSystemMessage(external, orderMessageKey, orderId, userId, "refund_initiated", systemContent);
+        await insertSystemMessage(external, orderMessageKey, threadOrderId, userId, "refund_initiated", systemContent);
 
         // Notify buyer
         try {
@@ -391,7 +406,7 @@ Deno.serve(async (req) => {
             message: `${formattedUsername} has initiated a refund via ${orderInfo.paymentMethod === "paypal" ? "PayPal" : "Stripe"}.`,
             related_listing_id: orderInfo.listingId,
             related_user_id: userId,
-            related_order_id: orderId,
+            related_order_id: orderInfo.matchedOrderId ?? threadOrderId,
           });
         } catch (e) {
           console.error("[order-messages] Refund initiate notification error:", e);
@@ -463,14 +478,14 @@ Deno.serve(async (req) => {
 
       const messageInsert = orderMessageKey === "order_id"
         ? {
-            order_id: orderId,
+            order_id: threadOrderId,
             sender_id: userId,
             message: message || "",
             attachment_url: attachment_url || null,
             message_type: "user",
           }
         : {
-            order_group_id: orderId,
+            order_group_id: threadOrderId,
             sender_id: userId,
             message: message || "",
             attachment_url: attachment_url || null,
@@ -487,29 +502,21 @@ Deno.serve(async (req) => {
 
       try {
         const senderUsername = await getUsername(userId, authHeader);
-        const { data: orderData } = await external
-          .from("orders")
-          .select("listing_id, buyer_id, seller_id")
-          .eq("id", orderId)
-          .maybeSingle();
+        const recipientId = isBuyer ? orderInfo.sellerId : orderInfo.buyerId;
+        const notifType = isBuyer ? "order_message_buyer" : "order_message_seller";
+        const notifMessage = isBuyer
+          ? `📩 New message from your buyer ${senderUsername.startsWith("@") ? senderUsername : `@${senderUsername}`}! Tap to view.`
+          : `💬 New message from ${senderUsername.startsWith("@") ? senderUsername : `@${senderUsername}`} about your order! Tap to view.`;
 
-        if (orderData) {
-          const recipientId = isBuyer ? orderData.seller_id : orderData.buyer_id;
-          const notifType = isBuyer ? "order_message_buyer" : "order_message_seller";
-          const notifMessage = isBuyer
-            ? `📩 New message from your buyer ${senderUsername.startsWith("@") ? senderUsername : `@${senderUsername}`}! Tap to view.`
-            : `💬 New message from ${senderUsername.startsWith("@") ? senderUsername : `@${senderUsername}`} about your order! Tap to view.`;
-
-          await insertNotificationWithFallback(external, {
-            user_id: recipientId,
-            type: notifType,
-            title: "New Message",
-            message: notifMessage,
-            related_listing_id: orderData.listing_id,
-            related_user_id: userId,
-            related_order_id: orderId,
-          });
-        }
+        await insertNotificationWithFallback(external, {
+          user_id: recipientId,
+          type: notifType,
+          title: "New Message",
+          message: notifMessage,
+          related_listing_id: orderInfo.listingId,
+          related_user_id: userId,
+          related_order_id: orderInfo.matchedOrderId ?? threadOrderId,
+        });
       } catch (notifErr) {
         console.error("[order-messages] Notification error:", notifErr);
       }

@@ -42,18 +42,20 @@ const OrderChat = () => {
 
   const { buyerOrderGroups, sellerOrderGroups } = useOrders();
 
-  // Find the specific order across all groups
+  // Find the specific order/group across all groups
   const orderInfo = useMemo(() => {
     if (!orderId || !user?.id) return null;
 
     for (const group of [...buyerOrderGroups, ...sellerOrderGroups]) {
-      const order = group.orders.find(o => o.id === orderId);
-      if (order) {
+      const matchesGroup = group.id === orderId || group.order_group_id === orderId;
+      const order = group.orders.find((o) => o.id === orderId) ?? group.orders[0];
+
+      if (matchesGroup || group.orders.some((o) => o.id === orderId)) {
         return {
           buyer_id: group.buyer_id,
           seller_id: group.seller_id,
-          delivered_at: order.delivered_at,
-          order_number: order.order_number || null,
+          delivered_at: group.delivered_at ?? order?.delivered_at ?? null,
+          order_number: order?.order_number || null,
           buyer_username: group.buyer_profile?.username || 'Buyer',
           seller_username: group.seller_profile?.username || 'Seller',
           buyer_avatar: group.buyer_profile?.avatar_url || null,
