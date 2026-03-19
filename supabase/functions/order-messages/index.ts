@@ -32,14 +32,17 @@ function getExternalServiceClient(authHeader?: string | null) {
 
 async function getUserId(req: Request): Promise<string | null> {
   const authHeader = req.headers.get("Authorization");
-  if (!authHeader) return null;
+  if (!authHeader?.startsWith("Bearer ")) return null;
 
-  const client = getExternalClient(authHeader);
-  const {
-    data: { user },
-  } = await client.auth.getUser();
-
-  return user?.id ?? null;
+  try {
+    const token = authHeader.replace("Bearer ", "");
+    const payload = JSON.parse(atob(token.split(".")[1] ?? "")) as { sub?: string; exp?: number };
+    if (!payload.sub) return null;
+    if (payload.exp && payload.exp * 1000 < Date.now()) return null;
+    return payload.sub;
+  } catch {
+    return null;
+  }
 }
 
 type ExternalClient = ReturnType<typeof getExternalClient>;
