@@ -123,7 +123,7 @@ const RefundSystemMessage = ({
                 variant="outline"
                 onClick={onReject}
                 disabled={isActioning}
-                className="rounded-full flex-1 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                className="rounded-full flex-1 h-12 bg-destructive text-destructive-foreground hover:bg-destructive/90 border-destructive"
               >
                 <XCircle className="h-3.5 w-3.5 mr-1" />
                 Reject
@@ -132,7 +132,7 @@ const RefundSystemMessage = ({
                 size="sm"
                 onClick={() => onRefund?.(d.payment_method)}
                 disabled={isActioning}
-                className="rounded-full flex-1 bg-charcoal text-white hover:bg-charcoal-light"
+                className="rounded-full flex-1 h-12 bg-charcoal text-white hover:bg-charcoal-light"
               >
                 <CheckCircle className="h-3.5 w-3.5 mr-1" />
                 Refund Order
