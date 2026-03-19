@@ -147,7 +147,8 @@ async function isOrderParticipant(
   relatedOrderIds: string[];
   requestedIdType: "order" | "group" | "unknown";
 }> {
-  const extClient = getExternalServiceClient(authHeader);
+  const userScopedClient = getExternalClient(authHeader);
+  const serviceClient = getExternalServiceClient(authHeader);
   const emptyState = {
     isBuyer: false,
     isSeller: false,
@@ -164,32 +165,47 @@ async function isOrderParticipant(
 
   const orderFields = "id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, created_at, payment_method";
 
-  const orderByIdResponse = await extClient
-    .from("orders")
-    .select(orderFields)
-    .eq("id", requestedOrderId)
-    .maybeSingle();
+  const loadVisibleOrder = async (client: ExternalClient) => {
+    const byIdResponse = await client
+      .from("orders")
+      .select(orderFields)
+      .eq("id", requestedOrderId)
+      .maybeSingle();
 
-  let order = orderByIdResponse.data;
-  let requestedIdType: "order" | "group" | "unknown" = "order";
+    if (byIdResponse.data) {
+      return { order: byIdResponse.data, requestedIdType: "order" as const };
+    }
 
-  if (!order) {
-    requestedIdType = "group";
-    const orderByGroupResponse = await extClient
+    const byGroupResponse = await client
       .from("orders")
       .select(orderFields)
       .eq("order_group_id", requestedOrderId)
       .order("created_at", { ascending: true })
       .limit(1);
 
-    order = orderByGroupResponse.data?.[0] ?? null;
-  }
+    return {
+      order: byGroupResponse.data?.[0] ?? null,
+      requestedIdType: "group" as const,
+    };
+  };
+
+  const visibleOrderResult = await loadVisibleOrder(userScopedClient);
+  const fallbackOrderResult = visibleOrderResult.order
+    ? visibleOrderResult
+    : await loadVisibleOrder(serviceClient);
+
+  const order = fallbackOrderResult.order;
+  const requestedIdType = fallbackOrderResult.order ? fallbackOrderResult.requestedIdType : "unknown" as const;
 
   if (!order) return emptyState;
 
+  if (order.buyer_id !== userId && order.seller_id !== userId) {
+    return emptyState;
+  }
+
   let relatedOrderIds = [order.id];
   if (order.order_group_id) {
-    const { data: groupedOrders } = await extClient
+    const { data: groupedOrders } = await userScopedClient
       .from("orders")
       .select("id")
       .eq("order_group_id", order.order_group_id);
