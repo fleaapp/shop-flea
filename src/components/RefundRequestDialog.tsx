@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Image, X, Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase as cloudSupabase } from '@/integrations/supabase/client';
 import { compressImage } from '@/utils/imageCompression';
 import { toast } from 'sonner';
 
@@ -65,13 +65,13 @@ const RefundRequestDialog = ({ open, onOpenChange, orderId, userId, onSubmit }: 
         const compressed = await compressImage(img.file);
         const ext = img.file.name.split('.').pop() || 'jpg';
         const path = `${userId}/${orderId}/refund-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error: uploadError } = await supabase.storage.from('order-attachments').upload(path, compressed);
+        const { error: uploadError } = await cloudSupabase.storage.from('order-attachments').upload(path, compressed);
 
         if (uploadError) {
           throw new Error(uploadError.message || 'Image upload failed');
         }
 
-        const { data: urlData } = supabase.storage.from('order-attachments').getPublicUrl(path);
+        const { data: urlData } = cloudSupabase.storage.from('order-attachments').getPublicUrl(path);
         imageUrls.push(urlData.publicUrl);
       }
 
