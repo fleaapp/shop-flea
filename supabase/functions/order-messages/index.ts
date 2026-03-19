@@ -451,6 +451,48 @@ function formatUsername(username: string): string {
   return username.startsWith("@") ? username : `@${username}`;
 }
 
+function decodeBase64(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return bytes;
+}
+
+async function uploadRefundImages(
+  extClient: ExternalClient,
+  userId: string,
+  orderId: string,
+  imageUploads: RefundImageUpload[],
+): Promise<string[]> {
+  const imageUrls: string[] = [];
+
+  for (const [index, image] of imageUploads.entries()) {
+    const safeFileName = image.fileName.replace(/[^a-zA-Z0-9._-]/g, "-");
+    const path = `${userId}/${orderId}/refund-${Date.now()}-${index}-${safeFileName}`;
+    const contentType = image.contentType || "image/jpeg";
+
+    const { error: uploadError } = await extClient.storage
+      .from("order-attachments")
+      .upload(path, decodeBase64(image.base64), {
+        contentType,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      throw new Error(uploadError.message || "Image upload failed");
+    }
+
+    const { data } = extClient.storage.from("order-attachments").getPublicUrl(path);
+    imageUrls.push(data.publicUrl);
+  }
+
+  return imageUrls;
+}
+
 function getThreadOrderId(
   orderInfo: Awaited<ReturnType<typeof isOrderParticipant>>,
   orderMessageKey: "order_id" | "order_group_id",
