@@ -110,7 +110,7 @@ const RefundRequestDialog = ({ open, onOpenChange, orderId, userId, onSubmit }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] sm:max-w-md rounded-2xl">
+      <DialogContent className="max-w-[85vw] sm:max-w-sm rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-lg">Request Refund</DialogTitle>
         </DialogHeader>
