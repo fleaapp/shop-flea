@@ -73,21 +73,25 @@ async function getOrderMessageKey(
 async function isOrderParticipant(
   userId: string,
   orderId: string,
-): Promise<{ isBuyer: boolean; isSeller: boolean; deliveredAt: string | null }> {
+): Promise<{ isBuyer: boolean; isSeller: boolean; deliveredAt: string | null; buyerId: string; sellerId: string; listingId: string; paymentMethod: string }> {
   const extClient = getExternalServiceClient();
 
   const { data: order } = await extClient
     .from("orders")
-    .select("buyer_id, seller_id, delivered_at")
+    .select("buyer_id, seller_id, delivered_at, listing_id, payment_method")
     .eq("id", orderId)
     .maybeSingle();
 
-  if (!order) return { isBuyer: false, isSeller: false, deliveredAt: null };
+  if (!order) return { isBuyer: false, isSeller: false, deliveredAt: null, buyerId: "", sellerId: "", listingId: "", paymentMethod: "stripe" };
 
   return {
     isBuyer: order.buyer_id === userId,
     isSeller: order.seller_id === userId,
     deliveredAt: order.delivered_at,
+    buyerId: order.buyer_id,
+    sellerId: order.seller_id,
+    listingId: order.listing_id,
+    paymentMethod: order.payment_method || "stripe",
   };
 }
 
@@ -144,6 +148,40 @@ async function insertNotificationWithFallback(
   if (fallbackError) throw fallbackError;
 }
 
+async function insertSystemMessage(
+  extClient: ReturnType<typeof getExternalServiceClient>,
+  orderMessageKey: "order_id" | "order_group_id",
+  orderId: string,
+  senderId: string,
+  messageType: string,
+  message: string,
+  attachmentUrl?: string | null,
+) {
+  const baseInsert = {
+    sender_id: senderId,
+    message: message || "",
+    attachment_url: attachmentUrl || null,
+    message_type: messageType,
+  };
+
+  const messageInsert = orderMessageKey === "order_id"
+    ? { ...baseInsert, order_id: orderId }
+    : { ...baseInsert, order_group_id: orderId };
+
+  const { data, error } = await extClient
+    .from("order_messages")
+    .insert(messageInsert)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+function formatUsername(username: string): string {
+  return username.startsWith("@") ? username : `@${username}`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -160,6 +198,8 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url);
     const orderId = url.searchParams.get("orderId");
+    const action = url.searchParams.get("action");
+
     if (!orderId) {
       return new Response(JSON.stringify({ error: "orderId required" }), {
         status: 400,
@@ -167,7 +207,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { isBuyer, isSeller, deliveredAt } = await isOrderParticipant(userId, orderId);
+    const orderInfo = await isOrderParticipant(userId, orderId);
+    const { isBuyer, isSeller, deliveredAt } = orderInfo;
     if (!isBuyer && !isSeller) {
       return new Response(JSON.stringify({ error: "Not a participant" }), {
         status: 403,
@@ -177,6 +218,117 @@ Deno.serve(async (req) => {
 
     const external = getExternalServiceClient();
     const orderMessageKey = await getOrderMessageKey(external);
+
+    // Handle refund actions via POST with action param
+    if (req.method === "POST" && action) {
+      const body = await req.json();
+      const senderUsername = await getUsername(userId);
+      const formattedUsername = formatUsername(senderUsername);
+
+      if (action === "refund_request" && isBuyer) {
+        const { reason, details, image_urls } = body;
+        if (!reason || typeof reason !== "string" || reason.trim().length === 0) {
+          return new Response(JSON.stringify({ error: "Reason is required" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // Build system message content as JSON
+        const systemContent = JSON.stringify({
+          type: "refund_request",
+          buyer_username: senderUsername,
+          reason: reason.trim().slice(0, 500),
+          details: (details || "").trim().slice(0, 2000),
+          image_urls: (image_urls || []).slice(0, 5),
+          payment_method: orderInfo.paymentMethod,
+          requested_at: new Date().toISOString(),
+        });
+
+        await insertSystemMessage(external, orderMessageKey, orderId, userId, "refund_request", systemContent);
+
+        // Notify seller
+        try {
+          await insertNotificationWithFallback(external, {
+            user_id: orderInfo.sellerId,
+            type: "refund_request",
+            title: "Refund Requested",
+            message: `${formattedUsername} has requested a refund. Tap to review.`,
+            related_listing_id: orderInfo.listingId,
+            related_user_id: userId,
+            related_order_id: orderId,
+          });
+        } catch (e) {
+          console.error("[order-messages] Refund notification error:", e);
+        }
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (action === "refund_reject" && isSeller) {
+        const systemContent = JSON.stringify({
+          type: "refund_rejected",
+          seller_username: senderUsername,
+          payment_method: orderInfo.paymentMethod,
+          rejected_at: new Date().toISOString(),
+        });
+
+        await insertSystemMessage(external, orderMessageKey, orderId, userId, "refund_rejected", systemContent);
+
+        // Notify buyer
+        try {
+          await insertNotificationWithFallback(external, {
+            user_id: orderInfo.buyerId,
+            type: "refund_rejected",
+            title: "Refund Rejected",
+            message: `${formattedUsername} has rejected your refund request.`,
+            related_listing_id: orderInfo.listingId,
+            related_user_id: userId,
+            related_order_id: orderId,
+          });
+        } catch (e) {
+          console.error("[order-messages] Refund reject notification error:", e);
+        }
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (action === "refund_initiate" && isSeller) {
+        const systemContent = JSON.stringify({
+          type: "refund_initiated",
+          seller_username: senderUsername,
+          payment_method: orderInfo.paymentMethod,
+          initiated_at: new Date().toISOString(),
+        });
+
+        await insertSystemMessage(external, orderMessageKey, orderId, userId, "refund_initiated", systemContent);
+
+        // Notify buyer
+        try {
+          await insertNotificationWithFallback(external, {
+            user_id: orderInfo.buyerId,
+            type: "refund_initiated",
+            title: "Refund Initiated",
+            message: `${formattedUsername} has initiated a refund via ${orderInfo.paymentMethod === "paypal" ? "PayPal" : "Stripe"}.`,
+            related_listing_id: orderInfo.listingId,
+            related_user_id: userId,
+            related_order_id: orderId,
+          });
+        } catch (e) {
+          console.error("[order-messages] Refund initiate notification error:", e);
+        }
+
+        return new Response(JSON.stringify({ success: true, payment_method: orderInfo.paymentMethod }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Fall through to normal POST handling if action not recognized
+    }
 
     if (req.method === "GET") {
       const { data, error } = await external
@@ -231,12 +383,14 @@ Deno.serve(async (req) => {
             sender_id: userId,
             message: message || "",
             attachment_url: attachment_url || null,
+            message_type: "user",
           }
         : {
             order_group_id: orderId,
             sender_id: userId,
             message: message || "",
             attachment_url: attachment_url || null,
+            message_type: "user",
           };
 
       const { data, error } = await external
