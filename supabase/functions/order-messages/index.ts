@@ -54,6 +54,12 @@ async function getUserId(req: Request): Promise<string | null> {
 
 type ExternalClient = ReturnType<typeof getExternalClient>;
 
+type RefundImageUpload = {
+  fileName: string;
+  contentType: string;
+  base64: string;
+};
+
 type OrderMessageInsertInput = {
   senderId: string;
   message: string;
