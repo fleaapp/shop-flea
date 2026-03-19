@@ -65,7 +65,7 @@ const RefundRequestDialog = ({ open, onOpenChange, orderId, userId, onSubmit }: 
         const compressed = await compressImage(img.file);
         const ext = img.file.name.split('.').pop() || 'jpg';
         const path = `${userId}/${orderId}/refund-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error: uploadError } = await supabase.storage.from('order-attachments').upload(path, compressed);
+        const { error: uploadError } = await cloudSupabase.storage.from('order-attachments').upload(path, compressed);
 
         if (uploadError) {
           throw new Error(uploadError.message || 'Image upload failed');
