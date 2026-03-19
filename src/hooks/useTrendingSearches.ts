@@ -47,5 +47,5 @@ export function useTrendingSearches() {
      }
    };
  
-   return { trending, loading, recordSearch };
+   return { trending, loading, recordSearch, refetchTrending: fetchTrending };
  }
