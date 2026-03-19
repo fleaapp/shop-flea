@@ -82,7 +82,7 @@ function isMissingColumnError(error: unknown, columnName: string): boolean {
   const candidate = error as { code?: string; message?: string; details?: string | null };
   const errorText = `${candidate.message ?? ""} ${candidate.details ?? ""}`;
 
-  return candidate.code === "PGRST204" && errorText.includes(columnName);
+  return (candidate.code === "PGRST204" || candidate.code === "42703") && errorText.includes(columnName);
 }
 
 function deriveMessageType(message: string): string {
@@ -130,6 +130,91 @@ async function getOrderMessageKey(
   throw orderIdProbe.error ?? orderGroupIdProbe.error ?? new Error("Unable to determine order message key");
 }
 
+type OrderLookupRow = {
+  id: string;
+  order_group_id: string | null;
+  buyer_id: string;
+  seller_id: string;
+  delivered_at: string | null;
+  listing_id: string;
+  created_at?: string;
+  payment_method?: string | null;
+};
+
+async function fetchOrderByIdWithFallback(
+  serviceClient: ExternalClient,
+  requestedOrderId: string,
+): Promise<{ data: OrderLookupRow | null; error: unknown }> {
+  const preferredFields = "id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, created_at, payment_method";
+  const fallbackFields = "id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, created_at";
+
+  const preferredResponse = await serviceClient
+    .from("orders")
+    .select(preferredFields)
+    .eq("id", requestedOrderId)
+    .maybeSingle();
+
+  if (!preferredResponse.error || !isMissingColumnError(preferredResponse.error, "payment_method")) {
+    return {
+      data: (preferredResponse.data as OrderLookupRow | null) ?? null,
+      error: preferredResponse.error,
+    };
+  }
+
+  console.warn("[order-messages] orders.payment_method missing on id lookup, retrying without it");
+
+  const fallbackResponse = await serviceClient
+    .from("orders")
+    .select(fallbackFields)
+    .eq("id", requestedOrderId)
+    .maybeSingle();
+
+  return {
+    data: fallbackResponse.data
+      ? ({ ...fallbackResponse.data, payment_method: "stripe" } as OrderLookupRow)
+      : null,
+    error: fallbackResponse.error,
+  };
+}
+
+async function fetchOrderByGroupWithFallback(
+  serviceClient: ExternalClient,
+  requestedOrderId: string,
+): Promise<{ data: OrderLookupRow[] | null; error: unknown }> {
+  const preferredFields = "id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, created_at, payment_method";
+  const fallbackFields = "id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, created_at";
+
+  const preferredResponse = await serviceClient
+    .from("orders")
+    .select(preferredFields)
+    .eq("order_group_id", requestedOrderId)
+    .order("created_at", { ascending: true })
+    .limit(1);
+
+  if (!preferredResponse.error || !isMissingColumnError(preferredResponse.error, "payment_method")) {
+    return {
+      data: (preferredResponse.data as OrderLookupRow[] | null) ?? null,
+      error: preferredResponse.error,
+    };
+  }
+
+  console.warn("[order-messages] orders.payment_method missing on group lookup, retrying without it");
+
+  const fallbackResponse = await serviceClient
+    .from("orders")
+    .select(fallbackFields)
+    .eq("order_group_id", requestedOrderId)
+    .order("created_at", { ascending: true })
+    .limit(1);
+
+  return {
+    data: fallbackResponse.data
+      ? fallbackResponse.data.map((row) => ({ ...row, payment_method: "stripe" } as OrderLookupRow))
+      : null,
+    error: fallbackResponse.error,
+  };
+}
+
 async function isOrderParticipant(
   userId: string,
   requestedOrderId: string,
@@ -162,26 +247,15 @@ async function isOrderParticipant(
     requestedIdType: "unknown" as const,
   };
 
-  const orderFields = "id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, created_at, payment_method";
+  const byIdResponse = await fetchOrderByIdWithFallback(serviceClient, requestedOrderId);
 
-  const byIdResponse = await serviceClient
-    .from("orders")
-    .select(orderFields)
-    .eq("id", requestedOrderId)
-    .maybeSingle();
-
-  if (byIdResponse.error && byIdResponse.error.code !== "PGRST116") {
+  if (byIdResponse.error && (byIdResponse.error as { code?: string }).code !== "PGRST116") {
     console.error("[order-messages] Failed order lookup by id:", byIdResponse.error);
   }
 
   const byGroupResponse = byIdResponse.data
     ? { data: null, error: null }
-    : await serviceClient
-        .from("orders")
-        .select(orderFields)
-        .eq("order_group_id", requestedOrderId)
-        .order("created_at", { ascending: true })
-        .limit(1);
+    : await fetchOrderByGroupWithFallback(serviceClient, requestedOrderId);
 
   if (byGroupResponse.error) {
     console.error("[order-messages] Failed order lookup by group id:", byGroupResponse.error);
