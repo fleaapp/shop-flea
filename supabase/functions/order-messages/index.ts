@@ -162,7 +162,7 @@ async function isOrderParticipant(
     requestedIdType: "unknown" as const,
   };
 
-  const orderFields = "id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, created_at, payment_method";
+  const orderFields = "id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, created_at";
 
   const byIdResponse = await serviceClient
     .from("orders")
@@ -231,7 +231,7 @@ async function isOrderParticipant(
     buyerId: order.buyer_id,
     sellerId: order.seller_id,
     listingId: order.listing_id,
-    paymentMethod: order.payment_method ?? "stripe",
+    paymentMethod: "stripe",
     matchedOrderId: order.id,
     matchedOrderGroupId: order.order_group_id,
     relatedOrderIds,
