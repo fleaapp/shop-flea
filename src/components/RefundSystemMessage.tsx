@@ -87,7 +87,7 @@ const RefundSystemMessage = ({
       <div className="mx-4 my-3">
         <div className="rounded-2xl border-2 border-amber-400/50 bg-amber-50 dark:bg-amber-950/30 p-4 space-y-3">
           <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-            <AlertTriangle className="h-4 w-4" />
+            <span className="text-base">⚠️</span>
             <span className="font-semibold text-sm">Refund Request</span>
           </div>
 
