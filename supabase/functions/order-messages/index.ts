@@ -162,7 +162,7 @@ async function isOrderParticipant(
     requestedIdType: "unknown" as const,
   };
 
-  const orderFields = "id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, created_at, payment_method";
+  const orderFields = "id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, created_at";
 
   const byIdResponse = await serviceClient
     .from("orders")
