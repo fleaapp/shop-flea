@@ -17,16 +17,20 @@ type NotificationInsert = {
   related_thread_id?: string;
 };
 
+const EXTERNAL_PUBLIC_URL = "https://dzglehiopfgfjmxtejve.supabase.co";
+const EXTERNAL_PUBLIC_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2R6Z2xlaGlvcGZnZmpteHRlanZlLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJyZWYiOiJkemdsZWhpb3BmZ2ZqbXh0ZWp2ZSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzY4OTcyNDI1LCJleHAiOjIwODQ1NDg0MjV9.qfOBjubnuod5iGF_G_gH2ZhMDJ1fVwAO9p5BZSxG0xI";
+
+function getExternalClient(authHeader?: string | null) {
+  return createClient(EXTERNAL_PUBLIC_URL, EXTERNAL_PUBLIC_ANON_KEY, {
+    global: authHeader ? { headers: { Authorization: authHeader } } : undefined,
+  });
+}
+
 async function getUserId(req: Request): Promise<string | null> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return null;
 
-  const externalUrl = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
-  const externalAnonKey = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "";
-  const client = createClient(externalUrl, externalAnonKey, {
-    global: { headers: { Authorization: authHeader } },
-  });
-
+  const client = getExternalClient(authHeader);
   const {
     data: { user },
   } = await client.auth.getUser();
@@ -34,11 +38,7 @@ async function getUserId(req: Request): Promise<string | null> {
   return user?.id ?? null;
 }
 
-function getExternalServiceClient() {
-  const url = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
-  const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  return createClient(url, serviceKey);
-}
+type ExternalClient = ReturnType<typeof getExternalClient>;
 
 let orderMessageKeyCache: "order_id" | "order_group_id" | null = null;
 
