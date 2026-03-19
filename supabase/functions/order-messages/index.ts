@@ -335,7 +335,7 @@ Deno.serve(async (req) => {
           requested_at: new Date().toISOString(),
         });
 
-        await insertSystemMessage(external, orderMessageKey, orderId, userId, "refund_request", systemContent);
+        await insertSystemMessage(external, orderMessageKey, threadOrderId, userId, "refund_request", systemContent);
 
         // Notify seller
         try {
@@ -346,7 +346,7 @@ Deno.serve(async (req) => {
             message: `${formattedUsername} has requested a refund. Tap to review.`,
             related_listing_id: orderInfo.listingId,
             related_user_id: userId,
-            related_order_id: orderId,
+            related_order_id: orderInfo.matchedOrderId ?? threadOrderId,
           });
         } catch (e) {
           console.error("[order-messages] Refund notification error:", e);
@@ -365,7 +365,7 @@ Deno.serve(async (req) => {
           rejected_at: new Date().toISOString(),
         });
 
-        await insertSystemMessage(external, orderMessageKey, orderId, userId, "refund_rejected", systemContent);
+        await insertSystemMessage(external, orderMessageKey, threadOrderId, userId, "refund_rejected", systemContent);
 
         // Notify buyer
         try {
@@ -376,7 +376,7 @@ Deno.serve(async (req) => {
             message: `${formattedUsername} has rejected your refund request.`,
             related_listing_id: orderInfo.listingId,
             related_user_id: userId,
-            related_order_id: orderId,
+            related_order_id: orderInfo.matchedOrderId ?? threadOrderId,
           });
         } catch (e) {
           console.error("[order-messages] Refund reject notification error:", e);
@@ -395,7 +395,7 @@ Deno.serve(async (req) => {
           initiated_at: new Date().toISOString(),
         });
 
-        await insertSystemMessage(external, orderMessageKey, orderId, userId, "refund_initiated", systemContent);
+        await insertSystemMessage(external, orderMessageKey, threadOrderId, userId, "refund_initiated", systemContent);
 
         // Notify buyer
         try {
@@ -406,7 +406,7 @@ Deno.serve(async (req) => {
             message: `${formattedUsername} has initiated a refund via ${orderInfo.paymentMethod === "paypal" ? "PayPal" : "Stripe"}.`,
             related_listing_id: orderInfo.listingId,
             related_user_id: userId,
-            related_order_id: orderId,
+            related_order_id: orderInfo.matchedOrderId ?? threadOrderId,
           });
         } catch (e) {
           console.error("[order-messages] Refund initiate notification error:", e);
