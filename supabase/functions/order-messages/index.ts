@@ -26,6 +26,10 @@ function getExternalClient(authHeader?: string | null) {
   });
 }
 
+function getExternalServiceClient(authHeader?: string | null) {
+  return getExternalClient(authHeader);
+}
+
 async function getUserId(req: Request): Promise<string | null> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return null;
@@ -43,7 +47,7 @@ type ExternalClient = ReturnType<typeof getExternalClient>;
 let orderMessageKeyCache: "order_id" | "order_group_id" | null = null;
 
 async function getOrderMessageKey(
-  extClient: ReturnType<typeof getExternalServiceClient>,
+  extClient: ExternalClient,
 ): Promise<"order_id" | "order_group_id"> {
   if (orderMessageKeyCache) return orderMessageKeyCache;
 
