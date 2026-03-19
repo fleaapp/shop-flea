@@ -116,9 +116,11 @@ async function isOrderParticipant(
     requestedIdType: "unknown" as const,
   };
 
+  const orderFields = "id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, created_at";
+
   const orderByIdResponse = await extClient
     .from("orders")
-    .select("id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, payment_method")
+    .select(orderFields)
     .eq("id", requestedOrderId)
     .maybeSingle();
 
@@ -129,7 +131,7 @@ async function isOrderParticipant(
     requestedIdType = "group";
     const orderByGroupResponse = await extClient
       .from("orders")
-      .select("id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, payment_method")
+      .select(orderFields)
       .eq("order_group_id", requestedOrderId)
       .order("created_at", { ascending: true })
       .limit(1);
@@ -158,7 +160,7 @@ async function isOrderParticipant(
     buyerId: order.buyer_id,
     sellerId: order.seller_id,
     listingId: order.listing_id,
-    paymentMethod: order.payment_method || "stripe",
+    paymentMethod: "stripe",
     matchedOrderId: order.id,
     matchedOrderGroupId: order.order_group_id,
     relatedOrderIds,
