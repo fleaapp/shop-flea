@@ -307,6 +307,7 @@ Deno.serve(async (req) => {
 
     const external = getExternalServiceClient(authHeader);
     const orderMessageKey = await getOrderMessageKey(external);
+    const threadOrderId = getThreadOrderId(orderInfo, orderMessageKey, orderId);
 
     // Handle refund actions via POST with action param
     if (req.method === "POST" && action) {
