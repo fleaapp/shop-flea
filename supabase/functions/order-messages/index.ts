@@ -255,6 +255,18 @@ function formatUsername(username: string): string {
   return username.startsWith("@") ? username : `@${username}`;
 }
 
+function getThreadOrderId(
+  orderInfo: Awaited<ReturnType<typeof isOrderParticipant>>,
+  orderMessageKey: "order_id" | "order_group_id",
+  requestedOrderId: string,
+): string {
+  if (orderMessageKey === "order_group_id") {
+    return orderInfo.matchedOrderGroupId ?? orderInfo.matchedOrderId ?? requestedOrderId;
+  }
+
+  return orderInfo.matchedOrderId ?? requestedOrderId;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
