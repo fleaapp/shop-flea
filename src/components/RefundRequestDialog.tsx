@@ -71,7 +71,7 @@ const RefundRequestDialog = ({ open, onOpenChange, orderId, userId, onSubmit }: 
           throw new Error(uploadError.message || 'Image upload failed');
         }
 
-        const { data: urlData } = supabase.storage.from('order-attachments').getPublicUrl(path);
+        const { data: urlData } = cloudSupabase.storage.from('order-attachments').getPublicUrl(path);
         imageUrls.push(urlData.publicUrl);
       }
 
