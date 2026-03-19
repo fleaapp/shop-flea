@@ -56,7 +56,7 @@ interface RefundSystemMessageProps {
   messageContent: string;
   isSeller: boolean;
   onReject?: () => void;
-  onRefund?: () => void;
+  onRefund?: (paymentMethod: string) => void;
   isActioning?: boolean;
   hasSellerResponded?: boolean;
   showAutoReminder?: boolean;
