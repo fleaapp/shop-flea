@@ -268,7 +268,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const orderInfo = await isOrderParticipant(userId, orderId);
+    const authHeader = req.headers.get("Authorization");
+    const orderInfo = await isOrderParticipant(userId, orderId, authHeader);
     const { isBuyer, isSeller, deliveredAt } = orderInfo;
     if (!isBuyer && !isSeller) {
       return new Response(JSON.stringify({ error: "Not a participant" }), {
@@ -277,13 +278,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    const external = getExternalServiceClient();
+    const external = getExternalServiceClient(authHeader);
     const orderMessageKey = await getOrderMessageKey(external);
 
     // Handle refund actions via POST with action param
     if (req.method === "POST" && action) {
       const body = await req.json();
-      const senderUsername = await getUsername(userId);
+      const senderUsername = await getUsername(userId, authHeader);
       const formattedUsername = formatUsername(senderUsername);
 
       if (action === "refund_request" && isBuyer) {
