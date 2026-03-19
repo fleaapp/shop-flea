@@ -175,7 +175,7 @@ const RefundSystemMessage = ({
       <div className="mx-4 my-3">
         <div className="rounded-2xl border-2 border-destructive/30 bg-destructive/5 p-4 space-y-3">
           <div className="flex items-center gap-2 text-destructive">
-            <XCircle className="h-4 w-4" />
+            <span className="text-base">🚫</span>
             <span className="font-semibold text-sm">Refund Rejected</span>
           </div>
 
