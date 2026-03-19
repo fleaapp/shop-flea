@@ -25,6 +25,7 @@ interface OrderMessage {
   attachment_url: string | null;
   created_at: string;
   read: boolean;
+  message_type?: string;
 }
 
 const OrderChat = () => {
