@@ -56,7 +56,7 @@ interface RefundSystemMessageProps {
   messageContent: string;
   isSeller: boolean;
   onReject?: () => void;
-  onRefund?: () => void;
+  onRefund?: (paymentMethod: string) => void;
   isActioning?: boolean;
   hasSellerResponded?: boolean;
   showAutoReminder?: boolean;
@@ -130,7 +130,7 @@ const RefundSystemMessage = ({
               </Button>
               <Button
                 size="sm"
-                onClick={onRefund}
+                onClick={() => onRefund?.(d.payment_method)}
                 disabled={isActioning}
                 className="rounded-full flex-1 bg-charcoal text-white hover:bg-charcoal-light"
               >

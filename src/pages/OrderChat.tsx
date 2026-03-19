@@ -279,22 +279,20 @@ const OrderChat = () => {
                     setRefundActioning(false);
                   }
                 }}
-                onRefund={async () => {
+                onRefund={async (paymentMethod: string) => {
                   setRefundActioning(true);
                   try {
-                    const { data } = await invokeCloudFunction('order-messages', {
+                    await invokeCloudFunction('order-messages', {
                       method: 'POST',
                       query: { orderId: orderId!, action: 'refund_initiate' },
                       body: {},
                     });
                     queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
                     queryClient.invalidateQueries({ queryKey: ['refund-status', orderId] });
-                    const pm = (data as { payment_method?: string })?.payment_method || 'stripe';
-                    const refundUrl = pm === 'paypal'
+                    const refundUrl = paymentMethod === 'paypal'
                       ? 'https://www.paypal.com/disputes'
                       : 'https://dashboard.stripe.com/payments';
                     window.open(refundUrl, '_blank');
-                    toast.success('Refund initiated');
                   } catch {
                     toast.error('Failed to initiate refund');
                   } finally {
