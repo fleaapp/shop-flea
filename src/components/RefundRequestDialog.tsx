@@ -59,21 +59,24 @@ const RefundRequestDialog = ({ open, onOpenChange, orderId, userId, onSubmit }: 
 
     setSubmitting(true);
     try {
-      // Upload images
       const imageUrls: string[] = [];
+
       for (const img of images) {
         const compressed = await compressImage(img.file);
         const ext = img.file.name.split('.').pop() || 'jpg';
-        const path = `${orderId}/${userId}/refund-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const path = `${userId}/${orderId}/refund-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
         const { error: uploadError } = await supabase.storage.from('order-attachments').upload(path, compressed);
-        if (uploadError) throw uploadError;
+
+        if (uploadError) {
+          throw new Error(uploadError.message || 'Image upload failed');
+        }
+
         const { data: urlData } = supabase.storage.from('order-attachments').getPublicUrl(path);
         imageUrls.push(urlData.publicUrl);
       }
 
       await onSubmit({ reason, details, imageUrls });
-      
-      // Reset
+
       setReason('');
       setDetails('');
       images.forEach(img => URL.revokeObjectURL(img.preview));
@@ -81,7 +84,8 @@ const RefundRequestDialog = ({ open, onOpenChange, orderId, userId, onSubmit }: 
       onOpenChange(false);
     } catch (err) {
       console.error('Refund request error:', err);
-      toast.error('Failed to submit refund request');
+      const message = err instanceof Error ? err.message : 'Failed to submit refund request';
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
