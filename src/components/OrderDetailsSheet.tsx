@@ -271,6 +271,16 @@ const OrderDetailsSheet = ({
                   Review Seller
                 </Button>
               )}
+              {canRequestRefund && (
+                <Button
+                  onClick={() => setRefundDialogOpen(true)}
+                  disabled={refundStatus?.hasPending}
+                  variant="outline"
+                  className="rounded-full h-12 px-8 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-60"
+                >
+                  {refundStatus?.hasPending ? 'Refund Requested' : 'Request Refund'}
+                </Button>
+              )}
               <button
                 className="text-center text-sm text-foreground underline"
                 onClick={() => {
