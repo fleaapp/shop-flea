@@ -123,7 +123,7 @@ const RefundSystemMessage = ({
                 variant="outline"
                 onClick={onReject}
                 disabled={isActioning}
-                className="rounded-full flex-1 h-12 bg-destructive text-destructive-foreground hover:bg-destructive/90 border-destructive"
+                className="rounded-full flex-1 h-12 bg-destructive text-destructive-foreground hover:bg-destructive/90 border-destructive gap-1.5 items-center justify-center"
               >
                 <span className="text-xs leading-none">🚫</span>
                 Reject
