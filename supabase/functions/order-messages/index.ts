@@ -209,7 +209,7 @@ async function insertNotificationWithFallback(
 }
 
 async function insertSystemMessage(
-  extClient: ReturnType<typeof getExternalServiceClient>,
+  extClient: ExternalClient,
   orderMessageKey: "order_id" | "order_group_id",
   orderId: string,
   senderId: string,
