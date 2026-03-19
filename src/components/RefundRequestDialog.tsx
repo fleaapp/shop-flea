@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Image, X, Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase as cloudSupabase } from '@/integrations/supabase/client';
 import { compressImage } from '@/utils/imageCompression';
 import { toast } from 'sonner';
 
