@@ -61,28 +61,24 @@ const OrderDetailsSheet = ({
   const { data: existingReview } = useExistingReview(primaryOrder?.id);
 
   const isBuyer = !!user?.id && user.id === primaryOrder?.buyer_id;
-
-  // Hide refund actions unless the buyer is viewing a delivered order within 10 days
-  const canRequestRefund = useMemo(() => {
-    if (!primaryOrder || !isBuyer || primaryOrder.status !== 'delivered' || !primaryOrder.delivered_at) {
-      return false;
-    }
-
-    return differenceInDays(new Date(), new Date(primaryOrder.delivered_at)) <= 10;
-  }, [isBuyer, primaryOrder]);
+  const isDeliveredOrder = primaryOrder?.status === 'delivered';
+  const refundWindowExpired = useMemo(() => {
+    if (!primaryOrder?.delivered_at) return false;
+    return differenceInDays(new Date(), new Date(primaryOrder.delivered_at)) > 10;
+  }, [primaryOrder?.delivered_at]);
+  const canShowRefundButton = isBuyer && isDeliveredOrder;
 
   // Check if there's a pending refund request (no seller response yet)
   const { data: refundStatus } = useQuery({
     queryKey: ['refund-status', primaryOrder?.id],
     queryFn: async () => {
-      if (!primaryOrder?.id || !canRequestRefund) return { hasPending: false };
+      if (!primaryOrder?.id || !canShowRefundButton) return { hasPending: false };
       const { data } = await invokeCloudFunction('order-messages', {
         method: 'GET',
         query: { orderId: primaryOrder.id },
       });
       const messages = ((data as { messages?: Array<{ message_type: string }> })?.messages) || [];
       const hasRequest = messages.some((m: { message_type: string }) => m.message_type === 'refund_request');
-      // Count requests vs responses - if latest request has no response after it, it's pending
       let pendingCount = 0;
       for (const m of messages) {
         if (m.message_type === 'refund_request') pendingCount++;
@@ -92,7 +88,7 @@ const OrderDetailsSheet = ({
       }
       return { hasPending: pendingCount > 0, hasAnyRequest: hasRequest };
     },
-    enabled: !!primaryOrder?.id && canRequestRefund,
+    enabled: !!primaryOrder?.id && canShowRefundButton,
   });
 
   if (!orders || orders.length === 0) return null;
@@ -278,14 +274,14 @@ const OrderDetailsSheet = ({
                   Review Seller
                 </Button>
               )}
-              {canRequestRefund && (
+              {canShowRefundButton && (
                 <Button
                   onClick={() => setRefundDialogOpen(true)}
-                  disabled={refundStatus?.hasPending}
+                  disabled={refundStatus?.hasPending || refundWindowExpired}
                   variant="outline"
                   className="rounded-full h-12 px-8 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-60"
                 >
-                  {refundStatus?.hasPending ? 'Refund Requested' : 'Request Refund'}
+                  {refundStatus?.hasPending ? 'Refund Requested' : refundWindowExpired ? 'Refund Window Closed' : 'Request Refund'}
                 </Button>
               )}
               <button
