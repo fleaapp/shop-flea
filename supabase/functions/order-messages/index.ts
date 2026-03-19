@@ -54,7 +54,53 @@ async function getUserId(req: Request): Promise<string | null> {
 
 type ExternalClient = ReturnType<typeof getExternalClient>;
 
+type OrderMessageInsertInput = {
+  senderId: string;
+  message: string;
+  attachmentUrl?: string | null;
+  messageType?: string;
+};
+
+type OrderMessageRow = {
+  id?: string;
+  sender_id: string;
+  message: string;
+  attachment_url?: string | null;
+  message_type?: string | null;
+  created_at?: string;
+  read?: boolean;
+  order_id?: string;
+  order_group_id?: string;
+};
+
 let orderMessageKeyCache: "order_id" | "order_group_id" | null = null;
+let orderMessagesSupportsMessageTypeCache: boolean | null = null;
+
+function isMissingColumnError(error: unknown, columnName: string): boolean {
+  if (!error || typeof error !== "object") return false;
+
+  const candidate = error as { code?: string; message?: string; details?: string | null };
+  const errorText = `${candidate.message ?? ""} ${candidate.details ?? ""}`;
+
+  return candidate.code === "PGRST204" && errorText.includes(columnName);
+}
+
+function deriveMessageType(message: string): string {
+  try {
+    const parsed = JSON.parse(message) as { type?: string };
+    if (
+      parsed?.type === "refund_request" ||
+      parsed?.type === "refund_rejected" ||
+      parsed?.type === "refund_initiated"
+    ) {
+      return parsed.type;
+    }
+  } catch {
+    // Ignore non-JSON user messages.
+  }
+
+  return "user";
+}
 
 async function getOrderMessageKey(
   extClient: ExternalClient,
@@ -116,7 +162,7 @@ async function isOrderParticipant(
     requestedIdType: "unknown" as const,
   };
 
-  const orderFields = "id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, created_at";
+  const orderFields = "id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, created_at, payment_method";
 
   const orderByIdResponse = await extClient
     .from("orders")
@@ -160,7 +206,7 @@ async function isOrderParticipant(
     buyerId: order.buyer_id,
     sellerId: order.seller_id,
     listingId: order.listing_id,
-    paymentMethod: "stripe",
+    paymentMethod: order.payment_method ?? "stripe",
     matchedOrderId: order.id,
     matchedOrderGroupId: order.order_group_id,
     relatedOrderIds,
@@ -221,6 +267,64 @@ async function insertNotificationWithFallback(
   if (fallbackError) throw fallbackError;
 }
 
+async function insertOrderMessage(
+  extClient: ExternalClient,
+  orderMessageKey: "order_id" | "order_group_id",
+  orderId: string,
+  input: OrderMessageInsertInput,
+): Promise<OrderMessageRow> {
+  const baseInsert = {
+    sender_id: input.senderId,
+    message: input.message || "",
+    attachment_url: input.attachmentUrl || null,
+  };
+
+  const recordWithoutType = orderMessageKey === "order_id"
+    ? { ...baseInsert, order_id: orderId }
+    : { ...baseInsert, order_group_id: orderId };
+
+  const shouldIncludeMessageType = input.messageType && orderMessagesSupportsMessageTypeCache !== false;
+  const recordWithOptionalType = shouldIncludeMessageType
+    ? { ...recordWithoutType, message_type: input.messageType }
+    : recordWithoutType;
+
+  const { data, error } = await extClient
+    .from("order_messages")
+    .insert(recordWithOptionalType)
+    .select()
+    .single();
+
+  if (!error) {
+    if (shouldIncludeMessageType) {
+      orderMessagesSupportsMessageTypeCache = true;
+    }
+
+    return {
+      ...(data as OrderMessageRow),
+      message_type: (data as OrderMessageRow)?.message_type ?? input.messageType ?? deriveMessageType(input.message),
+    };
+  }
+
+  if (shouldIncludeMessageType && isMissingColumnError(error, "message_type")) {
+    orderMessagesSupportsMessageTypeCache = false;
+
+    const fallbackResponse = await extClient
+      .from("order_messages")
+      .insert(recordWithoutType)
+      .select()
+      .single();
+
+    if (fallbackResponse.error) throw fallbackResponse.error;
+
+    return {
+      ...(fallbackResponse.data as OrderMessageRow),
+      message_type: input.messageType ?? deriveMessageType(input.message),
+    };
+  }
+
+  throw error;
+}
+
 async function insertSystemMessage(
   extClient: ExternalClient,
   orderMessageKey: "order_id" | "order_group_id",
@@ -230,25 +334,12 @@ async function insertSystemMessage(
   message: string,
   attachmentUrl?: string | null,
 ) {
-  const baseInsert = {
-    sender_id: senderId,
-    message: message || "",
-    attachment_url: attachmentUrl || null,
-    message_type: messageType,
-  };
-
-  const messageInsert = orderMessageKey === "order_id"
-    ? { ...baseInsert, order_id: orderId }
-    : { ...baseInsert, order_group_id: orderId };
-
-  const { data, error } = await extClient
-    .from("order_messages")
-    .insert(messageInsert)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  return insertOrderMessage(extClient, orderMessageKey, orderId, {
+    senderId,
+    message,
+    attachmentUrl,
+    messageType,
+  });
 }
 
 function formatUsername(username: string): string {
@@ -309,7 +400,6 @@ Deno.serve(async (req) => {
     const orderMessageKey = await getOrderMessageKey(external);
     const threadOrderId = getThreadOrderId(orderInfo, orderMessageKey, orderId);
 
-    // Handle refund actions via POST with action param
     if (req.method === "POST" && action) {
       const body = await req.json();
       const senderUsername = await getUsername(userId, authHeader);
@@ -324,7 +414,6 @@ Deno.serve(async (req) => {
           });
         }
 
-        // Build system message content as JSON
         const systemContent = JSON.stringify({
           type: "refund_request",
           buyer_username: senderUsername,
@@ -337,7 +426,6 @@ Deno.serve(async (req) => {
 
         await insertSystemMessage(external, orderMessageKey, threadOrderId, userId, "refund_request", systemContent);
 
-        // Notify seller
         try {
           await insertNotificationWithFallback(external, {
             user_id: orderInfo.sellerId,
@@ -367,7 +455,6 @@ Deno.serve(async (req) => {
 
         await insertSystemMessage(external, orderMessageKey, threadOrderId, userId, "refund_rejected", systemContent);
 
-        // Notify buyer
         try {
           await insertNotificationWithFallback(external, {
             user_id: orderInfo.buyerId,
@@ -397,7 +484,6 @@ Deno.serve(async (req) => {
 
         await insertSystemMessage(external, orderMessageKey, threadOrderId, userId, "refund_initiated", systemContent);
 
-        // Notify buyer
         try {
           await insertNotificationWithFallback(external, {
             user_id: orderInfo.buyerId,
@@ -417,7 +503,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Unrecognized action or unauthorized for this action
       return new Response(JSON.stringify({ error: "Invalid action or not authorized" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -435,7 +520,12 @@ Deno.serve(async (req) => {
 
       if (error) throw error;
 
-      return new Response(JSON.stringify({ messages: data || [] }), {
+      const messages = ((data as OrderMessageRow[] | null) ?? []).map((row) => ({
+        ...row,
+        message_type: row.message_type ?? deriveMessageType(row.message),
+      }));
+
+      return new Response(JSON.stringify({ messages }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -476,29 +566,12 @@ Deno.serve(async (req) => {
       const body = await req.json();
       const { message, attachment_url } = body;
 
-      const messageInsert = orderMessageKey === "order_id"
-        ? {
-            order_id: threadOrderId,
-            sender_id: userId,
-            message: message || "",
-            attachment_url: attachment_url || null,
-            message_type: "user",
-          }
-        : {
-            order_group_id: threadOrderId,
-            sender_id: userId,
-            message: message || "",
-            attachment_url: attachment_url || null,
-            message_type: "user",
-          };
-
-      const { data, error } = await external
-        .from("order_messages")
-        .insert(messageInsert)
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await insertOrderMessage(external, orderMessageKey, threadOrderId, {
+        senderId: userId,
+        message: message || "",
+        attachmentUrl: attachment_url || null,
+        messageType: "user",
+      });
 
       try {
         const senderUsername = await getUsername(userId, authHeader);
