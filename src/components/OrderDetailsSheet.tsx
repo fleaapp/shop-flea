@@ -59,7 +59,36 @@ const OrderDetailsSheet = ({
   
   const primaryOrder = orders?.[0];
   const { data: existingReview } = useExistingReview(primaryOrder?.id);
-  
+
+  // Check if there's a pending refund request (no seller response yet)
+  const { data: refundStatus } = useQuery({
+    queryKey: ['refund-status', primaryOrder?.id],
+    queryFn: async () => {
+      if (!primaryOrder?.id) return { hasPending: false };
+      const { data } = await invokeCloudFunction('order-messages', {
+        method: 'GET',
+        query: { orderId: primaryOrder.id },
+      });
+      const messages = ((data as { messages?: Array<{ message_type: string }> })?.messages) || [];
+      const hasRequest = messages.some((m: { message_type: string }) => m.message_type === 'refund_request');
+      const hasResponse = messages.some((m: { message_type: string }) => m.message_type === 'refund_rejected' || m.message_type === 'refund_initiated');
+      // Count requests vs responses - if latest request has no response after it, it's pending
+      let pendingCount = 0;
+      for (const m of messages) {
+        if (m.message_type === 'refund_request') pendingCount++;
+        if (m.message_type === 'refund_rejected' || m.message_type === 'refund_initiated') pendingCount = Math.max(0, pendingCount - 1);
+      }
+      return { hasPending: pendingCount > 0, hasAnyRequest: hasRequest };
+    },
+    enabled: !!primaryOrder?.id,
+  });
+
+  // Hide refund button 10 days after delivery
+  const canRequestRefund = useMemo(() => {
+    if (!primaryOrder?.delivered_at) return true;
+    return differenceInDays(new Date(), new Date(primaryOrder.delivered_at)) <= 10;
+  }, [primaryOrder?.delivered_at]);
+
   if (!orders || orders.length === 0) return null;
 
   const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
