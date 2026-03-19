@@ -87,7 +87,7 @@ const RefundSystemMessage = ({
       <div className="mx-4 my-3">
         <div className="rounded-2xl border-2 border-amber-400/50 bg-amber-50 dark:bg-amber-950/30 p-4 space-y-3">
           <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-            <AlertTriangle className="h-4 w-4" />
+            <span className="text-base">⚠️</span>
             <span className="font-semibold text-sm">Refund Request</span>
           </div>
 
@@ -125,7 +125,7 @@ const RefundSystemMessage = ({
                 disabled={isActioning}
                 className="rounded-full flex-1 h-12 bg-destructive text-destructive-foreground hover:bg-destructive/90 border-destructive"
               >
-                <XCircle className="h-3.5 w-3.5 mr-1" />
+                <span className="mr-1">🚫</span>
                 Reject
               </Button>
               <Button
@@ -134,7 +134,7 @@ const RefundSystemMessage = ({
                 disabled={isActioning}
                 className="rounded-full flex-1 h-12 bg-charcoal text-white hover:bg-charcoal-light"
               >
-                <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                <span className="mr-1">↩️</span>
                 Refund Order
               </Button>
             </div>
