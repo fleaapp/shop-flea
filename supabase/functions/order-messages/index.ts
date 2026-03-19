@@ -407,10 +407,13 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === "PATCH") {
-      const { error } = await external
-        .from("order_messages")
-        .update({ read: true })
-        .eq(orderMessageKey, orderId)
+      const readFilter = orderInfo.requestedIdType === "group" && orderInfo.matchedOrderGroupId
+        ? external.from("order_messages").update({ read: true }).eq(orderMessageKey, orderInfo.matchedOrderGroupId)
+        : orderInfo.relatedOrderIds.length > 1
+          ? external.from("order_messages").update({ read: true }).in("order_id", orderInfo.relatedOrderIds)
+          : external.from("order_messages").update({ read: true }).eq(orderMessageKey, orderInfo.matchedOrderId ?? orderId);
+
+      const { error } = await readFilter
         .neq("sender_id", userId)
         .eq("read", false);
 
