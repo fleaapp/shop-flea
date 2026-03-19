@@ -54,6 +54,12 @@ async function getUserId(req: Request): Promise<string | null> {
 
 type ExternalClient = ReturnType<typeof getExternalClient>;
 
+type RefundImageUpload = {
+  fileName: string;
+  contentType: string;
+  base64: string;
+};
+
 type OrderMessageInsertInput = {
   senderId: string;
   message: string;
@@ -445,6 +451,48 @@ function formatUsername(username: string): string {
   return username.startsWith("@") ? username : `@${username}`;
 }
 
+function decodeBase64(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return bytes;
+}
+
+async function uploadRefundImages(
+  extClient: ExternalClient,
+  userId: string,
+  orderId: string,
+  imageUploads: RefundImageUpload[],
+): Promise<string[]> {
+  const imageUrls: string[] = [];
+
+  for (const [index, image] of imageUploads.entries()) {
+    const safeFileName = image.fileName.replace(/[^a-zA-Z0-9._-]/g, "-");
+    const path = `${userId}/${orderId}/refund-${Date.now()}-${index}-${safeFileName}`;
+    const contentType = image.contentType || "image/jpeg";
+
+    const { error: uploadError } = await extClient.storage
+      .from("order-attachments")
+      .upload(path, decodeBase64(image.base64), {
+        contentType,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      throw new Error(uploadError.message || "Image upload failed");
+    }
+
+    const { data } = extClient.storage.from("order-attachments").getPublicUrl(path);
+    imageUrls.push(data.publicUrl);
+  }
+
+  return imageUrls;
+}
+
 function getThreadOrderId(
   orderInfo: Awaited<ReturnType<typeof isOrderParticipant>>,
   orderMessageKey: "order_id" | "order_group_id",
@@ -505,7 +553,7 @@ Deno.serve(async (req) => {
       const formattedUsername = formatUsername(senderUsername);
 
       if (action === "refund_request" && isBuyer) {
-        const { reason, details, image_urls } = body;
+        const { reason, details, image_urls, image_uploads } = body;
         if (!reason || typeof reason !== "string" || reason.trim().length === 0) {
           return new Response(JSON.stringify({ error: "Reason is required" }), {
             status: 400,
@@ -513,12 +561,15 @@ Deno.serve(async (req) => {
           });
         }
 
+        const uploadedImageUrls = Array.isArray(image_uploads)
+          ? await uploadRefundImages(external, userId, threadOrderId, image_uploads as RefundImageUpload[])
+          : [];
         const systemContent = JSON.stringify({
           type: "refund_request",
           buyer_username: senderUsername,
           reason: reason.trim().slice(0, 500),
           details: (details || "").trim().slice(0, 2000),
-          image_urls: (image_urls || []).slice(0, 5),
+          image_urls: uploadedImageUrls.length ? uploadedImageUrls : (image_urls || []).slice(0, 5),
           payment_method: orderInfo.paymentMethod,
           requested_at: new Date().toISOString(),
         });

@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Image, X, Loader2 } from 'lucide-react';
-import { supabase as cloudSupabase } from '@/integrations/supabase/client';
 import { compressImage } from '@/utils/imageCompression';
 import { toast } from 'sonner';
 
@@ -17,13 +16,36 @@ const REFUND_REASONS = [
   'Other',
 ];
 
+type RefundImageUpload = {
+  fileName: string;
+  contentType: string;
+  base64: string;
+};
+
 interface RefundRequestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orderId: string;
   userId: string;
-  onSubmit: (data: { reason: string; details: string; imageUrls: string[] }) => Promise<void>;
+  onSubmit: (data: { reason: string; details: string; imageUploads: RefundImageUpload[] }) => Promise<void>;
 }
+
+const fileToBase64 = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== 'string') {
+        reject(new Error('Failed to encode image'));
+        return;
+      }
+
+      const [, base64 = ''] = result.split(',');
+      resolve(base64);
+    };
+    reader.onerror = () => reject(new Error('Failed to read image'));
+    reader.readAsDataURL(file);
+  });
 
 const RefundRequestDialog = ({ open, onOpenChange, orderId, userId, onSubmit }: RefundRequestDialogProps) => {
   const [reason, setReason] = useState('');
@@ -59,23 +81,18 @@ const RefundRequestDialog = ({ open, onOpenChange, orderId, userId, onSubmit }: 
 
     setSubmitting(true);
     try {
-      const imageUrls: string[] = [];
+      const imageUploads: RefundImageUpload[] = [];
 
       for (const img of images) {
         const compressed = await compressImage(img.file);
-        const ext = img.file.name.split('.').pop() || 'jpg';
-        const path = `${userId}/${orderId}/refund-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error: uploadError } = await cloudSupabase.storage.from('order-attachments').upload(path, compressed);
-
-        if (uploadError) {
-          throw new Error(uploadError.message || 'Image upload failed');
-        }
-
-        const { data: urlData } = cloudSupabase.storage.from('order-attachments').getPublicUrl(path);
-        imageUrls.push(urlData.publicUrl);
+        imageUploads.push({
+          fileName: compressed.name,
+          contentType: compressed.type || 'image/jpeg',
+          base64: await fileToBase64(compressed),
+        });
       }
 
-      await onSubmit({ reason, details, imageUrls });
+      await onSubmit({ reason, details, imageUploads });
 
       setReason('');
       setDetails('');
