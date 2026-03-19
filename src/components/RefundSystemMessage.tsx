@@ -188,6 +188,7 @@ const RefundSystemMessage = ({
           </p>
 
           {!isSeller && (
+            <div className="flex justify-center">
             <Button
               size="sm"
               onClick={() => window.open(getPaymentProviderUrl(d.payment_method, 'buyer'), '_blank')}
