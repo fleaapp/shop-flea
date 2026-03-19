@@ -553,7 +553,7 @@ Deno.serve(async (req) => {
       const formattedUsername = formatUsername(senderUsername);
 
       if (action === "refund_request" && isBuyer) {
-        const { reason, details, image_urls } = body;
+        const { reason, details, image_urls, image_uploads } = body;
         if (!reason || typeof reason !== "string" || reason.trim().length === 0) {
           return new Response(JSON.stringify({ error: "Reason is required" }), {
             status: 400,
@@ -561,12 +561,15 @@ Deno.serve(async (req) => {
           });
         }
 
+        const uploadedImageUrls = Array.isArray(image_uploads)
+          ? await uploadRefundImages(external, userId, threadOrderId, image_uploads as RefundImageUpload[])
+          : [];
         const systemContent = JSON.stringify({
           type: "refund_request",
           buyer_username: senderUsername,
           reason: reason.trim().slice(0, 500),
           details: (details || "").trim().slice(0, 2000),
-          image_urls: (image_urls || []).slice(0, 5),
+          image_urls: uploadedImageUrls.length ? uploadedImageUrls : (image_urls || []).slice(0, 5),
           payment_method: orderInfo.paymentMethod,
           requested_at: new Date().toISOString(),
         });
