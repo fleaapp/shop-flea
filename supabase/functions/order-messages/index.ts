@@ -90,7 +90,7 @@ async function isOrderParticipant(
   relatedOrderIds: string[];
   requestedIdType: "order" | "group" | "unknown";
 }> {
-  const extClient = getExternalServiceClient();
+  const extClient = getExternalServiceClient(authHeader);
   const emptyState = {
     isBuyer: false,
     isSeller: false,
