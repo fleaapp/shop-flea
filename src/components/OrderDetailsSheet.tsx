@@ -319,11 +319,11 @@ const OrderDetailsSheet = ({
           onOpenChange={setRefundDialogOpen}
           orderId={primaryOrder.id}
           userId={user.id}
-          onSubmit={async ({ reason, details, imageUrls }) => {
+          onSubmit={async ({ reason, details, imageUploads }) => {
             const { data, error } = await invokeCloudFunction('order-messages', {
               method: 'POST',
               query: { orderId: primaryOrder.id, action: 'refund_request' },
-              body: { reason, details, image_urls: imageUrls },
+              body: { reason, details, image_uploads: imageUploads },
             });
             if (error) {
               console.error('[RefundRequest] Error:', error);
