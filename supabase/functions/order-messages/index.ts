@@ -155,8 +155,8 @@ async function isOrderParticipant(
   };
 }
 
-async function getUsername(userId: string): Promise<string> {
-  const extClient = getExternalServiceClient();
+async function getUsername(userId: string, authHeader?: string | null): Promise<string> {
+  const extClient = getExternalServiceClient(authHeader);
 
   const publicProfileResponse = await extClient
     .from("profiles_public")
