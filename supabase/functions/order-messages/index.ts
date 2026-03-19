@@ -332,6 +332,7 @@ Deno.serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
 
     if (req.method === "GET") {
       const { data, error } = await external
