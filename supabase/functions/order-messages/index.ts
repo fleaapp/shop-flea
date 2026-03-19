@@ -77,6 +77,7 @@ async function getOrderMessageKey(
 async function isOrderParticipant(
   userId: string,
   requestedOrderId: string,
+  authHeader?: string | null,
 ): Promise<{
   isBuyer: boolean;
   isSeller: boolean;
