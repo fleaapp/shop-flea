@@ -61,18 +61,17 @@ const OrderDetailsSheet = ({
   const { data: existingReview } = useExistingReview(primaryOrder?.id);
 
   const isBuyer = !!user?.id && user.id === primaryOrder?.buyer_id;
-  const isDeliveredOrder = primaryOrder?.status === 'delivered';
   const refundWindowExpired = useMemo(() => {
     if (!primaryOrder?.delivered_at) return false;
     return differenceInDays(new Date(), new Date(primaryOrder.delivered_at)) > 10;
   }, [primaryOrder?.delivered_at]);
-  const canShowRefundButton = isBuyer && isDeliveredOrder;
+  const canShowRefundButton = isBuyer && !refundWindowExpired;
 
   // Check if there's a pending refund request (no seller response yet)
   const { data: refundStatus } = useQuery({
     queryKey: ['refund-status', primaryOrder?.id],
     queryFn: async () => {
-      if (!primaryOrder?.id || !canShowRefundButton) return { hasPending: false };
+      if (!primaryOrder?.id || !isBuyer) return { hasPending: false };
       const { data } = await invokeCloudFunction('order-messages', {
         method: 'GET',
         query: { orderId: primaryOrder.id },
@@ -88,7 +87,7 @@ const OrderDetailsSheet = ({
       }
       return { hasPending: pendingCount > 0, hasAnyRequest: hasRequest };
     },
-    enabled: !!primaryOrder?.id && canShowRefundButton,
+    enabled: !!primaryOrder?.id && isBuyer,
   });
 
   if (!orders || orders.length === 0) return null;
