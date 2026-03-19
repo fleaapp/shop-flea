@@ -473,7 +473,7 @@ Deno.serve(async (req) => {
       if (error) throw error;
 
       try {
-        const senderUsername = await getUsername(userId);
+        const senderUsername = await getUsername(userId, authHeader);
         const { data: orderData } = await external
           .from("orders")
           .select("listing_id, buyer_id, seller_id")
