@@ -231,7 +231,7 @@ async function isOrderParticipant(
     buyerId: order.buyer_id,
     sellerId: order.seller_id,
     listingId: order.listing_id,
-    paymentMethod: "stripe",
+    paymentMethod: order.payment_method || "stripe",
     matchedOrderId: order.id,
     matchedOrderGroupId: order.order_group_id,
     relatedOrderIds,
