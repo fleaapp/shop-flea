@@ -53,7 +53,9 @@ const OrderDetailsSheet = ({
   const { user } = useAuth();
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
+  const [refundDialogOpen, setRefundDialogOpen] = useState(false);
   const { getGroupUnread } = useUnreadOrderMessages();
+  const queryClient = useQueryClient();
   
   const primaryOrder = orders?.[0];
   const { data: existingReview } = useExistingReview(primaryOrder?.id);
