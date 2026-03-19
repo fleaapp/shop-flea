@@ -115,10 +115,6 @@ const SalesDetailsSheet = ({
             <p className="text-sm text-muted-foreground mt-1">
               Order #{primaryOrder.order_number || (primaryOrder.order_group_id || primaryOrder.id).slice(0, 8).toUpperCase()} • {formattedDate}
             </p>
-            {(() => {
-              const chatThreadId = primaryOrder.order_group_id || primaryOrder.id;
-              const unread = orders.reduce((sum, order) => sum + getGroupUnread(order.id), 0);
-              return (
             <div className="flex justify-center mt-1 mb-2">
               <Badge variant={statusBadge.variant}>
                 {statusBadge.label}
@@ -137,20 +133,18 @@ const SalesDetailsSheet = ({
                 variant="outline"
                 onClick={() => {
                   onOpenChange(false);
-                  setTimeout(() => navigate(`/order-chat/${chatThreadId}`), 300);
+                  setTimeout(() => navigate(`/order-chat/${primaryOrder.order_group_id || primaryOrder.id}`), 300);
                 }}
                 className="relative h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-primary active:border-primary"
               >
                 💬
-                {unread > 0 ? (
+                {orders.reduce((sum, order) => sum + getGroupUnread(order.id), 0) > 0 ? (
                   <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                    {unread}
+                    {orders.reduce((sum, order) => sum + getGroupUnread(order.id), 0)}
                   </span>
                 ) : null}
               </Button>
             </div>
-              );
-            })()}
           </DrawerHeader>
 
           <div className="px-4 pb-8 space-y-4">
