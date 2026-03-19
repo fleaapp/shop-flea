@@ -132,7 +132,7 @@ const RefundSystemMessage = ({
                 size="sm"
                 onClick={() => onRefund?.(d.payment_method)}
                 disabled={isActioning}
-                className="rounded-full flex-1 h-12 bg-charcoal text-white hover:bg-charcoal-light"
+                className="rounded-full flex-1 h-12 bg-charcoal text-white hover:bg-charcoal-light gap-1.5 items-center justify-center"
               >
                 <span className="text-xs leading-none">↩️</span>
                 Refund Order
