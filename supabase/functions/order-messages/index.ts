@@ -147,7 +147,6 @@ async function isOrderParticipant(
   relatedOrderIds: string[];
   requestedIdType: "order" | "group" | "unknown";
 }> {
-  const userScopedClient = getExternalClient(authHeader);
   const serviceClient = getExternalServiceClient(authHeader);
   const emptyState = {
     isBuyer: false,
@@ -165,53 +164,63 @@ async function isOrderParticipant(
 
   const orderFields = "id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, created_at, payment_method";
 
-  const loadVisibleOrder = async (client: ExternalClient) => {
-    const byIdResponse = await client
-      .from("orders")
-      .select(orderFields)
-      .eq("id", requestedOrderId)
-      .maybeSingle();
+  const byIdResponse = await serviceClient
+    .from("orders")
+    .select(orderFields)
+    .eq("id", requestedOrderId)
+    .maybeSingle();
 
-    if (byIdResponse.data) {
-      return { order: byIdResponse.data, requestedIdType: "order" as const };
-    }
+  if (byIdResponse.error && byIdResponse.error.code !== "PGRST116") {
+    console.error("[order-messages] Failed order lookup by id:", byIdResponse.error);
+  }
 
-    const byGroupResponse = await client
-      .from("orders")
-      .select(orderFields)
-      .eq("order_group_id", requestedOrderId)
-      .order("created_at", { ascending: true })
-      .limit(1);
+  const byGroupResponse = byIdResponse.data
+    ? { data: null, error: null }
+    : await serviceClient
+        .from("orders")
+        .select(orderFields)
+        .eq("order_group_id", requestedOrderId)
+        .order("created_at", { ascending: true })
+        .limit(1);
 
-    return {
-      order: byGroupResponse.data?.[0] ?? null,
-      requestedIdType: "group" as const,
-    };
-  };
+  if (byGroupResponse.error) {
+    console.error("[order-messages] Failed order lookup by group id:", byGroupResponse.error);
+  }
 
-  const visibleOrderResult = await loadVisibleOrder(userScopedClient);
-  const fallbackOrderResult = visibleOrderResult.order
-    ? visibleOrderResult
-    : await loadVisibleOrder(serviceClient);
+  const order = byIdResponse.data ?? byGroupResponse.data?.[0] ?? null;
+  const requestedIdType = byIdResponse.data
+    ? "order" as const
+    : order
+      ? "group" as const
+      : "unknown" as const;
 
-  const order = fallbackOrderResult.order;
-  const requestedIdType = fallbackOrderResult.order ? fallbackOrderResult.requestedIdType : "unknown" as const;
-
-  if (!order) return emptyState;
+  if (!order) {
+    console.error("[order-messages] No matching order found for:", requestedOrderId);
+    return emptyState;
+  }
 
   if (order.buyer_id !== userId && order.seller_id !== userId) {
+    console.error("[order-messages] User is not participant:", {
+      requestedOrderId,
+      userId,
+      buyerId: order.buyer_id,
+      sellerId: order.seller_id,
+    });
     return emptyState;
   }
 
   let relatedOrderIds = [order.id];
   if (order.order_group_id) {
-    const { data: groupedOrders } = await userScopedClient
+    const groupedOrdersResponse = await serviceClient
       .from("orders")
       .select("id")
-      .eq("order_group_id", order.order_group_id);
+      .eq("order_group_id", order.order_group_id)
+      .order("created_at", { ascending: true });
 
-    if (groupedOrders?.length) {
-      relatedOrderIds = groupedOrders.map((groupedOrder) => groupedOrder.id);
+    if (groupedOrdersResponse.error) {
+      console.error("[order-messages] Failed grouped order lookup:", groupedOrdersResponse.error);
+    } else if (groupedOrdersResponse.data?.length) {
+      relatedOrderIds = groupedOrdersResponse.data.map((groupedOrder) => groupedOrder.id);
     }
   }
 
