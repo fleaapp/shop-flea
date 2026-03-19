@@ -17,8 +17,9 @@ type NotificationInsert = {
   related_thread_id?: string;
 };
 
-const EXTERNAL_PUBLIC_URL = "https://dzglehiopfgfjmxtejve.supabase.co";
-const EXTERNAL_PUBLIC_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2R6Z2xlaGlvcGZnZmpteHRlanZlLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJyZWYiOiJkemdsZWhpb3BmZ2ZqbXh0ZWp2ZSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzY4OTcyNDI1LCJleHAiOjIwODQ1NDg0MjV9.qfOBjubnuod5iGF_G_gH2ZhMDJ1fVwAO9p5BZSxG0xI";
+const EXTERNAL_PUBLIC_URL = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "https://dzglehiopfgfjmxtejve.supabase.co";
+const EXTERNAL_PUBLIC_ANON_KEY = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6Z2xlaGlvcGZnZmpteHRlanZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzI0MjUsImV4cCI6MjA4NDU0ODQyNX0.qfOBjubnuod5iGF_G_gH2ZhMDJ1fVwAO9p5BZSxG0xI";
+const EXTERNAL_SERVICE_ROLE_KEY = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY");
 
 function getExternalClient(authHeader?: string | null) {
   return createClient(EXTERNAL_PUBLIC_URL, EXTERNAL_PUBLIC_ANON_KEY, {
@@ -27,6 +28,12 @@ function getExternalClient(authHeader?: string | null) {
 }
 
 function getExternalServiceClient(authHeader?: string | null) {
+  // Use service role key for server-side operations to bypass RLS
+  if (EXTERNAL_SERVICE_ROLE_KEY) {
+    return createClient(EXTERNAL_PUBLIC_URL, EXTERNAL_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+  }
   return getExternalClient(authHeader);
 }
 
