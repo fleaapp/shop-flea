@@ -91,19 +91,18 @@ const Notifications = () => {
 
     // Order message notifications → navigate to order chat using related_order_id
     if (notification.type === 'order_message_seller' || notification.type === 'order_message_buyer') {
-      const orderId = notification.related_order_id;
-      if (orderId) {
-        navigate(`/order-chat/${orderId}`);
+      const threadId = notification.related_order_id;
+      if (threadId) {
+        navigate(`/order-chat/${threadId}`);
         return;
       }
-      // Fallback: find order by listing_id
       if (notification.related_listing_id) {
         const allGroups = [...(sellerOrderGroups || []), ...(buyerOrderGroups || [])];
-        const matchingOrder = allGroups
-          .flatMap(g => g.orders)
-          .find(o => o.listing_id === notification.related_listing_id);
-        if (matchingOrder) {
-          navigate(`/order-chat/${matchingOrder.id}`);
+        const matchingGroup = allGroups.find((group) =>
+          group.orders.some((order) => order.listing_id === notification.related_listing_id)
+        );
+        if (matchingGroup) {
+          navigate(`/order-chat/${matchingGroup.order_group_id || matchingGroup.id}`);
           return;
         }
       }

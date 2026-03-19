@@ -72,17 +72,69 @@ async function getOrderMessageKey(
 
 async function isOrderParticipant(
   userId: string,
-  orderId: string,
-): Promise<{ isBuyer: boolean; isSeller: boolean; deliveredAt: string | null; buyerId: string; sellerId: string; listingId: string; paymentMethod: string }> {
+  requestedOrderId: string,
+): Promise<{
+  isBuyer: boolean;
+  isSeller: boolean;
+  deliveredAt: string | null;
+  buyerId: string;
+  sellerId: string;
+  listingId: string;
+  paymentMethod: string;
+  matchedOrderId: string | null;
+  matchedOrderGroupId: string | null;
+  relatedOrderIds: string[];
+  requestedIdType: "order" | "group" | "unknown";
+}> {
   const extClient = getExternalServiceClient();
+  const emptyState = {
+    isBuyer: false,
+    isSeller: false,
+    deliveredAt: null,
+    buyerId: "",
+    sellerId: "",
+    listingId: "",
+    paymentMethod: "stripe",
+    matchedOrderId: null,
+    matchedOrderGroupId: null,
+    relatedOrderIds: [],
+    requestedIdType: "unknown" as const,
+  };
 
-  const { data: order } = await extClient
+  const orderByIdResponse = await extClient
     .from("orders")
-    .select("buyer_id, seller_id, delivered_at, listing_id, payment_method")
-    .eq("id", orderId)
+    .select("id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, payment_method")
+    .eq("id", requestedOrderId)
     .maybeSingle();
 
-  if (!order) return { isBuyer: false, isSeller: false, deliveredAt: null, buyerId: "", sellerId: "", listingId: "", paymentMethod: "stripe" };
+  let order = orderByIdResponse.data;
+  let requestedIdType: "order" | "group" | "unknown" = "order";
+
+  if (!order) {
+    requestedIdType = "group";
+    const orderByGroupResponse = await extClient
+      .from("orders")
+      .select("id, order_group_id, buyer_id, seller_id, delivered_at, listing_id, payment_method")
+      .eq("order_group_id", requestedOrderId)
+      .order("created_at", { ascending: true })
+      .limit(1);
+
+    order = orderByGroupResponse.data?.[0] ?? null;
+  }
+
+  if (!order) return emptyState;
+
+  let relatedOrderIds = [order.id];
+  if (order.order_group_id) {
+    const { data: groupedOrders } = await extClient
+      .from("orders")
+      .select("id")
+      .eq("order_group_id", order.order_group_id);
+
+    if (groupedOrders?.length) {
+      relatedOrderIds = groupedOrders.map((groupedOrder) => groupedOrder.id);
+    }
+  }
 
   return {
     isBuyer: order.buyer_id === userId,
@@ -92,6 +144,10 @@ async function isOrderParticipant(
     sellerId: order.seller_id,
     listingId: order.listing_id,
     paymentMethod: order.payment_method || "stripe",
+    matchedOrderId: order.id,
+    matchedOrderGroupId: order.order_group_id,
+    relatedOrderIds,
+    requestedIdType,
   };
 }
 
@@ -335,11 +391,13 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === "GET") {
-      const { data, error } = await external
-        .from("order_messages")
-        .select("*")
-        .eq(orderMessageKey, orderId)
-        .order("created_at", { ascending: true });
+      const messageFilter = orderInfo.requestedIdType === "group" && orderInfo.matchedOrderGroupId
+        ? external.from("order_messages").select("*").eq(orderMessageKey, orderInfo.matchedOrderGroupId)
+        : orderInfo.relatedOrderIds.length > 1
+          ? external.from("order_messages").select("*").in("order_id", orderInfo.relatedOrderIds)
+          : external.from("order_messages").select("*").eq(orderMessageKey, orderInfo.matchedOrderId ?? orderId);
+
+      const { data, error } = await messageFilter.order("created_at", { ascending: true });
 
       if (error) throw error;
 
@@ -349,10 +407,13 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === "PATCH") {
-      const { error } = await external
-        .from("order_messages")
-        .update({ read: true })
-        .eq(orderMessageKey, orderId)
+      const readFilter = orderInfo.requestedIdType === "group" && orderInfo.matchedOrderGroupId
+        ? external.from("order_messages").update({ read: true }).eq(orderMessageKey, orderInfo.matchedOrderGroupId)
+        : orderInfo.relatedOrderIds.length > 1
+          ? external.from("order_messages").update({ read: true }).in("order_id", orderInfo.relatedOrderIds)
+          : external.from("order_messages").update({ read: true }).eq(orderMessageKey, orderInfo.matchedOrderId ?? orderId);
+
+      const { error } = await readFilter
         .neq("sender_id", userId)
         .eq("read", false);
 

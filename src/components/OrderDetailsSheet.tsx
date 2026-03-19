@@ -102,7 +102,8 @@ const OrderDetailsSheet = ({
   const sellerUsername = rawUsername.startsWith('@') ? rawUsername.slice(1) : rawUsername;
   const sellerAvatar = primaryOrder.seller_profile?.avatar_url || getDefaultAvatar(primaryOrder.seller_id);
 
-  const displayId = primaryOrder.order_number || (primaryOrder.order_group_id || primaryOrder.id).slice(0, 8).toUpperCase();
+  const chatThreadId = primaryOrder.order_group_id || primaryOrder.id;
+  const displayId = primaryOrder.order_number || chatThreadId.slice(0, 8).toUpperCase();
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -129,15 +130,15 @@ const OrderDetailsSheet = ({
               </Button>
               <Button
                 variant="outline"
-                onClick={() => {
-                  onOpenChange(false);
-                  setTimeout(() => navigate(`/order-chat/${primaryOrder.id}`), 300);
-                }}
-                className="relative h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-primary active:border-primary"
-              >
-                💬
-                {(() => {
-                  const unread = getGroupUnread(primaryOrder.id);
+                  onClick={() => {
+                    onOpenChange(false);
+                    setTimeout(() => navigate(`/order-chat/${chatThreadId}`), 300);
+                  }}
+                  className="relative h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-primary active:border-primary"
+                >
+                  💬
+                  {(() => {
+                    const unread = orders.reduce((sum, order) => sum + getGroupUnread(order.id), 0);
                   return unread > 0 ? (
                     <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
                       {unread}

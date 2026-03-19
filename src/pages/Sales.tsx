@@ -111,7 +111,7 @@ const Sales = () => {
           </span>
         </div>
         <button
-          onClick={(e) => { e.stopPropagation(); navigate(`/order-chat/${primaryOrder.id}`); }}
+          onClick={(e) => { e.stopPropagation(); navigate(`/order-chat/${group.order_group_id || primaryOrder.id}`); }}
           className="relative flex h-10 w-10 items-center justify-center flex-shrink-0"
         >
           <span className="text-xl">💬</span>
