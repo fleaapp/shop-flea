@@ -89,8 +89,9 @@ const Notifications = () => {
       return;
     }
 
-    // Order message notifications → navigate to order chat using related_order_id
-    if (notification.type === 'order_message_seller' || notification.type === 'order_message_buyer') {
+    // Order message / refund notifications → navigate to order chat using related_order_id
+    if (notification.type === 'order_message_seller' || notification.type === 'order_message_buyer' ||
+        notification.type === 'refund_request' || notification.type === 'refund_rejected' || notification.type === 'refund_initiated') {
       const threadId = notification.related_order_id;
       if (threadId) {
         navigate(`/order-chat/${threadId}`);
