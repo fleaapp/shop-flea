@@ -259,7 +259,10 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log("[order-messages] Request:", req.method, req.url);
     const userId = await getUserId(req);
+    console.log("[order-messages] userId:", userId);
+    console.log("[order-messages] Has service role key:", !!EXTERNAL_SERVICE_ROLE_KEY);
     if (!userId) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
