@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Send, Image, Flag, Lock } from 'lucide-react';
+import RefundSystemMessage from '@/components/RefundSystemMessage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -24,6 +25,7 @@ interface OrderMessage {
   attachment_url: string | null;
   created_at: string;
   read: boolean;
+  message_type?: string;
 }
 
 const OrderChat = () => {
@@ -35,6 +37,7 @@ const OrderChat = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [refundActioning, setRefundActioning] = useState(false);
   const { openReport, submitPendingReport, closeReport, pendingReport, isReporting } = useReporting();
 
   const { buyerOrderGroups, sellerOrderGroups } = useOrders();
@@ -226,8 +229,75 @@ const OrderChat = () => {
         {messages.length === 0 && !messagesError && (
           <p className="text-center text-muted-foreground text-sm mt-8">No messages yet. Start the conversation!</p>
         )}
-        {messages.map((msg) => {
+        {messages.map((msg, msgIndex) => {
           const isMe = msg.sender_id === user?.id;
+          const isSystem = msg.message_type && msg.message_type !== 'user';
+
+          if (isSystem) {
+            // Determine if seller has responded to this refund request
+            const hasSellerResponded = msg.message_type === 'refund_request' && messages.slice(msgIndex + 1).some(
+              m => m.message_type === 'refund_rejected' || m.message_type === 'refund_initiated'
+            );
+            // Show auto-reminder if 4+ days since request with no response
+            const showAutoReminder = msg.message_type === 'refund_request' && !hasSellerResponded && (() => {
+              const daysSince = (Date.now() - new Date(msg.created_at).getTime()) / (1000 * 60 * 60 * 24);
+              return daysSince >= 4;
+            })();
+
+            const iAmSeller = user?.id === orderInfo?.seller_id;
+
+            return (
+              <RefundSystemMessage
+                key={msg.id}
+                messageType={msg.message_type!}
+                messageContent={msg.message}
+                isSeller={!!iAmSeller}
+                hasSellerResponded={hasSellerResponded}
+                showAutoReminder={showAutoReminder}
+                isActioning={refundActioning}
+                onReject={async () => {
+                  setRefundActioning(true);
+                  try {
+                    await invokeCloudFunction('order-messages', {
+                      method: 'POST',
+                      query: { orderId: orderId!, action: 'refund_reject' },
+                      body: {},
+                    });
+                    queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
+                    queryClient.invalidateQueries({ queryKey: ['refund-status', orderId] });
+                    toast.success('Refund request rejected');
+                  } catch {
+                    toast.error('Failed to reject refund');
+                  } finally {
+                    setRefundActioning(false);
+                  }
+                }}
+                onRefund={async () => {
+                  setRefundActioning(true);
+                  try {
+                    const { data } = await invokeCloudFunction('order-messages', {
+                      method: 'POST',
+                      query: { orderId: orderId!, action: 'refund_initiate' },
+                      body: {},
+                    });
+                    queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
+                    queryClient.invalidateQueries({ queryKey: ['refund-status', orderId] });
+                    const pm = (data as { payment_method?: string })?.payment_method || 'stripe';
+                    const refundUrl = pm === 'paypal'
+                      ? 'https://www.paypal.com/disputes'
+                      : 'https://dashboard.stripe.com/payments';
+                    window.open(refundUrl, '_blank');
+                    toast.success('Refund initiated');
+                  } catch {
+                    toast.error('Failed to initiate refund');
+                  } finally {
+                    setRefundActioning(false);
+                  }
+                }}
+              />
+            );
+          }
+
           return (
             <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${

@@ -369,6 +369,7 @@ export type Database = {
           created_at: string
           id: string
           message: string
+          message_type: string
           order_id: string
           read: boolean
           sender_id: string
@@ -378,6 +379,7 @@ export type Database = {
           created_at?: string
           id?: string
           message?: string
+          message_type?: string
           order_id: string
           read?: boolean
           sender_id: string
@@ -387,6 +389,7 @@ export type Database = {
           created_at?: string
           id?: string
           message?: string
+          message_type?: string
           order_id?: string
           read?: boolean
           sender_id?: string
@@ -402,6 +405,7 @@ export type Database = {
           listing_id: string
           order_group_id: string | null
           order_number: string | null
+          payment_method: string
           price: number
           seller_id: string
           shipped_at: string | null
@@ -425,6 +429,7 @@ export type Database = {
           listing_id: string
           order_group_id?: string | null
           order_number?: string | null
+          payment_method?: string
           price: number
           seller_id: string
           shipped_at?: string | null
@@ -448,6 +453,7 @@ export type Database = {
           listing_id?: string
           order_group_id?: string | null
           order_number?: string | null
+          payment_method?: string
           price?: number
           seller_id?: string
           shipped_at?: string | null

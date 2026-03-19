@@ -68,6 +68,7 @@ const CheckoutSuccess = () => {
                 price: item.price,
                 shipping_price: itemShipping,
                 status: 'awaiting',
+                payment_method: 'stripe',
                 shipping_first_name: shipping.shippingFirstName,
                 shipping_last_name: shipping.shippingLastName,
                 shipping_address: shipping.shippingAddress,

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
@@ -6,14 +6,18 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Order, OrderStatus } from '@/hooks/useOrders';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { useExistingReview } from '@/hooks/useReviews';
 import WriteReviewDrawer from '@/components/WriteReviewDrawer';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import OrderReceiptDialog from '@/components/OrderReceiptDialog';
+import RefundRequestDialog from '@/components/RefundRequestDialog';
 import { useAuth } from '@/context/AuthContext';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import ShippingStatusTracker from '@/components/ShippingStatusTracker';
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 interface OrderDetailsSheetProps {
   orders: Order[] | null;
@@ -49,11 +53,42 @@ const OrderDetailsSheet = ({
   const { user } = useAuth();
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
+  const [refundDialogOpen, setRefundDialogOpen] = useState(false);
   const { getGroupUnread } = useUnreadOrderMessages();
+  const queryClient = useQueryClient();
   
   const primaryOrder = orders?.[0];
   const { data: existingReview } = useExistingReview(primaryOrder?.id);
-  
+
+  // Check if there's a pending refund request (no seller response yet)
+  const { data: refundStatus } = useQuery({
+    queryKey: ['refund-status', primaryOrder?.id],
+    queryFn: async () => {
+      if (!primaryOrder?.id) return { hasPending: false };
+      const { data } = await invokeCloudFunction('order-messages', {
+        method: 'GET',
+        query: { orderId: primaryOrder.id },
+      });
+      const messages = ((data as { messages?: Array<{ message_type: string }> })?.messages) || [];
+      const hasRequest = messages.some((m: { message_type: string }) => m.message_type === 'refund_request');
+      const hasResponse = messages.some((m: { message_type: string }) => m.message_type === 'refund_rejected' || m.message_type === 'refund_initiated');
+      // Count requests vs responses - if latest request has no response after it, it's pending
+      let pendingCount = 0;
+      for (const m of messages) {
+        if (m.message_type === 'refund_request') pendingCount++;
+        if (m.message_type === 'refund_rejected' || m.message_type === 'refund_initiated') pendingCount = Math.max(0, pendingCount - 1);
+      }
+      return { hasPending: pendingCount > 0, hasAnyRequest: hasRequest };
+    },
+    enabled: !!primaryOrder?.id,
+  });
+
+  // Hide refund button 10 days after delivery
+  const canRequestRefund = useMemo(() => {
+    if (!primaryOrder?.delivered_at) return true;
+    return differenceInDays(new Date(), new Date(primaryOrder.delivered_at)) <= 10;
+  }, [primaryOrder?.delivered_at]);
+
   if (!orders || orders.length === 0) return null;
 
   const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
@@ -236,6 +271,16 @@ const OrderDetailsSheet = ({
                   Review Seller
                 </Button>
               )}
+              {canRequestRefund && (
+                <Button
+                  onClick={() => setRefundDialogOpen(true)}
+                  disabled={refundStatus?.hasPending}
+                  variant="outline"
+                  className="rounded-full h-12 px-8 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-60"
+                >
+                  {refundStatus?.hasPending ? 'Refund Requested' : 'Request Refund'}
+                </Button>
+              )}
               <button
                 className="text-center text-sm text-foreground underline"
                 onClick={() => {
@@ -265,6 +310,25 @@ const OrderDetailsSheet = ({
         onOpenChange={setReceiptOpen}
         viewAs="buyer"
       />
+
+      {user?.id && primaryOrder && (
+        <RefundRequestDialog
+          open={refundDialogOpen}
+          onOpenChange={setRefundDialogOpen}
+          orderId={primaryOrder.id}
+          userId={user.id}
+          onSubmit={async ({ reason, details, imageUrls }) => {
+            await invokeCloudFunction('order-messages', {
+              method: 'POST',
+              query: { orderId: primaryOrder.id, action: 'refund_request' },
+              body: { reason, details, image_urls: imageUrls },
+            });
+            queryClient.invalidateQueries({ queryKey: ['refund-status', primaryOrder.id] });
+            queryClient.invalidateQueries({ queryKey: ['order-messages', primaryOrder.id] });
+            toast.success('Refund request submitted');
+          }}
+        />
+      )}
     </Drawer>
   );
 };
