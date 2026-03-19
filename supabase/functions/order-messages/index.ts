@@ -478,14 +478,14 @@ Deno.serve(async (req) => {
 
       const messageInsert = orderMessageKey === "order_id"
         ? {
-            order_id: orderId,
+            order_id: threadOrderId,
             sender_id: userId,
             message: message || "",
             attachment_url: attachment_url || null,
             message_type: "user",
           }
         : {
-            order_group_id: orderId,
+            order_group_id: threadOrderId,
             sender_id: userId,
             message: message || "",
             attachment_url: attachment_url || null,
@@ -502,29 +502,21 @@ Deno.serve(async (req) => {
 
       try {
         const senderUsername = await getUsername(userId, authHeader);
-        const { data: orderData } = await external
-          .from("orders")
-          .select("listing_id, buyer_id, seller_id")
-          .eq("id", orderId)
-          .maybeSingle();
+        const recipientId = isBuyer ? orderInfo.sellerId : orderInfo.buyerId;
+        const notifType = isBuyer ? "order_message_buyer" : "order_message_seller";
+        const notifMessage = isBuyer
+          ? `📩 New message from your buyer ${senderUsername.startsWith("@") ? senderUsername : `@${senderUsername}`}! Tap to view.`
+          : `💬 New message from ${senderUsername.startsWith("@") ? senderUsername : `@${senderUsername}`} about your order! Tap to view.`;
 
-        if (orderData) {
-          const recipientId = isBuyer ? orderData.seller_id : orderData.buyer_id;
-          const notifType = isBuyer ? "order_message_buyer" : "order_message_seller";
-          const notifMessage = isBuyer
-            ? `📩 New message from your buyer ${senderUsername.startsWith("@") ? senderUsername : `@${senderUsername}`}! Tap to view.`
-            : `💬 New message from ${senderUsername.startsWith("@") ? senderUsername : `@${senderUsername}`} about your order! Tap to view.`;
-
-          await insertNotificationWithFallback(external, {
-            user_id: recipientId,
-            type: notifType,
-            title: "New Message",
-            message: notifMessage,
-            related_listing_id: orderData.listing_id,
-            related_user_id: userId,
-            related_order_id: orderId,
-          });
-        }
+        await insertNotificationWithFallback(external, {
+          user_id: recipientId,
+          type: notifType,
+          title: "New Message",
+          message: notifMessage,
+          related_listing_id: orderInfo.listingId,
+          related_user_id: userId,
+          related_order_id: orderInfo.matchedOrderId ?? threadOrderId,
+        });
       } catch (notifErr) {
         console.error("[order-messages] Notification error:", notifErr);
       }
