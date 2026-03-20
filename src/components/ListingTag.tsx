@@ -16,7 +16,7 @@ export const formatTagLabel = (label: string, isSize = false): string => {
   if (isSize || SIZE_VALUES.includes(label.toLowerCase())) {
     const upper = label.toUpperCase();
     if (upper.includes('"')) return upper;
-    return `AU ${upper}`;
+    return `📏 ${upper}`;
   }
   return label.charAt(0).toUpperCase() + label.slice(1);
 };
