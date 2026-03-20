@@ -230,8 +230,8 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
       // Extract @mentions and send notifications
       const mentions = content.match(/@[\w]+/g);
       if (mentions && mentions.length > 0) {
-        // Normalize usernames (ensure @ prefix for DB lookup)
-        const usernames = mentions.map(m => m.startsWith('@') ? m : `@${m}`);
+        // Strip @ prefix — DB function handles lookup with and without @
+        const usernames = mentions.map(m => m.replace(/^@/, ''));
         
         try {
           await supabase.rpc('create_mention_notifications', {
