@@ -14,7 +14,7 @@ const SIZE_VALUES = ['xs', 's', 'm', 'l', 'xl', 'xxl', 'one size'];
 
 export const formatTagLabel = (label: string, isSize = false): string => {
   if (isSize || SIZE_VALUES.includes(label.toLowerCase())) {
-    return label.toUpperCase();
+    return `📏 ${label.toUpperCase()}`;
   }
   return label.charAt(0).toUpperCase() + label.slice(1);
 };
