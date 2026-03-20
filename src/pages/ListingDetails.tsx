@@ -574,7 +574,7 @@ const ListingDetails = () => {
                 >
                   <span className="text-[10px] font-bold text-muted-foreground leading-tight">{tag.label}</span>
                   <span className="text-xs font-medium text-muted-foreground leading-snug mt-0.5 text-center">
-                    {tag.isSize ? tag.value.toUpperCase() : tag.value.charAt(0).toUpperCase() + tag.value.slice(1)}
+                    {tag.isSize ? `AU ${tag.value.toUpperCase()}` : tag.value.charAt(0).toUpperCase() + tag.value.slice(1)}
                   </span>
                 </div>
               ))}
