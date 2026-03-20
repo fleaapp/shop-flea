@@ -216,80 +216,38 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
       if (moderationResult.isBlocked) {
         throw new Error(moderationResult.reason || 'Content blocked');
       }
+
+      const trimmedContent = content.trim();
       
       const { error } = await supabase
         .from('listing_comments')
         .insert({
           listing_id: listingId,
           user_id: user.id,
-          content: content.trim(),
+          content: trimmedContent,
           parent_id: parentId || null,
         });
 
       if (error) throw error;
 
-      // Extract @mentions and create notifications directly in the live backend
       const mentionHandles = Array.from(
         new Set(
-          (content.match(/@[\w]+/g) ?? [])
+          (trimmedContent.match(/@[\w]+/g) ?? [])
             .map((mention) => mention.replace(/^@/, '').trim().toLowerCase())
             .filter(Boolean)
         )
       ).slice(0, 10);
 
       if (mentionHandles.length > 0) {
-        const mentionFilters = mentionHandles.flatMap((handle) => [
-          `username.ilike.${handle}`,
-          `username.ilike.@${handle}`,
-        ]);
-
         try {
-          const profilesPublicResponse = await supabase
-            .from('profiles_public')
-            .select('user_id, username')
-            .or(mentionFilters.join(','))
-            .limit(mentionHandles.length * 2);
+          const { error: mentionError } = await invokeCloudFunction('comment-mentions', {
+            listingId,
+            content: trimmedContent,
+          });
 
-          const mentionedProfiles = !profilesPublicResponse.error
-            ? profilesPublicResponse.data ?? []
-            : (
-                await supabase
-                  .from('profiles')
-                  .select('user_id, username')
-                  .or(mentionFilters.join(','))
-                  .limit(mentionHandles.length * 2)
-              ).data ?? [];
-
-          const notificationsToInsert = Array.from(
-            new Map(
-              (mentionedProfiles ?? [])
-                .filter((profile) => {
-                  const normalizedUsername = profile.username?.replace(/^@/, '').toLowerCase();
-                  return !!normalizedUsername && mentionHandles.includes(normalizedUsername) && profile.user_id !== user.id;
-                })
-                .map((profile) => [
-                  profile.user_id,
-                  {
-                    user_id: profile.user_id,
-                    type: 'mention',
-                    title: 'You were mentioned in a comment',
-                    message: content.trim().slice(0, 100),
-                    related_listing_id: listingId,
-                    related_user_id: user.id,
-                  },
-                ])
-            ).values()
-          );
-
-          if (notificationsToInsert.length > 0) {
-            const { error: insertMentionError } = await supabase
-              .from('notifications')
-              .insert(notificationsToInsert);
-
-            if (insertMentionError) throw insertMentionError;
-          }
+          if (mentionError) throw mentionError;
         } catch (notifError) {
-          // Don't fail the comment if notification fails
+          // Don't fail the comment if mention notification fails
           console.error('Failed to send mention notifications:', notifError);
         }
       }
