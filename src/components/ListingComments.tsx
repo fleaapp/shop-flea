@@ -229,26 +229,43 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
 
       // Extract @mentions and create notifications directly in the live backend
       const mentionHandles = Array.from(
-        new Set((content.match(/@[\w]+/g) ?? []).map((mention) => mention.replace(/^@/, '').toLowerCase()))
-      );
+        new Set(
+          (content.match(/@[\w]+/g) ?? [])
+            .map((mention) => mention.replace(/^@/, '').trim().toLowerCase())
+            .filter(Boolean)
+        )
+      ).slice(0, 10);
 
       if (mentionHandles.length > 0) {
-        const mentionVariants = Array.from(
-          new Set(mentionHandles.flatMap((handle) => [handle, `@${handle}`]))
-        );
+        const mentionFilters = mentionHandles.flatMap((handle) => [
+          `username.ilike.${handle}`,
+          `username.ilike.@${handle}`,
+        ]);
 
         try {
-          const { data: mentionedProfiles, error: mentionLookupError } = await supabase
-            .from('profiles')
+          const profilesPublicResponse = await supabase
+            .from('profiles_public')
             .select('user_id, username')
-            .in('username', mentionVariants);
+            .or(mentionFilters.join(','))
+            .limit(mentionHandles.length * 2);
 
-          if (mentionLookupError) throw mentionLookupError;
+          const mentionedProfiles = !profilesPublicResponse.error
+            ? profilesPublicResponse.data ?? []
+            : (
+                await supabase
+                  .from('profiles')
+                  .select('user_id, username')
+                  .or(mentionFilters.join(','))
+                  .limit(mentionHandles.length * 2)
+              ).data ?? [];
 
           const notificationsToInsert = Array.from(
             new Map(
               (mentionedProfiles ?? [])
-                .filter((profile) => profile.user_id && profile.user_id !== user.id)
+                .filter((profile) => {
+                  const normalizedUsername = profile.username?.replace(/^@/, '').toLowerCase();
+                  return !!normalizedUsername && mentionHandles.includes(normalizedUsername) && profile.user_id !== user.id;
+                })
                 .map((profile) => [
                   profile.user_id,
                   {
