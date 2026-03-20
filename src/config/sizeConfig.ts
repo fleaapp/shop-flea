@@ -171,8 +171,8 @@ export const SIZE_CONFIG: Record<FitType, Record<CategoryType, string[]>> = {
 export const LISTING_SIZE_SECTIONS = {
   women: {
     clothing: {
-      'Clothing (Alpha)': WOMENS_CLOTHING_ALPHA,
-      'Clothing (Numeric)': WOMENS_CLOTHING_NUMERIC,
+      'Alpha (AU sizing)': WOMENS_CLOTHING_ALPHA,
+      'Numeric (AU sizing)': WOMENS_CLOTHING_NUMERIC,
       'Bottoms (Inches)': WOMENS_BOTTOMS_INCHES,
       'Extras': WOMENS_EXTRAS,
     },
@@ -182,7 +182,7 @@ export const LISTING_SIZE_SECTIONS = {
   },
   men: {
     clothing: {
-      'Clothing (Alpha)': MENS_CLOTHING_ALPHA,
+      'Alpha (AU sizing)': MENS_CLOTHING_ALPHA,
       'Bottoms (Inches)': MENS_BOTTOMS_INCHES,
       'Extras': MENS_EXTRAS,
     },
@@ -192,7 +192,7 @@ export const LISTING_SIZE_SECTIONS = {
   },
   unisex: {
     clothing: {
-      'Clothing (Alpha)': UNISEX_CLOTHING_ALPHA,
+      'Alpha (AU sizing)': UNISEX_CLOTHING_ALPHA,
       'Bottoms (Inches)': UNISEX_BOTTOMS_INCHES,
     },
     shoes: {
