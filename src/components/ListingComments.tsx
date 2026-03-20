@@ -227,19 +227,49 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
 
       if (error) throw error;
 
-      // Extract @mentions and send notifications
-      const mentions = content.match(/@[\w]+/g);
-      if (mentions && mentions.length > 0) {
-        // Strip @ prefix — DB function handles lookup with and without @
-        const usernames = mentions.map(m => m.replace(/^@/, ''));
-        
+      // Extract @mentions and create notifications directly in the live backend
+      const mentionHandles = Array.from(
+        new Set((content.match(/@[\w]+/g) ?? []).map((mention) => mention.replace(/^@/, '').toLowerCase()))
+      );
+
+      if (mentionHandles.length > 0) {
+        const mentionVariants = Array.from(
+          new Set(mentionHandles.flatMap((handle) => [handle, `@${handle}`]))
+        );
+
         try {
-          await supabase.rpc('create_mention_notifications', {
-            p_mentioned_usernames: usernames,
-            p_mentioner_user_id: user.id,
-            p_listing_id: listingId,
-            p_comment_preview: content.trim().slice(0, 100)
-          });
+          const { data: mentionedProfiles, error: mentionLookupError } = await supabase
+            .from('profiles')
+            .select('user_id, username')
+            .in('username', mentionVariants);
+
+          if (mentionLookupError) throw mentionLookupError;
+
+          const notificationsToInsert = Array.from(
+            new Map(
+              (mentionedProfiles ?? [])
+                .filter((profile) => profile.user_id && profile.user_id !== user.id)
+                .map((profile) => [
+                  profile.user_id,
+                  {
+                    user_id: profile.user_id,
+                    type: 'mention',
+                    title: 'You were mentioned in a comment',
+                    message: content.trim().slice(0, 100),
+                    related_listing_id: listingId,
+                    related_user_id: user.id,
+                  },
+                ])
+            ).values()
+          );
+
+          if (notificationsToInsert.length > 0) {
+            const { error: insertMentionError } = await supabase
+              .from('notifications')
+              .insert(notificationsToInsert);
+
+            if (insertMentionError) throw insertMentionError;
+          }
         } catch (notifError) {
           // Don't fail the comment if notification fails
           console.error('Failed to send mention notifications:', notifError);
