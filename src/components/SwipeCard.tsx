@@ -160,7 +160,7 @@ const SwipeCard = ({
             
             <div className="text-right flex-shrink-0 ml-3 max-[375px]:ml-2">
               <p className="text-xl max-[375px]:text-lg font-bold text-foreground leading-tight">${listing.price}</p>
-              <p className="text-xs max-[375px]:text-[10px] text-muted-foreground">📦 + ${listing.shippingPrice}</p>
+              <p className="text-xs max-[375px]:text-[10px] text-muted-foreground">📦 +${listing.shippingPrice}</p>
             </div>
           </div>
         </div>
