@@ -357,6 +357,32 @@ const OrderDetailsSheet = ({
           }}
         />
       )}
+      )}
+
+      <AlertDialog open={deliveredConfirmOpen} onOpenChange={setDeliveredConfirmOpen}>
+        <AlertDialogContent className="max-w-[300px] rounded-2xl p-6">
+          <AlertDialogHeader className="text-center">
+            <AlertDialogTitle className="text-balance">
+              Mark as delivered?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="leading-relaxed text-pretty">
+              The seller hasn't added tracking yet.
+              Are you sure this order has arrived?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 sm:justify-center">
+            <AlertDialogCancel className="flex-1 h-9 rounded-lg text-sm mt-0">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => onMarkDelivered?.()}
+              className="flex-1 h-9 rounded-lg text-sm bg-charcoal text-white hover:bg-charcoal-light"
+            >
+              Yes, delivered
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Drawer>
   );
 };
