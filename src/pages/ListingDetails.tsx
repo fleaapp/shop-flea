@@ -582,17 +582,26 @@ const ListingDetails = () => {
 
             {/* Secondary Tags – remaining filters */}
             {(() => {
-              const secondary = [
-                listing.style && { label: listing.style },
-                listing.colour && { label: listing.colour, isColour: true },
-                listing.category && { label: listing.category },
-                listing.gender && { label: listing.gender },
-              ].filter(Boolean) as { label: string; isColour?: boolean }[];
+              const secondary: { label: string; isColour?: boolean }[] = [];
+              // Split comma-separated colours into individual tags
+              if (listing.colour) {
+                listing.colour.split(',').map(c => c.trim()).filter(Boolean).forEach(c => {
+                  secondary.push({ label: c, isColour: true });
+                });
+              }
+              // Split comma-separated styles into individual tags
+              if (listing.style) {
+                listing.style.split(',').map(s => s.trim()).filter(Boolean).forEach(s => {
+                  secondary.push({ label: s });
+                });
+              }
+              if (listing.category) secondary.push({ label: listing.category });
+              if (listing.gender) secondary.push({ label: listing.gender });
               if (secondary.length === 0) return null;
               return (
                 <div className="mt-2 gap-2 flex flex-row overflow-x-auto scrollbar-hide">
-                  {secondary.map((tag) => (
-                    <ListingTag key={tag.label} label={tag.label} variant="muted" colourSwatch={tag.isColour ? tag.label : undefined} />
+                  {secondary.map((tag, idx) => (
+                    <ListingTag key={`${tag.label}-${idx}`} label={tag.label} variant="muted" colourSwatch={tag.isColour ? tag.label : undefined} />
                   ))}
                 </div>
               );
