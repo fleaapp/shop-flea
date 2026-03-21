@@ -44,6 +44,7 @@ const AppContent = () => {
     <>
       <Toaster />
       <Sonner position="top-center" />
+      <RealtimeAlerts />
       <OnboardingOverlay />
       <OnboardingCarousel open={showCarousel} onComplete={closeCarousel} />
       <Routes>
