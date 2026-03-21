@@ -11,6 +11,13 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
       closeButton
+      icons={{
+        success: <span className="text-base">✅</span>,
+        error: <span className="text-base">❌</span>,
+        info: <span className="text-base">ℹ️</span>,
+        warning: <span className="text-base">⚠️</span>,
+        loading: <span className="text-base animate-spin">⏳</span>,
+      }}
       toastOptions={{
         duration: 1800,
         classNames: {
