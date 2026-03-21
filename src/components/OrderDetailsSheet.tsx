@@ -357,7 +357,6 @@ const OrderDetailsSheet = ({
           }}
         />
       )}
-      )}
 
       <AlertDialog open={deliveredConfirmOpen} onOpenChange={setDeliveredConfirmOpen}>
         <AlertDialogContent className="max-w-[300px] rounded-2xl p-6">
