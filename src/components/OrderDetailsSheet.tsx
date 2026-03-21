@@ -257,7 +257,7 @@ const OrderDetailsSheet = ({
               status={primaryOrder.status}
             />
             <div className="flex flex-col items-center space-y-3 pt-4">
-              {primaryOrder.status === 'shipped' && (
+              {(primaryOrder.status === 'awaiting' || primaryOrder.status === 'shipped') && (
                 <Button
                   onClick={onMarkDelivered}
                   className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"

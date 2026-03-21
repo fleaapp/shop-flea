@@ -232,3 +232,21 @@
 .animate-card-enter {
   animation: card-enter 0.3s ease-out;
 }
+
+/* Sonner toast compact layout with inline close button */
+[data-sonner-toaster] [data-sonner-toast] {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  padding: 0.5rem 0.75rem !important;
+  min-height: 0 !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast] [data-close-button] {
+  position: static !important;
+  transform: none !important;
+  margin-left: auto !important;
+  flex-shrink: 0;
+  border: none !important;
+  background: transparent !important;
+}
