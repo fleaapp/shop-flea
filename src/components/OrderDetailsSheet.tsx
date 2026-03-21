@@ -1,4 +1,14 @@
 import { useState, useMemo } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useNavigate } from 'react-router-dom';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
@@ -54,6 +64,7 @@ const OrderDetailsSheet = ({
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [refundDialogOpen, setRefundDialogOpen] = useState(false);
+  const [deliveredConfirmOpen, setDeliveredConfirmOpen] = useState(false);
   const { getGroupUnread } = useUnreadOrderMessages();
   const queryClient = useQueryClient();
   
@@ -259,7 +270,13 @@ const OrderDetailsSheet = ({
             <div className="flex flex-col items-center space-y-3 pt-4">
               {(primaryOrder.status === 'awaiting' || primaryOrder.status === 'shipped') && (
                 <Button
-                  onClick={onMarkDelivered}
+                  onClick={() => {
+                    if (primaryOrder.status === 'awaiting') {
+                      setDeliveredConfirmOpen(true);
+                    } else {
+                      onMarkDelivered?.();
+                    }
+                  }}
                   className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
                 >
                   Mark as delivered
@@ -340,6 +357,31 @@ const OrderDetailsSheet = ({
           }}
         />
       )}
+
+      <AlertDialog open={deliveredConfirmOpen} onOpenChange={setDeliveredConfirmOpen}>
+        <AlertDialogContent className="max-w-[300px] rounded-2xl p-6">
+          <AlertDialogHeader className="text-center">
+            <AlertDialogTitle className="text-balance">
+              Mark as delivered?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="leading-relaxed text-pretty">
+              The seller hasn't added tracking yet.
+              Are you sure this order has arrived?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 sm:justify-center">
+            <AlertDialogCancel className="flex-1 h-9 rounded-lg text-sm mt-0">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => onMarkDelivered?.()}
+              className="flex-1 h-9 rounded-lg text-sm bg-charcoal text-white hover:bg-charcoal-light"
+            >
+              Yes, delivered
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Drawer>
   );
 };
