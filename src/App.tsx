@@ -10,6 +10,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import OnboardingOverlay from "@/components/OnboardingOverlay";
 import OnboardingCarousel from "@/components/OnboardingCarousel";
 import SuggestionBox from "./pages/SuggestionBox";
+import RealtimeAlerts from "./components/RealtimeAlerts";
 import Index from "./pages/Index";
 import ListingDetails from "./pages/ListingDetails";
 import Favorites from "./pages/Favorites";
