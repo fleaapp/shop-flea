@@ -85,8 +85,7 @@ const Favorites = () => {
   const handleRemoveFavorite = useCallback(async (listingId: string) => {
     await removeFavorite(listingId);
     await removeDiscarded(listingId);
-    toast({
-      title: "Removed from wishlist",
+    toast('💔 Removed from wishlist', {
       description: "Item has been removed from your wishlist",
     });
     refetch();
