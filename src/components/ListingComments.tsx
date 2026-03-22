@@ -415,75 +415,6 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
         </CollapsibleTrigger>
 
         <CollapsibleContent className="mt-3 space-y-3">
-          {/* Comment Input */}
-          {user ? (
-            <div className="space-y-2">
-              {replyingTo && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-lg">
-                  <span>Replying to <span className="font-medium text-foreground">{replyingTo.username}</span></span>
-                  <button
-                    onClick={() => setReplyingTo(null)}
-                    className="ml-auto hover:text-foreground"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              )}
-              <div className="flex gap-2 relative">
-                <div className="flex-1 relative">
-                  <Textarea
-                    ref={textareaRef}
-                    placeholder={replyingTo ? `Reply to ${replyingTo.username}...` : "Write a comment... (use @ to mention)"}
-                    value={newComment}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                    className="min-h-[60px] resize-none rounded-xl border-muted-foreground/20 bg-card"
-                    maxLength={500}
-                  />
-                  
-                  {/* @mention autocomplete dropdown */}
-                  {mentionQuery !== null && mentionUsers.length > 0 && (
-                    <div className="absolute bottom-full left-0 right-0 mb-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden z-50">
-                      {mentionUsers.map((mentionUser, idx) => (
-                        <button
-                          key={mentionUser.user_id}
-                          onClick={() => insertMention(mentionUser.username)}
-                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted/50 ${
-                            idx === mentionIndex ? 'bg-muted/50' : ''
-                          }`}
-                        >
-                          <img
-                            src={getAvatarUrl(mentionUser.avatar_url) || getDefaultAvatar(mentionUser.user_id)}
-                            alt={mentionUser.username}
-                            className="h-6 w-6 rounded-full bg-muted"
-                          />
-                          <span className="font-medium">{mentionUser.username}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <Button
-                  size="icon"
-                  onClick={handleSubmit}
-                  disabled={!newComment.trim() || addComment.isPending || isChecking || isBlocked}
-                  className="h-[60px] w-12 rounded-xl bg-primary"
-                >
-                  <Send className="h-5 w-5" />
-                </Button>
-              </div>
-              {isBlocked && (
-                <p className="text-xs text-destructive text-center">
-                  Your account is restricted and cannot post comments.
-                </p>
-              )}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-2">
-              Log in to leave a comment
-            </p>
-          )}
-
           {/* Comments List */}
           {isLoading ? (
             <div className="flex justify-center py-4">
@@ -513,6 +444,80 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
                 </div>
               ))}
             </div>
+          )}
+
+          {/* Comment Input */}
+          {user ? (
+            <div className="sticky bottom-0 z-10 space-y-2 border-t border-border bg-background py-3">
+              {replyingTo && (
+                <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
+                  <span>Replying to <span className="font-medium text-foreground">{replyingTo.username}</span></span>
+                  <button
+                    onClick={() => setReplyingTo(null)}
+                    className="ml-auto hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+              <div className="relative flex gap-2">
+                <div className="relative flex-1">
+                  <Textarea
+                    ref={textareaRef}
+                    placeholder={replyingTo ? `Reply to ${replyingTo.username}...` : "Write a comment... (use @ to mention)"}
+                    value={newComment}
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => {
+                      requestAnimationFrame(() => {
+                        textareaRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                      });
+                    }}
+                    className="min-h-[60px] resize-none rounded-xl border-muted-foreground/20 bg-card"
+                    maxLength={500}
+                  />
+
+                  {/* @mention autocomplete dropdown */}
+                  {mentionQuery !== null && mentionUsers.length > 0 && (
+                    <div className="absolute bottom-full left-0 right-0 z-50 mb-1 overflow-hidden rounded-lg border border-border bg-card shadow-lg">
+                      {mentionUsers.map((mentionUser, idx) => (
+                        <button
+                          key={mentionUser.user_id}
+                          onClick={() => insertMention(mentionUser.username)}
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/50 ${
+                            idx === mentionIndex ? 'bg-muted/50' : ''
+                          }`}
+                        >
+                          <img
+                            src={getAvatarUrl(mentionUser.avatar_url) || getDefaultAvatar(mentionUser.user_id)}
+                            alt={mentionUser.username}
+                            className="h-6 w-6 rounded-full bg-muted"
+                          />
+                          <span className="font-medium">{mentionUser.username}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <Button
+                  size="icon"
+                  onClick={handleSubmit}
+                  disabled={!newComment.trim() || addComment.isPending || isChecking || isBlocked}
+                  className="h-[60px] w-12 rounded-xl bg-primary"
+                >
+                  <Send className="h-5 w-5" />
+                </Button>
+              </div>
+              {isBlocked && (
+                <p className="text-center text-xs text-destructive">
+                  Your account is restricted and cannot post comments.
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="py-2 text-center text-sm text-muted-foreground">
+              Log in to leave a comment
+            </p>
           )}
         </CollapsibleContent>
       </Collapsible>
