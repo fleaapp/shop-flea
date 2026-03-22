@@ -109,8 +109,7 @@ const Favorites = () => {
       return;
     }
 
-    toast({
-      title: "Added to cart",
+    toast('🛒 Added to cart', {
       description: `${listing.title} has been added to your cart`,
     });
   }, [addToCart, refetch]);
