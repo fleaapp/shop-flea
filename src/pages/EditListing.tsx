@@ -391,7 +391,7 @@ const EditListing = () => {
         throw error;
       }
       
-      toast.success('Listing marked as sold');
+      toast.success('🏷️ Listing marked as sold');
       navigate('/profile');
     } catch (error) {
       console.error('Error marking listing as sold:', error);
