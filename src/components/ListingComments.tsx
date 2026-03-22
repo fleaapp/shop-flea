@@ -415,40 +415,9 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
         </CollapsibleTrigger>
 
         <CollapsibleContent className="mt-3 space-y-3">
-          {/* Comments List */}
-          {isLoading ? (
-            <div className="flex justify-center py-4">
-              <span className="text-4xl">⏳</span>
-            </div>
-          ) : comments.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No comments yet. Be the first!
-            </p>
-          ) : (
-            <div className="space-y-3 max-h-[300px] overflow-y-auto">
-              {comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className="rounded-xl bg-card p-3 border border-border"
-                >
-                  <CommentItem comment={comment} />
-                  
-                  {/* Replies - line centered under parent avatar */}
-                  {comment.replies && comment.replies.length > 0 && (
-                    <div className="mt-2 space-y-2 ml-[15px] border-l-2 border-muted pl-2">
-                      {comment.replies.map((reply) => (
-                        <CommentItem key={reply.id} comment={reply} isReply />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
           {/* Comment Input */}
           {user ? (
-            <div className="sticky bottom-0 z-10 space-y-2 border-t border-border bg-background py-3">
+            <div className="space-y-2">
               {replyingTo && (
                 <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
                   <span>Replying to <span className="font-medium text-foreground">{replyingTo.username}</span></span>
@@ -468,11 +437,6 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
                     value={newComment}
                     onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
-                    onFocus={() => {
-                      requestAnimationFrame(() => {
-                        textareaRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-                      });
-                    }}
                     className="min-h-[60px] resize-none rounded-xl border-muted-foreground/20 bg-card"
                     maxLength={500}
                   />
@@ -518,6 +482,37 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
             <p className="py-2 text-center text-sm text-muted-foreground">
               Log in to leave a comment
             </p>
+          )}
+
+          {/* Comments List */}
+          {isLoading ? (
+            <div className="flex justify-center py-4">
+              <span className="text-4xl">⏳</span>
+            </div>
+          ) : comments.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No comments yet. Be the first!
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {comments.map((comment) => (
+                <div
+                  key={comment.id}
+                  className="rounded-xl bg-card p-3 border border-border"
+                >
+                  <CommentItem comment={comment} />
+                  
+                  {/* Replies */}
+                  {comment.replies && comment.replies.length > 0 && (
+                    <div className="mt-2 space-y-2 ml-[15px] border-l-2 border-muted pl-2">
+                      {comment.replies.map((reply) => (
+                        <CommentItem key={reply.id} comment={reply} isReply />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </CollapsibleContent>
       </Collapsible>
