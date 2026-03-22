@@ -22,14 +22,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
         duration: 1800,
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg group-[.toaster]:!py-2 group-[.toaster]:!px-3 group-[.toaster]:!min-h-0",
-          description: "group-[.toast]:text-muted-foreground",
+            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg group-[.toaster]:!py-3 group-[.toaster]:!px-4 group-[.toaster]:!min-h-[48px]",
+          description: "group-[.toast]:text-muted-foreground group-[.toast]:text-left",
           actionButton:
             "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
           cancelButton:
             "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
           closeButton:
-            "group-[.toast]:!static group-[.toast]:!ml-auto group-[.toast]:!mr-0 group-[.toast]:!mt-0 group-[.toast]:!mb-0 group-[.toast]:!transform-none group-[.toast]:!border-0 group-[.toast]:!bg-transparent group-[.toast]:!text-foreground group-[.toast]:!opacity-70 group-[.toast]:hover:!opacity-100 group-[.toast]:!h-5 group-[.toast]:!w-5 group-[.toast]:flex-shrink-0",
+            "group-[.toast]:!static group-[.toast]:!ml-auto group-[.toast]:!mr-0 group-[.toast]:!mt-0 group-[.toast]:!mb-0 group-[.toast]:!transform-none group-[.toast]:!border-0 group-[.toast]:!bg-transparent group-[.toast]:!text-foreground group-[.toast]:!opacity-70 group-[.toast]:hover:!opacity-100 group-[.toast]:!h-7 group-[.toast]:!w-7 group-[.toast]:flex-shrink-0",
         },
       }}
       {...props}
