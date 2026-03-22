@@ -39,7 +39,7 @@ const Settings = () => {
     if (success) {
       toast.success('🔁 Passed listings refreshed! You can browse them again.');
     } else {
-      toast.error('Failed to refresh passed listings');
+      toast.error('🔁 Failed to refresh passed listings');
     }
   };
   const handleLogout = async () => {

@@ -309,7 +309,7 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
   const handleSubmit = () => {
     if (!newComment.trim()) return;
     if (!user) {
-      toast.error('Please log in to comment');
+      toast.error('🔒 Please log in to comment');
       return;
     }
     if (isBlocked) {
