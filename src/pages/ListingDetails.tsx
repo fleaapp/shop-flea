@@ -449,7 +449,7 @@ const ListingDetails = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Drawer open={open} onOpenChange={isOpen => !isOpen && handleClose()}>
+      <Drawer open={open} onOpenChange={isOpen => !isOpen && handleClose()} repositionInputs={false}>
         <DrawerContent className="mt-0 flex h-[95svh] max-h-[95svh] flex-col overflow-hidden rounded-t-3xl bg-background">
           <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-32">
             {/* Image Gallery (swipe) */}
