@@ -329,20 +329,20 @@ const SalesDetailsSheet = ({
 
             {/* Actions */}
             <div className="flex flex-col items-center space-y-3 pt-4">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 w-full px-4">
                 <Button
                   onClick={() => {
                     window.open('https://dashboard.stripe.com/payments', '_blank');
                   }}
                   variant="outline"
-                  className="rounded-full h-12 px-8 bg-muted-foreground/60 text-white hover:bg-muted-foreground/70 border-none"
+                  className="flex-1 rounded-full h-12 bg-muted-foreground/60 text-white hover:bg-muted-foreground/70 border-none"
                 >
                   Refund sale
                 </Button>
                 {primaryOrder.status === 'delivered' && !existingReview && (
                   <Button
                     onClick={() => setReviewDrawerOpen(true)}
-                    className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
+                    className="flex-1 rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12"
                   >
                     Review Buyer
                   </Button>

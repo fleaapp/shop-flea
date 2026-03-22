@@ -268,38 +268,40 @@ const OrderDetailsSheet = ({
               status={primaryOrder.status}
             />
             <div className="flex flex-col items-center space-y-3 pt-4">
-              {(primaryOrder.status === 'awaiting' || primaryOrder.status === 'shipped') && (
-                <Button
-                  onClick={() => {
-                    if (primaryOrder.status === 'awaiting') {
-                      setDeliveredConfirmOpen(true);
-                    } else {
-                      onMarkDelivered?.();
-                    }
-                  }}
-                  className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
-                >
-                  Mark as delivered
-                </Button>
-              )}
-              {primaryOrder.status === 'delivered' && !existingReview && (
-                <Button
-                  onClick={() => setReviewDrawerOpen(true)}
-                  className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
-                >
-                  Review Seller
-                </Button>
-              )}
-              {canShowRefundButton && (
-                <Button
-                  onClick={() => setRefundDialogOpen(true)}
-                  disabled={refundStatus?.hasPending || refundWindowExpired}
-                  variant="outline"
-                  className="rounded-full h-12 px-8 bg-muted-foreground text-white hover:bg-muted-foreground/80 border-none disabled:opacity-60"
-                >
-                  {refundStatus?.hasPending ? 'Refund Requested' : refundWindowExpired ? 'Refund Window Closed' : 'Request Refund'}
-                </Button>
-              )}
+              <div className="flex items-center gap-3 w-full px-4">
+                {(primaryOrder.status === 'awaiting' || primaryOrder.status === 'shipped') && (
+                  <Button
+                    onClick={() => {
+                      if (primaryOrder.status === 'awaiting') {
+                        setDeliveredConfirmOpen(true);
+                      } else {
+                        onMarkDelivered?.();
+                      }
+                    }}
+                    className="flex-1 rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12"
+                  >
+                    Mark as delivered
+                  </Button>
+                )}
+                {primaryOrder.status === 'delivered' && !existingReview && (
+                  <Button
+                    onClick={() => setReviewDrawerOpen(true)}
+                    className="flex-1 rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12"
+                  >
+                    Review Seller
+                  </Button>
+                )}
+                {canShowRefundButton && (
+                  <Button
+                    onClick={() => setRefundDialogOpen(true)}
+                    disabled={refundStatus?.hasPending || refundWindowExpired}
+                    variant="outline"
+                    className="flex-1 rounded-full h-12 bg-muted-foreground/60 text-white hover:bg-muted-foreground/70 border-none disabled:opacity-60"
+                  >
+                    {refundStatus?.hasPending ? 'Refund Requested' : refundWindowExpired ? 'Refund Window Closed' : 'Request Refund'}
+                  </Button>
+                )}
+              </div>
               <button
                 className="text-center text-sm text-foreground underline mt-2"
                 onClick={() => {
