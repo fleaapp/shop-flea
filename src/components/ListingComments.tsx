@@ -302,7 +302,7 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
       toast.success('💬 Comment deleted');
     },
     onError: () => {
-      toast.error('Failed to delete comment');
+      toast.error('💬 Failed to delete comment');
     },
   });
 
