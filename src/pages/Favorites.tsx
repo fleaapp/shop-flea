@@ -102,10 +102,8 @@ const Favorites = () => {
 
     const added = await addToCart(listing);
     if (!added) {
-      toast({
-        title: "Item unavailable",
+      toast.error('Item unavailable', {
         description: "This listing can no longer be added to cart",
-        variant: "destructive",
       });
       await refetch();
       return;
