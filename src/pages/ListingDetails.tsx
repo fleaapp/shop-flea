@@ -103,6 +103,7 @@ const ListingDetails = () => {
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
+  const [isTextInputFocused, setIsTextInputFocused] = useState(false);
 
   const isOwner = user?.id === listing?.user_id;
 
@@ -299,6 +300,56 @@ const ListingDetails = () => {
       carouselApi.off('select', onSelect);
     };
   }, [carouselApi]);
+
+  useEffect(() => {
+    const isTextEntryElement = (element: Element | null): boolean => {
+      if (!(element instanceof HTMLElement)) return false;
+
+      if (element.tagName === 'TEXTAREA' || element.isContentEditable) {
+        return true;
+      }
+
+      if (element.tagName === 'INPUT') {
+        const input = element as HTMLInputElement;
+        const nonTextTypes = new Set([
+          'button',
+          'checkbox',
+          'color',
+          'file',
+          'hidden',
+          'image',
+          'radio',
+          'range',
+          'reset',
+          'submit',
+        ]);
+
+        return !nonTextTypes.has(input.type);
+      }
+
+      return false;
+    };
+
+    const handleFocusIn = (event: FocusEvent) => {
+      if (isTextEntryElement(event.target as Element | null)) {
+        setIsTextInputFocused(true);
+      }
+    };
+
+    const handleFocusOut = () => {
+      requestAnimationFrame(() => {
+        setIsTextInputFocused(isTextEntryElement(document.activeElement));
+      });
+    };
+
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('focusout', handleFocusOut);
+
+    return () => {
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('focusout', handleFocusOut);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -656,7 +707,7 @@ const ListingDetails = () => {
           </div>
 
           {/* Sticky Footer Actions */}
-          <div className="left-0 right-0 z-10 flex shrink-0 justify-center gap-3 border-t border-border bg-background px-4 py-4">
+          <div className={`left-0 right-0 z-10 flex shrink-0 justify-center gap-3 border-t border-border bg-background px-4 py-4 transition-all duration-200 ${isTextInputFocused ? 'pointer-events-none translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`}>
             {isRemoved && !isOwner ? (
               // Removed listing footer
               <div className="flex flex-col items-center gap-3">
