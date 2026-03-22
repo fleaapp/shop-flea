@@ -186,9 +186,9 @@
   --keyboard-safe-height: 100dvh;
 }
 
-/* Ensure drawers never exceed the visual viewport (shrinks with keyboard on iOS) */
+/* Keep drawers stable when the keyboard opens so fixed footers don't jump */
 [vaul-drawer] > [vaul-drawer-content] {
-  max-height: 90dvh !important;
+  max-height: 90svh !important;
 }
 
 /* Custom scrollbar */
