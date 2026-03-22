@@ -399,7 +399,7 @@ const CreateListing = () => {
         throw error;
       }
       
-      toast.success('Listing posted!');
+      toast.success('🎉 Listing posted!');
       navigate('/profile');
     } catch (error: any) {
       console.error('Error creating listing:', error);
