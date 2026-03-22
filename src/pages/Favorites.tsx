@@ -13,7 +13,7 @@ import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { useCart } from '@/context/CartContext';
 import { Listing } from '@/types/listing';
 import { ListingFilters } from '@/hooks/useListings';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 // Convert DbListing to Listing display type
 interface DisplayListing extends Listing {
@@ -85,8 +85,7 @@ const Favorites = () => {
   const handleRemoveFavorite = useCallback(async (listingId: string) => {
     await removeFavorite(listingId);
     await removeDiscarded(listingId);
-    toast({
-      title: "Removed from wishlist",
+    toast('💔 Removed from wishlist', {
       description: "Item has been removed from your wishlist",
     });
     refetch();
@@ -95,27 +94,22 @@ const Favorites = () => {
   const handleAddToCart = useCallback(async (listing: DisplayListing) => {
     // Don't allow adding paused, inactive, sold, or removed items to cart
     if (listing.isPaused || listing.isSold || listing.isInactive || listing.isRemoved) {
-      toast({
-        title: "Item unavailable",
+      toast.error('Item unavailable', {
         description: listing.isSold ? "This item has been sold" : listing.isRemoved ? "This item has been removed" : listing.isPaused ? "This seller has paused selling" : "This seller is inactive",
-        variant: "destructive",
       });
       return;
     }
 
     const added = await addToCart(listing);
     if (!added) {
-      toast({
-        title: "Item unavailable",
+      toast.error('Item unavailable', {
         description: "This listing can no longer be added to cart",
-        variant: "destructive",
       });
       await refetch();
       return;
     }
 
-    toast({
-      title: "Added to cart",
+    toast('🛒 Added to cart', {
       description: `${listing.title} has been added to your cart`,
     });
   }, [addToCart, refetch]);

@@ -333,7 +333,7 @@ const EditListing = () => {
         throw error;
       }
       
-      toast.success('Listing updated!');
+      toast.success('✏️ Listing updated!');
       navigate('/profile');
     } catch (error) {
       console.error('Error updating listing:', error);
@@ -366,7 +366,7 @@ const EditListing = () => {
         throw removeError;
       }
 
-      toast.success('Listing removed');
+      toast.success('🗑️ Listing removed');
       navigate('/profile');
     } catch (error) {
       console.error('Error removing listing:', error);
@@ -391,7 +391,7 @@ const EditListing = () => {
         throw error;
       }
       
-      toast.success('Listing marked as sold');
+      toast.success('🏷️ Listing marked as sold');
       navigate('/profile');
     } catch (error) {
       console.error('Error marking listing as sold:', error);

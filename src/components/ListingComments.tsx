@@ -299,17 +299,17 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['listing-comments', listingId] });
       queryClient.invalidateQueries({ queryKey: ['listing-comments-count', listingId] });
-      toast.success('Comment deleted');
+      toast.success('💬 Comment deleted');
     },
     onError: () => {
-      toast.error('Failed to delete comment');
+      toast.error('💬 Failed to delete comment');
     },
   });
 
   const handleSubmit = () => {
     if (!newComment.trim()) return;
     if (!user) {
-      toast.error('Please log in to comment');
+      toast.error('🔒 Please log in to comment');
       return;
     }
     if (isBlocked) {
