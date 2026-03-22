@@ -707,7 +707,8 @@ const ListingDetails = () => {
           </div>
 
           {/* Sticky Footer Actions */}
-          <div className={`left-0 right-0 z-10 flex shrink-0 justify-center gap-3 border-t border-border bg-background px-4 py-4 transition-all duration-200 ${isTextInputFocused ? 'pointer-events-none translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`}>
+          {!isTextInputFocused && (
+          <div className="left-0 right-0 z-10 flex shrink-0 justify-center gap-3 border-t border-border bg-background px-4 py-4 transition-all duration-200">
             {isRemoved && !isOwner ? (
               // Removed listing footer
               <div className="flex flex-col items-center gap-3">
@@ -845,6 +846,7 @@ const ListingDetails = () => {
               </>
             )}
           </div>
+          )}
 
           {/* Remove from Wishlist Confirmation */}
           <AlertDialog open={showRemoveFromWishlistDialog} onOpenChange={setShowRemoveFromWishlistDialog}>
