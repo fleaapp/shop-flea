@@ -333,7 +333,7 @@ const EditListing = () => {
         throw error;
       }
       
-      toast.success('Listing updated!');
+      toast.success('✏️ Listing updated!');
       navigate('/profile');
     } catch (error) {
       console.error('Error updating listing:', error);
