@@ -366,7 +366,7 @@ const EditListing = () => {
         throw removeError;
       }
 
-      toast.success('Listing removed');
+      toast.success('🗑️ Listing removed');
       navigate('/profile');
     } catch (error) {
       console.error('Error removing listing:', error);
