@@ -37,7 +37,7 @@ const Settings = () => {
   const handleRefreshDiscarded = async () => {
     const success = await clearDiscarded();
     if (success) {
-      toast.success('Passed listings refreshed! You can browse them again.');
+      toast.success('🔁 Passed listings refreshed! You can browse them again.');
     } else {
       toast.error('Failed to refresh passed listings');
     }
