@@ -13,7 +13,7 @@ import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { useCart } from '@/context/CartContext';
 import { Listing } from '@/types/listing';
 import { ListingFilters } from '@/hooks/useListings';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 // Convert DbListing to Listing display type
 interface DisplayListing extends Listing {
