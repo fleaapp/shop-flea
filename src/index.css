@@ -246,11 +246,13 @@
 [data-sonner-toaster] [data-sonner-toast] [data-content] {
   text-align: left !important;
   flex: 1 !important;
+  order: 1 !important;
 }
 
 [data-sonner-toaster] [data-sonner-toast] [data-close-button] {
   position: static !important;
   transform: none !important;
+  order: 2 !important;
   margin-left: auto !important;
   flex-shrink: 0;
   border: none !important;

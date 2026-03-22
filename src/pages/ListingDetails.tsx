@@ -450,8 +450,8 @@ const ListingDetails = () => {
   return (
     <div className="min-h-screen bg-background">
       <Drawer open={open} onOpenChange={isOpen => !isOpen && handleClose()}>
-        <DrawerContent className="mt-0 h-[95dvh] max-h-[95dvh] overflow-hidden rounded-t-3xl bg-background">
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-8">
+        <DrawerContent className="mt-0 flex h-[95dvh] max-h-[95dvh] flex-col overflow-hidden rounded-t-3xl bg-background">
+          <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-32">
             {/* Image Gallery (swipe) */}
             <div className="relative overflow-hidden rounded-3xl">
               <Carousel setApi={setCarouselApi} opts={{ loop: images.length > 1 }} className="w-full">
@@ -656,7 +656,7 @@ const ListingDetails = () => {
           </div>
 
           {/* Sticky Footer Actions */}
-          <div className="sticky bottom-0 left-0 right-0 flex gap-3 bg-background px-4 py-4 border-t border-border justify-center">
+          <div className="left-0 right-0 z-10 flex shrink-0 justify-center gap-3 border-t border-border bg-background px-4 py-4">
             {isRemoved && !isOwner ? (
               // Removed listing footer
               <div className="flex flex-col items-center gap-3">
