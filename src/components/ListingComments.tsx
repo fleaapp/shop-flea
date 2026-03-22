@@ -299,7 +299,7 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['listing-comments', listingId] });
       queryClient.invalidateQueries({ queryKey: ['listing-comments-count', listingId] });
-      toast.success('Comment deleted');
+      toast.success('💬 Comment deleted');
     },
     onError: () => {
       toast.error('Failed to delete comment');
