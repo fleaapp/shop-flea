@@ -301,56 +301,6 @@ const ListingDetails = () => {
     };
   }, [carouselApi]);
 
-  useEffect(() => {
-    const isTextEntryElement = (element: Element | null): boolean => {
-      if (!(element instanceof HTMLElement)) return false;
-
-      if (element.tagName === 'TEXTAREA' || element.isContentEditable) {
-        return true;
-      }
-
-      if (element.tagName === 'INPUT') {
-        const input = element as HTMLInputElement;
-        const nonTextTypes = new Set([
-          'button',
-          'checkbox',
-          'color',
-          'file',
-          'hidden',
-          'image',
-          'radio',
-          'range',
-          'reset',
-          'submit',
-        ]);
-
-        return !nonTextTypes.has(input.type);
-      }
-
-      return false;
-    };
-
-    const handleFocusIn = (event: FocusEvent) => {
-      if (isTextEntryElement(event.target as Element | null)) {
-        setIsTextInputFocused(true);
-      }
-    };
-
-    const handleFocusOut = () => {
-      requestAnimationFrame(() => {
-        setIsTextInputFocused(isTextEntryElement(document.activeElement));
-      });
-    };
-
-    document.addEventListener('focusin', handleFocusIn);
-    document.addEventListener('focusout', handleFocusOut);
-
-    return () => {
-      document.removeEventListener('focusin', handleFocusIn);
-      document.removeEventListener('focusout', handleFocusOut);
-    };
-  }, []);
-
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -701,7 +651,11 @@ const ListingDetails = () => {
               </div>
 
               {/* Comments Section */}
-              <ListingComments listingId={listing.id} sellerId={listing.user_id} />
+              <ListingComments
+                listingId={listing.id}
+                sellerId={listing.user_id}
+                onComposerFocusChange={setIsTextInputFocused}
+              />
 
             </div>
           </div>

@@ -44,9 +44,10 @@ interface Comment {
 interface ListingCommentsProps {
   listingId: string;
   sellerId: string;
+  onComposerFocusChange?: (isFocused: boolean) => void;
 }
 
-const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
+const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: ListingCommentsProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<{ id: string; username: string } | null>(null);
@@ -54,11 +55,30 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
   const [mentionIndex, setMentionIndex] = useState(0);
   const [cursorPosition, setCursorPosition] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const { openReport, submitPendingReport, closeReport, pendingReport, isReporting } = useReporting();
   const { checkCommentContent, isChecking } = useContentModeration();
   const { isBlocked } = useBlockedStatus();
+
+  useEffect(() => {
+    return () => {
+      onComposerFocusChange?.(false);
+    };
+  }, [onComposerFocusChange]);
+
+  const handleComposerFocus = () => {
+    onComposerFocusChange?.(true);
+  };
+
+  const handleComposerBlur = () => {
+    requestAnimationFrame(() => {
+      const activeElement = document.activeElement;
+      const isStillWithinComposer = !!(activeElement instanceof Node && composerRef.current?.contains(activeElement));
+      onComposerFocusChange?.(isStillWithinComposer);
+    });
+  };
 
   // Always fetch comment count (for badge visibility when collapsed)
   const { data: commentCount = 0 } = useQuery({
@@ -429,7 +449,7 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
                   </button>
                 </div>
               )}
-              <div className="relative flex gap-2">
+              <div ref={composerRef} className="relative flex gap-2">
                 <div className="relative flex-1">
                   <Textarea
                     ref={textareaRef}
@@ -437,6 +457,8 @@ const ListingComments = ({ listingId, sellerId }: ListingCommentsProps) => {
                     value={newComment}
                     onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
+                    onFocus={handleComposerFocus}
+                    onBlur={handleComposerBlur}
                     className="min-h-[60px] resize-none rounded-xl border-muted-foreground/20 bg-card"
                     maxLength={500}
                   />
