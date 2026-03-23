@@ -12,7 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import stripeLogo from '@/assets/logo-stripe.jpeg';
+import stripeLogo from '@/assets/logo-stripe.png';
 import paypalLogo from '@/assets/logo-paypal.png';
 
 interface ConnectPaymentDialogProps {
