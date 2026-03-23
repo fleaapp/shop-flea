@@ -63,7 +63,6 @@ serve(async (req) => {
 
     let accountId = stripeAccountId;
     let lookupUserId = user.id;
-    let lookupEmail = user.email;
 
     // If checking a different seller (e.g. from checkout flow), fetch their profile via service role
     if (sellerUserId && sellerUserId !== user.id) {
@@ -71,39 +70,18 @@ serve(async (req) => {
       const serviceClient = createClient(externalUrl, serviceKey);
       const { data: sellerProfile } = await serviceClient
         .from('profiles')
-        .select('email, stripe_account_id')
+        .select('stripe_account_id')
         .eq('user_id', sellerUserId)
         .single();
 
-      if (sellerProfile?.email) {
-        lookupEmail = sellerProfile.email;
-        console.log(`[stripe-connect-status] Found seller email: ${lookupEmail}`);
-      }
       if (!accountId && sellerProfile?.stripe_account_id) {
         accountId = sellerProfile.stripe_account_id;
       }
       lookupUserId = sellerUserId;
     }
 
-    // If no account ID provided, search by email in connected accounts
-    if (!accountId && lookupEmail) {
-      console.log(`[stripe-connect-status] Searching for account by email: ${lookupEmail}`);
-      const accounts = await stripe.accounts.list({ limit: 100 });
-      const matches = accounts.data.filter(
-        (a) => a.email?.toLowerCase() === lookupEmail!.toLowerCase()
-      );
-      if (matches.length > 0) {
-        const best = matches.find(a => a.charges_enabled)
-          || matches.find(a => a.details_submitted)
-          || matches[0];
-        accountId = best.id;
-        console.log(`[stripe-connect-status] Found ${matches.length} account(s), using best: ${accountId}`);
-      } else {
-        console.log(`[stripe-connect-status] No account found for email: ${lookupEmail}`);
-      }
-    }
-
     if (!accountId) {
+      console.log(`[stripe-connect-status] No stored Stripe account for user ${lookupUserId}; skipping email lookup.`);
       return new Response(
         JSON.stringify({ chargesEnabled: false, detailsSubmitted: false, accountId: null, accountExists: false }),
         {
