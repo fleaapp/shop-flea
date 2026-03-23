@@ -24,6 +24,7 @@ const ConnectPaymentDialog = ({ open, onOpenChange }: ConnectPaymentDialogProps)
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isConnectingPayPal, setIsConnectingPayPal] = useState(false);
 
   const handleConnectStripe = async () => {
     if (!user || !user.email) {
@@ -42,7 +43,6 @@ const ConnectPaymentDialog = ({ open, onOpenChange }: ConnectPaymentDialogProps)
       if (error) throw error;
       if (!data?.url) throw new Error('No onboarding URL returned');
 
-      // Save account ID before redirecting
       if (data.accountId) {
         await supabase
           .from('profiles')
@@ -50,7 +50,6 @@ const ConnectPaymentDialog = ({ open, onOpenChange }: ConnectPaymentDialogProps)
           .eq('user_id', user.id);
       }
 
-      // Mark that we're coming from the connect flow
       localStorage.setItem('flea_stripe_pending', 'true');
       window.location.href = data.url;
     } catch (error: any) {
@@ -58,6 +57,31 @@ const ConnectPaymentDialog = ({ open, onOpenChange }: ConnectPaymentDialogProps)
       toast.error('Failed to start Stripe connection. Please try again.');
     } finally {
       setIsConnecting(false);
+    }
+  };
+
+  const handleConnectPayPal = async () => {
+    if (!user || !user.email) {
+      toast.error('You must be logged in to connect PayPal');
+      return;
+    }
+
+    setIsConnectingPayPal(true);
+    try {
+      const { data, error } = await invokeCloudFunction('paypal-connect-onboard', {
+        returnUrl: window.location.origin + '/settings',
+      });
+
+      if (error) throw error;
+      if (!data?.url) throw new Error('No onboarding URL returned');
+
+      localStorage.setItem('flea_paypal_pending', 'true');
+      window.location.href = data.url;
+    } catch (error: any) {
+      console.error('PayPal Connect error:', error);
+      toast.error('Failed to start PayPal connection. Please try again.');
+    } finally {
+      setIsConnectingPayPal(false);
     }
   };
 
@@ -75,17 +99,17 @@ const ConnectPaymentDialog = ({ open, onOpenChange }: ConnectPaymentDialogProps)
         <div className="space-y-3 mt-4 flex flex-col items-center">
           <Button
             onClick={handleConnectStripe}
-            disabled={isConnecting}
+            disabled={isConnecting || isConnectingPayPal}
             className="w-64 h-11 rounded-full bg-charcoal text-white hover:bg-charcoal-light border-none shadow-none ring-0 outline-none focus-visible:ring-0 flex items-center justify-center gap-2"
           >
             {isConnecting ? 'Connecting...' : <><img src={stripeLogo} alt="Stripe" className="h-5 w-auto object-contain" /> Connect Stripe</>}
           </Button>
           <Button
-            disabled
-            className="w-64 h-11 rounded-full opacity-50 border-none shadow-none ring-0 outline-none focus-visible:ring-0 text-xs"
-            variant="outline"
+            onClick={handleConnectPayPal}
+            disabled={isConnecting || isConnectingPayPal}
+            className="w-64 h-11 rounded-full bg-[#0070ba] text-white hover:bg-[#005ea6] border-none shadow-none ring-0 outline-none focus-visible:ring-0 flex items-center justify-center gap-2"
           >
-            <img src={paypalLogo} alt="PayPal" className="h-4 inline-block mr-1.5" /> Connect PayPal (Coming Soon)
+            {isConnectingPayPal ? 'Connecting...' : <><img src={paypalLogo} alt="PayPal" className="h-4 w-auto object-contain" /> Connect PayPal</>}
           </Button>
           <Button
             variant="ghost"
