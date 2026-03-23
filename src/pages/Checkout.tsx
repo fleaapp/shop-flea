@@ -65,31 +65,34 @@ const Checkout = () => {
     loadSellerSettings();
   }, [items]);
 
-  // Fetch seller Stripe account IDs
+  // Fetch seller payment accounts (Stripe + PayPal)
   const [sellerStripeAccounts, setSellerStripeAccounts] = useState<Map<string, string>>(new Map());
+  const [sellerPayPalAccounts, setSellerPayPalAccounts] = useState<Map<string, string>>(new Map());
   const [sellerStripeLoading, setSellerStripeLoading] = useState(true);
   useEffect(() => {
-    const loadSellerStripe = async () => {
+    const loadSellerPayments = async () => {
       if (items.length === 0) { setSellerStripeLoading(false); return; }
       const sellerIds = [...new Set(items.map(item => item.sellerId))];
       
       const { data } = await supabase
         .from('profiles' as any)
-        .select('user_id, stripe_account_id, stripe_onboarding_complete')
+        .select('user_id, stripe_account_id, stripe_onboarding_complete, paypal_merchant_id, paypal_onboarding_complete')
         .in('user_id', sellerIds);
       
-      const accounts = new Map<string, string>();
+      const stripeAccounts = new Map<string, string>();
+      const paypalAccounts = new Map<string, string>();
       
-      // Build confirmed accounts from DB
       data?.forEach((p: any) => {
         if (p.stripe_account_id && p.stripe_onboarding_complete) {
-          accounts.set(p.user_id, p.stripe_account_id);
+          stripeAccounts.set(p.user_id, p.stripe_account_id);
+        }
+        if (p.paypal_merchant_id && p.paypal_onboarding_complete) {
+          paypalAccounts.set(p.user_id, p.paypal_merchant_id);
         }
       });
 
-      // For ALL sellers not yet confirmed, do real-time Stripe verification.
-      // This handles: (1) stale DB flags, (2) DB write failures, (3) missing stripe_account_id.
-      const unconfirmedSellerIds = sellerIds.filter(id => !accounts.has(id));
+      // Real-time Stripe verification for unconfirmed sellers
+      const unconfirmedSellerIds = sellerIds.filter(id => !stripeAccounts.has(id));
       
       for (const sellerId of unconfirmedSellerIds) {
         try {
@@ -99,18 +102,33 @@ const Checkout = () => {
             sellerUserId: sellerId,
           });
           if (!error && statusData && (statusData.chargesEnabled || statusData.detailsSubmitted) && statusData.accountId) {
-            accounts.set(sellerId, statusData.accountId);
-            console.log(`[checkout] Verified seller ${sellerId} via real-time Stripe check: ${statusData.accountId}`);
+            stripeAccounts.set(sellerId, statusData.accountId);
           }
         } catch (e) {
           console.error('Seller Stripe verify failed:', e);
         }
       }
+
+      // Real-time PayPal verification for unconfirmed sellers
+      const unconfirmedPayPalIds = sellerIds.filter(id => !paypalAccounts.has(id));
+      for (const sellerId of unconfirmedPayPalIds) {
+        try {
+          const { data: statusData, error } = await invokeCloudFunction('paypal-connect-status', {
+            sellerUserId: sellerId,
+          });
+          if (!error && statusData?.connected && statusData?.merchantId) {
+            paypalAccounts.set(sellerId, statusData.merchantId);
+          }
+        } catch (e) {
+          console.error('Seller PayPal verify failed:', e);
+        }
+      }
       
-      setSellerStripeAccounts(accounts);
+      setSellerStripeAccounts(stripeAccounts);
+      setSellerPayPalAccounts(paypalAccounts);
       setSellerStripeLoading(false);
     };
-    loadSellerStripe();
+    loadSellerPayments();
   }, [items]);
 
   const handleClose = () => {
@@ -136,10 +154,19 @@ const Checkout = () => {
     );
   }, [validItems, sellerSettings]);
   
+  // Determine which payment method the seller supports
+  const sellerId = validItems[0]?.sellerId;
+  const sellerHasStripe = sellerId ? sellerStripeAccounts.has(sellerId) : false;
+  const sellerHasPayPal = sellerId ? sellerPayPalAccounts.has(sellerId) : false;
+  
+  // Fee depends on payment method: 2% for Stripe, 3% for PayPal
+  // Default to Stripe if both available
+  const paymentMethod = sellerHasStripe ? 'stripe' : sellerHasPayPal ? 'paypal' : null;
+  const feeRate = paymentMethod === 'paypal' ? 0.03 : 0.02;
+  
   const itemsTotal = validItems.reduce((sum: number, item: any) => sum + item.price, 0);
   const subtotal = itemsTotal + totalShipping;
-  // 2% payment processing fee (buyer-facing)
-  const processingFee = subtotal * 0.02;
+  const processingFee = subtotal * feeRate;
   const total = subtotal + processingFee;
   
   const isShippingComplete = shippingFirstName.trim() && shippingLastName.trim() && shippingAddress.trim() && shippingSuburb.trim() && shippingState.trim() && shippingPostcode.trim();
@@ -186,33 +213,51 @@ const Checkout = () => {
       sessionStorage.setItem('checkout_seller_settings', JSON.stringify(Array.from(sellerSettings.entries())));
       sessionStorage.setItem('checkout_shipping_by_seller', JSON.stringify(Array.from(shippingBySeller.entries())));
 
-      // Get the seller's Stripe account ID (for now, assume single seller checkout)
+      // Get the seller's payment account
       const sellerId = validItems[0]?.sellerId;
       const sellerStripeAccountId = sellerStripeAccounts.get(sellerId);
+      const sellerPayPalMerchantId = sellerPayPalAccounts.get(sellerId);
       
-      if (!sellerStripeAccountId) {
+      if (!sellerStripeAccountId && !sellerPayPalMerchantId) {
         toast.error('This seller has not connected a payment method yet.');
         setIsSubmitting(false);
         return;
       }
 
-      // Call Stripe Connect checkout edge function (on Cloud project)
-      const { data, error } = await invokeCloudFunction('stripe-connect-checkout', {
-        items: validItems.map(item => ({
-          id: item.id,
-          title: item.title,
-          price: item.price,
-          image: item.image,
-        })),
-        shipping: totalShipping,
-        sellerStripeAccountId,
-      });
+      // Use Stripe if available, otherwise PayPal
+      if (sellerStripeAccountId) {
+        const { data, error } = await invokeCloudFunction('stripe-connect-checkout', {
+          items: validItems.map(item => ({
+            id: item.id,
+            title: item.title,
+            price: item.price,
+            image: item.image,
+          })),
+          shipping: totalShipping,
+          sellerStripeAccountId,
+        });
 
-      if (error) throw error;
-      if (!data?.url) throw new Error('No checkout URL returned');
+        if (error) throw error;
+        if (!data?.url) throw new Error('No checkout URL returned');
+        window.location.href = data.url;
+      } else if (sellerPayPalMerchantId) {
+        sessionStorage.setItem('checkout_payment_method', 'paypal');
+        
+        const { data, error } = await invokeCloudFunction('paypal-connect-checkout', {
+          items: validItems.map(item => ({
+            id: item.id,
+            title: item.title,
+            price: item.price,
+            image: item.image,
+          })),
+          shipping: totalShipping,
+          sellerPayPalMerchantId,
+        });
 
-      // Redirect to Stripe Checkout
-      window.location.href = data.url;
+        if (error) throw error;
+        if (!data?.url) throw new Error('No checkout URL returned');
+        window.location.href = data.url;
+      }
     } catch (error) {
       console.error('Error creating checkout session:', error);
       toast.error('Failed to start checkout. Please try again.');
@@ -278,7 +323,7 @@ const Checkout = () => {
               
               {/* Fee line */}
               <div className="flex justify-between text-sm px-4 py-3 border-t border-border">
-                <span className="text-muted-foreground">Payment processing fee (2%)</span>
+                <span className="text-muted-foreground">Payment processing fee ({Math.round(feeRate * 100)}%)</span>
                 <span className="text-muted-foreground">+ ${processingFee.toFixed(2)}</span>
               </div>
               
@@ -361,7 +406,7 @@ const Checkout = () => {
                 {isSubmitting ? 'Redirecting to payment...' : 'Proceed to payment'}
               </Button>
               <p className="text-xs text-muted-foreground text-center mt-3">
-                You'll be redirected to Stripe to complete payment securely.
+                You'll be redirected to {paymentMethod === 'paypal' ? 'PayPal' : 'Stripe'} to complete payment securely.
               </p>
             </div>
           </div>

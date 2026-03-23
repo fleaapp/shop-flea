@@ -18,7 +18,13 @@ const CheckoutSuccess = () => {
   useEffect(() => {
     const processOrder = async () => {
       const sessionId = searchParams.get('session_id');
-      if (!sessionId || !user) {
+      const isPayPal = searchParams.get('paypal') === 'true';
+      
+      if (!sessionId && !isPayPal) {
+        navigate('/');
+        return;
+      }
+      if (!user) {
         navigate('/');
         return;
       }
@@ -68,7 +74,7 @@ const CheckoutSuccess = () => {
                 price: item.price,
                 shipping_price: itemShipping,
                 status: 'awaiting',
-                payment_method: 'stripe',
+                payment_method: sessionStorage.getItem('checkout_payment_method') || 'stripe',
                 shipping_first_name: shipping.shippingFirstName,
                 shipping_last_name: shipping.shippingLastName,
                 shipping_address: shipping.shippingAddress,
@@ -94,6 +100,7 @@ const CheckoutSuccess = () => {
         sessionStorage.removeItem('checkout_shipping');
         sessionStorage.removeItem('checkout_seller_settings');
         sessionStorage.removeItem('checkout_shipping_by_seller');
+        sessionStorage.removeItem('checkout_payment_method');
 
         setShowSuccess(true);
       } catch (error) {

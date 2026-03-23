@@ -492,6 +492,8 @@ export type Database = {
           location: string | null
           password_set: boolean
           pause_selling: boolean
+          paypal_merchant_id: string | null
+          paypal_onboarding_complete: boolean
           preferred_gender: string[] | null
           preferred_sizes: string[] | null
           rating: number | null
@@ -522,6 +524,8 @@ export type Database = {
           location?: string | null
           password_set?: boolean
           pause_selling?: boolean
+          paypal_merchant_id?: string | null
+          paypal_onboarding_complete?: boolean
           preferred_gender?: string[] | null
           preferred_sizes?: string[] | null
           rating?: number | null
@@ -552,6 +556,8 @@ export type Database = {
           location?: string | null
           password_set?: boolean
           pause_selling?: boolean
+          paypal_merchant_id?: string | null
+          paypal_onboarding_complete?: boolean
           preferred_gender?: string[] | null
           preferred_sizes?: string[] | null
           rating?: number | null
@@ -745,6 +751,7 @@ export type Database = {
           last_sign_in_at: string | null
           location: string | null
           pause_selling: boolean | null
+          paypal_onboarding_complete: boolean | null
           rating: number | null
           region_id: string | null
           shipping_preferences_set: boolean | null
@@ -767,6 +774,7 @@ export type Database = {
           last_sign_in_at?: string | null
           location?: string | null
           pause_selling?: boolean | null
+          paypal_onboarding_complete?: boolean | null
           rating?: number | null
           region_id?: string | null
           shipping_preferences_set?: boolean | null
@@ -789,6 +797,7 @@ export type Database = {
           last_sign_in_at?: string | null
           location?: string | null
           pause_selling?: boolean | null
+          paypal_onboarding_complete?: boolean | null
           rating?: number | null
           region_id?: string | null
           shipping_preferences_set?: boolean | null
