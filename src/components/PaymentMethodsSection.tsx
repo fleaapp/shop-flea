@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { ChevronRight } from 'lucide-react';
 import stripeLogo from '@/assets/logo-stripe.jpeg';
 import paypalLogo from '@/assets/logo-paypal.png';
+import { clearStripeConnectionState, getStripeConnectedStorageKey } from '@/utils/stripeConnectionState';
 
 const PaymentMethodsSection = () => {
   const { user, profile, refreshProfile } = useAuth();
@@ -14,12 +15,22 @@ const PaymentMethodsSection = () => {
   const [localConnected, setLocalConnected] = useState(false);
   const [localAccountId, setLocalAccountId] = useState<string | null>(null);
 
+  const clearLocalStripeState = useCallback(() => {
+    clearStripeConnectionState(user?.id);
+    setLocalConnected(false);
+    setLocalAccountId(null);
+  }, [user?.id]);
+
   // Re-sync localStorage when user ID becomes available (fixes useState initializer race)
   useEffect(() => {
-    if (user) {
-      const stored = localStorage.getItem(`flea_stripe_connected_${user.id}`) === 'true';
-      if (stored) setLocalConnected(true);
+    if (!user) {
+      setLocalConnected(false);
+      setLocalAccountId(null);
+      return;
     }
+
+    const stored = localStorage.getItem(getStripeConnectedStorageKey(user.id)) === 'true';
+    setLocalConnected(stored);
   }, [user]);
 
   const stripeConnected = profile?.stripe_onboarding_complete === true || localConnected;
@@ -62,7 +73,6 @@ const PaymentMethodsSection = () => {
     }
   };
 
-  // Check Stripe status by querying Stripe directly via email
   const handleCheckStatus = useCallback(async (silent = false) => {
     if (!user?.email) return;
     setIsChecking(true);
@@ -77,8 +87,8 @@ const PaymentMethodsSection = () => {
       if ((data?.chargesEnabled || data?.detailsSubmitted) && data?.accountId) {
         setLocalConnected(true);
         setLocalAccountId(data.accountId);
-        if (user) localStorage.setItem(`flea_stripe_connected_${user.id}`, 'true');
-        // Try to persist to DB
+        localStorage.setItem(getStripeConnectedStorageKey(user.id), 'true');
+
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ stripe_onboarding_complete: true, stripe_account_id: data.accountId } as any)
@@ -95,9 +105,13 @@ const PaymentMethodsSection = () => {
           }
         }
       } else if (data?.accountId) {
+        setLocalConnected(false);
         setLocalAccountId(data.accountId);
+        localStorage.removeItem(getStripeConnectedStorageKey(user.id));
         if (!silent) toast('Stripe onboarding incomplete. Please finish setup.');
       } else {
+        clearLocalStripeState();
+        await refreshProfile();
         if (!silent) toast('No Stripe account found. Please connect Stripe first.');
       }
     } catch (error) {
@@ -106,11 +120,8 @@ const PaymentMethodsSection = () => {
     } finally {
       setIsChecking(false);
     }
-  }, [user, stripeAccountId, refreshProfile]);
+  }, [clearLocalStripeState, refreshProfile, stripeAccountId, user]);
 
-  // Auto-check in two cases:
-  // 1. Returning from Stripe redirect (flea_stripe_pending flag set)
-  // 2. UI shows connected (localStorage) but DB is missing stripe_account_id — fixes all affected users automatically
   useEffect(() => {
     const pending = localStorage.getItem('flea_stripe_pending');
     const missingFromDb = stripeConnected && !profile?.stripe_account_id;
@@ -119,7 +130,6 @@ const PaymentMethodsSection = () => {
     }
   }, [user?.email, stripeConnected, profile?.stripe_account_id, handleCheckStatus]);
 
-  // Only clear the pending flag once Stripe is fully connected
   useEffect(() => {
     if (stripeConnected) {
       localStorage.removeItem('flea_stripe_pending');
@@ -132,7 +142,6 @@ const PaymentMethodsSection = () => {
         Payment Methods
       </h2>
       <div className="space-y-2 max-[375px]:space-y-1.5">
-        {/* Stripe Connect */}
         <div
           className="flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow bg-card cursor-pointer"
           onClick={stripeConnected ? undefined : handleConnectStripe}
@@ -167,7 +176,6 @@ const PaymentMethodsSection = () => {
           </div>
         </div>
 
-        {/* PayPal - Coming Soon */}
         <div className="flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow bg-card opacity-50">
           <div className="flex items-center gap-3 max-[375px]:gap-2">
             <img src={paypalLogo} alt="PayPal" className="h-7 w-7 object-contain" />
