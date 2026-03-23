@@ -293,12 +293,19 @@ const OrderDetailsSheet = ({
                 )}
                 {canShowRefundButton && (
                   <Button
-                    onClick={() => setRefundDialogOpen(true)}
-                    disabled={refundStatus?.hasPending || refundWindowExpired}
+                    onClick={() => {
+                      if (refundStatus?.hasPending || refundStatus?.hasAnyRequest) {
+                        onOpenChange(false);
+                        setTimeout(() => navigate(`/order-chat/${chatThreadId}`), 300);
+                      } else {
+                        setRefundDialogOpen(true);
+                      }
+                    }}
+                    disabled={refundWindowExpired}
                     variant="outline"
                     className="flex-1 rounded-full h-12 bg-muted-foreground/60 text-white hover:bg-muted-foreground/70 border-none disabled:opacity-60"
                   >
-                    {refundStatus?.hasPending ? 'Refund Requested' : refundWindowExpired ? 'Refund Window Closed' : 'Request Refund'}
+                    {refundStatus?.hasPending || refundStatus?.hasAnyRequest ? 'Refund Requested' : refundWindowExpired ? 'Refund Window Closed' : 'Request Refund'}
                   </Button>
                 )}
               </div>
