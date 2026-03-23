@@ -100,16 +100,16 @@ const ConnectPaymentDialog = ({ open, onOpenChange }: ConnectPaymentDialogProps)
           <Button
             onClick={handleConnectStripe}
             disabled={isConnecting || isConnectingPayPal}
-            className="w-64 h-11 rounded-full bg-charcoal text-white hover:bg-charcoal-light border-none shadow-none ring-0 outline-none focus-visible:ring-0 flex items-center justify-center gap-2"
+            className="w-64 h-13 rounded-full bg-muted text-foreground hover:bg-muted/80 border-none shadow-none ring-0 outline-none focus-visible:ring-0 flex items-center justify-center gap-2.5 text-[15px] font-medium"
           >
-            {isConnecting ? 'Connecting...' : <><img src={stripeLogo} alt="Stripe" className="h-5 w-auto object-contain" /> Connect Stripe</>}
+            {isConnecting ? 'Connecting...' : <><img src={stripeLogo} alt="Stripe" className="h-6 w-auto object-contain rounded" /> Connect Stripe</>}
           </Button>
           <Button
             onClick={handleConnectPayPal}
             disabled={isConnecting || isConnectingPayPal}
-            className="w-64 h-11 rounded-full bg-[#0070ba] text-white hover:bg-[#005ea6] border-none shadow-none ring-0 outline-none focus-visible:ring-0 flex items-center justify-center gap-2"
+            className="w-64 h-13 rounded-full bg-muted text-foreground hover:bg-muted/80 border-none shadow-none ring-0 outline-none focus-visible:ring-0 flex items-center justify-center gap-2.5 text-[15px] font-medium"
           >
-            {isConnectingPayPal ? 'Connecting...' : <><img src={paypalLogo} alt="PayPal" className="h-4 w-auto object-contain" /> Connect PayPal</>}
+            {isConnectingPayPal ? 'Connecting...' : <><img src={paypalLogo} alt="PayPal" className="h-5 w-auto object-contain" /> Connect PayPal</>}
           </Button>
           <Button
             variant="ghost"

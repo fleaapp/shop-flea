@@ -29,7 +29,7 @@ import fleaLogoReceipt from '@/assets/flea-logo-receipt.jpeg';
 import fleaLogoTransparent from '@/assets/flea-logo-transparent.png';
 import fleaLogoWelcome from '@/assets/flea-logo-welcome.png';
 import fleaLogoWelcomeHeader from '@/assets/flea-logo-welcome-header.png';
-import stripeLogo from '@/assets/logo-stripe.jpeg';
+import stripeLogo from '@/assets/logo-stripe.png';
 import paypalLogo from '@/assets/logo-paypal.png';
 import soldSticker from '@/assets/sold-sticker.png';
 import orderSuccessReceipt from '@/assets/order-success-receipt.png';

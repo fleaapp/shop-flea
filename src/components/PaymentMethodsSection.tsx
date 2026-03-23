@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { toast } from 'sonner';
 import { ChevronRight } from 'lucide-react';
-import stripeLogo from '@/assets/logo-stripe.jpeg';
+import stripeLogo from '@/assets/logo-stripe.png';
 import paypalLogo from '@/assets/logo-paypal.png';
 import { clearStripeConnectionState, getStripeConnectedStorageKey } from '@/utils/stripeConnectionState';
 
