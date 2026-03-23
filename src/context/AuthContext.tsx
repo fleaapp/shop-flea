@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback,
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
+import { clearStripeConnectionState, getStripeConnectedStorageKey } from '@/utils/stripeConnectionState';
 
 interface Profile {
   id: string;
@@ -54,6 +55,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .eq('user_id', userId)
       .maybeSingle();
     setProfile(data);
+
+    if (data?.stripe_onboarding_complete) {
+      localStorage.setItem(getStripeConnectedStorageKey(userId), 'true');
+      localStorage.removeItem('flea_stripe_pending');
+    } else if (!data?.stripe_account_id) {
+      clearStripeConnectionState(userId);
+    }
 
     // Check banned_users table
     const { data: ban } = await supabase
@@ -121,7 +129,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Skip if already fully connected in DB
     if (profile.stripe_onboarding_complete) {
-      localStorage.setItem(`flea_stripe_connected_${user.id}`, 'true');
+      localStorage.setItem(getStripeConnectedStorageKey(user.id), 'true');
       localStorage.removeItem('flea_stripe_pending');
       stripeVerifiedRef.current = true;
       return;
@@ -144,7 +152,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (error || !data) return;
 
         if ((data.chargesEnabled || data.detailsSubmitted) && data.accountId) {
-          localStorage.setItem(`flea_stripe_connected_${user.id}`, 'true');
+          localStorage.setItem(getStripeConnectedStorageKey(user.id), 'true');
           localStorage.removeItem('flea_stripe_pending');
           const { error: updateError } = await supabase
             .from('profiles')
@@ -157,6 +165,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             console.error('Failed to persist Stripe status to DB:', updateError);
           }
           setTimeout(() => fetchProfile(user.id), 500);
+        } else {
+          clearStripeConnectionState(user.id);
         }
       } catch (e) {
         console.error('Auto Stripe verify on login failed:', e);
@@ -196,18 +206,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    // IMPORTANT: Do NOT remove flea_stripe_connected_${user.id} on signout.
-    // It is user-scoped so there's no cross-account leakage, and removing it
-    // causes Stripe to appear "disconnected" on re-login if the DB update
-    // previously failed. The flag persists so Stripe stays connected.
-    
-    // Remove legacy unscoped key only
     localStorage.removeItem('flea_stripe_connected');
-    // Clean up OAuth/password flags (not user-scoped, could affect next account)
     localStorage.removeItem('flea_oauth_signup');
     await supabase.auth.signOut();
   };
-
   return (
     <AuthContext.Provider value={{ user, session, profile, loading, isBanned, signUp, signIn, signOut, refreshProfile }}>
       {children}
