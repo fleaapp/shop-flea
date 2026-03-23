@@ -406,7 +406,7 @@ const Checkout = () => {
                 {isSubmitting ? 'Redirecting to payment...' : 'Proceed to payment'}
               </Button>
               <p className="text-xs text-muted-foreground text-center mt-3">
-                You'll be redirected to Stripe to complete payment securely.
+                You'll be redirected to {paymentMethod === 'paypal' ? 'PayPal' : 'Stripe'} to complete payment securely.
               </p>
             </div>
           </div>
