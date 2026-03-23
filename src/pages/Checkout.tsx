@@ -154,10 +154,19 @@ const Checkout = () => {
     );
   }, [validItems, sellerSettings]);
   
+  // Determine which payment method the seller supports
+  const sellerId = validItems[0]?.sellerId;
+  const sellerHasStripe = sellerId ? sellerStripeAccounts.has(sellerId) : false;
+  const sellerHasPayPal = sellerId ? sellerPayPalAccounts.has(sellerId) : false;
+  
+  // Fee depends on payment method: 2% for Stripe, 3% for PayPal
+  // Default to Stripe if both available
+  const paymentMethod = sellerHasStripe ? 'stripe' : sellerHasPayPal ? 'paypal' : null;
+  const feeRate = paymentMethod === 'paypal' ? 0.03 : 0.02;
+  
   const itemsTotal = validItems.reduce((sum: number, item: any) => sum + item.price, 0);
   const subtotal = itemsTotal + totalShipping;
-  // 2% payment processing fee (buyer-facing)
-  const processingFee = subtotal * 0.02;
+  const processingFee = subtotal * feeRate;
   const total = subtotal + processingFee;
   
   const isShippingComplete = shippingFirstName.trim() && shippingLastName.trim() && shippingAddress.trim() && shippingSuburb.trim() && shippingState.trim() && shippingPostcode.trim();
