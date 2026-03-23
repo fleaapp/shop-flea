@@ -323,7 +323,7 @@ const Checkout = () => {
               
               {/* Fee line */}
               <div className="flex justify-between text-sm px-4 py-3 border-t border-border">
-                <span className="text-muted-foreground">Payment processing fee (2%)</span>
+                <span className="text-muted-foreground">Payment processing fee ({Math.round(feeRate * 100)}%)</span>
                 <span className="text-muted-foreground">+ ${processingFee.toFixed(2)}</span>
               </div>
               
