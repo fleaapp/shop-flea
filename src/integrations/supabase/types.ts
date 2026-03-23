@@ -492,6 +492,8 @@ export type Database = {
           location: string | null
           password_set: boolean
           pause_selling: boolean
+          paypal_merchant_id: string | null
+          paypal_onboarding_complete: boolean
           preferred_gender: string[] | null
           preferred_sizes: string[] | null
           rating: number | null
@@ -522,6 +524,8 @@ export type Database = {
           location?: string | null
           password_set?: boolean
           pause_selling?: boolean
+          paypal_merchant_id?: string | null
+          paypal_onboarding_complete?: boolean
           preferred_gender?: string[] | null
           preferred_sizes?: string[] | null
           rating?: number | null
@@ -552,6 +556,8 @@ export type Database = {
           location?: string | null
           password_set?: boolean
           pause_selling?: boolean
+          paypal_merchant_id?: string | null
+          paypal_onboarding_complete?: boolean
           preferred_gender?: string[] | null
           preferred_sizes?: string[] | null
           rating?: number | null
