@@ -94,6 +94,7 @@ const CheckoutSuccess = () => {
         sessionStorage.removeItem('checkout_shipping');
         sessionStorage.removeItem('checkout_seller_settings');
         sessionStorage.removeItem('checkout_shipping_by_seller');
+        sessionStorage.removeItem('checkout_payment_method');
 
         setShowSuccess(true);
       } catch (error) {
