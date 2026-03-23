@@ -65,31 +65,34 @@ const Checkout = () => {
     loadSellerSettings();
   }, [items]);
 
-  // Fetch seller Stripe account IDs
+  // Fetch seller payment accounts (Stripe + PayPal)
   const [sellerStripeAccounts, setSellerStripeAccounts] = useState<Map<string, string>>(new Map());
+  const [sellerPayPalAccounts, setSellerPayPalAccounts] = useState<Map<string, string>>(new Map());
   const [sellerStripeLoading, setSellerStripeLoading] = useState(true);
   useEffect(() => {
-    const loadSellerStripe = async () => {
+    const loadSellerPayments = async () => {
       if (items.length === 0) { setSellerStripeLoading(false); return; }
       const sellerIds = [...new Set(items.map(item => item.sellerId))];
       
       const { data } = await supabase
         .from('profiles' as any)
-        .select('user_id, stripe_account_id, stripe_onboarding_complete')
+        .select('user_id, stripe_account_id, stripe_onboarding_complete, paypal_merchant_id, paypal_onboarding_complete')
         .in('user_id', sellerIds);
       
-      const accounts = new Map<string, string>();
+      const stripeAccounts = new Map<string, string>();
+      const paypalAccounts = new Map<string, string>();
       
-      // Build confirmed accounts from DB
       data?.forEach((p: any) => {
         if (p.stripe_account_id && p.stripe_onboarding_complete) {
-          accounts.set(p.user_id, p.stripe_account_id);
+          stripeAccounts.set(p.user_id, p.stripe_account_id);
+        }
+        if (p.paypal_merchant_id && p.paypal_onboarding_complete) {
+          paypalAccounts.set(p.user_id, p.paypal_merchant_id);
         }
       });
 
-      // For ALL sellers not yet confirmed, do real-time Stripe verification.
-      // This handles: (1) stale DB flags, (2) DB write failures, (3) missing stripe_account_id.
-      const unconfirmedSellerIds = sellerIds.filter(id => !accounts.has(id));
+      // Real-time Stripe verification for unconfirmed sellers
+      const unconfirmedSellerIds = sellerIds.filter(id => !stripeAccounts.has(id));
       
       for (const sellerId of unconfirmedSellerIds) {
         try {
@@ -99,18 +102,33 @@ const Checkout = () => {
             sellerUserId: sellerId,
           });
           if (!error && statusData && (statusData.chargesEnabled || statusData.detailsSubmitted) && statusData.accountId) {
-            accounts.set(sellerId, statusData.accountId);
-            console.log(`[checkout] Verified seller ${sellerId} via real-time Stripe check: ${statusData.accountId}`);
+            stripeAccounts.set(sellerId, statusData.accountId);
           }
         } catch (e) {
           console.error('Seller Stripe verify failed:', e);
         }
       }
+
+      // Real-time PayPal verification for unconfirmed sellers
+      const unconfirmedPayPalIds = sellerIds.filter(id => !paypalAccounts.has(id));
+      for (const sellerId of unconfirmedPayPalIds) {
+        try {
+          const { data: statusData, error } = await invokeCloudFunction('paypal-connect-status', {
+            sellerUserId: sellerId,
+          });
+          if (!error && statusData?.connected && statusData?.merchantId) {
+            paypalAccounts.set(sellerId, statusData.merchantId);
+          }
+        } catch (e) {
+          console.error('Seller PayPal verify failed:', e);
+        }
+      }
       
-      setSellerStripeAccounts(accounts);
+      setSellerStripeAccounts(stripeAccounts);
+      setSellerPayPalAccounts(paypalAccounts);
       setSellerStripeLoading(false);
     };
-    loadSellerStripe();
+    loadSellerPayments();
   }, [items]);
 
   const handleClose = () => {
