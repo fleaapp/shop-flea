@@ -213,33 +213,51 @@ const Checkout = () => {
       sessionStorage.setItem('checkout_seller_settings', JSON.stringify(Array.from(sellerSettings.entries())));
       sessionStorage.setItem('checkout_shipping_by_seller', JSON.stringify(Array.from(shippingBySeller.entries())));
 
-      // Get the seller's Stripe account ID (for now, assume single seller checkout)
+      // Get the seller's payment account
       const sellerId = validItems[0]?.sellerId;
       const sellerStripeAccountId = sellerStripeAccounts.get(sellerId);
+      const sellerPayPalMerchantId = sellerPayPalAccounts.get(sellerId);
       
-      if (!sellerStripeAccountId) {
+      if (!sellerStripeAccountId && !sellerPayPalMerchantId) {
         toast.error('This seller has not connected a payment method yet.');
         setIsSubmitting(false);
         return;
       }
 
-      // Call Stripe Connect checkout edge function (on Cloud project)
-      const { data, error } = await invokeCloudFunction('stripe-connect-checkout', {
-        items: validItems.map(item => ({
-          id: item.id,
-          title: item.title,
-          price: item.price,
-          image: item.image,
-        })),
-        shipping: totalShipping,
-        sellerStripeAccountId,
-      });
+      // Use Stripe if available, otherwise PayPal
+      if (sellerStripeAccountId) {
+        const { data, error } = await invokeCloudFunction('stripe-connect-checkout', {
+          items: validItems.map(item => ({
+            id: item.id,
+            title: item.title,
+            price: item.price,
+            image: item.image,
+          })),
+          shipping: totalShipping,
+          sellerStripeAccountId,
+        });
 
-      if (error) throw error;
-      if (!data?.url) throw new Error('No checkout URL returned');
+        if (error) throw error;
+        if (!data?.url) throw new Error('No checkout URL returned');
+        window.location.href = data.url;
+      } else if (sellerPayPalMerchantId) {
+        sessionStorage.setItem('checkout_payment_method', 'paypal');
+        
+        const { data, error } = await invokeCloudFunction('paypal-connect-checkout', {
+          items: validItems.map(item => ({
+            id: item.id,
+            title: item.title,
+            price: item.price,
+            image: item.image,
+          })),
+          shipping: totalShipping,
+          sellerPayPalMerchantId,
+        });
 
-      // Redirect to Stripe Checkout
-      window.location.href = data.url;
+        if (error) throw error;
+        if (!data?.url) throw new Error('No checkout URL returned');
+        window.location.href = data.url;
+      }
     } catch (error) {
       console.error('Error creating checkout session:', error);
       toast.error('Failed to start checkout. Please try again.');
