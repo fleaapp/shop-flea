@@ -18,7 +18,13 @@ const CheckoutSuccess = () => {
   useEffect(() => {
     const processOrder = async () => {
       const sessionId = searchParams.get('session_id');
-      if (!sessionId || !user) {
+      const isPayPal = searchParams.get('paypal') === 'true';
+      
+      if (!sessionId && !isPayPal) {
+        navigate('/');
+        return;
+      }
+      if (!user) {
         navigate('/');
         return;
       }
