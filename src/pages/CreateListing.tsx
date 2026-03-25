@@ -81,11 +81,11 @@ const CreateListing = () => {
 
   const hasPaymentMethod = hasPaymentMethodDB || hasPaymentMethodStripe;
 
-  // Check if Stripe is in a "pending verification" state (has account but not yet connected)
+  // Only show "verifying" if user just returned from Stripe with success param
+  // or if they have a completed account in DB that needs syncing
   const stripeAccountId = profile?.stripe_account_id || null;
-  const stripePending = !hasPaymentMethod && (
-    localStorage.getItem('flea_stripe_pending') === 'true' || !!stripeAccountId
-  );
+  const returnedFromStripe = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('stripe_success') === 'true';
+  const stripePending = !hasPaymentMethod && returnedFromStripe;
 
   // Auto-verify Stripe status if user has an account ID but isn't marked as connected
   // This prevents users from having to re-connect every login
