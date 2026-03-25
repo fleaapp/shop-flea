@@ -51,14 +51,14 @@ serve(async (req) => {
       });
     }
 
-    const { returnUrl, stripeAccountId } = await req.json();
+    const { returnUrl, stripeAccountId, forceNew } = await req.json();
     const userId = user.id;
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
 
-    let accountId = stripeAccountId || null;
+    let accountId = forceNew ? null : (stripeAccountId || null);
 
     // Check if existing account is reusable
     if (accountId) {
