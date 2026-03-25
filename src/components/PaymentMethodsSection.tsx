@@ -7,13 +7,14 @@ import { ChevronRight } from 'lucide-react';
 import stripeLogo from '@/assets/logo-stripe.png';
 import paypalLogo from '@/assets/logo-paypal.png';
 import { clearStripeConnectionState, getStripeConnectedStorageKey } from '@/utils/stripeConnectionState';
+import StripeOnboardingSheet from '@/components/StripeOnboardingSheet';
 
 const PaymentMethodsSection = () => {
   const { user, profile, refreshProfile } = useAuth();
-  const [isConnecting, setIsConnecting] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [localConnected, setLocalConnected] = useState(false);
   const [localAccountId, setLocalAccountId] = useState<string | null>(null);
+  const [showStripeOnboarding, setShowStripeOnboarding] = useState(false);
 
   // PayPal state
   const [isConnectingPayPal, setIsConnectingPayPal] = useState(false);
@@ -58,37 +59,12 @@ const PaymentMethodsSection = () => {
   const returnedFromPayPal = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('paypal_return') === 'true';
   const paypalPending = !paypalConnected && (returnedFromPayPal || isCheckingPayPal);
 
-  const handleConnectStripe = async () => {
+  const handleConnectStripe = () => {
     if (!user || !user.email) {
       toast.error('You must be logged in to connect Stripe');
       return;
     }
-
-    setIsConnecting(true);
-    try {
-      const { data, error } = await invokeCloudFunction('stripe-connect-onboard', {
-        stripeAccountId: stripeAccountId || undefined,
-        returnUrl: window.location.origin + '/settings',
-      });
-
-      if (error) throw error;
-      if (!data?.url) throw new Error('No onboarding URL returned');
-
-      if (data.accountId) {
-        await supabase
-          .from('profiles')
-          .update({ stripe_account_id: data.accountId } as any)
-          .eq('user_id', user.id);
-      }
-
-      // Don't set pending flag — ?stripe_success=true param handles it on return
-      window.location.href = data.url;
-    } catch (error: any) {
-      console.error('Stripe Connect error:', error);
-      toast.error('Failed to start Stripe connection. Please try again.');
-    } finally {
-      setIsConnecting(false);
-    }
+    setShowStripeOnboarding(true);
   };
 
   const handleConnectPayPal = async () => {
@@ -230,6 +206,15 @@ const PaymentMethodsSection = () => {
   }, [user?.email, stripeConnected, profile?.stripe_account_id, handleCheckStatus]);
 
   return (
+    <>
+    <StripeOnboardingSheet
+      open={showStripeOnboarding}
+      onOpenChange={setShowStripeOnboarding}
+      onComplete={() => {
+        setShowStripeOnboarding(false);
+        handleCheckStatus(true);
+      }}
+    />
     <div>
       <h2 className="mb-3 max-[375px]:mb-2 text-sm max-[375px]:text-xs font-medium text-muted-foreground uppercase tracking-wide">
         Payment Methods
@@ -252,9 +237,7 @@ const PaymentMethodsSection = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {isConnecting ? (
-              <span className="text-xs text-muted-foreground">Connecting...</span>
-            ) : stripeConnected ? (
+            {stripeConnected ? (
               <button
                 onClick={(e) => { e.stopPropagation(); handleCheckStatus(false); }}
                 disabled={isChecking}
@@ -306,6 +289,7 @@ const PaymentMethodsSection = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
