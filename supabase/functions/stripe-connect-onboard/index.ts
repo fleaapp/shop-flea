@@ -83,11 +83,6 @@ serve(async (req) => {
           country: "AU",
           business_type: "individual",
           email: userEmail,
-          business_profile: {
-            mcc: "5699",
-            product_description: "Selling pre-owned clothing and accessories on Flea marketplace",
-            url: "https://shop-flea.lovable.app",
-          },
           metadata: {
             flea_user_id: userId,
           },
