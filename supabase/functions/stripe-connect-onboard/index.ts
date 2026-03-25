@@ -12,7 +12,6 @@ async function persistStripeAccount(userId: string, accountId: string) {
   const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '';
   const serviceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-  // Use raw REST PATCH directly — avoids any PostgREST schema cache issues
   const response = await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
     method: 'PATCH',
     headers: {
@@ -32,59 +31,13 @@ async function persistStripeAccount(userId: string, accountId: string) {
   }
 }
 
-async function getReusableStripeAccountId(
-  stripe: Stripe,
-  candidateAccountId: string | undefined,
-  userId: string,
-) {
-  if (!candidateAccountId) {
-    return null;
-  }
-
-  try {
-    const account = await stripe.accounts.retrieve(candidateAccountId);
-
-    if (account.deleted) {
-      console.warn(`[stripe-connect-onboard] Ignoring deleted account ${candidateAccountId} for user ${userId}`);
-      return null;
-    }
-
-    const isOwnedByUser = account.metadata?.flea_user_id === userId;
-    const isIndividual = account.business_type === "individual";
-    const isOnboardingComplete = account.details_submitted === true;
-
-    if (!isOwnedByUser) {
-      console.warn(`[stripe-connect-onboard] Ignoring account ${candidateAccountId} because it is not owned by user ${userId}`);
-      return null;
-    }
-
-    if (!isIndividual) {
-      console.warn(`[stripe-connect-onboard] Ignoring account ${candidateAccountId} because business_type=${account.business_type ?? 'unknown'}`);
-      return null;
-    }
-
-    // Only reuse accounts that have completed onboarding.
-    // If the user abandoned onboarding midway, create a fresh account
-    // so they start from the beginning.
-    if (!isOnboardingComplete) {
-      console.warn(`[stripe-connect-onboard] Ignoring incomplete account ${candidateAccountId} for user ${userId} — will create fresh`);
-      return null;
-    }
-
-    return account.id;
-  } catch (error) {
-    console.error(`[stripe-connect-onboard] Failed to inspect account ${candidateAccountId}:`, error);
-    return null;
-  }
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Authenticate against the external Supabase project where users sign in
+    // Authenticate against the external Supabase project
     const supabaseClient = createClient(
       Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '',
       Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY') ?? '',
@@ -99,46 +52,46 @@ serve(async (req) => {
     }
 
     const { returnUrl, stripeAccountId } = await req.json();
-    const userEmail = user.email;
     const userId = user.id;
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
 
-    let accountId = await getReusableStripeAccountId(stripe, stripeAccountId, userId);
+    let accountId = stripeAccountId || null;
 
+    // Check if existing account is reusable
     if (accountId) {
-      console.log(`[stripe-connect-onboard] Reusing verified individual account: ${accountId}`);
-    } else {
+      try {
+        const existing = await stripe.accounts.retrieve(accountId);
+        if (existing.deleted) {
+          console.warn(`[stripe-connect-onboard] Account ${accountId} is deleted, creating new`);
+          accountId = null;
+        } else if (existing.metadata?.flea_user_id !== userId) {
+          console.warn(`[stripe-connect-onboard] Account ${accountId} not owned by user ${userId}`);
+          accountId = null;
+        }
+      } catch {
+        accountId = null;
+      }
+    }
+
+    // Create a new Standard account if needed
+    if (!accountId) {
       const account = await stripe.accounts.create({
-        type: "express",
-        country: "AU",
-        business_type: "individual",
-        email: userEmail,
-       business_profile: {
-         product_description: "Selling pre-loved fashion on Flea marketplace",
-         url: "https://shop-flea.lovable.app",
-       },
-       individual: {
-         email: userEmail,
-       },
+        type: "standard",
         metadata: {
           flea_user_id: userId,
         },
-        capabilities: {
-          card_payments: { requested: true },
-          transfers: { requested: true },
-        },
       });
       accountId = account.id;
-      console.log(`[stripe-connect-onboard] Created new individual account: ${accountId}`);
+      console.log(`[stripe-connect-onboard] Created new Standard account: ${accountId}`);
     }
 
-    // Persist stripe_account_id to DB immediately server-side
+    // Persist stripe_account_id to DB immediately
     await persistStripeAccount(userId, accountId);
 
-    // Create an account link for onboarding
+    // Create an account link — Stripe handles the entire onboarding/login flow
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
       refresh_url: `${returnUrl}?stripe_refresh=true`,
