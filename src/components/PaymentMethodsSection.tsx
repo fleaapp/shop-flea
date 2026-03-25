@@ -48,10 +48,15 @@ const PaymentMethodsSection = () => {
 
   const stripeConnected = profile?.stripe_onboarding_complete === true || localConnected;
   const stripeAccountId = profile?.stripe_account_id || localAccountId;
-  const stripePending = localStorage.getItem('flea_stripe_pending') === 'true' || (!!stripeAccountId && !stripeConnected);
+
+  // Only show "verifying" if user just returned from Stripe onboarding (URL param)
+  // or if a status check is actively running. Never show it just because an account ID exists.
+  const returnedFromStripe = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('stripe_success') === 'true';
+  const stripePending = !stripeConnected && (returnedFromStripe || isChecking);
 
   const paypalConnected = (profile as any)?.paypal_onboarding_complete === true || localPayPalConnected;
-  const paypalPending = localStorage.getItem('flea_paypal_pending') === 'true';
+  const returnedFromPayPal = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('paypal_return') === 'true';
+  const paypalPending = !paypalConnected && (returnedFromPayPal || isCheckingPayPal);
 
   const handleConnectStripe = async () => {
     if (!user || !user.email) {
