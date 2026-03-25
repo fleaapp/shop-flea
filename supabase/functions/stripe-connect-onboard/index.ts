@@ -32,6 +32,43 @@ async function persistStripeAccount(userId: string, accountId: string) {
   }
 }
 
+async function getReusableStripeAccountId(
+  stripe: Stripe,
+  candidateAccountId: string | undefined,
+  userId: string,
+) {
+  if (!candidateAccountId) {
+    return null;
+  }
+
+  try {
+    const account = await stripe.accounts.retrieve(candidateAccountId);
+
+    if (account.deleted) {
+      console.warn(`[stripe-connect-onboard] Ignoring deleted account ${candidateAccountId} for user ${userId}`);
+      return null;
+    }
+
+    const isOwnedByUser = account.metadata?.flea_user_id === userId;
+    const isIndividual = account.business_type === "individual";
+
+    if (!isOwnedByUser) {
+      console.warn(`[stripe-connect-onboard] Ignoring account ${candidateAccountId} because it is not owned by user ${userId}`);
+      return null;
+    }
+
+    if (!isIndividual) {
+      console.warn(`[stripe-connect-onboard] Ignoring account ${candidateAccountId} because business_type=${account.business_type ?? 'unknown'}`);
+      return null;
+    }
+
+    return account.id;
+  } catch (error) {
+    console.error(`[stripe-connect-onboard] Failed to inspect account ${candidateAccountId}:`, error);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -60,40 +97,26 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    let accountId: string;
+    let accountId = await getReusableStripeAccountId(stripe, stripeAccountId, userId);
 
-    if (stripeAccountId) {
-      // Use existing account from profile
-      accountId = stripeAccountId;
+    if (accountId) {
+      console.log(`[stripe-connect-onboard] Reusing verified individual account: ${accountId}`);
     } else {
-      // Check if an account already exists for this email before creating a new one
-      const existingAccounts = await stripe.accounts.list({ limit: 100 });
-      const existingMatch = existingAccounts.data.find(
-        (a) => a.email?.toLowerCase() === userEmail?.toLowerCase()
-      );
-
-      if (existingMatch) {
-        // Reuse existing account instead of creating a duplicate
-        accountId = existingMatch.id;
-        console.log(`[stripe-connect-onboard] Reusing existing account: ${accountId}`);
-      } else {
-        // Create a new Express Connect account
-        const account = await stripe.accounts.create({
-          type: "express",
-          country: "AU",
-          business_type: "individual",
-          email: userEmail,
-          metadata: {
-            flea_user_id: userId,
-          },
-          capabilities: {
-            card_payments: { requested: true },
-            transfers: { requested: true },
-          },
-        });
-        accountId = account.id;
-        console.log(`[stripe-connect-onboard] Created new account: ${accountId}`);
-      }
+      const account = await stripe.accounts.create({
+        type: "express",
+        country: "AU",
+        business_type: "individual",
+        email: userEmail,
+        metadata: {
+          flea_user_id: userId,
+        },
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+      });
+      accountId = account.id;
+      console.log(`[stripe-connect-onboard] Created new individual account: ${accountId}`);
     }
 
     // Persist stripe_account_id to DB immediately server-side
