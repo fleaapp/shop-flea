@@ -34,11 +34,14 @@ const StripeOnboardingSheet = ({
 
     setIsLoading(true);
     try {
-      const existingAccountId = (profile as any)?.stripe_account_id || undefined;
+      // Only reuse account if onboarding was previously completed
+      const onboardingComplete = (profile as any)?.stripe_onboarding_complete === true;
+      const existingAccountId = onboardingComplete ? (profile as any)?.stripe_account_id : undefined;
 
       const { data, error } = await invokeCloudFunction('stripe-connect-onboard', {
         returnUrl: window.location.origin + '/settings',
         stripeAccountId: existingAccountId,
+        forceNew: !onboardingComplete,
       });
 
       if (error) throw error;
@@ -69,6 +72,12 @@ const StripeOnboardingSheet = ({
               You'll be redirected to Stripe to sign in or create an account. Stripe handles all payments, payouts and compliance.
             </p>
           </SheetHeader>
+
+          <div className="bg-muted/60 rounded-xl px-4 py-3 text-left max-w-[300px]">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              <span className="font-semibold text-foreground">Heads up:</span> Stripe will ask for "business details" — this is standard for all Stripe accounts, even personal ones. Simply select <span className="font-medium text-foreground">Individual / Sole trader</span> and enter your personal information. You don't need a registered business to sell on Flea.
+            </p>
+          </div>
 
           <div className="w-full space-y-3 mt-2">
             <Button
