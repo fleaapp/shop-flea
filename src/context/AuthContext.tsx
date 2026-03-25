@@ -59,7 +59,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (data?.stripe_onboarding_complete) {
       localStorage.setItem(getStripeConnectedStorageKey(userId), 'true');
       localStorage.removeItem('flea_stripe_pending');
-    } else if (!data?.stripe_account_id) {
+    } else if (!data?.stripe_account_id && !data?.stripe_onboarding_complete) {
       clearStripeConnectionState(userId);
     }
 
