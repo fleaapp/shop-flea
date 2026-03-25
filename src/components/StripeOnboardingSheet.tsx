@@ -34,11 +34,14 @@ const StripeOnboardingSheet = ({
 
     setIsLoading(true);
     try {
-      const existingAccountId = (profile as any)?.stripe_account_id || undefined;
+      // Only reuse account if onboarding was previously completed
+      const onboardingComplete = (profile as any)?.stripe_onboarding_complete === true;
+      const existingAccountId = onboardingComplete ? (profile as any)?.stripe_account_id : undefined;
 
       const { data, error } = await invokeCloudFunction('stripe-connect-onboard', {
         returnUrl: window.location.origin + '/settings',
         stripeAccountId: existingAccountId,
+        forceNew: !onboardingComplete,
       });
 
       if (error) throw error;
