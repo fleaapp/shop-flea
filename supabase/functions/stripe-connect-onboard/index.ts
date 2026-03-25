@@ -116,6 +116,13 @@ serve(async (req) => {
         country: "AU",
         business_type: "individual",
         email: userEmail,
+       business_profile: {
+         product_description: "Selling pre-loved fashion on Flea marketplace",
+         url: "https://shop-flea.lovable.app",
+       },
+       individual: {
+         email: userEmail,
+       },
         metadata: {
           flea_user_id: userId,
         },
