@@ -22,6 +22,7 @@ import { loadShippingPrefs } from '@/utils/shippingPrefs';
 import { useContentModeration } from '@/hooks/useContentModeration';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
+import { clearStripeConnectionState, getStripeConnectedStorageKey } from '@/utils/stripeConnectionState';
 import { 
   FIT_OPTIONS, 
   CATEGORY_OPTIONS,
@@ -57,17 +58,26 @@ const CreateListing = () => {
 
   // Check if seller has connected a payment method
   const hasPaymentMethodDB = profile?.stripe_onboarding_complete === true;
-  const stripeLocalKey = user ? `flea_stripe_connected_${user.id}` : null;
+  const stripeLocalKey = user ? getStripeConnectedStorageKey(user.id) : null;
   const getLocalFlag = () => typeof window !== 'undefined' && !!stripeLocalKey && localStorage.getItem(stripeLocalKey) === 'true';
   const [hasPaymentMethodStripe, setHasPaymentMethodStripe] = useState(() => typeof window !== 'undefined' && !!stripeLocalKey && localStorage.getItem(stripeLocalKey) === 'true');
 
-  // Sync localStorage flag when user ID becomes available
+  // Keep local payment state aligned with backend resets
   useEffect(() => {
-    if (user) {
-      const stored = getLocalFlag();
-      if (stored) setHasPaymentMethodStripe(true);
+    if (!user) {
+      setHasPaymentMethodStripe(false);
+      return;
     }
-  }, [user]);
+
+    const dbStripeDisconnected = !profile?.stripe_account_id && profile?.stripe_onboarding_complete !== true;
+    if (dbStripeDisconnected) {
+      clearStripeConnectionState(user.id);
+      setHasPaymentMethodStripe(false);
+      return;
+    }
+
+    setHasPaymentMethodStripe(getLocalFlag());
+  }, [profile?.stripe_account_id, profile?.stripe_onboarding_complete, stripeLocalKey, user]);
 
   const hasPaymentMethod = hasPaymentMethodDB || hasPaymentMethodStripe;
 

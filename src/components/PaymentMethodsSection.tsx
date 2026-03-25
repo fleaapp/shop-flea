@@ -34,12 +34,17 @@ const PaymentMethodsSection = () => {
       return;
     }
 
-    const stored = localStorage.getItem(getStripeConnectedStorageKey(user.id)) === 'true';
-    setLocalConnected(stored);
+    const dbStripeDisconnected = !profile?.stripe_account_id && profile?.stripe_onboarding_complete !== true;
+    if (dbStripeDisconnected) {
+      clearLocalStripeState();
+    } else {
+      const stored = localStorage.getItem(getStripeConnectedStorageKey(user.id)) === 'true';
+      setLocalConnected(stored);
+    }
 
     const paypalStored = localStorage.getItem(`flea_paypal_connected_${user.id}`) === 'true';
     setLocalPayPalConnected(paypalStored);
-  }, [user]);
+  }, [clearLocalStripeState, profile?.stripe_account_id, profile?.stripe_onboarding_complete, user]);
 
   const stripeConnected = profile?.stripe_onboarding_complete === true || localConnected;
   const stripeAccountId = profile?.stripe_account_id || localAccountId;
