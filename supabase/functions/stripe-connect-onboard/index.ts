@@ -51,6 +51,7 @@ async function getReusableStripeAccountId(
 
     const isOwnedByUser = account.metadata?.flea_user_id === userId;
     const isIndividual = account.business_type === "individual";
+    const isOnboardingComplete = account.details_submitted === true;
 
     if (!isOwnedByUser) {
       console.warn(`[stripe-connect-onboard] Ignoring account ${candidateAccountId} because it is not owned by user ${userId}`);
@@ -59,6 +60,14 @@ async function getReusableStripeAccountId(
 
     if (!isIndividual) {
       console.warn(`[stripe-connect-onboard] Ignoring account ${candidateAccountId} because business_type=${account.business_type ?? 'unknown'}`);
+      return null;
+    }
+
+    // Only reuse accounts that have completed onboarding.
+    // If the user abandoned onboarding midway, create a fresh account
+    // so they start from the beginning.
+    if (!isOnboardingComplete) {
+      console.warn(`[stripe-connect-onboard] Ignoring incomplete account ${candidateAccountId} for user ${userId} — will create fresh`);
       return null;
     }
 

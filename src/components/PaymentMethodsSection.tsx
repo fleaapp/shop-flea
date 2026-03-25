@@ -48,10 +48,15 @@ const PaymentMethodsSection = () => {
 
   const stripeConnected = profile?.stripe_onboarding_complete === true || localConnected;
   const stripeAccountId = profile?.stripe_account_id || localAccountId;
-  const stripePending = localStorage.getItem('flea_stripe_pending') === 'true' || (!!stripeAccountId && !stripeConnected);
+
+  // Only show "verifying" if user just returned from Stripe onboarding (URL param)
+  // or if a status check is actively running. Never show it just because an account ID exists.
+  const returnedFromStripe = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('stripe_success') === 'true';
+  const stripePending = !stripeConnected && (returnedFromStripe || isChecking);
 
   const paypalConnected = (profile as any)?.paypal_onboarding_complete === true || localPayPalConnected;
-  const paypalPending = localStorage.getItem('flea_paypal_pending') === 'true';
+  const returnedFromPayPal = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('paypal_return') === 'true';
+  const paypalPending = !paypalConnected && (returnedFromPayPal || isCheckingPayPal);
 
   const handleConnectStripe = async () => {
     if (!user || !user.email) {
@@ -76,7 +81,7 @@ const PaymentMethodsSection = () => {
           .eq('user_id', user.id);
       }
 
-      localStorage.setItem('flea_stripe_pending', 'true');
+      // Don't set pending flag — ?stripe_success=true param handles it on return
       window.location.href = data.url;
     } catch (error: any) {
       console.error('Stripe Connect error:', error);
@@ -187,32 +192,42 @@ const PaymentMethodsSection = () => {
     }
   }, [refreshProfile, user]);
 
+  // Auto-verify on return from Stripe (detected via URL param)
   useEffect(() => {
-    const pending = localStorage.getItem('flea_stripe_pending');
-    const missingFromDb = stripeConnected && !profile?.stripe_account_id;
-    if ((pending && user?.email && !stripeConnected) || missingFromDb) {
+    if (!user?.email || stripeConnected) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('stripe_success') === 'true') {
       handleCheckStatus(true);
+      // Clean up URL param
+      params.delete('stripe_success');
+      params.delete('stripe_refresh');
+      const newUrl = params.toString()
+        ? `${window.location.pathname}?${params}`
+        : window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
     }
-  }, [user?.email, stripeConnected, profile?.stripe_account_id, handleCheckStatus]);
+  }, [user?.email, stripeConnected, handleCheckStatus]);
 
+  // Auto-verify on return from PayPal
   useEffect(() => {
-    const paypalPendingFlag = localStorage.getItem('flea_paypal_pending');
-    if (paypalPendingFlag && user?.email && !paypalConnected) {
+    if (!user?.email || paypalConnected) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('paypal_return') === 'true') {
       handleCheckPayPalStatus(true);
+      params.delete('paypal_return');
+      const newUrl = params.toString()
+        ? `${window.location.pathname}?${params}`
+        : window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
     }
   }, [user?.email, paypalConnected, handleCheckPayPalStatus]);
 
+  // Also verify if DB has account but not marked complete (e.g. after login)
   useEffect(() => {
-    if (stripeConnected) {
-      localStorage.removeItem('flea_stripe_pending');
-    }
-  }, [stripeConnected]);
-
-  useEffect(() => {
-    if (paypalConnected) {
-      localStorage.removeItem('flea_paypal_pending');
-    }
-  }, [paypalConnected]);
+    if (!user?.email || stripeConnected || !profile?.stripe_account_id) return;
+    // Only if details were previously submitted but local state is stale
+    handleCheckStatus(true);
+  }, [user?.email, stripeConnected, profile?.stripe_account_id, handleCheckStatus]);
 
   return (
     <div>

@@ -50,7 +50,8 @@ const ConnectPaymentDialog = ({ open, onOpenChange }: ConnectPaymentDialogProps)
           .eq('user_id', user.id);
       }
 
-      localStorage.setItem('flea_stripe_pending', 'true');
+      // Don't set flea_stripe_pending here — it will be set when
+      // the user returns from Stripe via ?stripe_success=true URL param.
       window.location.href = data.url;
     } catch (error: any) {
       console.error('Stripe Connect error:', error);
