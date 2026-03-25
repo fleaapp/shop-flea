@@ -81,7 +81,7 @@ const PaymentMethodsSection = () => {
           .eq('user_id', user.id);
       }
 
-      localStorage.setItem('flea_stripe_pending', 'true');
+      // Don't set pending flag — ?stripe_success=true param handles it on return
       window.location.href = data.url;
     } catch (error: any) {
       console.error('Stripe Connect error:', error);
