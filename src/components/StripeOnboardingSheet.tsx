@@ -73,7 +73,7 @@ const StripeOnboardingSheet = ({
             </p>
           </SheetHeader>
 
-          <div className="bg-muted/60 rounded-xl px-4 py-3 text-center w-full">
+          <div className="bg-muted/60 rounded-xl px-4 py-3 text-center max-w-[310px] w-full">
             <p className="text-xs font-semibold text-foreground mb-1.5">🚨 Please read 🚨</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
               If you are creating a new Stripe account, Stripe will ask for business details - this is standard for all Stripe accounts, even personal ones. Simply select <span className="font-medium text-foreground">Individual / Sole trader</span> and enter your personal information. You don't need a registered business to sell on Flea.
