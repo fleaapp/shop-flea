@@ -32,7 +32,7 @@ export const fetchSellerProfiles = async (userIds: string[]): Promise<FetchSelle
     return { profiles: [], canTrustMissing: true };
   }
 
-  // Use wildcard select so this works across environments even if view columns differ.
+  // Try profiles_public view first, fall back to profiles table
   const profilesPublicResponse = await supabase
     .from('profiles_public')
     .select('*')
@@ -45,6 +45,9 @@ export const fetchSellerProfiles = async (userIds: string[]): Promise<FetchSelle
 
     return { profiles, canTrustMissing: true };
   }
+
+  // Always fall back to profiles table if profiles_public is unavailable for any reason
+  console.warn('profiles_public unavailable, falling back to profiles table:', profilesPublicResponse.error.message);
 
   const shouldFallbackToProfiles =
     profilesPublicResponse.error.code === 'PGRST205' ||
