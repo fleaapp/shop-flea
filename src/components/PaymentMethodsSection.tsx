@@ -47,11 +47,13 @@ const PaymentMethodsSection = () => {
     setLocalPayPalConnected(paypalStored);
   }, [clearLocalStripeState, profile?.stripe_account_id, profile?.stripe_onboarding_complete, user]);
 
-  // "Connected" = charges are enabled (fully verified). "Pending review" = submitted but not yet verified.
+  // "Connected" = charges + payouts enabled. "Action required" = charges enabled but payouts paused.
   const [stripeChargesEnabled, setStripeChargesEnabled] = useState(false);
-  const stripeFullyConnected = stripeChargesEnabled || (profile?.stripe_onboarding_complete === true && localConnected);
+  const [stripePayoutsEnabled, setStripePayoutsEnabled] = useState(false);
+  const stripeFullyConnected = (stripeChargesEnabled && stripePayoutsEnabled) || (profile?.stripe_onboarding_complete === true && localConnected);
+  const stripeActionRequired = stripeChargesEnabled && !stripePayoutsEnabled && !stripeFullyConnected;
   const stripeAccountId = profile?.stripe_account_id || localAccountId;
-  const stripeDetailsSubmitted = !!stripeAccountId && !stripeFullyConnected;
+  const stripeDetailsSubmitted = !!stripeAccountId && !stripeFullyConnected && !stripeActionRequired;
 
   // Only show "verifying" if user just returned from Stripe onboarding (URL param)
   // or if a status check is actively running. Never show it just because an account ID exists.
