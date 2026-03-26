@@ -111,10 +111,9 @@ serve(async (req) => {
       }
 
       // Pre-fill business profile with industry & website
+      // Do NOT set 'name' here — Stripe uses it as the account display name,
+      // and it should be the user's personal name which they enter during onboarding.
       createParams.business_profile = {
-        name: userProfile?.first_name && userProfile?.last_name
-          ? `${userProfile.first_name} ${userProfile.last_name}`
-          : undefined,
         product_description: "Selling pre-loved fashion on Flea App. Pick 'Clothing and accessories' for industry.",
         url: "https://finditonflea.com",
         mcc: "5699", // Miscellaneous Apparel and Accessory Shops
