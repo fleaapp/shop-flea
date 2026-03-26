@@ -47,13 +47,16 @@ const PaymentMethodsSection = () => {
     setLocalPayPalConnected(paypalStored);
   }, [clearLocalStripeState, profile?.stripe_account_id, profile?.stripe_onboarding_complete, user]);
 
-  const stripeConnected = profile?.stripe_onboarding_complete === true || localConnected;
+  // "Connected" = charges are enabled (fully verified). "Pending review" = submitted but not yet verified.
+  const [stripeChargesEnabled, setStripeChargesEnabled] = useState(false);
+  const stripeFullyConnected = stripeChargesEnabled || (profile?.stripe_onboarding_complete === true && localConnected);
   const stripeAccountId = profile?.stripe_account_id || localAccountId;
+  const stripeDetailsSubmitted = !!stripeAccountId && !stripeFullyConnected;
 
   // Only show "verifying" if user just returned from Stripe onboarding (URL param)
   // or if a status check is actively running. Never show it just because an account ID exists.
   const returnedFromStripe = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('stripe_success') === 'true';
-  const stripePending = !stripeConnected && (returnedFromStripe || isChecking);
+  const stripePending = !stripeFullyConnected && !stripeDetailsSubmitted && (returnedFromStripe || isChecking);
 
   const paypalConnected = (profile as any)?.paypal_onboarding_complete === true || localPayPalConnected;
   const returnedFromPayPal = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('paypal_return') === 'true';
@@ -103,7 +106,9 @@ const PaymentMethodsSection = () => {
 
       if (error) throw error;
 
-      if ((data?.chargesEnabled || data?.detailsSubmitted) && data?.accountId) {
+      if (data?.chargesEnabled && data?.accountId) {
+        // Fully verified - charges enabled
+        setStripeChargesEnabled(true);
         setLocalConnected(true);
         setLocalAccountId(data.accountId);
         localStorage.setItem(getStripeConnectedStorageKey(user.id), 'true');
@@ -116,13 +121,20 @@ const PaymentMethodsSection = () => {
           console.error('Failed to persist Stripe status to DB:', updateError);
         }
         await refreshProfile();
-        if (!silent) {
-          if (data?.chargesEnabled) {
-            toast.success('Stripe account connected successfully!');
-          } else {
-            toast.success('Stripe onboarding complete! Payments will be enabled shortly.');
-          }
-        }
+        if (!silent) toast.success('Stripe account connected successfully!');
+      } else if (data?.detailsSubmitted && data?.accountId) {
+        // Details submitted but under review - NOT fully connected yet
+        setStripeChargesEnabled(false);
+        setLocalConnected(false);
+        setLocalAccountId(data.accountId);
+        localStorage.removeItem(getStripeConnectedStorageKey(user.id));
+        // Persist account ID but NOT onboarding_complete
+        await supabase
+          .from('profiles')
+          .update({ stripe_account_id: data.accountId } as any)
+          .eq('user_id', user.id);
+        await refreshProfile();
+        if (!silent) toast('Your Stripe account is under review. We\'ll update you when it\'s verified.');
       } else if (data?.accountId) {
         setLocalConnected(false);
         setLocalAccountId(data.accountId);
@@ -170,7 +182,7 @@ const PaymentMethodsSection = () => {
 
   // Auto-verify on return from Stripe (detected via URL param)
   useEffect(() => {
-    if (!user?.email || stripeConnected) return;
+    if (!user?.email || stripeFullyConnected) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get('stripe_success') === 'true') {
       handleCheckStatus(true);
@@ -182,7 +194,7 @@ const PaymentMethodsSection = () => {
         : window.location.pathname;
       window.history.replaceState({}, '', newUrl);
     }
-  }, [user?.email, stripeConnected, handleCheckStatus]);
+  }, [user?.email, stripeFullyConnected, handleCheckStatus]);
 
   // Auto-verify on return from PayPal
   useEffect(() => {
@@ -200,10 +212,28 @@ const PaymentMethodsSection = () => {
 
   // Also verify if DB has account but not marked complete (e.g. after login)
   useEffect(() => {
-    if (!user?.email || stripeConnected || !profile?.stripe_account_id) return;
-    // Only if details were previously submitted but local state is stale
+    if (!user?.email || stripeFullyConnected || !profile?.stripe_account_id) return;
     handleCheckStatus(true);
-  }, [user?.email, stripeConnected, profile?.stripe_account_id, handleCheckStatus]);
+  }, [user?.email, stripeFullyConnected, profile?.stripe_account_id, handleCheckStatus]);
+
+  const handleStripeRowClick = () => {
+    if (stripeFullyConnected || stripeDetailsSubmitted) {
+      // Open Stripe dashboard for connected/pending review users
+      window.open('https://dashboard.stripe.com', '_blank');
+    } else {
+      handleConnectStripe();
+    }
+  };
+
+  // Determine stripe status label and color
+  const getStripeStatus = () => {
+    if (stripeFullyConnected) return { label: '✅ Connected', color: 'text-green-600' };
+    if (stripePending || isChecking) return { label: '⏳ Verifying...', color: 'text-amber-600' };
+    if (stripeDetailsSubmitted) return { label: '🔍 Pending review', color: 'text-amber-600' };
+    return { label: 'Not connected', color: 'text-muted-foreground' };
+  };
+
+  const stripeStatus = getStripeStatus();
 
   return (
     <>
@@ -223,7 +253,7 @@ const PaymentMethodsSection = () => {
         {/* Stripe */}
         <div
           className="flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow bg-card cursor-pointer"
-          onClick={stripeConnected ? undefined : handleConnectStripe}
+          onClick={handleStripeRowClick}
         >
           <div className="flex items-center gap-3 max-[375px]:gap-2">
             <img src={stripeLogo} alt="Stripe" className="h-7 w-7 object-contain" />
@@ -231,13 +261,13 @@ const PaymentMethodsSection = () => {
               <span className="text-base max-[375px]:text-sm font-medium text-foreground">
                 Stripe
               </span>
-              <p className={`text-xs mt-0.5 ${stripeConnected ? 'text-green-600' : stripePending || isChecking ? 'text-amber-600' : 'text-muted-foreground'}`}>
-                {stripeConnected ? '✅ Connected' : stripePending || isChecking ? '⏳ Verifying...' : 'Not connected'}
+              <p className={`text-xs mt-0.5 ${stripeStatus.color}`}>
+                {stripeStatus.label}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {stripeConnected ? (
+            {stripeFullyConnected ? (
               <button
                 onClick={(e) => { e.stopPropagation(); handleCheckStatus(false); }}
                 disabled={isChecking}
