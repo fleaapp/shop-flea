@@ -63,27 +63,28 @@ const StripeOnboardingSheet = ({
         side="bottom"
         className="rounded-t-3xl border-t-[3px] border-charcoal p-0 flex flex-col"
       >
-        <div className="px-6 pt-8 pb-8 flex flex-col items-center text-center gap-5">
+        <div className="px-5 pt-8 pb-8 flex flex-col items-center text-center gap-5">
           <img src={stripeLogo} alt="Stripe" className="h-10 w-auto object-contain" />
 
           <SheetHeader className="space-y-2">
             <SheetTitle className="text-lg">Connect with Stripe</SheetTitle>
-            <p className="text-sm text-muted-foreground text-balance max-w-[280px] mx-auto">
+            <p className="text-sm text-muted-foreground text-balance max-w-[300px] mx-auto">
               You'll be redirected to Stripe to sign in or create an account. Stripe handles all payments, payouts and compliance.
             </p>
           </SheetHeader>
 
-          <div className="bg-muted/60 rounded-xl px-4 py-3 text-left max-w-[300px]">
+          <div className="bg-muted/60 rounded-xl px-4 py-3 text-left w-full">
+            <p className="text-xs font-semibold text-foreground mb-1.5">🚨 Please read 🚨</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              <span className="font-semibold text-foreground">Heads up:</span> Stripe will ask for "business details" — this is standard for all Stripe accounts, even personal ones. Simply select <span className="font-medium text-foreground">Individual / Sole trader</span> and enter your personal information. You don't need a registered business to sell on Flea.
+              If you are creating a new Stripe account, Stripe will ask for business details - this is standard for all Stripe accounts, even personal ones. Simply select <span className="font-medium text-foreground">Individual / Sole trader</span> and enter your personal information. You don't need a registered business to sell on Flea.
             </p>
           </div>
 
-          <div className="w-full space-y-3 mt-2">
+          <div className="w-full space-y-3 mt-2 flex flex-col items-center">
             <Button
               onClick={handleContinue}
               disabled={isLoading}
-              className="w-full h-12 rounded-full bg-charcoal text-white hover:bg-charcoal/90 text-[15px] font-medium"
+              className="w-52 h-12 rounded-full bg-charcoal text-white hover:bg-charcoal/90 text-[15px] font-medium"
             >
               {isLoading ? (
                 <>
