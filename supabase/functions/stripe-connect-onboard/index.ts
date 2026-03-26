@@ -144,6 +144,10 @@ serve(async (req) => {
       refresh_url: `${returnUrl}?stripe_refresh=true`,
       return_url: `${returnUrl}?stripe_success=true`,
       type: "account_onboarding",
+      collection_options: {
+        fields: "currently_due",
+        future_requirements: "omit",
+      },
     });
 
     return new Response(
