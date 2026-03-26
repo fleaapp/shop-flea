@@ -47,11 +47,13 @@ const PaymentMethodsSection = () => {
     setLocalPayPalConnected(paypalStored);
   }, [clearLocalStripeState, profile?.stripe_account_id, profile?.stripe_onboarding_complete, user]);
 
-  // "Connected" = charges are enabled (fully verified). "Pending review" = submitted but not yet verified.
+  // "Connected" = charges + payouts enabled. "Action required" = charges enabled but payouts paused.
   const [stripeChargesEnabled, setStripeChargesEnabled] = useState(false);
-  const stripeFullyConnected = stripeChargesEnabled || (profile?.stripe_onboarding_complete === true && localConnected);
+  const [stripePayoutsEnabled, setStripePayoutsEnabled] = useState(false);
+  const stripeFullyConnected = (stripeChargesEnabled && stripePayoutsEnabled) || (profile?.stripe_onboarding_complete === true && localConnected);
+  const stripeActionRequired = stripeChargesEnabled && !stripePayoutsEnabled && !stripeFullyConnected;
   const stripeAccountId = profile?.stripe_account_id || localAccountId;
-  const stripeDetailsSubmitted = !!stripeAccountId && !stripeFullyConnected;
+  const stripeDetailsSubmitted = !!stripeAccountId && !stripeFullyConnected && !stripeActionRequired;
 
   // Only show "verifying" if user just returned from Stripe onboarding (URL param)
   // or if a status check is actively running. Never show it just because an account ID exists.
@@ -106,9 +108,10 @@ const PaymentMethodsSection = () => {
 
       if (error) throw error;
 
-      if (data?.chargesEnabled && data?.accountId) {
-        // Fully verified - charges enabled
+      if (data?.chargesEnabled && data?.payoutsEnabled && data?.accountId) {
+        // Fully verified - charges and payouts enabled
         setStripeChargesEnabled(true);
+        setStripePayoutsEnabled(true);
         setLocalConnected(true);
         setLocalAccountId(data.accountId);
         localStorage.setItem(getStripeConnectedStorageKey(user.id), 'true');
@@ -122,6 +125,19 @@ const PaymentMethodsSection = () => {
         }
         await refreshProfile();
         if (!silent) toast.success('Stripe account connected successfully!');
+      } else if (data?.chargesEnabled && !data?.payoutsEnabled && data?.accountId) {
+        // Charges enabled but payouts paused - action required
+        setStripeChargesEnabled(true);
+        setStripePayoutsEnabled(false);
+        setLocalConnected(false);
+        setLocalAccountId(data.accountId);
+        localStorage.removeItem(getStripeConnectedStorageKey(user.id));
+        await supabase
+          .from('profiles')
+          .update({ stripe_account_id: data.accountId, stripe_onboarding_complete: false } as any)
+          .eq('user_id', user.id);
+        await refreshProfile();
+        if (!silent) toast('Your Stripe account needs attention - payouts are paused. Visit Stripe to complete verification.');
       } else if (data?.detailsSubmitted && data?.accountId) {
         // Details submitted but under review - NOT fully connected yet
         setStripeChargesEnabled(false);
@@ -217,8 +233,8 @@ const PaymentMethodsSection = () => {
   }, [user?.email, stripeFullyConnected, profile?.stripe_account_id, handleCheckStatus]);
 
   const handleStripeRowClick = () => {
-    if (stripeFullyConnected || stripeDetailsSubmitted) {
-      // Open Stripe dashboard for connected/pending review users
+    if (stripeFullyConnected || stripeDetailsSubmitted || stripeActionRequired) {
+      // Open Stripe dashboard for connected/pending/action-required users
       window.open('https://dashboard.stripe.com', '_blank');
     } else {
       handleConnectStripe();
@@ -229,6 +245,7 @@ const PaymentMethodsSection = () => {
   const getStripeStatus = () => {
     if (stripeFullyConnected) return { label: '✅ Connected', color: 'text-green-600' };
     if (stripePending || isChecking) return { label: '⏳ Verifying...', color: 'text-amber-600' };
+    if (stripeActionRequired) return { label: '⚠️ Action required', color: 'text-orange-600' };
     if (stripeDetailsSubmitted) return { label: '🔍 Pending review', color: 'text-amber-600' };
     return { label: 'Not connected', color: 'text-muted-foreground' };
   };

@@ -151,7 +151,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
         if (error || !data) return;
 
-        if (data.chargesEnabled && data.accountId) {
+        if (data.chargesEnabled && data.payoutsEnabled && data.accountId) {
           localStorage.setItem(getStripeConnectedStorageKey(user.id), 'true');
           localStorage.removeItem('flea_stripe_pending');
           const { error: updateError } = await supabase
@@ -165,10 +165,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             console.error('Failed to persist Stripe status to DB:', updateError);
           }
           setTimeout(() => fetchProfile(user.id), 500);
-        } else if (data.detailsSubmitted && data.accountId) {
-          // Submitted but not yet verified - don't mark as connected
-          clearStripeConnectionState(user.id);
         } else {
+          // Not fully connected (payouts paused, under review, etc.)
+          clearStripeConnectionState(user.id);
           clearStripeConnectionState(user.id);
         }
       } catch (e) {
