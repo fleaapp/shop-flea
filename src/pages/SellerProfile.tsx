@@ -83,31 +83,44 @@ const SellerProfile = () => {
     setLoading(true);
     setListingsLoading(true);
 
-    // Fetch seller profile, with fallback for backends missing last_sign_in_at
-    const { data: profileDataWithLastSeen, error: profileErrorWithLastSeen } = await supabase
-      .from('profiles')
+    // Try profiles_public first (no RLS restrictions), fallback to profiles
+    let profileData: SellerProfile | null = null;
+    let profileError: any = null;
+
+    const { data: publicData, error: publicError } = await supabase
+      .from('profiles_public' as any)
       .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at')
       .eq('user_id', sellerId)
       .maybeSingle();
 
-    let profileData: SellerProfile | null = profileDataWithLastSeen;
-    let profileError = profileErrorWithLastSeen;
-
-    // Some environments may not have last_sign_in_at yet
-    if (profileErrorWithLastSeen?.code === '42703') {
-      const fallbackResult = await supabase
+    if (!publicError && publicData) {
+      profileData = publicData as any;
+    } else {
+      // Fallback to profiles table
+      const { data: pData, error: pError } = await supabase
         .from('profiles')
-        .select('user_id, username, avatar_url, rating, pause_selling, created_at, updated_at')
+        .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at')
         .eq('user_id', sellerId)
         .maybeSingle();
 
-      profileData = fallbackResult.data
-        ? {
-            ...fallbackResult.data,
-            last_sign_in_at: fallbackResult.data.updated_at || fallbackResult.data.created_at || null,
-          }
-        : null;
-      profileError = fallbackResult.error;
+      if (pError?.code === '42703') {
+        const fallbackResult = await supabase
+          .from('profiles')
+          .select('user_id, username, avatar_url, rating, pause_selling, created_at, updated_at')
+          .eq('user_id', sellerId)
+          .maybeSingle();
+
+        profileData = fallbackResult.data
+          ? {
+              ...fallbackResult.data,
+              last_sign_in_at: fallbackResult.data.updated_at || fallbackResult.data.created_at || null,
+            }
+          : null;
+        profileError = fallbackResult.error;
+      } else {
+        profileData = pData;
+        profileError = pError;
+      }
     }
 
     if (profileError || !profileData) {
