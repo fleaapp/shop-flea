@@ -49,30 +49,55 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isBanned, setIsBanned] = useState(false);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
-    setProfile(data);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-    if (data?.stripe_onboarding_complete) {
-      localStorage.setItem(getStripeConnectedStorageKey(userId), 'true');
-      localStorage.removeItem('flea_stripe_pending');
-    } else if (!data?.stripe_account_id && !data?.stripe_onboarding_complete) {
-      clearStripeConnectionState(userId);
+      if (error) {
+        console.error('Failed to fetch profile:', error);
+        setProfile(null);
+        setIsBanned(false);
+        return null;
+      }
+
+      setProfile(data);
+
+      if (data?.stripe_onboarding_complete) {
+        localStorage.setItem(getStripeConnectedStorageKey(userId), 'true');
+        localStorage.removeItem('flea_stripe_pending');
+      } else if (!data?.stripe_account_id && !data?.stripe_onboarding_complete) {
+        clearStripeConnectionState(userId);
+      }
+
+      // Check if user is banned via profile status or banned_users table
+      const profileStatus = (data as any)?.status;
+      let banned = profileStatus === 'blocked';
+
+      if (!banned) {
+        try {
+          const { data: ban } = await supabase
+            .from('banned_users' as any)
+            .select('*')
+            .eq('user_id', userId)
+            .eq('status', 'active')
+            .maybeSingle();
+          banned = !!ban;
+        } catch {
+          // banned_users table may not exist - that's fine
+        }
+      }
+      setIsBanned(banned);
+
+      return data;
+    } catch (e) {
+      console.error('Unexpected error fetching profile:', e);
+      setProfile(null);
+      setIsBanned(false);
+      return null;
     }
-
-    // Check banned_users table
-    const { data: ban } = await supabase
-      .from('banned_users' as any)
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .maybeSingle();
-    setIsBanned(!!ban);
-
-    return data;
   }, []);
 
   const refreshProfile = useCallback(async () => {
