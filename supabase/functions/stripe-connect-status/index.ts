@@ -98,6 +98,22 @@ serve(async (req) => {
     // Only persist stripe_onboarding_complete when fully verified (charges + payouts enabled)
     if (account.charges_enabled && account.payouts_enabled) {
       await persistStripeStatus(lookupUserId, accountId);
+
+      // Set statement descriptors AFTER onboarding so they don't override the user's name
+      try {
+        const currentDescriptor = account.settings?.payments?.statement_descriptor;
+        if (!currentDescriptor || currentDescriptor !== 'FINDITONFLEA.COM') {
+          await stripe.accounts.update(accountId, {
+            settings: {
+              payments: { statement_descriptor: 'FINDITONFLEA.COM' },
+              card_payments: { statement_descriptor_prefix: 'FLEA' },
+            },
+          });
+          console.log(`[stripe-connect-status] Set statement descriptors for account ${accountId}`);
+        }
+      } catch (descErr) {
+        console.warn(`[stripe-connect-status] Failed to set descriptors: ${descErr.message}`);
+      }
     }
 
     return new Response(
