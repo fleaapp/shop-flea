@@ -110,12 +110,24 @@ serve(async (req) => {
         createParams.country = userProfile.country_code.toUpperCase();
       }
 
-      // Pre-fill business profile
+      // Pre-fill business profile with industry & website
       createParams.business_profile = {
         name: userProfile?.first_name && userProfile?.last_name
           ? `${userProfile.first_name} ${userProfile.last_name}`
           : undefined,
-        product_description: "Selling pre-loved fashion on Flea marketplace",
+        product_description: "Selling pre-loved fashion on Flea App. Pick 'Clothing and accessories' for industry.",
+        url: "https://finditonflea.com",
+        mcc: "5699", // Miscellaneous Apparel and Accessory Shops
+      };
+
+      // Pre-fill statement descriptors and card payments settings
+      createParams.settings = {
+        payments: {
+          statement_descriptor: "FINDITONFLEA.COM",
+        },
+        card_payments: {
+          statement_descriptor_prefix: "FLEA",
+        },
       };
 
       const account = await stripe.accounts.create(createParams as any);
