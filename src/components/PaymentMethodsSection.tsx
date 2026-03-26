@@ -233,8 +233,8 @@ const PaymentMethodsSection = () => {
   }, [user?.email, stripeFullyConnected, profile?.stripe_account_id, handleCheckStatus]);
 
   const handleStripeRowClick = () => {
-    if (stripeFullyConnected || stripeDetailsSubmitted) {
-      // Open Stripe dashboard for connected/pending review users
+    if (stripeFullyConnected || stripeDetailsSubmitted || stripeActionRequired) {
+      // Open Stripe dashboard for connected/pending/action-required users
       window.open('https://dashboard.stripe.com', '_blank');
     } else {
       handleConnectStripe();
@@ -245,6 +245,7 @@ const PaymentMethodsSection = () => {
   const getStripeStatus = () => {
     if (stripeFullyConnected) return { label: '✅ Connected', color: 'text-green-600' };
     if (stripePending || isChecking) return { label: '⏳ Verifying...', color: 'text-amber-600' };
+    if (stripeActionRequired) return { label: '⚠️ Action required', color: 'text-orange-600' };
     if (stripeDetailsSubmitted) return { label: '🔍 Pending review', color: 'text-amber-600' };
     return { label: 'Not connected', color: 'text-muted-foreground' };
   };
