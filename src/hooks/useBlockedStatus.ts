@@ -16,14 +16,22 @@ export const useBlockedStatus = () => {
 
     const checkBlockedStatus = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('status')
-        .eq('user_id', user.id)
-        .single();
+      try {
+        // Use select('*') to avoid errors if 'status' column doesn't exist
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-      if (!error && data) {
-        setIsBlocked(data.status === 'blocked');
+        if (!error && data) {
+          const status = (data as any)?.status;
+          setIsBlocked(status === 'blocked');
+        } else {
+          setIsBlocked(false);
+        }
+      } catch {
+        setIsBlocked(false);
       }
       setLoading(false);
     };
