@@ -95,7 +95,8 @@ serve(async (req) => {
 
     console.log(`[stripe-connect-status] Account ${accountId} state: charges_enabled=${account.charges_enabled}, details_submitted=${account.details_submitted}, payouts_enabled=${account.payouts_enabled}`);
 
-    if (account.charges_enabled || account.details_submitted) {
+    // Only persist stripe_onboarding_complete when charges are actually enabled (fully verified)
+    if (account.charges_enabled) {
       await persistStripeStatus(lookupUserId, accountId);
     }
 

@@ -47,13 +47,16 @@ const PaymentMethodsSection = () => {
     setLocalPayPalConnected(paypalStored);
   }, [clearLocalStripeState, profile?.stripe_account_id, profile?.stripe_onboarding_complete, user]);
 
-  const stripeConnected = profile?.stripe_onboarding_complete === true || localConnected;
+  // "Connected" = charges are enabled (fully verified). "Pending review" = submitted but not yet verified.
+  const [stripeChargesEnabled, setStripeChargesEnabled] = useState(false);
+  const stripeFullyConnected = stripeChargesEnabled || (profile?.stripe_onboarding_complete === true && localConnected);
   const stripeAccountId = profile?.stripe_account_id || localAccountId;
+  const stripeDetailsSubmitted = !!stripeAccountId && !stripeFullyConnected;
 
   // Only show "verifying" if user just returned from Stripe onboarding (URL param)
   // or if a status check is actively running. Never show it just because an account ID exists.
   const returnedFromStripe = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('stripe_success') === 'true';
-  const stripePending = !stripeConnected && (returnedFromStripe || isChecking);
+  const stripePending = !stripeFullyConnected && !stripeDetailsSubmitted && (returnedFromStripe || isChecking);
 
   const paypalConnected = (profile as any)?.paypal_onboarding_complete === true || localPayPalConnected;
   const returnedFromPayPal = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('paypal_return') === 'true';
