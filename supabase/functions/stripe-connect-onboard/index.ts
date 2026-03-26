@@ -78,12 +78,47 @@ serve(async (req) => {
 
     // Create a new Standard account if needed
     if (!accountId) {
-      const account = await stripe.accounts.create({
+      // Fetch user profile for pre-filling
+      const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '';
+      const serviceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
+      const profileRes = await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}&select=first_name,last_name,email,country_code`, {
+        headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` },
+      });
+      const profiles = await profileRes.json();
+      const userProfile = profiles?.[0];
+
+      const createParams: Record<string, unknown> = {
         type: "standard",
+        email: user.email,
         metadata: {
           flea_user_id: userId,
         },
-      });
+        business_type: "individual",
+      };
+
+      // Pre-fill individual details
+      const individual: Record<string, unknown> = {};
+      if (userProfile?.first_name) individual.first_name = userProfile.first_name;
+      if (userProfile?.last_name) individual.last_name = userProfile.last_name;
+      if (user.email) individual.email = user.email;
+      if (Object.keys(individual).length > 0) {
+        createParams.individual = individual;
+      }
+
+      // Pre-fill country
+      if (userProfile?.country_code) {
+        createParams.country = userProfile.country_code.toUpperCase();
+      }
+
+      // Pre-fill business profile
+      createParams.business_profile = {
+        name: userProfile?.first_name && userProfile?.last_name
+          ? `${userProfile.first_name} ${userProfile.last_name}`
+          : undefined,
+        product_description: "Selling pre-loved fashion on Flea marketplace",
+      };
+
+      const account = await stripe.accounts.create(createParams as any);
       accountId = account.id;
       console.log(`[stripe-connect-onboard] Created new Standard account: ${accountId}`);
     }

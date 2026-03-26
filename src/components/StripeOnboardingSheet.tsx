@@ -68,12 +68,12 @@ const StripeOnboardingSheet = ({
 
           <SheetHeader className="space-y-2">
             <SheetTitle className="text-lg">Connect with Stripe</SheetTitle>
-            <p className="text-sm text-muted-foreground text-balance max-w-[340px] mx-auto">
-              You'll be redirected to Stripe to sign in or create an account. Stripe handles all payments, payouts and compliance.
+            <p className="text-sm text-muted-foreground text-pretty leading-relaxed max-w-[360px] mx-auto">
+              You'll be redirected to Stripe to sign in or create an account. We use Stripe to pay you safely and to manage your refunds and compliance.
             </p>
           </SheetHeader>
 
-          <div className="bg-muted/60 rounded-xl px-4 py-3 text-center w-full">
+          <div className="bg-muted/60 rounded-xl px-4 py-3 text-center max-w-[310px] w-full">
             <p className="text-xs font-semibold text-foreground mb-1.5">🚨 Please read 🚨</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
               If you are creating a new Stripe account, Stripe will ask for business details - this is standard for all Stripe accounts, even personal ones. Simply select <span className="font-medium text-foreground">Individual / Sole trader</span> and enter your personal information. You don't need a registered business to sell on Flea.
