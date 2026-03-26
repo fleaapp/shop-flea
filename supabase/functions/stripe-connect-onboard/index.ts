@@ -119,15 +119,9 @@ serve(async (req) => {
         mcc: "5699", // Miscellaneous Apparel and Accessory Shops
       };
 
-      // Pre-fill statement descriptors and card payments settings
-      createParams.settings = {
-        payments: {
-          statement_descriptor: "FINDITONFLEA.COM",
-        },
-        card_payments: {
-          statement_descriptor_prefix: "FLEA",
-        },
-      };
+      // NOTE: Do NOT pre-fill statement descriptors here - Stripe uses them
+      // as the account display name, overriding the user's personal name.
+      // Stripe will prompt for these during onboarding instead.
 
       const account = await stripe.accounts.create(createParams as any);
       accountId = account.id;
