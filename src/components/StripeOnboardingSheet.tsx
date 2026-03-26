@@ -68,8 +68,8 @@ const StripeOnboardingSheet = ({
 
           <SheetHeader className="space-y-2">
             <SheetTitle className="text-lg">Connect with Stripe</SheetTitle>
-            <p className="text-sm text-muted-foreground text-balance max-w-[340px] mx-auto">
-              You'll be redirected to Stripe to sign in or create an account. Stripe handles all payments, payouts and compliance.
+            <p className="text-sm text-muted-foreground text-pretty leading-relaxed max-w-[360px] mx-auto">
+              You'll be redirected to Stripe to sign in or create an account. We use Stripe to pay you safely and to manage your refunds and compliance.
             </p>
           </SheetHeader>
 
