@@ -108,9 +108,10 @@ const PaymentMethodsSection = () => {
 
       if (error) throw error;
 
-      if (data?.chargesEnabled && data?.accountId) {
-        // Fully verified - charges enabled
+      if (data?.chargesEnabled && data?.payoutsEnabled && data?.accountId) {
+        // Fully verified - charges and payouts enabled
         setStripeChargesEnabled(true);
+        setStripePayoutsEnabled(true);
         setLocalConnected(true);
         setLocalAccountId(data.accountId);
         localStorage.setItem(getStripeConnectedStorageKey(user.id), 'true');
@@ -124,6 +125,19 @@ const PaymentMethodsSection = () => {
         }
         await refreshProfile();
         if (!silent) toast.success('Stripe account connected successfully!');
+      } else if (data?.chargesEnabled && !data?.payoutsEnabled && data?.accountId) {
+        // Charges enabled but payouts paused - action required
+        setStripeChargesEnabled(true);
+        setStripePayoutsEnabled(false);
+        setLocalConnected(false);
+        setLocalAccountId(data.accountId);
+        localStorage.removeItem(getStripeConnectedStorageKey(user.id));
+        await supabase
+          .from('profiles')
+          .update({ stripe_account_id: data.accountId, stripe_onboarding_complete: false } as any)
+          .eq('user_id', user.id);
+        await refreshProfile();
+        if (!silent) toast('Your Stripe account needs attention - payouts are paused. Visit Stripe to complete verification.');
       } else if (data?.detailsSubmitted && data?.accountId) {
         // Details submitted but under review - NOT fully connected yet
         setStripeChargesEnabled(false);
