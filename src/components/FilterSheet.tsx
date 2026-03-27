@@ -30,6 +30,9 @@ export interface FilterState {
 }
 
 import { COLOUR_SWATCHES } from '@/utils/colourSwatches';
+import { useBrands } from '@/hooks/useBrands';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 
 const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = false, preferredSizes }: FilterSheetProps) => {
   const [filters, setFilters] = useState<FilterState>({

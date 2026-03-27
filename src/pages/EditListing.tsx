@@ -30,6 +30,7 @@ import {
 } from '@/config/sizeConfig';
 import { COLOUR_SWATCHES } from '@/utils/colourSwatches';
 import ConditionInfoPopover from '@/components/ConditionInfoPopover';
+import BrandAutocomplete from '@/components/BrandAutocomplete';
 
 interface ImageFile {
   file: File;
