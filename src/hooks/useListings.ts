@@ -169,6 +169,14 @@ export const useListings = (filters?: ListingFilters) => {
       if (filters?.search) {
         listingsWithProfiles = filterBySearch(listingsWithProfiles, filters.search);
       }
+
+      // Apply client-side brand filtering (case-insensitive)
+      if (filters?.brands && filters.brands.length > 0) {
+        const brandSet = new Set(filters.brands.map(b => b.toLowerCase()));
+        listingsWithProfiles = listingsWithProfiles.filter(l =>
+          l.brand && brandSet.has(l.brand.toLowerCase())
+        );
+      }
       
       // Preload seller avatars and listing images in the background
       const avatarUrls = listingsWithProfiles
