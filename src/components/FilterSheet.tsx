@@ -25,6 +25,7 @@ export interface FilterState {
   condition: string;
   colours: string[]; // Multi-select colours
   styles: string[]; // Multi-select styles
+  brands: string[]; // Multi-select brands
   priceRange: [number, number];
 }
 
