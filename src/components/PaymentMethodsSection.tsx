@@ -138,6 +138,24 @@ const PaymentMethodsSection = () => {
           .eq('user_id', user.id);
         await refreshProfile();
         if (!silent) toast('Your Stripe account needs attention - payouts are paused. Visit Stripe to complete verification.');
+
+        // Send a notification if one hasn't been sent recently
+        const { data: existing } = await supabase
+          .from('notifications')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('type', 'payment_action_required')
+          .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+          .limit(1);
+
+        if (!existing?.length) {
+          await supabase.from('notifications').insert({
+            user_id: user.id,
+            type: 'payment_action_required',
+            title: 'Stripe Action Required',
+            message: '⚠️ Your Stripe payouts are paused. Tap here to visit Stripe and complete verification.',
+          });
+        }
       } else if (data?.detailsSubmitted && data?.accountId) {
         // Details submitted but under review - NOT fully connected yet
         setStripeChargesEnabled(false);
