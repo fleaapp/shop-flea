@@ -207,16 +207,6 @@ const Checkout = () => {
     setIsSubmitting(true);
     
     try {
-      // Save shipping details to localStorage for future pre-fill
-      localStorage.setItem('saved_shipping_details', JSON.stringify({
-        firstName: shippingFirstName.trim(),
-        lastName: shippingLastName.trim(),
-        address: shippingAddress.trim(),
-        suburb: shippingSuburb.trim(),
-        state: shippingState,
-        postcode: shippingPostcode.trim(),
-      }));
-
       // Save shipping details to sessionStorage for use after Stripe redirect
         const shippingDetails = {
         shippingFirstName: shippingFirstName.trim(),
@@ -412,6 +402,40 @@ const Checkout = () => {
                   </div>
                 </div>
               </div>
+              {isShippingComplete && (
+                <div className="px-4 pb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "w-full rounded-xl text-sm",
+                      savedShipping?.firstName === shippingFirstName.trim() &&
+                      savedShipping?.lastName === shippingLastName.trim() &&
+                      savedShipping?.address === shippingAddress.trim() &&
+                      savedShipping?.suburb === shippingSuburb.trim() &&
+                      savedShipping?.state === shippingState &&
+                      savedShipping?.postcode === shippingPostcode.trim()
+                        ? "text-muted-foreground"
+                        : ""
+                    )}
+                    onClick={() => {
+                      localStorage.setItem('saved_shipping_details', JSON.stringify({
+                        firstName: shippingFirstName.trim(),
+                        lastName: shippingLastName.trim(),
+                        address: shippingAddress.trim(),
+                        suburb: shippingSuburb.trim(),
+                        state: shippingState,
+                        postcode: shippingPostcode.trim(),
+                      }));
+                      toast.success('Shipping details saved');
+                    }}
+                  >
+                    {savedShipping?.firstName === shippingFirstName.trim() &&
+                     savedShipping?.address === shippingAddress.trim()
+                      ? '✓ Details saved' : 'Save details for next time'}
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Payment Methods Info */}
@@ -425,13 +449,13 @@ const Checkout = () => {
                     You'll be able to pay with:
                   </p>
                     <div className="flex items-center gap-2 flex-wrap">
-                    <div className="flex items-center justify-center w-20 h-10 rounded-xl" style={{ backgroundColor: '#F4F2EB' }}>
+                    <div className="flex items-center justify-center w-20 h-10 rounded-lg" style={{ backgroundColor: '#F4F2EB' }}>
                       <img src={applePayLogo} alt="Apple Pay" className="h-6" />
                     </div>
-                    <div className="flex items-center justify-center w-20 h-10 rounded-xl" style={{ backgroundColor: '#F4F2EB' }}>
+                    <div className="flex items-center justify-center w-20 h-10 rounded-lg" style={{ backgroundColor: '#F4F2EB' }}>
                       <img src={gPayLogo} alt="Google Pay" className="h-[18px]" />
                     </div>
-                    <div className="flex items-center justify-center w-20 h-10 rounded-xl text-sm font-medium text-foreground" style={{ backgroundColor: '#F4F2EB' }}>
+                    <div className="flex items-center justify-center w-20 h-10 rounded-lg text-sm font-medium text-foreground" style={{ backgroundColor: '#F4F2EB' }}>
                       💳 Card
                     </div>
                   </div>
