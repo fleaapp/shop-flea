@@ -2,13 +2,14 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, X, Clock, User } from 'lucide-react';
+import { ArrowLeft, X, Clock, User, Tag } from 'lucide-react';
 import { Listing } from '@/types/listing';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { isSimilar } from '@/utils/fuzzyMatch';
 import { useTrendingSearches } from '@/hooks/useTrendingSearches';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { useBrands } from '@/hooks/useBrands';
 
 interface SearchSheetProps {
   open: boolean;
