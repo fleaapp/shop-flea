@@ -409,13 +409,13 @@ const Checkout = () => {
                     You'll be able to pay with:
                   </p>
                   <div className="flex items-center gap-3 flex-wrap">
-                    <div className="flex items-center justify-center h-10 px-4 rounded-xl" style={{ backgroundColor: '#F4F2EB' }}>
-                      <img src={applePayLogo} alt="Apple Pay" className="h-5" />
+                    <div className="flex items-center justify-center w-24 h-12 rounded-xl" style={{ backgroundColor: '#F4F2EB' }}>
+                      <img src={applePayLogo} alt="Apple Pay" className="h-6" />
                     </div>
-                    <div className="flex items-center justify-center h-10 px-4 rounded-xl" style={{ backgroundColor: '#F4F2EB' }}>
-                      <img src={gPayLogo} alt="Google Pay" className="h-5" />
+                    <div className="flex items-center justify-center w-24 h-12 rounded-xl" style={{ backgroundColor: '#F4F2EB' }}>
+                      <img src={gPayLogo} alt="Google Pay" className="h-4" />
                     </div>
-                    <div className="flex items-center justify-center h-10 px-4 rounded-xl text-sm font-medium text-foreground" style={{ backgroundColor: '#F4F2EB' }}>
+                    <div className="flex items-center justify-center w-24 h-12 rounded-xl text-sm font-medium text-foreground" style={{ backgroundColor: '#F4F2EB' }}>
                       💳 Card
                     </div>
                   </div>
