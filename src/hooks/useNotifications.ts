@@ -25,7 +25,8 @@ export type NotificationType =
   | 'support_message'
   | 'refund_request'
   | 'refund_rejected'
-  | 'refund_initiated';
+  | 'refund_initiated'
+  | 'payment_action_required';
 
 export interface Notification {
   id: string;
@@ -314,6 +315,8 @@ export const getNotificationMessage = (type: string, username?: string, listingT
       return rawMessage || 'Your refund request was rejected.';
     case 'refund_initiated':
       return rawMessage || 'A refund has been initiated.';
+    case 'payment_action_required':
+      return rawMessage || '⚠️ Your payment account needs attention. Tap to fix.';
     default:
       return 'New notification';
   }
@@ -359,6 +362,8 @@ export const getNotificationEmoji = (type: string): string => {
       return '❌';
     case 'refund_initiated':
       return '✅';
+    case 'payment_action_required':
+      return '⚠️';
     default:
       return '🔔';
   }
