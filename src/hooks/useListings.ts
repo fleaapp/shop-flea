@@ -189,7 +189,7 @@ export const useListings = (filters?: ListingFilters) => {
       setListings([]);
     }
     setLoading(false);
-  }, [user, filters?.category, filters?.categories, filters?.size, filters?.sizes, filters?.condition, filters?.gender, filters?.genders, filters?.colours, filters?.styles, filters?.minPrice, filters?.maxPrice, filters?.search]);
+  }, [user, filters?.category, filters?.categories, filters?.size, filters?.sizes, filters?.condition, filters?.gender, filters?.genders, filters?.colours, filters?.styles, filters?.brands, filters?.minPrice, filters?.maxPrice, filters?.search]);
 
   useEffect(() => {
     fetchListings();
