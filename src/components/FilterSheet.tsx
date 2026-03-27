@@ -109,6 +109,7 @@ const BrandFilterSection = ({ selectedBrands, onToggleBrand, onClearBrands }: {
   );
 };
 
+const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = false, preferredSizes }: FilterSheetProps) => {
 
   const [filters, setFilters] = useState<FilterState>({
     preferences: false,
