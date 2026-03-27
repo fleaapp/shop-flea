@@ -524,7 +524,21 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
             </Collapsible>
           </div>
 
-          {/* Condition */}
+          {/* Brand Filter */}
+          <BrandFilterSection
+            selectedBrands={filters.brands}
+            onToggleBrand={(brand) => {
+              const normalized = brand.toLowerCase();
+              setFilters(prev => ({
+                ...prev,
+                brands: prev.brands.includes(normalized)
+                  ? prev.brands.filter(b => b !== normalized)
+                  : [...prev.brands, normalized],
+              }));
+            }}
+            onClearBrands={() => setFilters(prev => ({ ...prev, brands: [] }))}
+          />
+
           <div className="py-3 border-t border-border pb-5">
             <label className="text-base font-medium mb-3 block">Condition</label>
             <div className="flex flex-wrap gap-2">
