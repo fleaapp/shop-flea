@@ -13,6 +13,9 @@ import { supabase } from '@/lib/supabase';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import applePayBadge from '@/assets/applepay-badge.png';
+import gPayBadge from '@/assets/gpay-badge.png';
+import cardBadge from '@/assets/card-badge.png';
 import BlockedUserBanner from '@/components/BlockedUserBanner';
 import { fetchSellerShippingSettings, calculateTotalShipping, SellerShippingInfo } from '@/utils/shippingCalculator';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
@@ -407,20 +410,11 @@ const Checkout = () => {
                     You'll be able to pay with:
                   </p>
                   <div className="flex items-center gap-3 flex-wrap">
-                    {/* Apple Pay */}
-                    <div className="flex items-center gap-1.5 bg-foreground text-background rounded-lg px-3 py-1.5 text-xs font-medium">
-                      <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-                      Pay
-                    </div>
-                    {/* Google Pay */}
-                    <div className="flex items-center gap-1.5 bg-foreground text-background rounded-lg px-3 py-1.5 text-xs font-medium">
-                      <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current"><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/></svg>
-                      Pay
-                    </div>
-                    {/* Card */}
-                    <div className="flex items-center gap-1.5 bg-muted rounded-lg px-3 py-1.5 text-xs font-medium text-foreground">
-                      <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
-                      Card
+                    <img src={applePayBadge} alt="Apple Pay" className="h-10 rounded-lg" />
+                    <img src={gPayBadge} alt="Google Pay" className="h-10 rounded-lg" />
+                    <div className="relative h-10">
+                      <img src={cardBadge} alt="Card" className="h-10 rounded-lg" />
+                      <span className="absolute inset-0 flex items-center justify-center text-sm font-medium text-foreground">💳 Card</span>
                     </div>
                   </div>
                   <p className="text-[11px] text-muted-foreground/70">
