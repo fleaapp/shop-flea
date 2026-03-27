@@ -62,11 +62,17 @@ const CreateListing = () => {
   const stripeLocalKey = user ? getStripeConnectedStorageKey(user.id) : null;
   const getLocalFlag = () => typeof window !== 'undefined' && !!stripeLocalKey && localStorage.getItem(stripeLocalKey) === 'true';
   const [hasPaymentMethodStripe, setHasPaymentMethodStripe] = useState(() => typeof window !== 'undefined' && !!stripeLocalKey && localStorage.getItem(stripeLocalKey) === 'true');
+  const [stripeActionRequired, setStripeActionRequired] = useState(false);
+
+  // PayPal connected check
+  const hasPayPalConnected = (profile as any)?.paypal_onboarding_complete === true ||
+    (typeof window !== 'undefined' && !!user && localStorage.getItem(`flea_paypal_connected_${user.id}`) === 'true');
 
   // Keep local payment state aligned with backend resets
   useEffect(() => {
     if (!user) {
       setHasPaymentMethodStripe(false);
+      setStripeActionRequired(false);
       return;
     }
 
@@ -74,13 +80,43 @@ const CreateListing = () => {
     if (dbStripeDisconnected) {
       clearStripeConnectionState(user.id);
       setHasPaymentMethodStripe(false);
+      setStripeActionRequired(false);
       return;
     }
 
     setHasPaymentMethodStripe(getLocalFlag());
   }, [profile?.stripe_account_id, profile?.stripe_onboarding_complete, stripeLocalKey, user]);
 
-  const hasPaymentMethod = hasPaymentMethodDB || hasPaymentMethodStripe;
+  // Check Stripe for action required state (charges enabled but payouts paused)
+  useEffect(() => {
+    if (!user || !profile?.stripe_account_id) return;
+    let cancelled = false;
+
+    const checkStripeState = async () => {
+      try {
+        const { data, error } = await invokeCloudFunction('stripe-connect-status', {
+          stripeAccountId: profile.stripe_account_id,
+        });
+        if (cancelled || error) return;
+
+        if (data?.chargesEnabled && !data?.payoutsEnabled) {
+          setStripeActionRequired(true);
+          setHasPaymentMethodStripe(false);
+        } else if (data?.chargesEnabled && data?.payoutsEnabled) {
+          setStripeActionRequired(false);
+          setHasPaymentMethodStripe(true);
+          if (stripeLocalKey) localStorage.setItem(stripeLocalKey, 'true');
+        }
+      } catch (e) {
+        console.error('Stripe state check failed:', e);
+      }
+    };
+
+    checkStripeState();
+    return () => { cancelled = true; };
+  }, [user, profile?.stripe_account_id]);
+
+  const hasPaymentMethod = hasPaymentMethodDB || hasPaymentMethodStripe || hasPayPalConnected;
 
   // Only show "verifying" if user just returned from Stripe with success param
   // or if they have a completed account in DB that needs syncing
