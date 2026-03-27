@@ -109,10 +109,7 @@ export const useListings = (filters?: ListingFilters) => {
     if (filters?.styles && filters.styles.length > 0) {
       query = query.in('style', filters.styles.map(s => s.toLowerCase()));
     }
-    // Multi-select brands filter
-    if (filters?.brands && filters.brands.length > 0) {
-      query = query.in('brand', filters.brands.map(b => b.toLowerCase()));
-    }
+    // Note: brand filtering is done client-side for case-insensitive matching
     if (filters?.minPrice !== undefined) {
       query = query.gte('price', filters.minPrice);
     }
