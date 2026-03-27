@@ -25,12 +25,92 @@ export interface FilterState {
   condition: string;
   colours: string[]; // Multi-select colours
   styles: string[]; // Multi-select styles
+  brands: string[]; // Multi-select brands
   priceRange: [number, number];
 }
 
+import { useBrands } from '@/hooks/useBrands';
+import { Search } from 'lucide-react';
 import { COLOUR_SWATCHES } from '@/utils/colourSwatches';
 
+// Brand filter sub-component
+const BrandFilterSection = ({ selectedBrands, onToggleBrand, onClearBrands }: {
+  selectedBrands: string[];
+  onToggleBrand: (brand: string) => void;
+  onClearBrands: () => void;
+}) => {
+  const { brands, loading } = useBrands();
+  const [brandSearch, setBrandSearch] = useState('');
+
+  const filteredBrands = brandSearch.trim()
+    ? brands.filter(b =>
+        b.brand_name.includes(brandSearch.toLowerCase()) ||
+        b.display_name.toLowerCase().includes(brandSearch.toLowerCase())
+      )
+    : brands;
+
+  return (
+    <div className="py-3 border-t border-border">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-lg font-medium">Brand</span>
+        {selectedBrands.length > 0 && (
+          <button
+            type="button"
+            onClick={onClearBrands}
+            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+          >
+            Clear ({selectedBrands.length})
+            <X className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+        <Input
+          value={brandSearch}
+          onChange={(e) => setBrandSearch(e.target.value)}
+          placeholder="Search brands..."
+          className="pl-9 h-10 rounded-xl bg-muted/50 border-0 text-sm"
+        />
+        {brandSearch && (
+          <button
+            type="button"
+            onClick={() => setBrandSearch('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2"
+          >
+            <X className="h-3.5 w-3.5 text-muted-foreground" />
+          </button>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
+        {loading ? (
+          <span className="text-sm text-muted-foreground">Loading...</span>
+        ) : filteredBrands.length === 0 ? (
+          <span className="text-sm text-muted-foreground">No brands found</span>
+        ) : (
+          filteredBrands.map((brand) => {
+            const isSelected = selectedBrands.includes(brand.brand_name);
+            return (
+              <button
+                key={brand.id}
+                type="button"
+                onClick={() => onToggleBrand(brand.brand_name)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  isSelected ? 'bg-primary text-foreground' : 'bg-muted text-foreground hover:bg-muted/80'
+                }`}
+              >
+                {brand.display_name}
+              </button>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+};
+
 const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = false, preferredSizes }: FilterSheetProps) => {
+
   const [filters, setFilters] = useState<FilterState>({
     preferences: false,
     hideSoldItems: false,
@@ -40,6 +120,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
     condition: '',
     colours: [],
     styles: [],
+    brands: [],
     priceRange: [0, 1000],
   });
 
@@ -161,6 +242,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
       condition: '',
       colours: [],
       styles: [],
+      brands: [],
       priceRange: [0, 1000],
     });
     setExpandedSections({ categories: false, sizes: false, women: false, men: false, unisex: false, kids: false, colours: false, styles: false });
@@ -519,7 +601,21 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
             </Collapsible>
           </div>
 
-          {/* Condition */}
+          {/* Brand Filter */}
+          <BrandFilterSection
+            selectedBrands={filters.brands}
+            onToggleBrand={(brand) => {
+              const normalized = brand.toLowerCase();
+              setFilters(prev => ({
+                ...prev,
+                brands: prev.brands.includes(normalized)
+                  ? prev.brands.filter(b => b !== normalized)
+                  : [...prev.brands, normalized],
+              }));
+            }}
+            onClearBrands={() => setFilters(prev => ({ ...prev, brands: [] }))}
+          />
+
           <div className="py-3 border-t border-border pb-5">
             <label className="text-base font-medium mb-3 block">Condition</label>
             <div className="flex flex-wrap gap-2">
@@ -682,6 +778,11 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
             filters.styles.forEach(style => {
               selectedFilters.push({ label: style.charAt(0).toUpperCase() + style.slice(1), type: 'style', value: style });
             });
+            
+            // Add brands
+            filters.brands.forEach(brand => {
+              selectedFilters.push({ label: brand.charAt(0).toUpperCase() + brand.slice(1), type: 'brand', value: brand });
+            });
 
             if (selectedFilters.length === 0) return null;
 
@@ -705,6 +806,8 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                           toggleColour(filter.value);
                         } else if (filter.type === 'style') {
                           toggleStyle(filter.value);
+                        } else if (filter.type === 'brand') {
+                          setFilters(prev => ({ ...prev, brands: prev.brands.filter(b => b !== filter.value) }));
                         }
                       }}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-primary text-foreground"

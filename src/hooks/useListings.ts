@@ -47,6 +47,7 @@ export interface ListingFilters {
   genders?: string[]; // Multi-select genders
   colours?: string[]; // Multi-select colours
   styles?: string[]; // Multi-select styles
+  brands?: string[]; // Multi-select brands
   minPrice?: number;
   maxPrice?: number;
   search?: string;
@@ -108,6 +109,7 @@ export const useListings = (filters?: ListingFilters) => {
     if (filters?.styles && filters.styles.length > 0) {
       query = query.in('style', filters.styles.map(s => s.toLowerCase()));
     }
+    // Note: brand filtering is done client-side for case-insensitive matching
     if (filters?.minPrice !== undefined) {
       query = query.gte('price', filters.minPrice);
     }
@@ -167,6 +169,14 @@ export const useListings = (filters?: ListingFilters) => {
       if (filters?.search) {
         listingsWithProfiles = filterBySearch(listingsWithProfiles, filters.search);
       }
+
+      // Apply client-side brand filtering (case-insensitive)
+      if (filters?.brands && filters.brands.length > 0) {
+        const brandSet = new Set(filters.brands.map(b => b.toLowerCase()));
+        listingsWithProfiles = listingsWithProfiles.filter(l =>
+          l.brand && brandSet.has(l.brand.toLowerCase())
+        );
+      }
       
       // Preload seller avatars and listing images in the background
       const avatarUrls = listingsWithProfiles
@@ -184,7 +194,7 @@ export const useListings = (filters?: ListingFilters) => {
       setListings([]);
     }
     setLoading(false);
-  }, [user, filters?.category, filters?.categories, filters?.size, filters?.sizes, filters?.condition, filters?.gender, filters?.genders, filters?.colours, filters?.styles, filters?.minPrice, filters?.maxPrice, filters?.search]);
+  }, [user, filters?.category, filters?.categories, filters?.size, filters?.sizes, filters?.condition, filters?.gender, filters?.genders, filters?.colours, filters?.styles, filters?.brands, filters?.minPrice, filters?.maxPrice, filters?.search]);
 
   useEffect(() => {
     fetchListings();

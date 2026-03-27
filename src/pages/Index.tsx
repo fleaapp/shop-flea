@@ -134,6 +134,7 @@ const Index = () => {
     condition: '',
     colours: [],
     styles: [],
+    brands: [],
     priceRange: [0, 1000],
   });
   
@@ -168,6 +169,9 @@ const Index = () => {
     }
     if (appliedFilters.styles.length > 0) {
       filterObj.styles = appliedFilters.styles;
+    }
+    if (appliedFilters.brands.length > 0) {
+      filterObj.brands = appliedFilters.brands;
     }
     if (appliedFilters.priceRange[0] > 0) {
       filterObj.minPrice = appliedFilters.priceRange[0];
@@ -280,6 +284,9 @@ const Index = () => {
     appliedFilters.styles.forEach(style => {
       chips.push({ label: style.charAt(0).toUpperCase() + style.slice(1), type: 'style', value: style });
     });
+    appliedFilters.brands.forEach(brand => {
+      chips.push({ label: brand.charAt(0).toUpperCase() + brand.slice(1), type: 'brand', value: brand });
+    });
     
     return chips;
   }, [appliedFilters]);
@@ -298,6 +305,8 @@ const Index = () => {
         return { ...prev, colours: prev.colours.filter(c => c !== value) };
       } else if (type === 'style') {
         return { ...prev, styles: prev.styles.filter(s => s !== value) };
+      } else if (type === 'brand') {
+        return { ...prev, brands: prev.brands.filter(b => b !== value) };
       }
       return prev;
     });
@@ -362,11 +371,12 @@ const Index = () => {
                   hideSoldItems: false,
                   sizes: [],
                   categories: [],
-                    genders: [],
-                    condition: '',
-                    colours: [],
-                    styles: [],
-                    priceRange: [0, 1000],
+                  genders: [],
+                  condition: '',
+                  colours: [],
+                  styles: [],
+                  brands: [],
+                  priceRange: [0, 1000],
                 })}
                 className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-muted"
               >

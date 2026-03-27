@@ -33,6 +33,7 @@ import {
 } from '@/config/sizeConfig';
 import { COLOUR_SWATCHES } from '@/utils/colourSwatches';
 import ConditionInfoPopover from '@/components/ConditionInfoPopover';
+import BrandAutocomplete from '@/components/BrandAutocomplete';
 
 interface ImageFile {
   file: File;
@@ -654,11 +655,10 @@ const CreateListing = () => {
           <ChevronRight className="h-5 w-5 text-muted-foreground/60" />
         </button>
 
-        {/* Brand - Text Input */}
-        <Input
-          placeholder="Brand"
+        {/* Brand - Autocomplete */}
+        <BrandAutocomplete
           value={brand}
-          onChange={(e) => setBrand(e.target.value)}
+          onChange={setBrand}
           className={inputStyles}
         />
         
