@@ -32,7 +32,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [sellers, setSellers] = useState<SellerSuggestion[]>([]);
   const { trending, recordSearch, refetchTrending } = useTrendingSearches();
-
+  const { brands: allBrands } = useBrands();
   // User-specific localStorage key for recent searches
   const storageKey = user ? `recentSearches_${user.id}` : null;
 
