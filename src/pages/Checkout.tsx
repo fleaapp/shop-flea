@@ -207,6 +207,16 @@ const Checkout = () => {
     setIsSubmitting(true);
     
     try {
+      // Save shipping details to localStorage for future pre-fill
+      localStorage.setItem('saved_shipping_details', JSON.stringify({
+        firstName: shippingFirstName.trim(),
+        lastName: shippingLastName.trim(),
+        address: shippingAddress.trim(),
+        suburb: shippingSuburb.trim(),
+        state: shippingState,
+        postcode: shippingPostcode.trim(),
+      }));
+
       // Save shipping details to sessionStorage for use after Stripe redirect
         const shippingDetails = {
         shippingFirstName: shippingFirstName.trim(),
