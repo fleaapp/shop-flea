@@ -46,13 +46,19 @@ const Checkout = () => {
   const [open, setOpen] = useState(true);
   const [sellerSettings, setSellerSettings] = useState<Map<string, SellerShippingInfo>>(new Map());
 
-  // Shipping details state
-  const [shippingFirstName, setShippingFirstName] = useState('');
-  const [shippingLastName, setShippingLastName] = useState('');
-  const [shippingAddress, setShippingAddress] = useState('');
-  const [shippingSuburb, setShippingSuburb] = useState('');
-  const [shippingState, setShippingState] = useState('');
-  const [shippingPostcode, setShippingPostcode] = useState('');
+  // Shipping details state - pre-fill from saved details
+  const savedShipping = useMemo(() => {
+    try {
+      const saved = localStorage.getItem('saved_shipping_details');
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  }, []);
+  const [shippingFirstName, setShippingFirstName] = useState(savedShipping?.firstName || '');
+  const [shippingLastName, setShippingLastName] = useState(savedShipping?.lastName || '');
+  const [shippingAddress, setShippingAddress] = useState(savedShipping?.address || '');
+  const [shippingSuburb, setShippingSuburb] = useState(savedShipping?.suburb || '');
+  const [shippingState, setShippingState] = useState(savedShipping?.state || '');
+  const [shippingPostcode, setShippingPostcode] = useState(savedShipping?.postcode || '');
 
   // Fetch seller shipping settings
   useEffect(() => {
