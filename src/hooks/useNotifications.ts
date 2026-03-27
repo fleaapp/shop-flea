@@ -362,6 +362,8 @@ export const getNotificationEmoji = (type: string): string => {
       return '❌';
     case 'refund_initiated':
       return '✅';
+    case 'payment_action_required':
+      return '⚠️';
     default:
       return '🔔';
   }
