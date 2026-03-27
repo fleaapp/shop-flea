@@ -165,6 +165,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
       condition: '',
       colours: [],
       styles: [],
+      brands: [],
       priceRange: [0, 1000],
     });
     setExpandedSections({ categories: false, sizes: false, women: false, men: false, unisex: false, kids: false, colours: false, styles: false });
