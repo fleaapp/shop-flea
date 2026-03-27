@@ -46,13 +46,19 @@ const Checkout = () => {
   const [open, setOpen] = useState(true);
   const [sellerSettings, setSellerSettings] = useState<Map<string, SellerShippingInfo>>(new Map());
 
-  // Shipping details state
-  const [shippingFirstName, setShippingFirstName] = useState('');
-  const [shippingLastName, setShippingLastName] = useState('');
-  const [shippingAddress, setShippingAddress] = useState('');
-  const [shippingSuburb, setShippingSuburb] = useState('');
-  const [shippingState, setShippingState] = useState('');
-  const [shippingPostcode, setShippingPostcode] = useState('');
+  // Shipping details state - pre-fill from saved details
+  const savedShipping = useMemo(() => {
+    try {
+      const saved = localStorage.getItem('saved_shipping_details');
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  }, []);
+  const [shippingFirstName, setShippingFirstName] = useState(savedShipping?.firstName || '');
+  const [shippingLastName, setShippingLastName] = useState(savedShipping?.lastName || '');
+  const [shippingAddress, setShippingAddress] = useState(savedShipping?.address || '');
+  const [shippingSuburb, setShippingSuburb] = useState(savedShipping?.suburb || '');
+  const [shippingState, setShippingState] = useState(savedShipping?.state || '');
+  const [shippingPostcode, setShippingPostcode] = useState(savedShipping?.postcode || '');
 
   // Fetch seller shipping settings
   useEffect(() => {
@@ -201,6 +207,16 @@ const Checkout = () => {
     setIsSubmitting(true);
     
     try {
+      // Save shipping details to localStorage for future pre-fill
+      localStorage.setItem('saved_shipping_details', JSON.stringify({
+        firstName: shippingFirstName.trim(),
+        lastName: shippingLastName.trim(),
+        address: shippingAddress.trim(),
+        suburb: shippingSuburb.trim(),
+        state: shippingState,
+        postcode: shippingPostcode.trim(),
+      }));
+
       // Save shipping details to sessionStorage for use after Stripe redirect
         const shippingDetails = {
         shippingFirstName: shippingFirstName.trim(),
@@ -408,14 +424,14 @@ const Checkout = () => {
                   <p className="text-sm text-muted-foreground">
                     You'll be able to pay with:
                   </p>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <div className="flex items-center justify-center w-24 h-12 rounded-xl" style={{ backgroundColor: '#F4F2EB' }}>
+                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center justify-center w-20 h-10 rounded-xl" style={{ backgroundColor: '#F4F2EB' }}>
                       <img src={applePayLogo} alt="Apple Pay" className="h-6" />
                     </div>
-                    <div className="flex items-center justify-center w-24 h-12 rounded-xl" style={{ backgroundColor: '#F4F2EB' }}>
-                      <img src={gPayLogo} alt="Google Pay" className="h-4" />
+                    <div className="flex items-center justify-center w-20 h-10 rounded-xl" style={{ backgroundColor: '#F4F2EB' }}>
+                      <img src={gPayLogo} alt="Google Pay" className="h-[18px]" />
                     </div>
-                    <div className="flex items-center justify-center w-24 h-12 rounded-xl text-sm font-medium text-foreground" style={{ backgroundColor: '#F4F2EB' }}>
+                    <div className="flex items-center justify-center w-20 h-10 rounded-xl text-sm font-medium text-foreground" style={{ backgroundColor: '#F4F2EB' }}>
                       💳 Card
                     </div>
                   </div>
