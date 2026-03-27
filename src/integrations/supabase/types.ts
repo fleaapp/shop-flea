@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      brands: {
+        Row: {
+          brand_name: string
+          created_at: string
+          display_name: string
+          id: string
+          usage_count: number
+        }
+        Insert: {
+          brand_name: string
+          created_at?: string
+          display_name: string
+          id?: string
+          usage_count?: number
+        }
+        Update: {
+          brand_name?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          usage_count?: number
+        }
+        Relationships: []
+      }
       cart_items: {
         Row: {
           created_at: string
