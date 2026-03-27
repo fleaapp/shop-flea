@@ -47,6 +47,7 @@ export interface ListingFilters {
   genders?: string[]; // Multi-select genders
   colours?: string[]; // Multi-select colours
   styles?: string[]; // Multi-select styles
+  brands?: string[]; // Multi-select brands
   minPrice?: number;
   maxPrice?: number;
   search?: string;
