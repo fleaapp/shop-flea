@@ -514,8 +514,9 @@ const CreateListing = () => {
     );
   }
 
-  // Show payment gate if user has no payment method at all
-  if (!hasPaymentMethod && user && profile) {
+  // Show payment gate if user has no fully connected payment method or action required
+  const needsPaymentGate = !hasPaymentMethod || (stripeActionRequired && !hasPayPalConnected);
+  if (needsPaymentGate && user && profile) {
     return (
       <div className="min-h-screen bg-background pb-24">
         <header className="relative flex items-center justify-center px-4 py-4">
@@ -529,7 +530,11 @@ const CreateListing = () => {
           </Button>
           <h1 className="text-xl font-bold text-foreground">Add New Listing</h1>
         </header>
-        <ConnectPaymentDialog open={true} onOpenChange={() => {}} />
+        <ConnectPaymentDialog
+          open={true}
+          onOpenChange={() => {}}
+          stripeActionRequired={stripeActionRequired}
+        />
         <BottomNav />
       </div>
     );
