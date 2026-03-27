@@ -149,6 +149,19 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
       .slice(0, 4);
   }, [query, sellers]);
 
+  // Filter matching brands from the brands table
+  const matchingBrands = useMemo(() => {
+    if (!query.trim()) return [];
+    const lowerQuery = query.toLowerCase().trim();
+    return allBrands
+      .filter(b =>
+        b.brand_name.includes(lowerQuery) ||
+        b.display_name.toLowerCase().includes(lowerQuery) ||
+        isSimilar(b.display_name.toLowerCase(), lowerQuery)
+      )
+      .slice(0, 6);
+  }, [query, allBrands]);
+
   // Generate search suggestions based on query
   const suggestions = useMemo(() => {
     if (!query.trim()) return [];
