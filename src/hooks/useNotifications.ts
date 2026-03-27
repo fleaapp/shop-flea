@@ -25,7 +25,8 @@ export type NotificationType =
   | 'support_message'
   | 'refund_request'
   | 'refund_rejected'
-  | 'refund_initiated';
+  | 'refund_initiated'
+  | 'payment_action_required';
 
 export interface Notification {
   id: string;
