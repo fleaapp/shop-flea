@@ -778,6 +778,11 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
             filters.styles.forEach(style => {
               selectedFilters.push({ label: style.charAt(0).toUpperCase() + style.slice(1), type: 'style', value: style });
             });
+            
+            // Add brands
+            filters.brands.forEach(brand => {
+              selectedFilters.push({ label: brand.charAt(0).toUpperCase() + brand.slice(1), type: 'brand', value: brand });
+            });
 
             if (selectedFilters.length === 0) return null;
 
@@ -801,6 +806,8 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                           toggleColour(filter.value);
                         } else if (filter.type === 'style') {
                           toggleStyle(filter.value);
+                        } else if (filter.type === 'brand') {
+                          setFilters(prev => ({ ...prev, brands: prev.brands.filter(b => b !== filter.value) }));
                         }
                       }}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-primary text-foreground"
