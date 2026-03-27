@@ -121,6 +121,17 @@ const Notifications = () => {
       return;
     }
 
+    // Payment action required → open Stripe or PayPal dashboard
+    if (notification.type === 'payment_action_required') {
+      const msg = (notification.message || '').toLowerCase();
+      if (msg.includes('paypal')) {
+        window.open('https://www.paypal.com/businessmanage', '_blank');
+      } else {
+        window.open('https://dashboard.stripe.com', '_blank');
+      }
+      return;
+    }
+
     // Order shipped/delivered → navigate to cart (orders tab)
     if (notification.type === 'order_shipped' || notification.type === 'order_delivered') {
       navigate('/cart');
