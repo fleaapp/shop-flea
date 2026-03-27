@@ -134,6 +134,7 @@ const Index = () => {
     condition: '',
     colours: [],
     styles: [],
+    brands: [],
     priceRange: [0, 1000],
   });
   
