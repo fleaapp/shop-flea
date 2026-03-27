@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, X } from 'lucide-react';
+import { Check, ChevronDown, X } from 'lucide-react';
 import { FILTER_SIZES, CONDITIONS, COLOURS, STYLES, CATEGORY_OPTIONS, FIT_OPTIONS } from '@/config/sizeConfig';
 import { formatSizeKeyLabel, makeSizeKey, normalizeSizeKeys, SizeCategoryKey, FitKey } from '@/utils/sizeKeys';
 
