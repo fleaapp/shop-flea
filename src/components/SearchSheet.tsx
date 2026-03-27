@@ -151,13 +151,12 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
 
   // Filter matching brands from the brands table
   const matchingBrands = useMemo(() => {
-    if (!query.trim()) return [];
+    if (!query.trim() || query.trim().length < 2) return [];
     const lowerQuery = query.toLowerCase().trim();
     return allBrands
       .filter(b =>
         b.brand_name.includes(lowerQuery) ||
-        b.display_name.toLowerCase().includes(lowerQuery) ||
-        isSimilar(b.display_name.toLowerCase(), lowerQuery)
+        b.display_name.toLowerCase().includes(lowerQuery)
       )
       .slice(0, 6);
   }, [query, allBrands]);
