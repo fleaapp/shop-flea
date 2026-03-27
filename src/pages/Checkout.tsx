@@ -401,41 +401,42 @@ const Checkout = () => {
                     </Select>
                   </div>
                 </div>
-                {isShippingComplete && (
-                  <div className="px-4 pb-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={cn(
-                        "w-full rounded-xl text-sm",
-                        savedShipping?.firstName === shippingFirstName.trim() &&
-                        savedShipping?.lastName === shippingLastName.trim() &&
-                        savedShipping?.address === shippingAddress.trim() &&
-                        savedShipping?.suburb === shippingSuburb.trim() &&
-                        savedShipping?.state === shippingState &&
-                        savedShipping?.postcode === shippingPostcode.trim()
-                          ? "text-muted-foreground"
-                          : ""
-                      )}
-                      onClick={() => {
-                        localStorage.setItem('saved_shipping_details', JSON.stringify({
-                          firstName: shippingFirstName.trim(),
-                          lastName: shippingLastName.trim(),
-                          address: shippingAddress.trim(),
-                          suburb: shippingSuburb.trim(),
-                          state: shippingState,
-                          postcode: shippingPostcode.trim(),
-                        }));
-                        toast.success('Shipping details saved');
-                      }}
-                    >
-                      {savedShipping?.firstName === shippingFirstName.trim() &&
-                       savedShipping?.address === shippingAddress.trim()
-                        ? '✓ Details saved' : 'Save details for next time'}
-                    </Button>
-                  </div>
-                )}
               </div>
+              {isShippingComplete && (
+                <div className="px-4 pb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "w-full rounded-xl text-sm",
+                      savedShipping?.firstName === shippingFirstName.trim() &&
+                      savedShipping?.lastName === shippingLastName.trim() &&
+                      savedShipping?.address === shippingAddress.trim() &&
+                      savedShipping?.suburb === shippingSuburb.trim() &&
+                      savedShipping?.state === shippingState &&
+                      savedShipping?.postcode === shippingPostcode.trim()
+                        ? "text-muted-foreground"
+                        : ""
+                    )}
+                    onClick={() => {
+                      localStorage.setItem('saved_shipping_details', JSON.stringify({
+                        firstName: shippingFirstName.trim(),
+                        lastName: shippingLastName.trim(),
+                        address: shippingAddress.trim(),
+                        suburb: shippingSuburb.trim(),
+                        state: shippingState,
+                        postcode: shippingPostcode.trim(),
+                      }));
+                      toast.success('Shipping details saved');
+                    }}
+                  >
+                    {savedShipping?.firstName === shippingFirstName.trim() &&
+                     savedShipping?.address === shippingAddress.trim()
+                      ? '✓ Details saved' : 'Save details for next time'}
+                  </Button>
+                </div>
+              )}
+            </div>
 
             {/* Payment Methods Info */}
             {paymentMethod === 'stripe' && (
