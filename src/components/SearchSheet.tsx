@@ -2,13 +2,14 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, X, Clock, User } from 'lucide-react';
+import { ArrowLeft, X, Clock, User, Tag } from 'lucide-react';
 import { Listing } from '@/types/listing';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { isSimilar } from '@/utils/fuzzyMatch';
 import { useTrendingSearches } from '@/hooks/useTrendingSearches';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { useBrands } from '@/hooks/useBrands';
 
 interface SearchSheetProps {
   open: boolean;
@@ -31,7 +32,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [sellers, setSellers] = useState<SellerSuggestion[]>([]);
   const { trending, recordSearch, refetchTrending } = useTrendingSearches();
-
+  const { brands: allBrands } = useBrands();
   // User-specific localStorage key for recent searches
   const storageKey = user ? `recentSearches_${user.id}` : null;
 
@@ -147,6 +148,19 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
       })
       .slice(0, 4);
   }, [query, sellers]);
+
+  // Filter matching brands from the brands table
+  const matchingBrands = useMemo(() => {
+    if (!query.trim()) return [];
+    const lowerQuery = query.toLowerCase().trim();
+    return allBrands
+      .filter(b =>
+        b.brand_name.includes(lowerQuery) ||
+        b.display_name.toLowerCase().includes(lowerQuery) ||
+        isSimilar(b.display_name.toLowerCase(), lowerQuery)
+      )
+      .slice(0, 6);
+  }, [query, allBrands]);
 
   // Generate search suggestions based on query
   const suggestions = useMemo(() => {
@@ -338,6 +352,27 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
                         </AvatarFallback>
                       </Avatar>
                       <span className="text-foreground font-medium">{seller.username}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Matching Brands */}
+          {query && matchingBrands.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-foreground mb-3">Brands</h3>
+              <div className="bg-card rounded-2xl p-4">
+                <div className="space-y-1">
+                  {matchingBrands.map((brand) => (
+                    <button
+                      key={brand.id}
+                      onClick={() => handleSearch(brand.display_name)}
+                      className="flex items-center gap-3 w-full text-left py-2.5"
+                    >
+                      <Tag className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-foreground font-medium">{brand.display_name}</span>
                     </button>
                   ))}
                 </div>
