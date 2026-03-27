@@ -170,6 +170,9 @@ const Index = () => {
     if (appliedFilters.styles.length > 0) {
       filterObj.styles = appliedFilters.styles;
     }
+    if (appliedFilters.brands.length > 0) {
+      filterObj.brands = appliedFilters.brands;
+    }
     if (appliedFilters.priceRange[0] > 0) {
       filterObj.minPrice = appliedFilters.priceRange[0];
     }
