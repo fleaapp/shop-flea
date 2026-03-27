@@ -42,6 +42,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
     condition: '',
     colours: [],
     styles: [],
+    brands: [],
     priceRange: [0, 1000],
   });
 

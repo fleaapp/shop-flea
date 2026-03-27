@@ -363,11 +363,12 @@ const Index = () => {
                   hideSoldItems: false,
                   sizes: [],
                   categories: [],
-                    genders: [],
-                    condition: '',
-                    colours: [],
-                    styles: [],
-                    priceRange: [0, 1000],
+                  genders: [],
+                  condition: '',
+                  colours: [],
+                  styles: [],
+                  brands: [],
+                  priceRange: [0, 1000],
                 })}
                 className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-muted"
               >
