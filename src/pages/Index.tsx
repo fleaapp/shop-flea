@@ -284,6 +284,9 @@ const Index = () => {
     appliedFilters.styles.forEach(style => {
       chips.push({ label: style.charAt(0).toUpperCase() + style.slice(1), type: 'style', value: style });
     });
+    appliedFilters.brands.forEach(brand => {
+      chips.push({ label: brand.charAt(0).toUpperCase() + brand.slice(1), type: 'brand', value: brand });
+    });
     
     return chips;
   }, [appliedFilters]);
@@ -302,6 +305,8 @@ const Index = () => {
         return { ...prev, colours: prev.colours.filter(c => c !== value) };
       } else if (type === 'style') {
         return { ...prev, styles: prev.styles.filter(s => s !== value) };
+      } else if (type === 'brand') {
+        return { ...prev, brands: prev.brands.filter(b => b !== value) };
       }
       return prev;
     });
