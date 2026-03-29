@@ -200,7 +200,7 @@ const OrderDetailsSheet = ({
                           <h3 className="font-semibold text-foreground">{listingTitle}</h3>
                           <div className="text-right">
                             <p className="text-lg font-semibold">${o.price}</p>
-                            <p className="text-sm text-muted-foreground">+ ${o.shipping_price} shipping</p>
+                            <p className="text-sm text-muted-foreground">+${o.shipping_price} shipping</p>
                           </div>
                         </div>
                       </div>

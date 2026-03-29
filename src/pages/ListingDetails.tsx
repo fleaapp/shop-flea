@@ -648,7 +648,7 @@ const ListingDetails = () => {
                 {/* Price */}
                 <div className="text-right">
                   <p className="text-2xl font-bold text-foreground">${listing.price}</p>
-                  <p className="text-xs text-muted-foreground">+ ${listing.shipping_price || 0} shipping</p>
+                  <p className="text-xs text-muted-foreground">+${listing.shipping_price || 0} shipping</p>
                 </div>
               </div>
 

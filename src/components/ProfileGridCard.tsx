@@ -67,7 +67,7 @@ const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton }: ProfileGr
             </div>
             <div className="text-right flex-shrink-0">
               <p className="text-sm font-bold text-foreground">${listing.price}</p>
-              <p className="text-[10px] text-muted-foreground">+ ${listing.shipping_price || 0} 📦</p>
+              <p className="text-[10px] text-muted-foreground">📦 +${listing.shipping_price || 0}</p>
             </div>
           </div>
         </div>
