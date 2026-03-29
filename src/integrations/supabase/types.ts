@@ -284,6 +284,7 @@ export type Database = {
           size: string
           status: string
           style: string | null
+          subcategory: string | null
           tags: string[] | null
           title: string
           updated_at: string
@@ -307,6 +308,7 @@ export type Database = {
           size: string
           status?: string
           style?: string | null
+          subcategory?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string
@@ -330,6 +332,7 @@ export type Database = {
           size?: string
           status?: string
           style?: string | null
+          subcategory?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string
