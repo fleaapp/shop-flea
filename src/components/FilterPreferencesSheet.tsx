@@ -125,7 +125,7 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[85dvh] outline-none focus:outline-none flex flex-col">
+      <DrawerContent className="outline-none focus:outline-none flex flex-col">
         <DrawerHeader className="flex-shrink-0">
           <DrawerTitle className="text-center">Filter Preferences</DrawerTitle>
         </DrawerHeader>
