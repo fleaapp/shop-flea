@@ -219,11 +219,37 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
     console.log("Using Supabase URL:", supabaseUrl?.slice(0, 30));
 
-    // Get user's push subscriptions
-    const { data: subscriptions, error: subError } = await supabase
-      .from("push_subscriptions")
-      .select("*")
-      .eq("user_id", user_id);
+    // Get user's push subscriptions (with schema cache reload retry)
+    let subscriptions: any[] | null = null;
+    let subError: any = null;
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const result = await supabase
+        .from("push_subscriptions")
+        .select("*")
+        .eq("user_id", user_id);
+      
+      subscriptions = result.data;
+      subError = result.error;
+
+      if (subError?.code === "PGRST205" && attempt === 0) {
+        // Reload schema cache via PostgREST
+        await supabase.rpc("reload_schema_cache").catch(() => {});
+        // Also try direct NOTIFY
+        await fetch(`${supabaseUrl}/rest/v1/rpc/reload_schema_cache`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": serviceRoleKey,
+            "Authorization": `Bearer ${serviceRoleKey}`,
+          },
+        }).catch(() => {});
+        // Wait a moment for cache to refresh
+        await new Promise(r => setTimeout(r, 1000));
+        continue;
+      }
+      break;
+    }
 
     if (subError) {
       console.error("Error fetching subscriptions:", subError);
