@@ -325,15 +325,26 @@ const OrderChat = () => {
       </div>
 
       {!isReadOnly && !messagesError && (
-        <div className="sticky bottom-0 bg-background border-t border-border px-4 pt-3 pb-8 flex items-center gap-2">
+        <div className="sticky bottom-0 bg-background border-t border-border px-4 pt-3 pb-8 flex items-end gap-2">
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
-          <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-muted transition-colors" disabled={sending}>
+          <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-muted transition-colors shrink-0 mb-0.5" disabled={sending}>
             <Image className="h-5 w-5 text-muted-foreground" />
           </button>
-          <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type a message..."
-            className="flex-1 rounded-full bg-muted border-none" onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()} disabled={sending} />
+          <textarea
+            value={newMessage}
+            onChange={(e) => {
+              setNewMessage(e.target.value);
+              e.target.style.height = 'auto';
+              e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+            }}
+            placeholder="Type a message..."
+            className="flex-1 rounded-2xl bg-muted border-none px-4 py-2.5 text-sm resize-none min-h-[40px] max-h-[120px] outline-none"
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+            disabled={sending}
+            rows={1}
+          />
           <button onClick={handleSend} disabled={!newMessage.trim() || sending}
-            className="p-2 rounded-full bg-charcoal text-white disabled:opacity-40 transition-colors">
+            className="p-2 rounded-full bg-charcoal text-white disabled:opacity-40 transition-colors shrink-0 mb-0.5">
             <Send className="h-5 w-5" />
           </button>
         </div>

@@ -198,12 +198,17 @@ const ChatConversation = () => {
                   <button onClick={() => setFile(null)} className="text-destructive ml-1">✕</button>
                 </div>
               )}
-              <input
+              <textarea
                 value={newMsg}
-                onChange={(e) => setNewMsg(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+                onChange={(e) => {
+                  setNewMsg(e.target.value);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                }}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 placeholder="Type a message..."
-                className="w-full rounded-full bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none card-shadow"
+                className="w-full rounded-2xl bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none card-shadow resize-none min-h-[40px] max-h-[120px]"
+                rows={1}
               />
             </div>
             <button
