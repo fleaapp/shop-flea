@@ -39,7 +39,7 @@ DrawerHeader.displayName = "DrawerHeader";
 const DrawerFooter = ({
   className,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) => <div className={cn("shrink-0 border-t bg-background p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]", className)} {...props} />;
+}: React.HTMLAttributes<HTMLDivElement>) => <div className={cn("shrink-0 border-t bg-background px-4 pt-3 pb-4", className)} {...props} />;
 DrawerFooter.displayName = "DrawerFooter";
 const DrawerTitle = React.forwardRef<React.ElementRef<typeof DrawerPrimitive.Title>, React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Title>>(({
   className,
