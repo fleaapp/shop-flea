@@ -207,8 +207,8 @@ const ChatConversation = () => {
                 }}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 placeholder="Type a message..."
-                className="w-full rounded-2xl bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none card-shadow resize-none min-h-[40px] max-h-[120px]"
-                rows={1}
+                className="w-full rounded-2xl bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none card-shadow resize-none min-h-[48px] max-h-[120px]"
+                rows={2}
               />
             </div>
             <button
