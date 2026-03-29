@@ -15,6 +15,7 @@ export interface DbListing {
   brand: string;
   size: string;
   category: string;
+  subcategory: string | null;
   condition: string;
   colour: string | null;
   style: string | null;
