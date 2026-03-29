@@ -123,6 +123,7 @@ const EditListing = () => {
       setSize(data.size);
       setBrand(data.brand);
       setCategory(data.category);
+      setSubcategory((data as any).subcategory || '');
       setCondition(data.condition);
       // Parse comma-separated colours/styles back into arrays
       setColours(data.colour ? data.colour.split(', ').map((c: string) => c.toLowerCase()) : []);
