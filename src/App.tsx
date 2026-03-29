@@ -11,6 +11,7 @@ import OnboardingOverlay from "@/components/OnboardingOverlay";
 import OnboardingCarousel from "@/components/OnboardingCarousel";
 import SuggestionBox from "./pages/SuggestionBox";
 import RealtimeAlerts from "./components/RealtimeAlerts";
+import { PushNotificationSubscriber } from "./components/PushNotificationSubscriber";
 import Index from "./pages/Index";
 import ListingDetails from "./pages/ListingDetails";
 import Favorites from "./pages/Favorites";
@@ -46,6 +47,7 @@ const AppContent = () => {
       <Toaster />
       <Sonner position="top-center" />
       <RealtimeAlerts />
+      <PushNotificationSubscriber />
       <OnboardingOverlay />
       <OnboardingCarousel open={showCarousel} onComplete={closeCarousel} />
       <Routes>
