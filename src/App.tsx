@@ -50,6 +50,7 @@ const AppContent = () => {
       <OnboardingCarousel open={showCarousel} onComplete={closeCarousel} />
       <Routes>
         <Route path="/about" element={<About />} />
+        <Route path="/install" element={<Install />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
