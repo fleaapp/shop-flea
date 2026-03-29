@@ -168,6 +168,14 @@ export const useListings = (filters?: ListingFilters) => {
         listingsWithProfiles = filterBySearch(listingsWithProfiles, filters.search);
       }
 
+      // Apply client-side categories filtering (supports both parent categories and subcategories)
+      if (filters?.categories && filters.categories.length > 0) {
+        const catSet = new Set(filters.categories.map(c => c.toLowerCase()));
+        listingsWithProfiles = listingsWithProfiles.filter(l =>
+          catSet.has(l.category?.toLowerCase()) || (l.subcategory && catSet.has(l.subcategory.toLowerCase()))
+        );
+      }
+
       // Apply client-side brand filtering (case-insensitive)
       if (filters?.brands && filters.brands.length > 0) {
         const brandSet = new Set(filters.brands.map(b => b.toLowerCase()));
