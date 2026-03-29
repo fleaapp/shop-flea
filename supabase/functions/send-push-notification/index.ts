@@ -233,19 +233,19 @@ serve(async (req) => {
       subError = result.error;
 
       if (subError?.code === "PGRST205" && attempt === 0) {
-        // Reload schema cache via PostgREST
-        await supabase.rpc("reload_schema_cache").catch(() => {});
-        // Also try direct NOTIFY
-        await fetch(`${supabaseUrl}/rest/v1/rpc/reload_schema_cache`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": serviceRoleKey,
-            "Authorization": `Bearer ${serviceRoleKey}`,
-          },
-        }).catch(() => {});
+        // Reload schema cache via PostgREST NOTIFY
+        try {
+          await fetch(`${supabaseUrl}/rest/v1/rpc/reload_schema_cache`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "apikey": serviceRoleKey,
+              "Authorization": `Bearer ${serviceRoleKey}`,
+            },
+          });
+        } catch (_) { /* ignore */ }
         // Wait a moment for cache to refresh
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 2000));
         continue;
       }
       break;
