@@ -213,7 +213,7 @@ const CartItemRow = ({
               ${item.price}
             </p>
             <p className="text-sm text-muted-foreground leading-tight">
-              + ${item.shippingPrice} shipping
+              +${item.shippingPrice} shipping
             </p>
           </div>
         </div>

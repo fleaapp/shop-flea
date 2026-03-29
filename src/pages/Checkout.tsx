@@ -317,7 +317,7 @@ const Checkout = () => {
                               <div className="text-right">
                                 <p className="text-lg font-semibold">${item.price}</p>
                                 {idx === sellerItems.length - 1 && (
-                                  <p className="text-sm text-muted-foreground">+ ${shipping.toFixed(2)} shipping</p>
+                                  <p className="text-sm text-muted-foreground">+${shipping.toFixed(2)} shipping</p>
                                 )}
                               </div>
                             </div>
