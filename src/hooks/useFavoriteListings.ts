@@ -181,7 +181,7 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
             colour: snapshot.listing.colour ?? null,
             style: snapshot.listing.style ?? null,
             gender: snapshot.listing.gender ?? null,
-            subcategory: snapshot.listing.subcategory ?? null,
+            subcategory: (snapshot.listing as any).subcategory ?? null,
             country_code: snapshot.listing.country_code ?? null,
             region_id: snapshot.listing.region_id ?? null,
             profiles: snapshot.seller
