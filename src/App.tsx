@@ -35,6 +35,7 @@ import FAQ from "./pages/FAQ";
 import OrderChat from "./pages/OrderChat";
 import Sales from "./pages/Sales";
 import About from "./pages/About";
+import Install from "./pages/Install";
 
 const queryClient = new QueryClient();
 
