@@ -51,4 +51,4 @@ const DrawerDescription = React.forwardRef<React.ElementRef<typeof DrawerPrimiti
   ...props
 }, ref) => <DrawerPrimitive.Description ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />);
 DrawerDescription.displayName = DrawerPrimitive.Description.displayName;
-export { Drawer, DrawerPortal, DrawerOverlay, DrawerTrigger, DrawerClose, DrawerContent, DrawerHeader, DrawerFooter, DrawerTitle, DrawerDescription };
+export { Drawer, DrawerPortal, DrawerOverlay, DrawerTrigger, DrawerClose, DrawerContent, DrawerBody, DrawerHeader, DrawerFooter, DrawerTitle, DrawerDescription };
