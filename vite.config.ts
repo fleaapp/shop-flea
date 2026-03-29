@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => ({
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
       manifest: {
-        name: "Flea - Swipe, Sell & Shop Secondhand",
+        name: "Flea",
         short_name: "Flea",
         description: "Like your favourite Sunday flea market, but at your fingertips. Shop & sell preloved fashion and goods with a swipe.",
         theme_color: "#EDE8DC",

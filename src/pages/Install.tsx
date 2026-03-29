@@ -148,7 +148,7 @@ const Install = () => {
         {!isIOS && !isAndroid && !deferredPrompt && (
           <div className="w-full bg-muted/50 rounded-2xl p-6 text-center space-y-2">
             <p className="text-sm text-muted-foreground">
-              Visit <strong>shop-flea.lovable.app</strong> on your phone to install the app.
+              Visit <strong>finditonflea.com</strong> on your phone to install the app.
             </p>
           </div>
         )}

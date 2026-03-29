@@ -80,7 +80,7 @@ const BottomNav = () => {
 
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 flex justify-center py-3 max-[375px]:py-2 z-50 pointer-events-none"
+      className="fixed bottom-0 left-0 right-0 flex justify-center pb-6 max-[375px]:pb-5 pt-3 max-[375px]:pt-2 z-50 pointer-events-none"
       data-onboarding="bottom-nav"
     >
       <div className="mx-4 max-[375px]:mx-2 flex items-center gap-2 max-[375px]:gap-1 rounded-full bg-nav px-4 max-[375px]:px-3 py-3 max-[375px]:py-2.5 nav-shadow pointer-events-auto">
