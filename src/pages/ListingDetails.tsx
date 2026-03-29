@@ -56,6 +56,7 @@ interface DbListing {
   style: string | null;
   gender: string | null;
   category: string;
+  subcategory?: string | null;
   user_id: string;
   status?: string;
 }
@@ -597,6 +598,7 @@ const ListingDetails = () => {
                 });
               }
               if (listing.category) secondary.push({ label: listing.category });
+              if (listing.subcategory) secondary.push({ label: listing.subcategory });
               if (listing.gender) secondary.push({ label: listing.gender });
               if (secondary.length === 0) return null;
               return (

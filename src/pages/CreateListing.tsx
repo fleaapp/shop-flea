@@ -397,6 +397,7 @@ const CreateListing = () => {
           brand,
           size,
           category,
+          subcategory: subcategory || null,
           condition,
           colour: colours.length > 0 ? colours.join(', ') : null,
           style: styles.length > 0 ? styles.join(', ') : null,

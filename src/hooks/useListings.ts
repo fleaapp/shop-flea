@@ -15,6 +15,7 @@ export interface DbListing {
   brand: string;
   size: string;
   category: string;
+  subcategory: string | null;
   condition: string;
   colour: string | null;
   style: string | null;
@@ -79,10 +80,7 @@ export const useListings = (filters?: ListingFilters) => {
     if (filters?.category) {
       query = query.eq('category', filters.category.toLowerCase());
     }
-    // Multi-select categories filter
-    if (filters?.categories && filters.categories.length > 0) {
-      query = query.in('category', filters.categories.map(c => c.toLowerCase()));
-    }
+    // Note: Multi-select categories filter is now done client-side to support subcategories
     if (filters?.size) {
       query = query.eq('size', filters.size.toLowerCase());
     }
@@ -168,6 +166,14 @@ export const useListings = (filters?: ListingFilters) => {
       // Apply client-side search filtering for multi-word, token-based search
       if (filters?.search) {
         listingsWithProfiles = filterBySearch(listingsWithProfiles, filters.search);
+      }
+
+      // Apply client-side categories filtering (supports both parent categories and subcategories)
+      if (filters?.categories && filters.categories.length > 0) {
+        const catSet = new Set(filters.categories.map(c => c.toLowerCase()));
+        listingsWithProfiles = listingsWithProfiles.filter(l =>
+          catSet.has(l.category?.toLowerCase()) || (l.subcategory && catSet.has(l.subcategory.toLowerCase()))
+        );
       }
 
       // Apply client-side brand filtering (case-insensitive)
