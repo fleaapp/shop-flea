@@ -20,12 +20,17 @@ const DrawerContent = React.forwardRef<React.ElementRef<typeof DrawerPrimitive.C
   ...props
 }, ref) => <DrawerPortal>
     <DrawerOverlay />
-    <DrawerPrimitive.Content ref={ref} className={cn("fixed inset-x-0 bottom-0 top-10 z-50 flex flex-col overflow-hidden rounded-t-3xl bg-background", className)} {...props}>
+    <DrawerPrimitive.Content ref={ref} className={cn("fixed inset-x-0 bottom-0 top-10 z-50 flex flex-col rounded-t-3xl bg-background", className)} {...props}>
       <div className="mx-auto my-3 h-2 w-[80px] shrink-0 rounded-full bg-muted-foreground/30" />
       {children}
     </DrawerPrimitive.Content>
   </DrawerPortal>);
 DrawerContent.displayName = "DrawerContent";
+const DrawerBody = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => <div className={cn("min-h-0 flex-1 overflow-y-auto", className)} {...props} />;
+DrawerBody.displayName = "DrawerBody";
 const DrawerHeader = ({
   className,
   ...props
@@ -34,7 +39,7 @@ DrawerHeader.displayName = "DrawerHeader";
 const DrawerFooter = ({
   className,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) => <div className={cn("sticky bottom-0 mt-auto flex flex-col gap-2 border-t bg-background p-4 pb-8", className)} {...props} />;
+}: React.HTMLAttributes<HTMLDivElement>) => <div className={cn("shrink-0 border-t bg-background p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]", className)} {...props} />;
 DrawerFooter.displayName = "DrawerFooter";
 const DrawerTitle = React.forwardRef<React.ElementRef<typeof DrawerPrimitive.Title>, React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Title>>(({
   className,
@@ -46,4 +51,4 @@ const DrawerDescription = React.forwardRef<React.ElementRef<typeof DrawerPrimiti
   ...props
 }, ref) => <DrawerPrimitive.Description ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />);
 DrawerDescription.displayName = DrawerPrimitive.Description.displayName;
-export { Drawer, DrawerPortal, DrawerOverlay, DrawerTrigger, DrawerClose, DrawerContent, DrawerHeader, DrawerFooter, DrawerTitle, DrawerDescription };
+export { Drawer, DrawerPortal, DrawerOverlay, DrawerTrigger, DrawerClose, DrawerContent, DrawerBody, DrawerHeader, DrawerFooter, DrawerTitle, DrawerDescription };
