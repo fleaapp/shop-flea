@@ -338,10 +338,10 @@ const OrderChat = () => {
               e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
             }}
             placeholder="Type a message..."
-            className="flex-1 rounded-2xl bg-muted border-none px-4 py-2.5 text-sm resize-none min-h-[40px] max-h-[120px] outline-none"
+            className="flex-1 rounded-2xl bg-muted border-none px-4 py-3 text-sm resize-none min-h-[48px] max-h-[120px] outline-none"
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
             disabled={sending}
-            rows={1}
+            rows={2}
           />
           <button onClick={handleSend} disabled={!newMessage.trim() || sending}
             className="p-2 rounded-full bg-charcoal text-white disabled:opacity-40 transition-colors shrink-0 mb-0.5">
