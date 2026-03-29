@@ -869,7 +869,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
           })()}
           
           {/* Buttons */}
-          <div className="p-6 flex gap-4">
+          <div className="p-6 pb-10 flex gap-4">
             <Button
               variant="outline"
               onClick={handleReset}
