@@ -184,7 +184,7 @@ const ChatConversation = () => {
       </div>
 
       {/* Input */}
-      <div className="sticky bottom-0 bg-background border-t border-border px-4 py-3">
+      <div className="sticky bottom-0 bg-background border-t border-border px-4 pt-3 pb-8">
         {isResolved ? (
           <p className="text-center text-sm text-muted-foreground py-2">This conversation is resolved.</p>
         ) : (
