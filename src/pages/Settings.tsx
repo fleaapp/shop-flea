@@ -51,7 +51,8 @@ const Settings = () => {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
         setNotificationsEnabled(true);
-        toast.success('🔔 Notifications enabled!');
+        // Also trigger the full push subscription save
+        triggerSubscribe();
       } else if (permission === 'denied') {
         setNotificationsEnabled(false);
         toast.error('Notifications blocked. Enable them in your browser/device settings.');
