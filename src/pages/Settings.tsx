@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -31,6 +31,35 @@ const Settings = () => {
   const {
     total: supportUnread
   } = useUnreadSupport();
+
+  // Notifications toggle state
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  useEffect(() => {
+    if ('Notification' in window) {
+      setNotificationsEnabled(Notification.permission === 'granted');
+    }
+  }, []);
+
+  const handleToggleNotifications = async (checked: boolean) => {
+    if (!('Notification' in window)) {
+      toast.error('Notifications are not supported in this browser');
+      return;
+    }
+    if (checked) {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        setNotificationsEnabled(true);
+        toast.success('🔔 Notifications enabled!');
+      } else if (permission === 'denied') {
+        setNotificationsEnabled(false);
+        toast.error('Notifications blocked. Enable them in your browser/device settings.');
+      } else {
+        setNotificationsEnabled(false);
+      }
+    } else {
+      toast('To disable notifications, use your browser or device settings.');
+    }
+  };
 
   // Get pause_selling from profile
   const pauseSelling = (profile as any)?.pause_selling || false;
@@ -111,6 +140,12 @@ const Settings = () => {
       toggle: true,
       checked: pauseSelling,
       onToggle: handleTogglePauseSelling
+    }, {
+      icon: <span className="text-base">🔔</span>,
+      label: 'Notifications',
+      toggle: true,
+      checked: notificationsEnabled,
+      onToggle: handleToggleNotifications
     }]
   }, {
     title: 'Support',
