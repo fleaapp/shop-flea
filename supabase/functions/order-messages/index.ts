@@ -341,12 +341,45 @@ async function getUsername(userId: string, authHeader?: string | null): Promise<
   return profileResponse.data?.username ?? "user";
 }
 
+async function firePushNotification(payload: NotificationInsert) {
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? `https://teaicrimlqdayqpmxasc.supabase.co`;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const res = await fetch(`${supabaseUrl}/functions/v1/send-push-notification`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({
+        user_id: payload.user_id,
+        notification: {
+          type: payload.type,
+          title: payload.title,
+          message: payload.message,
+          related_listing_id: payload.related_listing_id,
+          related_order_id: payload.related_order_id,
+          related_thread_id: payload.related_thread_id,
+        },
+      }),
+    });
+    const text = await res.text();
+    console.log("[order-messages] Push result:", res.status, text);
+  } catch (e) {
+    console.error("[order-messages] Push fire error:", e);
+  }
+}
+
 async function insertNotificationWithFallback(
   extClient: ExternalClient,
   payload: NotificationInsert,
 ) {
   const { error } = await extClient.from("notifications").insert(payload);
-  if (!error) return;
+  if (!error) {
+    // Fire push notification directly since external DB triggers can't call our edge functions
+    await firePushNotification(payload);
+    return;
+  }
 
   const errorText = `${error.message ?? ""} ${error.details ?? ""}`;
   const missingOptionalColumn =
@@ -370,6 +403,9 @@ async function insertNotificationWithFallback(
     .insert(fallbackPayload);
 
   if (fallbackError) throw fallbackError;
+
+  // Fire push even on fallback path
+  await firePushNotification(payload);
 }
 
 async function insertOrderMessage(
