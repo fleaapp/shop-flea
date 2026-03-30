@@ -87,10 +87,15 @@ export function usePushNotifications() {
       }
     } catch (err) {
       console.error('[Push] Subscription error:', err);
+      toast.error(`Push error: ${err instanceof Error ? err.message : String(err)}`);
     }
   }, [user?.id]);
 
+  // Auto-subscribe on mount
   useEffect(() => {
     subscribe();
   }, [subscribe]);
+
+  // Expose for manual trigger
+  return { triggerSubscribe: () => { subscribedRef.current = false; subscribe(); } };
 }
