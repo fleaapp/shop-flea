@@ -325,9 +325,9 @@ const OrderChat = () => {
       </div>
 
       {!isReadOnly && !messagesError && (
-        <div className="sticky bottom-0 bg-background border-t border-border px-4 pt-3 pb-8 flex items-end gap-2">
+        <div className="sticky bottom-0 bg-background border-t border-border px-4 pt-3 pb-8 flex items-center gap-2">
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
-          <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-muted transition-colors shrink-0 mb-0.5" disabled={sending}>
+          <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-muted transition-colors shrink-0" disabled={sending}>
             <Image className="h-5 w-5 text-muted-foreground" />
           </button>
           <textarea
@@ -344,7 +344,7 @@ const OrderChat = () => {
             rows={2}
           />
           <button onClick={handleSend} disabled={!newMessage.trim() || sending}
-            className="p-2 rounded-full bg-charcoal text-white disabled:opacity-40 transition-colors shrink-0 mb-0.5">
+            className="p-2 rounded-full bg-charcoal text-white disabled:opacity-40 transition-colors shrink-0">
             <Send className="h-5 w-5" />
           </button>
         </div>
