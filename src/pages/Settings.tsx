@@ -140,6 +140,12 @@ const Settings = () => {
       toggle: true,
       checked: pauseSelling,
       onToggle: handleTogglePauseSelling
+    }, {
+      icon: <span className="text-base">🔔</span>,
+      label: 'Notifications',
+      toggle: true,
+      checked: notificationsEnabled,
+      onToggle: handleToggleNotifications
     }]
   }, {
     title: 'Support',
