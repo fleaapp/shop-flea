@@ -32,6 +32,35 @@ const Settings = () => {
     total: supportUnread
   } = useUnreadSupport();
 
+  // Notifications toggle state
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  useEffect(() => {
+    if ('Notification' in window) {
+      setNotificationsEnabled(Notification.permission === 'granted');
+    }
+  }, []);
+
+  const handleToggleNotifications = async (checked: boolean) => {
+    if (!('Notification' in window)) {
+      toast.error('Notifications are not supported in this browser');
+      return;
+    }
+    if (checked) {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        setNotificationsEnabled(true);
+        toast.success('🔔 Notifications enabled!');
+      } else if (permission === 'denied') {
+        setNotificationsEnabled(false);
+        toast.error('Notifications blocked. Enable them in your browser/device settings.');
+      } else {
+        setNotificationsEnabled(false);
+      }
+    } else {
+      toast('To disable notifications, use your browser or device settings.');
+    }
+  };
+
   // Get pause_selling from profile
   const pauseSelling = (profile as any)?.pause_selling || false;
   const handleRefreshDiscarded = async () => {
