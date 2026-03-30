@@ -32,6 +32,7 @@ const Settings = () => {
   const {
     total: supportUnread
   } = useUnreadSupport();
+  const { triggerSubscribe } = usePushNotifications();
 
   // Notifications toggle state
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
