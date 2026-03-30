@@ -188,9 +188,9 @@ const ChatConversation = () => {
         {isResolved ? (
           <p className="text-center text-sm text-muted-foreground py-2">This conversation is resolved.</p>
         ) : (
-          <div className="flex items-end gap-2">
+          <div className="flex items-center gap-2">
             <input ref={fileRef} type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-            <button onClick={() => fileRef.current?.click()} className="text-muted-foreground pb-2.5">📎</button>
+            <button onClick={() => fileRef.current?.click()} className="text-muted-foreground">📎</button>
             <div className="flex-1 relative">
               {file && (
                 <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
