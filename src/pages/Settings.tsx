@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
