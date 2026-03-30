@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
