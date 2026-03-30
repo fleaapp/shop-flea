@@ -25,8 +25,8 @@ export function usePushNotifications() {
 
     // Don't run in preview/iframe
     const isInIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
-    const isPreview = window.location.hostname.includes('id-preview--') || window.location.hostname.includes('lovableproject.com');
-    if (isInIframe || isPreview) return;
+    const isEditorPreview = window.location.hostname.includes('id-preview--');
+    if (isInIframe || isEditorPreview) return;
 
     try {
       // Register the push service worker
