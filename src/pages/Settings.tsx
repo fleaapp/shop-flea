@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -31,6 +32,7 @@ const Settings = () => {
   const {
     total: supportUnread
   } = useUnreadSupport();
+  const { triggerSubscribe } = usePushNotifications();
 
   // Notifications toggle state
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
@@ -49,7 +51,8 @@ const Settings = () => {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
         setNotificationsEnabled(true);
-        toast.success('🔔 Notifications enabled!');
+        // Also trigger the full push subscription save
+        triggerSubscribe();
       } else if (permission === 'denied') {
         setNotificationsEnabled(false);
         toast.error('Notifications blocked. Enable them in your browser/device settings.');
