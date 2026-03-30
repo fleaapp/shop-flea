@@ -16,7 +16,7 @@ self.addEventListener('push', (event) => {
     badge: payload.badge || '/pwa-icon-192.png',
     data: payload.data || {},
     vibrate: [100, 50, 100],
-    tag: payload.data?.type || 'flea-notification',
+    tag: (payload.data?.type || 'flea-notification') + '-' + Date.now(),
     renotify: true,
   };
 
