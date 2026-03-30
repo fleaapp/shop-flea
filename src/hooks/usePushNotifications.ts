@@ -79,9 +79,10 @@ export function usePushNotifications() {
 
       if (error) {
         console.error('[Push] Failed to save subscription:', JSON.stringify(error));
-        toast.error('Failed to register push notifications');
+        toast.error(`Push save failed: ${error.message || error.code || 'Unknown error'}`);
       } else {
         console.log('[Push] Subscription saved successfully!');
+        toast.success('🔔 Push notifications activated!');
         subscribedRef.current = true;
       }
     } catch (err) {
