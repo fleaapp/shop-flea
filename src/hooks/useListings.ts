@@ -184,15 +184,13 @@ export const useListings = (filters?: ListingFilters) => {
         );
       }
       
-      // Preload seller avatars and listing images in the background
-      const avatarUrls = listingsWithProfiles
-        .map(l => l.profiles?.avatar_url)
-        .filter((url): url is string => !!url);
+      // Only preload the first few listing images (visible in swipe stack)
       const listingImageUrls = listingsWithProfiles
-        .flatMap(l => l.images?.slice(0, 1) || []) // First image of each listing
+        .slice(0, 3)
+        .flatMap(l => l.images?.slice(0, 1) || [])
         .filter(Boolean);
-      if (avatarUrls.length > 0 || listingImageUrls.length > 0) {
-        preloadImages([...avatarUrls, ...listingImageUrls]);
+      if (listingImageUrls.length > 0) {
+        preloadImages(listingImageUrls);
       }
       
       setListings(listingsWithProfiles);
