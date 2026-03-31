@@ -1,7 +1,7 @@
 /**
  * Utility for optimizing Supabase storage image URLs.
- * Avatars use Supabase image transforms (small square crops are fine).
- * Listing images pass through as-is to avoid unwanted cropping.
+ * Uses Supabase CDN image transforms for thumbnails to drastically reduce payload.
+ * Avatars pass through as-is (already compressed on upload).
  */
 
 const SUPABASE_STORAGE_HOST = 'dzglehiopfgfjmxtejve.supabase.co/storage';
@@ -18,15 +18,12 @@ const getTransformedUrl = (
     '/storage/v1/render/image/public/'
   );
   const [base, queryString] = transformed.split('?');
-  // Preserve existing query params (like cache-busting ?t=) alongside transform params
   const existingParams = queryString ? `&${queryString}` : '';
   return `${base}?width=${width}&quality=${quality}${existingParams}`;
 };
 
 /**
  * Avatar URL — pass-through since avatars are already compressed to 400x400 on upload.
- * We skip the transform endpoint because it crops/zooms beyond what the user cropped,
- * and its CDN cache doesn't respect cache-busting params.
  */
 export const getAvatarUrl = (url: string | null | undefined): string => {
   if (!url) return '';
@@ -34,17 +31,19 @@ export const getAvatarUrl = (url: string | null | undefined): string => {
 };
 
 /**
- * Listing card thumbnail — pass-through to avoid cropping.
+ * Listing card thumbnail — use CDN transform for fast loading (~50KB vs 1-3MB).
+ * Width 400 covers mobile card widths at 2x DPR with quality 75.
  */
 export const getCardImageUrl = (url: string | null | undefined): string => {
   if (!url) return '';
-  return url;
+  return getTransformedUrl(url, 400, 75);
 };
 
 /**
- * Full listing detail image — pass-through to avoid cropping.
+ * Full listing detail image — use CDN transform at higher quality.
+ * Width 800 covers full-width mobile at 2x DPR.
  */
 export const getDetailImageUrl = (url: string | null | undefined): string => {
   if (!url) return '';
-  return url;
+  return getTransformedUrl(url, 800, 85);
 };
