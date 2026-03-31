@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { compressImage } from '@/utils/imageCompression';
 import ReviewPhotoCropDialog from '@/components/ReviewPhotoCropDialog';
+import { sendPushNotification } from '@/utils/pushNotify';
 
 interface WriteReviewDrawerProps {
   orderId: string;
@@ -134,6 +135,12 @@ function WriteReviewDrawer({
       });
       
       toast.success('Review submitted!');
+      // Send push notification to the reviewed user
+      sendPushNotification(reviewedUserId, {
+        type: 'new_review',
+        title: 'New Review',
+        message: `⭐ You received a ${rating}-star review!`,
+      }).catch(() => {});
       setRating(0);
       setComment('');
       setPhotoFile(null);

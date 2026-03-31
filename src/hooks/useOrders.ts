@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { preloadImages } from '@/utils/preloadAssets';
 import { toast } from 'sonner';
+import { sendPushNotification } from '@/utils/pushNotify';
 
 export type OrderStatus = 'awaiting' | 'shipped' | 'delivered';
 
@@ -257,9 +258,22 @@ export function useOrders() {
       const { error } = await query;
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       toast.success('Order marked as shipped');
+      // Push notification to buyer - find the order to get buyer_id
+      const order = sellerOrders.find(o =>
+        variables.orderGroupId ? o.order_group_id === variables.orderGroupId : o.id === variables.orderId
+      );
+      if (order) {
+        sendPushNotification(order.buyer_id, {
+          type: 'order_shipped',
+          title: 'Order Shipped',
+          message: `📦 Your order ${order.listing?.title || 'item'} is on the way!`,
+          related_listing_id: order.listing_id,
+          related_order_id: order.id,
+        }).catch(() => {});
+      }
     },
     onError: (error) => {
       console.error('Error marking as shipped:', error);
@@ -290,9 +304,24 @@ export function useOrders() {
       const { error } = await query;
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       toast.success('Order marked as delivered');
+      // Push notification to buyer (delivered confirmation)
+      const oid = typeof variables === 'string' ? variables : variables.orderId;
+      const ogid = typeof variables === 'string' ? undefined : variables.orderGroupId;
+      const order = buyerOrders.find(o =>
+        ogid ? o.order_group_id === ogid : o.id === oid
+      );
+      if (order) {
+        sendPushNotification(order.buyer_id, {
+          type: 'order_delivered',
+          title: 'Order Delivered',
+          message: `Delivered! Your order ${order.listing?.title || 'item'} is home safe 🏠`,
+          related_listing_id: order.listing_id,
+          related_order_id: order.id,
+        }).catch(() => {});
+      }
     },
     onError: (error) => {
       console.error('Error marking as delivered:', error);
