@@ -26,6 +26,7 @@ import ReportDialog from '@/components/ReportDialog';
 import { useContentModeration } from '@/hooks/useContentModeration';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
+import { sendPushNotification } from '@/utils/pushNotify';
 
 interface Comment {
   id: string;
