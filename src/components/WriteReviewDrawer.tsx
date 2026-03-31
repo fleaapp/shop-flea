@@ -135,6 +135,12 @@ function WriteReviewDrawer({
       });
       
       toast.success('Review submitted!');
+      // Send push notification to the reviewed user
+      sendPushNotification(reviewedUserId, {
+        type: 'new_review',
+        title: 'New Review',
+        message: `⭐ You received a ${rating}-star review!`,
+      }).catch(() => {});
       setRating(0);
       setComment('');
       setPhotoFile(null);
