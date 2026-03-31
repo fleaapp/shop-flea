@@ -119,11 +119,14 @@ serve(async (req) => {
         };
 
         console.log(`[Push] Sending to endpoint: ${sub.endpoint.slice(0, 60)}...`);
-        await webpush.sendNotification(pushSubscription, pushPayload);
+        console.log(`[Push] Subscription updated_at: ${sub.updated_at}, created_at: ${sub.created_at}`);
+        
+        const result = await webpush.sendNotification(pushSubscription, pushPayload);
         sent++;
-        console.log(`[Push] Successfully sent to endpoint`);
+        console.log(`[Push] Success! Status: ${result.statusCode}, Headers: ${JSON.stringify(result.headers)}`);
       } catch (e: any) {
         console.error(`[Push] Failed for endpoint:`, e?.statusCode, e?.body || e?.message);
+        console.error(`[Push] Full error:`, JSON.stringify({ statusCode: e?.statusCode, body: e?.body, message: e?.message, headers: e?.headers }));
         if (e?.statusCode === 404 || e?.statusCode === 410) {
           staleEndpoints.push(sub.endpoint);
         }

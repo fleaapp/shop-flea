@@ -1,5 +1,8 @@
-// Push notification service worker — runs independently from VitePWA workbox SW
+// Push notification handler — imported into VitePWA workbox SW via importScripts
+// v2 — 2026-03-31
+
 self.addEventListener('push', (event) => {
+  console.log('[push-sw] Push event received!', event?.data ? 'has data' : 'no data');
   if (!event.data) return;
 
   let payload;
@@ -8,6 +11,8 @@ self.addEventListener('push', (event) => {
   } catch {
     payload = { title: 'Flea', body: event.data.text() };
   }
+
+  console.log('[push-sw] Payload:', JSON.stringify(payload).slice(0, 200));
 
   const title = payload.title || 'Flea';
   const options = {
@@ -57,3 +62,5 @@ self.addEventListener('notificationclick', (event) => {
     })
   );
 });
+
+console.log('[push-sw] Push handler loaded and registered');
