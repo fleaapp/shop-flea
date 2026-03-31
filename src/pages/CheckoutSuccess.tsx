@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Listing } from '@/types/listing';
 import { SellerShippingInfo } from '@/utils/shippingCalculator';
 import OrderSuccessDialog from '@/components/OrderSuccessDialog';
+import { sendPushNotification } from '@/utils/pushNotify';
 
 const CheckoutSuccess = () => {
   const navigate = useNavigate();
@@ -91,6 +92,60 @@ const CheckoutSuccess = () => {
         });
 
         await Promise.all(orderPromises);
+
+        // Fire push notifications for item sold (seller + cart/wishlist users)
+        // The DB trigger inserts notifications, but push must be triggered explicitly
+        const uniqueSellers = [...new Set(items.map(i => i.sellerId))];
+        for (const sellerId of uniqueSellers) {
+          const sellerItems = items.filter(i => i.sellerId === sellerId);
+          sendPushNotification(sellerId, {
+            type: 'item_sold',
+            title: 'Item Sold',
+            message: `🎉🤑 Cha-ching! Your item "${sellerItems[0].title}" has just sold!`,
+            related_listing_id: sellerItems[0].id,
+          });
+        }
+
+        // Notify cart/wishlist users about sold items
+        for (const item of items) {
+          // Get users who had this item in cart (excluding buyer and seller)
+          const { data: cartUsers } = await supabase
+            .from('cart_items')
+            .select('user_id')
+            .eq('listing_id', item.id)
+            .neq('user_id', user.id)
+            .neq('user_id', item.sellerId);
+
+          const { data: wishlistUsers } = await supabase
+            .from('favorites')
+            .select('user_id')
+            .eq('listing_id', item.id)
+            .neq('user_id', user.id)
+            .neq('user_id', item.sellerId);
+
+          const cartUserIds = new Set((cartUsers || []).map(u => u.user_id));
+          const wishlistUserIds = new Set((wishlistUsers || []).map(u => u.user_id));
+
+          for (const uid of cartUserIds) {
+            const type = wishlistUserIds.has(uid) ? 'cart_wishlist_item_sold' : 'cart_item_sold';
+            sendPushNotification(uid, {
+              type,
+              title: 'Item Sold',
+              message: item.title,
+              related_listing_id: item.id,
+            });
+          }
+          for (const uid of wishlistUserIds) {
+            if (!cartUserIds.has(uid)) {
+              sendPushNotification(uid, {
+                type: 'wishlist_item_sold',
+                title: 'Item Sold',
+                message: item.title,
+                related_listing_id: item.id,
+              });
+            }
+          }
+        }
 
         // Remove items from cart
         items.forEach(item => removeFromCart(item.id));
