@@ -260,7 +260,7 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
           sendPushNotification(sellerId, {
             type: parentId ? 'new_comment' : 'new_comment',
             title: 'New Comment',
-            message: `${profile?.username || '@user'} commented on your listing`,
+            message: `${profile?.username || '@user'} commented on your listing.`,
             related_listing_id: listingId,
           })
         );
@@ -282,7 +282,7 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
             sendPushNotification(parentAuthorId, {
               type: 'comment_reply',
               title: 'Reply',
-              message: `${profile?.username || '@user'} replied to your comment`,
+              message: `${profile?.username || '@user'} replied to your comment.`,
               related_listing_id: listingId,
             })
           );
