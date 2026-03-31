@@ -47,16 +47,20 @@ export function usePushNotifications() {
       console.log('[Push] Permission:', permission);
       if (permission !== 'granted') return;
 
-      // Subscribe to push
-      let subscription = await registration.pushManager.getSubscription();
-      if (!subscription) {
-        console.log('[Push] Creating new subscription...');
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY).buffer as ArrayBuffer,
-        });
+      // Always unsubscribe + resubscribe to get a fresh endpoint
+      // iOS rotates push endpoints on PWA refresh, causing stale subscriptions
+      const existingSub = await registration.pushManager.getSubscription();
+      if (existingSub) {
+        console.log('[Push] Unsubscribing old endpoint to force refresh...');
+        await existingSub.unsubscribe();
       }
-      console.log('[Push] Got subscription endpoint:', subscription.endpoint?.slice(0, 50));
+
+      console.log('[Push] Creating fresh subscription...');
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY).buffer as ArrayBuffer,
+      });
+      console.log('[Push] Got subscription endpoint:', subscription.endpoint?.slice(0, 60));
 
       const subJson = subscription.toJSON();
       if (!subJson.endpoint || !subJson.keys?.p256dh || !subJson.keys?.auth) {
@@ -64,25 +68,24 @@ export function usePushNotifications() {
         return;
       }
 
-      // Save to database (upsert by user_id + endpoint)
-      console.log('[Push] Saving subscription for user:', user.id);
-      const { error } = await (supabase as any).from('push_subscriptions').upsert(
-        {
-          user_id: user.id,
-          endpoint: subJson.endpoint,
-          p256dh: subJson.keys.p256dh,
-          auth: subJson.keys.auth,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'user_id,endpoint' }
-      );
+      // Delete all old subscriptions for this user, then insert the fresh one
+      // This ensures only the current endpoint is stored
+      console.log('[Push] Replacing all subscriptions for user:', user.id);
+      await (supabase as any).from('push_subscriptions').delete().eq('user_id', user.id);
+
+      const { error } = await (supabase as any).from('push_subscriptions').insert({
+        user_id: user.id,
+        endpoint: subJson.endpoint,
+        p256dh: subJson.keys.p256dh,
+        auth: subJson.keys.auth,
+        updated_at: new Date().toISOString(),
+      });
 
       if (error) {
         console.error('[Push] Failed to save subscription:', JSON.stringify(error));
         toast.error(`Push save failed: ${error.message || error.code || 'Unknown error'}`);
       } else {
-        console.log('[Push] Subscription saved successfully!');
-        toast.success('🔔 Push notifications activated!');
+        console.log('[Push] Fresh subscription saved successfully!');
         subscribedRef.current = true;
       }
     } catch (err) {
