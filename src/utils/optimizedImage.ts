@@ -31,19 +31,17 @@ export const getAvatarUrl = (url: string | null | undefined): string => {
 };
 
 /**
- * Listing card thumbnail — use CDN transform for fast loading (~50KB vs 1-3MB).
- * Width 400 covers mobile card widths at 2x DPR with quality 75.
+ * Listing card thumbnail — pass-through (CDN transforms too slow on this plan).
  */
 export const getCardImageUrl = (url: string | null | undefined): string => {
   if (!url) return '';
-  return getTransformedUrl(url, 400, 75);
+  return url;
 };
 
 /**
- * Full listing detail image — use CDN transform at higher quality.
- * Width 800 covers full-width mobile at 2x DPR.
+ * Full listing detail image — pass-through.
  */
 export const getDetailImageUrl = (url: string | null | undefined): string => {
   if (!url) return '';
-  return getTransformedUrl(url, 800, 85);
+  return url;
 };
