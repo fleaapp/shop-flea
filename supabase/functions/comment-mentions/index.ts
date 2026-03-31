@@ -119,6 +119,36 @@ serve(async (req) => {
       throw insertError;
     }
 
+    // Send push notifications for each mentioned user (fire-and-forget)
+    const pushUrl = `${EXTERNAL_PUBLIC_URL}/functions/v1/send-push-notification`;
+    // We don't have the Cloud URL here, so call send-push via the external edge function URL
+    // Actually, send-push is on Lovable Cloud. Use the Cloud URL from env.
+    const cloudUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const cloudServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+    for (const notif of notificationsToInsert) {
+      try {
+        await fetch(`${cloudUrl}/functions/v1/send-push-notification`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${cloudServiceKey}`,
+          },
+          body: JSON.stringify({
+            user_id: notif.user_id,
+            notification: {
+              type: notif.type,
+              title: notif.title,
+              message: notif.message,
+              related_listing_id: notif.related_listing_id,
+            },
+          }),
+        });
+      } catch (pushErr) {
+        console.error("[comment-mentions] Push failed for user:", notif.user_id, pushErr);
+      }
+    }
+
     return json({ inserted: notificationsToInsert.length });
   } catch (error) {
     console.error("[comment-mentions] Failed to create mention notifications:", error);
