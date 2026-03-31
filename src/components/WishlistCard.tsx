@@ -60,13 +60,15 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused
         <div className="flex h-full flex-col overflow-hidden rounded-3xl bg-card p-3 max-[375px]:p-2 card-shadow">
           {/* Image with white border effect - takes remaining space */}
           <div
-            className="relative flex-1 min-h-0 overflow-hidden rounded-2xl"
+            className="relative flex-1 min-h-0 overflow-hidden rounded-2xl bg-muted"
             style={{ clipPath: 'inset(0 round calc(var(--radius) + 8px))' }}
           >
             <img 
               src={listing.image} 
               alt={listing.title} 
-            className={`h-full w-full object-cover block rounded-2xl ${isSold ? 'blur-[2px]' : ''}`}
+              className={`h-full w-full object-cover block rounded-2xl ${isSold ? 'blur-[2px]' : ''}`}
+              loading="lazy"
+              decoding="async"
             />
             
             {/* Sold overlay with sticker */}

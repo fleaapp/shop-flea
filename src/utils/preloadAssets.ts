@@ -91,5 +91,11 @@ const avatarAssets = [
   avatarCoin, avatarDartboard, avatarPlate, avatarGolfBall,
 ];
 
-// Fire-and-forget preload all static assets
-preloadImages([...staticAssets, ...avatarAssets]);
+// Defer preloading until after first paint so it doesn't block rendering
+const deferPreload = () => preloadImages([...staticAssets, ...avatarAssets]);
+
+if (typeof requestIdleCallback !== 'undefined') {
+  requestIdleCallback(deferPreload);
+} else {
+  setTimeout(deferPreload, 2000);
+}

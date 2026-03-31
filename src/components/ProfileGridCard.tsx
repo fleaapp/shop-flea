@@ -28,11 +28,13 @@ const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton }: ProfileGr
     }}>
       <div className="flex flex-col overflow-hidden rounded-2xl bg-card p-2 card-shadow">
         {/* Image */}
-        <div className="relative aspect-[4/5] overflow-hidden rounded-xl">
+        <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-muted">
           <img
             src={listing.images[0]}
             alt={listing.title}
             className="h-full w-full object-cover block rounded-xl"
+            loading="lazy"
+            decoding="async"
           />
 
           {/* Edit button - only for active listings */}
