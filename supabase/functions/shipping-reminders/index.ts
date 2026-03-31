@@ -73,6 +73,12 @@ Deno.serve(async (req) => {
       } else {
         sent3d++;
         console.log(`[3d] Sent reminder for order ${order.id}`);
+        await firePushNotification(order.seller_id, {
+          type: 'shipping_reminder_3d',
+          title: 'Shipping Reminder',
+          message: '🚨 Reminder: Your buyer is waiting 👀 Ship now & update tracking. 📦',
+          related_listing_id: order.listing_id,
+        });
       }
     }
 
