@@ -26,6 +26,7 @@ import ReportDialog from '@/components/ReportDialog';
 import { useContentModeration } from '@/hooks/useContentModeration';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
+import { sendPushNotification } from '@/utils/pushNotify';
 
 interface Comment {
   id: string;
@@ -250,6 +251,47 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
 
       if (error) throw error;
 
+      // Send push notifications for comment/reply (fire-and-forget)
+      const pushPromises: Promise<void>[] = [];
+
+      // Notify listing owner about new comment (if not the commenter)
+      if (sellerId !== user.id) {
+        pushPromises.push(
+          sendPushNotification(sellerId, {
+            type: parentId ? 'new_comment' : 'new_comment',
+            title: 'New Comment',
+            message: `${profile?.username || '@user'} commented on your listing`,
+            related_listing_id: listingId,
+          })
+        );
+      }
+
+      // Notify parent comment author about reply (if different from listing owner and commenter)
+      if (parentId) {
+        const allCachedComments = queryClient.getQueryData<Comment[]>(['listing-comments', listingId]);
+        let parentAuthorId: string | undefined;
+        if (allCachedComments) {
+          for (const c of allCachedComments) {
+            if (c.id === parentId) { parentAuthorId = c.user_id; break; }
+            const reply = c.replies?.find(r => r.id === parentId);
+            if (reply) { parentAuthorId = reply.user_id; break; }
+          }
+        }
+        if (parentAuthorId && parentAuthorId !== user.id && parentAuthorId !== sellerId) {
+          pushPromises.push(
+            sendPushNotification(parentAuthorId, {
+              type: 'comment_reply',
+              title: 'Reply',
+              message: `${profile?.username || '@user'} replied to your comment`,
+              related_listing_id: listingId,
+            })
+          );
+        }
+      }
+
+      Promise.all(pushPromises).catch(() => {});
+
+      // Handle @mentions
       const mentionHandles = Array.from(
         new Set(
           (trimmedContent.match(/@[\w]+/g) ?? [])
@@ -267,7 +309,6 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
 
           if (mentionError) throw mentionError;
         } catch (notifError) {
-          // Don't fail the comment if mention notification fails
           console.error('Failed to send mention notifications:', notifError);
         }
       }
