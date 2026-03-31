@@ -36,11 +36,10 @@ export function usePushNotifications() {
     }
 
     try {
-      // Register the push service worker
-      console.log('[Push] Registering service worker...');
-      const registration = await navigator.serviceWorker.register('/push-sw.js', { scope: '/' });
-      await navigator.serviceWorker.ready;
-      console.log('[Push] Service worker ready');
+      // Use the existing VitePWA service worker (which imports push-sw.js via importScripts)
+      console.log('[Push] Waiting for service worker...');
+      const registration = await navigator.serviceWorker.ready;
+      console.log('[Push] Service worker ready, scope:', registration.scope);
 
       // Check permission
       const permission = await Notification.requestPermission();

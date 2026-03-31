@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => ({
         navigateFallbackDenylist: [/^\/~oauth/],
         globPatterns: ['**/*.{js,css,html,ico,woff,woff2}'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        importScripts: ['/push-sw.js'],
       },
       manifest: {
         name: "Flea",
