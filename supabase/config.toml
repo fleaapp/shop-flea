@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.cleanup-stale-saved-listings]
 verify_jwt = false
+
+[functions.send-push-notification]
+verify_jwt = false
+
+[functions.comment-mentions]
+verify_jwt = false
