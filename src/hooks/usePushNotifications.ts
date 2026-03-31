@@ -41,6 +41,19 @@ export function usePushNotifications() {
       const registration = await navigator.serviceWorker.ready;
       console.log('[Push] Service worker ready, scope:', registration.scope);
 
+      // Force the SW to check for updates and activate new version immediately
+      try {
+        await registration.update();
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+          console.log('[Push] Activated waiting service worker');
+          // Give it a moment to activate
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      } catch (updateErr) {
+        console.log('[Push] SW update check:', updateErr);
+      }
+
       // Check permission
       const permission = await Notification.requestPermission();
       console.log('[Push] Permission:', permission);
