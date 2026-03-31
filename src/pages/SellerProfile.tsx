@@ -379,11 +379,13 @@ const SellerProfile = () => {
           viewMode === 'single' ? (
             <div className="flex gap-4 max-[430px]:gap-3 max-[375px]:gap-2.5">
               <div className="flex-shrink-0 w-[calc(50vw-128px)] max-[430px]:w-[calc(50vw-120px)] max-[393px]:w-[calc(50vw-104px)] max-[375px]:w-[calc(50vw-88px)]" />
-              {displayListings.map((listing) => (
+              {displayListings.map((listing) => {
+                const realId = listing.id.includes('::') ? listing.id.split('::')[0] : listing.id;
+                return (
                 <div key={listing.id} className="relative w-64 max-[430px]:w-60 max-[393px]:w-52 max-[375px]:w-44 flex-shrink-0 overflow-hidden rounded-3xl max-[375px]:rounded-2xl bg-card p-2.5 max-[430px]:p-2 max-[375px]:p-1.5 card-shadow snap-center">
                   <div 
                     className="aspect-[3/4] max-[430px]:aspect-[3/4] max-[393px]:aspect-[4/5] max-[375px]:aspect-[1/1] w-full overflow-hidden rounded-2xl max-[375px]:rounded-xl cursor-pointer"
-                    onClick={() => navigate(`/listing/${listing.id}`)}
+                    onClick={() => navigate(`/listing/${realId}`)}
                   >
                     <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
                   </div>
@@ -407,7 +409,8 @@ const SellerProfile = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
               <div className="flex-shrink-0 w-[calc(50vw-128px)] max-[430px]:w-[calc(50vw-120px)] max-[393px]:w-[calc(50vw-104px)] max-[375px]:w-[calc(50vw-88px)]" />
             </div>
           ) : (
