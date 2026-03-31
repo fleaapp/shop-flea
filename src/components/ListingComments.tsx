@@ -282,7 +282,7 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
             sendPushNotification(parentAuthorId, {
               type: 'comment_reply',
               title: 'Reply',
-              message: `${profile?.username || '@user'} replied to your comment`,
+              message: `${profile?.username || '@user'} replied to your comment.`,
               related_listing_id: listingId,
             })
           );
