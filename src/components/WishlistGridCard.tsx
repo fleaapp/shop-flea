@@ -60,13 +60,15 @@ const WishlistGridCard = ({ listing, onRemove, onAddToCart, isSold = false, isPa
         <div className="flex flex-col overflow-hidden rounded-2xl bg-card p-2 card-shadow">
           {/* Image */}
           <div
-            className="relative aspect-[4/5] overflow-hidden rounded-xl"
+            className="relative aspect-[4/5] overflow-hidden rounded-xl bg-muted"
             style={{ clipPath: 'inset(0 round calc(var(--radius) + 4px))' }}
           >
             <img
               src={listing.image}
               alt={listing.title}
               className={`h-full w-full object-cover block rounded-xl ${isSold ? 'blur-[2px]' : ''}`}
+              loading="lazy"
+              decoding="async"
             />
 
             {isSold && (
