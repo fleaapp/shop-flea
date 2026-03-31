@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Listing } from '@/types/listing';
 import { SellerShippingInfo } from '@/utils/shippingCalculator';
 import OrderSuccessDialog from '@/components/OrderSuccessDialog';
+import { sendPushNotification } from '@/utils/pushNotify';
 
 const CheckoutSuccess = () => {
   const navigate = useNavigate();
