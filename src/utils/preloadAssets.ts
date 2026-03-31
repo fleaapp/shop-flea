@@ -47,9 +47,14 @@ import listingJacket from '@/assets/listing-jacket.jpg';
 import listingSneakers from '@/assets/listing-sneakers.jpg';
 import listingSweater from '@/assets/listing-sweater.jpg';
 
-const staticAssets = [
+// Only preload the most critical assets immediately (logo + auth)
+const criticalAssets = [
   fleaLogo,
   fleaLogoAuth,
+];
+
+// Everything else is deferred until well after first paint
+const deferredAssets = [
   fleaLogoReceipt,
   fleaLogoTransparent,
   fleaLogoWelcome,
@@ -91,11 +96,14 @@ const avatarAssets = [
   avatarCoin, avatarDartboard, avatarPlate, avatarGolfBall,
 ];
 
-// Defer preloading until after first paint so it doesn't block rendering
-const deferPreload = () => preloadImages([...staticAssets, ...avatarAssets]);
+// Preload critical assets immediately (logo only)
+preloadImages(criticalAssets);
+
+// Defer non-critical assets with a longer delay
+const deferPreload = () => preloadImages([...deferredAssets, ...avatarAssets]);
 
 if (typeof requestIdleCallback !== 'undefined') {
-  requestIdleCallback(deferPreload);
+  requestIdleCallback(deferPreload, { timeout: 10000 });
 } else {
-  setTimeout(deferPreload, 2000);
+  setTimeout(deferPreload, 5000);
 }
