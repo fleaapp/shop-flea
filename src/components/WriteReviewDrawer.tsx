@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { compressImage } from '@/utils/imageCompression';
 import ReviewPhotoCropDialog from '@/components/ReviewPhotoCropDialog';
+import { sendPushNotification } from '@/utils/pushNotify';
 
 interface WriteReviewDrawerProps {
   orderId: string;
