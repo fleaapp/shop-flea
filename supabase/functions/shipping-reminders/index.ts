@@ -120,6 +120,12 @@ Deno.serve(async (req) => {
       } else {
         sent6d++;
         console.log(`[6d] Sent reminder for order ${order.id}`);
+        await firePushNotification(order.seller_id, {
+          type: 'shipping_reminder_6d',
+          title: 'Urgent Shipping Reminder',
+          message: '🚨 Urgent action needed: Your sale is 6 days overdue. Ship today to avoid issues. 🚚',
+          related_listing_id: order.listing_id,
+        });
       }
     }
 

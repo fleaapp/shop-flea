@@ -155,6 +155,13 @@ const PaymentMethodsSection = () => {
             title: 'Stripe Action Required',
             message: '⚠️ Your Stripe payouts are paused. Tap here to visit Stripe and complete verification.',
           });
+          // Fire push notification explicitly
+          const { sendPushNotification } = await import('@/utils/pushNotify');
+          sendPushNotification(user.id, {
+            type: 'payment_action_required',
+            title: 'Payment Action Required',
+            message: '⚠️ Your Stripe payouts are paused. Tap here to visit Stripe and complete verification.',
+          });
         }
       } else if (data?.detailsSubmitted && data?.accountId) {
         // Details submitted but under review - NOT fully connected yet
