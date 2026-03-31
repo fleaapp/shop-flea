@@ -312,8 +312,14 @@ const ListingDetails = () => {
 
   if (!listing) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background gap-4 px-4">
         <p className="text-muted-foreground">Listing not found</p>
+        <button
+          onClick={() => navigate(-1)}
+          className="rounded-full bg-primary px-6 py-3 text-primary-foreground font-medium"
+        >
+          Go Back
+        </button>
       </div>
     );
   }

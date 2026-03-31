@@ -21,7 +21,11 @@ const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton }: ProfileGr
   const navigate = useNavigate();
 
   return (
-    <div className="w-full cursor-pointer" onClick={() => navigate(`/listing/${(listing as any).source_listing_id || listing.id}`)}>
+    <div className="w-full cursor-pointer" onClick={() => {
+      const rawId = (listing as any).source_listing_id || listing.id;
+      const realId = typeof rawId === 'string' && rawId.includes('::') ? rawId.split('::')[0] : rawId;
+      navigate(`/listing/${realId}`);
+    }}>
       <div className="flex flex-col overflow-hidden rounded-2xl bg-card p-2 card-shadow">
         {/* Image */}
         <div className="relative aspect-[4/5] overflow-hidden rounded-xl">
