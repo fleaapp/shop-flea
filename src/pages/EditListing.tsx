@@ -311,36 +311,53 @@ const EditListing = () => {
       const newImageUrls = await uploadImages();
       const allImages = [...existingImages, ...newImageUrls];
       
+      // Build update payload
+      const parsedPrice = parseFloat(itemPrice);
+      const parsedShipping = shippingPrice ? parseFloat(shippingPrice) : 0;
+
+      if (isNaN(parsedPrice) || parsedPrice <= 0) {
+        toast.error('Please enter a valid price');
+        setIsLoading(false);
+        return;
+      }
+
+      const updatePayload: Record<string, unknown> = {
+        title: productName,
+        description: description || null,
+        brand,
+        size,
+        category,
+        subcategory: subcategory || null,
+        condition,
+        colour: colours.length > 0 ? colours.join(', ') : null,
+        style: styles.length > 0 ? styles.join(', ') : null,
+        gender: fit || null,
+        price: parsedPrice,
+        shipping_price: isNaN(parsedShipping) ? 0 : parsedShipping,
+        images: allImages,
+        tags: [brand, category].filter(Boolean),
+        updated_at: new Date().toISOString(),
+      };
+
       // Update the listing
       const { error } = await supabase
         .from('listings')
-        .update({
-          title: productName,
-          description: description || null,
-          brand,
-          size,
-          category,
-          subcategory: subcategory || null,
-          condition,
-          colour: colours.length > 0 ? colours.join(', ') : null,
-          style: styles.length > 0 ? styles.join(', ') : null,
-          gender: fit || null,
-          price: parseFloat(itemPrice),
-          shipping_price: shippingPrice ? parseFloat(shippingPrice) : 0,
-          images: allImages,
-          tags: [brand, category].filter(Boolean),
-        })
-        .eq('id', id);
+        .update(updatePayload)
+        .eq('id', id)
+        .eq('user_id', user.id);
       
       if (error) {
-        throw error;
+        console.error('Supabase update error:', error);
+        toast.error(error.message || 'Failed to update listing. Please try again.');
+        setIsLoading(false);
+        return;
       }
       
       toast.success('✏️ Listing updated!');
       navigate('/profile');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating listing:', error);
-      toast.error('Failed to update listing. Please try again.');
+      toast.error(error?.message || 'Failed to update listing. Please try again.');
     } finally {
       setIsLoading(false);
     }
