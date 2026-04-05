@@ -37,6 +37,11 @@ interface ImageFile {
   preview: string;
 }
 
+const isMissingSubcategoryColumnError = (error: { code?: string; message?: string } | null | undefined) => {
+  if (!error) return false;
+  return error.code === '42703' && /subcategory/i.test(error.message ?? '');
+};
+
 const EditListing = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -60,6 +65,7 @@ const EditListing = () => {
   // Existing image URLs from the listing
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [expandedImageSrc, setExpandedImageSrc] = useState<string | null>(null);
+  const [supportsSubcategory, setSupportsSubcategory] = useState(true);
   
   const [productName, setProductName] = useState('');
   const [fit, setFit] = useState(''); // Gender/Fit selection
@@ -111,6 +117,9 @@ const EditListing = () => {
         navigate('/profile');
         return;
       }
+
+      const hasSubcategoryColumn = Object.prototype.hasOwnProperty.call(data, 'subcategory');
+      setSupportsSubcategory(hasSubcategoryColumn);
       
       // Check if user owns this listing
       if (data.user_id !== user?.id) {
@@ -123,7 +132,7 @@ const EditListing = () => {
       setSize(data.size);
       setBrand(data.brand);
       setCategory(data.category);
-      setSubcategory((data as any).subcategory || '');
+      setSubcategory(hasSubcategoryColumn ? (data as any).subcategory || '' : '');
       setCondition(data.condition);
       // Parse comma-separated colours/styles back into arrays
       setColours(data.colour ? data.colour.split(', ').map((c: string) => c.toLowerCase()) : []);
@@ -327,7 +336,6 @@ const EditListing = () => {
         brand,
         size,
         category,
-        subcategory: subcategory || null,
         condition,
         colour: colours.length > 0 ? colours.join(', ') : null,
         style: styles.length > 0 ? styles.join(', ') : null,
@@ -339,12 +347,30 @@ const EditListing = () => {
         updated_at: new Date().toISOString(),
       };
 
+      if (supportsSubcategory) {
+        updatePayload.subcategory = subcategory || null;
+      }
+
+      const runListingUpdate = (payload: Record<string, unknown>) => {
+        return supabase
+          .from('listings')
+          .update(payload)
+          .eq('id', id)
+          .eq('user_id', user.id);
+      };
+
       // Update the listing
-      const { error } = await supabase
-        .from('listings')
-        .update(updatePayload)
-        .eq('id', id)
-        .eq('user_id', user.id);
+      let { error } = await runListingUpdate(updatePayload);
+
+      if (error && supportsSubcategory && isMissingSubcategoryColumnError(error)) {
+        const { subcategory: _removedSubcategory, ...fallbackPayload } = updatePayload;
+        const retryResult = await runListingUpdate(fallbackPayload);
+        error = retryResult.error;
+
+        if (!error) {
+          setSupportsSubcategory(false);
+        }
+      }
       
       if (error) {
         console.error('Supabase update error:', error);
