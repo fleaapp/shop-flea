@@ -2,10 +2,11 @@ import { useState, type CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
 import { getCardImageUrl } from '@/utils/optimizedImage';
 
-const STACK_WIDTH = 112;
+const STACK_WIDTH = 128;
 const PRIMARY_SIZE = 80;
-const SECONDARY_SIZE = 66;
-const SECONDARY_TOP = 8;
+const SECONDARY_SIZE = 72;
+const SECONDARY_LEFT = 56;
+const SECONDARY_TOP = 4;
 const AVATAR_LEFT = 57;
 
 type ThumbnailTileProps = {
@@ -22,7 +23,10 @@ const ThumbnailTile = ({ src, alt, className, fallbackEmoji = '📦', style }: T
   if (!src || imageFailed) {
     return (
       <div
-        className={cn('flex items-center justify-center rounded-xl border-2 border-card bg-muted', className)}
+        className={cn(
+          'flex items-center justify-center overflow-hidden rounded-xl border-2 border-border bg-muted shadow-md ring-2 ring-card',
+          className,
+        )}
         style={style}
       >
         <span className="text-2xl">{fallbackEmoji}</span>
@@ -34,7 +38,7 @@ const ThumbnailTile = ({ src, alt, className, fallbackEmoji = '📦', style }: T
     <img
       src={getCardImageUrl(src)}
       alt={alt}
-      className={cn('rounded-xl border-2 border-card bg-muted object-cover', className)}
+      className={cn('overflow-hidden rounded-xl border-2 border-border bg-muted object-cover shadow-md ring-2 ring-card', className)}
       style={style}
       loading="lazy"
       decoding="async"
@@ -71,13 +75,14 @@ const OrderItemThumbnailStack = ({
       {hasMultipleItems && (
         <ThumbnailTile
           src={secondaryImage}
-          alt="Additional item image"
-          className="absolute right-0 shadow-sm"
+          alt="Second item image"
+          className="absolute"
           style={{
+            left: SECONDARY_LEFT,
             top: SECONDARY_TOP,
             width: SECONDARY_SIZE,
             height: SECONDARY_SIZE,
-            transform: 'rotate(6deg)',
+            transform: 'rotate(4deg)',
             zIndex: 1,
           }}
         />
@@ -86,7 +91,7 @@ const OrderItemThumbnailStack = ({
       <ThumbnailTile
         src={primaryImage}
         alt="Item image"
-        className="absolute left-0 top-0 h-20 w-20 shadow-sm"
+        className="absolute left-0 top-0 h-20 w-20"
         style={{ zIndex: 2 }}
       />
 
