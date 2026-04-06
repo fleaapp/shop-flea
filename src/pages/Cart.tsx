@@ -38,18 +38,29 @@ const getOrderStatusBadge = (status: Order['status']) => {
 };
 
 const ProductThumbnail = ({
-  image,
+  images,
   avatar,
 }: {
-  image: string;
+  images: string[];
   avatar: string;
 }) => (
-  <div className="relative h-20 w-20 flex-shrink-0">
-    <img src={image} alt="Product" className="h-full w-full rounded-xl object-cover" />
+  <div className="relative flex-shrink-0" style={{ width: images.length > 1 ? '5.75rem' : '5rem', height: '5rem' }}>
+    {images.length > 1 && (
+      <img
+        src={images[1]}
+        alt="Product 2"
+        className="absolute top-0 right-0 h-[4.5rem] w-[4.5rem] rounded-xl object-cover border-2 border-card"
+        style={{ zIndex: 1 }}
+      />
+    )}
+    <div className="absolute top-0 left-0 h-[5rem] w-[5rem]" style={{ zIndex: 2 }}>
+      <img src={images[0]} alt="Product" className="h-full w-full rounded-xl object-cover border-2 border-card" />
+    </div>
     <img
       src={avatar}
       alt="User"
-      className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full border-2 border-card object-cover"
+      className="absolute -bottom-1 h-7 w-7 rounded-full border-2 border-card object-cover"
+      style={{ zIndex: 3, left: images.length > 1 ? '3.25rem' : '3.5rem' }}
     />
   </div>
 );
@@ -207,7 +218,7 @@ const Cart = () => {
     const rawUsername = primaryOrder.seller_profile?.username || 'Unknown';
     const sellerUsername = rawUsername.startsWith('@') ? rawUsername.slice(1) : rawUsername;
     const sellerAvatar = getAvatarUrl(primaryOrder.seller_profile?.avatar_url) || getDefaultAvatar(primaryOrder.seller_id);
-    const productImage = primaryOrder.listing?.images?.[0] || '';
+    const productImages = group.orders.map(o => o.listing?.images?.[0] || '').filter(Boolean);
     const itemCount = group.orders.length;
     const unread = group.orders.reduce((sum, o) => sum + getGroupUnread(o.id), 0);
 
@@ -220,7 +231,7 @@ const Cart = () => {
           showShadow && "card-shadow"
         )}
       >
-        <ProductThumbnail image={productImage} avatar={sellerAvatar} />
+        <ProductThumbnail images={productImages.length ? productImages : ['']} avatar={sellerAvatar} />
         <div className="flex-1 min-w-0">
           <p className="text-sm text-foreground">
             From <span className="font-semibold">@{sellerUsername}</span>
