@@ -1,20 +1,30 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
 import { getCardImageUrl } from '@/utils/optimizedImage';
+
+const STACK_WIDTH = 112;
+const PRIMARY_SIZE = 80;
+const SECONDARY_SIZE = 66;
+const SECONDARY_TOP = 8;
+const AVATAR_LEFT = 57;
 
 type ThumbnailTileProps = {
   src?: string | null;
   alt: string;
   className?: string;
   fallbackEmoji?: string;
+  style?: CSSProperties;
 };
 
-const ThumbnailTile = ({ src, alt, className, fallbackEmoji = '📦' }: ThumbnailTileProps) => {
+const ThumbnailTile = ({ src, alt, className, fallbackEmoji = '📦', style }: ThumbnailTileProps) => {
   const [imageFailed, setImageFailed] = useState(false);
 
   if (!src || imageFailed) {
     return (
-      <div className={cn('flex items-center justify-center rounded-xl border-2 border-card bg-muted', className)}>
+      <div
+        className={cn('flex items-center justify-center rounded-xl border-2 border-card bg-muted', className)}
+        style={style}
+      >
         <span className="text-2xl">{fallbackEmoji}</span>
       </div>
     );
@@ -25,6 +35,7 @@ const ThumbnailTile = ({ src, alt, className, fallbackEmoji = '📦' }: Thumbnai
       src={getCardImageUrl(src)}
       alt={alt}
       className={cn('rounded-xl border-2 border-card bg-muted object-cover', className)}
+      style={style}
       loading="lazy"
       decoding="async"
       onError={() => setImageFailed(true)}
@@ -53,12 +64,22 @@ const OrderItemThumbnailStack = ({
   const secondaryImage = availableImages[1];
 
   return (
-    <div className={cn('relative h-20 flex-shrink-0 overflow-visible', hasMultipleItems ? 'w-[7rem]' : 'w-20', className)}>
+    <div
+      className={cn('relative h-20 flex-shrink-0 overflow-visible', className)}
+      style={{ width: hasMultipleItems ? STACK_WIDTH : PRIMARY_SIZE }}
+    >
       {hasMultipleItems && (
         <ThumbnailTile
           src={secondaryImage}
           alt="Additional item image"
-          className="absolute right-0 top-2 h-[4.15rem] w-[4.15rem] rotate-6 shadow-sm"
+          className="absolute right-0 shadow-sm"
+          style={{
+            top: SECONDARY_TOP,
+            width: SECONDARY_SIZE,
+            height: SECONDARY_SIZE,
+            transform: 'rotate(6deg)',
+            zIndex: 1,
+          }}
         />
       )}
 
@@ -66,13 +87,15 @@ const OrderItemThumbnailStack = ({
         src={primaryImage}
         alt="Item image"
         className="absolute left-0 top-0 h-20 w-20 shadow-sm"
+        style={{ zIndex: 2 }}
       />
 
       {avatarUrl ? (
         <img
           src={avatarUrl}
           alt={avatarAlt}
-          className="absolute -bottom-1 left-[3.55rem] h-7 w-7 rounded-full border-2 border-card bg-card object-cover"
+          className="absolute -bottom-1 h-7 w-7 rounded-full border-2 border-card bg-card object-cover"
+          style={{ left: AVATAR_LEFT, zIndex: 3 }}
           loading="lazy"
           decoding="async"
         />
