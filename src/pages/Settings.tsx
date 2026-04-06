@@ -75,9 +75,9 @@ const Settings = () => {
     }
   };
   const handleLogout = async () => {
+    navigate('/auth', { replace: true });
     await signOut();
     toast.success('Logged out');
-    navigate('/auth');
   };
   const handleTogglePauseSelling = async (checked: boolean) => {
     if (!user) return;
