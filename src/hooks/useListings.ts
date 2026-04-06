@@ -223,45 +223,63 @@ export const useUserListings = (status?: 'active' | 'sold' | 'archived') => {
       setLoading(true);
 
       if (status === 'sold') {
-        // Derive sold items from orders and preserve one card per sale transaction
-        const { data: orders, error: ordersError } = await supabase
-          .from('orders')
-          .select('id, listing_id, created_at')
-          .eq('seller_id', user.id)
-          .order('created_at', { ascending: false });
+        // Fetch orders AND listings marked as sold (includes "sold elsewhere")
+        const [ordersResult, soldListingsResult] = await Promise.all([
+          supabase
+            .from('orders')
+            .select('id, listing_id, created_at')
+            .eq('seller_id', user.id)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('listings')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('status', 'sold')
+            .order('updated_at', { ascending: false }),
+        ]);
 
-        if (ordersError || !orders || orders.length === 0) {
-          setListings([]);
-          setLoading(false);
-          return;
+        const orders = ordersResult.data || [];
+        const allSoldListings = soldListingsResult.data || [];
+
+        // Build order-based sold cards
+        const orderListingIds = new Set(orders.map(o => o.listing_id));
+        let orderedSoldListings: DbListing[] = [];
+
+        if (orders.length > 0) {
+          const listingIds = [...orderListingIds];
+          const { data } = await supabase
+            .from('listings')
+            .select('*')
+            .in('id', listingIds)
+            .eq('user_id', user.id);
+
+          if (data) {
+            const listingMap = new Map(data.map((listing) => [listing.id, listing]));
+            orderedSoldListings = orders
+              .map((order) => {
+                const listing = listingMap.get(order.listing_id);
+                if (!listing) return null;
+                return {
+                  ...listing,
+                  id: `${listing.id}::${order.id}`,
+                  source_listing_id: listing.id,
+                  order_id: order.id,
+                  created_at: order.created_at,
+                };
+              })
+              .filter((listing): listing is DbListing => !!listing);
+          }
         }
 
-        const listingIds = [...new Set(orders.map(o => o.listing_id))];
-        const { data, error } = await supabase
-          .from('listings')
-          .select('*')
-          .in('id', listingIds)
-          .eq('user_id', user.id);
+        // Add "sold elsewhere" listings (sold status but no order)
+        const soldElsewhere = allSoldListings
+          .filter(l => !orderListingIds.has(l.id))
+          .map(l => ({
+            ...l,
+            source_listing_id: l.id,
+          }));
 
-        if (!error && data) {
-          const listingMap = new Map(data.map((listing) => [listing.id, listing]));
-          const orderedSoldListings = orders
-            .map((order) => {
-              const listing = listingMap.get(order.listing_id);
-              if (!listing) return null;
-
-              return {
-                ...listing,
-                id: `${listing.id}::${order.id}`,
-                source_listing_id: listing.id,
-                order_id: order.id,
-                created_at: order.created_at,
-              };
-            })
-            .filter((listing): listing is DbListing => !!listing);
-
-          setListings(orderedSoldListings);
-        }
+        setListings([...orderedSoldListings, ...soldElsewhere]);
       } else {
         let query = supabase
           .from('listings')
