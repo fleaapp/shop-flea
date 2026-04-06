@@ -56,20 +56,29 @@ const ChatConversation = () => {
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 100);
   };
 
+  const fetchData = async () => {
+    if (!threadId || !user) return;
+    const [threadRes, msgRes] = await Promise.all([
+      (supabase as any).from('chat_threads').select('*').eq('id', threadId).maybeSingle(),
+      (supabase as any).from('chat_messages').select('*').eq('thread_id', threadId).order('created_at', { ascending: true }),
+    ]);
+    if (threadRes.data) setThread(threadRes.data);
+    if (msgRes.data) setMessages(msgRes.data);
+    scrollToBottom();
+  };
+
   // Fetch thread & messages
   useEffect(() => {
-    if (!threadId || !user) return;
-
-    const fetchData = async () => {
-      const [threadRes, msgRes] = await Promise.all([
-        (supabase as any).from('chat_threads').select('*').eq('id', threadId).maybeSingle(),
-        (supabase as any).from('chat_messages').select('*').eq('thread_id', threadId).order('created_at', { ascending: true }),
-      ]);
-      if (threadRes.data) setThread(threadRes.data);
-      if (msgRes.data) setMessages(msgRes.data);
-      scrollToBottom();
-    };
     fetchData();
+  }, [threadId, user]);
+
+  // Refetch when app returns from background (e.g. push notification tap)
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') fetchData();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
   }, [threadId, user]);
 
   // Real-time subscriptions
