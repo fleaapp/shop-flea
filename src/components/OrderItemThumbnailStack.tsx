@@ -2,13 +2,13 @@ import { useState, type CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
 import { getCardImageUrl } from '@/utils/optimizedImage';
 
-const STACK_WIDTH = 138;
-const PRIMARY_SIZE = 82;
-const SECONDARY_SIZE = 72;
-const SECONDARY_LEFT = 62;
-const SECONDARY_TOP = 6;
+const STACK_WIDTH = 148;
+const PRIMARY_SIZE = 84;
+const SECONDARY_SIZE = 76;
+const SECONDARY_LEFT = 70;
+const SECONDARY_TOP = 4;
 const AVATAR_SIZE = 28;
-const AVATAR_LEFT = 64;
+const AVATAR_LEFT = 56;
 
 const TILE_BASE_STYLE: CSSProperties = {
   position: 'absolute',
@@ -17,17 +17,18 @@ const TILE_BASE_STYLE: CSSProperties = {
   borderRadius: 16,
   border: '2px solid hsl(var(--border))',
   background: 'hsl(var(--muted))',
-  boxShadow: 'var(--shadow-card), 0 0 0 2px hsl(var(--card))',
+  boxShadow: '0 12px 24px -18px hsl(var(--foreground) / 0.45), var(--shadow-card), 0 0 0 2px hsl(var(--card))',
 };
 
 type ThumbnailTileProps = {
   src?: string | null;
   alt: string;
   fallbackEmoji?: string;
+  objectPosition?: CSSProperties['objectPosition'];
   style: CSSProperties;
 };
 
-const ThumbnailTile = ({ src, alt, fallbackEmoji = '📦', style }: ThumbnailTileProps) => {
+const ThumbnailTile = ({ src, alt, fallbackEmoji = '📦', objectPosition = 'center', style }: ThumbnailTileProps) => {
   const [imageFailed, setImageFailed] = useState(false);
 
   if (!src || imageFailed) {
@@ -54,6 +55,7 @@ const ThumbnailTile = ({ src, alt, fallbackEmoji = '📦', style }: ThumbnailTil
         ...TILE_BASE_STYLE,
         ...style,
         objectFit: 'cover',
+        objectPosition,
       }}
       loading="lazy"
       decoding="async"
@@ -97,12 +99,13 @@ const OrderItemThumbnailStack = ({
         <ThumbnailTile
           src={secondaryImage}
           alt="Second item image"
+          objectPosition="right center"
           style={{
             left: SECONDARY_LEFT,
             top: SECONDARY_TOP,
             width: SECONDARY_SIZE,
             height: SECONDARY_SIZE,
-            transform: 'rotate(6deg)',
+            transform: 'rotate(8deg)',
             zIndex: 1,
           }}
         />
