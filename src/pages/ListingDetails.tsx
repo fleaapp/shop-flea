@@ -689,60 +689,71 @@ const ListingDetails = () => {
               // Owner footer
               isSold ? (
                 // Sold listing owner footer
-                <div className="flex flex-col items-center gap-3.5">
-                  <div className="flex gap-3">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowReceiptDialog(true)}
-                      className="h-14 rounded-2xl border-2 text-sm font-medium px-5 bg-transparent w-44 gap-1"
-                    >
-                      🧾 Receipt
-                    </Button>
-                    {(() => {
-                      const order = sellerOrders.find(o => o.listing_id === listing.id);
-                      const orderGroup = sellerOrderGroups.find(g => g.orders.some(o => o.listing_id === listing.id));
-                      if (!order) return null;
-                      if (order.status === 'awaiting') {
-                        return (
-                          <Button
-                            onClick={() => {
-                              if (orderGroup) {
-                                setSelectedOrderGroup(orderGroup);
-                                setSalesSheetOpen(true);
-                              }
-                            }}
-                            className="h-14 rounded-2xl text-sm font-medium px-2 bg-[#ddfed7] text-foreground hover:bg-[#ddfed7]/80 border-2 border-[#ddfed7] w-44 gap-1"
-                          >
-                            📦 Mark as shipped
-                          </Button>
-                        );
-                      }
-                      return (
+                (() => {
+                  const order = sellerOrders.find(o => o.listing_id === listing.id);
+                  const orderGroup = sellerOrderGroups.find(g => g.orders.some(o => o.listing_id === listing.id));
+                  // Sold elsewhere — no order exists
+                  if (!order) {
+                    return (
+                      <div className="flex flex-col items-center gap-1">
+                        <p className="text-xs text-muted-foreground">Sold elsewhere</p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="flex flex-col items-center gap-3.5">
+                      <div className="flex gap-3">
                         <Button
                           variant="outline"
-                          onClick={() => {
-                            if (orderGroup) {
-                              setSelectedOrderGroup(orderGroup);
-                              setSalesSheetOpen(true);
-                            }
-                          }}
-                          className="h-14 rounded-2xl border-2 border-muted text-sm font-medium px-4 bg-muted text-muted-foreground w-44 gap-1"
+                          onClick={() => setShowReceiptDialog(true)}
+                          className="h-14 rounded-2xl border-2 text-sm font-medium px-5 bg-transparent w-44 gap-1"
                         >
-                          {order.status === 'shipped' ? '✈️ Shipped' : '🚚 Delivered'}
+                          🧾 Receipt
                         </Button>
-                      );
-                    })()}
-                  </div>
-                  <button
-                    onClick={() => {
-                      setOpen(false);
-                      setTimeout(() => navigate('/support'), 300);
-                    }}
-                    className="text-xs text-muted-foreground underline"
-                  >
-                    Need help?
-                  </button>
-                </div>
+                        {(() => {
+                          if (order.status === 'awaiting') {
+                            return (
+                              <Button
+                                onClick={() => {
+                                  if (orderGroup) {
+                                    setSelectedOrderGroup(orderGroup);
+                                    setSalesSheetOpen(true);
+                                  }
+                                }}
+                                className="h-14 rounded-2xl text-sm font-medium px-2 bg-[#ddfed7] text-foreground hover:bg-[#ddfed7]/80 border-2 border-[#ddfed7] w-44 gap-1"
+                              >
+                                📦 Mark as shipped
+                              </Button>
+                            );
+                          }
+                          return (
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                if (orderGroup) {
+                                  setSelectedOrderGroup(orderGroup);
+                                  setSalesSheetOpen(true);
+                                }
+                              }}
+                              className="h-14 rounded-2xl border-2 border-muted text-sm font-medium px-4 bg-muted text-muted-foreground w-44 gap-1"
+                            >
+                              {order.status === 'shipped' ? '✈️ Shipped' : '🚚 Delivered'}
+                            </Button>
+                          );
+                        })()}
+                      </div>
+                      <button
+                        onClick={() => {
+                          setOpen(false);
+                          setTimeout(() => navigate('/support'), 300);
+                        }}
+                        className="text-xs text-muted-foreground underline"
+                      >
+                        Need help?
+                      </button>
+                    </div>
+                  );
+                })()
               ) : (
                 // Active listing owner footer
                 <>
@@ -848,15 +859,15 @@ const ListingDetails = () => {
 
           {/* Mark as Sold Confirmation */}
           <AlertDialog open={showMarkAsSoldDialog} onOpenChange={setShowMarkAsSoldDialog}>
-            <AlertDialogContent className="max-w-[280px] rounded-2xl">
-              <AlertDialogHeader>
-                <AlertDialogTitle>Mark as sold?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This listing will be marked as sold. This action cannot be undone.
+            <AlertDialogContent className="max-w-[300px] rounded-2xl">
+              <AlertDialogHeader className="text-center">
+                <AlertDialogTitle className="text-balance">Sold elsewhere?</AlertDialogTitle>
+                <AlertDialogDescription className="leading-relaxed text-pretty">
+                  This will mark your listing as sold outside of Flea. This action cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="flex-row gap-2">
-                <AlertDialogCancel className="flex-1 mt-0">Cancel</AlertDialogCancel>
+                <AlertDialogCancel className="flex-1 mt-0 h-9 rounded-lg text-sm">Cancel</AlertDialogCancel>
                 <AlertDialogAction 
                   onClick={async () => {
                     const { error } = await supabase
@@ -872,7 +883,7 @@ const ListingDetails = () => {
                     }
                     setShowMarkAsSoldDialog(false);
                   }}
-                  className="flex-1"
+                  className="flex-1 h-9 rounded-lg text-sm"
                 >
                   Mark as sold
                 </AlertDialogAction>
