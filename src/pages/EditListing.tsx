@@ -53,6 +53,7 @@ const EditListing = () => {
   const [isFetching, setIsFetching] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMarkingSold, setIsMarkingSold] = useState(false);
+  const [showMarkSoldDialog, setShowMarkSoldDialog] = useState(false);
   const [sizeDrawerOpen, setSizeDrawerOpen] = useState(false);
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
   const [showShippingSettings, setShowShippingSettings] = useState(false);
@@ -769,13 +770,36 @@ const EditListing = () => {
           
           <Button
             type="button"
-            onClick={handleMarkAsSold}
+            onClick={() => setShowMarkSoldDialog(true)}
             disabled={isMarkingSold}
             className="h-12 px-6 rounded-full font-medium"
             style={{ backgroundColor: '#29303d', color: '#ddfed7' }}
           >
             {isMarkingSold ? 'Marking...' : 'Mark as sold'}
           </Button>
+
+          <AlertDialog open={showMarkSoldDialog} onOpenChange={setShowMarkSoldDialog}>
+            <AlertDialogContent className="max-w-[300px] rounded-2xl">
+              <AlertDialogHeader className="text-center">
+                <AlertDialogTitle className="text-balance">Sold elsewhere?</AlertDialogTitle>
+                <AlertDialogDescription className="leading-relaxed text-pretty">
+                  This will mark your listing as sold outside of Flea. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-row gap-2">
+                <AlertDialogCancel className="flex-1 mt-0 h-9 rounded-lg text-sm">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    setShowMarkSoldDialog(false);
+                    handleMarkAsSold();
+                  }}
+                  className="flex-1 h-9 rounded-lg text-sm"
+                >
+                  Mark as sold
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           
           <Button
             type="submit"
