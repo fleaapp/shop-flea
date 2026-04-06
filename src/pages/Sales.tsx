@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import BottomNav from '@/components/BottomNav';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
+import OrderItemThumbnailStack from '@/components/OrderItemThumbnailStack';
 import { useOrders, Order, OrderGroup } from '@/hooks/useOrders';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { cn } from '@/lib/utils';
@@ -20,48 +21,6 @@ const getStatusBadge = (status: Order['status']) => {
       return { label: 'Delivered', className: 'bg-muted text-muted-foreground' };
   }
 };
-
-const ProductThumbnail = ({ images, avatar, fallbackEmoji }: { images: string[]; avatar?: string; fallbackEmoji?: string }) => (
-  <div className={cn('relative h-20 flex-shrink-0', images.length > 1 ? 'w-[6.5rem]' : 'w-20')}>
-    {images.length > 1 && images[1] && (
-      <img
-        src={images[1]}
-        alt="Product 2"
-        className="absolute right-0 top-3 h-16 w-16 rounded-xl border-2 border-card object-cover"
-        style={{ zIndex: 1 }}
-      />
-    )}
-    <div className="absolute left-0 top-0 h-20 w-20" style={{ zIndex: 2 }}>
-      {images[0] ? (
-        <img
-          src={images[0]}
-          alt="Product"
-          className="h-full w-full rounded-xl border-2 border-card object-cover"
-          onError={(e) => {
-            e.currentTarget.style.display = 'none';
-            e.currentTarget.parentElement?.classList.add('bg-muted', 'flex', 'items-center', 'justify-center', 'rounded-xl');
-            const emoji = document.createElement('span');
-            emoji.className = 'text-3xl';
-            emoji.textContent = fallbackEmoji || '📦';
-            e.currentTarget.parentElement?.appendChild(emoji);
-          }}
-        />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center rounded-xl bg-muted">
-          <span className="text-3xl">{fallbackEmoji || '📦'}</span>
-        </div>
-      )}
-    </div>
-    {avatar && (
-      <img
-        src={avatar}
-        alt="User"
-        className="absolute -bottom-1 left-14 h-7 w-7 rounded-full border-2 border-card object-cover"
-        style={{ zIndex: 3 }}
-      />
-    )}
-  </div>
-);
 
 const Sales = () => {
   const navigate = useNavigate();
@@ -107,8 +66,8 @@ const Sales = () => {
     const primaryOrder = group.orders[0];
     const rawBuyerUsername = primaryOrder.buyer_profile?.username || 'Unknown';
     const buyerUsername = rawBuyerUsername.startsWith('@') ? rawBuyerUsername.slice(1) : rawBuyerUsername;
-    const buyerAvatar = primaryOrder.buyer_profile?.avatar_url || '';
-    const productImages = group.orders.map(o => o.listing?.images?.[0] || '').filter(Boolean);
+    const buyerAvatar = primaryOrder.buyer_profile?.avatar_url || getDefaultAvatar(primaryOrder.buyer_id);
+    const productImages = group.orders.slice(0, 2).map((order) => order.listing?.images?.[0]);
     const itemCount = group.orders.length;
     const unread = group.orders.reduce((sum, o) => sum + getGroupUnread(o.id), 0);
 
@@ -117,7 +76,7 @@ const Sales = () => {
         onClick={() => handleSaleClick(group)}
         className={cn("flex items-center gap-4 rounded-2xl bg-card p-4 cursor-pointer", showShadow && "card-shadow")}
       >
-        <ProductThumbnail images={productImages.length ? productImages : ['']} avatar={buyerAvatar} />
+        <OrderItemThumbnailStack imageUrls={productImages} itemCount={itemCount} avatarUrl={buyerAvatar} />
         <div className="flex-1 min-w-0">
           <p className="text-sm text-foreground">
             Sold to <span className="font-semibold">@{buyerUsername}</span>

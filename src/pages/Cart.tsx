@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import CartItemRow from '@/components/CartItemRow';
 import OrderDetailsSheet from '@/components/OrderDetailsSheet';
+import OrderItemThumbnailStack from '@/components/OrderItemThumbnailStack';
 import { formatDistanceToNow } from 'date-fns';
 import { Listing } from '@/types/listing';
 import { fetchSellerShippingSettings, SellerShippingInfo } from '@/utils/shippingCalculator';
@@ -36,34 +37,6 @@ const getOrderStatusBadge = (status: Order['status']) => {
       };
   }
 };
-
-const ProductThumbnail = ({
-  images,
-  avatar,
-}: {
-  images: string[];
-  avatar: string;
-}) => (
-  <div className={cn('relative h-20 flex-shrink-0', images.length > 1 ? 'w-[6.5rem]' : 'w-20')}>
-    {images.length > 1 && images[1] && (
-      <img
-        src={images[1]}
-        alt="Product 2"
-        className="absolute right-0 top-3 h-16 w-16 rounded-xl border-2 border-card object-cover"
-        style={{ zIndex: 1 }}
-      />
-    )}
-    <div className="absolute left-0 top-0 h-20 w-20" style={{ zIndex: 2 }}>
-      <img src={images[0]} alt="Product" className="h-full w-full rounded-xl border-2 border-card object-cover" />
-    </div>
-    <img
-      src={avatar}
-      alt="User"
-      className="absolute -bottom-1 left-14 h-7 w-7 rounded-full border-2 border-card object-cover"
-      style={{ zIndex: 3 }}
-    />
-  </div>
-);
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -218,7 +191,7 @@ const Cart = () => {
     const rawUsername = primaryOrder.seller_profile?.username || 'Unknown';
     const sellerUsername = rawUsername.startsWith('@') ? rawUsername.slice(1) : rawUsername;
     const sellerAvatar = getAvatarUrl(primaryOrder.seller_profile?.avatar_url) || getDefaultAvatar(primaryOrder.seller_id);
-    const productImages = group.orders.map(o => o.listing?.images?.[0] || '').filter(Boolean);
+    const productImages = group.orders.slice(0, 2).map((order) => order.listing?.images?.[0]);
     const itemCount = group.orders.length;
     const unread = group.orders.reduce((sum, o) => sum + getGroupUnread(o.id), 0);
 
@@ -231,7 +204,7 @@ const Cart = () => {
           showShadow && "card-shadow"
         )}
       >
-        <ProductThumbnail images={productImages.length ? productImages : ['']} avatar={sellerAvatar} />
+        <OrderItemThumbnailStack imageUrls={productImages} itemCount={itemCount} avatarUrl={sellerAvatar} />
         <div className="flex-1 min-w-0">
           <p className="text-sm text-foreground">
             From <span className="font-semibold">@{sellerUsername}</span>
