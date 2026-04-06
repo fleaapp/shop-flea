@@ -44,23 +44,23 @@ const ProductThumbnail = ({
   images: string[];
   avatar: string;
 }) => (
-  <div className="relative flex-shrink-0" style={{ width: images.length > 1 ? '5.75rem' : '5rem', height: '5rem' }}>
-    {images.length > 1 && (
+  <div className={cn('relative h-20 flex-shrink-0', images.length > 1 ? 'w-[6.5rem]' : 'w-20')}>
+    {images.length > 1 && images[1] && (
       <img
         src={images[1]}
         alt="Product 2"
-        className="absolute top-0 right-0 h-[4.5rem] w-[4.5rem] rounded-xl object-cover border-2 border-card"
+        className="absolute right-0 top-3 h-16 w-16 rounded-xl border-2 border-card object-cover"
         style={{ zIndex: 1 }}
       />
     )}
-    <div className="absolute top-0 left-0 h-[5rem] w-[5rem]" style={{ zIndex: 2 }}>
-      <img src={images[0]} alt="Product" className="h-full w-full rounded-xl object-cover border-2 border-card" />
+    <div className="absolute left-0 top-0 h-20 w-20" style={{ zIndex: 2 }}>
+      <img src={images[0]} alt="Product" className="h-full w-full rounded-xl border-2 border-card object-cover" />
     </div>
     <img
       src={avatar}
       alt="User"
-      className="absolute -bottom-1 h-7 w-7 rounded-full border-2 border-card object-cover"
-      style={{ zIndex: 3, left: images.length > 1 ? '3.25rem' : '3.5rem' }}
+      className="absolute -bottom-1 left-14 h-7 w-7 rounded-full border-2 border-card object-cover"
+      style={{ zIndex: 3 }}
     />
   </div>
 );
