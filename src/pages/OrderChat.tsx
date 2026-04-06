@@ -125,6 +125,17 @@ const OrderChat = () => {
     return () => { supabase.removeChannel(channel); };
   }, [orderId, queryClient]);
 
+  // Refetch when app returns from background (e.g. push notification tap)
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible' && orderId) {
+        queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [orderId, queryClient]);
+
   // Mark messages as read
   useEffect(() => {
     if (!messages.length || !user?.id || !orderId) return;
