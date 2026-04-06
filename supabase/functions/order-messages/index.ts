@@ -620,7 +620,7 @@ Deno.serve(async (req) => {
             message: `${formattedUsername} has requested a refund. Tap to review.`,
             related_listing_id: orderInfo.listingId,
             related_user_id: userId,
-            related_order_id: orderInfo.matchedOrderId ?? threadOrderId,
+            related_order_id: orderInfo.matchedOrderGroupId ?? orderInfo.matchedOrderId ?? threadOrderId,
           });
         } catch (e) {
           console.error("[order-messages] Refund notification error:", e);
@@ -649,7 +649,7 @@ Deno.serve(async (req) => {
             message: `${formattedUsername} has rejected your refund request.`,
             related_listing_id: orderInfo.listingId,
             related_user_id: userId,
-            related_order_id: orderInfo.matchedOrderId ?? threadOrderId,
+            related_order_id: orderInfo.matchedOrderGroupId ?? orderInfo.matchedOrderId ?? threadOrderId,
           });
         } catch (e) {
           console.error("[order-messages] Refund reject notification error:", e);
@@ -754,7 +754,7 @@ Deno.serve(async (req) => {
           message: notifMessage,
           related_listing_id: orderInfo.listingId,
           related_user_id: userId,
-          related_order_id: orderInfo.matchedOrderId ?? threadOrderId,
+          related_order_id: orderInfo.matchedOrderGroupId ?? orderInfo.matchedOrderId ?? threadOrderId,
         });
       } catch (notifErr) {
         console.error("[order-messages] Notification error:", notifErr);
