@@ -2,34 +2,46 @@ import { useState, type CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
 import { getCardImageUrl } from '@/utils/optimizedImage';
 
-const STACK_WIDTH = 128;
-const PRIMARY_SIZE = 80;
+const STACK_WIDTH = 138;
+const PRIMARY_SIZE = 82;
 const SECONDARY_SIZE = 72;
-const SECONDARY_LEFT = 56;
-const SECONDARY_TOP = 4;
-const AVATAR_LEFT = 57;
+const SECONDARY_LEFT = 62;
+const SECONDARY_TOP = 6;
+const AVATAR_SIZE = 28;
+const AVATAR_LEFT = 64;
+
+const TILE_BASE_STYLE: CSSProperties = {
+  position: 'absolute',
+  display: 'block',
+  overflow: 'hidden',
+  borderRadius: 16,
+  border: '2px solid hsl(var(--border))',
+  background: 'hsl(var(--muted))',
+  boxShadow: 'var(--shadow-card), 0 0 0 2px hsl(var(--card))',
+};
 
 type ThumbnailTileProps = {
   src?: string | null;
   alt: string;
-  className?: string;
   fallbackEmoji?: string;
-  style?: CSSProperties;
+  style: CSSProperties;
 };
 
-const ThumbnailTile = ({ src, alt, className, fallbackEmoji = '📦', style }: ThumbnailTileProps) => {
+const ThumbnailTile = ({ src, alt, fallbackEmoji = '📦', style }: ThumbnailTileProps) => {
   const [imageFailed, setImageFailed] = useState(false);
 
   if (!src || imageFailed) {
     return (
       <div
-        className={cn(
-          'flex items-center justify-center overflow-hidden rounded-xl border-2 border-border bg-muted shadow-md ring-2 ring-card',
-          className,
-        )}
-        style={style}
+        style={{
+          ...TILE_BASE_STYLE,
+          ...style,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
       >
-        <span className="text-2xl">{fallbackEmoji}</span>
+        <span style={{ fontSize: 24, lineHeight: 1 }}>{fallbackEmoji}</span>
       </div>
     );
   }
@@ -38,8 +50,11 @@ const ThumbnailTile = ({ src, alt, className, fallbackEmoji = '📦', style }: T
     <img
       src={getCardImageUrl(src)}
       alt={alt}
-      className={cn('overflow-hidden rounded-xl border-2 border-border bg-muted object-cover shadow-md ring-2 ring-card', className)}
-      style={style}
+      style={{
+        ...TILE_BASE_STYLE,
+        ...style,
+        objectFit: 'cover',
+      }}
       loading="lazy"
       decoding="async"
       onError={() => setImageFailed(true)}
@@ -69,20 +84,25 @@ const OrderItemThumbnailStack = ({
 
   return (
     <div
-      className={cn('relative h-20 flex-shrink-0 overflow-visible', className)}
-      style={{ width: hasMultipleItems ? STACK_WIDTH : PRIMARY_SIZE }}
+      className={cn(className)}
+      style={{
+        position: 'relative',
+        height: PRIMARY_SIZE,
+        width: hasMultipleItems ? STACK_WIDTH : PRIMARY_SIZE,
+        flexShrink: 0,
+        overflow: 'visible',
+      }}
     >
       {hasMultipleItems && (
         <ThumbnailTile
           src={secondaryImage}
           alt="Second item image"
-          className="absolute"
           style={{
             left: SECONDARY_LEFT,
             top: SECONDARY_TOP,
             width: SECONDARY_SIZE,
             height: SECONDARY_SIZE,
-            transform: 'rotate(4deg)',
+            transform: 'rotate(6deg)',
             zIndex: 1,
           }}
         />
@@ -91,16 +111,32 @@ const OrderItemThumbnailStack = ({
       <ThumbnailTile
         src={primaryImage}
         alt="Item image"
-        className="absolute left-0 top-0 h-20 w-20"
-        style={{ zIndex: 2 }}
+        style={{
+          left: 0,
+          top: 0,
+          width: PRIMARY_SIZE,
+          height: PRIMARY_SIZE,
+          zIndex: 2,
+        }}
       />
 
       {avatarUrl ? (
         <img
           src={avatarUrl}
           alt={avatarAlt}
-          className="absolute -bottom-1 h-7 w-7 rounded-full border-2 border-card bg-card object-cover"
-          style={{ left: AVATAR_LEFT, zIndex: 3 }}
+          style={{
+            position: 'absolute',
+            left: AVATAR_LEFT,
+            bottom: -2,
+            width: AVATAR_SIZE,
+            height: AVATAR_SIZE,
+            borderRadius: 999,
+            border: '2px solid hsl(var(--card))',
+            background: 'hsl(var(--card))',
+            objectFit: 'cover',
+            boxShadow: '0 0 0 1px hsl(var(--border))',
+            zIndex: 3,
+          }}
           loading="lazy"
           decoding="async"
         />
