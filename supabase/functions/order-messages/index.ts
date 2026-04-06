@@ -754,7 +754,7 @@ Deno.serve(async (req) => {
           message: notifMessage,
           related_listing_id: orderInfo.listingId,
           related_user_id: userId,
-          related_order_id: orderInfo.matchedOrderId ?? threadOrderId,
+          related_order_id: orderInfo.matchedOrderGroupId ?? orderInfo.matchedOrderId ?? threadOrderId,
         });
       } catch (notifErr) {
         console.error("[order-messages] Notification error:", notifErr);
