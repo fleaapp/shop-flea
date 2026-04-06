@@ -279,7 +279,9 @@ export const useUserListings = (status?: 'active' | 'sold' | 'archived') => {
             source_listing_id: l.id,
           }));
 
-        setListings([...orderedSoldListings, ...soldElsewhere]);
+        const combined = [...orderedSoldListings, ...soldElsewhere];
+        combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        setListings(combined);
       } else {
         let query = supabase
           .from('listings')
