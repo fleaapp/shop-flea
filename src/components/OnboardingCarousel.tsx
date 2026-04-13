@@ -262,8 +262,15 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
             dragElastic={0.2}
             onDragEnd={handleDragEnd}
           >
-            {/* Image/GIF container — only for non-spotlight slides */}
-            {!isSpotlightSlide && slide.image && (
+            {/* Gesture animation — for swipe/tap demo slides */}
+            {!isSpotlightSlide && slide.gesture && (
+              <div className="flex items-center justify-center w-[min(70vw,45vh,280px)]">
+                <OnboardingMiniCard key={`gesture-${currentSlide}`} direction={slide.gesture} />
+              </div>
+            )}
+
+            {/* Static image — legacy fallback */}
+            {!isSpotlightSlide && !slide.gesture && slide.image && (
               <div className={`flex items-center justify-center w-[min(92vw,52vh,400px)] h-[min(92vw,52vh,400px)] ${slide.imageOffset || ''}`}>
                 <img
                   src={slide.image}
