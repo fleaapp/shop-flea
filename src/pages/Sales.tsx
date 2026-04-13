@@ -149,12 +149,6 @@ const Sales = () => {
                 <p className="text-lg font-medium text-muted-foreground">
                   No sales yet.
                 </p>
-                <Button
-                  onClick={() => navigate('/create-listing')}
-                  className="mt-6 rounded-full bg-primary text-primary-foreground"
-                >
-                  Create Listing
-                </Button>
               </div>
             );
           }
