@@ -109,20 +109,35 @@ const OnboardingMiniCard = ({ direction }: OnboardingMiniCardProps) => {
           : "ℹ️";
 
   return (
-    <div className="relative w-full aspect-[3/4] mx-auto" style={{ maxWidth: 200 }}>
+    <div className="relative w-full mx-auto" style={{ maxWidth: 200, aspectRatio: '3/4.6' }}>
       {/* Back card hint */}
       <div
         className="absolute inset-0 rounded-2xl bg-card shadow-md"
         style={{ transform: "translateX(6px) translateY(4px) rotate(3deg)" }}
       >
-        <div className="h-full w-full overflow-hidden rounded-2xl p-1.5">
-          <div className="h-full w-full rounded-xl overflow-hidden">
+        <div className="flex h-full w-full flex-col overflow-hidden rounded-2xl p-1.5">
+          <div className="flex-1 min-h-0 rounded-xl overflow-hidden">
             <img
               src={listingBag}
               alt=""
               className="h-full w-full object-cover opacity-60"
               draggable={false}
             />
+          </div>
+          <div className="px-1.5 pt-1.5 pb-1">
+            <div className="flex items-end justify-between">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-[10px] font-semibold text-foreground/40 truncate">Vintage Bag</h3>
+                <div className="mt-0.5 flex gap-0.5">
+                  <span className="text-[7px] bg-muted text-muted-foreground/40 px-1.5 py-0.5 rounded-full">One Size</span>
+                  <span className="text-[7px] bg-muted text-muted-foreground/40 px-1.5 py-0.5 rounded-full">Coach</span>
+                </div>
+              </div>
+              <div className="text-right flex-shrink-0 ml-1">
+                <p className="text-[11px] font-bold text-foreground/40">$45</p>
+                <p className="text-[7px] text-muted-foreground/40">📦 +$8</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -132,8 +147,8 @@ const OnboardingMiniCard = ({ direction }: OnboardingMiniCardProps) => {
         className="absolute inset-0 rounded-2xl bg-card shadow-xl"
         style={{ x, y, rotate, scale }}
       >
-        <div className="h-full w-full overflow-hidden rounded-2xl p-1.5">
-          <div className="relative h-full w-full rounded-xl overflow-hidden">
+        <div className="flex h-full w-full flex-col overflow-hidden rounded-2xl p-1.5">
+          <div className="relative flex-1 min-h-0 rounded-xl overflow-hidden">
             <img
               src={listingSneakers}
               alt=""
@@ -149,6 +164,21 @@ const OnboardingMiniCard = ({ direction }: OnboardingMiniCardProps) => {
             >
               <span className="text-5xl">{emoji}</span>
             </motion.div>
+          </div>
+          <div className="px-1.5 pt-1.5 pb-1">
+            <div className="flex items-end justify-between">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-[10px] font-semibold text-foreground truncate">Retro Sneakers</h3>
+                <div className="mt-0.5 flex gap-0.5">
+                  <span className="text-[7px] bg-muted text-foreground/70 px-1.5 py-0.5 rounded-full font-medium">US 9</span>
+                  <span className="text-[7px] bg-muted text-foreground/70 px-1.5 py-0.5 rounded-full font-medium">Nike</span>
+                </div>
+              </div>
+              <div className="text-right flex-shrink-0 ml-1">
+                <p className="text-[11px] font-bold text-foreground">$55</p>
+                <p className="text-[7px] text-muted-foreground">📦 +$12</p>
+              </div>
+            </div>
           </div>
         </div>
       </motion.div>
