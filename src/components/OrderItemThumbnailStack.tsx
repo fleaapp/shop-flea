@@ -2,11 +2,11 @@ import { useState, type CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
 import { getCardImageUrl } from '@/utils/optimizedImage';
 
-const STACK_WIDTH = 148;
+const STACK_WIDTH = 120;
 const PRIMARY_SIZE = 84;
-const SECONDARY_SIZE = 76;
-const SECONDARY_LEFT = 70;
-const SECONDARY_TOP = 4;
+const SECONDARY_SIZE = 72;
+const SECONDARY_LEFT = 38;
+const SECONDARY_TOP = 6;
 const AVATAR_SIZE = 28;
 const AVATAR_LEFT = 56;
 
@@ -105,7 +105,7 @@ const OrderItemThumbnailStack = ({
             top: SECONDARY_TOP,
             width: SECONDARY_SIZE,
             height: SECONDARY_SIZE,
-            transform: 'rotate(8deg)',
+            transform: 'rotate(4deg)',
             zIndex: 1,
           }}
         />
