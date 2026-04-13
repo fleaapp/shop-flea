@@ -305,7 +305,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
 
             {/* Text */}
             {Array.isArray(slide.text) ? (
-              <div className={`flex flex-col items-center gap-1 ${!isSpotlightSlide && (slide.image || slide.video) ? 'mt-10' : ''}`}>
+              <div className={`flex flex-col items-center gap-1 ${!isSpotlightSlide && (slide.gesture || slide.image || slide.video) ? 'mt-10' : ''}`}>
                 {slide.text.map((line, i) => (
                   <p key={i} className="text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg">
                     {line}
@@ -313,7 +313,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
                 ))}
               </div>
             ) : (
-              <p className={`text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg ${!isSpotlightSlide && (slide.image || slide.video) ? '-mt-6 max-[375px]:-mt-4' : ''} ${isSpotlightSlide ? 'hidden' : ''}`}>
+              <p className={`text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg ${!isSpotlightSlide && (slide.gesture || slide.image || slide.video) ? 'mt-8' : ''} ${isSpotlightSlide ? 'hidden' : ''}`}>
                 {slide.text}
               </p>
             )}
