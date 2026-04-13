@@ -80,8 +80,8 @@ const Sales = () => {
         <div className="flex-1 min-w-0">
           <p className="text-sm text-foreground">
             Sold to <span className="font-semibold">@{buyerUsername}</span>
+            {itemCount > 1 ? <span className="text-muted-foreground"> • {itemCount} items</span> : null}.
           </p>
-          {itemCount > 1 && <p className="text-xs text-muted-foreground">{itemCount} items</p>}
           <p className="text-xs text-muted-foreground">{formatTime(group.created_at)}</p>
           <span className={cn('mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium', getStatusBadge(group.status).className)}>
             {getStatusBadge(group.status).label}
