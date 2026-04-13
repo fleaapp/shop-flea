@@ -208,8 +208,8 @@ const Cart = () => {
         <div className="flex-1 min-w-0">
           <p className="text-sm text-foreground">
             From <span className="font-semibold">@{sellerUsername}</span>
-            {itemCount > 1 ? <span className="text-muted-foreground"> • {itemCount} items</span> : null}.
           </p>
+          {itemCount > 1 && <p className="text-xs text-muted-foreground">{itemCount} items</p>}
           <p className="text-xs text-muted-foreground">{formatOrderTime(group.created_at)}</p>
           <span
             className={cn(
