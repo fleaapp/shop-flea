@@ -3,16 +3,14 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { preloadImages } from '@/utils/preloadAssets';
+import OnboardingMiniCard, { type GestureDirection } from '@/components/onboarding/OnboardingMiniCard';
 
 // Import onboarding assets
-import tapToExpandGif from '@/assets/onboarding/tap-to-expand.gif';
-import swipeLeftPass from '@/assets/onboarding/swipe-left-pass.svg';
-import swipeUpCart from '@/assets/onboarding/swipe-up-cart.svg';
-import swipeRightWishlist from '@/assets/onboarding/swipe-right-wishlist.svg';
 import cartSwipeVideo from '@/assets/onboarding/cart-swipe-actions.mov';
-// Preload all onboarding assets immediately on module load
-const onboardingAssets = [tapToExpandGif, swipeLeftPass, swipeUpCart, swipeRightWishlist];
-preloadImages(onboardingAssets);
+import listingSneakers from '@/assets/onboarding/listing-sneakers.jpg';
+import listingBag from '@/assets/onboarding/listing-bag.jpg';
+// Preload listing images used in gesture cards
+preloadImages([listingSneakers, listingBag]);
 
 // Preload video so it's cached before slide 6
 const preloadVideo = (src: string) => {
@@ -36,6 +34,7 @@ interface SpotlightTarget {
 interface Slide {
   image?: string;
   video?: string;
+  gesture?: GestureDirection;
   text: string | string[];
   alt: string;
   isGif?: boolean;
@@ -50,24 +49,22 @@ interface Slide {
 
 const slides: Slide[] = [
   {
-    image: tapToExpandGif,
+    gesture: 'tap',
     text: 'Tap 👇 card for more details',
     alt: 'Tap to expand card',
-    isGif: true,
   },
   {
-    image: swipeLeftPass,
+    gesture: 'left',
     text: 'Swipe 👈 to Pass ❌',
     alt: 'Swipe left to pass',
   },
   {
-    image: swipeUpCart,
+    gesture: 'up',
     text: 'Swipe 👆 to add to Cart 🛒',
     alt: 'Swipe up to add to cart',
-    imageOffset: '-translate-y-4',
   },
   {
-    image: swipeRightWishlist,
+    gesture: 'right',
     text: 'Swipe 👉 to add to Wishlist 💌',
     alt: 'Swipe right to add to wishlist',
   },
@@ -265,8 +262,15 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
             dragElastic={0.2}
             onDragEnd={handleDragEnd}
           >
-            {/* Image/GIF container — only for non-spotlight slides */}
-            {!isSpotlightSlide && slide.image && (
+            {/* Gesture animation — for swipe/tap demo slides */}
+            {!isSpotlightSlide && slide.gesture && (
+              <div className="flex items-center justify-center w-[min(70vw,45vh,280px)]">
+                <OnboardingMiniCard key={`gesture-${currentSlide}`} direction={slide.gesture} />
+              </div>
+            )}
+
+            {/* Static image — legacy fallback */}
+            {!isSpotlightSlide && !slide.gesture && slide.image && (
               <div className={`flex items-center justify-center w-[min(92vw,52vh,400px)] h-[min(92vw,52vh,400px)] ${slide.imageOffset || ''}`}>
                 <img
                   src={slide.image}
@@ -301,7 +305,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
 
             {/* Text */}
             {Array.isArray(slide.text) ? (
-              <div className={`flex flex-col items-center gap-1 ${!isSpotlightSlide && (slide.image || slide.video) ? 'mt-10' : ''}`}>
+              <div className={`flex flex-col items-center gap-1 ${!isSpotlightSlide && (slide.gesture || slide.image || slide.video) ? 'mt-10' : ''}`}>
                 {slide.text.map((line, i) => (
                   <p key={i} className="text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg">
                     {line}
@@ -309,7 +313,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
                 ))}
               </div>
             ) : (
-              <p className={`text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg ${!isSpotlightSlide && (slide.image || slide.video) ? '-mt-6 max-[375px]:-mt-4' : ''} ${isSpotlightSlide ? 'hidden' : ''}`}>
+              <p className={`text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg ${!isSpotlightSlide && (slide.gesture || slide.image || slide.video) ? 'mt-8' : ''} ${isSpotlightSlide ? 'hidden' : ''}`}>
                 {slide.text}
               </p>
             )}
