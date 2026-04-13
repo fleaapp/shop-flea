@@ -3,16 +3,14 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { preloadImages } from '@/utils/preloadAssets';
+import OnboardingMiniCard, { type GestureDirection } from '@/components/onboarding/OnboardingMiniCard';
 
 // Import onboarding assets
-import tapToExpandGif from '@/assets/onboarding/tap-to-expand.gif';
-import swipeLeftPass from '@/assets/onboarding/swipe-left-pass.svg';
-import swipeUpCart from '@/assets/onboarding/swipe-up-cart.svg';
-import swipeRightWishlist from '@/assets/onboarding/swipe-right-wishlist.svg';
 import cartSwipeVideo from '@/assets/onboarding/cart-swipe-actions.mov';
-// Preload all onboarding assets immediately on module load
-const onboardingAssets = [tapToExpandGif, swipeLeftPass, swipeUpCart, swipeRightWishlist];
-preloadImages(onboardingAssets);
+import listingSneakers from '@/assets/onboarding/listing-sneakers.jpg';
+import listingBag from '@/assets/onboarding/listing-bag.jpg';
+// Preload listing images used in gesture cards
+preloadImages([listingSneakers, listingBag]);
 
 // Preload video so it's cached before slide 6
 const preloadVideo = (src: string) => {
