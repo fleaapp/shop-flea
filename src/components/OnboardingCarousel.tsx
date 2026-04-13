@@ -34,6 +34,7 @@ interface SpotlightTarget {
 interface Slide {
   image?: string;
   video?: string;
+  gesture?: GestureDirection;
   text: string | string[];
   alt: string;
   isGif?: boolean;
@@ -48,24 +49,22 @@ interface Slide {
 
 const slides: Slide[] = [
   {
-    image: tapToExpandGif,
+    gesture: 'tap',
     text: 'Tap 👇 card for more details',
     alt: 'Tap to expand card',
-    isGif: true,
   },
   {
-    image: swipeLeftPass,
+    gesture: 'left',
     text: 'Swipe 👈 to Pass ❌',
     alt: 'Swipe left to pass',
   },
   {
-    image: swipeUpCart,
+    gesture: 'up',
     text: 'Swipe 👆 to add to Cart 🛒',
     alt: 'Swipe up to add to cart',
-    imageOffset: '-translate-y-4',
   },
   {
-    image: swipeRightWishlist,
+    gesture: 'right',
     text: 'Swipe 👉 to add to Wishlist 💌',
     alt: 'Swipe right to add to wishlist',
   },
