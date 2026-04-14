@@ -56,7 +56,10 @@ const registerServiceWorker = async () => {
   });
 
   try {
-    const registration = await navigator.serviceWorker.register(SW_URL, { scope: '/' });
+    const registration = await navigator.serviceWorker.register(SW_URL, {
+      scope: '/',
+      updateViaCache: 'none',
+    });
 
     await registration.update().catch(() => undefined);
 
