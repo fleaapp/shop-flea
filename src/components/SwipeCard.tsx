@@ -9,6 +9,7 @@ interface SwipeCardProps {
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
   onSwipeUp: () => void;
+  onSwipeDown?: () => void;
   onExitComplete?: () => void;
   onClick: () => void;
   isTop: boolean;
@@ -20,6 +21,7 @@ const SwipeCard = ({
   onSwipeLeft,
   onSwipeRight,
   onSwipeUp,
+  onSwipeDown,
   onExitComplete,
   onClick,
   isTop,
@@ -36,6 +38,7 @@ const SwipeCard = ({
   const likeOpacity = useTransform(x, [0, 100], [0, 1]);
   const nopeOpacity = useTransform(x, [-100, 0], [1, 0]);
   const cartOpacity = useTransform(y, [-100, 0], [1, 0]);
+  const skipOpacity = useTransform(y, [0, 100], [0, 1]);
 
   const stackOffset = index * 4;
   const stackRotation = index * 3;
@@ -65,6 +68,7 @@ const SwipeCard = ({
       left: { x: -500 },
       right: { x: 500 },
       up: { y: -600 },
+      down: { y: 600 },
     };
     const target = targets[direction];
 
@@ -100,6 +104,9 @@ const SwipeCard = ({
     if (info.offset.y < -threshold && Math.abs(info.offset.y) > Math.abs(info.offset.x)) {
       onSwipeUp();
       animateExit('up');
+    } else if (info.offset.y > threshold && Math.abs(info.offset.y) > Math.abs(info.offset.x)) {
+      onSwipeDown?.();
+      animateExit('down');
     } else if (info.offset.x > threshold) {
       onSwipeRight();
       animateExit('right');
@@ -107,7 +114,7 @@ const SwipeCard = ({
       onSwipeLeft();
       animateExit('left');
     }
-  }, [gone, onSwipeUp, onSwipeRight, onSwipeLeft, animateExit]);
+  }, [gone, onSwipeUp, onSwipeDown, onSwipeRight, onSwipeLeft, animateExit]);
 
   return (
     <motion.div
@@ -142,6 +149,9 @@ const SwipeCard = ({
               </motion.div>
               <motion.div style={{ opacity: cartOpacity }} className="absolute inset-0 flex items-center justify-center">
                 <span className="text-7xl">🛒</span>
+              </motion.div>
+              <motion.div style={{ opacity: skipOpacity }} className="absolute inset-0 flex items-center justify-center">
+                <span className="text-7xl">⏭️</span>
               </motion.div>
             </>
           )}
