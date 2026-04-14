@@ -349,6 +349,7 @@ const Index = () => {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
+    setShowingSkipped(false); // Reset to show new listings first with new search
   };
 
   const clearSearch = () => {
@@ -362,6 +363,7 @@ const Index = () => {
   const handleApplyFilters = (filterState: FilterState) => {
     setAppliedFilters(filterState);
     setPendingExitId(null);
+    setShowingSkipped(false); // Reset to show new listings first with new filters
     toast.success('Filters applied!');
   };
 
