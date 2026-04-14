@@ -77,7 +77,7 @@ serve(async (req) => {
     let lookupUserId = userId;
 
     // If checking a different seller (e.g. from checkout flow), fetch their profile via service role
-    if (sellerUserId && sellerUserId !== user.id) {
+    if (sellerUserId && sellerUserId !== userId) {
       console.log(`[stripe-connect-status] Looking up seller profile for userId: ${sellerUserId}`);
       const serviceClient = createClient(externalUrl, serviceKey);
       const { data: sellerProfile } = await serviceClient
