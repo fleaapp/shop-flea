@@ -264,7 +264,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
           >
             {/* Gesture animation — for swipe/tap demo slides */}
             {!isSpotlightSlide && slide.gesture && (
-              <div className="flex items-center justify-center w-[min(55vw,35vh,220px)]">
+              <div className="flex items-center justify-center w-[min(45vw,28vh,180px)]">
                 <OnboardingMiniCard key={`gesture-${currentSlide}`} direction={slide.gesture} />
               </div>
             )}
