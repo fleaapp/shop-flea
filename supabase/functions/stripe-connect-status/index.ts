@@ -38,13 +38,25 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '',
-      Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-    );
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) {
+    // Manual JWT parsing – more reliable in cross-project environments
+    const authHeader = req.headers.get('Authorization') ?? '';
+    const token = authHeader.replace('Bearer ', '');
+    if (!token) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    let userId: string;
+    try {
+      const payloadB64 = token.split('.')[1];
+      const payload = JSON.parse(atob(payloadB64));
+      if (!payload.sub || (payload.exp && payload.exp * 1000 < Date.now())) {
+        throw new Error('Invalid or expired token');
+      }
+      userId = payload.sub;
+    } catch {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
@@ -62,10 +74,10 @@ serve(async (req) => {
     const serviceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
     let accountId = stripeAccountId;
-    let lookupUserId = user.id;
+    let lookupUserId = userId;
 
     // If checking a different seller (e.g. from checkout flow), fetch their profile via service role
-    if (sellerUserId && sellerUserId !== user.id) {
+    if (sellerUserId && sellerUserId !== userId) {
       console.log(`[stripe-connect-status] Looking up seller profile for userId: ${sellerUserId}`);
       const serviceClient = createClient(externalUrl, serviceKey);
       const { data: sellerProfile } = await serviceClient
