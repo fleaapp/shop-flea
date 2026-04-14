@@ -29,7 +29,7 @@ if (isPreviewHost || isInIframe) {
   let reloadingForServiceWorker = false;
 
   // BUILD_ID changes every deploy — if it differs from what's stored, nuke all caches
-  const BUILD_ID = __BUILD_TIMESTAMP__;
+  const BUILD_ID = import.meta.env.VITE_BUILD_ID as string ?? '0';
   const STORED_BUILD_KEY = 'flea_build_id';
   const storedBuild = localStorage.getItem(STORED_BUILD_KEY);
 
