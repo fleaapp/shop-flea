@@ -74,7 +74,7 @@ serve(async (req) => {
     const serviceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
     let accountId = stripeAccountId;
-    let lookupUserId = user.id;
+    let lookupUserId = userId;
 
     // If checking a different seller (e.g. from checkout flow), fetch their profile via service role
     if (sellerUserId && sellerUserId !== user.id) {
