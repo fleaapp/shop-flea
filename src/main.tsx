@@ -9,6 +9,24 @@ if (/android/i.test(navigator.userAgent)) {
   document.documentElement.classList.add('android');
 }
 
+const clearAppCaches = async () => {
+  if (typeof caches === 'undefined') return;
+
+  const cacheNames = await caches.keys();
+  await Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
+};
+
+const unregisterServiceWorkers = async () => {
+  if (!('serviceWorker' in navigator)) return;
+
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  await Promise.all(registrations.map((registration) => registration.unregister()));
+};
+
+const resetAppCache = async () => {
+  await Promise.all([clearAppCaches(), unregisterServiceWorkers()]);
+};
+
 // PWA: Prevent service worker registration in iframes/preview environments
 const isInIframe = (() => {
   try {
@@ -19,12 +37,11 @@ const isInIframe = (() => {
 })();
 
 const isPreviewHost =
-  window.location.hostname.includes("id-preview--");
+  window.location.hostname.includes("id-preview--") ||
+  window.location.hostname.includes("lovableproject.com");
 
 if (isPreviewHost || isInIframe) {
-  navigator.serviceWorker?.getRegistrations().then((registrations) => {
-    registrations.forEach((r) => r.unregister());
-  });
+  void resetAppCache();
 } else if ('serviceWorker' in navigator) {
   let reloadingForServiceWorker = false;
 
@@ -36,42 +53,36 @@ if (isPreviewHost || isInIframe) {
   if (storedBuild && storedBuild !== String(BUILD_ID)) {
     // New deploy detected — clear everything
     console.log('[cache-bust] New build detected, clearing caches…');
-    caches.keys().then((names) => {
-      names.forEach((name) => caches.delete(name));
-    });
-    navigator.serviceWorker.getRegistrations().then((regs) => {
-      regs.forEach((r) => r.unregister());
-    });
     localStorage.setItem(STORED_BUILD_KEY, String(BUILD_ID));
-    // Reload once to get fresh assets
-    window.location.reload();
+    void resetAppCache().finally(() => {
+      window.location.reload();
+    });
   } else {
     localStorage.setItem(STORED_BUILD_KEY, String(BUILD_ID));
-  }
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (reloadingForServiceWorker) return;
+      reloadingForServiceWorker = true;
+      window.location.reload();
+    });
 
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloadingForServiceWorker) return;
-    reloadingForServiceWorker = true;
-    window.location.reload();
-  });
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.getRegistration().then((registration) => {
+        registration?.update().catch(() => undefined);
 
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.getRegistration().then((registration) => {
-      registration?.update().catch(() => undefined);
+        registration?.addEventListener('updatefound', () => {
+          const installingWorker = registration.installing;
+          if (!installingWorker) return;
 
-      registration?.addEventListener('updatefound', () => {
-        const installingWorker = registration.installing;
-        if (!installingWorker) return;
-
-        installingWorker.addEventListener('statechange', () => {
-          if (installingWorker.state === 'installed' && navigator.serviceWorker.controller && !reloadingForServiceWorker) {
-            reloadingForServiceWorker = true;
-            window.location.reload();
-          }
+          installingWorker.addEventListener('statechange', () => {
+            if (installingWorker.state === 'installed' && navigator.serviceWorker.controller && !reloadingForServiceWorker) {
+              reloadingForServiceWorker = true;
+              window.location.reload();
+            }
+          });
         });
       });
     });
-  });
+  }
 }
 
 createRoot(document.getElementById("root")!).render(<App />);
