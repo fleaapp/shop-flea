@@ -6,20 +6,10 @@ import { preloadImages } from '@/utils/preloadAssets';
 import OnboardingMiniCard, { type GestureDirection } from '@/components/onboarding/OnboardingMiniCard';
 
 // Import onboarding assets
-import cartSwipeVideo from '@/assets/onboarding/cart-swipe-actions.mov';
 import listingSneakers from '@/assets/onboarding/listing-sneakers.jpg';
 import listingBag from '@/assets/onboarding/listing-bag.jpg';
 // Preload listing images used in gesture cards
 preloadImages([listingSneakers, listingBag]);
-
-// Preload video so it's cached before slide 6
-const preloadVideo = (src: string) => {
-  const video = document.createElement('video');
-  video.preload = 'auto';
-  video.src = src;
-  video.load();
-};
-preloadVideo(cartSwipeVideo);
 
 interface OnboardingCarouselProps {
   open: boolean;
@@ -84,11 +74,6 @@ const slides: Slide[] = [
       ],
     },
   },
-  {
-    video: cartSwipeVideo,
-    text: ['Slide 👉 to remove from Cart', 'Slide 👈 to move to Wishlist'],
-    alt: 'Cart swipe actions',
-  },
 ];
 
 const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
@@ -146,10 +131,12 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
   useEffect(() => {
     if (!open) return;
     // Delay to let navigation render
-    const timer = setTimeout(measureSpotlight, 300);
+    const timer1 = setTimeout(measureSpotlight, 400);
+    const timer2 = setTimeout(measureSpotlight, 800);
     window.addEventListener('resize', measureSpotlight);
     return () => {
-      clearTimeout(timer);
+      clearTimeout(timer1);
+      clearTimeout(timer2);
       window.removeEventListener('resize', measureSpotlight);
     };
   }, [open, measureSpotlight, currentSlide]);
@@ -188,7 +175,13 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
     <div className="fixed inset-0 z-[999] flex flex-col">
       {/* Overlay — with or without spotlight cutout */}
       {isSpotlightSlide && spotlightRects.length > 0 ? (
-        <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
+        <motion.svg
+          className="absolute inset-0 w-full h-full"
+          style={{ zIndex: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+        >
           <defs>
             <mask id="carousel-spotlight-mask">
               <rect x="0" y="0" width="100%" height="100%" fill="white" />
@@ -210,9 +203,13 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
             fill="hsl(220 15% 25% / 0.90)"
             mask="url(#carousel-spotlight-mask)"
           />
-        </svg>
+        </motion.svg>
       ) : (
-        <div className="absolute inset-0 bg-charcoal/90" />
+        <motion.div
+          className="absolute inset-0 bg-charcoal/90"
+          initial={isSpotlightSlide ? { opacity: 1 } : undefined}
+          animate={isSpotlightSlide ? { opacity: 1 } : undefined}
+        />
       )}
 
       {/* Spotlight glow rings - only for primary target (index 0) */}
@@ -310,9 +307,9 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
 
             {/* Text */}
             {Array.isArray(slide.text) ? (
-              <div className={`flex flex-col items-center gap-0.5 ${!isSpotlightSlide && (slide.gesture || slide.image || slide.video) ? 'mt-6' : ''}`}>
+              <div className={`flex flex-col items-center gap-0.5 ${!isSpotlightSlide && (slide.gesture || slide.image || slide.video) ? 'mt-8' : ''}`}>
                 {slide.text.map((line, i) => (
-                  <p key={i} className={`text-cream text-center leading-snug max-[375px]:text-base ${i === 0 && !slide.video ? 'text-2xl font-bold max-[375px]:text-xl' : 'text-xl font-bold text-cream/80 max-[375px]:text-lg'}`}>
+                  <p key={i} className={`text-cream text-center leading-snug max-[375px]:text-sm ${i === 0 && !slide.video ? 'text-xl font-bold max-[375px]:text-lg' : 'text-lg font-bold text-cream/80 max-[375px]:text-base'}`}>
                     {line}
                   </p>
                 ))}
