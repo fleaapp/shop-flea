@@ -84,11 +84,6 @@ const slides: Slide[] = [
       ],
     },
   },
-  {
-    video: cartSwipeVideo,
-    text: ['Slide 👉 to remove from Cart', 'Slide 👈 to move to Wishlist'],
-    alt: 'Cart swipe actions',
-  },
 ];
 
 const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
@@ -310,9 +305,9 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
 
             {/* Text */}
             {Array.isArray(slide.text) ? (
-              <div className={`flex flex-col items-center gap-0.5 ${!isSpotlightSlide && (slide.gesture || slide.image || slide.video) ? 'mt-6' : ''}`}>
+              <div className={`flex flex-col items-center gap-0.5 ${!isSpotlightSlide && (slide.gesture || slide.image || slide.video) ? 'mt-8' : ''}`}>
                 {slide.text.map((line, i) => (
-                  <p key={i} className={`text-cream text-center leading-snug max-[375px]:text-base ${i === 0 && !slide.video ? 'text-2xl font-bold max-[375px]:text-xl' : 'text-xl font-bold text-cream/80 max-[375px]:text-lg'}`}>
+                  <p key={i} className={`text-cream text-center leading-snug max-[375px]:text-sm ${i === 0 && !slide.video ? 'text-xl font-bold max-[375px]:text-lg' : 'text-lg font-bold text-cream/80 max-[375px]:text-base'}`}>
                     {line}
                   </p>
                 ))}
