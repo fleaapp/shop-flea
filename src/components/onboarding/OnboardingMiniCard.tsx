@@ -3,7 +3,7 @@ import { motion, useMotionValue, animate, useReducedMotion } from "framer-motion
 import listingSneakers from "@/assets/onboarding/listing-sneakers.jpg";
 import listingBag from "@/assets/onboarding/listing-bag.jpg";
 
-export type GestureDirection = "right" | "left" | "up" | "tap";
+export type GestureDirection = "right" | "left" | "up" | "down" | "tap";
 
 interface OnboardingMiniCardProps {
   direction: GestureDirection;
@@ -70,6 +70,19 @@ const OnboardingMiniCard = ({ direction }: OnboardingMiniCardProps) => {
             },
           });
         }, delay);
+      } else if (direction === "down") {
+        timerRef.current = setTimeout(() => {
+          animate(overlayOpacity, 1, { duration: 0.2 });
+          animate(y, 120, { duration: 0.5, ease: "easeIn", delay: 0.15 });
+          animate(scale, 0.9, {
+            duration: 0.5,
+            ease: "easeIn",
+            delay: 0.15,
+            onComplete: () => {
+              setTimeout(runAnimation, 800);
+            },
+          });
+        }, delay);
       } else {
         // tap
         timerRef.current = setTimeout(() => {
@@ -106,7 +119,9 @@ const OnboardingMiniCard = ({ direction }: OnboardingMiniCardProps) => {
         ? "💌"
         : direction === "up"
           ? "🛒"
-          : "ℹ️";
+          : direction === "down"
+            ? "⏭️"
+            : "ℹ️";
 
   return (
     <div className="relative w-full mx-auto" style={{ maxWidth: 160, aspectRatio: '3/4.6' }}>
