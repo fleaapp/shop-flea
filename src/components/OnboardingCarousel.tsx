@@ -50,22 +50,22 @@ interface Slide {
 const slides: Slide[] = [
   {
     gesture: 'tap',
-    text: 'Tap 👇 card for more details',
+    text: ['Tap a Card 👇', 'View Details ℹ️'],
     alt: 'Tap to expand card',
   },
   {
     gesture: 'left',
-    text: 'Swipe 👈 to Pass ❌',
+    text: ['Swipe Left 👈', 'Pass ❌'],
     alt: 'Swipe left to pass',
   },
   {
     gesture: 'up',
-    text: 'Swipe 👆 to add to Cart 🛒',
+    text: ['Swipe Up 👆', 'Add to Cart 🛒'],
     alt: 'Swipe up to add to cart',
   },
   {
     gesture: 'right',
-    text: 'Swipe 👉 to add to Wishlist 💌',
+    text: ['Swipe Right 👉', 'Add to Wishlist 💌'],
     alt: 'Swipe right to add to wishlist',
   },
   {
@@ -264,7 +264,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
           >
             {/* Gesture animation — for swipe/tap demo slides */}
             {!isSpotlightSlide && slide.gesture && (
-              <div className="flex items-center justify-center w-[min(70vw,45vh,280px)]">
+              <div className="flex items-center justify-center w-[min(55vw,35vh,220px)]">
                 <OnboardingMiniCard key={`gesture-${currentSlide}`} direction={slide.gesture} />
               </div>
             )}
@@ -305,15 +305,15 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
 
             {/* Text */}
             {Array.isArray(slide.text) ? (
-              <div className={`flex flex-col items-center gap-1 ${!isSpotlightSlide && (slide.gesture || slide.image || slide.video) ? 'mt-10' : ''}`}>
+              <div className={`flex flex-col items-center gap-0.5 ${!isSpotlightSlide && (slide.gesture || slide.image || slide.video) ? 'mt-6' : ''}`}>
                 {slide.text.map((line, i) => (
-                  <p key={i} className="text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg">
+                  <p key={i} className={`text-cream text-center leading-snug max-[375px]:text-base ${i === 0 ? 'text-2xl font-bold max-[375px]:text-xl' : 'text-xl font-semibold text-cream/80 max-[375px]:text-lg'}`}>
                     {line}
                   </p>
                 ))}
               </div>
             ) : (
-              <p className={`text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg ${!isSpotlightSlide && (slide.gesture || slide.image || slide.video) ? 'mt-8' : ''} ${isSpotlightSlide ? 'hidden' : ''}`}>
+              <p className={`text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg ${!isSpotlightSlide && (slide.gesture || slide.image || slide.video) ? 'mt-6' : ''} ${isSpotlightSlide ? 'hidden' : ''}`}>
                 {slide.text}
               </p>
             )}
@@ -323,7 +323,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
 
       {/* Controls pinned above bottom nav */}
       <div className="relative w-full px-6 pb-[calc(84px+env(safe-area-inset-bottom))] max-[375px]:pb-[calc(76px+env(safe-area-inset-bottom))]">
-        <div className="mx-auto w-full max-w-sm -translate-y-6">
+        <div className="mx-auto w-full max-w-sm -translate-y-16">
           {/* Pagination dots */}
           <div className="flex justify-center gap-2.5 mb-4">
             {slides.map((_, index) => (
