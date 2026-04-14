@@ -437,6 +437,7 @@ const Index = () => {
                   onSwipeLeft={() => handleSwipeLeft(dbListing.id)}
                   onSwipeRight={() => handleSwipeRight(dbListing)}
                   onSwipeUp={() => handleSwipeUp(dbListing)}
+                  onSwipeDown={() => handleSwipeDown(dbListing.id)}
                   onExitComplete={index === 0 ? handleTopExitComplete : undefined}
                   onClick={() => handleCardClick(dbListing)}
                   isTop={index === 0}
@@ -493,6 +494,27 @@ const Index = () => {
           supabase.auth.refreshSession();
         }}
       />
+      {/* Skipped listings popup */}
+      <Dialog open={skippedPopupOpen} onOpenChange={setSkippedPopupOpen}>
+        <DialogContent className="max-w-[320px] rounded-2xl text-center">
+          <div className="flex flex-col items-center gap-3 py-2">
+            <span className="text-5xl">🎉</span>
+            <h3 className="text-lg font-semibold text-foreground">All caught up!</h3>
+            <p className="text-sm text-muted-foreground">
+              You've gone through all your new listings. Ready to revisit your skipped ones?
+            </p>
+            <Button
+              onClick={() => {
+                setSkippedPopupOpen(false);
+                setShowingSkipped(true);
+              }}
+              className="w-full mt-1 rounded-full"
+            >
+              Show Skipped Listings
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <BottomNav />
     </div>
   );
