@@ -6,7 +6,9 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  envPrefix: ['VITE_'],
+  define: {
+    'import.meta.env.VITE_BUILD_ID': JSON.stringify(Date.now().toString()),
+  },
   server: {
     host: "::",
     port: 8080,
