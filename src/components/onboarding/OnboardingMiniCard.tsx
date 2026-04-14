@@ -109,7 +109,7 @@ const OnboardingMiniCard = ({ direction }: OnboardingMiniCardProps) => {
           : "ℹ️";
 
   return (
-    <div className="relative w-full mx-auto" style={{ maxWidth: 200, aspectRatio: '3/4.6' }}>
+    <div className="relative w-full mx-auto" style={{ maxWidth: 160, aspectRatio: '3/4.6' }}>
       {/* Back card hint */}
       <div
         className="absolute inset-0 rounded-2xl bg-card shadow-md"
