@@ -1,6 +1,8 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import FilterChip from '@/components/FilterChip';
@@ -124,6 +126,11 @@ const Index = () => {
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [searchSheetOpen, setSearchSheetOpen] = useState(false);
   
+  // Skip queue: listing IDs that were skipped, shown after all new cards
+  const [skippedIds, setSkippedIds] = useState<Set<string>>(new Set());
+  const [showingSkipped, setShowingSkipped] = useState(false);
+  const [skippedPopupOpen, setSkippedPopupOpen] = useState(false);
+  
   // Store the full filter state from FilterSheet
   const [appliedFilters, setAppliedFilters] = useState<FilterState>({
     preferences: false,
@@ -144,7 +151,7 @@ const Index = () => {
   // Track the last action for undo functionality
   const [lastAction, setLastAction] = useState<{
     listingId: string;
-    type: 'discard' | 'favorite' | 'cart';
+    type: 'discard' | 'favorite' | 'cart' | 'skip';
   } | null>(null);
 
 
@@ -196,18 +203,29 @@ const Index = () => {
   // Filter out listings that are discarded, favorited, or in cart.
   // IMPORTANT: while the top card is animating out, keep it in the stack so
   // the two cards behind don't collapse/disappear.
-  const availableListings = useMemo(() => {
-    return dbListings.filter((listing) => {
+  // Split listings into non-skipped and skipped
+  const { newListings, skippedListings } = useMemo(() => {
+    const base = dbListings.filter((listing) => {
       if (pendingExitId && listing.id === pendingExitId) return true;
-
       return (
         !discardedIds.has(listing.id) &&
         !favoriteIds.has(listing.id) &&
         !isInCart(listing.id)
       );
     });
-  }, [dbListings, discardedIds, favoriteIds, isInCart, pendingExitId]);
+    const newOnes = base.filter(l => l.id === pendingExitId || !skippedIds.has(l.id));
+    const skipped = base.filter(l => l.id !== pendingExitId && skippedIds.has(l.id));
+    return { newListings: newOnes, skippedListings: skipped };
+  }, [dbListings, discardedIds, favoriteIds, isInCart, pendingExitId, skippedIds]);
 
+  // When new listings run out, show popup then switch to skipped
+  useEffect(() => {
+    if (!loading && newListings.length === 0 && skippedListings.length > 0 && !showingSkipped) {
+      setSkippedPopupOpen(true);
+    }
+  }, [loading, newListings.length, skippedListings.length, showingSkipped]);
+
+  const availableListings = showingSkipped ? skippedListings : newListings;
   const currentListings = availableListings.slice(0, 3);
 
   const handleSwipeLeft = useCallback(async (listingId: string) => {
@@ -234,6 +252,13 @@ const Index = () => {
     setLastAction({ listingId: listing.id, type: 'cart' });
   }, [addToCart, pendingExitId]);
 
+  const handleSwipeDown = useCallback((listingId: string) => {
+    if (pendingExitId) return;
+    setPendingExitId(listingId);
+    setSkippedIds(prev => new Set(prev).add(listingId));
+    setLastAction({ listingId, type: 'skip' });
+  }, [pendingExitId]);
+
   const handleUndo = useCallback(async () => {
     if (!lastAction) return;
 
@@ -245,6 +270,12 @@ const Index = () => {
       await removeFavorite(listingId);
     } else if (type === 'cart') {
       await removeFromCart(listingId);
+    } else if (type === 'skip') {
+      setSkippedIds(prev => {
+        const next = new Set(prev);
+        next.delete(listingId);
+        return next;
+      });
     }
     
     setLastAction(null);
