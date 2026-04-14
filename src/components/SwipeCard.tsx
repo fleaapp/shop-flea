@@ -60,7 +60,7 @@ const SwipeCard = ({
     }
   }, [isTop, gone, x, y]);
 
-  const animateExit = useCallback((direction: 'left' | 'right' | 'up') => {
+  const animateExit = useCallback((direction: 'left' | 'right' | 'up' | 'down') => {
     setGone(true);
     exitNotifiedRef.current = false;
 
