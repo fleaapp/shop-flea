@@ -21,6 +21,13 @@ interface SpotlightTarget {
   showText?: boolean; // whether to show the slide text next to this target (default true)
 }
 
+interface SpotlightRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 interface Slide {
   image?: string;
   video?: string;
@@ -81,7 +88,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
   const location = useLocation();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [spotlightRects, setSpotlightRects] = useState<{ x: number; y: number; w: number; h: number }[]>([]);
+  const [spotlightRects, setSpotlightRects] = useState<SpotlightRect[]>([]);
 
   const slide = slides[currentSlide];
 
@@ -107,44 +114,53 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
       setSpotlightRects([]);
       return;
     }
+    if (location.pathname !== slide.spotlight.route) {
+      setSpotlightRects([]);
+      return;
+    }
     const allSelectors = [
       slide.spotlight.targetSelector,
       ...(slide.spotlight.additionalTargets?.map(t => t.targetSelector) || []),
     ];
-    const rects: { x: number; y: number; w: number; h: number }[] = [];
     const pad = 10;
-    for (const sel of allSelectors) {
+    const rects: Array<SpotlightRect | null> = allSelectors.map((sel) => {
       const el = document.querySelector(`[data-onboarding="${sel}"]`);
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        rects.push({
-          x: rect.left - pad,
-          y: rect.top - pad,
-          w: rect.width + pad * 2,
-          h: rect.height + pad * 2,
-        });
+      if (!el) {
+        return null;
       }
-    }
-    setSpotlightRects(rects);
-  }, [slide]);
+      const rect = el.getBoundingClientRect();
+      return {
+        x: rect.left - pad,
+        y: rect.top - pad,
+        w: rect.width + pad * 2,
+        h: rect.height + pad * 2,
+      };
+    });
+    setSpotlightRects(rects.every((rect): rect is SpotlightRect => rect !== null) ? rects : []);
+  }, [slide, location.pathname]);
 
   useEffect(() => {
     if (!open) return;
-    // Delay to let navigation render
-    const timer1 = setTimeout(measureSpotlight, 400);
-    const timer2 = setTimeout(measureSpotlight, 800);
+    const frame = requestAnimationFrame(measureSpotlight);
+    const timer1 = window.setTimeout(measureSpotlight, 400);
+    const timer2 = window.setTimeout(measureSpotlight, 800);
     window.addEventListener('resize', measureSpotlight);
     return () => {
+      cancelAnimationFrame(frame);
       clearTimeout(timer1);
       clearTimeout(timer2);
       window.removeEventListener('resize', measureSpotlight);
     };
-  }, [open, measureSpotlight, currentSlide]);
+  }, [open, measureSpotlight, currentSlide, location.pathname]);
 
   if (!open) return null;
 
   const handleNext = () => {
     if (currentSlide < slides.length - 1) {
+      const nextSlide = slides[currentSlide + 1];
+      if (nextSlide?.spotlight && nextSlide.spotlight.route !== location.pathname) {
+        navigate(nextSlide.spotlight.route);
+      }
       setDirection(1);
       setCurrentSlide(prev => prev + 1);
     } else {
@@ -169,22 +185,73 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
 
   const isLastSlide = currentSlide === slides.length - 1;
   const isSpotlightSlide = !!slide.spotlight;
-  const primaryRect = spotlightRects[0] || null;
+  const isSpotlightReady = isSpotlightSlide && location.pathname === slide.spotlight?.route && spotlightRects.length > 0;
+  const primaryRect = isSpotlightReady ? spotlightRects[0] : null;
+
+  const slideContent = (
+    <>
+      {/* Gesture animation — for swipe/tap demo slides */}
+      {!isSpotlightSlide && slide.gesture && (
+        <div className="flex items-center justify-center w-[min(45vw,28vh,180px)]">
+          <OnboardingMiniCard key={`gesture-${currentSlide}`} direction={slide.gesture} />
+        </div>
+      )}
+
+      {/* Static image — legacy fallback */}
+      {!isSpotlightSlide && !slide.gesture && slide.image && (
+        <div className={`flex items-center justify-center w-[min(92vw,52vh,400px)] h-[min(92vw,52vh,400px)] ${slide.imageOffset || ''}`}>
+          <img
+            src={slide.image}
+            alt={slide.alt}
+            className={`object-contain w-full h-full ${slide.isGif ? '' : ''}`}
+            style={undefined}
+          />
+        </div>
+      )}
+
+      {/* Video container */}
+      {!isSpotlightSlide && slide.video && (
+        <div className={`flex items-center justify-center w-[min(72vw,40vh,300px)] mt-8 ${slide.imageOffset || ''}`}>
+          <video
+            key={slide.video}
+            src={slide.video}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            onEnded={(e) => {
+              const vid = e.currentTarget;
+              vid.currentTime = 0;
+              vid.play();
+            }}
+            className="w-full rounded-xl object-contain"
+            style={undefined}
+          />
+        </div>
+      )}
+
+      {/* Text */}
+      {Array.isArray(slide.text) ? (
+        <div className={`flex flex-col items-center gap-0.5 ${!isSpotlightSlide && (slide.gesture || slide.image || slide.video) ? 'mt-14' : ''}`}>
+          {slide.text.map((line, i) => (
+            <p key={i} className={`text-cream text-center leading-snug max-[375px]:text-xs ${i === 0 && !slide.video ? 'text-lg font-bold max-[375px]:text-base' : 'text-base font-bold text-cream/80 max-[375px]:text-sm'}`}>
+              {line}
+            </p>
+          ))}
+        </div>
+      ) : (
+        <p className={`text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg ${!isSpotlightSlide && (slide.gesture || slide.image || slide.video) ? 'mt-6' : ''} ${isSpotlightSlide ? 'hidden' : ''}`}>
+          {slide.text}
+        </p>
+      )}
+    </>
+  );
 
   return (
     <div className="fixed inset-0 z-[999] flex flex-col">
-      {/* Solid overlay — always present as base layer */}
-      <div className="absolute inset-0 bg-charcoal/90" style={{ zIndex: 0 }} />
-
-      {/* SVG spotlight cutout — layered on top when rects are ready */}
-      {isSpotlightSlide && spotlightRects.length > 0 && (
-        <motion.svg
-          className="absolute inset-0 w-full h-full"
-          style={{ zIndex: 0 }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.35 }}
-        >
+      {isSpotlightSlide ? (
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
           <defs>
             <mask id="carousel-spotlight-mask">
               <rect x="0" y="0" width="100%" height="100%" fill="white" />
@@ -206,12 +273,14 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
             fill="hsl(220 15% 25% / 0.90)"
             mask="url(#carousel-spotlight-mask)"
           />
-        </motion.svg>
+        </svg>
+      ) : (
+        <div className="absolute inset-0 bg-charcoal/90" style={{ zIndex: 0 }} />
       )}
 
       {/* Spotlight glow rings - only for primary target (index 0) */}
-      {isSpotlightSlide && spotlightRects.length > 0 && (
-        <motion.div
+      {isSpotlightReady && (
+        <div
           className="absolute rounded-2xl pointer-events-none"
           style={{
             left: spotlightRects[0].x,
@@ -221,15 +290,12 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
             boxShadow: '0 0 24px 8px rgba(245,241,235,0.25), 0 0 48px 16px rgba(245,241,235,0.1)',
             zIndex: 1,
           }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4 }}
         />
       )}
 
       {/* Spotlight text — positioned to the left of the primary target */}
-      {isSpotlightSlide && primaryRect && (
-        <motion.p
+      {primaryRect && (
+        <p
           className="absolute text-cream text-xl font-semibold pointer-events-none max-[375px]:text-lg"
           style={{
             right: `calc(100% - ${primaryRect.x}px + 12px)`,
@@ -238,86 +304,42 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
             whiteSpace: 'nowrap',
             zIndex: 2,
           }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
         >
           {slide.text}
-        </motion.p>
+        </p>
       )}
 
       {/* Main content area */}
       <div className="relative flex-1 w-full flex flex-col items-center justify-center px-6">
-        <AnimatePresence mode="wait">
+        {isSpotlightSlide ? (
           <motion.div
             key={currentSlide}
-            initial={{ opacity: 0, x: direction * 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction * -50 }}
-            transition={{ duration: 0.3 }}
             className="flex flex-col items-center justify-center"
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.2}
             onDragEnd={handleDragEnd}
           >
-            {/* Gesture animation — for swipe/tap demo slides */}
-            {!isSpotlightSlide && slide.gesture && (
-              <div className="flex items-center justify-center w-[min(45vw,28vh,180px)]">
-                <OnboardingMiniCard key={`gesture-${currentSlide}`} direction={slide.gesture} />
-              </div>
-            )}
-
-            {/* Static image — legacy fallback */}
-            {!isSpotlightSlide && !slide.gesture && slide.image && (
-              <div className={`flex items-center justify-center w-[min(92vw,52vh,400px)] h-[min(92vw,52vh,400px)] ${slide.imageOffset || ''}`}>
-                <img
-                  src={slide.image}
-                  alt={slide.alt}
-                  className={`object-contain w-full h-full ${slide.isGif ? '' : ''}`}
-                  style={undefined}
-                />
-              </div>
-            )}
-
-            {/* Video container */}
-            {!isSpotlightSlide && slide.video && (
-              <div className={`flex items-center justify-center w-[min(72vw,40vh,300px)] mt-8 ${slide.imageOffset || ''}`}>
-                <video
-                  key={slide.video}
-                  src={slide.video}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  preload="auto"
-                  onEnded={(e) => {
-                    const vid = e.currentTarget;
-                    vid.currentTime = 0;
-                    vid.play();
-                  }}
-                  className="w-full rounded-xl object-contain"
-                  style={undefined}
-                />
-              </div>
-            )}
-
-            {/* Text */}
-            {Array.isArray(slide.text) ? (
-              <div className={`flex flex-col items-center gap-0.5 ${!isSpotlightSlide && (slide.gesture || slide.image || slide.video) ? 'mt-14' : ''}`}>
-                {slide.text.map((line, i) => (
-                  <p key={i} className={`text-cream text-center leading-snug max-[375px]:text-xs ${i === 0 && !slide.video ? 'text-lg font-bold max-[375px]:text-base' : 'text-base font-bold text-cream/80 max-[375px]:text-sm'}`}>
-                    {line}
-                  </p>
-                ))}
-              </div>
-            ) : (
-              <p className={`text-cream text-xl font-semibold text-center leading-relaxed max-[375px]:text-lg ${!isSpotlightSlide && (slide.gesture || slide.image || slide.video) ? 'mt-6' : ''} ${isSpotlightSlide ? 'hidden' : ''}`}>
-                {slide.text}
-              </p>
-            )}
+            {slideContent}
           </motion.div>
-        </AnimatePresence>
+        ) : (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentSlide}
+              initial={{ opacity: 0, x: direction * 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: direction * -50 }}
+              transition={{ duration: 0.3 }}
+              className="flex flex-col items-center justify-center"
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.2}
+              onDragEnd={handleDragEnd}
+            >
+              {slideContent}
+            </motion.div>
+          </AnimatePresence>
+        )}
       </div>
 
       {/* Controls pinned above bottom nav */}
