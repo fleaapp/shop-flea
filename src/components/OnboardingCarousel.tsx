@@ -89,6 +89,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(1);
   const [spotlightRects, setSpotlightRects] = useState<SpotlightRect[]>([]);
+  const [pendingSlideIndex, setPendingSlideIndex] = useState<number | null>(null);
 
   const slide = slides[currentSlide];
 
@@ -97,30 +98,18 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
     if (!open) {
       setCurrentSlide(0);
       setSpotlightRects([]);
+      setPendingSlideIndex(null);
     }
   }, [open]);
 
-  // Navigate to correct route for spotlight slides
-  useEffect(() => {
-    if (!open || !slide.spotlight) return;
-    if (slide.spotlight.route !== location.pathname) {
-      navigate(slide.spotlight.route);
-    }
-  }, [open, slide, location.pathname, navigate]);
-
   // Find and measure all spotlight target elements
-  const measureSpotlight = useCallback(() => {
-    if (!slide.spotlight) {
-      setSpotlightRects([]);
-      return;
-    }
-    if (location.pathname !== slide.spotlight.route) {
-      setSpotlightRects([]);
-      return;
+  const readSpotlightRects = useCallback((spotlight?: Slide['spotlight']) => {
+    if (!spotlight || location.pathname !== spotlight.route) {
+      return [];
     }
     const allSelectors = [
-      slide.spotlight.targetSelector,
-      ...(slide.spotlight.additionalTargets?.map(t => t.targetSelector) || []),
+      spotlight.targetSelector,
+      ...(spotlight.additionalTargets?.map(t => t.targetSelector) || []),
     ];
     const pad = 10;
     const rects: Array<SpotlightRect | null> = allSelectors.map((sel) => {
@@ -136,8 +125,12 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
         h: rect.height + pad * 2,
       };
     });
-    setSpotlightRects(rects.every((rect): rect is SpotlightRect => rect !== null) ? rects : []);
-  }, [slide, location.pathname]);
+    return rects.every((rect): rect is SpotlightRect => rect !== null) ? rects : [];
+  }, [location.pathname]);
+
+  const measureSpotlight = useCallback(() => {
+    setSpotlightRects(readSpotlightRects(slide.spotlight));
+  }, [readSpotlightRects, slide.spotlight]);
 
   useEffect(() => {
     if (!open) return;
@@ -153,16 +146,62 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
     };
   }, [open, measureSpotlight, currentSlide, location.pathname]);
 
+  useEffect(() => {
+    if (!open || pendingSlideIndex === null) return;
+
+    const pendingSlide = slides[pendingSlideIndex];
+    if (!pendingSlide?.spotlight) {
+      setDirection(pendingSlideIndex > currentSlide ? 1 : -1);
+      setCurrentSlide(pendingSlideIndex);
+      setPendingSlideIndex(null);
+      return;
+    }
+
+    if (location.pathname !== pendingSlide.spotlight.route) {
+      navigate(pendingSlide.spotlight.route);
+      return;
+    }
+
+    const revealSpotlightSlide = () => {
+      const rects = readSpotlightRects(pendingSlide.spotlight);
+      if (rects.length === 0) return;
+
+      setSpotlightRects(rects);
+      setDirection(pendingSlideIndex > currentSlide ? 1 : -1);
+      setCurrentSlide(pendingSlideIndex);
+      setPendingSlideIndex(null);
+    };
+
+    const frame = requestAnimationFrame(revealSpotlightSlide);
+    const timer1 = window.setTimeout(revealSpotlightSlide, 400);
+    const timer2 = window.setTimeout(revealSpotlightSlide, 800);
+    window.addEventListener('resize', revealSpotlightSlide);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      window.removeEventListener('resize', revealSpotlightSlide);
+    };
+  }, [open, pendingSlideIndex, location.pathname, navigate, readSpotlightRects, currentSlide]);
+
   if (!open) return null;
 
   const handleNext = () => {
     if (currentSlide < slides.length - 1) {
-      const nextSlide = slides[currentSlide + 1];
-      if (nextSlide?.spotlight && nextSlide.spotlight.route !== location.pathname) {
-        navigate(nextSlide.spotlight.route);
+      const nextIndex = currentSlide + 1;
+      const nextSlide = slides[nextIndex];
+
+      if (nextSlide?.spotlight) {
+        setPendingSlideIndex(nextIndex);
+        if (nextSlide.spotlight.route !== location.pathname) {
+          navigate(nextSlide.spotlight.route);
+        }
+        return;
       }
+
       setDirection(1);
-      setCurrentSlide(prev => prev + 1);
+      setCurrentSlide(nextIndex);
     } else {
       // Navigate back to home before completing
       navigate('/');
@@ -172,6 +211,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
 
   const handlePrev = () => {
     if (currentSlide > 0) {
+      setPendingSlideIndex(null);
       setDirection(-1);
       setCurrentSlide(prev => prev - 1);
     }
