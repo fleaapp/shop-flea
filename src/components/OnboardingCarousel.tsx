@@ -173,14 +173,17 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
 
   return (
     <div className="fixed inset-0 z-[999] flex flex-col">
-      {/* Overlay — with or without spotlight cutout */}
-      {isSpotlightSlide && spotlightRects.length > 0 ? (
+      {/* Solid overlay — always present as base layer */}
+      <div className="absolute inset-0 bg-charcoal/90" style={{ zIndex: 0 }} />
+
+      {/* SVG spotlight cutout — layered on top when rects are ready */}
+      {isSpotlightSlide && spotlightRects.length > 0 && (
         <motion.svg
           className="absolute inset-0 w-full h-full"
           style={{ zIndex: 0 }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
+          transition={{ duration: 0.35 }}
         >
           <defs>
             <mask id="carousel-spotlight-mask">
@@ -204,12 +207,6 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
             mask="url(#carousel-spotlight-mask)"
           />
         </motion.svg>
-      ) : (
-        <motion.div
-          className="absolute inset-0 bg-charcoal/90"
-          initial={isSpotlightSlide ? { opacity: 1 } : undefined}
-          animate={isSpotlightSlide ? { opacity: 1 } : undefined}
-        />
       )}
 
       {/* Spotlight glow rings - only for primary target (index 0) */}
@@ -307,9 +304,9 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
 
             {/* Text */}
             {Array.isArray(slide.text) ? (
-              <div className={`flex flex-col items-center gap-0.5 ${!isSpotlightSlide && (slide.gesture || slide.image || slide.video) ? 'mt-8' : ''}`}>
+              <div className={`flex flex-col items-center gap-0.5 ${!isSpotlightSlide && (slide.gesture || slide.image || slide.video) ? 'mt-14' : ''}`}>
                 {slide.text.map((line, i) => (
-                  <p key={i} className={`text-cream text-center leading-snug max-[375px]:text-sm ${i === 0 && !slide.video ? 'text-xl font-bold max-[375px]:text-lg' : 'text-lg font-bold text-cream/80 max-[375px]:text-base'}`}>
+                  <p key={i} className={`text-cream text-center leading-snug max-[375px]:text-xs ${i === 0 && !slide.video ? 'text-lg font-bold max-[375px]:text-base' : 'text-base font-bold text-cream/80 max-[375px]:text-sm'}`}>
                     {line}
                   </p>
                 ))}
