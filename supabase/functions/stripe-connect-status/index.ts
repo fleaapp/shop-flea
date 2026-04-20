@@ -10,7 +10,7 @@ const corsHeaders = {
 
 function getStripeSecretKey() {
   const sanitizedKey = (Deno.env.get("STRIPE_SECRET_KEY") ?? "")
-    .replace(/[\s\u00A0\u200B-\u200D\uFEFF]+/g, "")
+    .replace(/[\s\u00A0\u1680\u2000-\u200D\u2028\u2029\u202F\u205F\u3000\uFEFF]+/g, "")
     .trim();
 
   if (!sanitizedKey) {
