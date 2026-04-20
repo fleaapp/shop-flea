@@ -17,7 +17,7 @@ function getStripeSecretKey() {
     throw new Error("Stripe secret key is missing.");
   }
 
-  if (!/^sk_(test|live)_/.test(sanitizedKey)) {
+  if (!/^sk_(test|live|test_[A-Za-z0-9]+|live_[A-Za-z0-9]+)_/.test(sanitizedKey) && !/^rk_(test|live)_/.test(sanitizedKey)) {
     throw new Error("Stripe secret key is invalid. Please re-save it in backend secrets.");
   }
 
