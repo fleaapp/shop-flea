@@ -8,6 +8,22 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function getStripeSecretKey() {
+  const sanitizedKey = (Deno.env.get("STRIPE_SECRET_KEY") ?? "")
+    .replace(/[\s\u00A0\u200B-\u200D\uFEFF]+/g, "")
+    .trim();
+
+  if (!sanitizedKey) {
+    throw new Error("Stripe secret key is missing.");
+  }
+
+  if (!/^sk_(test|live)_/.test(sanitizedKey)) {
+    throw new Error("Stripe secret key is invalid. Please re-save it in backend secrets.");
+  }
+
+  return sanitizedKey;
+}
+
 async function persistStripeStatus(userId: string, accountId: string) {
   const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '';
   const serviceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -66,7 +82,7 @@ serve(async (req) => {
     const body = await req.json();
     const { stripeAccountId, sellerUserId } = body;
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+    const stripe = new Stripe(getStripeSecretKey(), {
       apiVersion: "2025-08-27.basil",
     });
 
