@@ -1,0 +1,1 @@
+UPDATE public.profiles SET stripe_account_id = NULL, stripe_onboarding_complete = false WHERE username IN ('@sarahhearn2', 'sarahhearn2');
