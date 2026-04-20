@@ -88,16 +88,12 @@ serve(async (req) => {
       const userProfile = profiles?.[0];
 
       const createParams: Record<string, unknown> = {
-        type: "express",
+        type: "standard",
         email: user.email,
         metadata: {
           flea_user_id: userId,
         },
         business_type: "individual",
-        capabilities: {
-          card_payments: { requested: true },
-          transfers: { requested: true },
-        },
       };
 
       // Pre-fill individual details
