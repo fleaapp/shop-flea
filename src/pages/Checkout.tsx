@@ -232,6 +232,8 @@ const Checkout = () => {
         return;
       }
 
+      localStorage.setItem('checkout_payment_method', sellerStripeAccountId ? 'stripe' : 'paypal');
+
       // Use Stripe if available, otherwise PayPal
       if (sellerStripeAccountId) {
         const { data, error } = await invokeCloudFunction('stripe-connect-checkout', {
@@ -249,8 +251,6 @@ const Checkout = () => {
         if (!data?.url) throw new Error('No checkout URL returned');
         window.location.href = data.url;
       } else if (sellerPayPalMerchantId) {
-        localStorage.setItem('checkout_payment_method', 'paypal');
-        
         const { data, error } = await invokeCloudFunction('paypal-connect-checkout', {
           items: validItems.map(item => ({
             id: item.id,
@@ -264,6 +264,9 @@ const Checkout = () => {
 
         if (error) throw error;
         if (!data?.url) throw new Error('No checkout URL returned');
+        if (data?.orderId) {
+          localStorage.setItem('checkout_reference', data.orderId);
+        }
         window.location.href = data.url;
       }
     } catch (error) {
