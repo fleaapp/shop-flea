@@ -29,6 +29,8 @@ type ListingRow = {
   status: string;
 };
 
+const ORDER_INSERT_FALLBACK_COLUMNS = ["checkout_reference", "payment_method"] as const;
+
 function isMissingColumnError(error: unknown, columnName: string) {
   if (!error || typeof error !== "object" || !("code" in error) || !("message" in error)) {
     return false;
@@ -38,6 +40,68 @@ function isMissingColumnError(error: unknown, columnName: string) {
   const message = typeof error.message === "string" ? error.message : "";
 
   return (code === "42703" || code === "PGRST204") && message.includes(columnName);
+}
+
+async function reloadExternalSchemaCache() {
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+    if (!supabaseUrl || !serviceKey) return;
+
+    await fetch(`${supabaseUrl}/functions/v1/reload-schema`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${serviceKey}`,
+      },
+    });
+  } catch (error) {
+    console.error("[finalize-checkout] Schema reload trigger failed:", error);
+  }
+}
+
+function stripOrderColumns(
+  rows: Record<string, unknown>[],
+  columnsToStrip: Set<string>,
+): Record<string, unknown>[] {
+  return rows.map((row) =>
+    Object.fromEntries(Object.entries(row).filter(([key]) => !columnsToStrip.has(key)))
+  );
+}
+
+async function insertOrdersWithFallback(
+  serviceClient: ReturnType<typeof createClient>,
+  rows: Record<string, unknown>[],
+) {
+  const strippedColumns = new Set<string>();
+  let schemaReloaded = false;
+
+  while (true) {
+    const payload = stripOrderColumns(rows, strippedColumns);
+    const result = await serviceClient
+      .from("orders")
+      .insert(payload)
+      .select("id, listing_id, seller_id");
+
+    const missingColumn = ORDER_INSERT_FALLBACK_COLUMNS.find(
+      (column) => !strippedColumns.has(column) && isMissingColumnError(result.error, column),
+    );
+
+    if (!missingColumn) {
+      return result;
+    }
+
+    if (!schemaReloaded) {
+      console.warn(`[finalize-checkout] ${missingColumn} unavailable in schema cache during insert, reloading schema and retrying.`);
+      schemaReloaded = true;
+      await reloadExternalSchemaCache();
+      continue;
+    }
+
+    console.warn(`[finalize-checkout] ${missingColumn} still unavailable after schema reload, retrying without it.`);
+    strippedColumns.add(missingColumn);
+  }
 }
 
 async function sendPushNotification(userId: string, notification: Record<string, unknown>) {
@@ -215,18 +279,7 @@ serve(async (req) => {
       });
     }
 
-    let insertResult = await serviceClient
-      .from("orders")
-      .insert(inserts)
-      .select("id, listing_id, seller_id");
-
-    if (isMissingColumnError(insertResult.error, "checkout_reference")) {
-      console.warn("[finalize-checkout] checkout_reference unavailable in schema cache during insert, retrying without it.");
-      insertResult = await serviceClient
-        .from("orders")
-        .insert(inserts.map(({ checkout_reference: _checkoutReference, ...order }) => order))
-        .select("id, listing_id, seller_id");
-    }
+    const insertResult = await insertOrdersWithFallback(serviceClient, inserts);
 
     if (insertResult.error) throw insertResult.error;
 

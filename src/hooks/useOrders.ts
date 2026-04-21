@@ -73,6 +73,30 @@ export interface OrderGroup {
   orders: Order[];
 }
 
+const ORDER_SELECT_FIELDS = `
+  id,
+  order_group_id,
+  order_number,
+  listing_id,
+  buyer_id,
+  seller_id,
+  status,
+  tracking_provider,
+  tracking_number,
+  price,
+  shipping_price,
+  created_at,
+  updated_at,
+  shipped_at,
+  delivered_at,
+  shipping_first_name,
+  shipping_last_name,
+  shipping_address,
+  shipping_city,
+  shipping_state,
+  shipping_postcode
+`;
+
 const getGroupStatus = (orders: Order[]): OrderStatus => {
   if (orders.some((o) => o.status === 'awaiting')) return 'awaiting';
   if (orders.some((o) => o.status === 'shipped')) return 'shipped';
@@ -127,6 +151,17 @@ const groupOrders = (orders: Order[]): OrderGroup[] => {
   );
 };
 
+const fetchOrdersForUser = async (column: 'buyer_id' | 'seller_id', userId: string) => {
+  const { data, error } = await supabase
+    .from('orders')
+    .select(ORDER_SELECT_FIELDS)
+    .eq(column, userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
+};
+
 export function useOrders() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -137,13 +172,7 @@ export function useOrders() {
     queryFn: async () => {
       if (!user?.id) return [];
       
-      const { data: orders, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('buyer_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const orders = await fetchOrdersForUser('buyer_id', user.id);
       if (!orders || orders.length === 0) return [];
 
       // Fetch listing and profile data
@@ -183,13 +212,7 @@ export function useOrders() {
     queryFn: async () => {
       if (!user?.id) return [];
       
-      const { data: orders, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('seller_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const orders = await fetchOrdersForUser('seller_id', user.id);
       if (!orders || orders.length === 0) return [];
 
       // Fetch listing and profile data
