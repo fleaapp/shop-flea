@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
@@ -12,8 +13,9 @@ import { sendPushNotification } from '@/utils/pushNotify';
 const CheckoutSuccess = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const { user, loading } = useAuth();
-  const { removeFromCart } = useCart();
+  const { removeFromCart, refetch: refetchCart } = useCart();
   const [showSuccess, setShowSuccess] = useState(false);
   const [processing, setProcessing] = useState(true);
   const [finalizationError, setFinalizationError] = useState<string | null>(null);
@@ -131,6 +133,8 @@ const CheckoutSuccess = () => {
 
         // Remove items from cart
         items.forEach(item => removeFromCart(item.id));
+        await refetchCart();
+        await queryClient.invalidateQueries({ queryKey: ['orders'] });
 
         // Clean up sessionStorage
         localStorage.removeItem('checkout_items');
@@ -150,7 +154,7 @@ const CheckoutSuccess = () => {
     };
 
     processOrder();
-  }, [user, loading, searchParams, navigate, removeFromCart]);
+  }, [user, loading, searchParams, navigate, removeFromCart, refetchCart, queryClient]);
 
   if (processing) {
     return (
