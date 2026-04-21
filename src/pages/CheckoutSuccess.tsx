@@ -32,9 +32,9 @@ const CheckoutSuccess = () => {
 
       try {
         // Retrieve saved checkout data
-        const itemsJson = sessionStorage.getItem('checkout_items');
-        const shippingJson = sessionStorage.getItem('checkout_shipping');
-        const shippingBySellerJson = sessionStorage.getItem('checkout_shipping_by_seller');
+        const itemsJson = localStorage.getItem('checkout_items');
+        const shippingJson = localStorage.getItem('checkout_shipping');
+        const shippingBySellerJson = localStorage.getItem('checkout_shipping_by_seller');
 
         if (!itemsJson || !shippingJson) {
           // Data missing - payment succeeded but we can't create orders client-side
@@ -75,7 +75,7 @@ const CheckoutSuccess = () => {
                 price: item.price,
                 shipping_price: itemShipping,
                 status: 'awaiting',
-                payment_method: sessionStorage.getItem('checkout_payment_method') || 'stripe',
+                payment_method: localStorage.getItem('checkout_payment_method') || 'stripe',
                 shipping_first_name: shipping.shippingFirstName,
                 shipping_last_name: shipping.shippingLastName,
                 shipping_address: shipping.shippingAddress,
@@ -151,11 +151,11 @@ const CheckoutSuccess = () => {
         items.forEach(item => removeFromCart(item.id));
 
         // Clean up sessionStorage
-        sessionStorage.removeItem('checkout_items');
-        sessionStorage.removeItem('checkout_shipping');
-        sessionStorage.removeItem('checkout_seller_settings');
-        sessionStorage.removeItem('checkout_shipping_by_seller');
-        sessionStorage.removeItem('checkout_payment_method');
+        localStorage.removeItem('checkout_items');
+        localStorage.removeItem('checkout_shipping');
+        localStorage.removeItem('checkout_seller_settings');
+        localStorage.removeItem('checkout_shipping_by_seller');
+        localStorage.removeItem('checkout_payment_method');
 
         setShowSuccess(true);
       } catch (error) {

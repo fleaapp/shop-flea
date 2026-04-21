@@ -216,10 +216,10 @@ const Checkout = () => {
         shippingState,
         shippingPostcode: shippingPostcode.trim(),
       };
-      sessionStorage.setItem('checkout_shipping', JSON.stringify(shippingDetails));
-      sessionStorage.setItem('checkout_items', JSON.stringify(validItems));
-      sessionStorage.setItem('checkout_seller_settings', JSON.stringify(Array.from(sellerSettings.entries())));
-      sessionStorage.setItem('checkout_shipping_by_seller', JSON.stringify(Array.from(shippingBySeller.entries())));
+      localStorage.setItem('checkout_shipping', JSON.stringify(shippingDetails));
+      localStorage.setItem('checkout_items', JSON.stringify(validItems));
+      localStorage.setItem('checkout_seller_settings', JSON.stringify(Array.from(sellerSettings.entries())));
+      localStorage.setItem('checkout_shipping_by_seller', JSON.stringify(Array.from(shippingBySeller.entries())));
 
       // Get the seller's payment account
       const sellerId = validItems[0]?.sellerId;
@@ -249,7 +249,7 @@ const Checkout = () => {
         if (!data?.url) throw new Error('No checkout URL returned');
         window.location.href = data.url;
       } else if (sellerPayPalMerchantId) {
-        sessionStorage.setItem('checkout_payment_method', 'paypal');
+        localStorage.setItem('checkout_payment_method', 'paypal');
         
         const { data, error } = await invokeCloudFunction('paypal-connect-checkout', {
           items: validItems.map(item => ({
