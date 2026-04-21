@@ -29,8 +29,6 @@ type ListingRow = {
   status: string;
 };
 
-const SOLD_NOTIFICATION_TYPES = ["cart_item_sold", "wishlist_item_sold", "cart_wishlist_item_sold"] as const;
-
 function isMissingColumnError(error: unknown, columnName: string) {
   return !!error && typeof error === "object" && "code" in error && "message" in error
     && error.code === "42703"
@@ -232,8 +230,6 @@ serve(async (req) => {
       .from("listings")
       .update({ status: "sold", updated_at: new Date().toISOString() })
       .in("id", itemIds);
-
-    const listingTitleMap = new Map(authoritativeItems.map((row) => [row.id, row.title]));
 
     const [cartUsersResult, wishlistUsersResult] = await Promise.all([
       serviceClient
