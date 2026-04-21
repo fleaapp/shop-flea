@@ -250,25 +250,7 @@ serve(async (req) => {
       throw new Error("Purchased items could not be found.");
     }
 
-    let existingOrdersQuery = serviceClient
-      .from("orders")
-      .select("id, listing_id, seller_id")
-      .eq("buyer_id", userId)
-      .in("listing_id", itemIds);
-
-    if (checkoutReference) {
-      existingOrdersQuery = existingOrdersQuery.eq("checkout_reference", checkoutReference);
-    }
-
-    let existingOrdersResult = await existingOrdersQuery;
-    if (checkoutReference && isMissingColumnError(existingOrdersResult.error, "checkout_reference")) {
-      console.warn("[finalize-checkout] checkout_reference unavailable in schema cache during lookup, retrying without it.");
-      existingOrdersResult = await serviceClient
-        .from("orders")
-        .select("id, listing_id, seller_id")
-        .eq("buyer_id", userId)
-        .in("listing_id", itemIds);
-    }
+    let existingOrdersResult = await fetchOrdersForBuyer(serviceClient, userId, itemIds, checkoutReference);
 
     if (existingOrdersResult.error) throw existingOrdersResult.error;
 
@@ -341,7 +323,17 @@ serve(async (req) => {
 
     if (insertResult.error) throw insertResult.error;
 
-    const insertedOrders = insertResult.data ?? [];
+    let insertedOrders = insertResult.data ?? [];
+
+    if (insertedOrders.length !== pendingItems.length) {
+      const verifyResult = await fetchOrdersForBuyer(serviceClient, userId, pendingItems.map((item) => item.id), checkoutReference);
+      if (verifyResult.error) throw verifyResult.error;
+      insertedOrders = verifyResult.data ?? [];
+    }
+
+    if (insertedOrders.length !== pendingItems.length) {
+      throw new Error("Order finalization did not create the expected order records.");
+    }
 
     await serviceClient
       .from("listings")
@@ -433,9 +425,7 @@ serve(async (req) => {
     }
 
     if (notificationRows.length > 0) {
-      const { error: notificationError } = await serviceClient
-        .from("notifications")
-        .insert(notificationRows);
+      const { error: notificationError } = await insertNotificationsWithFallback(serviceClient, notificationRows);
 
       if (notificationError) throw notificationError;
     }
