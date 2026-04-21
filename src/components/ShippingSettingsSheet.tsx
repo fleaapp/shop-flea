@@ -125,6 +125,14 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
         throw error;
       }
 
+      // Always persist to localStorage so listing pages can read it immediately
+      saveShippingPrefs(
+        user.id,
+        tieredEnabled
+          ? { tieredEnabled: true, tier1: parseFloat(tier1), tier2: parseFloat(tier2), tier3: parseFloat(tier3) }
+          : { tieredEnabled: false }
+      );
+
       await refreshProfile();
       toast.success('Shipping settings saved!');
       onOpenChange(false);

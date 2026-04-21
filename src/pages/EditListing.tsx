@@ -45,7 +45,7 @@ const isMissingSubcategoryColumnError = (error: { code?: string; message?: strin
 const EditListing = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   const { checkListingContent, isChecking } = useContentModeration();
   const { isBlocked } = useBlockedStatus();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -835,9 +835,15 @@ const EditListing = () => {
           setShowShippingSettings(open);
           if (!open && user) {
             const localPrefs = loadShippingPrefs(user.id);
-            if (localPrefs && localPrefs.tieredEnabled) {
-              setShippingPrice(localPrefs.tier1.toString());
+            if (localPrefs) {
+              setTieredShippingEnabled(localPrefs.tieredEnabled);
+              if (localPrefs.tieredEnabled) {
+                setShippingPrice(localPrefs.tier1.toString());
+              } else {
+                setShippingPrice('');
+              }
             }
+            refreshProfile();
           }
         }}
       />
