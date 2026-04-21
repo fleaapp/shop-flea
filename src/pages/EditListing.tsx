@@ -45,7 +45,7 @@ const isMissingSubcategoryColumnError = (error: { code?: string; message?: strin
 const EditListing = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   const { checkListingContent, isChecking } = useContentModeration();
   const { isBlocked } = useBlockedStatus();
   const fileInputRef = useRef<HTMLInputElement>(null);
