@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
 import { useCart } from '@/context/CartContext';
@@ -40,12 +40,14 @@ const getOrderStatusBadge = (status: Order['status']) => {
 
 const Cart = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const routeState = location.state as { initialTab?: 'cart' | 'orders' } | null;
   const { cartItems, removeFromCart } = useCart();
   const { addFavorite } = useFavorites();
   const { removeDiscarded } = useDiscardedListings();
   const { buyerOrderGroups, loadingBuyerOrders, markAsDelivered } = useOrders();
   const { getGroupUnread, total: totalUnreadMessages } = useUnreadOrderMessages();
-  const [activeTab, setActiveTab] = useState<'cart' | 'orders'>('cart');
+  const [activeTab, setActiveTab] = useState<'cart' | 'orders'>(routeState?.initialTab === 'orders' ? 'orders' : 'cart');
   const [orderStatusFilter, setOrderStatusFilter] = useState<'awaiting' | 'shipped' | 'delivered'>('awaiting');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
@@ -57,6 +59,12 @@ const Cart = () => {
     if (sellerIds.length === 0) return;
     fetchSellerShippingSettings(sellerIds).then(setSellerSettings);
   }, [cartItems]);
+
+  useEffect(() => {
+    if (routeState?.initialTab === 'orders') {
+      setActiveTab('orders');
+    }
+  }, [routeState?.initialTab]);
 
   const handleOrderClick = (group: OrderGroup) => {
     setSelectedOrderGroup(group);
