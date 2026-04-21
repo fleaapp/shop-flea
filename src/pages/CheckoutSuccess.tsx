@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Listing } from '@/types/listing';
 import OrderSuccessDialog from '@/components/OrderSuccessDialog';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
+import { sendPushNotification } from '@/utils/pushNotify';
 
 const CheckoutSuccess = () => {
   const navigate = useNavigate();
