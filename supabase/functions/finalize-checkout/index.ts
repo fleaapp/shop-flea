@@ -12,6 +12,32 @@ type CheckoutItem = {
   price: number;
 };
 
+type ShippingDetails = {
+  shippingFirstName?: string;
+  shippingLastName?: string;
+  shippingAddress?: string;
+  shippingCity?: string;
+  shippingState?: string;
+  shippingPostcode?: string;
+};
+
+type ListingRow = {
+  id: string;
+  user_id: string;
+  title: string;
+  price: number;
+  status: string;
+};
+
+const SOLD_NOTIFICATION_TYPES = ["cart_item_sold", "wishlist_item_sold", "cart_wishlist_item_sold"] as const;
+
+function isMissingColumnError(error: unknown, columnName: string) {
+  return !!error && typeof error === "object" && "code" in error && "message" in error
+    && error.code === "42703"
+    && typeof error.message === "string"
+    && error.message.includes(columnName);
+}
+
 async function sendPushNotification(userId: string, notification: Record<string, unknown>) {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
@@ -60,14 +86,20 @@ serve(async (req) => {
       });
     }
 
-    const { items, shipping, shippingBySeller, paymentMethod, checkoutReference } = await req.json();
+    const { items, shipping, shippingBySeller, paymentMethod, checkoutReference } = await req.json() as {
+      items?: CheckoutItem[];
+      shipping?: ShippingDetails;
+      shippingBySeller?: Array<[string, number]>;
+      paymentMethod?: string;
+      checkoutReference?: string;
+    };
 
     if (!Array.isArray(items) || items.length === 0) {
       throw new Error("No items provided.");
     }
 
-    if (!shipping || !checkoutReference) {
-      throw new Error("Missing shipping details or checkout reference.");
+    if (!shipping) {
+      throw new Error("Missing shipping details.");
     }
 
     const serviceClient = createClient(
@@ -76,19 +108,54 @@ serve(async (req) => {
       { auth: { persistSession: false, autoRefreshToken: false } }
     );
 
-    const itemIds = items.map((item: CheckoutItem) => item.id);
+    const itemIds = [...new Set(items.map((item: CheckoutItem) => item.id))];
 
-    const { data: existingOrders, error: existingOrdersError } = await serviceClient
+    const { data: listingRows, error: listingError } = await serviceClient
+      .from("listings")
+      .select("id, user_id, title, price, status")
+      .in("id", itemIds);
+
+    if (listingError) throw listingError;
+
+    const listingMap = new Map((listingRows ?? []).map((row) => [row.id, row as ListingRow]));
+    const authoritativeItems = itemIds
+      .map((id) => listingMap.get(id))
+      .filter((item): item is ListingRow => !!item);
+
+    if (authoritativeItems.length === 0) {
+      throw new Error("Purchased items could not be found.");
+    }
+
+    let existingOrdersQuery = serviceClient
       .from("orders")
-      .select("id, listing_id")
-      .eq("checkout_reference", checkoutReference)
+      .select("id, listing_id, seller_id")
+      .eq("buyer_id", userId)
       .in("listing_id", itemIds);
 
-    if (existingOrdersError) throw existingOrdersError;
+    if (checkoutReference) {
+      existingOrdersQuery = existingOrdersQuery.eq("checkout_reference", checkoutReference);
+    }
 
-    const existingListingIds = new Set((existingOrders ?? []).map((order) => order.listing_id));
+    let existingOrdersResult = await existingOrdersQuery;
+    if (checkoutReference && isMissingColumnError(existingOrdersResult.error, "checkout_reference")) {
+      existingOrdersResult = await serviceClient
+        .from("orders")
+        .select("id, listing_id, seller_id")
+        .eq("buyer_id", userId)
+        .in("listing_id", itemIds);
+    }
+
+    if (existingOrdersResult.error) throw existingOrdersResult.error;
+
+    const existingOrders = existingOrdersResult.data ?? [];
+    const existingListingIds = new Set(existingOrders.map((order) => order.listing_id));
 
     if (existingOrders && existingOrders.length === itemIds.length) {
+      await serviceClient
+        .from("listings")
+        .update({ status: "sold", updated_at: new Date().toISOString() })
+        .in("id", itemIds);
+
       await serviceClient
         .from("cart_items")
         .delete()
@@ -101,7 +168,7 @@ serve(async (req) => {
       });
     }
 
-    const pendingItems = (items as CheckoutItem[]).filter((item) => !existingListingIds.has(item.id));
+    const pendingItems = authoritativeItems.filter((item) => !existingListingIds.has(item.id));
 
     if (pendingItems.length === 0) {
       return new Response(JSON.stringify({ ok: true, alreadyProcessed: true }), {
@@ -112,12 +179,12 @@ serve(async (req) => {
 
     const orderGroupId = crypto.randomUUID();
     const shippingMap = new Map<string, number>(Array.isArray(shippingBySeller) ? shippingBySeller : []);
-    const itemsBySeller = new Map<string, CheckoutItem[]>();
+    const itemsBySeller = new Map<string, ListingRow[]>();
 
     for (const item of pendingItems) {
-      const sellerItems = itemsBySeller.get(item.sellerId) ?? [];
+      const sellerItems = itemsBySeller.get(item.user_id) ?? [];
       sellerItems.push(item);
-      itemsBySeller.set(item.sellerId, sellerItems);
+      itemsBySeller.set(item.user_id, sellerItems);
     }
 
     const inserts: Record<string, unknown>[] = [];
@@ -130,7 +197,7 @@ serve(async (req) => {
           listing_id: item.id,
           buyer_id: userId,
           seller_id: sellerId,
-          price: item.price,
+          price: Number(item.price),
           shipping_price: index === 0 ? sellerShipping : 0,
           status: "awaiting",
           payment_method: paymentMethod || "stripe",
@@ -140,32 +207,124 @@ serve(async (req) => {
           shipping_city: shipping.shippingCity,
           shipping_state: shipping.shippingState,
           shipping_postcode: shipping.shippingPostcode,
-          checkout_reference: checkoutReference,
+          ...(checkoutReference ? { checkout_reference: checkoutReference } : {}),
         });
       });
     }
 
-    const { data: insertedOrders, error: insertError } = await serviceClient
+    let insertResult = await serviceClient
       .from("orders")
       .insert(inserts)
       .select("id, listing_id, seller_id");
-    if (insertError) throw insertError;
 
-    const { data: listingRows } = await serviceClient
+    if (isMissingColumnError(insertResult.error, "checkout_reference")) {
+      insertResult = await serviceClient
+        .from("orders")
+        .insert(inserts.map(({ checkout_reference: _checkoutReference, ...order }) => order))
+        .select("id, listing_id, seller_id");
+    }
+
+    if (insertResult.error) throw insertResult.error;
+
+    const insertedOrders = insertResult.data ?? [];
+
+    await serviceClient
       .from("listings")
-      .select("id, title")
+      .update({ status: "sold", updated_at: new Date().toISOString() })
       .in("id", itemIds);
 
-    const listingTitleMap = new Map((listingRows ?? []).map((row) => [row.id, row.title]));
+    const listingTitleMap = new Map(authoritativeItems.map((row) => [row.id, row.title]));
+
+    const [cartUsersResult, wishlistUsersResult] = await Promise.all([
+      serviceClient
+        .from("cart_items")
+        .select("listing_id, user_id")
+        .in("listing_id", itemIds),
+      serviceClient
+        .from("favorites")
+        .select("listing_id, user_id")
+        .in("listing_id", itemIds),
+    ]);
+
+    if (cartUsersResult.error) throw cartUsersResult.error;
+    if (wishlistUsersResult.error) throw wishlistUsersResult.error;
+
+    const cartUsersByListing = new Map<string, Set<string>>();
+    for (const row of cartUsersResult.data ?? []) {
+      const users = cartUsersByListing.get(row.listing_id) ?? new Set<string>();
+      users.add(row.user_id);
+      cartUsersByListing.set(row.listing_id, users);
+    }
+
+    const wishlistUsersByListing = new Map<string, Set<string>>();
+    for (const row of wishlistUsersResult.data ?? []) {
+      const users = wishlistUsersByListing.get(row.listing_id) ?? new Set<string>();
+      users.add(row.user_id);
+      wishlistUsersByListing.set(row.listing_id, users);
+    }
+
+    const notificationRows: Record<string, unknown>[] = [];
 
     for (const order of insertedOrders ?? []) {
+      const listing = listingMap.get(order.listing_id);
+      if (!listing) continue;
+
+      notificationRows.push({
+        user_id: order.seller_id,
+        type: "item_sold",
+        title: "Item Sold",
+        message: listing.title,
+        related_listing_id: order.listing_id,
+        related_user_id: userId,
+        related_order_id: order.id,
+      });
+
       await sendPushNotification(order.seller_id, {
         type: "item_sold",
         title: "Item Sold",
-        message: `🎉🤑 Cha-ching! Your item \"${listingTitleMap.get(order.listing_id) ?? 'item'}\" has just sold!`,
+        message: `🎉🤑 Cha-ching! Your item \"${listing.title}\" has just sold.`,
         related_listing_id: order.listing_id,
         related_order_id: order.id,
       });
+
+      const cartUsers = cartUsersByListing.get(order.listing_id) ?? new Set<string>();
+      const wishlistUsers = wishlistUsersByListing.get(order.listing_id) ?? new Set<string>();
+
+      for (const watcherId of new Set([...cartUsers, ...wishlistUsers])) {
+        if (watcherId === userId || watcherId === order.seller_id) continue;
+
+        const inCart = cartUsers.has(watcherId);
+        const inWishlist = wishlistUsers.has(watcherId);
+        const type = inCart && inWishlist
+          ? "cart_wishlist_item_sold"
+          : inCart
+            ? "cart_item_sold"
+            : "wishlist_item_sold";
+
+        notificationRows.push({
+          user_id: watcherId,
+          type,
+          title: "Item Sold",
+          message: listing.title,
+          related_listing_id: order.listing_id,
+          related_user_id: userId,
+        });
+
+        await sendPushNotification(watcherId, {
+          type,
+          title: "Item Sold",
+          message: `${listing.title}.`,
+          related_listing_id: order.listing_id,
+        });
+      }
+    }
+
+    if (notificationRows.length > 0) {
+      const { error: notificationError } = await serviceClient
+        .from("notifications")
+        .insert(notificationRows);
+
+      if (notificationError) throw notificationError;
     }
 
     const { error: clearCartError } = await serviceClient
