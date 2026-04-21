@@ -73,6 +73,10 @@ export interface OrderGroup {
   orders: Order[];
 }
 
+type RawOrderRow = Omit<Order, 'status' | 'listing' | 'buyer_profile' | 'seller_profile'> & {
+  status: string;
+};
+
 const ORDER_SELECT_COLUMNS = [
   'id',
   'order_group_id',
@@ -109,6 +113,17 @@ const isMissingColumnError = (error: unknown, columnName: string) => {
   const message = 'message' in error && typeof error.message === 'string' ? error.message : '';
 
   return (code === '42703' || code === 'PGRST204') && message.includes(columnName);
+};
+
+const normalizeOrderRows = (rows: unknown[]): RawOrderRow[] => {
+  return rows.map((row) => {
+    const typedRow = row as Partial<RawOrderRow>;
+
+    return {
+      ...(typedRow as RawOrderRow),
+      order_number: typedRow.order_number ?? null,
+    };
+  });
 };
 
 const ORDER_SELECT_FIELDS = buildOrderSelectFields();
@@ -167,7 +182,7 @@ const groupOrders = (orders: Order[]): OrderGroup[] => {
   );
 };
 
-const fetchOrdersForUser = async (column: 'buyer_id' | 'seller_id', userId: string) => {
+const fetchOrdersForUser = async (column: 'buyer_id' | 'seller_id', userId: string): Promise<RawOrderRow[]> => {
   const omittedColumns = new Set<string>();
 
   while (true) {
@@ -187,7 +202,7 @@ const fetchOrdersForUser = async (column: 'buyer_id' | 'seller_id', userId: stri
     }
 
     if (error) throw error;
-    return data ?? [];
+    return normalizeOrderRows((data ?? []) as unknown[]);
   }
 };
 
