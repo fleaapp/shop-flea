@@ -77,19 +77,22 @@ type RawOrderRow = Omit<Order, 'status' | 'listing' | 'buyer_profile' | 'seller_
   status: string;
 };
 
-const ORDER_SELECT_COLUMNS = [
+const ORDER_REQUIRED_COLUMNS = [
   'id',
-  'order_group_id',
-  'order_number',
   'listing_id',
   'buyer_id',
   'seller_id',
   'status',
-  'tracking_provider',
-  'tracking_number',
   'price',
   'shipping_price',
   'created_at',
+] as const;
+
+const ORDER_OPTIONAL_COLUMNS = [
+  'order_group_id',
+  'order_number',
+  'tracking_provider',
+  'tracking_number',
   'updated_at',
   'shipped_at',
   'delivered_at',
@@ -101,10 +104,10 @@ const ORDER_SELECT_COLUMNS = [
   'shipping_postcode',
 ] as const;
 
-const ORDER_OPTIONAL_COLUMNS = ['order_number'] as const;
-
 const buildOrderSelectFields = (omitted = new Set<string>()) =>
-  ORDER_SELECT_COLUMNS.filter((column) => !omitted.has(column)).join(',\n  ');
+  [...ORDER_REQUIRED_COLUMNS, ...ORDER_OPTIONAL_COLUMNS]
+    .filter((column) => !omitted.has(column))
+    .join(',\n  ');
 
 const isMissingColumnError = (error: unknown, columnName: string) => {
   if (!error || typeof error !== 'object') return false;
@@ -121,7 +124,19 @@ const normalizeOrderRows = (rows: unknown[]): RawOrderRow[] => {
 
     return {
       ...(typedRow as RawOrderRow),
+      order_group_id: typedRow.order_group_id ?? null,
       order_number: typedRow.order_number ?? null,
+      tracking_provider: typedRow.tracking_provider ?? null,
+      tracking_number: typedRow.tracking_number ?? null,
+      updated_at: typedRow.updated_at ?? typedRow.created_at ?? new Date(0).toISOString(),
+      shipped_at: typedRow.shipped_at ?? null,
+      delivered_at: typedRow.delivered_at ?? null,
+      shipping_first_name: typedRow.shipping_first_name ?? null,
+      shipping_last_name: typedRow.shipping_last_name ?? null,
+      shipping_address: typedRow.shipping_address ?? null,
+      shipping_city: typedRow.shipping_city ?? null,
+      shipping_state: typedRow.shipping_state ?? null,
+      shipping_postcode: typedRow.shipping_postcode ?? null,
     };
   });
 };
