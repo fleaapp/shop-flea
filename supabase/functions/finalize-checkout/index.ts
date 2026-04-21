@@ -21,6 +21,25 @@ type ShippingDetails = {
   shippingPostcode: string;
 };
 
+async function sendPushNotification(userId: string, notification: Record<string, unknown>) {
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    if (!supabaseUrl || !serviceKey) return;
+
+    await fetch(`${supabaseUrl}/functions/v1/send-push-notification`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({ user_id: userId, notification }),
+    });
+  } catch (error) {
+    console.error("[finalize-checkout] Push send failed:", error);
+  }
+}
+
 function getUserId(req: Request): string | null {
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) return null;
@@ -124,8 +143,28 @@ serve(async (req) => {
       });
     }
 
-    const { error: insertError } = await serviceClient.from("orders").insert(inserts);
+    const { data: insertedOrders, error: insertError } = await serviceClient
+      .from("orders")
+      .insert(inserts)
+      .select("id, listing_id, seller_id");
     if (insertError) throw insertError;
+
+    const { data: listingRows } = await serviceClient
+      .from("listings")
+      .select("id, title")
+      .in("id", itemIds);
+
+    const listingTitleMap = new Map((listingRows ?? []).map((row) => [row.id, row.title]));
+
+    for (const order of insertedOrders ?? []) {
+      await sendPushNotification(order.seller_id, {
+        type: "item_sold",
+        title: "Item Sold",
+        message: `🎉🤑 Cha-ching! Your item \"${listingTitleMap.get(order.listing_id) ?? 'item'}\" has just sold!`,
+        related_listing_id: order.listing_id,
+        related_order_id: order.id,
+      });
+    }
 
     const { error: clearCartError } = await serviceClient
       .from("cart_items")
