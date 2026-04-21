@@ -426,6 +426,7 @@ export type Database = {
       orders: {
         Row: {
           buyer_id: string
+          checkout_reference: string | null
           created_at: string
           delivered_at: string | null
           id: string
@@ -450,6 +451,7 @@ export type Database = {
         }
         Insert: {
           buyer_id: string
+          checkout_reference?: string | null
           created_at?: string
           delivered_at?: string | null
           id?: string
@@ -474,6 +476,7 @@ export type Database = {
         }
         Update: {
           buyer_id?: string
+          checkout_reference?: string | null
           created_at?: string
           delivered_at?: string | null
           id?: string
