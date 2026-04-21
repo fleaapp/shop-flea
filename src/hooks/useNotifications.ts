@@ -50,6 +50,56 @@ export interface Notification {
   } | null;
 }
 
+const NOTIFICATION_REQUIRED_COLUMNS = [
+  'id',
+  'type',
+  'title',
+  'created_at',
+  'is_read',
+] as const;
+
+const NOTIFICATION_OPTIONAL_COLUMNS = [
+  'message',
+  'related_listing_id',
+  'related_user_id',
+  'related_order_id',
+  'related_thread_id',
+] as const;
+
+const buildNotificationSelectFields = (omitted = new Set<string>()) =>
+  [...NOTIFICATION_REQUIRED_COLUMNS, ...NOTIFICATION_OPTIONAL_COLUMNS]
+    .filter((column) => !omitted.has(column))
+    .join(',\n  ');
+
+const isMissingNotificationColumnError = (error: unknown, columnName: string) => {
+  if (!error || typeof error !== 'object') return false;
+
+  const code = 'code' in error && typeof error.code === 'string' ? error.code : '';
+  const message = 'message' in error && typeof error.message === 'string' ? error.message : '';
+
+  return (code === '42703' || code === 'PGRST204') && message.includes(columnName);
+};
+
+const normalizeNotifications = (rows: unknown[]): Notification[] =>
+  rows.map((row) => {
+    const typedRow = row as Partial<Notification>;
+
+    return {
+      id: typedRow.id ?? '',
+      type: typedRow.type ?? 'unknown',
+      title: typedRow.title ?? 'Notification',
+      message: typedRow.message ?? null,
+      is_read: typedRow.is_read ?? false,
+      created_at: typedRow.created_at ?? new Date(0).toISOString(),
+      related_listing_id: typedRow.related_listing_id ?? null,
+      related_user_id: typedRow.related_user_id ?? null,
+      related_order_id: typedRow.related_order_id ?? null,
+      related_thread_id: typedRow.related_thread_id ?? null,
+      listing: null,
+      related_user: null,
+    };
+  });
+
 export const useNotifications = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -59,16 +109,32 @@ export const useNotifications = () => {
     queryFn: async () => {
       if (!user?.id) return [];
 
-      const { data: notificationsData, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      const omittedColumns = new Set<string>();
+      let notificationsData: unknown[] | null = null;
 
-      if (error) throw error;
+      while (true) {
+        const { data, error } = await supabase
+          .from('notifications')
+          .select(buildNotificationSelectFields(omittedColumns))
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        const missingColumn = NOTIFICATION_OPTIONAL_COLUMNS.find(
+          (column) => !omittedColumns.has(column) && isMissingNotificationColumnError(error, column)
+        );
+
+        if (missingColumn) {
+          omittedColumns.add(missingColumn);
+          continue;
+        }
+
+        if (error) throw error;
+        notificationsData = data as unknown[] | null;
+        break;
+      }
 
       const fallbackNotifications: Notification[] = [];
-      const existingNotifications = notificationsData || [];
+      const existingNotifications = normalizeNotifications(notificationsData || []);
 
       const { data: threads } = await (supabase as any)
         .from('chat_threads')
