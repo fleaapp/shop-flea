@@ -30,6 +30,7 @@ type ListingRow = {
 };
 
 const ORDER_INSERT_FALLBACK_COLUMNS = ["checkout_reference", "payment_method"] as const;
+const NOTIFICATION_INSERT_FALLBACK_COLUMNS = ["related_order_id"] as const;
 
 function isMissingColumnError(error: unknown, columnName: string) {
   if (!error || typeof error !== "object" || !("code" in error) || !("message" in error)) {
@@ -102,6 +103,63 @@ async function insertOrdersWithFallback(
     console.warn(`[finalize-checkout] ${missingColumn} still unavailable after schema reload, retrying without it.`);
     strippedColumns.add(missingColumn);
   }
+}
+
+async function insertNotificationsWithFallback(
+  serviceClient: ReturnType<typeof createClient>,
+  rows: Record<string, unknown>[],
+) {
+  const strippedColumns = new Set<string>();
+
+  while (true) {
+    const payload = stripOrderColumns(rows, strippedColumns);
+    const result = await serviceClient
+      .from("notifications")
+      .insert(payload);
+
+    const missingColumn = NOTIFICATION_INSERT_FALLBACK_COLUMNS.find(
+      (column) => !strippedColumns.has(column) && isMissingColumnError(result.error, column),
+    );
+
+    if (!missingColumn) {
+      return result;
+    }
+
+    console.warn(`[finalize-checkout] ${missingColumn} unavailable in notifications schema cache, retrying without it.`);
+    strippedColumns.add(missingColumn);
+  }
+}
+
+async function fetchOrdersForBuyer(
+  serviceClient: ReturnType<typeof createClient>,
+  userId: string,
+  itemIds: string[],
+  checkoutReference?: string,
+) {
+  let query = serviceClient
+    .from("orders")
+    .select("id, listing_id, seller_id, created_at, checkout_reference")
+    .eq("buyer_id", userId)
+    .in("listing_id", itemIds)
+    .order("created_at", { ascending: false });
+
+  if (checkoutReference) {
+    query = query.eq("checkout_reference", checkoutReference);
+  }
+
+  let result = await query;
+
+  if (checkoutReference && isMissingColumnError(result.error, "checkout_reference")) {
+    console.warn("[finalize-checkout] checkout_reference unavailable in schema cache during lookup, retrying without it.");
+    result = await serviceClient
+      .from("orders")
+      .select("id, listing_id, seller_id, created_at")
+      .eq("buyer_id", userId)
+      .in("listing_id", itemIds)
+      .order("created_at", { ascending: false });
+  }
+
+  return result;
 }
 
 async function sendPushNotification(userId: string, notification: Record<string, unknown>) {
