@@ -30,10 +30,14 @@ type ListingRow = {
 };
 
 function isMissingColumnError(error: unknown, columnName: string) {
-  return !!error && typeof error === "object" && "code" in error && "message" in error
-    && error.code === "42703"
-    && typeof error.message === "string"
-    && error.message.includes(columnName);
+  if (!error || typeof error !== "object" || !("code" in error) || !("message" in error)) {
+    return false;
+  }
+
+  const code = typeof error.code === "string" ? error.code : "";
+  const message = typeof error.message === "string" ? error.message : "";
+
+  return (code === "42703" || code === "PGRST204") && message.includes(columnName);
 }
 
 async function sendPushNotification(userId: string, notification: Record<string, unknown>) {
@@ -136,6 +140,7 @@ serve(async (req) => {
 
     let existingOrdersResult = await existingOrdersQuery;
     if (checkoutReference && isMissingColumnError(existingOrdersResult.error, "checkout_reference")) {
+      console.warn("[finalize-checkout] checkout_reference unavailable in schema cache during lookup, retrying without it.");
       existingOrdersResult = await serviceClient
         .from("orders")
         .select("id, listing_id, seller_id")
@@ -216,6 +221,7 @@ serve(async (req) => {
       .select("id, listing_id, seller_id");
 
     if (isMissingColumnError(insertResult.error, "checkout_reference")) {
+      console.warn("[finalize-checkout] checkout_reference unavailable in schema cache during insert, retrying without it.");
       insertResult = await serviceClient
         .from("orders")
         .insert(inserts.map(({ checkout_reference: _checkoutReference, ...order }) => order))
