@@ -12,15 +12,6 @@ type CheckoutItem = {
   price: number;
 };
 
-type ShippingDetails = {
-  shippingFirstName: string;
-  shippingLastName: string;
-  shippingAddress: string;
-  shippingCity: string;
-  shippingState: string;
-  shippingPostcode: string;
-};
-
 async function sendPushNotification(userId: string, notification: Record<string, unknown>) {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
@@ -95,6 +86,8 @@ serve(async (req) => {
 
     if (existingOrdersError) throw existingOrdersError;
 
+    const existingListingIds = new Set((existingOrders ?? []).map((order) => order.listing_id));
+
     if (existingOrders && existingOrders.length === itemIds.length) {
       await serviceClient
         .from("cart_items")
@@ -108,11 +101,20 @@ serve(async (req) => {
       });
     }
 
+    const pendingItems = (items as CheckoutItem[]).filter((item) => !existingListingIds.has(item.id));
+
+    if (pendingItems.length === 0) {
+      return new Response(JSON.stringify({ ok: true, alreadyProcessed: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const orderGroupId = crypto.randomUUID();
     const shippingMap = new Map<string, number>(Array.isArray(shippingBySeller) ? shippingBySeller : []);
     const itemsBySeller = new Map<string, CheckoutItem[]>();
 
-    for (const item of items as CheckoutItem[]) {
+    for (const item of pendingItems) {
       const sellerItems = itemsBySeller.get(item.sellerId) ?? [];
       sellerItems.push(item);
       itemsBySeller.set(item.sellerId, sellerItems);
