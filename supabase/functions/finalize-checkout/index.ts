@@ -30,6 +30,7 @@ type ListingRow = {
 };
 
 const ORDER_INSERT_FALLBACK_COLUMNS = ["checkout_reference", "payment_method"] as const;
+const NOTIFICATION_INSERT_FALLBACK_COLUMNS = ["related_order_id"] as const;
 
 function isMissingColumnError(error: unknown, columnName: string) {
   if (!error || typeof error !== "object" || !("code" in error) || !("message" in error)) {
@@ -102,6 +103,63 @@ async function insertOrdersWithFallback(
     console.warn(`[finalize-checkout] ${missingColumn} still unavailable after schema reload, retrying without it.`);
     strippedColumns.add(missingColumn);
   }
+}
+
+async function insertNotificationsWithFallback(
+  serviceClient: ReturnType<typeof createClient>,
+  rows: Record<string, unknown>[],
+) {
+  const strippedColumns = new Set<string>();
+
+  while (true) {
+    const payload = stripOrderColumns(rows, strippedColumns);
+    const result = await serviceClient
+      .from("notifications")
+      .insert(payload);
+
+    const missingColumn = NOTIFICATION_INSERT_FALLBACK_COLUMNS.find(
+      (column) => !strippedColumns.has(column) && isMissingColumnError(result.error, column),
+    );
+
+    if (!missingColumn) {
+      return result;
+    }
+
+    console.warn(`[finalize-checkout] ${missingColumn} unavailable in notifications schema cache, retrying without it.`);
+    strippedColumns.add(missingColumn);
+  }
+}
+
+async function fetchOrdersForBuyer(
+  serviceClient: ReturnType<typeof createClient>,
+  userId: string,
+  itemIds: string[],
+  checkoutReference?: string,
+) {
+  let query = serviceClient
+    .from("orders")
+    .select("id, listing_id, seller_id, created_at, checkout_reference")
+    .eq("buyer_id", userId)
+    .in("listing_id", itemIds)
+    .order("created_at", { ascending: false });
+
+  if (checkoutReference) {
+    query = query.eq("checkout_reference", checkoutReference);
+  }
+
+  let result = await query;
+
+  if (checkoutReference && isMissingColumnError(result.error, "checkout_reference")) {
+    console.warn("[finalize-checkout] checkout_reference unavailable in schema cache during lookup, retrying without it.");
+    result = await serviceClient
+      .from("orders")
+      .select("id, listing_id, seller_id, created_at")
+      .eq("buyer_id", userId)
+      .in("listing_id", itemIds)
+      .order("created_at", { ascending: false });
+  }
+
+  return result;
 }
 
 async function sendPushNotification(userId: string, notification: Record<string, unknown>) {
@@ -192,25 +250,7 @@ serve(async (req) => {
       throw new Error("Purchased items could not be found.");
     }
 
-    let existingOrdersQuery = serviceClient
-      .from("orders")
-      .select("id, listing_id, seller_id")
-      .eq("buyer_id", userId)
-      .in("listing_id", itemIds);
-
-    if (checkoutReference) {
-      existingOrdersQuery = existingOrdersQuery.eq("checkout_reference", checkoutReference);
-    }
-
-    let existingOrdersResult = await existingOrdersQuery;
-    if (checkoutReference && isMissingColumnError(existingOrdersResult.error, "checkout_reference")) {
-      console.warn("[finalize-checkout] checkout_reference unavailable in schema cache during lookup, retrying without it.");
-      existingOrdersResult = await serviceClient
-        .from("orders")
-        .select("id, listing_id, seller_id")
-        .eq("buyer_id", userId)
-        .in("listing_id", itemIds);
-    }
+    let existingOrdersResult = await fetchOrdersForBuyer(serviceClient, userId, itemIds, checkoutReference);
 
     if (existingOrdersResult.error) throw existingOrdersResult.error;
 
@@ -283,7 +323,17 @@ serve(async (req) => {
 
     if (insertResult.error) throw insertResult.error;
 
-    const insertedOrders = insertResult.data ?? [];
+    let insertedOrders = insertResult.data ?? [];
+
+    if (insertedOrders.length !== pendingItems.length) {
+      const verifyResult = await fetchOrdersForBuyer(serviceClient, userId, pendingItems.map((item) => item.id), checkoutReference);
+      if (verifyResult.error) throw verifyResult.error;
+      insertedOrders = verifyResult.data ?? [];
+    }
+
+    if (insertedOrders.length !== pendingItems.length) {
+      throw new Error("Order finalization did not create the expected order records.");
+    }
 
     await serviceClient
       .from("listings")
@@ -375,9 +425,7 @@ serve(async (req) => {
     }
 
     if (notificationRows.length > 0) {
-      const { error: notificationError } = await serviceClient
-        .from("notifications")
-        .insert(notificationRows);
+      const { error: notificationError } = await insertNotificationsWithFallback(serviceClient, notificationRows);
 
       if (notificationError) throw notificationError;
     }

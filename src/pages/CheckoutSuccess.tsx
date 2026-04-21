@@ -156,6 +156,16 @@ const CheckoutSuccess = () => {
     processOrder();
   }, [user, loading, searchParams, navigate, removeFromCart, refetchCart, queryClient]);
 
+  useEffect(() => {
+    if (!showSuccess) return;
+
+    const timeoutId = window.setTimeout(() => {
+      navigate('/cart', { state: { initialTab: 'orders' } });
+    }, 1600);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [showSuccess, navigate]);
+
   if (processing) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -188,7 +198,7 @@ const CheckoutSuccess = () => {
   return (
     <OrderSuccessDialog
       open={showSuccess}
-      onClose={() => navigate('/')}
+      onClose={() => navigate('/cart', { state: { initialTab: 'orders' } })}
     />
   );
 };
