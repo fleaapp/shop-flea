@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { supabase } from '@/lib/supabase';
@@ -168,20 +169,12 @@ const CheckoutSuccess = () => {
         <div className="text-center space-y-4 max-w-sm">
           <p className="text-foreground font-medium">{finalizationError}</p>
           <div className="flex items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="rounded-md bg-primary px-4 py-2 text-primary-foreground"
-            >
+            <Button type="button" onClick={() => window.location.reload()}>
               Retry
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/cart')}
-              className="rounded-md bg-secondary px-4 py-2 text-secondary-foreground"
-            >
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => navigate('/cart')}>
               Back
-            </button>
+            </Button>
           </div>
         </div>
       </div>
