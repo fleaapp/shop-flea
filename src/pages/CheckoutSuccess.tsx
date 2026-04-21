@@ -4,9 +4,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { supabase } from '@/lib/supabase';
 import { Listing } from '@/types/listing';
-import { SellerShippingInfo } from '@/utils/shippingCalculator';
 import OrderSuccessDialog from '@/components/OrderSuccessDialog';
-import { sendPushNotification } from '@/utils/pushNotify';
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
 
 const CheckoutSuccess = () => {
   const navigate = useNavigate();
@@ -55,14 +54,12 @@ const CheckoutSuccess = () => {
 
         const checkoutReference = sessionId || localStorage.getItem('checkout_reference');
 
-        const { data, error } = await supabase.functions.invoke('finalize-checkout', {
-          body: {
-            items: items.map(item => ({ id: item.id, sellerId: item.sellerId, price: item.price })),
-            shipping,
-            shippingBySeller: Array.from(shippingBySeller.entries()),
-            paymentMethod: localStorage.getItem('checkout_payment_method') || (isPayPal ? 'paypal' : 'stripe'),
-            checkoutReference,
-          },
+        const { data, error } = await invokeCloudFunction('finalize-checkout', {
+          items: items.map(item => ({ id: item.id, sellerId: item.sellerId, price: item.price })),
+          shipping,
+          shippingBySeller: Array.from(shippingBySeller.entries()),
+          paymentMethod: localStorage.getItem('checkout_payment_method') || (isPayPal ? 'paypal' : 'stripe'),
+          checkoutReference,
         });
 
         if (error) throw error;
