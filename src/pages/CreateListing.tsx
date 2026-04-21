@@ -779,14 +779,15 @@ const CreateListing = () => {
             value={shippingPrice}
             onChange={(e) => setShippingPrice(e.target.value)}
             disabled={tieredShippingEnabled === true}
-            className={`${inputStyles} pl-8 ${tieredShippingEnabled ? 'opacity-60 cursor-pointer' : ''}`}
+            className={`${inputStyles} pl-8 pr-32 ${tieredShippingEnabled ? 'opacity-60 cursor-pointer' : ''}`}
             style={tieredShippingEnabled ? { pointerEvents: 'none' } : undefined}
           />
-          {tieredShippingEnabled && (
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60">
-              Tiered shipping ›
-            </span>
-          )}
+          <span
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60 cursor-pointer"
+            onClick={(e) => { e.stopPropagation(); setShowShippingSettings(true); }}
+          >
+            {tieredShippingEnabled ? 'Tiered shipping ›' : 'Shipping settings ›'}
+          </span>
         </div>
         
         {/* Description */}
