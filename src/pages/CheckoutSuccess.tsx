@@ -4,14 +4,14 @@ import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { supabase } from '@/lib/supabase';
 import { Listing } from '@/types/listing';
-import { SellerShippingInfo } from '@/utils/shippingCalculator';
 import OrderSuccessDialog from '@/components/OrderSuccessDialog';
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { sendPushNotification } from '@/utils/pushNotify';
 
 const CheckoutSuccess = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { removeFromCart } = useCart();
   const [showSuccess, setShowSuccess] = useState(false);
   const [processing, setProcessing] = useState(true);
@@ -25,6 +25,11 @@ const CheckoutSuccess = () => {
         navigate('/');
         return;
       }
+
+      if (loading) {
+        return;
+      }
+
       if (!user) {
         navigate('/');
         return;
@@ -48,64 +53,23 @@ const CheckoutSuccess = () => {
         const shipping = JSON.parse(shippingJson);
         const shippingBySeller = new Map<string, number>(JSON.parse(shippingBySellerJson || '[]'));
 
-        const orderGroupId = crypto.randomUUID();
+        const checkoutReference = sessionId || localStorage.getItem('checkout_reference');
 
-        // Group items by seller
-        const itemsBySeller = new Map<string, Listing[]>();
-        items.forEach(item => {
-          const existing = itemsBySeller.get(item.sellerId) || [];
-          itemsBySeller.set(item.sellerId, [...existing, item]);
+        const { data, error } = await invokeCloudFunction('finalize-checkout', {
+          items: items.map(item => ({ id: item.id, sellerId: item.sellerId, price: item.price })),
+          shipping,
+          shippingBySeller: Array.from(shippingBySeller.entries()),
+          paymentMethod: localStorage.getItem('checkout_payment_method') || (isPayPal ? 'paypal' : 'stripe'),
+          checkoutReference,
         });
 
-        // Create order records
-        const orderPromises: Promise<void>[] = [];
+        if (error) throw error;
 
-        itemsBySeller.forEach((sellerItems, sellerId) => {
-          const sellerShipping = shippingBySeller.get(sellerId) || 0;
-
-          sellerItems.forEach((item, index) => {
-            const itemShipping = index === 0 ? sellerShipping : 0;
-
-            orderPromises.push((async () => {
-              const { error } = await supabase.from('orders').insert({
-                order_group_id: orderGroupId,
-                listing_id: item.id,
-                buyer_id: user.id,
-                seller_id: item.sellerId,
-                price: item.price,
-                shipping_price: itemShipping,
-                status: 'awaiting',
-                payment_method: localStorage.getItem('checkout_payment_method') || 'stripe',
-                shipping_first_name: shipping.shippingFirstName,
-                shipping_last_name: shipping.shippingLastName,
-                shipping_address: shipping.shippingAddress,
-                shipping_city: shipping.shippingCity,
-                shipping_state: shipping.shippingState,
-                shipping_postcode: shipping.shippingPostcode,
-              });
-
-              if (error) throw error;
-
-              await supabase.from('listings').update({ status: 'sold' }).eq('id', item.id);
-            })());
-          });
-        });
-
-        await Promise.all(orderPromises);
-
-        // Fire push notifications for item sold (seller + cart/wishlist users)
-        // The DB trigger inserts notifications, but push must be triggered explicitly
-        const uniqueSellers = [...new Set(items.map(i => i.sellerId))];
-        for (const sellerId of uniqueSellers) {
-          const sellerItems = items.filter(i => i.sellerId === sellerId);
-          sendPushNotification(sellerId, {
-            type: 'item_sold',
-            title: 'Item Sold',
-            message: `🎉🤑 Cha-ching! Your item "${sellerItems[0].title}" has just sold!`,
-            related_listing_id: sellerItems[0].id,
-          });
+        if (!data?.ok) {
+          throw new Error('Checkout finalization failed');
         }
 
+        // Fire push notifications for item sold (seller + cart/wishlist users)
         // Notify cart/wishlist users about sold items
         for (const item of items) {
           // Get users who had this item in cart (excluding buyer and seller)
@@ -156,6 +120,7 @@ const CheckoutSuccess = () => {
         localStorage.removeItem('checkout_seller_settings');
         localStorage.removeItem('checkout_shipping_by_seller');
         localStorage.removeItem('checkout_payment_method');
+        localStorage.removeItem('checkout_reference');
 
         setShowSuccess(true);
       } catch (error) {
@@ -168,7 +133,7 @@ const CheckoutSuccess = () => {
     };
 
     processOrder();
-  }, [user, searchParams, navigate, removeFromCart]);
+  }, [user, loading, searchParams, navigate, removeFromCart]);
 
   if (processing) {
     return (
