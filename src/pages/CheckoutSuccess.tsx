@@ -15,6 +15,7 @@ const CheckoutSuccess = () => {
   const { removeFromCart } = useCart();
   const [showSuccess, setShowSuccess] = useState(false);
   const [processing, setProcessing] = useState(true);
+  const [finalizationError, setFinalizationError] = useState<string | null>(null);
 
   useEffect(() => {
     const processOrder = async () => {
@@ -55,17 +56,33 @@ const CheckoutSuccess = () => {
 
         const checkoutReference = sessionId || localStorage.getItem('checkout_reference');
 
-        const { data, error } = await invokeCloudFunction('finalize-checkout', {
-          items: items.map(item => ({ id: item.id, sellerId: item.sellerId, price: item.price })),
-          shipping,
-          shippingBySeller: Array.from(shippingBySeller.entries()),
-          paymentMethod: localStorage.getItem('checkout_payment_method') || (isPayPal ? 'paypal' : 'stripe'),
-          checkoutReference,
-        });
+        let finalizeData: any = null;
+        let finalizeError: any = null;
 
-        if (error) throw error;
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+          const { data, error } = await invokeCloudFunction('finalize-checkout', {
+            items: items.map(item => ({ id: item.id, sellerId: item.sellerId, price: item.price })),
+            shipping,
+            shippingBySeller: Array.from(shippingBySeller.entries()),
+            paymentMethod: localStorage.getItem('checkout_payment_method') || (isPayPal ? 'paypal' : 'stripe'),
+            checkoutReference,
+          });
 
-        if (!data?.ok) {
+          finalizeData = data;
+          finalizeError = error;
+
+          if (!error && data?.ok) {
+            break;
+          }
+
+          if (attempt < 4) {
+            await new Promise(resolve => setTimeout(resolve, 1500));
+          }
+        }
+
+        if (finalizeError) throw finalizeError;
+
+        if (!finalizeData?.ok) {
           throw new Error('Checkout finalization failed');
         }
 
@@ -125,8 +142,7 @@ const CheckoutSuccess = () => {
         setShowSuccess(true);
       } catch (error) {
         console.error('Error processing order:', error);
-        // Payment succeeded even if order creation fails
-        setShowSuccess(true);
+        setFinalizationError('We are still syncing your order. Please retry this page in a moment.');
       } finally {
         setProcessing(false);
       }
@@ -141,6 +157,32 @@ const CheckoutSuccess = () => {
         <div className="text-center space-y-4">
           <div className="animate-spin h-8 w-8 border-2 border-foreground border-t-transparent rounded-full mx-auto" />
           <p className="text-muted-foreground">Processing your order...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (finalizationError && !showSuccess) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-6">
+        <div className="text-center space-y-4 max-w-sm">
+          <p className="text-foreground font-medium">{finalizationError}</p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="rounded-md bg-primary px-4 py-2 text-primary-foreground"
+            >
+              Retry
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/cart')}
+              className="rounded-md bg-secondary px-4 py-2 text-secondary-foreground"
+            >
+              Back
+            </button>
+          </div>
         </div>
       </div>
     );
