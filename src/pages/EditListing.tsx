@@ -835,9 +835,15 @@ const EditListing = () => {
           setShowShippingSettings(open);
           if (!open && user) {
             const localPrefs = loadShippingPrefs(user.id);
-            if (localPrefs && localPrefs.tieredEnabled) {
-              setShippingPrice(localPrefs.tier1.toString());
+            if (localPrefs) {
+              setTieredShippingEnabled(localPrefs.tieredEnabled);
+              if (localPrefs.tieredEnabled) {
+                setShippingPrice(localPrefs.tier1.toString());
+              } else {
+                setShippingPrice('');
+              }
             }
+            refreshProfile();
           }
         }}
       />
