@@ -388,9 +388,7 @@ const CreateListing = () => {
       const imageUrls = await uploadImages();
       
       // Create the listing with region from user's profile
-      const { error } = await supabase
-        .from('listings')
-        .insert({
+      const listingData: Record<string, any> = {
           user_id: user.id,
           title: productName,
           description: description || null,
@@ -401,7 +399,7 @@ const CreateListing = () => {
           condition,
           colour: colours.length > 0 ? colours.join(', ') : null,
           style: styles.length > 0 ? styles.join(', ') : null,
-          gender: fit || null, // Store fit as gender
+          gender: fit || null,
           price: parseFloat(itemPrice),
           shipping_price: shippingPrice ? parseFloat(shippingPrice) : 0,
           images: imageUrls,
@@ -409,8 +407,17 @@ const CreateListing = () => {
           status: 'active',
           region_id: profile?.region_id || null,
           country_code: profile?.country_code || null,
-        });
-      
+        };
+
+      let { error } = await supabase.from('listings').insert(listingData);
+
+      // Retry without the column that triggered a 42703 / PGRST204 cache miss
+      if (error && (error.code === '42703' || error.code === 'PGRST204') && error.message?.includes('subcategory')) {
+        const { subcategory: _dropped, ...withoutSubcat } = listingData;
+        const retry = await supabase.from('listings').insert(withoutSubcat);
+        error = retry.error;
+      }
+
       if (error) {
         throw error;
       }
