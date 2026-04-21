@@ -249,6 +249,9 @@ const Checkout = () => {
 
         if (error) throw error;
         if (!data?.url) throw new Error('No checkout URL returned');
+        if (data?.sessionId) {
+          localStorage.setItem('checkout_reference', data.sessionId);
+        }
         window.location.href = data.url;
       } else if (sellerPayPalMerchantId) {
         const { data, error } = await invokeCloudFunction('paypal-connect-checkout', {
