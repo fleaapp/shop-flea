@@ -53,6 +53,9 @@ const Checkout = () => {
       return saved ? JSON.parse(saved) : null;
     } catch { return null; }
   }, []);
+  const [detailsSaved, setDetailsSaved] = useState(!!savedShipping);
+  const [isEditing, setIsEditing] = useState(!savedShipping);
+  const [saveConfirmed, setSaveConfirmed] = useState(false);
   const [shippingFirstName, setShippingFirstName] = useState(savedShipping?.firstName || '');
   const [shippingLastName, setShippingLastName] = useState(savedShipping?.lastName || '');
   const [shippingAddress, setShippingAddress] = useState(savedShipping?.address || '');
@@ -354,78 +357,105 @@ const Checkout = () => {
                 Shipping details
               </div>
               
-              {/* Show input fields directly for first-time users (no saved data) */}
-              <div className="p-4 space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">First name</label>
-                    <Input value={shippingFirstName} onChange={e => setShippingFirstName(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="First name" />
+              {detailsSaved && !isEditing ? (
+                <div className="p-4 space-y-1">
+                  <p className="text-sm text-foreground font-medium">{shippingFirstName} {shippingLastName}</p>
+                  <p className="text-sm text-muted-foreground">{shippingAddress}</p>
+                  <p className="text-sm text-muted-foreground">{shippingSuburb}, {shippingState} {shippingPostcode}</p>
+                </div>
+              ) : (
+                <div className="p-4 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">First name</label>
+                      <Input value={shippingFirstName} onChange={e => setShippingFirstName(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="First name" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">Last name</label>
+                      <Input value={shippingLastName} onChange={e => setShippingLastName(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Last name" />
+                    </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">Last name</label>
-                    <Input value={shippingLastName} onChange={e => setShippingLastName(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Last name" />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Street address</label>
-                  <AddressAutocomplete
-                    value={shippingAddress}
-                    onChange={setShippingAddress}
-                    onSelect={(addr) => {
-                      setShippingAddress(addr.street);
-                      if (addr.suburb) setShippingSuburb(addr.suburb);
-                      if (addr.state) setShippingState(addr.state);
-                      if (addr.postcode) setShippingPostcode(addr.postcode);
-                    }}
-                    placeholder="Start typing your address..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Suburb</label>
-                  <Input value={shippingSuburb} onChange={e => setShippingSuburb(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Suburb" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">Postcode</label>
-                    <Input value={shippingPostcode} onChange={e => setShippingPostcode(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Postcode" />
+                    <label className="block text-sm font-medium text-foreground mb-1">Street address</label>
+                    <AddressAutocomplete
+                      value={shippingAddress}
+                      onChange={setShippingAddress}
+                      onSelect={(addr) => {
+                        setShippingAddress(addr.street);
+                        if (addr.suburb) setShippingSuburb(addr.suburb);
+                        if (addr.state) setShippingState(addr.state);
+                        if (addr.postcode) setShippingPostcode(addr.postcode);
+                      }}
+                      placeholder="Start typing your address..."
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">State</label>
-                    <Select value={shippingState} onValueChange={setShippingState}>
-                      <SelectTrigger className="h-11 rounded-xl bg-background border-border">
-                        <SelectValue placeholder="Select state" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background border-border z-50">
-                        <SelectItem value="NSW">NSW</SelectItem>
-                        <SelectItem value="VIC">VIC</SelectItem>
-                        <SelectItem value="QLD">QLD</SelectItem>
-                        <SelectItem value="WA">WA</SelectItem>
-                        <SelectItem value="SA">SA</SelectItem>
-                        <SelectItem value="TAS">TAS</SelectItem>
-                        <SelectItem value="ACT">ACT</SelectItem>
-                        <SelectItem value="NT">NT</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <label className="block text-sm font-medium text-foreground mb-1">Suburb</label>
+                    <Input value={shippingSuburb} onChange={e => setShippingSuburb(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Suburb" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">Postcode</label>
+                      <Input value={shippingPostcode} onChange={e => setShippingPostcode(e.target.value)} className="h-11 rounded-xl bg-background border-border" placeholder="Postcode" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">State</label>
+                      <Select value={shippingState} onValueChange={setShippingState}>
+                        <SelectTrigger className="h-11 rounded-xl bg-background border-border">
+                          <SelectValue placeholder="Select state" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border-border z-50">
+                          <SelectItem value="NSW">NSW</SelectItem>
+                          <SelectItem value="VIC">VIC</SelectItem>
+                          <SelectItem value="QLD">QLD</SelectItem>
+                          <SelectItem value="WA">WA</SelectItem>
+                          <SelectItem value="SA">SA</SelectItem>
+                          <SelectItem value="TAS">TAS</SelectItem>
+                          <SelectItem value="ACT">ACT</SelectItem>
+                          <SelectItem value="NT">NT</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
               <div className="px-4 pb-4">
-                <Button
-                  className="w-full h-12 rounded-full bg-charcoal text-white hover:bg-charcoal-light font-medium"
-                  onClick={() => {
-                    localStorage.setItem('saved_shipping_details', JSON.stringify({
-                      firstName: shippingFirstName.trim(),
-                      lastName: shippingLastName.trim(),
-                      address: shippingAddress.trim(),
-                      suburb: shippingSuburb.trim(),
-                      state: shippingState,
-                      postcode: shippingPostcode.trim(),
-                    }));
-                    toast.success('✅ Shipping details saved');
-                  }}
-                >
-                  Save details
-                </Button>
+                {detailsSaved && !isEditing ? (
+                  <Button
+                    className="w-full h-12 rounded-full bg-charcoal text-white hover:bg-charcoal-light font-medium"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    Edit details
+                  </Button>
+                ) : (
+                  <Button
+                    className={cn(
+                      "w-full h-12 rounded-full font-medium transition-colors",
+                      saveConfirmed
+                        ? "bg-lime text-charcoal hover:bg-lime/90"
+                        : "bg-charcoal text-white hover:bg-charcoal-light"
+                    )}
+                    disabled={!isShippingComplete}
+                    onClick={() => {
+                      localStorage.setItem('saved_shipping_details', JSON.stringify({
+                        firstName: shippingFirstName.trim(),
+                        lastName: shippingLastName.trim(),
+                        address: shippingAddress.trim(),
+                        suburb: shippingSuburb.trim(),
+                        state: shippingState,
+                        postcode: shippingPostcode.trim(),
+                      }));
+                      setDetailsSaved(true);
+                      setSaveConfirmed(true);
+                      setTimeout(() => {
+                        setSaveConfirmed(false);
+                        setIsEditing(false);
+                      }, 1500);
+                    }}
+                  >
+                    {saveConfirmed ? '✅ Details saved' : 'Save details'}
+                  </Button>
+                )}
               </div>
             </div>
 
