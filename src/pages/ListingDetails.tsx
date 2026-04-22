@@ -203,7 +203,7 @@ const ListingDetails = () => {
         return true;
       };
       
-      // First fetch the listing
+      // Fetch listing and profile in parallel
       const { data: listingData, error: listingError } = await supabase
         .from('listings')
         .select('*')
@@ -220,44 +220,43 @@ const ListingDetails = () => {
       }
       
       const status = listingData.status || 'active';
-      let normalizedListing = listingData;
       setListingStatus(status);
 
-      // For removed/deleted listings, still allow rendering (user sees ⛔️ UI)
-      const isRemovedListing = status !== 'active' && status !== 'sold';
+      // Show content immediately
+      setListing(listingData);
+      setLoading(false);
 
-      if (!isRemovedListing) {
-        // If listing is not generally accessible anymore, keep details but force removed state for saved-item cleanup
-        const listingIsAccessible = await canOpenListing(listingData.id);
-
-        if (!listingIsAccessible) {
-          normalizedListing = { ...listingData, status: 'removed' };
-          setListingStatus('removed');
-        }
-      }
-
-      setListing(normalizedListing);
-      
-      // Then fetch the seller's profile
-      const { data: profileData, error: profileError } = await supabase
+      // Fetch profile in parallel (non-blocking)
+      supabase
         .from('profiles')
         .select('username, avatar_url, location, country_code')
         .eq('user_id', listingData.user_id)
-        .maybeSingle();
-      
-      // If country_code column doesn't exist, retry without it
-      if (profileError?.code === '42703') {
-        const { data: fallbackProfile } = await supabase
-          .from('profiles')
-          .select('username, avatar_url, location')
-          .eq('user_id', listingData.user_id)
-          .maybeSingle();
-        setSeller(fallbackProfile ? { ...fallbackProfile, country_code: null } : null);
-      } else {
-        setSeller(profileData);
+        .maybeSingle()
+        .then(({ data: profileData, error: profileError }) => {
+          if (profileError?.code === '42703') {
+            supabase
+              .from('profiles')
+              .select('username, avatar_url, location')
+              .eq('user_id', listingData.user_id)
+              .maybeSingle()
+              .then(({ data: fallbackProfile }) => {
+                setSeller(fallbackProfile ? { ...fallbackProfile, country_code: null } : null);
+              });
+          } else {
+            setSeller(profileData);
+          }
+        });
+
+      // Run access check in background for non-removed listings
+      const isRemovedListing = status !== 'active' && status !== 'sold';
+      if (!isRemovedListing) {
+        canOpenListing(listingData.id).then((accessible) => {
+          if (!accessible) {
+            setListing(prev => prev ? { ...prev, status: 'removed' } : prev);
+            setListingStatus('removed');
+          }
+        });
       }
-      
-      setLoading(false);
     };
     
     fetchListing();
