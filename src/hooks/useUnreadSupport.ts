@@ -47,6 +47,7 @@ export const useUnreadSupport = () => {
       return { total: messages.length, perThread };
     },
     enabled: !!user?.id,
+    staleTime: 30_000,
     refetchInterval: 30000,
   });
 
