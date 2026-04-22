@@ -104,14 +104,14 @@ serve(async (req) => {
 
     // Create checkout session with destination charge
     // Money goes directly to seller, platform fee is deducted
-    // Enable card, Apple Pay, Google Pay — no Link/Stripe login for simpler buyer UX
+    // Card + Link enabled; Link auto-detects existing accounts for one-click pay
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : userEmail,
       customer_creation: customerId ? undefined : 'if_required',
       line_items: lineItems,
       mode: "payment",
-      payment_method_types: ['card'],
+      payment_method_types: ['card', 'link'],
       success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/cart`,
       payment_intent_data: {
