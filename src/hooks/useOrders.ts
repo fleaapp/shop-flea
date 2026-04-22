@@ -302,6 +302,7 @@ export function useOrders() {
       })) as Order[];
     },
     enabled: !!user?.id,
+    staleTime: 30_000,
   });
 
 
