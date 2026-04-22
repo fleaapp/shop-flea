@@ -33,20 +33,24 @@ export const useDiscardedListings = () => {
   const addDiscarded = useCallback(async (listingId: string) => {
     if (!user) return false;
 
-    const { error } = await supabase
-      .from('discarded_listings')
-      .insert({ user_id: user.id, listing_id: listingId });
-
-    if (error) {
-      if (error.code === '23505') {
-        // Already discarded
-        return true;
-      }
-      console.error('Failed to discard listing:', error);
-      return false;
-    }
-
+    // Optimistic update — unblock UI immediately
     setDiscardedIds(prev => new Set([...prev, listingId]));
+
+    supabase
+      .from('discarded_listings')
+      .insert({ user_id: user.id, listing_id: listingId })
+      .then(({ error }) => {
+        if (error && error.code !== '23505') {
+          console.error('Failed to discard listing:', error);
+          // Rollback on failure
+          setDiscardedIds(prev => {
+            const next = new Set(prev);
+            next.delete(listingId);
+            return next;
+          });
+        }
+      });
+
     return true;
   }, [user]);
 
