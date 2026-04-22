@@ -171,10 +171,11 @@ const Checkout = () => {
   // Default to Stripe if both available
   const paymentMethod = sellerHasStripe ? 'stripe' : sellerHasPayPal ? 'paypal' : null;
   const feeRate = paymentMethod === 'paypal' ? 0.03 : 0.02;
-  
+  const fixedFee = paymentMethod === 'paypal' ? 0 : 0.30;
+   
   const itemsTotal = validItems.reduce((sum: number, item: any) => sum + item.price, 0);
   const subtotal = itemsTotal + totalShipping;
-  const processingFee = subtotal * feeRate;
+  const processingFee = subtotal * feeRate + fixedFee;
   const total = subtotal + processingFee;
   
   const isShippingComplete = shippingFirstName.trim() && shippingLastName.trim() && shippingAddress.trim() && shippingSuburb.trim() && shippingState.trim() && shippingPostcode.trim();
@@ -337,7 +338,7 @@ const Checkout = () => {
               
               {/* Fee line */}
               <div className="flex justify-between text-sm px-4 py-3 border-t border-border">
-                <span className="text-muted-foreground">Payment processing fee ({Math.round(feeRate * 100)}%)</span>
+                <span className="text-muted-foreground">Payment processing fee ({Math.round(feeRate * 100)}%{fixedFee > 0 ? ` + $${fixedFee.toFixed(2)}` : ''})</span>
                 <span className="text-muted-foreground">+ ${processingFee.toFixed(2)}</span>
               </div>
               
