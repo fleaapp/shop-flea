@@ -426,14 +426,7 @@ const Checkout = () => {
                 </div>
               )}
               <div className="px-4 pb-4">
-                {detailsSaved && !isEditing ? (
-                  <Button
-                    className="w-full h-12 rounded-full bg-charcoal text-white hover:bg-charcoal-light font-medium"
-                    onClick={() => setIsEditing(true)}
-                  >
-                    Edit details
-                  </Button>
-                ) : (
+                {(!detailsSaved || isEditing) && (
                   <Button
                     className={cn(
                       "w-full h-12 rounded-full font-medium transition-colors",
