@@ -16,19 +16,19 @@ import { PushNotificationSubscriber } from "./components/PushNotificationSubscri
 // Critical path – loaded eagerly
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Favorites from "./pages/Favorites";
+import Cart from "./pages/Cart";
+import Profile from "./pages/Profile";
+import Notifications from "./pages/Notifications";
+import Settings from "./pages/Settings";
 
-// Everything else – lazy loaded
+// Secondary routes – lazy loaded
 const ListingDetails = lazy(() => import("./pages/ListingDetails"));
-const Favorites = lazy(() => import("./pages/Favorites"));
-const Cart = lazy(() => import("./pages/Cart"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const CheckoutSuccess = lazy(() => import("./pages/CheckoutSuccess"));
-const Profile = lazy(() => import("./pages/Profile"));
 const CreateListing = lazy(() => import("./pages/CreateListing"));
 const EditListing = lazy(() => import("./pages/EditListing"));
 const EditProfile = lazy(() => import("./pages/EditProfile"));
-const Notifications = lazy(() => import("./pages/Notifications"));
-const Settings = lazy(() => import("./pages/Settings"));
 const ContactSupport = lazy(() => import("./pages/ContactSupport"));
 const ChatConversation = lazy(() => import("./pages/ChatConversation"));
 const SellerProfile = lazy(() => import("./pages/SellerProfile"));
