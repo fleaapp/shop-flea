@@ -44,9 +44,6 @@ const Checkout = () => {
   const items: Listing[] = location.state?.items || [];
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [open, setOpen] = useState(true);
-  const [detailsSaved, setDetailsSaved] = useState(!!savedShipping);
-  const [isEditing, setIsEditing] = useState(!savedShipping);
-  const [saveConfirmed, setSaveConfirmed] = useState(false);
   const [sellerSettings, setSellerSettings] = useState<Map<string, SellerShippingInfo>>(new Map());
 
   // Shipping details state - pre-fill from saved details
