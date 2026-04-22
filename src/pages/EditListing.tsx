@@ -204,11 +204,7 @@ const EditListing = () => {
   const handleCropComplete = useCallback(async (croppedBlob: Blob) => {
     const croppedFile = new File([croppedBlob], `cropped-${Date.now()}.jpg`, { type: 'image/jpeg' });
     try {
-      const compressedFile = await compressImage(croppedFile, {
-        maxWidth: 800,
-        maxHeight: 1000,
-        quality: 0.75,
-      });
+      const compressedFile = await compressImage(croppedFile);
       const preview = URL.createObjectURL(compressedFile);
       setNewImageFiles((prev) => [...prev, { file: compressedFile, preview }]);
     } catch {
