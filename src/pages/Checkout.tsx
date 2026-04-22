@@ -12,6 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { toast } from 'sonner';
+import { Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import applePayLogo from '@/assets/applepay-logo.png';
 import gPayLogo from '@/assets/gpay-logo.png';
@@ -353,8 +354,13 @@ const Checkout = () => {
 
             {/* Shipping Details */}
             <div className="rounded-xl bg-card overflow-hidden">
-              <div className="bg-muted-foreground/20 px-4 py-2 text-sm font-medium text-muted-foreground">
-                Shipping details
+              <div className="bg-muted-foreground/20 px-4 py-2 flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">Shipping details</span>
+                {detailsSaved && !isEditing && (
+                  <button onClick={() => setIsEditing(true)} className="text-muted-foreground hover:text-foreground transition-colors">
+                    <Pencil size={14} />
+                  </button>
+                )}
               </div>
               
               {detailsSaved && !isEditing ? (
@@ -420,14 +426,7 @@ const Checkout = () => {
                 </div>
               )}
               <div className="px-4 pb-4">
-                {detailsSaved && !isEditing ? (
-                  <Button
-                    className="w-full h-12 rounded-full bg-charcoal text-white hover:bg-charcoal-light font-medium"
-                    onClick={() => setIsEditing(true)}
-                  >
-                    Edit details
-                  </Button>
-                ) : (
+                {(!detailsSaved || isEditing) && (
                   <Button
                     className={cn(
                       "w-full h-12 rounded-full font-medium transition-colors",
