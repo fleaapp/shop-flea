@@ -239,6 +239,7 @@ export const useNotifications = () => {
       return combined;
     },
     enabled: !!user?.id,
+    staleTime: 30_000,
   });
 
   const markAsRead = useMutation({

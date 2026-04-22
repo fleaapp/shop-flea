@@ -263,9 +263,8 @@ export function useOrders() {
       })) as Order[];
     },
     enabled: !!user?.id,
+    staleTime: 30_000,
   });
-
-  // Fetch orders where user is the seller (sales)
   const { data: sellerOrders = [], isLoading: loadingSellerOrders } = useQuery({
     queryKey: ['orders', 'seller', user?.id],
     queryFn: async () => {
@@ -303,6 +302,7 @@ export function useOrders() {
       })) as Order[];
     },
     enabled: !!user?.id,
+    staleTime: 30_000,
   });
 
 

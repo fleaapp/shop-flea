@@ -39,6 +39,7 @@ export const useUnreadOrderMessages = () => {
       return { total: messages.length, perOrder };
     },
     enabled: !!user?.id,
+    staleTime: 30_000,
     refetchInterval: 30000,
   });
 
