@@ -77,6 +77,25 @@ const PageLoader = () => (
 
 const AppContent = () => {
   const { showCarousel, closeCarousel } = useOnboarding();
+
+  useEffect(() => {
+    const prefetchCoreRoutes = () => {
+      void loadFavorites();
+      void loadCart();
+      void loadProfile();
+      void loadNotifications();
+      void loadSettings();
+    };
+
+    if (typeof requestIdleCallback !== 'undefined') {
+      requestIdleCallback(prefetchCoreRoutes, { timeout: 2000 });
+      return;
+    }
+
+    const timeoutId = window.setTimeout(prefetchCoreRoutes, 1200);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
   return (
     <>
       <Toaster />
@@ -112,7 +131,6 @@ const AppContent = () => {
           <Route path="/seller/:sellerId" element={<ProtectedRoute><SellerProfile /></ProtectedRoute>} />
           <Route path="/sales" element={<ProtectedRoute><Sales /></ProtectedRoute>} />
           <Route path="/order-chat/:orderId" element={<ProtectedRoute><OrderChat /></ProtectedRoute>} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
