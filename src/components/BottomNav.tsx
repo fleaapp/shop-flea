@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback, useTransition } from 'react';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { getAvatarUrl } from '@/utils/optimizedImage';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -19,6 +19,7 @@ interface NavItem {
 const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isPending, startTransition] = useTransition();
   const { user, profile } = useAuth();
   const { badgeCount: activityBadgeCount } = useNotifications();
   const { buyerOrders, sellerOrderGroups } = useOrders();
@@ -47,6 +48,14 @@ const BottomNav = () => {
     const count = toShipCount + sellerUnread;
     return count || undefined;
   }, [sellerOrderGroups, perOrder]);
+
+  const handleNavigate = useCallback((path: string) => {
+    // Use startTransition so the current screen stays visible
+    // while the next route's lazy chunk loads
+    startTransition(() => {
+      navigate(path);
+    });
+  }, [navigate, startTransition]);
 
   const profileIcon = (
     <div className="h-5 w-5 rounded-full overflow-hidden bg-background flex items-center justify-center">
@@ -91,7 +100,7 @@ const BottomNav = () => {
           return (
             <button
               key={item.path}
-              onClick={() => navigate(item.path)}
+              onClick={() => handleNavigate(item.path)}
               data-onboarding={onboardingId}
               className={cn(
                 'relative flex items-center justify-center rounded-full px-4 max-[375px]:px-3 py-2 max-[375px]:py-1.5 transition-colors duration-150',
