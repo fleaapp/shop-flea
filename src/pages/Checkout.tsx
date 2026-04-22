@@ -53,6 +53,9 @@ const Checkout = () => {
       return saved ? JSON.parse(saved) : null;
     } catch { return null; }
   }, []);
+  const [detailsSaved, setDetailsSaved] = useState(!!savedShipping);
+  const [isEditing, setIsEditing] = useState(!savedShipping);
+  const [saveConfirmed, setSaveConfirmed] = useState(false);
   const [shippingFirstName, setShippingFirstName] = useState(savedShipping?.firstName || '');
   const [shippingLastName, setShippingLastName] = useState(savedShipping?.lastName || '');
   const [shippingAddress, setShippingAddress] = useState(savedShipping?.address || '');
