@@ -44,12 +44,17 @@ serve(async (req) => {
     const shippingAmount = shipping || 0;
     const subtotal = itemsTotal + shippingAmount;
     
-    // 2% buyer processing fee
-    const processingFee = subtotal * 0.02;
+    // 2% + $0.30 buyer processing fee (covers Stripe's costs)
+    const processingFee = subtotal * 0.02 + 0.30;
     const totalCharge = subtotal + processingFee;
     
-    // 7% platform fee (taken from the total charge)
-    const platformFee = Math.round(totalCharge * 0.07 * 100); // in cents
+    // 7% platform fee on the subtotal (items + shipping)
+    const platformFeeDollars = subtotal * 0.07;
+    
+    // application_fee_amount = platform fee + processing fee
+    // This keeps the processing fee with the platform to cover Stripe's charges
+    // Seller receives: totalCharge - application_fee = subtotal - platformFee = 93% of (items + shipping)
+    const applicationFeeAmount = Math.round((platformFeeDollars + processingFee) * 100); // in cents
 
     // Build line items
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map(
