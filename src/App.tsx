@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,32 +16,56 @@ import { PushNotificationSubscriber } from "./components/PushNotificationSubscri
 // Critical path – loaded eagerly
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import Favorites from "./pages/Favorites";
-import Cart from "./pages/Cart";
-import Profile from "./pages/Profile";
-import Notifications from "./pages/Notifications";
-import Settings from "./pages/Settings";
 
-// Secondary routes – lazy loaded
-const ListingDetails = lazy(() => import("./pages/ListingDetails"));
-const Checkout = lazy(() => import("./pages/Checkout"));
-const CheckoutSuccess = lazy(() => import("./pages/CheckoutSuccess"));
-const CreateListing = lazy(() => import("./pages/CreateListing"));
-const EditListing = lazy(() => import("./pages/EditListing"));
-const EditProfile = lazy(() => import("./pages/EditProfile"));
-const ContactSupport = lazy(() => import("./pages/ContactSupport"));
-const ChatConversation = lazy(() => import("./pages/ChatConversation"));
-const SellerProfile = lazy(() => import("./pages/SellerProfile"));
-const FAQ = lazy(() => import("./pages/FAQ"));
-const OrderChat = lazy(() => import("./pages/OrderChat"));
-const Sales = lazy(() => import("./pages/Sales"));
-const About = lazy(() => import("./pages/About"));
-const Install = lazy(() => import("./pages/Install"));
-const SuggestionBox = lazy(() => import("./pages/SuggestionBox"));
-const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
-const ResetPassword = lazy(() => import("./pages/ResetPassword"));
-const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+const loadListingDetails = () => import("./pages/ListingDetails");
+const loadFavorites = () => import("./pages/Favorites");
+const loadCart = () => import("./pages/Cart");
+const loadCheckout = () => import("./pages/Checkout");
+const loadCheckoutSuccess = () => import("./pages/CheckoutSuccess");
+const loadProfile = () => import("./pages/Profile");
+const loadCreateListing = () => import("./pages/CreateListing");
+const loadEditListing = () => import("./pages/EditListing");
+const loadEditProfile = () => import("./pages/EditProfile");
+const loadNotifications = () => import("./pages/Notifications");
+const loadSettings = () => import("./pages/Settings");
+const loadContactSupport = () => import("./pages/ContactSupport");
+const loadChatConversation = () => import("./pages/ChatConversation");
+const loadSellerProfile = () => import("./pages/SellerProfile");
+const loadFAQ = () => import("./pages/FAQ");
+const loadOrderChat = () => import("./pages/OrderChat");
+const loadSales = () => import("./pages/Sales");
+const loadAbout = () => import("./pages/About");
+const loadInstall = () => import("./pages/Install");
+const loadSuggestionBox = () => import("./pages/SuggestionBox");
+const loadForgotPassword = () => import("./pages/ForgotPassword");
+const loadResetPassword = () => import("./pages/ResetPassword");
+const loadVerifyEmail = () => import("./pages/VerifyEmail");
+const loadNotFound = () => import("./pages/NotFound");
+
+const ListingDetails = lazy(loadListingDetails);
+const Favorites = lazy(loadFavorites);
+const Cart = lazy(loadCart);
+const Checkout = lazy(loadCheckout);
+const CheckoutSuccess = lazy(loadCheckoutSuccess);
+const Profile = lazy(loadProfile);
+const CreateListing = lazy(loadCreateListing);
+const EditListing = lazy(loadEditListing);
+const EditProfile = lazy(loadEditProfile);
+const Notifications = lazy(loadNotifications);
+const Settings = lazy(loadSettings);
+const ContactSupport = lazy(loadContactSupport);
+const ChatConversation = lazy(loadChatConversation);
+const SellerProfile = lazy(loadSellerProfile);
+const FAQ = lazy(loadFAQ);
+const OrderChat = lazy(loadOrderChat);
+const Sales = lazy(loadSales);
+const About = lazy(loadAbout);
+const Install = lazy(loadInstall);
+const SuggestionBox = lazy(loadSuggestionBox);
+const ForgotPassword = lazy(loadForgotPassword);
+const ResetPassword = lazy(loadResetPassword);
+const VerifyEmail = lazy(loadVerifyEmail);
+const NotFound = lazy(loadNotFound);
 
 const queryClient = new QueryClient();
 
