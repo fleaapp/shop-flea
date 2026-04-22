@@ -107,22 +107,30 @@ export const useFavorites = () => {
       return false;
     }
 
-    const { error } = await supabase
-      .from('favorites')
-      .insert({ user_id: user.id, listing_id: listingId });
+    // Optimistic update — unblock UI immediately
+    setFavoriteIds(prev => new Set([...prev, listingId]));
 
-    if (error && error.code !== '23505') {
-      toast.error('Failed to save item');
-      return false;
-    }
+    // Fire-and-forget DB insert + snapshot
+    supabase
+      .from('favorites')
+      .insert({ user_id: user.id, listing_id: listingId })
+      .then(({ error }) => {
+        if (error && error.code !== '23505') {
+          toast.error('Failed to save item');
+          setFavoriteIds(prev => {
+            const next = new Set(prev);
+            next.delete(listingId);
+            return next;
+          });
+        }
+      });
 
     try {
-      await persistFavoriteSnapshot(listingId, listing);
+      persistFavoriteSnapshot(listingId, listing);
     } catch (snapshotError) {
       console.warn('Failed to persist wishlist snapshot:', snapshotError);
     }
 
-    setFavoriteIds(prev => new Set([...prev, listingId]));
     return true;
   }, [user, persistFavoriteSnapshot]);
 
