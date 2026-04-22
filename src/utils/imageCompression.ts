@@ -11,9 +11,9 @@ interface CompressionOptions {
 }
 
 const DEFAULT_OPTIONS: CompressionOptions = {
-  maxWidth: 1200,
-  maxHeight: 1200,
-  quality: 0.8,
+  maxWidth: 800,
+  maxHeight: 1000,
+  quality: 0.75,
   mimeType: 'image/jpeg',
 };
 

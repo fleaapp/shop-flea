@@ -274,9 +274,9 @@ const CreateListing = () => {
     const croppedFile = new File([croppedBlob], `cropped-${Date.now()}.jpg`, { type: 'image/jpeg' });
     try {
       const compressedFile = await compressImage(croppedFile, {
-        maxWidth: 1200,
-        maxHeight: 1200,
-        quality: 0.8,
+        maxWidth: 800,
+        maxHeight: 1000,
+        quality: 0.75,
       });
       const preview = URL.createObjectURL(compressedFile);
       setImageFiles((prev) => [...prev, { file: compressedFile, preview }]);

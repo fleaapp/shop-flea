@@ -255,47 +255,51 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const addToCart = useCallback(async (listing: Listing): Promise<boolean> => {
     if (!user) return false;
 
-    const { profiles: sellerProfiles, canTrustMissing } = await fetchSellerProfiles([listing.sellerId]);
-    const seller = sellerProfiles[0];
-    if ((canTrustMissing && !seller) || seller?.status === 'blocked') {
-      return false;
-    }
-
-    const persistSnapshot = () => {
-      saveSavedListingSnapshots(user.id, [
-        createSavedListingSnapshotFromListing(listing, seller
-          ? {
-              user_id: seller.user_id,
-              username: seller.username,
-              avatar_url: seller.avatar_url,
-              location: seller.location,
-              rating: seller.rating,
-              pause_selling: seller.pause_selling,
-              last_sign_in_at: seller.last_sign_in_at,
-              status: seller.status,
-            }
-          : null),
-      ]);
-    };
-
-    const { error } = await supabase
-      .from('cart_items')
-      .insert({ user_id: user.id, listing_id: listing.id });
-
-    if (error) {
-      if (error.code === '23505') {
-        // Already in cart
-        persistSnapshot();
-        return true;
-      }
-      console.error('Failed to add to cart:', error);
-      return false;
-    }
-
-    persistSnapshot();
-
+    // Optimistic update — unblock UI immediately
     setCartItems(prev => [...prev, listing]);
     setCartIds(prev => new Set([...prev, listing.id]));
+
+    // Background: seller check + DB insert
+    (async () => {
+      try {
+        const { profiles: sellerProfiles, canTrustMissing } = await fetchSellerProfiles([listing.sellerId]);
+        const seller = sellerProfiles[0];
+        if ((canTrustMissing && !seller) || seller?.status === 'blocked') {
+          // Rollback
+          setCartItems(prev => prev.filter(i => i.id !== listing.id));
+          setCartIds(prev => { const n = new Set(prev); n.delete(listing.id); return n; });
+          return;
+        }
+
+        saveSavedListingSnapshots(user.id, [
+          createSavedListingSnapshotFromListing(listing, seller
+            ? {
+                user_id: seller.user_id,
+                username: seller.username,
+                avatar_url: seller.avatar_url,
+                location: seller.location,
+                rating: seller.rating,
+                pause_selling: seller.pause_selling,
+                last_sign_in_at: seller.last_sign_in_at,
+                status: seller.status,
+              }
+            : null),
+        ]);
+
+        const { error } = await supabase
+          .from('cart_items')
+          .insert({ user_id: user.id, listing_id: listing.id });
+
+        if (error && error.code !== '23505') {
+          console.error('Failed to add to cart:', error);
+          setCartItems(prev => prev.filter(i => i.id !== listing.id));
+          setCartIds(prev => { const n = new Set(prev); n.delete(listing.id); return n; });
+        }
+      } catch (e) {
+        console.error('Cart add failed:', e);
+      }
+    })();
+
     return true;
   }, [user]);
 

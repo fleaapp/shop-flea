@@ -81,7 +81,7 @@ function WriteReviewDrawer({
   const handleCropComplete = useCallback(async (blob: Blob) => {
     setCropSrc(null);
     const file = new File([blob], 'review-photo.jpg', { type: 'image/jpeg' });
-    const compressed = await compressImage(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.85 });
+    const compressed = await compressImage(file, { maxWidth: 800, maxHeight: 1000, quality: 0.75 });
     setPhotoFile(compressed);
     const reader = new FileReader();
     reader.onload = (ev) => setPhotoPreview(ev.target?.result as string);
