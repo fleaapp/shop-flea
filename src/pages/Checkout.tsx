@@ -12,6 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { toast } from 'sonner';
+import { Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import applePayLogo from '@/assets/applepay-logo.png';
 import gPayLogo from '@/assets/gpay-logo.png';
