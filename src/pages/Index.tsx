@@ -69,8 +69,23 @@ const Index = () => {
   // The AuthContext sets profile to null both when loading and when no row exists, so we treat
   // a missing row as "loaded" once the user is present and not in initial loading.
   const profileLoaded = !!user;
-  const [welcomeCompleted, setWelcomeCompleted] = useState(false);
+  // Persist `welcomeCompleted` per-user in localStorage. Without this, navigating
+  // between routes during the onboarding carousel unmounts/remounts Index and
+  // resets this flag to false — which, combined with a brief profile-refetch lag,
+  // re-opens the WelcomeSetupDialog and creates a loop.
+  const [welcomeCompleted, setWelcomeCompleted] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return false; // initialised properly in the user-scoped effect below
+  });
   const [passwordCompleted, setPasswordCompleted] = useState(false);
+
+  // Sync welcomeCompleted from user-scoped localStorage once user is available
+  useEffect(() => {
+    if (user) {
+      const done = localStorage.getItem(`flea_welcome_done_${user.id}`) === '1';
+      if (done) setWelcomeCompleted(true);
+    }
+  }, [user]);
   
   // Sync passwordCompleted from user-scoped localStorage once user is available
   useEffect(() => {
