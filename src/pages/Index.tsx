@@ -502,6 +502,7 @@ const Index = () => {
         isGoogleUser={isGoogleUser}
         onComplete={() => {
           setWelcomeCompleted(true);
+          if (user) localStorage.setItem(`flea_welcome_done_${user.id}`, '1');
           // Use the localStorage flag — it was set BEFORE the OAuth redirect and survives cross-origin redirects
           const isOAuth = localStorage.getItem('flea_oauth_signup') === '1';
           console.log('[PW_DEBUG] onComplete fired:', { isOAuth, passwordCompleted, passwordAlreadySet, oauthSignupFlag });
