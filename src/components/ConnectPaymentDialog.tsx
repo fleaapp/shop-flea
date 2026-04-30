@@ -15,6 +15,7 @@ import paypalLogo from '@/assets/logo-paypal.png';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import StripeOnboardingSheet from '@/components/StripeOnboardingSheet';
 import { getStripeConnectedStorageKey } from '@/utils/stripeConnectionState';
+import { safeNavigateBack } from '@/utils/safeBack';
 
 interface ConnectPaymentDialogProps {
   open: boolean;
@@ -144,7 +145,7 @@ const ConnectPaymentDialog = ({ open, onOpenChange, stripeActionRequired = false
             variant="ghost"
             onClick={() => {
               onOpenChange(false);
-              navigate(-1);
+              safeNavigateBack(navigate, '/profile');
             }}
             disabled={isVerifying}
             className="w-64 h-10 text-muted-foreground mt-1 shadow-none ring-0 outline-none focus-visible:ring-0 border-none"

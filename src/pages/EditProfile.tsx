@@ -13,6 +13,7 @@ import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import AvatarCropDialog from '@/components/AvatarCropDialog';
 import ChangeEmailSheet from '@/components/ChangeEmailSheet';
 import ChangePasswordSheet from '@/components/ChangePasswordSheet';
+import { safeNavigateBack } from '@/utils/safeBack';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -259,7 +260,7 @@ const EditProfile = () => {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background px-4 py-4">
         <div className="flex items-center">
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2">
+          <button onClick={() => safeNavigateBack(navigate, '/profile')} className="p-2 -ml-2">
             <ArrowLeft className="h-6 w-6 text-foreground" />
           </button>
           <h1 className="flex-1 text-center text-lg font-bold text-foreground pr-8">Edit Profile</h1>

@@ -10,6 +10,7 @@ import { useOrders, Order, OrderGroup } from '@/hooks/useOrders';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { safeNavigateBack } from '@/utils/safeBack';
 
 const getStatusBadge = (status: Order['status']) => {
   switch (status) {
@@ -106,7 +107,7 @@ const Sales = () => {
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background px-4 py-4 flex items-center">
-        <button onClick={() => navigate(-1)} className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-border bg-card hover:bg-secondary">
+        <button onClick={() => safeNavigateBack(navigate, '/profile')} className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-border bg-card hover:bg-secondary">
           <ChevronLeft className="h-5 w-5" />
         </button>
         <h1 className="flex-1 text-center text-xl font-bold text-foreground pr-10">💸 Sales</h1>
