@@ -90,7 +90,7 @@ const WelcomeSetupDialog = ({ open, onComplete, isGoogleUser = false }: WelcomeS
         detectedLocation?.countryCode && detectedLocation.countryCode !== 'UNKNOWN'
           ? detectedLocation.countryCode
           : 'AU';
-      const resolvedRegion = detectedLocation?.regionId ?? 'oceania';
+      const resolvedRegion = detectedLocation?.regionId ?? 'AU';
 
       const updateData: Record<string, any> = {
         username: `@${formattedUsername}`,
