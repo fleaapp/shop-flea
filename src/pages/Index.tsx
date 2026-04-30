@@ -53,9 +53,22 @@ const Index = () => {
   const { checkAndTriggerOnboarding, openCarousel } = useOnboarding();
   const { user, profile, refreshProfile } = useAuth();
 
-  // Check if user needs to set up their profile (new users get auto-generated usernames)
-  const needsProfileSetup = profile?.username?.startsWith('@user_') || false;
-  const profileLoaded = profile !== null;
+  // Check if user needs to set up their profile.
+  // Triggers when: profile is missing entirely, username is missing/blank,
+  // username is the auto-generated placeholder, OR region/country is missing.
+  // Any of these means the user hasn't completed onboarding and must be gated.
+  const needsProfileSetup = !!user && (
+    !profile ||
+    !profile.username ||
+    profile.username.trim() === '' ||
+    profile.username.startsWith('@user_') ||
+    !profile.region_id ||
+    !profile.country_code
+  );
+  // profileLoaded reflects "we've finished trying to load it", regardless of whether a row exists.
+  // The AuthContext sets profile to null both when loading and when no row exists, so we treat
+  // a missing row as "loaded" once the user is present and not in initial loading.
+  const profileLoaded = !!user;
   const [welcomeCompleted, setWelcomeCompleted] = useState(false);
   const [passwordCompleted, setPasswordCompleted] = useState(false);
   
