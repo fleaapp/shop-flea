@@ -145,7 +145,14 @@ const Checkout = () => {
 
   const handleClose = () => {
     setOpen(false);
-    setTimeout(() => navigate(-1), 300);
+    // Navigate back immediately to avoid a flash of empty background while the
+    // drawer animates out (the page renders nothing behind the drawer).
+    const canGoBack = window.history.state && window.history.state.idx > 0;
+    if (canGoBack) {
+      navigate(-1);
+    } else {
+      navigate('/cart', { replace: true });
+    }
   };
 
   // Check if any items are from paused sellers (should have been filtered at Cart, but double-check)
