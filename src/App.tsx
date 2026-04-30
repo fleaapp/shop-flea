@@ -12,6 +12,8 @@ import OnboardingOverlay from "@/components/OnboardingOverlay";
 import OnboardingCarousel from "@/components/OnboardingCarousel";
 import RealtimeAlerts from "./components/RealtimeAlerts";
 import { PushNotificationSubscriber } from "./components/PushNotificationSubscriber";
+import ErrorBoundary from "./components/ErrorBoundary";
+import PageSkeleton from "./components/PageSkeleton";
 
 // Critical path – loaded eagerly
 import Index from "./pages/Index";
@@ -76,11 +78,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const PageLoader = () => (
-  <div className="fixed inset-0 flex items-center justify-center bg-background">
-    <span className="text-4xl animate-pulse">⏳</span>
-  </div>
-);
+const PageLoader = () => <PageSkeleton />;
 
 const AppContent = () => {
   const { showCarousel, closeCarousel } = useOnboarding();
@@ -146,19 +144,21 @@ const AppContent = () => {
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
-      <AuthProvider>
-        <CartProvider>
-          <OnboardingProvider>
-            <TooltipProvider>
-              <AppContent />
-            </TooltipProvider>
-          </OnboardingProvider>
-        </CartProvider>
-      </AuthProvider>
-    </BrowserRouter>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AuthProvider>
+          <CartProvider>
+            <OnboardingProvider>
+              <TooltipProvider>
+                <AppContent />
+              </TooltipProvider>
+            </OnboardingProvider>
+          </CartProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
