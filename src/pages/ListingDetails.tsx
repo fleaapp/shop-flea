@@ -278,7 +278,16 @@ const ListingDetails = () => {
 
   const handleClose = () => {
     setOpen(false);
-    setTimeout(() => navigate(-1), 300);
+    // Navigate back immediately. Deferring with setTimeout left a blank
+    // bg-background screen visible during the drawer's exit animation
+    // (and stuck permanently if the back navigation never fired).
+    // If there's no history to go back to, fall back to a sensible route.
+    const canGoBack = window.history.state && window.history.state.idx > 0;
+    if (canGoBack) {
+      navigate(-1);
+    } else {
+      navigate(fromWishlist ? '/wishlist' : '/', { replace: true });
+    }
   };
 
   useEffect(() => {
