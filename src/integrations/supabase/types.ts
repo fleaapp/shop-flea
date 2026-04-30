@@ -894,6 +894,7 @@ export type Database = {
         Returns: undefined
       }
       get_email_by_username: { Args: { p_username: string }; Returns: string }
+      get_nav_badges: { Args: { _user_id: string }; Returns: Json }
       get_trending_searches: {
         Args: { limit_count?: number }
         Returns: {
