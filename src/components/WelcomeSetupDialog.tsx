@@ -83,18 +83,22 @@ const WelcomeSetupDialog = ({ open, onComplete, isGoogleUser = false }: WelcomeS
         return;
       }
 
-      // Update the user's profile with all fields, including location if detected
-      const updateData: Record<string, any> = { 
+      // Update the user's profile with all fields, including location.
+      // Region/country are REQUIRED — fall back to AU if detection failed,
+      // since the app is AU-exclusive (see regional lockdown rules).
+      const resolvedCountry =
+        detectedLocation?.countryCode && detectedLocation.countryCode !== 'UNKNOWN'
+          ? detectedLocation.countryCode
+          : 'AU';
+      const resolvedRegion = detectedLocation?.regionId ?? 'oceania';
+
+      const updateData: Record<string, any> = {
         username: `@${formattedUsername}`,
         first_name: firstName.trim() || null,
         last_name: lastName.trim() || null,
+        country_code: resolvedCountry,
+        region_id: resolvedRegion,
       };
-
-      // Add location data if available and not already set
-      if (detectedLocation?.countryCode && detectedLocation.countryCode !== 'UNKNOWN') {
-        updateData.country_code = detectedLocation.countryCode;
-        updateData.region_id = detectedLocation.regionId;
-      }
 
       const { error: updateError } = await supabase
         .from('profiles')
