@@ -4,10 +4,7 @@ import { getAvatarUrl } from '@/utils/optimizedImage';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
-import { useNotifications } from '@/hooks/useNotifications';
-import { useOrders } from '@/hooks/useOrders';
-import { useUnreadSupport } from '@/hooks/useUnreadSupport';
-import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
+import { useNavBadges } from '@/hooks/useNavBadges';
 
 interface NavItem {
   icon: React.ReactNode;
@@ -19,39 +16,30 @@ interface NavItem {
 const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const { user, profile } = useAuth();
-  const { badgeCount: activityBadgeCount } = useNotifications();
-  const { buyerOrders, sellerOrderGroups } = useOrders();
-  const { total: supportUnread } = useUnreadSupport();
-  const { total: orderMessagesUnread, perOrder } = useUnreadOrderMessages();
+  const badges = useNavBadges();
 
-  // Orders badge: awaiting + shipped orders (buyer perspective)
+  // Orders badge: awaiting+shipped buyer orders + buyer-side unread messages
   const ordersBadge = useMemo(() => {
-    const count = buyerOrders.filter(o => o.status === 'awaiting' || o.status === 'shipped').length + orderMessagesUnread;
+    const count = badges.buyer_orders + badges.unread_buyer_msgs;
     return count || undefined;
-  }, [buyerOrders, orderMessagesUnread]);
+  }, [badges.buyer_orders, badges.unread_buyer_msgs]);
 
-  // Alerts badge: activity only (sales moved to separate page)
+  // Alerts badge: activity notifications only
   const alertsBadge = useMemo(() => {
-    const count = activityBadgeCount;
-    return count || undefined;
-  }, [activityBadgeCount]);
+    return badges.activity_unread || undefined;
+  }, [badges.activity_unread]);
 
-  // Sales badge for Profile nav: awaiting seller orders + unread buyer messages on seller orders
+  // Sales badge for Profile nav
   const salesBadge = useMemo(() => {
-    const toShipCount = sellerOrderGroups.filter(g => g.status === 'awaiting').length;
-    // Count unread messages on seller's orders
-    const sellerUnread = sellerOrderGroups.reduce((sum, g) => {
-      return sum + g.orders.reduce((s, o) => s + (perOrder.get(o.id) || 0), 0);
-    }, 0);
-    const count = toShipCount + sellerUnread;
+    const count = badges.seller_to_ship + badges.unread_seller_msgs;
     return count || undefined;
-  }, [sellerOrderGroups, perOrder]);
+  }, [badges.seller_to_ship, badges.unread_seller_msgs]);
+
+  const supportUnread = badges.unread_support || undefined;
 
   const handleNavigate = useCallback((path: string) => {
-    // Use startTransition so the current screen stays visible
-    // while the next route's lazy chunk loads
     startTransition(() => {
       navigate(path);
     });
@@ -68,14 +56,13 @@ const BottomNav = () => {
   );
 
   const navItems: NavItem[] = useMemo(() => [
-    { icon: <span className="text-lg">⚙️</span>, label: 'Settings', path: '/settings', badge: supportUnread || undefined },
+    { icon: <span className="text-lg">⚙️</span>, label: 'Settings', path: '/settings', badge: supportUnread },
     { icon: profileIcon, label: 'Profile', path: '/profile', badge: salesBadge },
     { icon: <span className="text-lg">🏠</span>, label: 'Home', path: '/' },
     { icon: <span className="text-lg">🛒</span>, label: 'Cart', path: '/cart', badge: ordersBadge },
     { icon: <span className="text-lg">🔔</span>, label: 'Alerts', path: '/notifications', badge: alertsBadge },
-  ], [profile?.avatar_url, profileIcon, ordersBadge, alertsBadge, salesBadge]);
+  ], [profile?.avatar_url, profileIcon, ordersBadge, alertsBadge, salesBadge, supportUnread]);
 
-  // Map paths to onboarding IDs
   const getOnboardingId = (path: string) => {
     switch (path) {
       case '/settings': return 'nav-settings';
