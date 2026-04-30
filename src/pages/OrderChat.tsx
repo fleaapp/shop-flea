@@ -16,6 +16,7 @@ import { useReporting } from '@/hooks/useReporting';
 import { compressImage } from '@/utils/imageCompression';
 import { useOrders } from '@/hooks/useOrders';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
+import { safeNavigateBack } from '@/utils/safeBack';
 
 interface OrderMessage {
   id: string;
@@ -212,7 +213,7 @@ const OrderChat = () => {
   return (
     <div className="flex flex-col h-screen bg-background">
       <header className="sticky top-0 z-40 bg-background px-4 py-3 flex items-center gap-3 border-b border-border">
-        <button onClick={() => navigate(-1)}>
+        <button onClick={() => safeNavigateBack(navigate, '/cart')}>
           <ChevronLeft className="h-6 w-6 text-foreground" />
         </button>
         <Avatar className="h-8 w-8">
