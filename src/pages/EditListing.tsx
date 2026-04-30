@@ -31,6 +31,7 @@ import {
 import { COLOUR_SWATCHES } from '@/utils/colourSwatches';
 import ConditionInfoPopover from '@/components/ConditionInfoPopover';
 import BrandAutocomplete from '@/components/BrandAutocomplete';
+import { safeNavigateBack } from '@/utils/safeBack';
 
 interface ImageFile {
   file: File;
@@ -483,7 +484,7 @@ const EditListing = () => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate(-1)}
+          onClick={() => safeNavigateBack(navigate, '/profile')}
           className="absolute left-4 h-10 w-10 rounded-full"
         >
           <ArrowLeft className="h-5 w-5" />

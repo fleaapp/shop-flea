@@ -16,6 +16,7 @@ import ReviewsDrawer from '@/components/ReviewsDrawer';
 import { ArrowLeft, MoreVertical, LayoutGrid, Rows3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProfileGridCard from '@/components/ProfileGridCard';
+import { safeNavigateBack } from '@/utils/safeBack';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -254,7 +255,7 @@ const SellerProfile = () => {
       <div className="min-h-screen bg-background pb-24 flex flex-col items-center justify-center px-4">
         <p className="text-lg font-medium text-foreground mb-4">Seller not found</p>
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => safeNavigateBack(navigate, '/')}
           className="rounded-full bg-primary px-6 py-3 text-primary-foreground font-medium"
         >
           Go Back
@@ -269,7 +270,7 @@ const SellerProfile = () => {
       {/* Header with back button and menu - absolute positioned */}
       <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-4 z-20">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => safeNavigateBack(navigate, '/')}
           className="h-10 w-10 flex items-center justify-center rounded-full bg-card card-shadow"
         >
           <ArrowLeft className="h-5 w-5 text-foreground" />

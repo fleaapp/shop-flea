@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { safeNavigateBack } from '@/utils/safeBack';
 
 const SuggestionBox = () => {
   const navigate = useNavigate();
@@ -40,7 +41,7 @@ const SuggestionBox = () => {
 
       toast.success('Thank you! Your suggestion has been submitted 💌');
       setContent('');
-      navigate(-1);
+      safeNavigateBack(navigate, '/profile');
     } catch {
       toast.error('Failed to submit suggestion. Please try again.');
     } finally {
@@ -52,7 +53,7 @@ const SuggestionBox = () => {
     <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
       {/* Header */}
       <header className="px-4 py-4 flex items-center flex-shrink-0">
-        <button onClick={() => navigate(-1)} className="p-1">
+        <button onClick={() => safeNavigateBack(navigate, '/profile')} className="p-1">
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
         <h1 className="text-xl font-bold text-foreground flex-1 text-center pr-6">📮 Suggestion Box</h1>

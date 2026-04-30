@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Download, Share, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { safeNavigateBack } from '@/utils/safeBack';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -67,7 +68,7 @@ const Install = () => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate(-1)}
+          onClick={() => safeNavigateBack(navigate, '/')}
           className="absolute left-2 rounded-full"
         >
           <ArrowLeft className="h-5 w-5" />
