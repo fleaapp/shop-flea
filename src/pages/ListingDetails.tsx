@@ -75,6 +75,7 @@ const ListingDetails = () => {
   const { user } = useAuth();
   const { openReport, submitPendingReport, closeReport, pendingReport, isReporting } = useReporting();
   const [open, setOpen] = useState(true);
+  const closeStartedRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -277,14 +278,18 @@ const ListingDetails = () => {
   }, [id]);
 
   const handleClose = () => {
+    if (closeStartedRef.current) return;
+    closeStartedRef.current = true;
+
     const fallbackRoute = fromWishlist
       ? '/favorites'
       : location.state?.fromCart
         ? '/cart'
         : sessionStorage.getItem('flea_last_non_listing_route') || '/';
 
-    const isSafeFallback = fallbackRoute && !fallbackRoute.startsWith('/listing/');
-    const safeFallback = isSafeFallback ? fallbackRoute : '/';
+    const normalisedFallback = fallbackRoute === '/index' ? '/' : fallbackRoute;
+    const isSafeFallback = normalisedFallback && !normalisedFallback.startsWith('/listing/');
+    const safeFallback = isSafeFallback ? normalisedFallback : '/';
 
     if (window.history.state?.idx > 0) {
       navigate(-1);
@@ -300,6 +305,7 @@ const ListingDetails = () => {
 
   useEffect(() => {
     setOpen(true);
+    closeStartedRef.current = false;
     setActiveImageIndex(0);
     requestAnimationFrame(() => {
       scrollRef.current?.scrollTo({ top: 0 });
