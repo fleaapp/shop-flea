@@ -278,7 +278,8 @@ export const useUserListings = (status?: 'active' | 'sold' | 'archived') => {
             .from('orders')
             .select('id, listing_id, created_at')
             .eq('seller_id', user.id)
-            .order('created_at', { ascending: false }),
+            .order('created_at', { ascending: false })
+            .limit(500),
           supabase
             .from('listings')
             .select('*')

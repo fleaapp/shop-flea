@@ -149,7 +149,8 @@ const SellerProfile = () => {
       .from('orders')
       .select('id, listing_id, created_at')
       .eq('seller_id', sellerId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(500);
 
     if (orders && orders.length > 0) {
       const listingIds = [...new Set(orders.map(o => o.listing_id))];

@@ -205,7 +205,8 @@ const fetchOrdersForUser = async (column: 'buyer_id' | 'seller_id', userId: stri
       .from('orders')
       .select(omittedColumns.size ? buildOrderSelectFields(omittedColumns) : ORDER_SELECT_FIELDS)
       .eq(column, userId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(500);
 
     const missingColumn = ORDER_OPTIONAL_COLUMNS.find(
       (optionalColumn) => !omittedColumns.has(optionalColumn) && isMissingColumnError(error, optionalColumn)
