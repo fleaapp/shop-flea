@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { compressImage } from '@/utils/imageCompression';
 import { toast } from 'sonner';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
@@ -30,8 +31,9 @@ const NewChatForm = ({ open, onOpenChange }: NewChatFormProps) => {
       let attachmentUrl: string | null = null;
 
       if (file) {
-        const filePath = `${user.id}/support/${Date.now()}_${file.name}`;
-        const { error: uploadErr } = await supabase.storage.from('listings').upload(filePath, file);
+        const upload = file.type.startsWith('image/') ? await compressImage(file).catch(() => file) : file;
+        const filePath = `${user.id}/support/${Date.now()}_${upload.name}`;
+        const { error: uploadErr } = await supabase.storage.from('listings').upload(filePath, upload);
         if (uploadErr) throw uploadErr;
         const { data: urlData } = supabase.storage.from('listings').getPublicUrl(filePath);
         attachmentUrl = urlData.publicUrl;
