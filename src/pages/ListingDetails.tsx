@@ -75,6 +75,7 @@ const ListingDetails = () => {
   const { user } = useAuth();
   const { openReport, submitPendingReport, closeReport, pendingReport, isReporting } = useReporting();
   const [open, setOpen] = useState(true);
+  const closeStartedRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -277,21 +278,25 @@ const ListingDetails = () => {
   }, [id]);
 
   const handleClose = () => {
-    setOpen(false);
-    // Navigate back immediately. Deferring with setTimeout left a blank
-    // bg-background screen visible during the drawer's exit animation
-    // (and stuck permanently if the back navigation never fired).
-    // If there's no history to go back to, fall back to a sensible route.
-    const canGoBack = window.history.state && window.history.state.idx > 0;
-    if (canGoBack) {
-      navigate(-1);
-    } else {
-      navigate(fromWishlist ? '/wishlist' : '/', { replace: true });
-    }
+    if (closeStartedRef.current) return;
+    closeStartedRef.current = true;
+
+    const fallbackRoute = fromWishlist
+      ? '/favorites'
+      : location.state?.fromCart
+        ? '/cart'
+        : sessionStorage.getItem('flea_last_non_listing_route') || '/';
+
+    const normalisedFallback = fallbackRoute === '/index' ? '/' : fallbackRoute;
+    const isSafeFallback = normalisedFallback && !normalisedFallback.startsWith('/listing/');
+    const safeFallback = isSafeFallback ? normalisedFallback : '/';
+
+    navigate(safeFallback, { replace: true });
   };
 
   useEffect(() => {
     setOpen(true);
+    closeStartedRef.current = false;
     setActiveImageIndex(0);
     requestAnimationFrame(() => {
       scrollRef.current?.scrollTo({ top: 0 });
@@ -753,7 +758,7 @@ const ListingDetails = () => {
                       <button
                         onClick={() => {
                           setOpen(false);
-                          setTimeout(() => navigate('/support'), 300);
+                          setTimeout(() => navigate('/contact-support'), 300);
                         }}
                         className="text-xs text-muted-foreground underline"
                       >

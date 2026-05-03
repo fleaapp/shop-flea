@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { OnboardingProvider, useOnboarding } from "@/context/OnboardingContext";
@@ -82,6 +82,14 @@ const PageLoader = () => <PageSkeleton />;
 
 const AppContent = () => {
   const { showCarousel, closeCarousel } = useOnboarding();
+  const location = useLocation();
+
+  useEffect(() => {
+    const currentRoute = `${location.pathname}${location.search}${location.hash}`;
+    if (!location.pathname.startsWith('/listing/')) {
+      sessionStorage.setItem('flea_last_non_listing_route', currentRoute);
+    }
+  }, [location.pathname, location.search, location.hash]);
 
   useEffect(() => {
     const prefetchCoreRoutes = () => {
