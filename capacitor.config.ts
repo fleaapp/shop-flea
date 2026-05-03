@@ -18,6 +18,23 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
+    SplashScreen: {
+      launchShowDuration: 1500,
+      launchAutoHide: true,
+      backgroundColor: '#EDE8DC',
+      androidSplashResourceName: 'splash',
+      androidScaleType: 'CENTER_CROP',
+      showSpinner: false,
+      splashFullScreen: true,
+      splashImmersive: true,
+    },
+  },
+  ios: {
+    contentInset: 'always',
+    limitsNavigationsToAppBoundDomains: false,
+  },
+  android: {
+    allowMixedContent: false,
   },
 };
 
