@@ -117,7 +117,8 @@ export const useNotifications = () => {
           .from('notifications')
           .select(buildNotificationSelectFields(omittedColumns))
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .limit(200);
 
         const missingColumn = NOTIFICATION_OPTIONAL_COLUMNS.find(
           (column) => !omittedColumns.has(column) && isMissingNotificationColumnError(error, column)

@@ -39,7 +39,8 @@ export function useUserReviews(userId: string | undefined) {
         .from('reviews')
         .select('*')
         .eq('reviewed_user_id', userId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(200);
       
       if (reviewsError) throw reviewsError;
       if (!reviewsData || reviewsData.length === 0) return [];

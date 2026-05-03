@@ -102,7 +102,8 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
         .from('listing_comments')
         .select('*')
         .eq('listing_id', listingId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true })
+        .limit(500);
 
       if (error) throw error;
 
