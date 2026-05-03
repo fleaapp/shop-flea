@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Send } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { compressImage } from '@/utils/imageCompression';
 import { toast } from 'sonner';
 import ChatBubble from '@/components/ChatBubble';
 import { useQueryClient } from '@tanstack/react-query';
@@ -126,8 +127,9 @@ const ChatConversation = () => {
     try {
       let attachmentUrl: string | null = null;
       if (file) {
-        const filePath = `${user.id}/support/${Date.now()}_${file.name}`;
-        const { error: upErr } = await supabase.storage.from('listings').upload(filePath, file);
+        const upload = file.type.startsWith('image/') ? await compressImage(file).catch(() => file) : file;
+        const filePath = `${user.id}/support/${Date.now()}_${upload.name}`;
+        const { error: upErr } = await supabase.storage.from('listings').upload(filePath, upload);
         if (upErr) throw upErr;
         const { data: urlData } = supabase.storage.from('listings').getPublicUrl(filePath);
         attachmentUrl = urlData.publicUrl;
