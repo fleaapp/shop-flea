@@ -226,7 +226,17 @@ const Index = () => {
     return listingFilters;
   }, [listingFilters, searchQuery]);
 
-  const { listings: dbListings, loading } = useListings(finalFilters);
+  const { listings: dbListings, loading, loadMore, hasMore, loadingMore } = useListings(finalFilters);
+
+  // Auto-fetch next page when the unswiped stack is running low.
+  useEffect(() => {
+    if (!loading && !loadingMore && hasMore && dbListings.length > 0) {
+      const remaining = dbListings.filter(l =>
+        !discardedIds.has(l.id) && !favoriteIds.has(l.id) && !isInCart(l.id)
+      ).length;
+      if (remaining < 10) loadMore();
+    }
+  }, [dbListings, discardedIds, favoriteIds, isInCart, loading, loadingMore, hasMore, loadMore]);
 
   // Filter out listings that are discarded, favorited, or in cart.
   // IMPORTANT: while the top card is animating out, keep it in the stack so
