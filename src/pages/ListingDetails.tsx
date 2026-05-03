@@ -758,7 +758,7 @@ const ListingDetails = () => {
                       <button
                         onClick={() => {
                           setOpen(false);
-                          setTimeout(() => navigate('/support'), 300);
+                          setTimeout(() => navigate('/contact-support'), 300);
                         }}
                         className="text-xs text-muted-foreground underline"
                       >
