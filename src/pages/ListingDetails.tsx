@@ -277,16 +277,24 @@ const ListingDetails = () => {
   }, [id]);
 
   const handleClose = () => {
-    setOpen(false);
-    // Navigate back immediately. Deferring with setTimeout left a blank
-    // bg-background screen visible during the drawer's exit animation
-    // (and stuck permanently if the back navigation never fired).
-    // If there's no history to go back to, fall back to a sensible route.
-    const canGoBack = window.history.state && window.history.state.idx > 0;
-    if (canGoBack) {
+    const fallbackRoute = fromWishlist
+      ? '/favorites'
+      : location.state?.fromCart
+        ? '/cart'
+        : sessionStorage.getItem('flea_last_non_listing_route') || '/';
+
+    const isSafeFallback = fallbackRoute && !fallbackRoute.startsWith('/listing/');
+    const safeFallback = isSafeFallback ? fallbackRoute : '/';
+
+    if (window.history.state?.idx > 0) {
       navigate(-1);
+      window.setTimeout(() => {
+        if (window.location.pathname.startsWith('/listing/')) {
+          navigate(safeFallback, { replace: true });
+        }
+      }, 350);
     } else {
-      navigate(fromWishlist ? '/wishlist' : '/', { replace: true });
+      navigate(safeFallback, { replace: true });
     }
   };
 
