@@ -291,16 +291,7 @@ const ListingDetails = () => {
     const isSafeFallback = normalisedFallback && !normalisedFallback.startsWith('/listing/');
     const safeFallback = isSafeFallback ? normalisedFallback : '/';
 
-    if (window.history.state?.idx > 0) {
-      navigate(-1);
-      window.setTimeout(() => {
-        if (window.location.pathname.startsWith('/listing/')) {
-          navigate(safeFallback, { replace: true });
-        }
-      }, 350);
-    } else {
-      navigate(safeFallback, { replace: true });
-    }
+    navigate(safeFallback, { replace: true });
   };
 
   useEffect(() => {
