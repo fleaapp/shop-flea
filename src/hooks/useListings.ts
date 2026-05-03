@@ -54,14 +54,24 @@ export interface ListingFilters {
   search?: string;
 }
 
+const PAGE_SIZE = 50;
+
 export const useListings = (filters?: ListingFilters) => {
   const { user } = useAuth();
   const [listings, setListings] = useState<DbListing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Keyset cursor: last seen created_at (for pagination beyond first page)
+  const [cursor, setCursor] = useState<string | null>(null);
 
-  const fetchListings = useCallback(async () => {
-    setLoading(true);
+  const fetchListings = useCallback(async (mode: 'reset' | 'append' = 'reset', cursorOverride?: string | null) => {
+    if (mode === 'reset') {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
     setError(null);
 
     let query = supabase
@@ -69,7 +79,12 @@ export const useListings = (filters?: ListingFilters) => {
       .select('*')
       .eq('status', 'active')
       .order('created_at', { ascending: false })
-      .limit(100); // Limit to prevent DoS via large result sets
+      .limit(PAGE_SIZE);
+
+    // Keyset cursor for "append" mode
+    if (mode === 'append' && cursorOverride) {
+      query = query.lt('created_at', cursorOverride);
+    }
 
     // Exclude current user's own listings
     if (user) {
