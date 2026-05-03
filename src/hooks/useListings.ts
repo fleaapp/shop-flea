@@ -54,14 +54,24 @@ export interface ListingFilters {
   search?: string;
 }
 
+const PAGE_SIZE = 50;
+
 export const useListings = (filters?: ListingFilters) => {
   const { user } = useAuth();
   const [listings, setListings] = useState<DbListing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Keyset cursor: last seen created_at (for pagination beyond first page)
+  const [cursor, setCursor] = useState<string | null>(null);
 
-  const fetchListings = useCallback(async () => {
-    setLoading(true);
+  const fetchListings = useCallback(async (mode: 'reset' | 'append' = 'reset', cursorOverride?: string | null) => {
+    if (mode === 'reset') {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
     setError(null);
 
     let query = supabase
@@ -69,7 +79,12 @@ export const useListings = (filters?: ListingFilters) => {
       .select('*')
       .eq('status', 'active')
       .order('created_at', { ascending: false })
-      .limit(100); // Limit to prevent DoS via large result sets
+      .limit(PAGE_SIZE);
+
+    // Keyset cursor for "append" mode
+    if (mode === 'append' && cursorOverride) {
+      query = query.lt('created_at', cursorOverride);
+    }
 
     // Exclude current user's own listings
     if (user) {
@@ -120,8 +135,20 @@ export const useListings = (filters?: ListingFilters) => {
 
     if (queryError) {
       setError(queryError.message);
-      setListings([]);
-    } else if (data && data.length > 0) {
+      if (mode === 'reset') setListings([]);
+      setLoading(false);
+      setLoadingMore(false);
+      return;
+    }
+
+    // Track whether the raw page was full — that's what determines if more pages exist server-side.
+    const rawCount = data?.length ?? 0;
+    setHasMore(rawCount === PAGE_SIZE);
+    if (rawCount > 0 && data) {
+      setCursor(data[data.length - 1].created_at);
+    }
+
+    if (data && data.length > 0) {
       // If size keys are in use (e.g. clothing:8 vs shoes:8), apply a second
       // pass to ensure category+size matching (DB only stores size).
       const normalizedSizeKeys = normalizeSizeKeys(filters?.sizes);
@@ -184,27 +211,49 @@ export const useListings = (filters?: ListingFilters) => {
         );
       }
       
-      // Only preload the first few listing images (visible in swipe stack)
-      const listingImageUrls = listingsWithProfiles
-        .slice(0, 3)
-        .flatMap(l => l.images?.slice(0, 1) || [])
-        .filter(Boolean);
-      if (listingImageUrls.length > 0) {
-        preloadImages(listingImageUrls);
+      // Only preload the first few listing images (visible in swipe stack) on initial load
+      if (mode === 'reset') {
+        const listingImageUrls = listingsWithProfiles
+          .slice(0, 3)
+          .flatMap(l => l.images?.slice(0, 1) || [])
+          .filter(Boolean);
+        if (listingImageUrls.length > 0) {
+          preloadImages(listingImageUrls);
+        }
       }
       
-      setListings(listingsWithProfiles);
-    } else {
+      if (mode === 'append') {
+        setListings(prev => {
+          const existingIds = new Set(prev.map(l => l.id));
+          const merged = [...prev];
+          for (const l of listingsWithProfiles) {
+            if (!existingIds.has(l.id)) merged.push(l);
+          }
+          return merged;
+        });
+      } else {
+        setListings(listingsWithProfiles);
+      }
+    } else if (mode === 'reset') {
       setListings([]);
     }
     setLoading(false);
+    setLoadingMore(false);
   }, [user, filters?.category, filters?.categories, filters?.size, filters?.sizes, filters?.condition, filters?.gender, filters?.genders, filters?.colours, filters?.styles, filters?.brands, filters?.minPrice, filters?.maxPrice, filters?.search]);
 
+  // Reset + fetch first page whenever filters/user change
   useEffect(() => {
-    fetchListings();
+    setCursor(null);
+    setHasMore(true);
+    fetchListings('reset');
   }, [fetchListings]);
 
-  return { listings, loading, error, refetch: fetchListings };
+  const loadMore = useCallback(() => {
+    if (loading || loadingMore || !hasMore || !cursor) return;
+    fetchListings('append', cursor);
+  }, [loading, loadingMore, hasMore, cursor, fetchListings]);
+
+  return { listings, loading, loadingMore, hasMore, error, refetch: () => fetchListings('reset'), loadMore };
 };
 
 export const useUserListings = (status?: 'active' | 'sold' | 'archived') => {
