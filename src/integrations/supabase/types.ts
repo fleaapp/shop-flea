@@ -435,6 +435,7 @@ export type Database = {
           order_number: string | null
           payment_method: string
           price: number
+          refunded_at: string | null
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -460,6 +461,7 @@ export type Database = {
           order_number?: string | null
           payment_method?: string
           price: number
+          refunded_at?: string | null
           seller_id: string
           shipped_at?: string | null
           shipping_address?: string | null
@@ -485,6 +487,7 @@ export type Database = {
           order_number?: string | null
           payment_method?: string
           price?: number
+          refunded_at?: string | null
           seller_id?: string
           shipped_at?: string | null
           shipping_address?: string | null
@@ -508,6 +511,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payment_events: {
+        Row: {
+          amount: number | null
+          buyer_id: string | null
+          created_at: string
+          event_id: string
+          event_type: string
+          id: string
+          order_id: string | null
+          payload: Json | null
+          provider: string
+          seller_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          buyer_id?: string | null
+          created_at?: string
+          event_id: string
+          event_type: string
+          id?: string
+          order_id?: string | null
+          payload?: Json | null
+          provider: string
+          seller_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          buyer_id?: string | null
+          created_at?: string
+          event_id?: string
+          event_type?: string
+          id?: string
+          order_id?: string | null
+          payload?: Json | null
+          provider?: string
+          seller_id?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
