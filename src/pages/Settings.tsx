@@ -113,8 +113,13 @@ const Settings = () => {
     label: 'Suggestion Box',
     action: () => navigate('/suggestion-box')
   }, {
+    icon: <span className="text-base">📄</span>,
+    label: 'Terms & Conditions',
+    action: () => navigate('/terms')
+  }, {
     icon: <span className="text-base">🔒</span>,
-    label: 'Terms & Privacy'
+    label: 'Privacy Policy',
+    action: () => navigate('/privacy')
   }, {
     icon: <span className="text-base">📖</span>,
     label: 'App Walkthrough',

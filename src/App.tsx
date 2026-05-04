@@ -43,6 +43,8 @@ const loadForgotPassword = () => import("./pages/ForgotPassword");
 const loadResetPassword = () => import("./pages/ResetPassword");
 const loadVerifyEmail = () => import("./pages/VerifyEmail");
 const loadNotFound = () => import("./pages/NotFound");
+const loadTerms = () => import("./pages/Terms");
+const loadPrivacyPolicy = () => import("./pages/PrivacyPolicy");
 
 const ListingDetails = lazy(loadListingDetails);
 const Favorites = lazy(loadFavorites);
@@ -68,6 +70,8 @@ const ForgotPassword = lazy(loadForgotPassword);
 const ResetPassword = lazy(loadResetPassword);
 const VerifyEmail = lazy(loadVerifyEmail);
 const NotFound = lazy(loadNotFound);
+const Terms = lazy(loadTerms);
+const PrivacyPolicy = lazy(loadPrivacyPolicy);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -144,6 +148,8 @@ const AppContent = () => {
           <Route path="/seller/:sellerId" element={<ProtectedRoute><SellerProfile /></ProtectedRoute>} />
           <Route path="/sales" element={<ProtectedRoute><Sales /></ProtectedRoute>} />
           <Route path="/order-chat/:orderId" element={<ProtectedRoute><OrderChat /></ProtectedRoute>} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
