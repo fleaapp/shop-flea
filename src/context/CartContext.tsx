@@ -259,48 +259,52 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setCartItems(prev => [...prev, listing]);
     setCartIds(prev => new Set([...prev, listing.id]));
 
-    // Background: seller check + DB insert
-    (async () => {
-      try {
-        const { profiles: sellerProfiles, canTrustMissing } = await fetchSellerProfiles([listing.sellerId]);
-        const seller = sellerProfiles[0];
-        if ((canTrustMissing && !seller) || seller?.status === 'blocked') {
-          // Rollback
-          setCartItems(prev => prev.filter(i => i.id !== listing.id));
-          setCartIds(prev => { const n = new Set(prev); n.delete(listing.id); return n; });
-          return;
-        }
+    const rollback = () => {
+      setCartItems(prev => prev.filter(i => i.id !== listing.id));
+      setCartIds(prev => { const n = new Set(prev); n.delete(listing.id); return n; });
+    };
 
-        saveSavedListingSnapshots(user.id, [
-          createSavedListingSnapshotFromListing(listing, seller
-            ? {
-                user_id: seller.user_id,
-                username: seller.username,
-                avatar_url: seller.avatar_url,
-                location: seller.location,
-                rating: seller.rating,
-                pause_selling: seller.pause_selling,
-                last_sign_in_at: seller.last_sign_in_at,
-                status: seller.status,
-              }
-            : null),
-        ]);
-
-        const { error } = await supabase
-          .from('cart_items')
-          .insert({ user_id: user.id, listing_id: listing.id });
-
-        if (error && error.code !== '23505') {
-          console.error('Failed to add to cart:', error);
-          setCartItems(prev => prev.filter(i => i.id !== listing.id));
-          setCartIds(prev => { const n = new Set(prev); n.delete(listing.id); return n; });
-        }
-      } catch (e) {
-        console.error('Cart add failed:', e);
+    try {
+      const { profiles: sellerProfiles, canTrustMissing } = await fetchSellerProfiles([listing.sellerId]);
+      const seller = sellerProfiles[0];
+      if ((canTrustMissing && !seller) || seller?.status === 'blocked') {
+        rollback();
+        return false;
       }
-    })();
 
-    return true;
+      saveSavedListingSnapshots(user.id, [
+        createSavedListingSnapshotFromListing(listing, seller
+          ? {
+              user_id: seller.user_id,
+              username: seller.username,
+              avatar_url: seller.avatar_url,
+              location: seller.location,
+              rating: seller.rating,
+              pause_selling: seller.pause_selling,
+              last_sign_in_at: seller.last_sign_in_at,
+              status: seller.status,
+            }
+          : null),
+      ]);
+
+      // Awaited insert — guarantees the cart row hits the DB before we return success.
+      // Prevents a desync where the UI shows the item but the DB doesn't.
+      const { error } = await supabase
+        .from('cart_items')
+        .insert({ user_id: user.id, listing_id: listing.id });
+
+      if (error && error.code !== '23505') {
+        console.error('Failed to add to cart:', error);
+        rollback();
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      console.error('Cart add failed:', e);
+      rollback();
+      return false;
+    }
   }, [user]);
 
   const removeFromCart = useCallback(async (id: string): Promise<boolean> => {
