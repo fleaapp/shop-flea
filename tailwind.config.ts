@@ -96,7 +96,14 @@ export default {
   			nav: 'hsl(var(--nav-bg))',
   			tag: 'hsl(var(--tag-bg))',
   			price: 'hsl(var(--price-green))',
-  			'filter-chip': 'hsl(var(--filter-chip-selected))'
+  			'filter-chip': 'hsl(var(--filter-chip-selected))',
+  			navy: 'hsl(var(--flea-navy))',
+  			flea: {
+  				mint: 'hsl(var(--flea-mint))',
+  				navy: 'hsl(var(--flea-navy))',
+  				charcoal: 'hsl(var(--flea-charcoal))',
+  				cream: 'hsl(var(--flea-cream))'
+  			}
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
