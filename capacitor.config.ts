@@ -3,7 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const liveReloadUrl = process.env.CAP_SERVER_URL;
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.1d93444672c7497393780721cb47807c',
+  appId: 'com.finditonflea.app',
   appName: 'Flea',
   webDir: 'dist',
   ...(liveReloadUrl
