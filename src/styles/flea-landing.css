@@ -1,0 +1,45 @@
+/* Scoped theme & utilities for the Flea marketing landing page (/about) */
+.flea-landing {
+  /* Override tokens within this scope only */
+  --background: 120 100% 96%;
+  --foreground: 234 30% 22%;
+  --card: 0 0% 100%;
+  --card-foreground: 234 30% 22%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 234 30% 22%;
+  --primary: 234 30% 22%;
+  --primary-foreground: 120 100% 92%;
+  --secondary: 120 100% 92%;
+  --secondary-foreground: 234 30% 22%;
+  --muted: 0 0% 24%;
+  --muted-foreground: 0 0% 45%;
+  --accent: 120 100% 92%;
+  --accent-foreground: 234 30% 22%;
+  --border: 234 20% 85%;
+  --input: 234 20% 85%;
+  --ring: 234 30% 22%;
+  --radius: 0.75rem;
+
+  --flea-mint: 120 100% 92%;
+  --flea-navy: 234 30% 22%;
+  --flea-charcoal: 0 3% 24%;
+  --flea-cream: 40 30% 97%;
+  --flea-cream-charcoal: 220 15% 25%;
+
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.flea-landing .bg-navy { background-color: hsl(var(--flea-navy)); }
+.flea-landing .bg-mint { background-color: hsl(var(--flea-mint)); }
+.flea-landing .bg-cream { background-color: hsl(var(--flea-cream)); }
+.flea-landing .text-navy { color: hsl(var(--flea-navy)); }
+.flea-landing .text-mint { color: hsl(var(--flea-mint)); }
+.flea-landing .text-charcoal { color: hsl(var(--flea-charcoal)); }
+.flea-landing .text-cream-charcoal { color: hsl(var(--flea-cream-charcoal)); }
+.flea-landing .text-flea-cream { color: hsl(var(--flea-cream)); }
+.flea-landing .border-mint\/30 { border-color: hsl(var(--flea-mint) / 0.3); }
+.flea-landing .text-mint\/85 { color: hsl(var(--flea-mint) / 0.85); }
+.flea-landing .text-navy\/70 { color: hsl(var(--flea-navy) / 0.7); }
+.flea-landing .text-navy\/50 { color: hsl(var(--flea-navy) / 0.5); }
+.flea-landing .text-navy\/30 { color: hsl(var(--flea-navy) / 0.3); }
