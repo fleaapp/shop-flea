@@ -1,6 +1,6 @@
-/* Scoped theme & utilities for the Flea marketing landing page (/about) */
+/* Scoped theme tokens for the Flea marketing landing page (/about) */
 .flea-landing {
-  /* Override tokens within this scope only */
+  /* Override base shadcn tokens within this scope only */
   --background: 120 100% 96%;
   --foreground: 234 30% 22%;
   --card: 0 0% 100%;
@@ -20,6 +20,15 @@
   --ring: 234 30% 22%;
   --radius: 0.75rem;
 
+  /* Override mint/cream tokens for this scope so existing tailwind classes pick up Flea values */
+  --mint: 120 100% 92%;
+  --mint-dark: 120 100% 80%;
+  --cream: 40 30% 97%;
+  --cream-dark: 40 25% 90%;
+  --charcoal: 0 3% 24%;
+  --charcoal-light: 0 3% 35%;
+
+  /* Flea-specific tokens used by flea-landing utility classes */
   --flea-mint: 120 100% 92%;
   --flea-navy: 234 30% 22%;
   --flea-charcoal: 0 3% 24%;
@@ -28,18 +37,8 @@
 
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
+  font-family: 'Inter', sans-serif;
 }
 
-.flea-landing .bg-navy { background-color: hsl(var(--flea-navy)); }
-.flea-landing .bg-mint { background-color: hsl(var(--flea-mint)); }
-.flea-landing .bg-cream { background-color: hsl(var(--flea-cream)); }
-.flea-landing .text-navy { color: hsl(var(--flea-navy)); }
-.flea-landing .text-mint { color: hsl(var(--flea-mint)); }
-.flea-landing .text-charcoal { color: hsl(var(--flea-charcoal)); }
 .flea-landing .text-cream-charcoal { color: hsl(var(--flea-cream-charcoal)); }
 .flea-landing .text-flea-cream { color: hsl(var(--flea-cream)); }
-.flea-landing .border-mint\/30 { border-color: hsl(var(--flea-mint) / 0.3); }
-.flea-landing .text-mint\/85 { color: hsl(var(--flea-mint) / 0.85); }
-.flea-landing .text-navy\/70 { color: hsl(var(--flea-navy) / 0.7); }
-.flea-landing .text-navy\/50 { color: hsl(var(--flea-navy) / 0.5); }
-.flea-landing .text-navy\/30 { color: hsl(var(--flea-navy) / 0.3); }
