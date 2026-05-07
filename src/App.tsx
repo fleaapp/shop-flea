@@ -87,6 +87,7 @@ const PageLoader = () => <PageSkeleton />;
 const AppContent = () => {
   const { showCarousel, closeCarousel } = useOnboarding();
   const location = useLocation();
+  const isStandaloneSite = location.pathname.startsWith('/about');
 
   useEffect(() => {
     const currentRoute = `${location.pathname}${location.search}${location.hash}`;
@@ -117,10 +118,10 @@ const AppContent = () => {
     <>
       <Toaster />
       <Sonner position="top-center" />
-      <RealtimeAlerts />
-      <PushNotificationSubscriber />
-      <OnboardingOverlay />
-      <OnboardingCarousel open={showCarousel} onComplete={closeCarousel} />
+      {!isStandaloneSite && <RealtimeAlerts />}
+      {!isStandaloneSite && <PushNotificationSubscriber />}
+      {!isStandaloneSite && <OnboardingOverlay />}
+      {!isStandaloneSite && <OnboardingCarousel open={showCarousel} onComplete={closeCarousel} />}
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/about" element={<About />} />
