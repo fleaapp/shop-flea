@@ -12,7 +12,22 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Flea" />
     <link rel="apple-touch-icon" href="/pwa-icon-192.png" />
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="manifest" href="/manifest.webmanifest" id="app-manifest" />
+    <script>
+      // Synchronously swap manifest + apple-web-app-title for /about so iOS
+      // "Add to Home Screen" creates a standalone marketing-site shortcut
+      // (start_url=/about) instead of the main app (which redirects to /auth).
+      (function () {
+        try {
+          if (location.pathname.indexOf('/about') === 0) {
+            var m = document.getElementById('app-manifest');
+            if (m) m.setAttribute('href', '/about.webmanifest');
+            var t = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+            if (t) t.setAttribute('content', 'Flea Site');
+          }
+        } catch (e) {}
+      })();
+    </script>
 
     
     
