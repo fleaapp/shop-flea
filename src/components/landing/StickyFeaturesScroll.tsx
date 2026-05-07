@@ -44,7 +44,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
   },
 ];
 
-const Block = ({ heading, detail, animation, isAccent }: { heading: string; detail: ReactNode; animation?: ReactNode; isAccent: boolean; }) => {
+const Block = ({ heading, detail, animation, isAccent }: { heading: ReactNode; detail: ReactNode; animation?: ReactNode; isAccent: boolean; }) => {
   const textColor = isAccent ? "text-navy" : "text-mint";
   return (
     <motion.div
