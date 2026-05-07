@@ -9,22 +9,22 @@ import shopSellSwipeGif from "@/assets/flea-landing/shop-sell-swipe.gif";
 
 const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[] = [
   {
-    heading: "Goodbye, Squint-and-Scroll.",
+    heading: "GOODBYE, SQUINT-AND-SCROLL.",
     detail: (<>Ditch the crowded, headache causing grids.<br />One listing, full screen, zero distractions.</>),
     animation: <GridToStackAnimation />,
   },
   {
-    heading: "No Déjà Vu.",
-    detail: (<>Stop sifting through the same old listings. Our swipe logic clears the deck.<br />Never wonder "haven't I seen this already?" again.</>),
+    heading: 'NO MORE "SEEN THAT ALREADY"',
+    detail: (<>Stop sifting through the same, stale listings.<br />Our swipe logic clears the deck, so every swipe is a first look.</>),
     animation: <SwipeCardStack />,
   },
   {
-    heading: "Built on Your Behaviour",
+    heading: "BUILT ON YOUR BEHAVIOUR",
     detail: (<>Forget the generic, lucky dip "suggested" feed.<br />Every swipe trains Flea to learn your style.</>),
     animation: <FilterBubblesCloud />,
   },
   {
-    heading: "Kill the Competition.",
+    heading: "KILL THE COMPETITION.",
     detail: (<>Why be one tile in a crowd?<br />On Flea, your listing is the only one on the screen.</>),
     animation: (
       <div className="relative mt-2 mb-2 w-full flex justify-center">
@@ -34,7 +34,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
     ),
   },
   {
-    heading: (<>High fees shouldn't kill<br />the thrill of the sale.</>),
+    heading: "FAIR FEES. FINALLY.",
     detail: (<>We've kept our cut <strong>fair</strong> so the post office run is <strong>actually worth it</strong>.</>),
     animation: (
       <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="w-full max-w-[16rem] md:max-w-xs">
