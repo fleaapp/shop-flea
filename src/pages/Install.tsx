@@ -40,7 +40,10 @@ const Install = () => {
     };
 
     window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      if (manifestLink && prevManifest) manifestLink.setAttribute('href', prevManifest);
+    };
   }, []);
 
   const handleInstall = async () => {
