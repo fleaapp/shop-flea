@@ -87,7 +87,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
       </>
     ),
     animation: (
-      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="w-full max-w-[22rem] min-[390px]:max-w-[24rem] md:max-w-sm mx-auto">
+      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="w-full max-w-[18rem] min-[390px]:max-w-[20rem] md:max-w-xs mx-auto">
         <img src={shopSellSwipeGif} alt="Shop and sell secondhand with a swipe" className="w-full rounded-2xl shadow-2xl" />
       </motion.div>
     ),
