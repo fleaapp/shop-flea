@@ -41,7 +41,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
   {
     heading: (
       <>
-        <span className="md:hidden">BUILT ON YOUR BEHAVIOUR.</span>
+        <span className="md:hidden">BUILT ON<br />YOUR BEHAVIOUR.</span>
         <span className="hidden md:inline">BUILT ON YOUR BEHAVIOUR</span>
       </>
     ),
@@ -54,7 +54,12 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
     animation: <FilterBubblesCloud />,
   },
   {
-    heading: "KILL THE COMPETITION.",
+    heading: (
+      <>
+        <span className="md:hidden">KILL THE<br />COMPETITION.</span>
+        <span className="hidden md:inline">KILL THE COMPETITION.</span>
+      </>
+    ),
     detail: (
       <>
         <span className="md:hidden">Why be one tile amongst hundreds?<br />On Flea, your listing is the only<br />one on the screen.</span>
@@ -69,8 +74,18 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
     ),
   },
   {
-    heading: "FAIR FEES. FINALLY.",
-    detail: (<>We've kept our cut <strong>fair</strong> so the post office run is <strong>actually worth it</strong>.</>),
+    heading: (
+      <>
+        <span className="md:hidden">FAIR FEES.<br />FINALLY.</span>
+        <span className="hidden md:inline">FAIR FEES. FINALLY.</span>
+      </>
+    ),
+    detail: (
+      <>
+        <span className="md:hidden">We've kept our cut <strong>fair</strong>,<br />so the post office run is <strong>actually worth it</strong>.</span>
+        <span className="hidden md:inline">We've kept our cut <strong>fair</strong> so the post office run is <strong>actually worth it</strong>.</span>
+      </>
+    ),
     animation: (
       <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="w-full max-w-[16rem] md:max-w-xs">
         <img src={shopSellSwipeGif} alt="Shop and sell secondhand with a swipe" className="w-full rounded-2xl shadow-2xl" />
@@ -89,7 +104,7 @@ const Block = ({ heading, detail, animation, isAccent }: { heading: ReactNode; d
       className="absolute inset-0 flex flex-col pointer-events-none"
     >
       <div className="px-16 min-[390px]:px-8 md:px-12 lg:px-16 flex-shrink-0 pt-[calc(env(safe-area-inset-top,0px)+7rem)] min-[390px]:pt-[calc(env(safe-area-inset-top,0px)+10rem)] md:pt-[calc(env(safe-area-inset-top,0px)+7rem)]">
-        <h3 className={`text-xl md:text-4xl lg:text-5xl font-bold leading-snug md:leading-tight text-center max-w-sm md:max-w-2xl lg:max-w-3xl mx-auto ${textColor}`}>{heading}</h3>
+        <h3 className={`text-3xl min-[390px]:text-4xl md:text-4xl lg:text-5xl font-bold leading-tight md:leading-tight text-center max-w-sm md:max-w-2xl lg:max-w-3xl mx-auto ${textColor}`}>{heading}</h3>
       </div>
       <div className="flex-1 min-h-0 flex items-center justify-center pointer-events-auto">
         <div className="w-full h-full flex items-center justify-center md:scale-90 lg:scale-95 origin-center">{animation}</div>
