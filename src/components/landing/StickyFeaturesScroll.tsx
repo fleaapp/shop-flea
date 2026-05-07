@@ -74,8 +74,18 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
     ),
   },
   {
-    heading: "FAIR FEES. FINALLY.",
-    detail: (<>We've kept our cut <strong>fair</strong> so the post office run is <strong>actually worth it</strong>.</>),
+    heading: (
+      <>
+        <span className="md:hidden">FAIR FEES.<br />FINALLY.</span>
+        <span className="hidden md:inline">FAIR FEES. FINALLY.</span>
+      </>
+    ),
+    detail: (
+      <>
+        <span className="md:hidden">We've kept our cut <strong>fair</strong>,<br />so the post office run is <strong>actually worth it</strong>.</span>
+        <span className="hidden md:inline">We've kept our cut <strong>fair</strong> so the post office run is <strong>actually worth it</strong>.</span>
+      </>
+    ),
     animation: (
       <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="w-full max-w-[16rem] md:max-w-xs">
         <img src={shopSellSwipeGif} alt="Shop and sell secondhand with a swipe" className="w-full rounded-2xl shadow-2xl" />
