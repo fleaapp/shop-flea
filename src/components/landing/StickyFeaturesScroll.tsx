@@ -26,7 +26,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
   {
     heading: (
       <>
-        <span className="md:hidden">NO MORE<br />"ALREADY SEEN THAT".</span>
+        <span className="md:hidden">NO MORE<br />"ALREADY SEEN THAT"</span>
         <span className="hidden md:inline">NO MORE "SEEN THAT ALREADY"</span>
       </>
     ),
