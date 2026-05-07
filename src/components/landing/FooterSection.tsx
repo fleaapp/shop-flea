@@ -17,13 +17,13 @@ const FooterSection = () => {
         </motion.p>
 
         <motion.div className="flex flex-col sm:flex-row justify-center items-center gap-3 mb-10" initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2, duration: 0.4 }}>
-          <Link
-            to="/install"
+          <a
+            href="/install"
             className="flex items-center justify-center gap-2 bg-navy rounded-xl w-[220px] py-3.5 hover:opacity-90 transition-opacity"
           >
             <Download className="w-5 h-5 text-flea-cream" />
             <p className="text-flea-cream text-xs font-bold uppercase tracking-wide">Download Web App</p>
-          </Link>
+          </a>
           <button
             type="button"
             disabled
