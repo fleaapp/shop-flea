@@ -88,14 +88,33 @@ const Install = () => {
         <img src="/pwa-icon-512.png" alt="Flea" className="w-24 h-24 rounded-2xl shadow-lg" />
 
         <div className="text-center space-y-2">
-          <h2 className="text-2xl font-bold text-foreground">Install Flea</h2>
+          <h2 className="text-2xl font-bold text-foreground">Download Flea</h2>
           <p className="text-muted-foreground">
-            Add Flea to your home screen for the full app experience — full-screen, fast, and no browser bars.
+            Add Flea to your Home Screen.
+          </p>
+          <p className="text-muted-foreground font-semibold">
+            No App Store needed!
           </p>
         </div>
 
-        {/* Android / Chrome — automatic install button */}
-        {deferredPrompt && (
+        {/* Platform toggle */}
+        <div className="inline-flex bg-muted rounded-full p-1">
+          <button
+            onClick={() => setPlatform('ios')}
+            className={`px-5 py-2 rounded-full text-sm font-semibold transition ${platform === 'ios' ? 'bg-charcoal text-white' : 'text-foreground'}`}
+          >
+            iPhone
+          </button>
+          <button
+            onClick={() => setPlatform('android')}
+            className={`px-5 py-2 rounded-full text-sm font-semibold transition ${platform === 'android' ? 'bg-charcoal text-white' : 'text-foreground'}`}
+          >
+            Android
+          </button>
+        </div>
+
+        {/* Android automatic install button */}
+        {platform === 'android' && deferredPrompt && (
           <Button
             onClick={handleInstall}
             className="w-full h-14 rounded-full bg-charcoal text-white text-base font-semibold gap-2"
@@ -105,66 +124,53 @@ const Install = () => {
           </Button>
         )}
 
-        {/* iOS instructions */}
-        {isIOS && !deferredPrompt && (
+        {/* iPhone instructions */}
+        {platform === 'ios' && (
           <div className="w-full bg-muted/50 rounded-2xl p-6 space-y-4">
             <h3 className="font-semibold text-foreground text-center">How to install on iPhone</h3>
             <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-sm font-bold">1</div>
-                <p className="text-sm text-foreground pt-1">
-                  Tap the <Share className="inline h-4 w-4 -mt-0.5" /> <strong>Share</strong> button in Safari's bottom bar
-                </p>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-sm font-bold">2</div>
-                <p className="text-sm text-foreground pt-1">
-                  Scroll down and tap <Plus className="inline h-4 w-4 -mt-0.5" /> <strong>Add to Home Screen</strong>
-                </p>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-sm font-bold">3</div>
-                <p className="text-sm text-foreground pt-1">
-                  Tap <strong>Add</strong> — Flea will appear on your home screen!
-                </p>
-              </div>
+              {[
+                <>Tap the <strong>three dots</strong> in the bottom right corner</>,
+                <>Tap <Share className="inline h-4 w-4 -mt-0.5" /> <strong>Share</strong></>,
+                <>Tap <strong>View more</strong></>,
+                <>Tap <Plus className="inline h-4 w-4 -mt-0.5" /> <strong>Add to Home Screen</strong></>,
+                <>Make sure <strong>Open as Web App</strong> is toggled on</>,
+                <>Tap <strong>Add</strong></>,
+                <>Flea will appear on your Home Screen</>,
+              ].map((step, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-sm font-bold">{i + 1}</div>
+                  <p className="text-sm text-foreground pt-1">{step}</p>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
-        {/* Android fallback if prompt didn't fire */}
-        {isAndroid && !deferredPrompt && (
+        {/* Android instructions */}
+        {platform === 'android' && (
           <div className="w-full bg-muted/50 rounded-2xl p-6 space-y-4">
             <h3 className="font-semibold text-foreground text-center">How to install on Android</h3>
             <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-sm font-bold">1</div>
-                <p className="text-sm text-foreground pt-1">
-                  Tap the <strong>⋮ menu</strong> in Chrome's top-right corner
-                </p>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-sm font-bold">2</div>
-                <p className="text-sm text-foreground pt-1">
-                  Tap <strong>Install app</strong> or <strong>Add to Home screen</strong>
-                </p>
-              </div>
+              {[
+                <>Open Flea in <strong>Chrome</strong></>,
+                <>Tap the <strong>three dots</strong> menu in the top right corner</>,
+                <>Tap <strong>Add to Home screen</strong> or <strong>Install app</strong></>,
+                <>Tap <strong>Install</strong> to confirm</>,
+                <>Flea will appear on your Home Screen</>,
+              ].map((step, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-sm font-bold">{i + 1}</div>
+                  <p className="text-sm text-foreground pt-1">{step}</p>
+                </div>
+              ))}
             </div>
-          </div>
-        )}
-
-        {/* Desktop fallback */}
-        {!isIOS && !isAndroid && !deferredPrompt && (
-          <div className="w-full bg-muted/50 rounded-2xl p-6 text-center space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Visit <strong>finditonflea.com</strong> on your phone to install the app.
-            </p>
           </div>
         )}
 
         <div className="text-center space-y-1">
           <p className="text-xs text-muted-foreground">
-            No app store download needed • Works offline • Push notifications
+            Works offline • Push notifications • No App Store needed
           </p>
         </div>
       </div>
