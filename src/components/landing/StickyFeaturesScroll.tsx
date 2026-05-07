@@ -104,7 +104,7 @@ const Block = ({ heading, detail, animation, isAccent }: { heading: ReactNode; d
       className="absolute inset-0 flex flex-col pointer-events-none"
     >
       <div className="px-16 min-[390px]:px-8 md:px-12 lg:px-16 flex-shrink-0 pt-[calc(env(safe-area-inset-top,0px)+7rem)] min-[390px]:pt-[calc(env(safe-area-inset-top,0px)+10rem)] md:pt-[calc(env(safe-area-inset-top,0px)+7rem)]">
-        <h3 className={`text-3xl min-[390px]:text-4xl md:text-4xl lg:text-5xl font-bold leading-tight md:leading-tight text-center max-w-sm md:max-w-2xl lg:max-w-3xl mx-auto ${textColor}`}>{heading}</h3>
+        <h3 className={`text-2xl min-[390px]:text-[28px] md:text-4xl lg:text-5xl font-bold leading-tight md:leading-tight text-center max-w-sm md:max-w-2xl lg:max-w-3xl mx-auto ${textColor}`}>{heading}</h3>
       </div>
       <div className="flex-1 min-h-0 flex items-center justify-center pointer-events-auto">
         <div className="w-full h-full flex items-center justify-center md:scale-90 lg:scale-95 origin-center">{animation}</div>
