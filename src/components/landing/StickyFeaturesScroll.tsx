@@ -53,12 +53,14 @@ const Block = ({ heading, detail, animation, isAccent }: { heading: string; deta
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       className="absolute inset-0 flex flex-col pointer-events-none"
     >
-      <div className="px-16 md:px-24 flex-shrink-0" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 7rem)" }}>
-        <h3 className={`text-xl md:text-3xl font-bold leading-snug text-center max-w-sm mx-auto ${textColor}`}>{heading}</h3>
+      <div className="px-16 md:px-12 lg:px-16 flex-shrink-0" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 7rem)" }}>
+        <h3 className={`text-xl md:text-4xl lg:text-5xl font-bold leading-snug md:leading-tight text-center max-w-sm md:max-w-2xl lg:max-w-3xl mx-auto ${textColor}`}>{heading}</h3>
       </div>
-      <div className="flex-1 min-h-0 flex items-center justify-center pointer-events-auto">{animation}</div>
-      <div className="px-16 md:px-24 flex-shrink-0" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 4rem)" }}>
-        <p className={`text-base md:text-lg font-normal leading-relaxed text-center max-w-sm mx-auto ${textColor}`}>{detail}</p>
+      <div className="flex-1 min-h-0 flex items-center justify-center pointer-events-auto">
+        <div className="w-full h-full flex items-center justify-center md:scale-90 lg:scale-95 origin-center">{animation}</div>
+      </div>
+      <div className="px-16 md:px-12 lg:px-16 flex-shrink-0" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 4rem)" }}>
+        <p className={`text-base md:text-xl lg:text-2xl font-normal leading-relaxed text-center max-w-sm md:max-w-2xl lg:max-w-3xl mx-auto ${textColor}`}>{detail}</p>
       </div>
     </motion.div>
   );
