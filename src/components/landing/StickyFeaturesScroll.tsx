@@ -7,7 +7,7 @@ import GridToStackAnimation from "./GridToStackAnimation";
 import phoneMockup from "@/assets/flea-landing/phone-mockup.png";
 import shopSellSwipeGif from "@/assets/flea-landing/shop-sell-swipe.gif";
 
-const blocks: { heading: string; detail: ReactNode; animation?: ReactNode }[] = [
+const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[] = [
   {
     heading: "Goodbye, Squint-and-Scroll.",
     detail: (<>Ditch the crowded, headache causing grids.<br />One listing, full screen, zero distractions.</>),
