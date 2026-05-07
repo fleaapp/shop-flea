@@ -80,7 +80,7 @@ const StickyFeaturesScroll = () => {
 
   return (
     <section ref={containerRef} className="relative" style={{ height: `${(blocks.length + 1) * 115}vh` }}>
-      <div className={`sticky top-0 h-screen w-full overflow-hidden transition-colors duration-300 ${[1, 3, 5].includes(activeIndex) ? "bg-mint" : "bg-navy"}`}>
+      <div className={`sticky top-0 h-screen w-full overflow-hidden transition-colors duration-300 ${[1, 3].includes(activeIndex) ? "bg-mint" : "bg-navy"}`}>
         <div className="relative h-full w-full">
           <Block
             key={activeIndex}
@@ -91,7 +91,7 @@ const StickyFeaturesScroll = () => {
           />
           <div className="absolute right-4 md:right-6 top-1/2 -translate-y-1/2 flex flex-col gap-2">
             {blocks.map((_, i) => (
-              <Dot key={i} isActive={i === activeIndex} isAccent={[1, 4, 6].includes(activeIndex)} />
+              <Dot key={i} isActive={i === activeIndex} isAccent={[1, 3].includes(activeIndex)} />
             ))}
           </div>
         </div>
