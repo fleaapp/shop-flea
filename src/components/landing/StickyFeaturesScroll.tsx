@@ -54,7 +54,12 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
     animation: <FilterBubblesCloud />,
   },
   {
-    heading: "KILL THE COMPETITION.",
+    heading: (
+      <>
+        <span className="md:hidden">KILL THE<br />COMPETITION.</span>
+        <span className="hidden md:inline">KILL THE COMPETITION.</span>
+      </>
+    ),
     detail: (
       <>
         <span className="md:hidden">Why be one tile amongst hundreds?<br />On Flea, your listing is the only<br />one on the screen.</span>
