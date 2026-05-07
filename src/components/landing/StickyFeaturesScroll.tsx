@@ -56,8 +56,8 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
   {
     heading: (
       <>
-        <span className="md:hidden">KILL THE<br />COMPETITION.</span>
-        <span className="hidden md:inline">KILL THE COMPETITION.</span>
+        <span className="md:hidden">KILL THE<br />COMPETITION</span>
+        <span className="hidden md:inline">KILL THE COMPETITION</span>
       </>
     ),
     detail: (
