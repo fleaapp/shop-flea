@@ -87,7 +87,7 @@ const StickyFeaturesScroll = () => {
             heading={blocks[activeIndex].heading}
             detail={blocks[activeIndex].detail}
             animation={blocks[activeIndex].animation}
-            isAccent={[1, 3, 5].includes(activeIndex)}
+            isAccent={[1, 3].includes(activeIndex)}
           />
           <div className="absolute right-4 md:right-6 top-1/2 -translate-y-1/2 flex flex-col gap-2">
             {blocks.map((_, i) => (
