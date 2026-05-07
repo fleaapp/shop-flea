@@ -26,7 +26,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
   {
     heading: (
       <>
-        <span className="md:hidden">NO MORE<br />"ALREADY SEEN THAT".</span>
+        <span className="md:hidden">NO MORE<br />"ALREADY SEEN THAT"</span>
         <span className="hidden md:inline">NO MORE "SEEN THAT ALREADY"</span>
       </>
     ),
@@ -41,7 +41,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
   {
     heading: (
       <>
-        <span className="md:hidden">BUILT ON<br />YOUR BEHAVIOUR.</span>
+        <span className="md:hidden">BUILT ON<br />YOUR BEHAVIOUR</span>
         <span className="hidden md:inline">BUILT ON YOUR BEHAVIOUR</span>
       </>
     ),
@@ -56,8 +56,8 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
   {
     heading: (
       <>
-        <span className="md:hidden">KILL THE<br />COMPETITION.</span>
-        <span className="hidden md:inline">KILL THE COMPETITION.</span>
+        <span className="md:hidden">KILL THE<br />COMPETITION</span>
+        <span className="hidden md:inline">KILL THE COMPETITION</span>
       </>
     ),
     detail: (
