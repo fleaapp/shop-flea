@@ -41,7 +41,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
   {
     heading: (
       <>
-        <span className="md:hidden">Built on your behaviour.</span>
+        <span className="md:hidden">BUILT ON YOUR BEHAVIOUR.</span>
         <span className="hidden md:inline">BUILT ON YOUR BEHAVIOUR</span>
       </>
     ),
