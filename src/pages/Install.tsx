@@ -13,8 +13,7 @@ const Install = () => {
   const navigate = useNavigate();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
-  const [isAndroid, setIsAndroid] = useState(false);
+  const [platform, setPlatform] = useState<'ios' | 'android'>('ios');
 
   useEffect(() => {
     // Ensure the main app manifest is used (not /about.webmanifest if user
