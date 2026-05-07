@@ -26,7 +26,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
   {
     heading: (
       <>
-        <span className="md:hidden">No more<br />“already seen that”.</span>
+        <span className="md:hidden">NO MORE<br />"ALREADY SEEN THAT".</span>
         <span className="hidden md:inline">NO MORE "SEEN THAT ALREADY"</span>
       </>
     ),
@@ -41,7 +41,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
   {
     heading: (
       <>
-        <span className="md:hidden">Built on your behaviour.</span>
+        <span className="md:hidden">BUILT ON YOUR BEHAVIOUR.</span>
         <span className="hidden md:inline">BUILT ON YOUR BEHAVIOUR</span>
       </>
     ),
@@ -88,13 +88,13 @@ const Block = ({ heading, detail, animation, isAccent }: { heading: ReactNode; d
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       className="absolute inset-0 flex flex-col pointer-events-none"
     >
-      <div className="px-16 md:px-12 lg:px-16 flex-shrink-0 pt-[calc(env(safe-area-inset-top,0px)+7rem)] min-[390px]:pt-[calc(env(safe-area-inset-top,0px)+8.5rem)] md:pt-[calc(env(safe-area-inset-top,0px)+7rem)]">
+      <div className="px-16 min-[390px]:px-8 md:px-12 lg:px-16 flex-shrink-0 pt-[calc(env(safe-area-inset-top,0px)+7rem)] min-[390px]:pt-[calc(env(safe-area-inset-top,0px)+8.5rem)] md:pt-[calc(env(safe-area-inset-top,0px)+7rem)]">
         <h3 className={`text-xl md:text-4xl lg:text-5xl font-bold leading-snug md:leading-tight text-center max-w-sm md:max-w-2xl lg:max-w-3xl mx-auto ${textColor}`}>{heading}</h3>
       </div>
       <div className="flex-1 min-h-0 flex items-center justify-center pointer-events-auto">
         <div className="w-full h-full flex items-center justify-center md:scale-90 lg:scale-95 origin-center">{animation}</div>
       </div>
-      <div className="px-16 md:px-12 lg:px-16 flex-shrink-0 pb-[calc(env(safe-area-inset-bottom,0px)+4rem)] min-[390px]:pb-[calc(env(safe-area-inset-bottom,0px)+2.5rem)] md:pb-[calc(env(safe-area-inset-bottom,0px)+4rem)]">
+      <div className="px-16 min-[390px]:px-8 md:px-12 lg:px-16 flex-shrink-0 pb-[calc(env(safe-area-inset-bottom,0px)+4rem)] min-[390px]:pb-[calc(env(safe-area-inset-bottom,0px)+2.5rem)] md:pb-[calc(env(safe-area-inset-bottom,0px)+4rem)]">
         <p className={`text-base md:text-xl lg:text-2xl font-normal leading-relaxed text-center max-w-sm md:max-w-2xl lg:max-w-3xl mx-auto ${textColor}`}>{detail}</p>
       </div>
     </motion.div>
