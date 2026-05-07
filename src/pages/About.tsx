@@ -52,8 +52,8 @@ const About = () => {
       <ScallopHeader />
       <HeroSection />
       <div className="relative z-10"><StickyFeaturesScroll /></div>
-      <div className="relative z-10"><GestureCardsSection /></div>
       <div className="relative z-10"><FeaturesGrid /></div>
+      <div className="relative z-10"><GestureCardsSection /></div>
       <FAQSection />
       <FooterSection />
     </div>
