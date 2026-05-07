@@ -29,8 +29,8 @@ const Install = () => {
 
     // Detect platform
     const ua = navigator.userAgent;
-    setIsIOS(/iPad|iPhone|iPod/.test(ua));
-    setIsAndroid(/android/i.test(ua));
+    if (/android/i.test(ua)) setPlatform('android');
+    else setPlatform('ios');
 
     // Listen for the install prompt (Android/Chrome)
     const handler = (e: Event) => {
