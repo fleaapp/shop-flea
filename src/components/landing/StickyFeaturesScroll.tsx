@@ -10,34 +10,34 @@ import shopSellSwipeGif from "@/assets/flea-landing/shop-sell-swipe.gif";
 const blocks: { heading: string; detail: ReactNode; animation?: ReactNode }[] = [
   {
     heading: "Goodbye, Squint-and-Scroll.",
-    detail: (<>Ditch the crowded, headache causing grids. One listing, full screen, zero distractions.</>),
+    detail: (<>Ditch the crowded, headache causing grids.<br />One listing, full screen, zero distractions.</>),
     animation: <GridToStackAnimation />,
   },
   {
     heading: "No Déjà Vu.",
-    detail: (<>Stop sifting through the same old listings. Our swipe logic clears the deck. Never wonder "haven't I seen this already?" again.</>),
+    detail: (<>Stop sifting through the same old listings. Our swipe logic clears the deck.<br />Never wonder "haven't I seen this already?" again.</>),
     animation: <SwipeCardStack />,
   },
   {
     heading: "Built on Your Behaviour",
-    detail: (<>Forget the generic, lucky dip "suggested" feed. Every swipe trains Flea to learn your style.</>),
+    detail: (<>Forget the generic, lucky dip "suggested" feed.<br />Every swipe trains Flea to learn your style.</>),
     animation: <FilterBubblesCloud />,
   },
   {
     heading: "Kill the Competition.",
-    detail: (<>Why be one tile in a crowd? On Flea, your listing is the only one on the screen.</>),
+    detail: (<>Why be one tile in a crowd?<br />On Flea, your listing is the only one on the screen.</>),
     animation: (
       <div className="relative mt-2 mb-2 w-full flex justify-center">
-        <img src={phoneMockup} alt="Flea app showing a listing with full-screen attention" className="w-56 md:w-64 drop-shadow-2xl" />
+        <img src={phoneMockup} alt="Flea app showing a listing with full-screen attention" className="w-56 md:w-60 drop-shadow-2xl" />
         <FloatingCardMarquee />
       </div>
     ),
   },
   {
-    heading: "High fees shouldn't kill the thrill of the sale.",
+    heading: (<>High fees shouldn't kill<br />the thrill of the sale.</>) as unknown as string,
     detail: (<>We've kept our cut <strong>fair</strong> so the post office run is <strong>actually worth it</strong>.</>),
     animation: (
-      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="w-full max-w-xs md:max-w-sm">
+      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="w-full max-w-[16rem] md:max-w-xs">
         <img src={shopSellSwipeGif} alt="Shop and sell secondhand with a swipe" className="w-full rounded-2xl shadow-2xl" />
       </motion.div>
     ),
