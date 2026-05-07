@@ -13,20 +13,20 @@ const faqs = [
 const FAQSection = () => {
   return (
     <div className="relative z-10">
-      <section className="bg-navy px-6 py-14 md:py-18">
+      <section className="bg-mint px-6 py-14 md:py-18">
         <div className="container mx-auto max-w-2xl">
-          <h2 className="text-mint text-2xl md:text-3xl font-black text-center mb-8 uppercase tracking-wider">FAQ</h2>
+          <h2 className="text-navy text-2xl md:text-3xl font-black text-center mb-8 uppercase tracking-wider">FAQ</h2>
           <Accordion type="single" collapsible className="w-full space-y-3">
             {faqs.map((faq, i) => (
-              <AccordionItem key={i} value={`item-${i}`} className="border border-mint/30 rounded-xl px-4 bg-navy">
-                <AccordionTrigger className="text-mint text-left text-base md:text-lg font-bold hover:no-underline py-4">{faq.q}</AccordionTrigger>
-                <AccordionContent className="text-mint/85 text-sm md:text-base leading-relaxed pb-4">{faq.a}</AccordionContent>
+              <AccordionItem key={i} value={`item-${i}`} className="border border-navy/30 rounded-xl px-4 bg-mint">
+                <AccordionTrigger className="text-navy text-left text-base md:text-lg font-bold hover:no-underline py-4">{faq.q}</AccordionTrigger>
+                <AccordionContent className="text-navy/85 text-sm md:text-base leading-relaxed pb-4">{faq.a}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
         </div>
       </section>
-      <ScallopEdge fillColor="hsl(234, 30%, 22%)" bgColor="hsl(120, 100%, 92%)" showTopLine={false} />
+      <ScallopEdge fillColor="hsl(120, 100%, 92%)" bgColor="hsl(234, 30%, 22%)" showTopLine={false} />
     </div>
   );
 };
