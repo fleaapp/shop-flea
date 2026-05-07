@@ -9,23 +9,23 @@ import shopSellSwipeGif from "@/assets/flea-landing/shop-sell-swipe.gif";
 
 const blocks: { heading: string; detail: ReactNode; animation?: ReactNode }[] = [
   {
-    heading: "Ditch the tiny thumbnails and the crowded grids.",
-    detail: (<>Flea shows you <strong>one listing at a time</strong> in full-screen glory. It's the end of the "squint-and-scroll" - we give every listing the <strong>spotlight it actually deserves</strong>.</>),
+    heading: "Goodbye, Squint-and-Scroll.",
+    detail: (<>Ditch the crowded, headache causing grids. One listing, full screen, zero distractions.</>),
     animation: <GridToStackAnimation />,
   },
   {
-    heading: "Sick of seeing the same recycled listings every time you open the app?",
-    detail: (<>Our swipe logic <strong>clears the deck</strong> so you only ever see what's new to you. It's a fresh hunt with every flick of the thumb. <strong>Zero repeats, zero deja-vu</strong>.</>),
+    heading: "No Déjà Vu.",
+    detail: (<>Stop sifting through the same old listings. Our swipe logic clears the deck. Never wonder "haven't I seen this already?" again.</>),
     animation: <SwipeCardStack />,
   },
   {
-    heading: 'Trade a "suggested" feed that guesses your taste (and usually gets it wrong).',
-    detail: (<>Every swipe trains Flea to <strong>learn your style</strong>. Replacing generic suggestions with a feed built on <strong>your actual behaviour</strong> - <strong>not a lucky dip</strong>.</>),
+    heading: "Built on Your Behaviour",
+    detail: (<>Forget the generic, lucky dip "suggested" feed. Every swipe trains Flea to learn your style.</>),
     animation: <FilterBubblesCloud />,
   },
   {
-    heading: "Don't let your listings get buried in the noise.",
-    detail: (<>On Flea, you aren't just another tile in a noisy grid - <strong>you're the only listing on the screen</strong>.<br /><strong>No crowd. No competition.</strong></>),
+    heading: "Kill the Competition.",
+    detail: (<>Why be one tile in a crowd? On Flea, your listing is the only one on the screen.</>),
     animation: (
       <div className="relative mt-2 mb-2 w-full flex justify-center">
         <img src={phoneMockup} alt="Flea app showing a listing with full-screen attention" className="w-56 md:w-64 drop-shadow-2xl" />
@@ -41,10 +41,6 @@ const blocks: { heading: string; detail: ReactNode; animation?: ReactNode }[] = 
         <img src={shopSellSwipeGif} alt="Shop and sell secondhand with a swipe" className="w-full rounded-2xl shadow-2xl" />
       </motion.div>
     ),
-  },
-  {
-    heading: 'Never accidentally scroll past "the one" again.',
-    detail: (<>Endless scrolling is a graveyard for good taste. By focusing on <strong>one item at a time</strong>, we make sure your next favourite staple <strong>doesn't get lost in the shuffle</strong>.</>),
   },
 ];
 
