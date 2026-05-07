@@ -17,6 +17,12 @@ const Install = () => {
   const [isAndroid, setIsAndroid] = useState(false);
 
   useEffect(() => {
+    // Ensure the main app manifest is used (not /about.webmanifest if user
+    // navigated here from the About page).
+    const manifestLink = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+    const prevManifest = manifestLink?.getAttribute('href') ?? null;
+    if (manifestLink) manifestLink.setAttribute('href', '/manifest.webmanifest');
+
     // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
@@ -34,7 +40,10 @@ const Install = () => {
     };
 
     window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      if (manifestLink && prevManifest) manifestLink.setAttribute('href', prevManifest);
+    };
   }, []);
 
   const handleInstall = async () => {
