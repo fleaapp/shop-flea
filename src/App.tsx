@@ -118,10 +118,10 @@ const AppContent = () => {
     <>
       <Toaster />
       <Sonner position="top-center" />
-      <RealtimeAlerts />
-      <PushNotificationSubscriber />
-      <OnboardingOverlay />
-      <OnboardingCarousel open={showCarousel} onComplete={closeCarousel} />
+      {!isStandaloneSite && <RealtimeAlerts />}
+      {!isStandaloneSite && <PushNotificationSubscriber />}
+      {!isStandaloneSite && <OnboardingOverlay />}
+      {!isStandaloneSite && <OnboardingCarousel open={showCarousel} onComplete={closeCarousel} />}
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/about" element={<About />} />
