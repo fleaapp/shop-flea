@@ -34,7 +34,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
     ),
   },
   {
-    heading: (<>High fees shouldn't kill<br />the thrill of the sale.</>) as unknown as string,
+    heading: (<>High fees shouldn't kill<br />the thrill of the sale.</>),
     detail: (<>We've kept our cut <strong>fair</strong> so the post office run is <strong>actually worth it</strong>.</>),
     animation: (
       <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="w-full max-w-[16rem] md:max-w-xs">
