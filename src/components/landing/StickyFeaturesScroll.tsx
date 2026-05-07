@@ -9,23 +9,58 @@ import shopSellSwipeGif from "@/assets/flea-landing/shop-sell-swipe.gif";
 
 const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[] = [
   {
-    heading: "GOODBYE, SQUINT-AND-SCROLL.",
-    detail: (<>Ditch the crowded, headache causing grids.<br />One listing, full screen, zero distractions.</>),
+    heading: (
+      <>
+        <span className="md:hidden">GOODBYE,<br />SQUINT-AND-SCROLL.</span>
+        <span className="hidden md:inline">GOODBYE, SQUINT-AND-SCROLL.</span>
+      </>
+    ),
+    detail: (
+      <>
+        <span className="md:hidden">Ditch the crowded, noisy feeds.<br />One listing, full screen, no distractions.</span>
+        <span className="hidden md:inline">Ditch the crowded, headache causing grids.<br />One listing, full screen, zero distractions.</span>
+      </>
+    ),
     animation: <GridToStackAnimation />,
   },
   {
-    heading: 'NO MORE "SEEN THAT ALREADY"',
-    detail: (<>Stop sifting through the same, stale listings.<br />Our swipe logic clears the deck, so every swipe is a first look.</>),
+    heading: (
+      <>
+        <span className="md:hidden">No more<br />“already seen that”.</span>
+        <span className="hidden md:inline">NO MORE "SEEN THAT ALREADY"</span>
+      </>
+    ),
+    detail: (
+      <>
+        <span className="md:hidden">Stop sifting through the same, stale listings.<br />Our swipe logic clears the deck,<br />so every swipe is a first look.</span>
+        <span className="hidden md:inline">Stop sifting through the same, stale listings.<br />Our swipe logic clears the deck, so every swipe is a first look.</span>
+      </>
+    ),
     animation: <SwipeCardStack />,
   },
   {
-    heading: "BUILT ON YOUR BEHAVIOUR",
-    detail: (<>Forget the generic, lucky dip "suggested" feed.<br />Every swipe trains Flea to learn your style.</>),
+    heading: (
+      <>
+        <span className="md:hidden">Built on your behaviour.</span>
+        <span className="hidden md:inline">BUILT ON YOUR BEHAVIOUR</span>
+      </>
+    ),
+    detail: (
+      <>
+        <span className="md:hidden">Forget the lucky dip “suggested” feed.<br />Every swipe trains Flea to learn your style.</span>
+        <span className="hidden md:inline">Forget the generic, lucky dip "suggested" feed.<br />Every swipe trains Flea to learn your style.</span>
+      </>
+    ),
     animation: <FilterBubblesCloud />,
   },
   {
     heading: "KILL THE COMPETITION.",
-    detail: (<>Why be one tile in a crowd?<br />On Flea, your listing is the only one on the screen.</>),
+    detail: (
+      <>
+        <span className="md:hidden">Why be one tile amongst hundreds?<br />On Flea, your listing is the only<br />one on the screen.</span>
+        <span className="hidden md:inline">Why be one tile in a crowd?<br />On Flea, your listing is the only one on the screen.</span>
+      </>
+    ),
     animation: (
       <div className="relative mt-2 mb-2 w-full flex justify-center">
         <img src={phoneMockup} alt="Flea app showing a listing with full-screen attention" className="w-56 md:w-60 drop-shadow-2xl" />
