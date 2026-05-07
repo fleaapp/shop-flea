@@ -167,12 +167,6 @@ const Install = () => {
             </div>
           </div>
         )}
-
-        <div className="text-center space-y-1">
-          <p className="text-xs text-muted-foreground">
-            Works offline • Push notifications • No App Store needed
-          </p>
-        </div>
       </div>
     </div>
   );
