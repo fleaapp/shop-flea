@@ -110,6 +110,16 @@ serve(async (req) => {
           card_payments: { requested: true },
           transfers: { requested: true },
         },
+        // Daily automatic payouts with the minimum delay (AU minimum is 2 business days).
+        // Sellers can still trigger Instant Payouts from their Express dashboard when eligible.
+        settings: {
+          payouts: {
+            schedule: {
+              interval: "daily",
+              delay_days: "minimum",
+            },
+          },
+        },
       };
 
       // Pre-fill individual details
@@ -126,26 +136,41 @@ serve(async (req) => {
         createParams.country = userProfile.country_code.toUpperCase();
       }
 
-      // Pre-fill business profile with industry & website
-      // Do NOT set 'name' here — Stripe uses it as the account display name,
-      // and it should be the user's personal name which they enter during onboarding.
+      // Pre-fill business profile.
+      // Setting business_profile.name = "Flea" so receipts and the Express
+      // dashboard show "Flea" as the platform/brand rather than the seller's
+      // legal name.
       createParams.business_profile = {
+        name: "Flea",
         product_description: "Selling pre-loved fashion on Flea App. Pick 'Clothing and accessories' for industry.",
         url: "https://finditonflea.com",
+        support_url: "https://finditonflea.com",
         mcc: "5699", // Miscellaneous Apparel and Accessory Shops
       };
 
-      // NOTE: Do NOT pre-fill statement descriptors here - Stripe uses them
-      // as the account display name, overriding the user's personal name.
-      // Stripe will prompt for these during onboarding instead.
+      // NOTE: Statement descriptors are set per-charge on the Checkout Session
+      // (statement_descriptor_suffix: "FLEA") so that buyers' bank statements
+      // show FLEA rather than the seller's personal name.
 
       const account = await stripe.accounts.create(createParams as any);
       accountId = account.id;
-      console.log(`[stripe-connect-onboard] Created new Standard account: ${accountId}`);
+      console.log(`[stripe-connect-onboard] Created new Express account: ${accountId}`);
     }
 
     // Persist stripe_account_id to DB immediately
     await persistStripeAccount(userId, accountId);
+
+    // Ensure existing accounts also get daily payouts + Flea branding.
+    try {
+      await stripe.accounts.update(accountId, {
+        business_profile: { name: "Flea" },
+        settings: {
+          payouts: { schedule: { interval: "daily", delay_days: "minimum" } },
+        },
+      } as any);
+    } catch (e) {
+      console.warn(`[stripe-connect-onboard] Account update failed for ${accountId}:`, (e as Error)?.message);
+    }
 
     // Create an account link — Stripe handles the entire onboarding/login flow
     const accountLink = await stripe.accountLinks.create({

@@ -43,18 +43,25 @@ serve(async (req) => {
     const itemsTotal = items.reduce((sum: number, item: { price: number }) => sum + item.price, 0);
     const shippingAmount = shipping || 0;
     const subtotal = itemsTotal + shippingAmount;
-    
-    // 2% + $0.30 buyer processing fee (covers Stripe's costs)
-    const processingFee = subtotal * 0.02 + 0.30;
-    const totalCharge = subtotal + processingFee;
-    
-    // 7% platform fee on the subtotal (items + shipping)
+
+    // Stripe AU domestic card pricing — buyer covers this in full.
+    // Formula grosses up so Stripe's actual deduction (rate × buyerTotal + fixed)
+    // is fully covered by the buyer-paid line item. See src/utils/feeCalculator.ts.
+    const STRIPE_RATE = 0.0175;
+    const STRIPE_FIXED = 0.30;
+    const processingFee = Math.round(
+      ((subtotal + STRIPE_FIXED) / (1 - STRIPE_RATE) - subtotal) * 100,
+    ) / 100;
+    const buyerTotalDollars = subtotal + processingFee;
+
+    // Flea platform fee — flat 7% of items + shipping.
     const platformFeeDollars = subtotal * 0.07;
-    
-    // application_fee_amount = platform fee + processing fee
-    // This keeps the processing fee with the platform to cover Stripe's charges
-    // Seller receives: totalCharge - application_fee = subtotal - platformFee = 93% of (items + shipping)
-    const applicationFeeAmount = Math.round((platformFeeDollars + processingFee) * 100); // in cents
+
+    // application_fee_amount is what Flea takes off the top.
+    // Because we use on_behalf_of, the seller is the settlement merchant and
+    // Stripe deducts processing fees from the seller's balance — NOT Flea's.
+    // So Flea's application fee is JUST the 7% platform fee. Clean.
+    const applicationFeeAmount = Math.round(platformFeeDollars * 100); // in cents
 
     // Build line items
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map(
@@ -83,11 +90,11 @@ serve(async (req) => {
       });
     }
 
-    // Add 2% processing fee as a line item
+    // Add buyer-paid processing fee as a line item
     lineItems.push({
       price_data: {
         currency: "aud",
-        product_data: { name: "Processing fee (2%)" },
+        product_data: { name: `Payment processing fee (${(STRIPE_RATE * 100).toFixed(2)}% + $${STRIPE_FIXED.toFixed(2)})` },
         unit_amount: Math.round(processingFee * 100),
       },
       quantity: 1,
@@ -102,9 +109,13 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "https://shop-flea.lovable.app";
 
-    // Create checkout session with destination charge
-    // Money goes directly to seller, platform fee is deducted
-    // Card + Link enabled; Link auto-detects existing accounts for one-click pay
+    // Create checkout session.
+    // - on_behalf_of: makes the seller the merchant of record. Stripe's
+    //   processing fee comes out of the seller's balance (covered by the
+    //   buyer-paid processing fee line). Flea NEVER absorbs Stripe fees.
+    // - statement_descriptor_suffix: buyers see "FLEA" on their bank statement
+    //   instead of the seller's personal name.
+    // - PaymentIntent description: shows as "Flea order" in receipts.
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : userEmail,
@@ -116,12 +127,18 @@ serve(async (req) => {
       cancel_url: `${origin}/cart`,
       payment_intent_data: {
         application_fee_amount: applicationFeeAmount,
+        on_behalf_of: sellerStripeAccountId,
         transfer_data: {
           destination: sellerStripeAccountId,
         },
+        description: "Flea order",
+        statement_descriptor_suffix: "FLEA",
       },
       metadata: {
         item_ids: items.map((i: { id: string }) => i.id).join(","),
+        platform_fee_aud: platformFeeDollars.toFixed(2),
+        processing_fee_aud: processingFee.toFixed(2),
+        buyer_total_aud: buyerTotalDollars.toFixed(2),
       },
     });
 

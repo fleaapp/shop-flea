@@ -18,6 +18,7 @@ import applePayLogo from '@/assets/applepay-logo.png';
 import gPayLogo from '@/assets/gpay-logo.png';
 import BlockedUserBanner from '@/components/BlockedUserBanner';
 import { fetchSellerShippingSettings, calculateTotalShipping, SellerShippingInfo } from '@/utils/shippingCalculator';
+import { calculateFees } from '@/utils/feeCalculator';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 
 const Checkout = () => {
@@ -178,16 +179,16 @@ const Checkout = () => {
   const sellerHasStripe = sellerId ? sellerStripeAccounts.has(sellerId) : false;
   const sellerHasPayPal = sellerId ? sellerPayPalAccounts.has(sellerId) : false;
   
-  // Fee depends on payment method: 2% for Stripe, 3% for PayPal
-  // Default to Stripe if both available
+  // Single source of truth for fees — see src/utils/feeCalculator.ts
   const paymentMethod = sellerHasStripe ? 'stripe' : sellerHasPayPal ? 'paypal' : null;
-  const feeRate = paymentMethod === 'paypal' ? 0.03 : 0.02;
-  const fixedFee = paymentMethod === 'paypal' ? 0 : 0.30;
-   
+
   const itemsTotal = validItems.reduce((sum: number, item: any) => sum + item.price, 0);
   const subtotal = itemsTotal + totalShipping;
-  const processingFee = subtotal * feeRate + fixedFee;
-  const total = subtotal + processingFee;
+  const fees = paymentMethod
+    ? calculateFees(itemsTotal, totalShipping, paymentMethod)
+    : { processingFee: 0, buyerTotal: subtotal, rateLabel: '' };
+  const processingFee = fees.processingFee;
+  const total = fees.buyerTotal;
   
   const isShippingComplete = shippingFirstName.trim() && shippingLastName.trim() && shippingAddress.trim() && shippingSuburb.trim() && shippingState.trim() && shippingPostcode.trim();
   
@@ -349,7 +350,7 @@ const Checkout = () => {
               
               {/* Fee line */}
               <div className="flex justify-between text-sm px-4 py-3 border-t border-border">
-                <span className="text-muted-foreground">Payment processing fee ({Math.round(feeRate * 100)}%{fixedFee > 0 ? ` + $${fixedFee.toFixed(2)}` : ''})</span>
+                <span className="text-muted-foreground">Payment processing fee ({fees.rateLabel})</span>
                 <span className="text-muted-foreground">+ ${processingFee.toFixed(2)}</span>
               </div>
               
