@@ -253,10 +253,15 @@ const Checkout = () => {
         return;
       }
 
-      localStorage.setItem('checkout_payment_method', sellerStripeAccountId ? 'stripe' : 'paypal');
+      // Honour buyer's selected rail; fall back if their pick isn't connected.
+      const useRail: 'stripe' | 'paypal' =
+        selectedRail === 'paypal' && sellerPayPalMerchantId ? 'paypal'
+        : selectedRail === 'stripe' && sellerStripeAccountId ? 'stripe'
+        : sellerStripeAccountId ? 'stripe' : 'paypal';
 
-      // Use Stripe if available, otherwise PayPal
-      if (sellerStripeAccountId) {
+      localStorage.setItem('checkout_payment_method', useRail);
+
+      if (useRail === 'stripe') {
         const { data, error } = await invokeCloudFunction('stripe-connect-checkout', {
           items: validItems.map(item => ({
             id: item.id,
@@ -274,7 +279,7 @@ const Checkout = () => {
           localStorage.setItem('checkout_reference', data.sessionId);
         }
         window.location.href = data.url;
-      } else if (sellerPayPalMerchantId) {
+      } else {
         const { data, error } = await invokeCloudFunction('paypal-connect-checkout', {
           items: validItems.map(item => ({
             id: item.id,
