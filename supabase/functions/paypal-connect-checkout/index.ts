@@ -91,6 +91,9 @@ serve(async (req) => {
         intent: "CAPTURE",
         purchase_units: [
           {
+            description: "Flea order",
+            soft_descriptor: "FLEA",
+            custom_id: items.map((i: { id: string }) => i.id).join(","),
             amount: {
               currency_code: "AUD",
               value: totalCharge.toFixed(2),
