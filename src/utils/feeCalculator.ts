@@ -16,9 +16,10 @@
 export const STRIPE_PROCESSING_RATE = 0.0175;
 export const STRIPE_PROCESSING_FIXED = 0.30;
 
-// PayPal — kept at flat 3% (PayPal AU model, no separate gross-up)
-export const PAYPAL_PROCESSING_RATE = 0.03;
-export const PAYPAL_PROCESSING_FIXED = 0;
+// PayPal AU domestic Checkout standard rate — same gross-up model as Stripe
+// so PayPal's actual deduction is fully covered by the buyer-paid fee.
+export const PAYPAL_PROCESSING_RATE = 0.026;
+export const PAYPAL_PROCESSING_FIXED = 0.30;
 
 // Flea platform fee — what the seller pays out of the sale
 export const PLATFORM_FEE_RATE = 0.07;
