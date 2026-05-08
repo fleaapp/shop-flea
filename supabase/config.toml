@@ -18,6 +18,18 @@ verify_jwt = false
 [functions.stripe-connect-refund]
 verify_jwt = false
 
+[functions.paypal-connect-refund]
+verify_jwt = false
+
+[functions.paypal-connect-onboard]
+verify_jwt = false
+
+[functions.paypal-connect-status]
+verify_jwt = false
+
+[functions.paypal-connect-checkout]
+verify_jwt = false
+
 [functions.delete-account]
 verify_jwt = false
 

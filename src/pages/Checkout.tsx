@@ -174,13 +174,21 @@ const Checkout = () => {
     );
   }, [validItems, sellerSettings]);
   
-  // Determine which payment method the seller supports
+  // Determine which payment rails the seller supports
   const sellerId = validItems[0]?.sellerId;
   const sellerHasStripe = sellerId ? sellerStripeAccounts.has(sellerId) : false;
   const sellerHasPayPal = sellerId ? sellerPayPalAccounts.has(sellerId) : false;
-  
+
+  // Buyer-selected rail. Default to Stripe if available, else PayPal.
+  const defaultRail: 'stripe' | 'paypal' | null =
+    sellerHasStripe ? 'stripe' : sellerHasPayPal ? 'paypal' : null;
+  const [selectedRail, setSelectedRail] = useState<'stripe' | 'paypal' | null>(defaultRail);
+  useEffect(() => {
+    setSelectedRail(defaultRail);
+  }, [defaultRail]);
+
   // Single source of truth for fees — see src/utils/feeCalculator.ts
-  const paymentMethod = sellerHasStripe ? 'stripe' : sellerHasPayPal ? 'paypal' : null;
+  const paymentMethod = selectedRail;
 
   const itemsTotal = validItems.reduce((sum: number, item: any) => sum + item.price, 0);
   const subtotal = itemsTotal + totalShipping;
@@ -245,10 +253,15 @@ const Checkout = () => {
         return;
       }
 
-      localStorage.setItem('checkout_payment_method', sellerStripeAccountId ? 'stripe' : 'paypal');
+      // Honour buyer's selected rail; fall back if their pick isn't connected.
+      const useRail: 'stripe' | 'paypal' =
+        selectedRail === 'paypal' && sellerPayPalMerchantId ? 'paypal'
+        : selectedRail === 'stripe' && sellerStripeAccountId ? 'stripe'
+        : sellerStripeAccountId ? 'stripe' : 'paypal';
 
-      // Use Stripe if available, otherwise PayPal
-      if (sellerStripeAccountId) {
+      localStorage.setItem('checkout_payment_method', useRail);
+
+      if (useRail === 'stripe') {
         const { data, error } = await invokeCloudFunction('stripe-connect-checkout', {
           items: validItems.map(item => ({
             id: item.id,
@@ -266,7 +279,7 @@ const Checkout = () => {
           localStorage.setItem('checkout_reference', data.sessionId);
         }
         window.location.href = data.url;
-      } else if (sellerPayPalMerchantId) {
+      } else {
         const { data, error } = await invokeCloudFunction('paypal-connect-checkout', {
           items: validItems.map(item => ({
             id: item.id,
@@ -467,28 +480,43 @@ const Checkout = () => {
             </div>
 
             {/* Payment Methods Info */}
-            {paymentMethod === 'stripe' && (
+            {(sellerHasStripe || sellerHasPayPal) && (
               <div className="rounded-xl bg-card overflow-hidden">
                 <div className="bg-muted-foreground/20 px-4 py-2 text-sm font-medium text-muted-foreground">
                   Payment
                 </div>
                 <div className="p-4 space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    You'll be able to pay with:
-                  </p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                    <div className="flex items-center justify-center w-20 h-10 rounded-lg" style={{ backgroundColor: '#F4F2EB' }}>
-                      <img src={applePayLogo} alt="Apple Pay" className="h-6" />
-                    </div>
-                    <div className="flex items-center justify-center w-20 h-10 rounded-lg" style={{ backgroundColor: '#F4F2EB' }}>
-                      <img src={gPayLogo} alt="Google Pay" className="h-[18px]" />
-                    </div>
-                    <div className="flex items-center justify-center w-20 h-10 rounded-lg text-sm font-medium text-foreground" style={{ backgroundColor: '#F4F2EB' }}>
-                      💳 Card
-                    </div>
+                  <p className="text-sm text-muted-foreground">Choose how you'd like to pay:</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {sellerHasStripe && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedRail('stripe')}
+                        className={cn(
+                          "flex items-center gap-1 px-3 h-10 rounded-lg text-sm font-medium border-2 transition-colors",
+                          selectedRail === 'stripe' ? 'border-charcoal bg-[#F4F2EB]' : 'border-transparent bg-[#F4F2EB] opacity-60'
+                        )}
+                      >
+                        <img src={applePayLogo} alt="" className="h-5" />
+                        <img src={gPayLogo} alt="" className="h-[14px]" />
+                        <span className="ml-1">💳 Card</span>
+                      </button>
+                    )}
+                    {sellerHasPayPal && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedRail('paypal')}
+                        className={cn(
+                          "flex items-center justify-center px-4 h-10 rounded-lg text-sm font-semibold border-2 transition-colors",
+                          selectedRail === 'paypal' ? 'border-charcoal bg-[#F4F2EB]' : 'border-transparent bg-[#F4F2EB] opacity-60'
+                        )}
+                      >
+                        PayPal
+                      </button>
+                    )}
                   </div>
                   <p className="text-[11px] text-muted-foreground/70">
-                    All payments are processed securely by Stripe
+                    All payments are processed securely. You only see Flea — your seller's personal details are never shown.
                   </p>
                 </div>
               </div>
@@ -498,13 +526,17 @@ const Checkout = () => {
             <div className="mt-6">
               <Button 
                 onClick={handlePlaceOrder} 
-                disabled={isSubmitting || !isShippingComplete}
+                disabled={isSubmitting || !isShippingComplete || !selectedRail}
                 className="w-full h-12 rounded-full bg-charcoal text-white hover:bg-charcoal-light font-medium disabled:opacity-50"
               >
-                {isSubmitting ? 'Redirecting to payment...' : 'Proceed to payment'}
+                {isSubmitting
+                  ? 'Redirecting to payment...'
+                  : selectedRail === 'paypal'
+                    ? 'Pay with PayPal'
+                    : 'Pay with Card'}
               </Button>
               <p className="text-xs text-muted-foreground text-center mt-3">
-                You'll be redirected to {paymentMethod === 'paypal' ? 'PayPal' : 'Stripe'} to complete payment securely.
+                You'll be redirected to {selectedRail === 'paypal' ? 'PayPal' : 'our card processor'} to complete payment securely.
               </p>
             </div>
           </div>
