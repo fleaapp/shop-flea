@@ -59,18 +59,23 @@ serve(async (req) => {
 
     const accessToken = await getPayPalAccessToken();
 
-    // Calculate totals
+    // Calculate totals — same model as Stripe.
+    // Buyer pays subtotal + grossed-up processing fee.
+    // PayPal deducts its fee from the seller side (via payment_instruction).
+    // Flea takes a clean 7% of subtotal as platform_fees.
     const itemsTotal = items.reduce((sum: number, item: { price: number }) => sum + item.price, 0);
     const shippingAmount = shipping || 0;
     const subtotal = itemsTotal + shippingAmount;
 
-    // 3% buyer processing fee for PayPal
-    const processingFee = subtotal * 0.03;
-    const totalCharge = subtotal + processingFee;
+    const PAYPAL_RATE = 0.026;
+    const PAYPAL_FIXED = 0.30;
+    const processingFee = Math.round(
+      ((subtotal + PAYPAL_FIXED) / (1 - PAYPAL_RATE) - subtotal) * 100,
+    ) / 100;
+    const totalCharge = Math.round((subtotal + processingFee) * 100) / 100;
 
-    // 7% platform fee
-    const platformFee = totalCharge * 0.07;
-    const sellerAmount = totalCharge - platformFee;
+    // 7% platform fee — based on subtotal (items + shipping), NOT totalCharge.
+    const platformFee = Math.round(subtotal * 0.07 * 100) / 100;
 
     const origin = req.headers.get("origin") || "https://shop-flea.lovable.app";
 
