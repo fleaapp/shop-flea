@@ -292,27 +292,34 @@ const OrderChat = () => {
                   }
                 }}
                 onRefund={async (paymentMethod: string) => {
-                  // PayPal still routes to the provider dashboard for now
-                  // (PayPal partner refunds are handled separately).
-                  if (paymentMethod === 'paypal') {
-                    const newTab = window.open('https://www.paypal.com/disputes', '_blank');
-                    setRefundActioning(true);
-                    try {
-                      await invokeCloudFunction('order-messages', {
-                        method: 'POST',
-                        query: { orderId: orderId!, action: 'refund_initiate' },
-                        body: {},
-                      });
-                      queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
-                      queryClient.invalidateQueries({ queryKey: ['refund-status', orderId] });
-                    } catch {
-                      toast.error('Failed to initiate refund');
-                      newTab?.close();
-                    } finally {
-                      setRefundActioning(false);
+                  // Both rails — execute refund directly via Connect/Partner.
+                  // Stripe: reverse_transfer + refund_application_fee.
+                  // PayPal: capture refund auto-reverses platform_fees.
+                  // Both unwind seller payout AND Flea's 7% cleanly.
+                  const fnName = paymentMethod === 'paypal' ? 'paypal-connect-refund' : 'stripe-connect-refund';
+                  setRefundActioning(true);
+                  try {
+                    const { data, error } = await invokeCloudFunction(fnName, {
+                      orderId: orderId!,
+                    });
+                    if (error || !(data as any)?.success) {
+                      throw new Error((error as any)?.message || (data as any)?.error || 'Refund failed');
                     }
-                    return;
+                    await invokeCloudFunction('order-messages', {
+                      method: 'POST',
+                      query: { orderId: orderId!, action: 'refund_initiate' },
+                      body: {},
+                    });
+                    queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
+                    queryClient.invalidateQueries({ queryKey: ['refund-status', orderId] });
+                    toast.success('Refund processed. Buyer will see it in 5–10 days.');
+                  } catch (e: any) {
+                    toast.error(e?.message || 'Failed to process refund');
+                  } finally {
+                    setRefundActioning(false);
                   }
+                  return;
+                }}
 
                   // Stripe — execute the refund directly via Connect.
                   // reverse_transfer + refund_application_fee unwind both the
