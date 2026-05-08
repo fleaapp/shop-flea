@@ -104,9 +104,9 @@ const OrderDetailsSheet = ({
   if (!orders || orders.length === 0) return null;
 
   const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
-  const processingFee = subtotal * 0.02;
+  const processingFee = Math.round(((subtotal + 0.30) / (1 - 0.0175) - subtotal) * 100) / 100;
   const total = subtotal + processingFee;
-  // Note: buyer pays 2% processing fee; seller pays 7% platform fee (shown in SalesDetailsSheet)
+  // Buyer pays 1.75% + $0.30 processing fee that fully covers Stripe; seller pays only the 7% Flea fee.
   const statusBadge = getStatusBadge(primaryOrder.status);
   const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
 
@@ -210,7 +210,7 @@ const OrderDetailsSheet = ({
 
                 {/* Fee line */}
                 <div className="flex justify-between text-sm px-4 py-3 border-t border-border">
-                  <span className="text-muted-foreground">Payment processing fee (2%)</span>
+                  <span className="text-muted-foreground">Payment processing fee (1.75% + $0.30)</span>
                   <span className="text-muted-foreground">+ ${processingFee.toFixed(2)}</span>
                 </div>
 

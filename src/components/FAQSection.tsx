@@ -31,7 +31,7 @@ const faqItems = [
       },
       {
         q: 'Can I get a refund?',
-        a: 'If there\'s an issue with your order, start by messaging the seller directly through the app. If you can\'t resolve it, you can request a refund and open a dispute through whichever payment provider was used via their dashboard.',
+        a: 'If there\'s an issue with your order, start by messaging the seller through the app. You can request a refund directly in the order chat - the seller reviews your request and, if approved, the refund is processed automatically through the original payment method.',
       },
     ],
   },
@@ -48,7 +48,7 @@ const faqItems = [
       },
       {
         q: 'How do I get paid?',
-        a: 'Payments go directly to your connected payment account. You can access your payouts and transaction history through your payment provider\'s dashboard.',
+        a: 'Payouts run automatically every day with the minimum delay (around 2 business days for new sales). Instant Payout to your bank is also available where eligible. You can view payouts and history through your payment provider\'s dashboard.',
       },
       {
         q: 'What does "Pause Selling" do?',
