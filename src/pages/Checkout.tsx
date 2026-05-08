@@ -174,13 +174,21 @@ const Checkout = () => {
     );
   }, [validItems, sellerSettings]);
   
-  // Determine which payment method the seller supports
+  // Determine which payment rails the seller supports
   const sellerId = validItems[0]?.sellerId;
   const sellerHasStripe = sellerId ? sellerStripeAccounts.has(sellerId) : false;
   const sellerHasPayPal = sellerId ? sellerPayPalAccounts.has(sellerId) : false;
-  
+
+  // Buyer-selected rail. Default to Stripe if available, else PayPal.
+  const defaultRail: 'stripe' | 'paypal' | null =
+    sellerHasStripe ? 'stripe' : sellerHasPayPal ? 'paypal' : null;
+  const [selectedRail, setSelectedRail] = useState<'stripe' | 'paypal' | null>(defaultRail);
+  useEffect(() => {
+    setSelectedRail(defaultRail);
+  }, [defaultRail]);
+
   // Single source of truth for fees — see src/utils/feeCalculator.ts
-  const paymentMethod = sellerHasStripe ? 'stripe' : sellerHasPayPal ? 'paypal' : null;
+  const paymentMethod = selectedRail;
 
   const itemsTotal = validItems.reduce((sum: number, item: any) => sum + item.price, 0);
   const subtotal = itemsTotal + totalShipping;
