@@ -320,32 +320,6 @@ const OrderChat = () => {
                   }
                   return;
                 }}
-
-                  // Stripe — execute the refund directly via Connect.
-                  // reverse_transfer + refund_application_fee unwind both the
-                  // seller payout and Flea's 7% fee. No manual dashboard step.
-                  setRefundActioning(true);
-                  try {
-                    const { data, error } = await invokeCloudFunction('stripe-connect-refund', {
-                      orderId: orderId!,
-                    });
-                    if (error || !(data as any)?.success) {
-                      throw new Error((error as any)?.message || (data as any)?.error || 'Refund failed');
-                    }
-                    await invokeCloudFunction('order-messages', {
-                      method: 'POST',
-                      query: { orderId: orderId!, action: 'refund_initiate' },
-                      body: {},
-                    });
-                    queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
-                    queryClient.invalidateQueries({ queryKey: ['refund-status', orderId] });
-                    toast.success('Refund processed. Buyer will see it in 5–10 days.');
-                  } catch (e: any) {
-                    toast.error(e?.message || 'Failed to process refund');
-                  } finally {
-                    setRefundActioning(false);
-                  }
-                }}
               />
             );
           }
