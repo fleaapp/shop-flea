@@ -110,6 +110,16 @@ serve(async (req) => {
           card_payments: { requested: true },
           transfers: { requested: true },
         },
+        // Daily automatic payouts with the minimum delay (AU minimum is 2 business days).
+        // Sellers can still trigger Instant Payouts from their Express dashboard when eligible.
+        settings: {
+          payouts: {
+            schedule: {
+              interval: "daily",
+              delay_days: "minimum",
+            },
+          },
+        },
       };
 
       // Pre-fill individual details
