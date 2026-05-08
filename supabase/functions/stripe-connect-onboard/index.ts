@@ -136,22 +136,25 @@ serve(async (req) => {
         createParams.country = userProfile.country_code.toUpperCase();
       }
 
-      // Pre-fill business profile with industry & website
-      // Do NOT set 'name' here — Stripe uses it as the account display name,
-      // and it should be the user's personal name which they enter during onboarding.
+      // Pre-fill business profile.
+      // Setting business_profile.name = "Flea" so receipts and the Express
+      // dashboard show "Flea" as the platform/brand rather than the seller's
+      // legal name.
       createParams.business_profile = {
+        name: "Flea",
         product_description: "Selling pre-loved fashion on Flea App. Pick 'Clothing and accessories' for industry.",
         url: "https://finditonflea.com",
+        support_url: "https://finditonflea.com",
         mcc: "5699", // Miscellaneous Apparel and Accessory Shops
       };
 
-      // NOTE: Do NOT pre-fill statement descriptors here - Stripe uses them
-      // as the account display name, overriding the user's personal name.
-      // Stripe will prompt for these during onboarding instead.
+      // NOTE: Statement descriptors are set per-charge on the Checkout Session
+      // (statement_descriptor_suffix: "FLEA") so that buyers' bank statements
+      // show FLEA rather than the seller's personal name.
 
       const account = await stripe.accounts.create(createParams as any);
       accountId = account.id;
-      console.log(`[stripe-connect-onboard] Created new Standard account: ${accountId}`);
+      console.log(`[stripe-connect-onboard] Created new Express account: ${accountId}`);
     }
 
     // Persist stripe_account_id to DB immediately
