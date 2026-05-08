@@ -72,7 +72,7 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
   const itemsSubtotal = orders.reduce((sum, o) => sum + o.price, 0);
   const shippingTotal = orders.reduce((sum, o) => sum + o.shipping_price, 0);
   const subtotal = itemsSubtotal + shippingTotal;
-  const processingFee = subtotal * 0.02;
+  const processingFee = Math.round(((subtotal + 0.30) / (1 - 0.0175) - subtotal) * 100) / 100;
   const platformFee = subtotal * 0.07;
   const buyerTotal = subtotal + processingFee;
   const sellerReceives = subtotal - platformFee;
@@ -140,7 +140,7 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
                 {viewAs === 'buyer' ? (
                   <>
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">Processing fee (2%)</span>
+                      <span className="text-gray-500">Processing fee (1.75% + $0.30)</span>
                       <span className="text-gray-900">+${processingFee.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-xs font-bold pt-1">
