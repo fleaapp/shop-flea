@@ -51,8 +51,10 @@ export function calculateFees(
   let rateLabel: string;
 
   if (paymentMethod === 'paypal') {
-    processingFee = subtotal * PAYPAL_PROCESSING_RATE + PAYPAL_PROCESSING_FIXED;
-    rateLabel = `${(PAYPAL_PROCESSING_RATE * 100).toFixed(0)}%`;
+    // Same gross-up formula as Stripe so PayPal's deduction
+    // (rate × buyerTotal + fixed) is fully covered.
+    processingFee = (subtotal + PAYPAL_PROCESSING_FIXED) / (1 - PAYPAL_PROCESSING_RATE) - subtotal;
+    rateLabel = `${(PAYPAL_PROCESSING_RATE * 100).toFixed(1)}% + $${PAYPAL_PROCESSING_FIXED.toFixed(2)}`;
   } else {
     // Gross-up so Stripe's deduction (rate × buyerTotal + fixed) is fully covered.
     processingFee = (subtotal + STRIPE_PROCESSING_FIXED) / (1 - STRIPE_PROCESSING_RATE) - subtotal;
