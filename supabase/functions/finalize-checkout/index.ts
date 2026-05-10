@@ -228,6 +228,12 @@ serve(async (req) => {
       });
     }
 
+    if (!(await checkRateLimit(`finalize-checkout:${userId}`, 10, 60))) {
+      return new Response(JSON.stringify({ error: "Too many checkout attempts. Please wait a moment and try again." }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { items, shipping, shippingBySeller, paymentMethod, checkoutReference } = await req.json() as {
       items?: CheckoutItem[];
       shipping?: ShippingDetails;
