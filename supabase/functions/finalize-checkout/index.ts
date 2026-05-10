@@ -29,6 +29,24 @@ const corsHeaders = {
 
 const PAYPAL_API = "https://api-m.paypal.com";
 
+async function checkRateLimit(key: string, max: number, windowSeconds: number): Promise<boolean> {
+  try {
+    const url = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    if (!url || !serviceKey) return true;
+    const res = await fetch(`${url}/rest/v1/rpc/check_and_record_rate_limit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+      body: JSON.stringify({ _key: key, _max: max, _window_seconds: windowSeconds }),
+    });
+    if (!res.ok) return true; // fail-open
+    const allowed = await res.json();
+    return allowed === true;
+  } catch {
+    return true;
+  }
+}
+
 type CheckoutItem = { id: string; sellerId: string; price: number };
 type ShippingDetails = {
   shippingFirstName?: string;
