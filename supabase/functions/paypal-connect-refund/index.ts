@@ -64,6 +64,13 @@ serve(async (req) => {
     if (claimsError || !claimsData?.claims?.sub) throw new Error("Unauthorized");
     const userId = claimsData.claims.sub as string;
 
+    if (!(await checkRateLimit(`paypal-refund:${userId}`, 10, 3600))) {
+      return new Response(JSON.stringify({ error: "Too many refund attempts. Please try again later." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { orderId, amount, reason } = await req.json();
     if (!orderId) throw new Error("orderId required");
 
