@@ -20,6 +20,7 @@ import BlockedUserBanner from '@/components/BlockedUserBanner';
 import { fetchSellerShippingSettings, calculateTotalShipping, SellerShippingInfo } from '@/utils/shippingCalculator';
 import { calculateFees } from '@/utils/feeCalculator';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
+import { useBuyerAddress } from '@/hooks/useBuyerAddress';
 import { PAYPAL_ENABLED } from '@/config/features';
 
 const Checkout = () => {
