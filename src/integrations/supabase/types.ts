@@ -38,6 +38,45 @@ export type Database = {
         }
         Relationships: []
       }
+      buyer_addresses: {
+        Row: {
+          address: string
+          created_at: string
+          first_name: string
+          id: string
+          last_name: string
+          postcode: string
+          state: string
+          suburb: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string
+          created_at?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          postcode?: string
+          state?: string
+          suburb?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          postcode?: string
+          state?: string
+          suburb?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cart_items: {
         Row: {
           created_at: string
@@ -562,6 +601,7 @@ export type Database = {
           last_name: string | null
           last_sign_in_at: string | null
           location: string | null
+          marketing_opt_in: boolean
           password_set: boolean
           pause_selling: boolean
           paypal_merchant_id: string | null
@@ -594,6 +634,7 @@ export type Database = {
           last_name?: string | null
           last_sign_in_at?: string | null
           location?: string | null
+          marketing_opt_in?: boolean
           password_set?: boolean
           pause_selling?: boolean
           paypal_merchant_id?: string | null
@@ -626,6 +667,7 @@ export type Database = {
           last_name?: string | null
           last_sign_in_at?: string | null
           location?: string | null
+          marketing_opt_in?: boolean
           password_set?: boolean
           pause_selling?: boolean
           paypal_merchant_id?: string | null
