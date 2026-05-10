@@ -171,6 +171,12 @@ const Settings = () => {
       toggle: true,
       checked: notificationsEnabled,
       onToggle: handleToggleNotifications
+    }, {
+      icon: <span className="text-base">📣</span>,
+      label: 'Marketing emails',
+      toggle: true,
+      checked: marketingOptIn,
+      onToggle: handleToggleMarketing
     }]
   }, {
     title: 'Support',
