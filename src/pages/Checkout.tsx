@@ -490,26 +490,46 @@ const Checkout = () => {
                   <p className="text-sm text-muted-foreground">Choose how you'd like to pay:</p>
                   <div className="flex items-center gap-2 flex-wrap">
                     {sellerHasStripe && (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedRail('stripe')}
-                        className={cn(
-                          "flex items-center gap-1 px-3 h-10 rounded-lg text-sm font-medium border-2 transition-colors",
-                          selectedRail === 'stripe' ? 'border-charcoal bg-[#F4F2EB]' : 'border-transparent bg-[#F4F2EB] opacity-60'
-                        )}
-                      >
-                        <img src={applePayLogo} alt="" className="h-5" />
-                        <img src={gPayLogo} alt="" className="h-[14px]" />
-                        <span className="ml-1">💳 Card</span>
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedRail('stripe')}
+                          className={cn(
+                            "flex items-center justify-center w-20 h-10 rounded-lg bg-[#F4F2EB] border-2 transition-colors",
+                            selectedRail === 'stripe' ? 'border-charcoal' : 'border-transparent opacity-80'
+                          )}
+                        >
+                          <img src={applePayLogo} alt="Apple Pay" className="h-6" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedRail('stripe')}
+                          className={cn(
+                            "flex items-center justify-center w-20 h-10 rounded-lg bg-[#F4F2EB] border-2 transition-colors",
+                            selectedRail === 'stripe' ? 'border-charcoal' : 'border-transparent opacity-80'
+                          )}
+                        >
+                          <img src={gPayLogo} alt="Google Pay" className="h-[18px]" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedRail('stripe')}
+                          className={cn(
+                            "flex items-center justify-center w-20 h-10 rounded-lg bg-[#F4F2EB] text-sm font-medium border-2 transition-colors",
+                            selectedRail === 'stripe' ? 'border-charcoal' : 'border-transparent opacity-80'
+                          )}
+                        >
+                          💳 Card
+                        </button>
+                      </>
                     )}
                     {sellerHasPayPal && (
                       <button
                         type="button"
                         onClick={() => setSelectedRail('paypal')}
                         className={cn(
-                          "flex items-center justify-center px-4 h-10 rounded-lg text-sm font-semibold border-2 transition-colors",
-                          selectedRail === 'paypal' ? 'border-charcoal bg-[#F4F2EB]' : 'border-transparent bg-[#F4F2EB] opacity-60'
+                          "flex items-center justify-center w-20 h-10 rounded-lg bg-[#F4F2EB] text-sm font-semibold border-2 transition-colors",
+                          selectedRail === 'paypal' ? 'border-charcoal' : 'border-transparent opacity-80'
                         )}
                       >
                         PayPal
