@@ -4,6 +4,7 @@
 // platform fee, atomic, no manual dashboard step.
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -35,13 +36,18 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Manual JWT parse — just trust the sub claim (we re-verify via DB ownership below).
+    // Cryptographically verified JWT — protects against forged tokens.
     const authHeader = req.headers.get("Authorization") || "";
-    const token = authHeader.replace(/^Bearer\s+/i, "");
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
     if (!token) throw new Error("Unauthorized");
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    const userId = payload.sub as string;
-    if (!userId) throw new Error("Unauthorized");
+    const verifier = createClient(
+      Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "",
+      Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "",
+      { auth: { persistSession: false, autoRefreshToken: false } },
+    );
+    const { data: claimsData, error: claimsError } = await verifier.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) throw new Error("Unauthorized");
+    const userId = claimsData.claims.sub as string;
 
     const { orderId, amount, reason } = await req.json();
     if (!orderId) throw new Error("orderId required");

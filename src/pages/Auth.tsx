@@ -496,12 +496,12 @@ const Auth = () => {
                 </button>
               </div>
               
-              {/* Terms & Privacy notice */}
-              <p className="text-[10px] text-foreground/70 text-center pt-2">
-                By signing up, you agree to our{' '}
-                <button type="button" className="underline hover:text-foreground">Terms</button>
+              {/* Terms & Privacy notice — also serves as the age & AU eligibility declaration */}
+              <p className="text-[10px] text-foreground/70 text-center pt-2 leading-snug">
+                By signing up you confirm you are at least 16 and located in Australia, and you agree to our{' '}
+                <button type="button" onClick={() => navigate('/terms')} className="underline hover:text-foreground">Terms</button>
                 {' & '}
-                <button type="button" className="underline hover:text-foreground">Privacy</button>.
+                <button type="button" onClick={() => navigate('/privacy')} className="underline hover:text-foreground">Privacy</button>.
               </p>
               
               <div className="pt-1">
