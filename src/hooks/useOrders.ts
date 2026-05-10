@@ -242,7 +242,7 @@ export function useOrders() {
 
       const [listingsRes, profilesRes] = await Promise.all([
         supabase.from('listings').select('id, title, images').in('id', listingIds),
-        supabase.from('profiles').select('user_id, username, avatar_url').in('user_id', allProfileIds),
+        supabase.from('profiles_public').select('user_id, username, avatar_url').in('user_id', allProfileIds),
       ]);
 
       const listingsMap = new Map(listingsRes.data?.map(l => [l.id, l]) || []);
@@ -281,7 +281,7 @@ export function useOrders() {
 
       const [listingsRes, profilesRes] = await Promise.all([
         supabase.from('listings').select('id, title, images').in('id', listingIds),
-        supabase.from('profiles').select('user_id, username, avatar_url').in('user_id', allProfileIds),
+        supabase.from('profiles_public').select('user_id, username, avatar_url').in('user_id', allProfileIds),
       ]);
 
       const listingsMap = new Map(listingsRes.data?.map(l => [l.id, l]) || []);

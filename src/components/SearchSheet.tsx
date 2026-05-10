@@ -58,7 +58,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
   useEffect(() => {
     const fetchSellers = async () => {
       const { data } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('user_id, username, avatar_url')
         .not('username', 'like', '@user_%')
         .limit(50);

@@ -36,7 +36,7 @@ export const usePausedSellers = (sellerIds: string[]) => {
 
     setLoading(true);
     const { data, error } = await supabase
-      .from('profiles')
+      .from('profiles_public')
       .select('user_id, pause_selling')
       .in('user_id', sellerIds);
 
@@ -86,7 +86,7 @@ export const useIsSellerPaused = (sellerId: string | undefined) => {
 
       setLoading(true);
       const { data, error } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('pause_selling')
         .eq('user_id', sellerId)
         .maybeSingle();

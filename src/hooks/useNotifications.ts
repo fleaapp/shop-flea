@@ -213,12 +213,7 @@ export const useNotifications = () => {
           .select('user_id, username, avatar_url')
           .in('user_id', userIds);
 
-        const users = !profilesPublicResponse.error && profilesPublicResponse.data?.length
-          ? profilesPublicResponse.data
-          : (await supabase
-              .from('profiles')
-              .select('user_id, username, avatar_url')
-              .in('user_id', userIds)).data;
+        const users = profilesPublicResponse.error ? null : profilesPublicResponse.data;
         
         if (users) {
           usersMap = Object.fromEntries(users.map(u => [u.user_id, { username: u.username, avatar_url: u.avatar_url }]));

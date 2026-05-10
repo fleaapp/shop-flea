@@ -87,10 +87,10 @@ const Checkout = () => {
       if (items.length === 0) { setSellerStripeLoading(false); return; }
       const sellerIds = [...new Set(items.map(item => item.sellerId))];
       
-      const { data } = await supabase
-        .from('profiles' as any)
-        .select('user_id, stripe_account_id, stripe_onboarding_complete, paypal_merchant_id, paypal_onboarding_complete')
-        .in('user_id', sellerIds);
+      // Use SECURITY DEFINER RPC — base profiles table no longer exposes payment account ids cross-user.
+      const { data } = await (supabase as any).rpc('get_seller_payment_accounts', {
+        seller_ids: sellerIds,
+      });
       
       const stripeAccounts = new Map<string, string>();
       const paypalAccounts = new Map<string, string>();

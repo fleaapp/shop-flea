@@ -227,16 +227,16 @@ const ListingDetails = () => {
       setListing(listingData);
       setLoading(false);
 
-      // Fetch profile in parallel (non-blocking)
+      // Fetch profile in parallel (non-blocking) — use public view (excludes sensitive fields)
       supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('username, avatar_url, location, country_code')
         .eq('user_id', listingData.user_id)
         .maybeSingle()
         .then(({ data: profileData, error: profileError }) => {
           if (profileError?.code === '42703') {
             supabase
-              .from('profiles')
+              .from('profiles_public')
               .select('username, avatar_url, location')
               .eq('user_id', listingData.user_id)
               .maybeSingle()

@@ -55,13 +55,9 @@ export function useUserReviews(userId: string | undefined) {
 
       let profiles = (profilesPublic || []).filter(p => p.user_id != null);
 
-      // Fall back to profiles table if profiles_public returned nothing
-      if (profilesPublicError || profiles.length === 0) {
-        const { data: profilesDirect } = await supabase
-          .from('profiles')
-          .select('user_id, username, avatar_url')
-          .in('user_id', reviewerIds);
-        profiles = (profilesDirect || []).filter(p => p.user_id != null);
+      // profiles_public is the only safe cross-user source; do not fall back to base table.
+      if (profilesPublicError) {
+        console.warn('profiles_public read failed:', profilesPublicError);
       }
 
       const profileMap = new Map(profiles.map(p => [p.user_id, p]));

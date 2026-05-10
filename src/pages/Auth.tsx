@@ -107,7 +107,7 @@ const Auth = () => {
       if (!resolvedEmail) {
         // Direct query to check if profile exists at all
         const { data: profileCheck, error: profileErr } = await supabase
-          .from('profiles')
+          .from('profiles_public')
           .select('username')
           .or(`username.eq.${withAt},username.eq.${withoutAt}`)
           .limit(1);
@@ -196,7 +196,7 @@ const Auth = () => {
       if (msg.includes('Invalid login credentials')) {
         // Check if account might be OAuth-based by looking for profile
         const { data: profileData } = await supabase
-          .from('profiles')
+          .from('profiles_public')
           .select('user_id')
           .limit(1);
         
