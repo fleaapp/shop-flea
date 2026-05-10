@@ -57,11 +57,18 @@ serve(async (req) => {
     // Flea platform fee — flat 7% of items + shipping.
     const platformFeeDollars = subtotal * 0.07;
 
-    // application_fee_amount is what Flea takes off the top.
-    // Because we use on_behalf_of, the seller is the settlement merchant and
-    // Stripe deducts processing fees from the seller's balance — NOT Flea's.
-    // So Flea's application fee is JUST the 7% platform fee. Clean.
-    const applicationFeeAmount = Math.round(platformFeeDollars * 100); // in cents
+    // application_fee_amount is what Flea retains from the charge before the
+    // remainder is transferred to the seller. With destination charges, Stripe
+    // deducts processing fees from the PLATFORM balance regardless of
+    // on_behalf_of — that param only changes fee pricing (seller's country),
+    // not who pays. So we MUST add the buyer-paid processing fee into the
+    // application fee, otherwise Flea absorbs Stripe's cut out of pocket.
+    //
+    // Result per sale:
+    //   Platform balance: +buyerTotal − stripeFee − (buyerTotal − appFee)
+    //                   = appFee − stripeFee = platformFee  ✅ (clean 7%)
+    //   Seller receives: buyerTotal − appFee = subtotal − platformFee  ✅
+    const applicationFeeAmount = Math.round((platformFeeDollars + processingFee) * 100);
 
     // Build line items
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map(
