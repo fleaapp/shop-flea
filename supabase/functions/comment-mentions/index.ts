@@ -10,6 +10,19 @@ const EXTERNAL_PUBLIC_URL = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
 const EXTERNAL_PUBLIC_ANON_KEY = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "";
 const EXTERNAL_SERVICE_ROLE_KEY = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
+async function checkRateLimit(key: string, max: number, windowSeconds: number): Promise<boolean> {
+  try {
+    if (!EXTERNAL_PUBLIC_URL || !EXTERNAL_SERVICE_ROLE_KEY) return true;
+    const res = await fetch(`${EXTERNAL_PUBLIC_URL}/rest/v1/rpc/check_and_record_rate_limit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: EXTERNAL_SERVICE_ROLE_KEY, Authorization: `Bearer ${EXTERNAL_SERVICE_ROLE_KEY}` },
+      body: JSON.stringify({ _key: key, _max: max, _window_seconds: windowSeconds }),
+    });
+    if (!res.ok) return true;
+    return (await res.json()) === true;
+  } catch { return true; }
+}
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -42,6 +55,10 @@ serve(async (req) => {
 
     if (authError || !user) {
       return json({ error: "Unauthorized" }, 401);
+    }
+
+    if (!(await checkRateLimit(`comment-mentions:${user.id}`, 30, 60))) {
+      return json({ error: "Too many mentions. Please slow down." }, 429);
     }
 
     const { listingId, content } = await req.json();

@@ -736,6 +736,24 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          created_at: string
+          id: number
+          key: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          key: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          key?: string
+        }
+        Relationships: []
+      }
       regions: {
         Row: {
           created_at: string
@@ -974,6 +992,10 @@ export type Database = {
       }
     }
     Functions: {
+      check_and_record_rate_limit: {
+        Args: { _key: string; _max: number; _window_seconds: number }
+        Returns: boolean
+      }
       create_mention_notifications: {
         Args: {
           p_comment_preview: string

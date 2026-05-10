@@ -6,6 +6,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+async function checkRateLimit(key: string, max: number, windowSeconds: number): Promise<boolean> {
+  try {
+    const url = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
+    const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    if (!url || !serviceKey) return true;
+    const res = await fetch(`${url}/rest/v1/rpc/check_and_record_rate_limit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+      body: JSON.stringify({ _key: key, _max: max, _window_seconds: windowSeconds }),
+    });
+    if (!res.ok) return true;
+    return (await res.json()) === true;
+  } catch { return true; }
+}
+
 // Profanity and banned words list (lowercase)
 const PROFANITY_LIST = [
   // Common profanity
@@ -321,6 +336,13 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!(await checkRateLimit(`moderate-content:${user.id}`, 60, 60))) {
+      return new Response(
+        JSON.stringify({ error: 'Too many requests. Please slow down.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

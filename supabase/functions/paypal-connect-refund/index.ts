@@ -14,6 +14,21 @@ const corsHeaders = {
 
 const PAYPAL_API = "https://api-m.paypal.com";
 
+async function checkRateLimit(key: string, max: number, windowSeconds: number): Promise<boolean> {
+  try {
+    const url = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
+    const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    if (!url || !serviceKey) return true;
+    const res = await fetch(`${url}/rest/v1/rpc/check_and_record_rate_limit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+      body: JSON.stringify({ _key: key, _max: max, _window_seconds: windowSeconds }),
+    });
+    if (!res.ok) return true;
+    return (await res.json()) === true;
+  } catch { return true; }
+}
+
 async function getPayPalAccessToken(): Promise<string> {
   const clientId = Deno.env.get("PAYPAL_CLIENT_ID");
   const secret = Deno.env.get("PAYPAL_SECRET_KEY");
@@ -48,6 +63,13 @@ serve(async (req) => {
     const { data: claimsData, error: claimsError } = await verifier.auth.getClaims(token);
     if (claimsError || !claimsData?.claims?.sub) throw new Error("Unauthorized");
     const userId = claimsData.claims.sub as string;
+
+    if (!(await checkRateLimit(`paypal-refund:${userId}`, 10, 3600))) {
+      return new Response(JSON.stringify({ error: "Too many refund attempts. Please try again later." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { orderId, amount, reason } = await req.json();
     if (!orderId) throw new Error("orderId required");
