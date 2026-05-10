@@ -57,6 +57,10 @@ serve(async (req) => {
       return json({ error: "Unauthorized" }, 401);
     }
 
+    if (!(await checkRateLimit(`comment-mentions:${user.id}`, 30, 60))) {
+      return json({ error: "Too many mentions. Please slow down." }, 429);
+    }
+
     const { listingId, content } = await req.json();
 
     if (typeof listingId !== "string" || !listingId.trim()) {
