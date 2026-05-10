@@ -116,14 +116,32 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "https://shop-flea.lovable.app";
 
+    // Resolve a seller display name so the PaymentIntent description (and thus
+    // the email receipt line) attributes the sale to the seller, not "Flea".
+    // With on_behalf_of, Stripe already shows the connected account's business
+    // name as the merchant on receipts and uses the seller's statement
+    // descriptor on card statements — we just need to stop overriding it.
+    let sellerLabel = "Flea order";
+    try {
+      const acct = await stripe.accounts.retrieve(sellerStripeAccountId);
+      sellerLabel =
+        acct.business_profile?.name ||
+        acct.settings?.dashboard?.display_name ||
+        (acct as any).display_name ||
+        [acct.individual?.first_name, acct.individual?.last_name].filter(Boolean).join(" ") ||
+        acct.company?.name ||
+        sellerLabel;
+    } catch (_) {
+      // fall back to default label
+    }
+
     // Create checkout session.
     // - transfer_data.destination: charge is on the platform; remainder after
     //   application_fee_amount is transferred to the seller.
-    // - on_behalf_of: makes Stripe price the processing fee using the seller's
-    //   country/currency. Fees still come out of the PLATFORM balance — that's
-    //   why application_fee_amount must include the buyer-paid processing fee
-    //   so the platform nets exactly the 7% Flea fee.
-    // - statement_descriptor_suffix: buyers see "FLEA" on their bank statement.
+    // - on_behalf_of: prices processing fee in the seller's country AND makes
+    //   Stripe show the connected account's business name + statement
+    //   descriptor on the buyer's receipt and bank statement. Do NOT pass a
+    //   platform statement_descriptor_suffix here — it would mask the seller.
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : userEmail,
@@ -139,8 +157,7 @@ serve(async (req) => {
         transfer_data: {
           destination: sellerStripeAccountId,
         },
-        description: "Flea order",
-        statement_descriptor_suffix: "FLEA",
+        description: sellerLabel,
       },
       metadata: {
         item_ids: items.map((i: { id: string }) => i.id).join(","),
