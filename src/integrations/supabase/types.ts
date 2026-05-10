@@ -937,6 +937,16 @@ export type Database = {
       }
       get_email_by_username: { Args: { p_username: string }; Returns: string }
       get_nav_badges: { Args: { _user_id: string }; Returns: Json }
+      get_seller_payment_accounts: {
+        Args: { seller_ids: string[] }
+        Returns: {
+          paypal_merchant_id: string
+          paypal_onboarding_complete: boolean
+          stripe_account_id: string
+          stripe_onboarding_complete: boolean
+          user_id: string
+        }[]
+      }
       get_trending_searches: {
         Args: { limit_count?: number }
         Returns: {
@@ -947,6 +957,81 @@ export type Database = {
       get_user_region_id: { Args: { user_uuid: string }; Returns: string }
       is_region_active: { Args: { region: string }; Returns: boolean }
       is_user_blocked: { Args: { user_uuid: string }; Returns: boolean }
+      mark_order_delivered: {
+        Args: { p_order_group_id?: string; p_order_id?: string }
+        Returns: {
+          buyer_id: string
+          checkout_reference: string | null
+          created_at: string
+          delivered_at: string | null
+          id: string
+          listing_id: string
+          order_group_id: string | null
+          order_number: string | null
+          payment_method: string
+          price: number
+          refunded_at: string | null
+          seller_id: string
+          shipped_at: string | null
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_first_name: string | null
+          shipping_last_name: string | null
+          shipping_postcode: string | null
+          shipping_price: number
+          shipping_state: string | null
+          status: string
+          tracking_number: string | null
+          tracking_provider: string | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      mark_order_shipped: {
+        Args: {
+          p_order_group_id?: string
+          p_order_id?: string
+          p_tracking_number?: string
+          p_tracking_provider?: string
+        }
+        Returns: {
+          buyer_id: string
+          checkout_reference: string | null
+          created_at: string
+          delivered_at: string | null
+          id: string
+          listing_id: string
+          order_group_id: string | null
+          order_number: string | null
+          payment_method: string
+          price: number
+          refunded_at: string | null
+          seller_id: string
+          shipped_at: string | null
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_first_name: string | null
+          shipping_last_name: string | null
+          shipping_postcode: string | null
+          shipping_price: number
+          shipping_state: string | null
+          status: string
+          tracking_number: string | null
+          tracking_provider: string | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
     }
     Enums: {
       [_ in never]: never
