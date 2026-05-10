@@ -468,14 +468,14 @@ const Checkout = () => {
                     )}
                     disabled={!isShippingComplete}
                     onClick={() => {
-                      localStorage.setItem('saved_shipping_details', JSON.stringify({
+                      void saveAddress({
                         firstName: shippingFirstName.trim(),
                         lastName: shippingLastName.trim(),
                         address: shippingAddress.trim(),
                         suburb: shippingSuburb.trim(),
                         state: shippingState,
                         postcode: shippingPostcode.trim(),
-                      }));
+                      });
                       setDetailsSaved(true);
                       setSaveConfirmed(true);
                       setTimeout(() => {
