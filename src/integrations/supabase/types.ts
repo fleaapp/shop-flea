@@ -597,6 +597,8 @@ export type Database = {
           created_at: string
           email: string | null
           first_name: string | null
+          gst_alert_60k_sent_at: string | null
+          gst_alert_75k_sent_at: string | null
           id: string
           last_name: string | null
           last_sign_in_at: string | null
@@ -630,6 +632,8 @@ export type Database = {
           created_at?: string
           email?: string | null
           first_name?: string | null
+          gst_alert_60k_sent_at?: string | null
+          gst_alert_75k_sent_at?: string | null
           id?: string
           last_name?: string | null
           last_sign_in_at?: string | null
@@ -663,6 +667,8 @@ export type Database = {
           created_at?: string
           email?: string | null
           first_name?: string | null
+          gst_alert_60k_sent_at?: string | null
+          gst_alert_75k_sent_at?: string | null
           id?: string
           last_name?: string | null
           last_sign_in_at?: string | null
