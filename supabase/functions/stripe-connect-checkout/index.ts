@@ -57,11 +57,18 @@ serve(async (req) => {
     // Flea platform fee — flat 7% of items + shipping.
     const platformFeeDollars = subtotal * 0.07;
 
-    // application_fee_amount is what Flea takes off the top.
-    // Because we use on_behalf_of, the seller is the settlement merchant and
-    // Stripe deducts processing fees from the seller's balance — NOT Flea's.
-    // So Flea's application fee is JUST the 7% platform fee. Clean.
-    const applicationFeeAmount = Math.round(platformFeeDollars * 100); // in cents
+    // application_fee_amount is what Flea retains from the charge before the
+    // remainder is transferred to the seller. With destination charges, Stripe
+    // deducts processing fees from the PLATFORM balance regardless of
+    // on_behalf_of — that param only changes fee pricing (seller's country),
+    // not who pays. So we MUST add the buyer-paid processing fee into the
+    // application fee, otherwise Flea absorbs Stripe's cut out of pocket.
+    //
+    // Result per sale:
+    //   Platform balance: +buyerTotal − stripeFee − (buyerTotal − appFee)
+    //                   = appFee − stripeFee = platformFee  ✅ (clean 7%)
+    //   Seller receives: buyerTotal − appFee = subtotal − platformFee  ✅
+    const applicationFeeAmount = Math.round((platformFeeDollars + processingFee) * 100);
 
     // Build line items
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map(
@@ -110,12 +117,13 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "https://shop-flea.lovable.app";
 
     // Create checkout session.
-    // - on_behalf_of: makes the seller the merchant of record. Stripe's
-    //   processing fee comes out of the seller's balance (covered by the
-    //   buyer-paid processing fee line). Flea NEVER absorbs Stripe fees.
-    // - statement_descriptor_suffix: buyers see "FLEA" on their bank statement
-    //   instead of the seller's personal name.
-    // - PaymentIntent description: shows as "Flea order" in receipts.
+    // - transfer_data.destination: charge is on the platform; remainder after
+    //   application_fee_amount is transferred to the seller.
+    // - on_behalf_of: makes Stripe price the processing fee using the seller's
+    //   country/currency. Fees still come out of the PLATFORM balance — that's
+    //   why application_fee_amount must include the buyer-paid processing fee
+    //   so the platform nets exactly the 7% Flea fee.
+    // - statement_descriptor_suffix: buyers see "FLEA" on their bank statement.
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : userEmail,
