@@ -117,12 +117,13 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "https://shop-flea.lovable.app";
 
     // Create checkout session.
-    // - on_behalf_of: makes the seller the merchant of record. Stripe's
-    //   processing fee comes out of the seller's balance (covered by the
-    //   buyer-paid processing fee line). Flea NEVER absorbs Stripe fees.
-    // - statement_descriptor_suffix: buyers see "FLEA" on their bank statement
-    //   instead of the seller's personal name.
-    // - PaymentIntent description: shows as "Flea order" in receipts.
+    // - transfer_data.destination: charge is on the platform; remainder after
+    //   application_fee_amount is transferred to the seller.
+    // - on_behalf_of: makes Stripe price the processing fee using the seller's
+    //   country/currency. Fees still come out of the PLATFORM balance — that's
+    //   why application_fee_amount must include the buyer-paid processing fee
+    //   so the platform nets exactly the 7% Flea fee.
+    // - statement_descriptor_suffix: buyers see "FLEA" on their bank statement.
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : userEmail,
