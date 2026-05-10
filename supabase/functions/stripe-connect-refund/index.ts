@@ -17,6 +17,21 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function checkRateLimit(key: string, max: number, windowSeconds: number): Promise<boolean> {
+  try {
+    const url = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
+    const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    if (!url || !serviceKey) return true;
+    const res = await fetch(`${url}/rest/v1/rpc/check_and_record_rate_limit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+      body: JSON.stringify({ _key: key, _max: max, _window_seconds: windowSeconds }),
+    });
+    if (!res.ok) return true;
+    return (await res.json()) === true;
+  } catch { return true; }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
