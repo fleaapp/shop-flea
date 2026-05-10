@@ -70,7 +70,7 @@ const WelcomeSetupDialog = ({ open, onComplete, isGoogleUser = false }: WelcomeS
     try {
       // Check if username is already taken
       const { data: existingUser, error: checkError } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('id')
         .eq('username', `@${formattedUsername}`)
         .maybeSingle();
