@@ -94,6 +94,23 @@ const Settings = () => {
       toast.error('Failed to update pause selling status');
     }
   };
+
+  // Marketing opt-out (Spam Act compliance — transactional comms unaffected).
+  const marketingOptIn = (profile as any)?.marketing_opt_in ?? true;
+  const handleToggleMarketing = async (checked: boolean) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ marketing_opt_in: checked } as any)
+        .eq('user_id', user.id);
+      if (error) throw error;
+      await refreshProfile();
+      toast.success(checked ? 'Marketing emails on' : 'Marketing emails off');
+    } catch {
+      toast.error('Failed to update marketing preferences');
+    }
+  };
   const ProfileAvatar = () => <Avatar className="h-5 w-5">
       <AvatarImage src={profile?.avatar_url || (user?.id ? getDefaultAvatar(user.id) : '')} alt="Profile" />
       <AvatarFallback className="text-xs">👤</AvatarFallback>
