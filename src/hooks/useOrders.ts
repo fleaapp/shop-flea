@@ -368,17 +368,10 @@ export function useOrders() {
 
       if (!orderId && !orderGroupId) throw new Error('orderId or orderGroupId is required');
 
-      let query = supabase
-        .from('orders')
-        .update({
-          status: 'delivered',
-          delivered_at: new Date().toISOString(),
-        })
-        .eq('buyer_id', user.id);
-
-      query = orderGroupId ? query.eq('order_group_id', orderGroupId) : query.eq('id', orderId!);
-
-      const { error } = await query;
+      const { error } = await (supabase as any).rpc('mark_order_delivered', {
+        p_order_id: orderId ?? null,
+        p_order_group_id: orderGroupId ?? null,
+      });
       if (error) throw error;
     },
     onSuccess: (_data, variables) => {
