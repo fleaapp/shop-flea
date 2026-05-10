@@ -178,7 +178,7 @@ const Checkout = () => {
   // Determine which payment rails the seller supports
   const sellerId = validItems[0]?.sellerId;
   const sellerHasStripe = sellerId ? sellerStripeAccounts.has(sellerId) : false;
-  const sellerHasPayPal = sellerId ? sellerPayPalAccounts.has(sellerId) : false;
+  const sellerHasPayPal = PAYPAL_ENABLED && (sellerId ? sellerPayPalAccounts.has(sellerId) : false);
 
   // Buyer-selected rail. Default to Stripe if available, else PayPal.
   const defaultRail: 'stripe' | 'paypal' | null =
