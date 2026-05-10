@@ -115,16 +115,28 @@ async function sendPushNotification(userId: string, notification: Record<string,
   } catch (error) { console.error("[finalize-checkout] Push send failed:", error); }
 }
 
-function getUserId(req: Request): string | null {
+// Signature-verified JWT extraction. Uses Supabase's auth client to validate
+// the token cryptographically (not just decode it) — protects against forged
+// JWTs minted with arbitrary `sub` values.
+async function getUserId(req: Request): Promise<string | null> {
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) return null;
+  const token = authHeader.replace("Bearer ", "").trim();
+  if (!token) return null;
   try {
-    const token = authHeader.replace("Bearer ", "");
-    const payload = JSON.parse(atob(token.split(".")[1] ?? "")) as { sub?: string; exp?: number };
-    if (!payload.sub) return null;
-    if (payload.exp && payload.exp * 1000 < Date.now()) return null;
-    return payload.sub;
-  } catch { return null; }
+    const verifier = createClient(
+      Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "",
+      Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "",
+      { auth: { persistSession: false, autoRefreshToken: false } }
+    );
+    const { data, error } = await verifier.auth.getClaims(token);
+    if (error || !data?.claims?.sub) return null;
+    const exp = (data.claims as { exp?: number }).exp;
+    if (exp && exp * 1000 < Date.now()) return null;
+    return data.claims.sub as string;
+  } catch {
+    return null;
+  }
 }
 
 async function getPayPalAccessToken(): Promise<string> {
