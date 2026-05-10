@@ -339,6 +339,13 @@ serve(async (req) => {
       );
     }
 
+    if (!(await checkRateLimit(`moderate-content:${user.id}`, 60, 60))) {
+      return new Response(
+        JSON.stringify({ error: 'Too many requests. Please slow down.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Check if user is blocked
     const { data: profile } = await supabaseClient
       .from('profiles')
