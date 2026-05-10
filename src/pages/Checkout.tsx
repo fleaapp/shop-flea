@@ -20,6 +20,7 @@ import BlockedUserBanner from '@/components/BlockedUserBanner';
 import { fetchSellerShippingSettings, calculateTotalShipping, SellerShippingInfo } from '@/utils/shippingCalculator';
 import { calculateFees } from '@/utils/feeCalculator';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
+import { useBuyerAddress } from '@/hooks/useBuyerAddress';
 import { PAYPAL_ENABLED } from '@/config/features';
 
 const Checkout = () => {
@@ -49,22 +50,31 @@ const Checkout = () => {
   const [open, setOpen] = useState(true);
   const [sellerSettings, setSellerSettings] = useState<Map<string, SellerShippingInfo>>(new Map());
 
-  // Shipping details state - pre-fill from saved details
-  const savedShipping = useMemo(() => {
-    try {
-      const saved = localStorage.getItem('saved_shipping_details');
-      return saved ? JSON.parse(saved) : null;
-    } catch { return null; }
-  }, []);
-  const [detailsSaved, setDetailsSaved] = useState(!!savedShipping);
-  const [isEditing, setIsEditing] = useState(!savedShipping);
+  // Shipping details — backed by `buyer_addresses` table (RLS), with
+  // localStorage as a fast first-paint cache so the form pre-fills instantly.
+  const { address: savedShipping, hasSaved, save: saveAddress } = useBuyerAddress();
+  const [detailsSaved, setDetailsSaved] = useState(hasSaved);
+  const [isEditing, setIsEditing] = useState(!hasSaved);
   const [saveConfirmed, setSaveConfirmed] = useState(false);
-  const [shippingFirstName, setShippingFirstName] = useState(savedShipping?.firstName || '');
-  const [shippingLastName, setShippingLastName] = useState(savedShipping?.lastName || '');
-  const [shippingAddress, setShippingAddress] = useState(savedShipping?.address || '');
-  const [shippingSuburb, setShippingSuburb] = useState(savedShipping?.suburb || '');
-  const [shippingState, setShippingState] = useState(savedShipping?.state || '');
-  const [shippingPostcode, setShippingPostcode] = useState(savedShipping?.postcode || '');
+  const [shippingFirstName, setShippingFirstName] = useState(savedShipping.firstName);
+  const [shippingLastName, setShippingLastName] = useState(savedShipping.lastName);
+  const [shippingAddress, setShippingAddress] = useState(savedShipping.address);
+  const [shippingSuburb, setShippingSuburb] = useState(savedShipping.suburb);
+  const [shippingState, setShippingState] = useState(savedShipping.state);
+  const [shippingPostcode, setShippingPostcode] = useState(savedShipping.postcode);
+
+  // When the network hydrates the saved address (after first paint from cache),
+  // backfill any empty fields without clobbering anything the user has typed.
+  useEffect(() => {
+    if (!hasSaved) return;
+    setDetailsSaved(true);
+    setShippingFirstName(prev => prev || savedShipping.firstName);
+    setShippingLastName(prev => prev || savedShipping.lastName);
+    setShippingAddress(prev => prev || savedShipping.address);
+    setShippingSuburb(prev => prev || savedShipping.suburb);
+    setShippingState(prev => prev || savedShipping.state);
+    setShippingPostcode(prev => prev || savedShipping.postcode);
+  }, [hasSaved, savedShipping.firstName, savedShipping.lastName, savedShipping.address, savedShipping.suburb, savedShipping.state, savedShipping.postcode]);
 
   // Fetch seller shipping settings
   useEffect(() => {
@@ -458,14 +468,14 @@ const Checkout = () => {
                     )}
                     disabled={!isShippingComplete}
                     onClick={() => {
-                      localStorage.setItem('saved_shipping_details', JSON.stringify({
+                      void saveAddress({
                         firstName: shippingFirstName.trim(),
                         lastName: shippingLastName.trim(),
                         address: shippingAddress.trim(),
                         suburb: shippingSuburb.trim(),
                         state: shippingState,
                         postcode: shippingPostcode.trim(),
-                      }));
+                      });
                       setDetailsSaved(true);
                       setSaveConfirmed(true);
                       setTimeout(() => {

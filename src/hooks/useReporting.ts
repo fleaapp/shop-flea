@@ -37,6 +37,16 @@ export const useReporting = () => {
         }
         throw error;
       }
+
+      // Mirror to Flea Support Hub for moderation triage. Non-blocking —
+      // Hub outages must never break the user-facing report flow.
+      try {
+        await supabase.functions.invoke('forward-report-to-hub', {
+          body: { reportType, entityId, ownerId, reason },
+        });
+      } catch (e) {
+        console.warn('[useReporting] Hub mirror failed (non-fatal):', e);
+      }
     },
     onSuccess: (_, variables) => {
       const messages: Record<ReportType, string> = {
