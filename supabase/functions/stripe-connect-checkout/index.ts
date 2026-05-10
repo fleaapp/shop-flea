@@ -116,14 +116,23 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "https://shop-flea.lovable.app";
 
-    // Resolve a seller display name so the PaymentIntent description (and thus
-    // the email receipt line) attributes the sale to the seller, not "Flea".
-    // With on_behalf_of, Stripe already shows the connected account's business
-    // name as the merchant on receipts and uses the seller's statement
-    // descriptor on card statements — we just need to stop overriding it.
+    // Live re-verify that the seller can actually receive funds RIGHT NOW.
+    // We don't trust the cached profile flag — Stripe can disable charges or
+    // payouts at any time (KYC lapses, risk review, dispute volume, etc.).
+    // If we let an order through here, buyer is charged but seller can't be
+    // paid out and we end up holding the bag.
     let sellerLabel = "";
     try {
       const acct = await stripe.accounts.retrieve(sellerStripeAccountId);
+      if (!acct.charges_enabled || !acct.payouts_enabled) {
+        return new Response(
+          JSON.stringify({
+            error: "This seller is temporarily unable to accept payments. Please try again later or contact support.",
+            code: "seller_payouts_disabled",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 },
+        );
+      }
       sellerLabel =
         acct.business_profile?.name ||
         acct.settings?.dashboard?.display_name ||
@@ -131,7 +140,13 @@ serve(async (req) => {
         [acct.individual?.first_name, acct.individual?.last_name].filter(Boolean).join(" ") ||
         acct.company?.name ||
         "";
-    } catch (_) {}
+    } catch (e) {
+      console.error("[stripe-connect-checkout] account retrieve failed:", e);
+      return new Response(
+        JSON.stringify({ error: "Could not verify seller payment status. Please try again.", code: "seller_lookup_failed" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 502 },
+      );
+    }
 
     // Receipt/description: co-branded so buyers see both Flea and the seller.
     const description = sellerLabel ? `Flea — ${sellerLabel}` : "Flea order";
@@ -141,6 +156,16 @@ serve(async (req) => {
     //   the receipt; their statement descriptor drives the bank statement.
     // - statement_descriptor_suffix "FLEA": appended to seller descriptor so
     //   buyers see e.g. "SELLERCO* FLEA" on their card statement.
+    // Idempotency key derived from buyer + items + total. Prevents accidental
+    // duplicate sessions if the client retries before the first response.
+    const idemBasis = `${user.id}|${items.map((i: { id: string }) => i.id).sort().join(",")}|${Math.round(buyerTotalDollars * 100)}`;
+    let idemHash = "";
+    try {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(idemBasis));
+      idemHash = Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+    } catch { idemHash = `${Date.now()}`; }
+    const idempotencyKey = `flea-cs-${idemHash}`;
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : userEmail,
@@ -164,8 +189,9 @@ serve(async (req) => {
         platform_fee_aud: platformFeeDollars.toFixed(2),
         processing_fee_aud: processingFee.toFixed(2),
         buyer_total_aud: buyerTotalDollars.toFixed(2),
+        flea_buyer_id: user.id,
       },
-    });
+    }, { idempotencyKey });
 
     return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
