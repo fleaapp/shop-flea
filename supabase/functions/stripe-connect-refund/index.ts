@@ -42,7 +42,7 @@ serve(async (req) => {
 
     // Fetch order and verify the caller is the seller.
     const orderRes = await fetch(
-      `${externalUrl}/rest/v1/orders?id=eq.${orderId}&select=id,buyer_id,seller_id,price,shipping_price,checkout_reference,refunded_at,payment_method`,
+      `${externalUrl}/rest/v1/orders?id=eq.${orderId}&select=id,buyer_id,seller_id,price,shipping_price,checkout_reference,refunded_at,payment_method,delivered_at,created_at`,
       { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
     );
     const orders = await orderRes.json();
@@ -52,6 +52,22 @@ serve(async (req) => {
     if (order.refunded_at) throw new Error("Order already refunded");
     if (order.payment_method && order.payment_method !== "stripe") {
       throw new Error("Refund only supported for Stripe orders here");
+    }
+
+    // Refund window — server-side enforcement. Up to 10 days after delivery,
+    // or up to 30 days after order if undelivered. Beyond that, only support
+    // can refund (out of band — not via this endpoint).
+    const now = Date.now();
+    if (order.delivered_at) {
+      const deliveredMs = new Date(order.delivered_at).getTime();
+      if (now - deliveredMs > 10 * 86400_000) {
+        throw new Error("Refund window has closed (10 days after delivery).");
+      }
+    } else if (order.created_at) {
+      const createdMs = new Date(order.created_at).getTime();
+      if (now - createdMs > 30 * 86400_000) {
+        throw new Error("Refund window has closed (30 days after order).");
+      }
     }
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -66,10 +82,7 @@ serve(async (req) => {
       : session.payment_intent?.id;
     if (!paymentIntentId) throw new Error("No payment intent for this order");
 
-    // Refund — full unless `amount` provided. reverse_transfer pulls the
-    // seller's share back; refund_application_fee returns Flea's 7% to the
-    // buyer too. Net effect: clean unwind, no party out of pocket on the
-    // platform side.
+    // Idempotency key prevents double-refunds on retry/double-click.
     const refund = await stripe.refunds.create({
       payment_intent: paymentIntentId,
       ...(typeof amount === "number" && amount > 0
@@ -83,7 +96,7 @@ serve(async (req) => {
         flea_seller_id: user.id,
         flea_buyer_id: order.buyer_id,
       },
-    });
+    }, { idempotencyKey: `flea-refund-${orderId}` });
 
     // Mark order refunded. The webhook will also handle this, but we set it
     // immediately so the UI updates without waiting for the webhook.

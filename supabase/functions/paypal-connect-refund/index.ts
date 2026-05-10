@@ -51,7 +51,7 @@ serve(async (req) => {
 
     // Look up the order — checkout_reference holds the PayPal order ID.
     const orderRes = await fetch(
-      `${externalUrl}/rest/v1/orders?id=eq.${orderId}&select=id,buyer_id,seller_id,price,shipping_price,checkout_reference,refunded_at,payment_method`,
+      `${externalUrl}/rest/v1/orders?id=eq.${orderId}&select=id,buyer_id,seller_id,price,shipping_price,checkout_reference,refunded_at,payment_method,delivered_at,created_at`,
       { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
     );
     const orders = await orderRes.json();
@@ -63,6 +63,18 @@ serve(async (req) => {
       throw new Error("This endpoint only handles PayPal refunds");
     }
     if (!order.checkout_reference) throw new Error("No PayPal reference on order");
+
+    // Refund window — server-side enforcement.
+    const now = Date.now();
+    if (order.delivered_at) {
+      if (now - new Date(order.delivered_at).getTime() > 10 * 86400_000) {
+        throw new Error("Refund window has closed (10 days after delivery).");
+      }
+    } else if (order.created_at) {
+      if (now - new Date(order.created_at).getTime() > 30 * 86400_000) {
+        throw new Error("Refund window has closed (30 days after order).");
+      }
+    }
 
     const accessToken = await getPayPalAccessToken();
 
@@ -97,6 +109,7 @@ serve(async (req) => {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
           "PayPal-Partner-Attribution-Id": Deno.env.get("PAYPAL_CLIENT_ID") || "",
+          "PayPal-Request-Id": `flea-refund-${orderId}`,
         },
         body: JSON.stringify(refundBody),
       },

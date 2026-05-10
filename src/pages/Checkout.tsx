@@ -537,7 +537,7 @@ const Checkout = () => {
                     )}
                   </div>
                   <p className="text-[11px] text-muted-foreground/70">
-                    All payments are processed securely. You only see Flea — your seller's personal details are never shown.
+                    Payments are processed securely. Receipts show Flea alongside the seller's name so you always know who you're buying from.
                   </p>
                 </div>
               </div>
