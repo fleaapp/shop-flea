@@ -72,6 +72,7 @@ const EditProfile = () => {
         setFirstName(profileData.first_name || '');
         setLastName(profileData.last_name || '');
         setCountryCode(data.country_code || null);
+        setMarketingOptIn(profileData.marketing_opt_in ?? true);
       }
 
       // Check for account deletion eligibility
