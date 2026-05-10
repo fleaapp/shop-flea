@@ -47,6 +47,8 @@ const EditProfile = () => {
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [marketingOptIn, setMarketingOptIn] = useState(true);
+  const [marketingSaving, setMarketingSaving] = useState(false);
 
   // Load profile data
   useEffect(() => {
