@@ -121,7 +121,7 @@ serve(async (req) => {
     // With on_behalf_of, Stripe already shows the connected account's business
     // name as the merchant on receipts and uses the seller's statement
     // descriptor on card statements — we just need to stop overriding it.
-    let sellerLabel = "Flea order";
+    let sellerLabel = "";
     try {
       const acct = await stripe.accounts.retrieve(sellerStripeAccountId);
       sellerLabel =
@@ -130,18 +130,17 @@ serve(async (req) => {
         (acct as any).display_name ||
         [acct.individual?.first_name, acct.individual?.last_name].filter(Boolean).join(" ") ||
         acct.company?.name ||
-        sellerLabel;
-    } catch (_) {
-      // fall back to default label
-    }
+        "";
+    } catch (_) {}
+
+    // Receipt/description: co-branded so buyers see both Flea and the seller.
+    const description = sellerLabel ? `Flea — ${sellerLabel}` : "Flea order";
 
     // Create checkout session.
-    // - transfer_data.destination: charge is on the platform; remainder after
-    //   application_fee_amount is transferred to the seller.
-    // - on_behalf_of: prices processing fee in the seller's country AND makes
-    //   Stripe show the connected account's business name + statement
-    //   descriptor on the buyer's receipt and bank statement. Do NOT pass a
-    //   platform statement_descriptor_suffix here — it would mask the seller.
+    // - on_behalf_of: connected account's business name shows as merchant on
+    //   the receipt; their statement descriptor drives the bank statement.
+    // - statement_descriptor_suffix "FLEA": appended to seller descriptor so
+    //   buyers see e.g. "SELLERCO* FLEA" on their card statement.
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : userEmail,
@@ -157,7 +156,8 @@ serve(async (req) => {
         transfer_data: {
           destination: sellerStripeAccountId,
         },
-        description: sellerLabel,
+        description,
+        statement_descriptor_suffix: "FLEA",
       },
       metadata: {
         item_ids: items.map((i: { id: string }) => i.id).join(","),
