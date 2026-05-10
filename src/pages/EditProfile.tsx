@@ -13,6 +13,7 @@ import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import AvatarCropDialog from '@/components/AvatarCropDialog';
 import ChangeEmailSheet from '@/components/ChangeEmailSheet';
 import ChangePasswordSheet from '@/components/ChangePasswordSheet';
+import { Switch } from '@/components/ui/switch';
 import { safeNavigateBack } from '@/utils/safeBack';
 import {
   AlertDialog,
@@ -46,6 +47,8 @@ const EditProfile = () => {
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [marketingOptIn, setMarketingOptIn] = useState(true);
+  const [marketingSaving, setMarketingSaving] = useState(false);
 
   // Load profile data
   useEffect(() => {
@@ -69,6 +72,7 @@ const EditProfile = () => {
         setFirstName(profileData.first_name || '');
         setLastName(profileData.last_name || '');
         setCountryCode(data.country_code || null);
+        setMarketingOptIn(profileData.marketing_opt_in ?? true);
       }
 
       // Check for account deletion eligibility
@@ -376,6 +380,36 @@ const EditProfile = () => {
               <span className="text-muted-foreground">••••••••••</span>
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </button>
+          </div>
+
+          <div>
+            <Label className="text-sm font-medium text-foreground mb-2 block">Marketing emails</Label>
+            <div className="flex w-full items-center justify-between h-12 rounded-2xl bg-card px-4 card-shadow">
+              <span className="text-muted-foreground text-sm">Receive promos & updates</span>
+              <Switch
+                checked={marketingOptIn}
+                disabled={marketingSaving}
+                onCheckedChange={async (checked) => {
+                  if (!user) return;
+                  const prev = marketingOptIn;
+                  setMarketingOptIn(checked);
+                  setMarketingSaving(true);
+                  const { error } = await supabase
+                    .from('profiles')
+                    .update({ marketing_opt_in: checked } as any)
+                    .eq('user_id', user.id);
+                  setMarketingSaving(false);
+                  if (error) {
+                    setMarketingOptIn(prev);
+                    toast.error('Failed to update preference');
+                    return;
+                  }
+                  await refreshProfile();
+                  toast.success(checked ? 'Marketing emails on' : 'Marketing emails off');
+                }}
+                className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime"
+              />
+            </div>
           </div>
         </div>
 
