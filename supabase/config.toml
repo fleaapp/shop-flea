@@ -3,9 +3,6 @@ project_id = "teaicrimlqdayqpmxasc"
 [functions.moderate-content]
 verify_jwt = false
 
-[functions.create-checkout]
-verify_jwt = false
-
 [functions.stripe-connect-onboard]
 verify_jwt = false
 

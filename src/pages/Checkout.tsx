@@ -20,6 +20,7 @@ import BlockedUserBanner from '@/components/BlockedUserBanner';
 import { fetchSellerShippingSettings, calculateTotalShipping, SellerShippingInfo } from '@/utils/shippingCalculator';
 import { calculateFees } from '@/utils/feeCalculator';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
+import { PAYPAL_ENABLED } from '@/config/features';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -87,10 +88,10 @@ const Checkout = () => {
       if (items.length === 0) { setSellerStripeLoading(false); return; }
       const sellerIds = [...new Set(items.map(item => item.sellerId))];
       
-      const { data } = await supabase
-        .from('profiles' as any)
-        .select('user_id, stripe_account_id, stripe_onboarding_complete, paypal_merchant_id, paypal_onboarding_complete')
-        .in('user_id', sellerIds);
+      // Use SECURITY DEFINER RPC — base profiles table no longer exposes payment account ids cross-user.
+      const { data } = await (supabase as any).rpc('get_seller_payment_accounts', {
+        seller_ids: sellerIds,
+      });
       
       const stripeAccounts = new Map<string, string>();
       const paypalAccounts = new Map<string, string>();
@@ -177,7 +178,7 @@ const Checkout = () => {
   // Determine which payment rails the seller supports
   const sellerId = validItems[0]?.sellerId;
   const sellerHasStripe = sellerId ? sellerStripeAccounts.has(sellerId) : false;
-  const sellerHasPayPal = sellerId ? sellerPayPalAccounts.has(sellerId) : false;
+  const sellerHasPayPal = PAYPAL_ENABLED && (sellerId ? sellerPayPalAccounts.has(sellerId) : false);
 
   // Buyer-selected rail. Default to Stripe if available, else PayPal.
   const defaultRail: 'stripe' | 'paypal' | null =

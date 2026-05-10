@@ -97,16 +97,16 @@ const SellerProfile = () => {
     if (!publicError && publicData) {
       profileData = publicData as any;
     } else {
-      // Fallback to profiles table
+      // Fallback to profiles_public view (cross-user reads of base profiles are restricted)
       const { data: pData, error: pError } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at')
         .eq('user_id', sellerId)
         .maybeSingle();
 
       if (pError?.code === '42703') {
         const fallbackResult = await supabase
-          .from('profiles')
+          .from('profiles_public')
           .select('user_id, username, avatar_url, rating, pause_selling, created_at, updated_at')
           .eq('user_id', sellerId)
           .maybeSingle();

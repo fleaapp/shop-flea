@@ -28,7 +28,7 @@ export async function fetchSellerShippingSettings(sellerIds: string[]): Promise<
   const uniqueIds = [...new Set(sellerIds)];
   
   const { data } = await supabase
-    .from('profiles')
+    .from('profiles_public')
     .select('user_id, tiered_shipping_enabled, shipping_tier_1, shipping_tier_2, shipping_tier_3')
     .in('user_id', uniqueIds);
 

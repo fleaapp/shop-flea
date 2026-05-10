@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { ChevronRight } from 'lucide-react';
 import stripeLogo from '@/assets/logo-stripe.png';
 import paypalLogo from '@/assets/logo-paypal.png';
+import { PAYPAL_ENABLED } from '@/config/features';
 import { clearStripeConnectionState, getStripeConnectedStorageKey } from '@/utils/stripeConnectionState';
 import StripeOnboardingSheet from '@/components/StripeOnboardingSheet';
 
@@ -325,7 +326,8 @@ const PaymentMethodsSection = () => {
           </div>
         </div>
 
-        {/* PayPal */}
+        {/* PayPal — hidden until Partner approval lands. */}
+        {PAYPAL_ENABLED && (
         <div
           className="flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow bg-card cursor-pointer"
           onClick={paypalConnected ? undefined : handleConnectPayPal}
@@ -359,6 +361,7 @@ const PaymentMethodsSection = () => {
             )}
           </div>
         </div>
+        )}
       </div>
     </div>
     </>

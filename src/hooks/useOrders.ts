@@ -242,7 +242,7 @@ export function useOrders() {
 
       const [listingsRes, profilesRes] = await Promise.all([
         supabase.from('listings').select('id, title, images').in('id', listingIds),
-        supabase.from('profiles').select('user_id, username, avatar_url').in('user_id', allProfileIds),
+        supabase.from('profiles_public').select('user_id, username, avatar_url').in('user_id', allProfileIds),
       ]);
 
       const listingsMap = new Map(listingsRes.data?.map(l => [l.id, l]) || []);
@@ -281,7 +281,7 @@ export function useOrders() {
 
       const [listingsRes, profilesRes] = await Promise.all([
         supabase.from('listings').select('id, title, images').in('id', listingIds),
-        supabase.from('profiles').select('user_id, username, avatar_url').in('user_id', allProfileIds),
+        supabase.from('profiles_public').select('user_id, username, avatar_url').in('user_id', allProfileIds),
       ]);
 
       const listingsMap = new Map(listingsRes.data?.map(l => [l.id, l]) || []);
@@ -326,19 +326,13 @@ export function useOrders() {
       if (!user?.id) throw new Error('Not authenticated');
       if (!orderId && !orderGroupId) throw new Error('orderId or orderGroupId is required');
 
-      let query = supabase
-        .from('orders')
-        .update({
-          status: 'shipped',
-          tracking_provider: trackingProvider,
-          tracking_number: trackingNumber,
-          shipped_at: new Date().toISOString(),
-        })
-        .eq('seller_id', user.id);
-
-      query = orderGroupId ? query.eq('order_group_id', orderGroupId) : query.eq('id', orderId!);
-
-      const { error } = await query;
+      // SECURITY DEFINER RPC — only updates status/tracking/shipped_at; verifies seller_id == auth.uid()
+      const { error } = await (supabase as any).rpc('mark_order_shipped', {
+        p_order_id: orderId ?? null,
+        p_order_group_id: orderGroupId ?? null,
+        p_tracking_provider: trackingProvider,
+        p_tracking_number: trackingNumber,
+      });
       if (error) throw error;
     },
     onSuccess: (_data, variables) => {
@@ -374,17 +368,10 @@ export function useOrders() {
 
       if (!orderId && !orderGroupId) throw new Error('orderId or orderGroupId is required');
 
-      let query = supabase
-        .from('orders')
-        .update({
-          status: 'delivered',
-          delivered_at: new Date().toISOString(),
-        })
-        .eq('buyer_id', user.id);
-
-      query = orderGroupId ? query.eq('order_group_id', orderGroupId) : query.eq('id', orderId!);
-
-      const { error } = await query;
+      const { error } = await (supabase as any).rpc('mark_order_delivered', {
+        p_order_id: orderId ?? null,
+        p_order_group_id: orderGroupId ?? null,
+      });
       if (error) throw error;
     },
     onSuccess: (_data, variables) => {

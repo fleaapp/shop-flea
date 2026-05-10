@@ -110,7 +110,7 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
       // Fetch profiles for all comment authors
       const userIds = [...new Set(commentsData.map(c => c.user_id))];
       const { data: profiles } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('user_id, username, avatar_url')
         .in('user_id', userIds);
 
@@ -152,7 +152,7 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
     queryFn: async () => {
       if (!mentionQuery || mentionQuery.length < 1) return [];
       const { data, error } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('user_id, username, avatar_url')
         .ilike('username', `%${mentionQuery}%`)
         .limit(5);

@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Same region users can read public profile fields" ON public.profiles;
