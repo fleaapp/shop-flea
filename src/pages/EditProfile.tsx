@@ -13,6 +13,7 @@ import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import AvatarCropDialog from '@/components/AvatarCropDialog';
 import ChangeEmailSheet from '@/components/ChangeEmailSheet';
 import ChangePasswordSheet from '@/components/ChangePasswordSheet';
+import { Switch } from '@/components/ui/switch';
 import { safeNavigateBack } from '@/utils/safeBack';
 import {
   AlertDialog,
