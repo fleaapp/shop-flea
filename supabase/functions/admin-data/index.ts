@@ -46,6 +46,11 @@ function isMissingSchemaError(status: number, text: string) {
   return status === 404 || /PGRST20[245]|42703|relation .* does not exist|column .* does not exist|Could not find the table|Could not find .* column|schema cache/i.test(text);
 }
 
+function missingColumnName(error: unknown) {
+  const raw = String((error as any)?.message ?? error ?? "");
+  return raw.match(/column\s+(?:\w+\.)?(\w+)\s+does not exist/i)?.[1] ?? null;
+}
+
 async function rest(path: string, options: RestOptions = {}) {
   const res = await fetch(`${EXTERNAL_URL}/rest/v1/${path}`, {
     method: options.method ?? "GET",
@@ -85,6 +90,19 @@ async function safeSelect(table: string, params: Record<string, string | number 
     const data = await rest(query(table, { select: "*", ...params }), { prefer: "return=minimal" });
     return Array.isArray(data) ? data : [];
   } catch (error) {
+    const missingColumn = missingColumnName(error);
+    const select = typeof params.select === "string" ? params.select : "";
+    if ((error as any)?.missingSchema && missingColumn && select.includes(missingColumn)) {
+      const fallbackSelect = select
+        .split(",")
+        .map((part) => part.trim())
+        .filter((part) => part && part !== missingColumn)
+        .join(",");
+      if (fallbackSelect) {
+        const data = await rest(query(table, { ...params, select: fallbackSelect }), { prefer: "return=minimal" });
+        return Array.isArray(data) ? data : [];
+      }
+    }
     if ((error as any)?.missingSchema) return [];
     throw error;
   }
