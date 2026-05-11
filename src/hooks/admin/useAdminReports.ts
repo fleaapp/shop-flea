@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Report, ReportFilter } from '@/types/admin/reports';
 import { useToast } from '@/hooks/use-toast';
+import { callAdminData } from './useAdminData';
 
 export function useAdminReports() {
   const [reports, setReports] = useState<Report[]>([]);
@@ -10,49 +10,25 @@ export function useAdminReports() {
   const { toast } = useToast();
 
   const fetchReports = useCallback(async () => {
+    setLoading(true);
     try {
-      let query = (supabase as any).from('reports').select('*').order('created_at', { ascending: false });
-      if (filter !== 'all') query = query.eq('status', filter);
-      const { data, error } = await query;
-      if (error) throw error;
-
-      const enriched = await Promise.all(
-        (data || []).map(async (report: any) => {
-          const [reportedProfile, reporterProfile] = await Promise.all([
-            (supabase as any).from('profiles').select('username, avatar_url').eq('user_id', report.reported_user_id).maybeSingle(),
-            (supabase as any).from('profiles').select('username, avatar_url').eq('user_id', report.reporter_user_id).maybeSingle(),
-          ]);
-          return {
-            ...report,
-            reported_user_profile: reportedProfile.data || { username: 'Unknown', avatar_url: null },
-            reporter_user_profile: reporterProfile.data || { username: 'Unknown', avatar_url: null },
-          } as Report;
-        })
-      );
-      setReports(enriched);
+      const data = await callAdminData<{ reports: Report[] }>('listReports', { filter });
+      setReports(data.reports || []);
     } catch (e) {
+      console.error('reports fetch failed', e);
       toast({ title: 'Error', description: 'Failed to fetch reports', variant: 'destructive' });
     } finally { setLoading(false); }
   }, [filter, toast]);
 
   useEffect(() => { fetchReports(); }, [fetchReports]);
 
-  useEffect(() => {
-    const channel = supabase.channel('admin-reports-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reports' }, () => fetchReports())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [fetchReports]);
-
   const updateReportStatus = async (id: string, status: 'accepted' | 'rejected', adminNotes?: string) => {
     try {
-      const update: Record<string, unknown> = { status };
-      if (adminNotes !== undefined) update.admin_notes = adminNotes;
-      const { error } = await (supabase as any).from('reports').update(update).eq('id', id);
-      if (error) throw error;
+      await callAdminData('updateReportStatus', { id, status, adminNotes });
       toast({ title: 'Updated', description: `Report ${status}` });
       fetchReports();
     } catch (e) {
+      console.error('report update failed', e);
       toast({ title: 'Error', description: 'Failed to update report', variant: 'destructive' });
     }
   };

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { ChatMessage } from '@/types/admin/chat';
 import { useToast } from '@/hooks/use-toast';
+import { callAdminData } from './useAdminData';
 
 export function useAdminChatMessages(threadId: string | null) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -13,48 +13,29 @@ export function useAdminChatMessages(threadId: string | null) {
     if (!threadId) { setMessages([]); return; }
     setLoading(true);
     try {
-      const { data, error } = await (supabase as any).from('chat_messages').select('*')
-        .eq('thread_id', threadId).order('created_at', { ascending: true });
-      if (error) throw error;
-      setMessages((data || []) as ChatMessage[]);
-      await (supabase as any).from('chat_messages').update({ read: true })
-        .eq('thread_id', threadId).eq('sender_type', 'user').eq('read', false);
+      const data = await callAdminData<{ messages: ChatMessage[] }>('getThreadMessages', { threadId });
+      setMessages(data.messages || []);
     } catch (e) {
+      console.error('admin messages fetch failed', e);
       toast({ title: 'Error', description: 'Failed to fetch messages', variant: 'destructive' });
     } finally { setLoading(false); }
   }, [threadId, toast]);
 
   useEffect(() => { fetchMessages(); }, [fetchMessages]);
 
-  useEffect(() => {
-    if (!threadId) return;
-    const channel = supabase.channel(`admin-messages-${threadId}`)
-      .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `thread_id=eq.${threadId}` },
-        (payload) => {
-          const m = payload.new as ChatMessage;
-          setMessages((prev) => [...prev, m]);
-          if (m.sender_type === 'user') {
-            (supabase as any).from('chat_messages').update({ read: true }).eq('id', m.id);
-          }
-        }
-      ).subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [threadId]);
-
   const sendMessage = async (message: string, attachmentUrl?: string) => {
     if (!threadId) return;
     setSending(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { toast({ title: 'Error', description: 'Not signed in', variant: 'destructive' }); return; }
-      const { error } = await (supabase as any).from('chat_messages').insert({
-        thread_id: threadId, sender_id: user.id, sender_type: 'support',
-        message, attachment_url: attachmentUrl || null, read: false,
+      const data = await callAdminData<{ message?: ChatMessage }>('sendSupportMessage', {
+        threadId,
+        message,
+        attachmentUrl: attachmentUrl || null,
       });
-      if (error) throw error;
-      await (supabase as any).from('chat_threads').update({ updated_at: new Date().toISOString() }).eq('id', threadId);
+      if (data.message) setMessages((prev) => [...prev, data.message as ChatMessage]);
+      else fetchMessages();
     } catch (e) {
+      console.error('admin message send failed', e);
       toast({ title: 'Error', description: 'Failed to send message', variant: 'destructive' });
     } finally { setSending(false); }
   };
