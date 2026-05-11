@@ -103,7 +103,22 @@ export default {
   				navy: 'hsl(var(--flea-navy))',
   				charcoal: 'hsl(var(--flea-charcoal))',
   				cream: 'hsl(var(--flea-cream))'
-  			}
+  			},
+  			status: {
+  				active: 'hsl(var(--status-active))',
+  				'active-foreground': 'hsl(var(--status-active-foreground))',
+  				resolved: 'hsl(var(--status-resolved))',
+  				'resolved-foreground': 'hsl(var(--status-resolved-foreground))'
+  			},
+  			support: {
+  				bubble: 'hsl(var(--support-bubble))',
+  				'bubble-foreground': 'hsl(var(--support-bubble-foreground))'
+  			},
+  			user: {
+  				bubble: 'hsl(var(--user-bubble))',
+  				'bubble-foreground': 'hsl(var(--user-bubble-foreground))'
+  			},
+  			unread: 'hsl(var(--unread))'
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
