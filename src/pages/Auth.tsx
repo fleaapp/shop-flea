@@ -165,7 +165,7 @@ const Auth = () => {
     // Password validation: min 8 chars, 1 capital letter, 1 number, 1 symbol
     const hasCapital = /[A-Z]/.test(signupPassword);
     const hasNumber = /\d/.test(signupPassword);
-    const hasSymbol = /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;'/`~]/.test(signupPassword);
+    const hasSymbol = /[!@#$%^&*(),.?":{}|<>_+=\-[\]\\;'/`~]/.test(signupPassword);
     if (signupPassword.length < 8) {
       toast.error('Password must be at least 8 characters');
       return;
