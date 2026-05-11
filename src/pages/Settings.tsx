@@ -15,6 +15,7 @@ import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
 import { useOnboarding } from '@/context/OnboardingContext';
 import PaymentMethodsSection from '@/components/PaymentMethodsSection';
 import { useUnreadSupport } from '@/hooks/useUnreadSupport';
+import { useAdminRole } from '@/hooks/useAdminRole';
 const Settings = () => {
   const navigate = useNavigate();
   const {
