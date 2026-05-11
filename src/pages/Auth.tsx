@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { lovable } from '@/integrations/lovable';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import fleaLogoAuth from '@/assets/flea-logo-auth.jpeg';
@@ -260,22 +261,16 @@ const Auth = () => {
 
   const handleGoogleSignIn = async () => {
     try {
-      // Mark that user is signing in via Google BEFORE redirect — this flag survives the OAuth redirect
       localStorage.setItem('flea_oauth_signup', '1');
-      
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-          queryParams: {
-            prompt: 'select_account',
-          },
-        },
+
+      const result = await lovable.auth.signInWithOAuth('google', {
+        redirect_uri: window.location.origin,
+        extraParams: { prompt: 'select_account' },
       });
-      
-      if (error) {
+
+      if (result.error) {
         localStorage.removeItem('flea_oauth_signup');
-        console.error('Google sign-in error:', error);
+        console.error('Google sign-in error:', result.error);
         toast.error('Google sign-in failed. Please try again.');
       }
     } catch (err) {
@@ -287,19 +282,15 @@ const Auth = () => {
 
   const handleAppleSignIn = async () => {
     try {
-      // Mark that user is signing in via OAuth BEFORE redirect
       localStorage.setItem('flea_oauth_signup', '1');
-      
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'apple',
-        options: {
-          redirectTo: window.location.origin,
-        },
+
+      const result = await lovable.auth.signInWithOAuth('apple', {
+        redirect_uri: window.location.origin,
       });
-      
-      if (error) {
+
+      if (result.error) {
         localStorage.removeItem('flea_oauth_signup');
-        console.error('Apple sign-in error:', error);
+        console.error('Apple sign-in error:', result.error);
         toast.error('Apple sign-in failed. Please try again.');
       }
     } catch (err) {
