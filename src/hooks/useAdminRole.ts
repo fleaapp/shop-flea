@@ -18,16 +18,13 @@ export function useAdminRole() {
         return;
       }
       try {
-        const { data, error } = await supabase.rpc('has_role' as any, {
-          _user_id: user.id,
-          _role: 'admin',
-        });
+        const { data, error } = await supabase.functions.invoke('admin-check-role');
         if (cancelled) return;
         if (error) {
-          console.error('has_role check failed', error);
+          console.error('admin-check-role failed', error);
           setIsAdmin(false);
         } else {
-          setIsAdmin(Boolean(data));
+          setIsAdmin(Boolean((data as any)?.isAdmin));
         }
       } catch (e) {
         console.error('admin check error', e);
