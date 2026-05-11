@@ -6,7 +6,7 @@ const CLOUD_FN_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supaba
 const CLOUD_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
 export function useAdminRole() {
-  const { user, session } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -15,11 +15,15 @@ export function useAdminRole() {
     async function check() {
       if (!user) {
         if (!cancelled) {
-          setIsAdmin(false);
-          setLoading(false);
+          setIsAdmin(null);
+          setLoading(authLoading);
         }
         return;
       }
+
+      setIsAdmin(null);
+      setLoading(true);
+
       try {
         // Get a fresh access token from the external auth session
         let token = session?.access_token;
@@ -52,7 +56,7 @@ export function useAdminRole() {
     return () => {
       cancelled = true;
     };
-  }, [user, session]);
+  }, [user, session, authLoading]);
 
-  return { isAdmin: !!isAdmin, loading };
+  return { isAdmin: isAdmin === true, loading };
 }

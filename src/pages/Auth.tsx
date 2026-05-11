@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { lovable } from '@/integrations/lovable';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import fleaLogoAuth from '@/assets/flea-logo-auth.jpeg';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import RegionBlockedScreen from '@/components/RegionBlockedScreen';
 
 const Auth = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, signIn, signUp, loading: authLoading } = useAuth();
   const { markUserAsOnboarded } = useOnboarding();
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
@@ -34,6 +35,9 @@ const Auth = () => {
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [passwordFocused, setPasswordFocused] = useState(false);
+
+  const redirectParam = new URLSearchParams(location.search).get('redirect');
+  const redirectTo = redirectParam?.startsWith('/') && !redirectParam.startsWith('//') ? redirectParam : '/';
   
   // Detect user location on mount
   useEffect(() => {
@@ -68,9 +72,9 @@ const Auth = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (user && !authLoading) {
-      navigate('/');
+      navigate(redirectTo, { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, redirectTo]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -148,7 +152,7 @@ const Auth = () => {
       }
       setIsLoading(false);
     } else {
-      navigate('/');
+      navigate(redirectTo, { replace: true });
     }
   };
 
@@ -161,7 +165,7 @@ const Auth = () => {
     // Password validation: min 8 chars, 1 capital letter, 1 number, 1 symbol
     const hasCapital = /[A-Z]/.test(signupPassword);
     const hasNumber = /\d/.test(signupPassword);
-    const hasSymbol = /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;'/`~]/.test(signupPassword);
+    const hasSymbol = /[!@#$%^&*(),.?":{}|<>_+=\-[\]\\;'/`~]/.test(signupPassword);
     if (signupPassword.length < 8) {
       toast.error('Password must be at least 8 characters');
       return;
