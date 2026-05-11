@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Headphones, MessageCircle, CheckCircle, BarChart3, ArrowLeft } from 'lucide-react';
+import { Headphones, MessageCircle, CheckCircle, BarChart3, ArrowLeft, Users, Package } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface DashboardHeaderProps {
