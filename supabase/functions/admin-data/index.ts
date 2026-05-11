@@ -170,7 +170,7 @@ function unique(values: Array<string | null | undefined>) {
   return [...new Set(values.filter(Boolean) as string[])];
 }
 
-const ORDER_ADMIN_SELECT = "id,listing_id,buyer_id,seller_id,order_group_id,price,shipping_price,status,tracking_number,tracking_provider,shipped_at,delivered_at,created_at,updated_at,order_number,payment_method,checkout_reference,shipping_city,shipping_state,shipping_postcode";
+const ORDER_ADMIN_SELECT = "id,listing_id,buyer_id,seller_id,order_group_id,price,shipping_price,status,tracking_number,tracking_provider,shipped_at,delivered_at,created_at,updated_at,order_number,checkout_reference,shipping_city,shipping_state,shipping_postcode";
 
 async function profilesByUserIds(userIds: string[]) {
   if (userIds.length === 0) return new Map<string, { username: string; avatar_url: string | null; status?: string | null }>();
@@ -488,6 +488,7 @@ async function listTransactions() {
 
   const enriched = orders.map((o: any) => ({
     ...o,
+    payment_method: o.payment_method ?? "stripe",
     listing: listingMap.get(o.listing_id) ?? null,
     buyer_profile: profileMap.get(o.buyer_id) ?? { username: "Unknown", avatar_url: null },
     seller_profile: profileMap.get(o.seller_id) ?? { username: "Unknown", avatar_url: null },
@@ -817,7 +818,7 @@ async function listSystemIssues() {
     safeSelect("listings", { status: "eq.active", select: "id,user_id,title,brand,images,report_count,region_id,shipping_price,created_at" }),
     safeSelect("listings", { status: "eq.sold", select: "id,user_id,title,updated_at" }),
     safeSelect("profiles", { select: "user_id,username,status,report_strike_count,stripe_account_id,stripe_onboarding_complete,paypal_merchant_id,paypal_onboarding_complete,pause_selling" }),
-    safeSelect("orders", { status: "eq.awaiting", select: "id,buyer_id,seller_id,listing_id,price,created_at,checkout_reference,payment_method" }),
+    safeSelect("orders", { status: "eq.awaiting", select: "id,buyer_id,seller_id,listing_id,price,created_at,checkout_reference" }),
     safeSelect("orders", { status: "eq.shipped", select: "id,buyer_id,seller_id,listing_id,shipped_at,tracking_number,tracking_provider,delivered_at" }),
     safeSelect("orders", { status: "eq.refunded", select: "id,refunded_at,updated_at,buyer_id,seller_id" }),
     safeSelect("reports", { status: "eq.pending", order: "created_at.asc", select: "id,created_at,report_type,reported_user_id,reported_entity_id" }),
