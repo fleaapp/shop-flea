@@ -411,7 +411,7 @@ async function listTransactions() {
   const sellerIds = unique(orders.map((o: any) => o.seller_id));
   const userIds = unique([...buyerIds, ...sellerIds]);
   const listingIds = unique(orders.map((o: any) => o.listing_id));
-  const orderIds = unique(orders.map((o: any) => o.id));
+  const groupIds = unique(orders.map((o: any) => o.order_group_id).filter(Boolean));
 
   const [profiles, listings, messages] = await Promise.all([
     userIds.length
@@ -420,8 +420,8 @@ async function listTransactions() {
     listingIds.length
       ? safeSelect("listings", { id: `in.(${listingIds.join(",")})` })
       : Promise.resolve([] as any[]),
-    orderIds.length
-      ? safeSelect("order_messages", { order_id: `in.(${orderIds.join(",")})`, select: "order_id" })
+    groupIds.length
+      ? safeSelect("order_messages", { order_group_id: `in.(${groupIds.join(",")})`, select: "order_group_id" })
       : Promise.resolve([] as any[]),
   ]);
 
@@ -438,7 +438,8 @@ async function listTransactions() {
   );
   const msgCounts = new Map<string, number>();
   for (const m of messages as any[]) {
-    msgCounts.set(m.order_id, (msgCounts.get(m.order_id) ?? 0) + 1);
+    if (!m.order_group_id) continue;
+    msgCounts.set(m.order_group_id, (msgCounts.get(m.order_group_id) ?? 0) + 1);
   }
 
   const enriched = orders.map((o: any) => ({
@@ -446,7 +447,7 @@ async function listTransactions() {
     listing: listingMap.get(o.listing_id) ?? null,
     buyer_profile: profileMap.get(o.buyer_id) ?? { username: "Unknown", avatar_url: null },
     seller_profile: profileMap.get(o.seller_id) ?? { username: "Unknown", avatar_url: null },
-    message_count: msgCounts.get(o.id) ?? 0,
+    message_count: o.order_group_id ? (msgCounts.get(o.order_group_id) ?? 0) : 0,
   }));
 
   return { orders: enriched };
