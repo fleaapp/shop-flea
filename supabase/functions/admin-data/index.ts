@@ -170,7 +170,7 @@ function unique(values: Array<string | null | undefined>) {
   return [...new Set(values.filter(Boolean) as string[])];
 }
 
-const ORDER_ADMIN_SELECT = "id,listing_id,buyer_id,seller_id,order_group_id,price,shipping_price,status,tracking_number,tracking_provider,shipped_at,delivered_at,created_at,updated_at,order_number,payment_method,checkout_reference,shipping_city,shipping_state,shipping_postcode";
+const ORDER_ADMIN_SELECT = "id,listing_id,buyer_id,seller_id,order_group_id,price,shipping_price,status,tracking_number,tracking_provider,shipped_at,delivered_at,created_at,updated_at,order_number,checkout_reference,shipping_city,shipping_state,shipping_postcode";
 
 async function profilesByUserIds(userIds: string[]) {
   if (userIds.length === 0) return new Map<string, { username: string; avatar_url: string | null; status?: string | null }>();
@@ -488,6 +488,7 @@ async function listTransactions() {
 
   const enriched = orders.map((o: any) => ({
     ...o,
+    payment_method: o.payment_method ?? "stripe",
     listing: listingMap.get(o.listing_id) ?? null,
     buyer_profile: profileMap.get(o.buyer_id) ?? { username: "Unknown", avatar_url: null },
     seller_profile: profileMap.get(o.seller_id) ?? { username: "Unknown", avatar_url: null },
