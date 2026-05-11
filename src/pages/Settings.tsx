@@ -183,7 +183,13 @@ const Settings = () => {
       onExpand: () => setHelpCentreExpanded(!helpCentreExpanded),
       isExpanded: helpCentreExpanded,
       badge: supportUnread || undefined
-    }, {
+    },
+    ...(isAdmin ? [{
+      icon: <span className="text-base">🛡️</span>,
+      label: 'Admin Dashboard',
+      action: () => navigate('/admin')
+    }] : []),
+    {
       icon: <span className="text-base">🚪</span>,
       label: 'Logout',
       action: handleLogout,
