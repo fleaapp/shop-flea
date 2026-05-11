@@ -39,6 +39,7 @@ export default function AdminDashboard() {
   const { messages, loading: mLoading, sending, sendMessage } = useAdminChatMessages(selectedThreadId);
   const {
     reports,
+    topReportedUsers,
     loading: rLoading,
     filter: reportFilter,
     setFilter: setReportFilter,
