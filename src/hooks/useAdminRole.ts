@@ -43,7 +43,6 @@ export function useAdminRole() {
         });
         const json = await res.json().catch(() => ({}));
         if (cancelled) return;
-        console.log('[admin-check-role] response', json);
         setIsAdmin(Boolean(json?.isAdmin));
       } catch (e) {
         console.error('admin check error', e);
