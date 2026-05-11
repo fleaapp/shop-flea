@@ -502,7 +502,7 @@ async function listUsers(payload: any = {}) {
     const t = buyerStats.get(o.buyer_id) ?? { count: 0, volume: 0, refunds: 0 };
     t.count += 1;
     t.volume += Number(o.price ?? 0) + Number(o.shipping_price ?? 0);
-    if (o.refunded_at || o.status === "refunded") t.refunds += 1;
+    if (o.status === "refunded") t.refunds += 1;
     buyerStats.set(o.buyer_id, t);
   }
   const sellerStats = new Map<string, { count: number; volume: number; refunds: number }>();
