@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, MessageCircle, Flag, ShieldBan, Mailbox, Loader2, RefreshCw, Send } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -263,7 +263,7 @@ function FilterBar<T extends string>({ value, options, onChange }: {
 function List({ loading, empty, children }: {
   loading: boolean;
   empty: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const hasItems = Array.isArray(children) ? children.length > 0 : Boolean(children);
   if (loading) return <Loader />;
