@@ -15,11 +15,15 @@ export function useAdminRole() {
     async function check() {
       if (!user) {
         if (!cancelled) {
-          setIsAdmin(false);
-          setLoading(false);
+          setIsAdmin(null);
+          setLoading(true);
         }
         return;
       }
+
+      setIsAdmin(null);
+      setLoading(true);
+
       try {
         // Get a fresh access token from the external auth session
         let token = session?.access_token;
@@ -54,5 +58,5 @@ export function useAdminRole() {
     };
   }, [user, session]);
 
-  return { isAdmin: !!isAdmin, loading };
+  return { isAdmin: isAdmin === true, loading };
 }
