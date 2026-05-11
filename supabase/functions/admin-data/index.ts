@@ -776,6 +776,16 @@ Deno.serve(async (req) => {
         return response(await markSuggestionRead(payload.id));
       case "listTransactions":
         return response(await listTransactions());
+      case "listUsers":
+        return response(await listUsers(payload));
+      case "getUserDetail":
+        return response(await getUserDetail(payload.userId));
+      case "userAction":
+        return response(await userAction(auth.userId, payload));
+      case "listListings":
+        return response(await listListings(payload));
+      case "listingAction":
+        return response(await listingAction(payload));
       default:
         return response({ error: "Unknown admin action" }, 400);
     }
