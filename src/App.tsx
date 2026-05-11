@@ -47,6 +47,8 @@ const loadTerms = () => import("./pages/Terms");
 const loadPrivacyPolicy = () => import("./pages/PrivacyPolicy");
 const loadAdminDashboard = () => import("./pages/admin/AdminDashboard");
 const loadAdminTransactions = () => import("./pages/admin/AdminTransactions");
+const loadAdminUsers = () => import("./pages/admin/AdminUsers");
+const loadAdminListings = () => import("./pages/admin/AdminListings");
 
 const ListingDetails = lazy(loadListingDetails);
 const Favorites = lazy(loadFavorites);
