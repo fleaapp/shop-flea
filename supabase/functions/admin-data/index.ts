@@ -21,7 +21,8 @@ type AdminAction =
   | "banUser"
   | "updateBanStatus"
   | "listSuggestions"
-  | "markSuggestionRead";
+  | "markSuggestionRead"
+  | "listTransactions";
 
 type RestOptions = {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
