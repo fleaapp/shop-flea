@@ -10,6 +10,8 @@ import { useAdminChatMessages } from '@/hooks/admin/useAdminChatMessages';
 import { useAdminReports } from '@/hooks/admin/useAdminReports';
 import { useAdminBannedUsers } from '@/hooks/admin/useAdminBannedUsers';
 import { useAdminSuggestions } from '@/hooks/admin/useAdminSuggestions';
+import type { ThreadFilter } from '@/types/admin/chat';
+import type { BanFilter, ReportFilter } from '@/types/admin/reports';
 import { formatDistanceToNow } from 'date-fns';
 
 const formatWhen = (value?: string | null) => {
@@ -119,7 +121,7 @@ export default function AdminDashboard() {
         {tab === 'support' && (
           <section className="grid gap-3 lg:grid-cols-[minmax(280px,360px)_1fr]">
             <div>
-              <FilterBar value={threadFilter} options={['all', 'active', 'resolved']} onChange={setThreadFilter} />
+              <FilterBar<ThreadFilter> value={threadFilter} options={['all', 'active', 'resolved']} onChange={setThreadFilter} />
               <List loading={tLoading} empty="No conversations">
                 {threads.map((thread) => (
                   <button
@@ -179,7 +181,7 @@ export default function AdminDashboard() {
 
         {tab === 'reports' && (
           <section>
-            <FilterBar value={reportFilter} options={['all', 'pending', 'accepted', 'rejected']} onChange={setReportFilter} />
+            <FilterBar<ReportFilter> value={reportFilter} options={['all', 'pending', 'accepted', 'rejected']} onChange={setReportFilter} />
             <List loading={rLoading} empty="No reports">
               {reports.map((report) => (
                 <div key={report.id} className="rounded-lg border border-border bg-card p-3">
@@ -203,7 +205,7 @@ export default function AdminDashboard() {
 
         {tab === 'bans' && (
           <section>
-            <FilterBar value={banFilter} options={['all', 'active', 'lifted']} onChange={setBanFilter} />
+            <FilterBar<BanFilter> value={banFilter} options={['all', 'active', 'lifted']} onChange={setBanFilter} />
             <List loading={bLoading} empty="No bans">
               {bannedUsers.map((ban) => (
                 <div key={ban.id} className="rounded-lg border border-border bg-card p-3">
