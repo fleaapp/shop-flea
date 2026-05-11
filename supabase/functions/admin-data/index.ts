@@ -43,7 +43,7 @@ function response(body: Record<string, unknown>, status = 200) {
 }
 
 function isMissingSchemaError(status: number, text: string) {
-  return status === 404 || /PGRST20[245]|relation .* does not exist|Could not find the table|Could not find .* column|schema cache/i.test(text);
+  return status === 404 || /PGRST20[245]|42703|relation .* does not exist|column .* does not exist|Could not find the table|Could not find .* column|schema cache/i.test(text);
 }
 
 async function rest(path: string, options: RestOptions = {}) {
@@ -455,6 +455,7 @@ async function listTransactions() {
     message_count: o.order_group_id ? (msgCounts.get(o.order_group_id) ?? 0) : 0,
   }));
 
+  return { orders: enriched };
 }
 
 // ----------------- Users -----------------
