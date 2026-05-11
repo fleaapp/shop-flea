@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 
+const CLOUD_FN_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/admin-check-role`;
+const CLOUD_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+
 export function useAdminRole() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -18,14 +21,26 @@ export function useAdminRole() {
         return;
       }
       try {
-        const { data, error } = await supabase.functions.invoke('admin-check-role');
-        if (cancelled) return;
-        if (error) {
-          console.error('admin-check-role failed', error);
-          setIsAdmin(false);
-        } else {
-          setIsAdmin(Boolean((data as any)?.isAdmin));
+        // Get a fresh access token from the external auth session
+        let token = session?.access_token;
+        if (!token) {
+          const { data } = await supabase.auth.getSession();
+          token = data.session?.access_token;
         }
+
+        const res = await fetch(CLOUD_FN_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: CLOUD_ANON,
+            Authorization: token ? `Bearer ${token}` : `Bearer ${CLOUD_ANON}`,
+          },
+          body: JSON.stringify({}),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        console.log('[admin-check-role] response', json);
+        setIsAdmin(Boolean(json?.isAdmin));
       } catch (e) {
         console.error('admin check error', e);
         if (!cancelled) setIsAdmin(false);
@@ -37,7 +52,7 @@ export function useAdminRole() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, session]);
 
   return { isAdmin: !!isAdmin, loading };
 }
