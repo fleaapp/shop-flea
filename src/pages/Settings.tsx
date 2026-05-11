@@ -15,6 +15,7 @@ import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
 import { useOnboarding } from '@/context/OnboardingContext';
 import PaymentMethodsSection from '@/components/PaymentMethodsSection';
 import { useUnreadSupport } from '@/hooks/useUnreadSupport';
+import { useAdminRole } from '@/hooks/useAdminRole';
 const Settings = () => {
   const navigate = useNavigate();
   const {
@@ -33,6 +34,7 @@ const Settings = () => {
     total: supportUnread
   } = useUnreadSupport();
   const { triggerSubscribe } = usePushNotifications();
+  const { isAdmin } = useAdminRole();
 
   // Notifications toggle state
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
@@ -181,7 +183,13 @@ const Settings = () => {
       onExpand: () => setHelpCentreExpanded(!helpCentreExpanded),
       isExpanded: helpCentreExpanded,
       badge: supportUnread || undefined
-    }, {
+    },
+    ...(isAdmin ? [{
+      icon: <span className="text-base">🛡️</span>,
+      label: 'Admin Dashboard',
+      action: () => navigate('/admin')
+    }] : []),
+    {
       icon: <span className="text-base">🚪</span>,
       label: 'Logout',
       action: handleLogout,

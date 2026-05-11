@@ -233,16 +233,86 @@ async function listReports(filter = "all") {
     updated_at: report.updated_at ?? report.created_at,
   }));
 
-  if (filter !== "all") reports = reports.filter((report: any) => report.status === filter);
+  const filtered = filter === "all" ? reports : reports.filter((report: any) => report.status === filter);
 
-  const profileMap = await profilesByUserIds(unique(reports.flatMap((report: any) => [report.reported_user_id, report.reporter_user_id])));
-  return {
-    reports: reports.map((report: any) => ({
+  const profileMap = await profilesByUserIds(
+    unique(reports.flatMap((report: any) => [report.reported_user_id, report.reporter_user_id]))
+  );
+
+  // Fetch reported entities (listings + comments) referenced by visible reports
+  const listingIds = unique(filtered.filter((r: any) => r.report_type === "listing").map((r: any) => r.reported_item_id));
+  const commentIds = unique(filtered.filter((r: any) => r.report_type === "comment").map((r: any) => r.reported_item_id));
+
+  const [listings, comments] = await Promise.all([
+    listingIds.length
+      ? safeSelect("listings", { id: `in.(${listingIds.join(",")})` })
+      : Promise.resolve([] as any[]),
+    commentIds.length
+      ? safeSelect("listing_comments", { id: `in.(${commentIds.join(",")})` })
+      : Promise.resolve([] as any[]),
+  ]);
+
+  const listingMap = new Map<string, any>(listings.map((l: any) => [l.id, l]));
+  const commentMap = new Map<string, any>(comments.map((c: any) => [c.id, c]));
+
+  // Per-user report tally (across ALL reports, not just current filter)
+  const tallyMap = new Map<string, { count: number; pending: number; accepted: number; rejected: number }>();
+  for (const r of reports) {
+    const uid = r.reported_user_id;
+    if (!uid) continue;
+    const t = tallyMap.get(uid) ?? { count: 0, pending: 0, accepted: 0, rejected: 0 };
+    t.count += 1;
+    if (r.status === "pending") t.pending += 1;
+    else if (r.status === "accepted") t.accepted += 1;
+    else if (r.status === "rejected") t.rejected += 1;
+    tallyMap.set(uid, t);
+  }
+
+  const enrichedReports = filtered.map((report: any) => {
+    let reported_entity: any = null;
+    if (report.report_type === "listing") {
+      const l = listingMap.get(report.reported_item_id);
+      if (l) reported_entity = {
+        kind: "listing",
+        id: l.id,
+        title: l.title,
+        price: l.price,
+        image: Array.isArray(l.images) ? l.images[0] ?? null : null,
+        status: l.status,
+      };
+    } else if (report.report_type === "comment") {
+      const c = commentMap.get(report.reported_item_id);
+      if (c) reported_entity = {
+        kind: "comment",
+        id: c.id,
+        content: c.content,
+        listing_id: c.listing_id,
+      };
+    } else if (report.report_type === "user") {
+      const p = profileMap.get(report.reported_user_id);
+      reported_entity = { kind: "user", id: report.reported_user_id, username: p?.username ?? "Unknown" };
+    }
+    const tally = tallyMap.get(report.reported_user_id);
+    return {
       ...report,
       reported_user_profile: profileMap.get(report.reported_user_id) ?? { username: "Unknown", avatar_url: null },
       reporter_user_profile: profileMap.get(report.reporter_user_id) ?? { username: "Unknown", avatar_url: null },
-    })),
-  };
+      reported_entity,
+      reported_user_total_reports: tally?.count ?? 1,
+    };
+  });
+
+  // Top reported users summary
+  const topReportedUsers = [...tallyMap.entries()]
+    .map(([user_id, t]) => ({
+      user_id,
+      ...t,
+      profile: profileMap.get(user_id) ?? { username: "Unknown", avatar_url: null },
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 25);
+
+  return { reports: enrichedReports, topReportedUsers };
 }
 
 async function updateReportStatus(id: string, status: string, adminNotes?: string) {

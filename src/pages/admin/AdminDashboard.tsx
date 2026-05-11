@@ -39,6 +39,7 @@ export default function AdminDashboard() {
   const { messages, loading: mLoading, sending, sendMessage } = useAdminChatMessages(selectedThreadId);
   const {
     reports,
+    topReportedUsers,
     loading: rLoading,
     filter: reportFilter,
     setFilter: setReportFilter,
@@ -180,25 +181,94 @@ export default function AdminDashboard() {
         )}
 
         {tab === 'reports' && (
-          <section>
+          <section className="space-y-4">
+            {topReportedUsers.length > 0 && (
+              <div className="rounded-lg border border-border bg-card p-3">
+                <p className="mb-2 text-sm font-semibold">Top reported users</p>
+                <div className="flex flex-wrap gap-2">
+                  {topReportedUsers.slice(0, 12).map((u) => (
+                    <div key={u.user_id} className="flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs">
+                      <span className="font-medium">{u.profile.username}</span>
+                      <Badge variant={u.pending > 0 ? 'destructive' : 'secondary'} className="h-5 px-1.5 text-[10px]">
+                        {u.count}
+                      </Badge>
+                      {u.pending > 0 && <span className="text-[10px] text-muted-foreground">{u.pending} pending</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <FilterBar<ReportFilter> value={reportFilter} options={['all', 'pending', 'accepted', 'rejected']} onChange={setReportFilter} />
             <List loading={rLoading} empty="No reports">
-              {reports.map((report) => (
-                <div key={report.id} className="rounded-lg border border-border bg-card p-3">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium">{report.report_type} report — {report.reported_user_profile?.username || '?'}</p>
-                      <p className="text-sm text-muted-foreground">by {report.reporter_user_profile?.username || '?'}: {report.reason || 'No reason provided'}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">{report.status} · {formatWhen(report.created_at)}</p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button variant="outline" size="sm" onClick={() => updateReportStatus(report.id, 'accepted')}>Accept</Button>
-                      <Button variant="outline" size="sm" onClick={() => updateReportStatus(report.id, 'rejected')}>Reject</Button>
-                      <Button variant="destructive" size="sm" onClick={() => banUser(report.reported_user_id, report.reason || 'Report accepted', report.id)}>Ban</Button>
+              {reports.map((report) => {
+                const entity = report.reported_entity;
+                return (
+                  <div key={report.id} className="rounded-lg border border-border bg-card p-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="outline" className="capitalize">{report.report_type}</Badge>
+                          <Badge variant={report.status === 'pending' ? 'destructive' : 'secondary'} className="capitalize">{report.status}</Badge>
+                          <span className="text-xs text-muted-foreground">{formatWhen(report.created_at)}</span>
+                        </div>
+                        <p className="text-sm">
+                          <span className="font-medium">{report.reported_user_profile?.username || '?'}</span>
+                          <span className="text-muted-foreground"> reported by </span>
+                          <span className="font-medium">{report.reporter_user_profile?.username || '?'}</span>
+                          {report.reported_user_total_reports && report.reported_user_total_reports > 1 && (
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              ({report.reported_user_total_reports} total reports against this user)
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-sm text-muted-foreground"><span className="font-medium text-foreground">Reason:</span> {report.reason || 'No reason provided'}</p>
+
+                        {entity?.kind === 'listing' && (
+                          <Link
+                            to={`/listing/${entity.id}`}
+                            className="flex items-center gap-3 rounded-md border border-border bg-muted/30 p-2 hover:bg-muted/60"
+                          >
+                            {entity.image && (
+                              <img src={entity.image} alt={entity.title} className="h-12 w-12 rounded object-cover" />
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium">{entity.title}</p>
+                              <p className="text-xs text-muted-foreground">${entity.price} · {entity.status}</p>
+                            </div>
+                          </Link>
+                        )}
+                        {entity?.kind === 'comment' && (
+                          <Link
+                            to={`/listing/${entity.listing_id}`}
+                            className="block rounded-md border border-border bg-muted/30 p-2 hover:bg-muted/60"
+                          >
+                            <p className="text-xs uppercase text-muted-foreground">Comment</p>
+                            <p className="line-clamp-3 whitespace-pre-wrap text-sm">{entity.content}</p>
+                          </Link>
+                        )}
+                        {entity?.kind === 'user' && (
+                          <Link
+                            to={`/seller/${entity.id}`}
+                            className="inline-block rounded-md border border-border bg-muted/30 px-2 py-1 text-sm hover:bg-muted/60"
+                          >
+                            View profile: {entity.username}
+                          </Link>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {report.status === 'pending' && (
+                          <>
+                            <Button variant="outline" size="sm" onClick={() => updateReportStatus(report.id, 'accepted')}>Accept</Button>
+                            <Button variant="outline" size="sm" onClick={() => updateReportStatus(report.id, 'rejected')}>Reject</Button>
+                          </>
+                        )}
+                        <Button variant="destructive" size="sm" onClick={() => banUser(report.reported_user_id, report.reason || 'Report accepted', report.id)}>Ban user</Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </List>
           </section>
         )}
