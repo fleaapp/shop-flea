@@ -484,8 +484,8 @@ async function listUsers(payload: any = {}) {
   const inList = `in.(${userIds.join(",")})`;
   const [listings, ordersAsBuyer, ordersAsSeller, reportsAgainst] = await Promise.all([
     safeSelect("listings", { user_id: inList, select: "user_id,status" }),
-    safeSelect("orders", { buyer_id: inList, select: "buyer_id,price,shipping_price,status,refunded_at" }),
-    safeSelect("orders", { seller_id: inList, select: "seller_id,price,shipping_price,status,refunded_at" }),
+    safeSelect("orders", { buyer_id: inList, select: "buyer_id,price,shipping_price,status" }),
+    safeSelect("orders", { seller_id: inList, select: "seller_id,price,shipping_price,status" }),
     safeSelect("reports", { reported_user_id: inList, select: "reported_user_id" }),
   ]);
 
