@@ -43,7 +43,7 @@ function response(body: Record<string, unknown>, status = 200) {
 }
 
 function isMissingSchemaError(status: number, text: string) {
-  return status === 404 || /PGRST20[245]|relation .* does not exist|Could not find the table|Could not find .* column|schema cache/i.test(text);
+  return status === 404 || /PGRST20[245]|42703|relation .* does not exist|column .* does not exist|Could not find the table|Could not find .* column|schema cache/i.test(text);
 }
 
 async function rest(path: string, options: RestOptions = {}) {
@@ -141,6 +141,8 @@ async function assertAdmin(req: Request) {
 function unique(values: Array<string | null | undefined>) {
   return [...new Set(values.filter(Boolean) as string[])];
 }
+
+const ORDER_ADMIN_SELECT = "id,listing_id,buyer_id,seller_id,order_group_id,price,shipping_price,status,tracking_number,tracking_provider,shipped_at,delivered_at,created_at,updated_at,order_number,payment_method,checkout_reference,shipping_city,shipping_state,shipping_postcode";
 
 async function profilesByUserIds(userIds: string[]) {
   if (userIds.length === 0) return new Map<string, { username: string; avatar_url: string | null; status?: string | null }>();
@@ -409,7 +411,7 @@ async function markSuggestionRead(id: string) {
 }
 
 async function listTransactions() {
-  const orders = await safeSelect("orders", { order: "created_at.desc", limit: 1000 });
+  const orders = await safeSelect("orders", { select: ORDER_ADMIN_SELECT, order: "created_at.desc", limit: 1000 });
   if (orders.length === 0) return { orders: [] };
 
   const buyerIds = unique(orders.map((o: any) => o.buyer_id));
@@ -455,6 +457,7 @@ async function listTransactions() {
     message_count: o.order_group_id ? (msgCounts.get(o.order_group_id) ?? 0) : 0,
   }));
 
+  return { orders: enriched };
 }
 
 // ----------------- Users -----------------
@@ -569,8 +572,8 @@ async function getUserDetail(userId: string) {
   const [profileArr, listings, ordersBuyer, ordersSeller, reportsAgainst, reportsBy, reviews, threads] = await Promise.all([
     safeSelect("profiles", { user_id: `eq.${userId}`, limit: 1 }),
     safeSelect("listings", { user_id: `eq.${userId}`, order: "created_at.desc", limit: 100 }),
-    safeSelect("orders", { buyer_id: `eq.${userId}`, order: "created_at.desc", limit: 100 }),
-    safeSelect("orders", { seller_id: `eq.${userId}`, order: "created_at.desc", limit: 100 }),
+    safeSelect("orders", { buyer_id: `eq.${userId}`, select: ORDER_ADMIN_SELECT, order: "created_at.desc", limit: 100 }),
+    safeSelect("orders", { seller_id: `eq.${userId}`, select: ORDER_ADMIN_SELECT, order: "created_at.desc", limit: 100 }),
     safeSelect("reports", { reported_user_id: `eq.${userId}`, order: "created_at.desc", limit: 50 }),
     safeSelect("reports", { reporting_user_id: `eq.${userId}`, order: "created_at.desc", limit: 50 }),
     safeSelect("reviews", { reviewed_user_id: `eq.${userId}`, order: "created_at.desc", limit: 50 }),
