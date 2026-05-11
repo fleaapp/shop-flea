@@ -45,6 +45,7 @@ const loadVerifyEmail = () => import("./pages/VerifyEmail");
 const loadNotFound = () => import("./pages/NotFound");
 const loadTerms = () => import("./pages/Terms");
 const loadPrivacyPolicy = () => import("./pages/PrivacyPolicy");
+const loadAdminDashboard = () => import("./pages/admin/AdminDashboard");
 
 const ListingDetails = lazy(loadListingDetails);
 const Favorites = lazy(loadFavorites);
@@ -72,6 +73,8 @@ const VerifyEmail = lazy(loadVerifyEmail);
 const NotFound = lazy(loadNotFound);
 const Terms = lazy(loadTerms);
 const PrivacyPolicy = lazy(loadPrivacyPolicy);
+const AdminDashboard = lazy(loadAdminDashboard);
+import AdminRoute from "@/components/admin/AdminRoute";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -149,6 +152,7 @@ const AppContent = () => {
           <Route path="/seller/:sellerId" element={<ProtectedRoute><SellerProfile /></ProtectedRoute>} />
           <Route path="/sales" element={<ProtectedRoute><Sales /></ProtectedRoute>} />
           <Route path="/order-chat/:orderId" element={<ProtectedRoute><OrderChat /></ProtectedRoute>} />
+          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="*" element={<NotFound />} />
