@@ -1,23 +1,77 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, MessageCircle, Flag, ShieldBan, Mailbox, Loader2 } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Flag, ShieldBan, Mailbox, Loader2, RefreshCw, Send } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { useAdminChatThreads } from '@/hooks/admin/useAdminChatThreads';
+import { useAdminChatMessages } from '@/hooks/admin/useAdminChatMessages';
 import { useAdminReports } from '@/hooks/admin/useAdminReports';
 import { useAdminBannedUsers } from '@/hooks/admin/useAdminBannedUsers';
 import { useAdminSuggestions } from '@/hooks/admin/useAdminSuggestions';
 import { formatDistanceToNow } from 'date-fns';
 
+const formatWhen = (value?: string | null) => {
+  if (!value) return 'unknown time';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'unknown time';
+  return formatDistanceToNow(date, { addSuffix: true });
+};
+
 type AdminTab = 'support' | 'reports' | 'bans' | 'suggestions';
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState<AdminTab>('support');
-  const { threads, loading: tLoading } = useAdminChatThreads();
-  const { reports, loading: rLoading, pendingCount } = useAdminReports();
-  const { bannedUsers, loading: bLoading, activeCount } = useAdminBannedUsers();
-  const { suggestions, loading: sLoading, unreadCount } = useAdminSuggestions();
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const [reply, setReply] = useState('');
+
+  const {
+    threads,
+    loading: tLoading,
+    filter: threadFilter,
+    setFilter: setThreadFilter,
+    updateThreadStatus,
+    refetch: refetchThreads,
+  } = useAdminChatThreads();
+  const { messages, loading: mLoading, sending, sendMessage } = useAdminChatMessages(selectedThreadId);
+  const {
+    reports,
+    loading: rLoading,
+    filter: reportFilter,
+    setFilter: setReportFilter,
+    updateReportStatus,
+    pendingCount,
+    refetch: refetchReports,
+  } = useAdminReports();
+  const {
+    bannedUsers,
+    loading: bLoading,
+    filter: banFilter,
+    setFilter: setBanFilter,
+    banUser,
+    updateBanStatus,
+    activeCount,
+    refetch: refetchBans,
+  } = useAdminBannedUsers();
+  const { suggestions, loading: sLoading, unreadCount, markAsRead, refetch: refetchSuggestions } = useAdminSuggestions();
+
+  const selectedThread = useMemo(
+    () => threads.find((thread) => thread.id === selectedThreadId) || null,
+    [selectedThreadId, threads]
+  );
+
+  useEffect(() => {
+    if (!selectedThreadId && threads.length > 0) setSelectedThreadId(threads[0].id);
+  }, [selectedThreadId, threads]);
+
+  const handleSendReply = async () => {
+    const trimmed = reply.trim();
+    if (!trimmed || !selectedThreadId) return;
+    await sendMessage(trimmed);
+    setReply('');
+    refetchThreads();
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -25,7 +79,20 @@ export default function AdminDashboard() {
         <Link to="/"><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
         <h1 className="text-lg font-bold">Admin</h1>
         <Badge variant="secondary" className="ml-2">staff</Badge>
-        <div className="ml-auto text-xs text-muted-foreground">More tools coming</div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="ml-auto"
+          onClick={() => {
+            refetchThreads();
+            refetchReports();
+            refetchBans();
+            refetchSuggestions();
+          }}
+          aria-label="Refresh admin data"
+        >
+          <RefreshCw className="h-4 w-4" />
+        </Button>
       </header>
 
       <div className="border-b border-border bg-card px-4">
@@ -50,64 +117,164 @@ export default function AdminDashboard() {
 
       <main className="flex-1 overflow-y-auto p-4">
         {tab === 'support' && (
-          <List loading={tLoading} empty="No conversations" items={threads.map((t) => ({
-            id: t.id,
-            title: t.user_profile?.username || 'Unknown',
-            sub: t.title + (t.last_message ? ` — ${t.last_message.message}` : ''),
-            meta: t.status,
-            badge: (t.unread_count || 0) > 0 ? String(t.unread_count) : undefined,
-          }))} />
+          <section className="grid gap-3 lg:grid-cols-[minmax(280px,360px)_1fr]">
+            <div>
+              <FilterBar value={threadFilter} options={['all', 'active', 'resolved']} onChange={setThreadFilter} />
+              <List loading={tLoading} empty="No conversations">
+                {threads.map((thread) => (
+                  <button
+                    key={thread.id}
+                    onClick={() => setSelectedThreadId(thread.id)}
+                    className={`w-full rounded-lg border p-3 text-left ${selectedThreadId === thread.id ? 'border-primary bg-accent' : 'border-border bg-card'}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium">{thread.user_profile?.username || 'Unknown'}</p>
+                        <p className="truncate text-sm text-muted-foreground">{thread.title}{thread.last_message ? ` — ${thread.last_message.message}` : ''}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{thread.status} · {formatWhen(thread.updated_at)}</p>
+                      </div>
+                      {(thread.unread_count || 0) > 0 && <Badge variant="destructive">{thread.unread_count}</Badge>}
+                    </div>
+                  </button>
+                ))}
+              </List>
+            </div>
+            <div className="rounded-lg border border-border bg-card p-3">
+              {!selectedThread ? (
+                <EmptyState label="Select a conversation" />
+              ) : (
+                <div className="flex h-[min(62svh,560px)] flex-col gap-3">
+                  <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold">{selectedThread.user_profile?.username || 'Unknown'}</p>
+                      <p className="truncate text-sm text-muted-foreground">{selectedThread.title}</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateThreadStatus(selectedThread.id, selectedThread.status === 'resolved' ? 'active' : 'resolved')}
+                    >
+                      {selectedThread.status === 'resolved' ? 'Reopen' : 'Resolve'}
+                    </Button>
+                  </div>
+                  <div className="flex-1 space-y-2 overflow-y-auto pr-1">
+                    {mLoading ? <Loader /> : messages.map((message) => (
+                      <div key={message.id} className={`max-w-[88%] rounded-lg px-3 py-2 text-sm ${message.sender_type === 'support' ? 'ml-auto bg-primary text-primary-foreground' : 'bg-muted text-foreground'}`}>
+                        <p className="whitespace-pre-wrap break-words">{message.message}</p>
+                        <p className="mt-1 text-[11px] opacity-70">{formatWhen(message.created_at)}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <Textarea value={reply} onChange={(e) => setReply(e.target.value)} className="min-h-10 flex-1 resize-none" placeholder="Reply..." />
+                    <Button size="icon" disabled={sending || !reply.trim()} onClick={handleSendReply} aria-label="Send reply">
+                      {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
         )}
+
         {tab === 'reports' && (
-          <List loading={rLoading} empty="No reports" items={reports.map((r) => ({
-            id: r.id,
-            title: `${r.report_type} report — ${r.reported_user_profile?.username || '?'}`,
-            sub: `by ${r.reporter_user_profile?.username || '?'}: ${r.reason}`,
-            meta: `${r.status} · ${formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}`,
-          }))} />
+          <section>
+            <FilterBar value={reportFilter} options={['all', 'pending', 'accepted', 'rejected']} onChange={setReportFilter} />
+            <List loading={rLoading} empty="No reports">
+              {reports.map((report) => (
+                <div key={report.id} className="rounded-lg border border-border bg-card p-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">{report.report_type} report — {report.reported_user_profile?.username || '?'}</p>
+                      <p className="text-sm text-muted-foreground">by {report.reporter_user_profile?.username || '?'}: {report.reason || 'No reason provided'}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{report.status} · {formatWhen(report.created_at)}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm" onClick={() => updateReportStatus(report.id, 'accepted')}>Accept</Button>
+                      <Button variant="outline" size="sm" onClick={() => updateReportStatus(report.id, 'rejected')}>Reject</Button>
+                      <Button variant="destructive" size="sm" onClick={() => banUser(report.reported_user_id, report.reason || 'Report accepted', report.id)}>Ban</Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </List>
+          </section>
         )}
+
         {tab === 'bans' && (
-          <List loading={bLoading} empty="No bans" items={bannedUsers.map((b) => ({
-            id: b.id,
-            title: b.user_profile?.username || 'Unknown',
-            sub: b.reason,
-            meta: b.status,
-          }))} />
+          <section>
+            <FilterBar value={banFilter} options={['all', 'active', 'lifted']} onChange={setBanFilter} />
+            <List loading={bLoading} empty="No bans">
+              {bannedUsers.map((ban) => (
+                <div key={ban.id} className="rounded-lg border border-border bg-card p-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">{ban.user_profile?.username || 'Unknown'}</p>
+                      <p className="text-sm text-muted-foreground">{ban.reason}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{ban.status} · {formatWhen(ban.banned_at)}</p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => updateBanStatus(ban.id, ban.status === 'active' ? 'lifted' : 'active')}>
+                      {ban.status === 'active' ? 'Lift ban' : 'Reinstate'}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </List>
+          </section>
         )}
+
         {tab === 'suggestions' && (
-          <List loading={sLoading} empty="No suggestions" items={suggestions.map((s) => ({
-            id: s.id,
-            title: s.profile?.username || 'Unknown',
-            sub: s.content,
-            meta: s.read ? 'read' : 'new',
-          }))} />
+          <List loading={sLoading} empty="No suggestions">
+            {suggestions.map((suggestion) => (
+              <div key={suggestion.id} className="rounded-lg border border-border bg-card p-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium">{suggestion.profile?.username || 'Unknown'}</p>
+                    <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">{suggestion.content}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{suggestion.read ? 'read' : 'new'} · {formatWhen(suggestion.created_at)}</p>
+                  </div>
+                  {!suggestion.read && <Button variant="outline" size="sm" onClick={() => markAsRead(suggestion.id)}>Mark read</Button>}
+                </div>
+              </div>
+            ))}
+          </List>
         )}
       </main>
     </div>
   );
 }
 
-function List({ loading, empty, items }: {
-  loading: boolean;
-  empty: string;
-  items: { id: string; title: string; sub: string; meta: string; badge?: string }[];
+function FilterBar<T extends string>({ value, options, onChange }: {
+  value: T;
+  options: T[];
+  onChange: (value: T) => void;
 }) {
-  if (loading) return <div className="flex justify-center p-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
-  if (items.length === 0) return <div className="py-12 text-center text-sm text-muted-foreground">{empty}</div>;
   return (
-    <div className="space-y-2">
-      {items.map((it) => (
-        <div key={it.id} className="rounded-lg border border-border bg-card p-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">{it.title}</p>
-              <p className="truncate text-sm text-muted-foreground">{it.sub}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{it.meta}</p>
-            </div>
-            {it.badge && <Badge variant="destructive">{it.badge}</Badge>}
-          </div>
-        </div>
+    <div className="mb-3 flex flex-wrap gap-2">
+      {options.map((option) => (
+        <Button key={option} size="sm" variant={value === option ? 'default' : 'outline'} onClick={() => onChange(option)}>
+          {option}
+        </Button>
       ))}
     </div>
   );
+}
+
+function List({ loading, empty, children }: {
+  loading: boolean;
+  empty: string;
+  children: React.ReactNode;
+}) {
+  const hasItems = Array.isArray(children) ? children.length > 0 : Boolean(children);
+  if (loading) return <Loader />;
+  if (!hasItems) return <EmptyState label={empty} />;
+  return <div className="space-y-2">{children}</div>;
+}
+
+function Loader() {
+  return <div className="flex justify-center p-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+}
+
+function EmptyState({ label }: { label: string }) {
+  return <div className="py-12 text-center text-sm text-muted-foreground">{label}</div>;
 }
