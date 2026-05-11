@@ -78,6 +78,8 @@ const Terms = lazy(loadTerms);
 const PrivacyPolicy = lazy(loadPrivacyPolicy);
 const AdminDashboard = lazy(loadAdminDashboard);
 const AdminTransactions = lazy(loadAdminTransactions);
+const AdminUsers = lazy(loadAdminUsers);
+const AdminListings = lazy(loadAdminListings);
 import AdminRoute from "@/components/admin/AdminRoute";
 
 const queryClient = new QueryClient({
