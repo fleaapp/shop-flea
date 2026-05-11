@@ -1,3 +1,8 @@
+export type ReportedEntity =
+  | { kind: 'listing'; id: string; title: string; price: number; image: string | null; status: string }
+  | { kind: 'comment'; id: string; content: string; listing_id: string }
+  | { kind: 'user'; id: string; username: string };
+
 export interface Report {
   id: string;
   report_type: 'listing' | 'comment' | 'user';
@@ -11,6 +16,17 @@ export interface Report {
   updated_at: string;
   reported_user_profile?: { username: string; avatar_url: string | null };
   reporter_user_profile?: { username: string; avatar_url: string | null };
+  reported_entity?: ReportedEntity | null;
+  reported_user_total_reports?: number;
+}
+
+export interface TopReportedUser {
+  user_id: string;
+  count: number;
+  pending: number;
+  accepted: number;
+  rejected: number;
+  profile: { username: string; avatar_url: string | null };
 }
 
 export interface BannedUser {
