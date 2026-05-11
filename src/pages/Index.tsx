@@ -51,13 +51,16 @@ const Index = () => {
   const { addFavorite, removeFavorite, favoriteIds } = useFavorites();
   const { addDiscarded, removeDiscarded, discardedIds } = useDiscardedListings();
   const { checkAndTriggerOnboarding, openCarousel } = useOnboarding();
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, loading: authLoading, refreshProfile } = useAuth();
 
   // Check if user needs to set up their profile.
   // Triggers when: profile is missing entirely, username is missing/blank,
   // username is the auto-generated placeholder, OR region/country is missing.
   // Any of these means the user hasn't completed onboarding and must be gated.
-  const needsProfileSetup = !!user && (
+  // IMPORTANT: gate on `!authLoading` so we don't flash the welcome dialog
+  // during the brief window after login when `user` is set but `profile`
+  // hasn't been fetched yet.
+  const needsProfileSetup = !!user && !authLoading && (
     !profile ||
     !profile.username ||
     profile.username.trim() === '' ||
