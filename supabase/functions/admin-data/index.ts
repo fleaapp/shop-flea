@@ -27,7 +27,9 @@ type AdminAction =
   | "getUserDetail"
   | "userAction"
   | "listListings"
-  | "listingAction";
+  | "listingAction"
+  | "listSystemIssues"
+  | "runSystemFix";
 
 type RestOptions = {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
