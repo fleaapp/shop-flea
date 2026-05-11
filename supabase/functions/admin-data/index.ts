@@ -767,6 +767,579 @@ async function listingAction(payload: any) {
   }
 }
 
+// ----------------- System Diagnostics / Error Dashboard -----------------
+
+type Severity = "low" | "medium" | "high" | "critical";
+
+interface SystemIssue {
+  id: string;
+  title: string;
+  description: string;
+  severity: Severity;
+  user_impact: string;
+  suggested_fix: string;
+  auto_fix_id: string | null;
+  category: string;
+  count: number;
+  examples: any[];
+  detected_at: string;
+}
+
+const DAY = 24 * 60 * 60 * 1000;
+function daysAgo(n: number) {
+  return new Date(Date.now() - n * DAY).toISOString();
+}
+
+async function listSystemIssues() {
+  const now = new Date().toISOString();
+  const issues: SystemIssue[] = [];
+
+  // Pull data sets in parallel
+  const [
+    activeListings,
+    soldListings,
+    profiles,
+    awaitingOrders,
+    shippedOrders,
+    refundedOrders,
+    pendingReports,
+    flaggedListings,
+    duplicateScan,
+  ] = await Promise.all([
+    safeSelect("listings", { status: "eq.active", select: "id,user_id,title,brand,images,report_count,region_id,shipping_price,created_at" }),
+    safeSelect("listings", { status: "eq.sold", select: "id,user_id,title,updated_at" }),
+    safeSelect("profiles", { select: "user_id,username,status,report_strike_count,stripe_account_id,stripe_onboarding_complete,paypal_merchant_id,paypal_onboarding_complete,pause_selling" }),
+    safeSelect("orders", { status: "eq.awaiting", select: "id,buyer_id,seller_id,listing_id,price,created_at,checkout_reference,payment_method" }),
+    safeSelect("orders", { status: "eq.shipped", select: "id,buyer_id,seller_id,listing_id,shipped_at,tracking_number,tracking_provider,delivered_at" }),
+    safeSelect("orders", { status: "eq.refunded", select: "id,refunded_at,updated_at,buyer_id,seller_id" }),
+    safeSelect("reports", { status: "eq.pending", order: "created_at.asc", select: "id,created_at,report_type,reported_user_id,reported_entity_id" }),
+    safeSelect("listings", { select: "id,user_id,title,status,report_count" }),
+    safeSelect("listings", { select: "id,user_id,title,brand,status" }),
+  ]);
+
+  const profileMap = new Map<string, any>(profiles.map((p: any) => [p.user_id, p]));
+  const orderListingIds = new Set<string>();
+  const sellersWithOrders = new Set<string>();
+  for (const o of [...awaitingOrders, ...shippedOrders] as any[]) {
+    if (o.listing_id) orderListingIds.add(o.listing_id);
+    if (o.seller_id) sellersWithOrders.add(o.seller_id);
+  }
+
+  // 1. Stuck awaiting orders > 4 days
+  const stuckAwaiting = (awaitingOrders as any[]).filter(
+    (o) => o.created_at && o.created_at < daysAgo(4)
+  );
+  if (stuckAwaiting.length) {
+    issues.push({
+      id: "stuck_awaiting_orders",
+      title: "Orders stuck awaiting shipment",
+      description: `${stuckAwaiting.length} order(s) have been awaiting shipment for more than 4 days. Sellers haven't marked them as shipped.`,
+      severity: stuckAwaiting.length >= 5 ? "high" : "medium",
+      user_impact: "Buyers are waiting for items they paid for. May trigger refund requests and damage trust.",
+      suggested_fix: "Send urgent reminders to sellers, or process automatic refunds after 7 days.",
+      auto_fix_id: null,
+      category: "Orders",
+      count: stuckAwaiting.length,
+      examples: stuckAwaiting.slice(0, 5).map((o) => ({ id: o.id, created_at: o.created_at, seller_id: o.seller_id })),
+      detected_at: now,
+    });
+  }
+
+  // 2. Shipped > 14 days, never delivered
+  const overdueShipped = (shippedOrders as any[]).filter(
+    (o) => !o.delivered_at && o.shipped_at && o.shipped_at < daysAgo(14)
+  );
+  if (overdueShipped.length) {
+    issues.push({
+      id: "overdue_shipped_orders",
+      title: "Shipped orders never marked delivered",
+      description: `${overdueShipped.length} order(s) shipped over 14 days ago and have not been confirmed delivered.`,
+      severity: "high",
+      user_impact: "Buyers may not have received items. Sellers can't be paid out cleanly. Possible lost packages.",
+      suggested_fix: "Contact buyer and seller, verify tracking, escalate to refund if undeliverable.",
+      auto_fix_id: null,
+      category: "Shipping",
+      count: overdueShipped.length,
+      examples: overdueShipped.slice(0, 5).map((o) => ({ id: o.id, shipped_at: o.shipped_at, tracking: o.tracking_number })),
+      detected_at: now,
+    });
+  }
+
+  // 3. Shipped without tracking
+  const missingTracking = (shippedOrders as any[]).filter((o) => !o.tracking_number);
+  if (missingTracking.length) {
+    issues.push({
+      id: "shipped_missing_tracking",
+      title: "Shipped orders missing tracking",
+      description: `${missingTracking.length} order(s) marked shipped but have no tracking number.`,
+      severity: "medium",
+      user_impact: "Buyers can't track their package. Reduces confidence in marketplace.",
+      suggested_fix: "Require sellers to add tracking before marking shipped.",
+      auto_fix_id: null,
+      category: "Shipping",
+      count: missingTracking.length,
+      examples: missingTracking.slice(0, 5).map((o) => ({ id: o.id, seller_id: o.seller_id })),
+      detected_at: now,
+    });
+  }
+
+  // 4. Sellers with successful orders but no payout connection
+  const sellersNoPayout: any[] = [];
+  for (const sid of sellersWithOrders) {
+    const p = profileMap.get(sid);
+    if (!p) continue;
+    const noStripe = !p.stripe_onboarding_complete || !p.stripe_account_id;
+    const noPaypal = !p.paypal_onboarding_complete || !p.paypal_merchant_id;
+    if (noStripe && noPaypal) sellersNoPayout.push(p);
+  }
+  if (sellersNoPayout.length) {
+    issues.push({
+      id: "sellers_no_payout",
+      title: "Sellers with sales but no payout method",
+      description: `${sellersNoPayout.length} seller(s) have orders but no working Stripe or PayPal connection.`,
+      severity: "critical",
+      user_impact: "Sellers cannot receive their money. Funds may be held by payment provider indefinitely.",
+      suggested_fix: "Email affected sellers to complete payment onboarding via Settings.",
+      auto_fix_id: null,
+      category: "Payments",
+      count: sellersNoPayout.length,
+      examples: sellersNoPayout.slice(0, 5).map((p) => ({ user_id: p.user_id, username: p.username })),
+      detected_at: now,
+    });
+  }
+
+  // 5. Stale Stripe onboarding flag (complete=true but no account_id)
+  const staleStripe = profiles.filter(
+    (p: any) => p.stripe_onboarding_complete && !p.stripe_account_id
+  );
+  if (staleStripe.length) {
+    issues.push({
+      id: "stale_stripe_flag",
+      title: "Inconsistent Stripe onboarding state",
+      description: `${staleStripe.length} profile(s) marked Stripe-complete but have no Stripe account ID.`,
+      severity: "medium",
+      user_impact: "Sellers see 'Connected' incorrectly and won't reconnect, blocking payouts.",
+      suggested_fix: "Auto-reset the onboarding flag so they can reconnect.",
+      auto_fix_id: "fix_stale_stripe_flag",
+      category: "Payments",
+      count: staleStripe.length,
+      examples: staleStripe.slice(0, 5).map((p: any) => ({ user_id: p.user_id, username: p.username })),
+      detected_at: now,
+    });
+  }
+
+  // 6. Stale PayPal onboarding flag
+  const stalePaypal = profiles.filter(
+    (p: any) => p.paypal_onboarding_complete && !p.paypal_merchant_id
+  );
+  if (stalePaypal.length) {
+    issues.push({
+      id: "stale_paypal_flag",
+      title: "Inconsistent PayPal onboarding state",
+      description: `${stalePaypal.length} profile(s) marked PayPal-complete but have no PayPal merchant ID.`,
+      severity: "medium",
+      user_impact: "Sellers won't reconnect, blocking PayPal payouts.",
+      suggested_fix: "Auto-reset the onboarding flag so they can reconnect.",
+      auto_fix_id: "fix_stale_paypal_flag",
+      category: "Payments",
+      count: stalePaypal.length,
+      examples: stalePaypal.slice(0, 5).map((p: any) => ({ user_id: p.user_id, username: p.username })),
+      detected_at: now,
+    });
+  }
+
+  // 7. Listings reported >=3 still active
+  const heavyReported = (flaggedListings as any[]).filter(
+    (l) => l.status === "active" && Number(l.report_count ?? 0) >= 3
+  );
+  if (heavyReported.length) {
+    issues.push({
+      id: "heavily_reported_listings_active",
+      title: "Heavily reported listings still live",
+      description: `${heavyReported.length} listing(s) with 3+ reports are still active.`,
+      severity: "high",
+      user_impact: "Potentially harmful, fraudulent, or off-policy listings remain visible to buyers.",
+      suggested_fix: "Remove these listings automatically pending review.",
+      auto_fix_id: "fix_remove_heavily_reported",
+      category: "Moderation",
+      count: heavyReported.length,
+      examples: heavyReported.slice(0, 5).map((l) => ({ id: l.id, title: l.title, reports: l.report_count })),
+      detected_at: now,
+    });
+  }
+
+  // 8. Users with 3+ strikes not blocked
+  const overStrike = profiles.filter(
+    (p: any) => Number(p.report_strike_count ?? 0) >= 3 && p.status !== "blocked"
+  );
+  if (overStrike.length) {
+    issues.push({
+      id: "overstrike_users_active",
+      title: "Users past strike limit still active",
+      description: `${overStrike.length} user(s) have 3+ strikes but are not blocked.`,
+      severity: "high",
+      user_impact: "Repeat offenders continue trading on the marketplace.",
+      suggested_fix: "Auto-block these accounts pending appeal.",
+      auto_fix_id: "fix_block_overstrike_users",
+      category: "Trust & Safety",
+      count: overStrike.length,
+      examples: overStrike.slice(0, 5).map((p: any) => ({ user_id: p.user_id, username: p.username, strikes: p.report_strike_count })),
+      detected_at: now,
+    });
+  }
+
+  // 9. Active listings owned by blocked users
+  const activeBlocked = (activeListings as any[]).filter((l) => {
+    const p = profileMap.get(l.user_id);
+    return p && p.status === "blocked";
+  });
+  if (activeBlocked.length) {
+    issues.push({
+      id: "active_listings_blocked_owners",
+      title: "Active listings from blocked sellers",
+      description: `${activeBlocked.length} active listing(s) belong to blocked accounts and should be archived.`,
+      severity: "high",
+      user_impact: "Buyers can purchase from blocked sellers, creating order failures and trust issues.",
+      suggested_fix: "Archive these listings.",
+      auto_fix_id: "fix_archive_blocked_listings",
+      category: "Moderation",
+      count: activeBlocked.length,
+      examples: activeBlocked.slice(0, 5).map((l) => ({ id: l.id, title: l.title })),
+      detected_at: now,
+    });
+  }
+
+  // 10. Refunded orders missing refunded_at timestamp
+  const refundsMissingTs = (refundedOrders as any[]).filter((o) => !o.refunded_at);
+  if (refundsMissingTs.length) {
+    issues.push({
+      id: "refunds_missing_timestamp",
+      title: "Refunded orders missing timestamp",
+      description: `${refundsMissingTs.length} refunded order(s) have no refund timestamp recorded.`,
+      severity: "low",
+      user_impact: "Reporting and audit trail incomplete; buyers can't see when refund was processed.",
+      suggested_fix: "Backfill timestamp from updated_at.",
+      auto_fix_id: "fix_backfill_refund_timestamps",
+      category: "Refunds",
+      count: refundsMissingTs.length,
+      examples: refundsMissingTs.slice(0, 5).map((o) => ({ id: o.id })),
+      detected_at: now,
+    });
+  }
+
+  // 11. Sold listings with no order rows (orphan)
+  const orderListingsAll = await safeSelect("orders", { select: "listing_id" });
+  const listingsWithOrders = new Set((orderListingsAll as any[]).map((o) => o.listing_id));
+  const orphanSold = (soldListings as any[]).filter((l) => !listingsWithOrders.has(l.id));
+  if (orphanSold.length) {
+    issues.push({
+      id: "orphan_sold_listings",
+      title: "Sold listings with no order record",
+      description: `${orphanSold.length} listing(s) marked sold but no order exists.`,
+      severity: "medium",
+      user_impact: "Inventory unavailable to other buyers despite no actual sale. Lost revenue.",
+      suggested_fix: "Restore listing status to active.",
+      auto_fix_id: "fix_restore_orphan_sold",
+      category: "Listings",
+      count: orphanSold.length,
+      examples: orphanSold.slice(0, 5).map((l) => ({ id: l.id, title: l.title })),
+      detected_at: now,
+    });
+  }
+
+  // 12. Active listings with no images
+  const noImages = (activeListings as any[]).filter(
+    (l) => !Array.isArray(l.images) || l.images.length === 0
+  );
+  if (noImages.length) {
+    issues.push({
+      id: "active_listings_no_images",
+      title: "Live listings with no images",
+      description: `${noImages.length} active listing(s) have no images uploaded.`,
+      severity: "medium",
+      user_impact: "Buyers can't see the item, low conversion, looks broken.",
+      suggested_fix: "Hide these listings until seller adds photos.",
+      auto_fix_id: "fix_hide_imageless_listings",
+      category: "Listings",
+      count: noImages.length,
+      examples: noImages.slice(0, 5).map((l) => ({ id: l.id, title: l.title })),
+      detected_at: now,
+    });
+  }
+
+  // 13. Active listings outside AU region
+  const wrongRegion = (activeListings as any[]).filter(
+    (l) => l.region_id && l.region_id !== "au"
+  );
+  if (wrongRegion.length) {
+    issues.push({
+      id: "wrong_region_listings",
+      title: "Listings outside AU region",
+      description: `${wrongRegion.length} active listing(s) are tagged to a non-AU region.`,
+      severity: "medium",
+      user_impact: "Listings won't show to AU buyers (Flea is AU-exclusive).",
+      suggested_fix: "Reassign to AU region.",
+      auto_fix_id: "fix_relocate_to_au",
+      category: "Compliance",
+      count: wrongRegion.length,
+      examples: wrongRegion.slice(0, 5).map((l) => ({ id: l.id, title: l.title, region_id: l.region_id })),
+      detected_at: now,
+    });
+  }
+
+  // 14. Pending reports older than 7 days
+  const oldReports = (pendingReports as any[]).filter(
+    (r) => r.created_at && r.created_at < daysAgo(7)
+  );
+  if (oldReports.length) {
+    issues.push({
+      id: "moderation_backlog",
+      title: "Moderation queue backlog",
+      description: `${oldReports.length} report(s) have been pending for over 7 days.`,
+      severity: oldReports.length >= 10 ? "high" : "medium",
+      user_impact: "Reported content stays visible. Reporters lose confidence.",
+      suggested_fix: "Triage in the Reports tab.",
+      auto_fix_id: null,
+      category: "Moderation",
+      count: oldReports.length,
+      examples: oldReports.slice(0, 5).map((r) => ({ id: r.id, created_at: r.created_at, type: r.report_type })),
+      detected_at: now,
+    });
+  }
+
+  // 15. Duplicate listings (same seller + title + brand)
+  const dupKeys = new Map<string, any[]>();
+  for (const l of duplicateScan as any[]) {
+    if (l.status !== "active") continue;
+    const k = `${l.user_id}|${(l.title ?? "").toLowerCase().trim()}|${(l.brand ?? "").toLowerCase().trim()}`;
+    if (!k.split("|")[1]) continue;
+    const arr = dupKeys.get(k) ?? [];
+    arr.push(l);
+    dupKeys.set(k, arr);
+  }
+  const duplicates = [...dupKeys.values()].filter((arr) => arr.length > 1);
+  const totalDupes = duplicates.reduce((s, arr) => s + arr.length, 0);
+  if (duplicates.length) {
+    issues.push({
+      id: "duplicate_listings",
+      title: "Duplicate listings detected",
+      description: `${duplicates.length} group(s) of duplicate listings (${totalDupes} listings total) from same seller.`,
+      severity: "low",
+      user_impact: "Spammy feed, possible fraud, dilutes search quality.",
+      suggested_fix: "Manual review in Listings tab; remove duplicates.",
+      auto_fix_id: null,
+      category: "Spam & Fraud",
+      count: duplicates.length,
+      examples: duplicates.slice(0, 5).map((arr) => ({ count: arr.length, title: arr[0].title, seller: arr[0].user_id })),
+      detected_at: now,
+    });
+  }
+
+  // 16. Suspicious title patterns (URLs, emails)
+  const suspicious = (activeListings as any[]).filter((l) =>
+    /(https?:\/\/|www\.|@\w+\.\w+)/i.test(l.title ?? "")
+  );
+  if (suspicious.length) {
+    issues.push({
+      id: "suspicious_title_patterns",
+      title: "Listings with off-platform contact links",
+      description: `${suspicious.length} listing(s) contain URLs or emails in titles — likely off-platform fraud attempts.`,
+      severity: "high",
+      user_impact: "Buyers can be lured off-platform and scammed. Direct policy violation.",
+      suggested_fix: "Hide listings and warn sellers.",
+      auto_fix_id: "fix_hide_suspicious_titles",
+      category: "Spam & Fraud",
+      count: suspicious.length,
+      examples: suspicious.slice(0, 5).map((l) => ({ id: l.id, title: l.title })),
+      detected_at: now,
+    });
+  }
+
+  // 17. Sellers paused but with active listings
+  const pausedWithActive = (activeListings as any[]).filter((l) => {
+    const p = profileMap.get(l.user_id);
+    return p && p.pause_selling === true;
+  });
+  const pausedSellersAffected = new Set(pausedWithActive.map((l) => l.user_id));
+  if (pausedWithActive.length) {
+    issues.push({
+      id: "paused_sellers_active_listings",
+      title: "Paused sellers with active listings",
+      description: `${pausedSellersAffected.size} paused seller(s) have ${pausedWithActive.length} listings still showing as active.`,
+      severity: "low",
+      user_impact: "Buyers may purchase from sellers on holiday, leading to delays.",
+      suggested_fix: "These should display as paused — verify pause UI is applied.",
+      auto_fix_id: null,
+      category: "Listings",
+      count: pausedWithActive.length,
+      examples: pausedWithActive.slice(0, 5).map((l) => ({ id: l.id, title: l.title, seller: l.user_id })),
+      detected_at: now,
+    });
+  }
+
+  // Sort: critical → high → medium → low, then by count desc
+  const sevOrder: Record<Severity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+  issues.sort((a, b) => sevOrder[a.severity] - sevOrder[b.severity] || b.count - a.count);
+
+  const summary = {
+    total: issues.length,
+    critical: issues.filter((i) => i.severity === "critical").length,
+    high: issues.filter((i) => i.severity === "high").length,
+    medium: issues.filter((i) => i.severity === "medium").length,
+    low: issues.filter((i) => i.severity === "low").length,
+    auto_fixable: issues.filter((i) => i.auto_fix_id).length,
+    last_scan: now,
+  };
+
+  return { issues, summary };
+}
+
+async function runSystemFix(fixId: string) {
+  switch (fixId) {
+    case "fix_stale_stripe_flag": {
+      const stale = await safeSelect("profiles", {
+        stripe_onboarding_complete: "eq.true",
+        stripe_account_id: "is.null",
+        select: "user_id",
+      });
+      let fixed = 0;
+      for (const p of stale as any[]) {
+        await safePatch("profiles", { user_id: `eq.${p.user_id}` }, { stripe_onboarding_complete: false });
+        fixed++;
+      }
+      return { ok: true, fixed, message: `Reset Stripe onboarding flag for ${fixed} profile(s).` };
+    }
+
+    case "fix_stale_paypal_flag": {
+      const stale = await safeSelect("profiles", {
+        paypal_onboarding_complete: "eq.true",
+        paypal_merchant_id: "is.null",
+        select: "user_id",
+      });
+      let fixed = 0;
+      for (const p of stale as any[]) {
+        await safePatch("profiles", { user_id: `eq.${p.user_id}` }, { paypal_onboarding_complete: false });
+        fixed++;
+      }
+      return { ok: true, fixed, message: `Reset PayPal onboarding flag for ${fixed} profile(s).` };
+    }
+
+    case "fix_remove_heavily_reported": {
+      const targets = await safeSelect("listings", {
+        status: "eq.active",
+        report_count: "gte.3",
+        select: "id",
+      });
+      let fixed = 0;
+      for (const l of targets as any[]) {
+        await safePatch("listings", { id: `eq.${l.id}` }, { status: "removed" });
+        fixed++;
+      }
+      return { ok: true, fixed, message: `Removed ${fixed} heavily-reported listing(s).` };
+    }
+
+    case "fix_block_overstrike_users": {
+      const targets = await safeSelect("profiles", {
+        report_strike_count: "gte.3",
+        status: "neq.blocked",
+        select: "user_id",
+      });
+      let fixed = 0;
+      for (const p of targets as any[]) {
+        await safePatch("profiles", { user_id: `eq.${p.user_id}` }, { status: "blocked" });
+        fixed++;
+      }
+      return { ok: true, fixed, message: `Blocked ${fixed} repeat-offender account(s).` };
+    }
+
+    case "fix_archive_blocked_listings": {
+      const blockedProfiles = await safeSelect("profiles", { status: "eq.blocked", select: "user_id" });
+      const ids = (blockedProfiles as any[]).map((p) => p.user_id);
+      if (ids.length === 0) return { ok: true, fixed: 0, message: "Nothing to fix." };
+      const targets = await safeSelect("listings", {
+        user_id: `in.(${ids.join(",")})`,
+        status: "eq.active",
+        select: "id",
+      });
+      let fixed = 0;
+      for (const l of targets as any[]) {
+        await safePatch("listings", { id: `eq.${l.id}` }, { status: "archived" });
+        fixed++;
+      }
+      return { ok: true, fixed, message: `Archived ${fixed} listing(s) from blocked sellers.` };
+    }
+
+    case "fix_backfill_refund_timestamps": {
+      const targets = await safeSelect("orders", {
+        status: "eq.refunded",
+        refunded_at: "is.null",
+        select: "id,updated_at",
+      });
+      let fixed = 0;
+      for (const o of targets as any[]) {
+        await safePatch("orders", { id: `eq.${o.id}` }, { refunded_at: o.updated_at ?? new Date().toISOString() });
+        fixed++;
+      }
+      return { ok: true, fixed, message: `Backfilled refund timestamps on ${fixed} order(s).` };
+    }
+
+    case "fix_restore_orphan_sold": {
+      const orderListingsAll = await safeSelect("orders", { select: "listing_id" });
+      const withOrders = new Set((orderListingsAll as any[]).map((o) => o.listing_id));
+      const sold = await safeSelect("listings", { status: "eq.sold", select: "id" });
+      let fixed = 0;
+      for (const l of sold as any[]) {
+        if (!withOrders.has(l.id)) {
+          await safePatch("listings", { id: `eq.${l.id}` }, { status: "active" });
+          fixed++;
+        }
+      }
+      return { ok: true, fixed, message: `Restored ${fixed} orphan listing(s) to active.` };
+    }
+
+    case "fix_hide_imageless_listings": {
+      const all = await safeSelect("listings", { status: "eq.active", select: "id,images" });
+      let fixed = 0;
+      for (const l of all as any[]) {
+        if (!Array.isArray(l.images) || l.images.length === 0) {
+          await safePatch("listings", { id: `eq.${l.id}` }, { status: "hidden" });
+          fixed++;
+        }
+      }
+      return { ok: true, fixed, message: `Hidden ${fixed} listing(s) with no images.` };
+    }
+
+    case "fix_relocate_to_au": {
+      const wrong = await safeSelect("listings", {
+        status: "eq.active",
+        region_id: "neq.au",
+        select: "id",
+      });
+      let fixed = 0;
+      for (const l of wrong as any[]) {
+        await safePatch("listings", { id: `eq.${l.id}` }, { region_id: "au" });
+        fixed++;
+      }
+      return { ok: true, fixed, message: `Reassigned ${fixed} listing(s) to AU region.` };
+    }
+
+    case "fix_hide_suspicious_titles": {
+      const all = await safeSelect("listings", { status: "eq.active", select: "id,title" });
+      let fixed = 0;
+      for (const l of all as any[]) {
+        if (/(https?:\/\/|www\.|@\w+\.\w+)/i.test(l.title ?? "")) {
+          await safePatch("listings", { id: `eq.${l.id}` }, { status: "hidden" });
+          fixed++;
+        }
+      }
+      return { ok: true, fixed, message: `Hidden ${fixed} listing(s) with off-platform contact links.` };
+    }
+
+    default:
+      throw new Error(`Unknown fix: ${fixId}`);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
