@@ -47,6 +47,8 @@ const loadTerms = () => import("./pages/Terms");
 const loadPrivacyPolicy = () => import("./pages/PrivacyPolicy");
 const loadAdminDashboard = () => import("./pages/admin/AdminDashboard");
 const loadAdminTransactions = () => import("./pages/admin/AdminTransactions");
+const loadAdminUsers = () => import("./pages/admin/AdminUsers");
+const loadAdminListings = () => import("./pages/admin/AdminListings");
 
 const ListingDetails = lazy(loadListingDetails);
 const Favorites = lazy(loadFavorites);
@@ -76,6 +78,8 @@ const Terms = lazy(loadTerms);
 const PrivacyPolicy = lazy(loadPrivacyPolicy);
 const AdminDashboard = lazy(loadAdminDashboard);
 const AdminTransactions = lazy(loadAdminTransactions);
+const AdminUsers = lazy(loadAdminUsers);
+const AdminListings = lazy(loadAdminListings);
 import AdminRoute from "@/components/admin/AdminRoute";
 
 const queryClient = new QueryClient({
@@ -156,6 +160,8 @@ const AppContent = () => {
           <Route path="/order-chat/:orderId" element={<ProtectedRoute><OrderChat /></ProtectedRoute>} />
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/transactions" element={<AdminRoute><AdminTransactions /></AdminRoute>} />
+          <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+          <Route path="/admin/listings" element={<AdminRoute><AdminListings /></AdminRoute>} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="*" element={<NotFound />} />

@@ -22,7 +22,12 @@ type AdminAction =
   | "updateBanStatus"
   | "listSuggestions"
   | "markSuggestionRead"
-  | "listTransactions";
+  | "listTransactions"
+  | "listUsers"
+  | "getUserDetail"
+  | "userAction"
+  | "listListings"
+  | "listingAction";
 
 type RestOptions = {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
@@ -450,7 +455,284 @@ async function listTransactions() {
     message_count: o.order_group_id ? (msgCounts.get(o.order_group_id) ?? 0) : 0,
   }));
 
-  return { orders: enriched };
+}
+
+// ----------------- Users -----------------
+
+async function listUsers(payload: any = {}) {
+  const search = (payload.search ?? "").trim().toLowerCase();
+  const status = payload.status ?? "all"; // all | active | blocked | suspended
+  const sort = payload.sort ?? "created_at"; // created_at | last_sign_in_at | username
+  const dir = payload.dir === "asc" ? "asc" : "desc";
+
+  const params: Record<string, string> = { order: `${sort}.${dir}.nullslast`, limit: "500" };
+  if (status !== "all") params.status = `eq.${status}`;
+  let users = await safeSelect("profiles", params);
+
+  if (search) {
+    users = users.filter((u: any) =>
+      (u.username ?? "").toLowerCase().includes(search) ||
+      (u.email ?? "").toLowerCase().includes(search) ||
+      (u.first_name ?? "").toLowerCase().includes(search) ||
+      (u.last_name ?? "").toLowerCase().includes(search)
+    );
+  }
+
+  const userIds = users.map((u: any) => u.user_id);
+  if (userIds.length === 0) return { users: [] };
+
+  const inList = `in.(${userIds.join(",")})`;
+  const [listings, ordersAsBuyer, ordersAsSeller, reportsAgainst] = await Promise.all([
+    safeSelect("listings", { user_id: inList, select: "user_id,status" }),
+    safeSelect("orders", { buyer_id: inList, select: "buyer_id,price,shipping_price,status,refunded_at" }),
+    safeSelect("orders", { seller_id: inList, select: "seller_id,price,shipping_price,status,refunded_at" }),
+    safeSelect("reports", { reported_user_id: inList, select: "reported_user_id" }),
+  ]);
+
+  const listingCounts = new Map<string, { total: number; active: number; sold: number }>();
+  for (const l of listings as any[]) {
+    const t = listingCounts.get(l.user_id) ?? { total: 0, active: 0, sold: 0 };
+    t.total += 1;
+    if (l.status === "active") t.active += 1;
+    if (l.status === "sold") t.sold += 1;
+    listingCounts.set(l.user_id, t);
+  }
+  const buyerStats = new Map<string, { count: number; volume: number; refunds: number }>();
+  for (const o of ordersAsBuyer as any[]) {
+    const t = buyerStats.get(o.buyer_id) ?? { count: 0, volume: 0, refunds: 0 };
+    t.count += 1;
+    t.volume += Number(o.price ?? 0) + Number(o.shipping_price ?? 0);
+    if (o.refunded_at || o.status === "refunded") t.refunds += 1;
+    buyerStats.set(o.buyer_id, t);
+  }
+  const sellerStats = new Map<string, { count: number; volume: number; refunds: number }>();
+  for (const o of ordersAsSeller as any[]) {
+    const t = sellerStats.get(o.seller_id) ?? { count: 0, volume: 0, refunds: 0 };
+    t.count += 1;
+    t.volume += Number(o.price ?? 0) + Number(o.shipping_price ?? 0);
+    if (o.refunded_at || o.status === "refunded") t.refunds += 1;
+    sellerStats.set(o.seller_id, t);
+  }
+  const reportCounts = new Map<string, number>();
+  for (const r of reportsAgainst as any[]) {
+    reportCounts.set(r.reported_user_id, (reportCounts.get(r.reported_user_id) ?? 0) + 1);
+  }
+
+  const enriched = users.map((u: any) => {
+    const listing = listingCounts.get(u.user_id) ?? { total: 0, active: 0, sold: 0 };
+    const buyer = buyerStats.get(u.user_id) ?? { count: 0, volume: 0, refunds: 0 };
+    const seller = sellerStats.get(u.user_id) ?? { count: 0, volume: 0, refunds: 0 };
+    const reports = reportCounts.get(u.user_id) ?? 0;
+    const strikes = Number(u.report_strike_count ?? 0);
+    // Simple risk score 0-100
+    const risk = Math.min(100,
+      strikes * 25 +
+      reports * 8 +
+      (buyer.refunds + seller.refunds) * 10 +
+      (u.status === "blocked" ? 30 : 0) +
+      (u.status === "suspended" ? 15 : 0)
+    );
+    return {
+      user_id: u.user_id,
+      username: u.username,
+      email: u.email,
+      first_name: u.first_name,
+      last_name: u.last_name,
+      avatar_url: u.avatar_url,
+      status: u.status ?? "active",
+      created_at: u.created_at,
+      last_sign_in_at: u.last_sign_in_at,
+      country_code: u.country_code,
+      region_id: u.region_id,
+      rating: Number(u.rating ?? 0),
+      total_reviews: Number(u.total_reviews ?? 0),
+      report_strike_count: strikes,
+      stripe_onboarding_complete: !!u.stripe_onboarding_complete,
+      paypal_onboarding_complete: !!u.paypal_onboarding_complete,
+      listings_total: listing.total,
+      listings_active: listing.active,
+      listings_sold: listing.sold,
+      orders_as_buyer: buyer.count,
+      orders_as_seller: seller.count,
+      buyer_volume: buyer.volume,
+      seller_volume: seller.volume,
+      refunds_count: buyer.refunds + seller.refunds,
+      reports_against: reports,
+      risk_score: risk,
+    };
+  });
+
+  return { users: enriched };
+}
+
+async function getUserDetail(userId: string) {
+  const [profileArr, listings, ordersBuyer, ordersSeller, reportsAgainst, reportsBy, reviews, threads] = await Promise.all([
+    safeSelect("profiles", { user_id: `eq.${userId}`, limit: 1 }),
+    safeSelect("listings", { user_id: `eq.${userId}`, order: "created_at.desc", limit: 100 }),
+    safeSelect("orders", { buyer_id: `eq.${userId}`, order: "created_at.desc", limit: 100 }),
+    safeSelect("orders", { seller_id: `eq.${userId}`, order: "created_at.desc", limit: 100 }),
+    safeSelect("reports", { reported_user_id: `eq.${userId}`, order: "created_at.desc", limit: 50 }),
+    safeSelect("reports", { reporting_user_id: `eq.${userId}`, order: "created_at.desc", limit: 50 }),
+    safeSelect("reviews", { reviewed_user_id: `eq.${userId}`, order: "created_at.desc", limit: 50 }),
+    safeSelect("chat_threads", { user_id: `eq.${userId}`, order: "updated_at.desc", limit: 25 }),
+  ]);
+
+  return {
+    profile: profileArr[0] ?? null,
+    listings,
+    ordersAsBuyer: ordersBuyer,
+    ordersAsSeller: ordersSeller,
+    reportsAgainst,
+    reportsBy,
+    reviews,
+    threads,
+  };
+}
+
+async function userAction(adminId: string, payload: any) {
+  const { userId, type, reason } = payload ?? {};
+  if (!userId || !type) throw new Error("userId and type required");
+
+  switch (type) {
+    case "suspend":
+      await safePatch("profiles", { user_id: `eq.${userId}` }, { status: "suspended" });
+      return { ok: true };
+    case "activate":
+    case "restore":
+      await safePatch("profiles", { user_id: `eq.${userId}` }, { status: "active" });
+      return { ok: true };
+    case "ban":
+      await banUser(adminId, userId, reason ?? "Banned by admin");
+      return { ok: true };
+    case "delete": {
+      const url = `${EXTERNAL_URL}/auth/v1/admin/users/${userId}`;
+      const res = await fetch(url, {
+        method: "DELETE",
+        headers: { apikey: EXTERNAL_SERVICE_ROLE_KEY, Authorization: `Bearer ${EXTERNAL_SERVICE_ROLE_KEY}` },
+      });
+      if (!res.ok && res.status !== 404) throw new Error(`Delete failed: ${await res.text()}`);
+      return { ok: true };
+    }
+    case "reset_password": {
+      // Get email
+      const profile = await safeSelect("profiles", { user_id: `eq.${userId}`, select: "email", limit: 1 });
+      const email = profile[0]?.email;
+      if (!email) throw new Error("No email on file");
+      const url = `${EXTERNAL_URL}/auth/v1/admin/generate_link`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { apikey: EXTERNAL_SERVICE_ROLE_KEY, Authorization: `Bearer ${EXTERNAL_SERVICE_ROLE_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "recovery", email }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.msg || "Reset failed");
+      return { ok: true, action_link: json.action_link ?? json.properties?.action_link ?? null };
+    }
+    default:
+      throw new Error(`Unknown user action: ${type}`);
+  }
+}
+
+// ----------------- Listings -----------------
+
+async function listListings(payload: any = {}) {
+  const search = (payload.search ?? "").trim().toLowerCase();
+  const status = payload.status ?? "all"; // all | active | sold | removed | hidden | archived
+  const sort = payload.sort ?? "created_at";
+  const dir = payload.dir === "asc" ? "asc" : "desc";
+  const minReports = Number(payload.minReports ?? 0);
+
+  const params: Record<string, string> = { order: `${sort}.${dir}.nullslast`, limit: "500" };
+  if (status !== "all") params.status = `eq.${status}`;
+  let listings = await safeSelect("listings", params);
+
+  if (search) {
+    listings = listings.filter((l: any) =>
+      (l.title ?? "").toLowerCase().includes(search) ||
+      (l.brand ?? "").toLowerCase().includes(search) ||
+      (l.id ?? "").toLowerCase().includes(search)
+    );
+  }
+  if (minReports > 0) {
+    listings = listings.filter((l: any) => Number(l.report_count ?? 0) >= minReports);
+  }
+
+  const sellerIds = unique(listings.map((l: any) => l.user_id));
+  const listingIds = listings.map((l: any) => l.id);
+
+  const [profiles, favorites, comments, ordersForListings] = await Promise.all([
+    sellerIds.length ? safeSelect("profiles", { user_id: `in.(${sellerIds.join(",")})` }) : Promise.resolve([] as any[]),
+    listingIds.length ? safeSelect("favorites", { listing_id: `in.(${listingIds.join(",")})`, select: "listing_id" }) : Promise.resolve([] as any[]),
+    listingIds.length ? safeSelect("listing_comments", { listing_id: `in.(${listingIds.join(",")})`, select: "listing_id" }) : Promise.resolve([] as any[]),
+    listingIds.length ? safeSelect("orders", { listing_id: `in.(${listingIds.join(",")})`, select: "listing_id,status" }) : Promise.resolve([] as any[]),
+  ]);
+
+  const profileMap = new Map(profiles.map((p: any) => [p.user_id, { username: p.username, avatar_url: p.avatar_url, status: p.status, email: p.email }]));
+  const favCounts = new Map<string, number>();
+  for (const f of favorites as any[]) favCounts.set(f.listing_id, (favCounts.get(f.listing_id) ?? 0) + 1);
+  const commentCounts = new Map<string, number>();
+  for (const c of comments as any[]) commentCounts.set(c.listing_id, (commentCounts.get(c.listing_id) ?? 0) + 1);
+  const orderCounts = new Map<string, number>();
+  for (const o of ordersForListings as any[]) orderCounts.set(o.listing_id, (orderCounts.get(o.listing_id) ?? 0) + 1);
+
+  // Duplicate detection: identical title+brand+seller
+  const dupKey = (l: any) => `${l.user_id}|${(l.title ?? "").toLowerCase().trim()}|${(l.brand ?? "").toLowerCase().trim()}`;
+  const dupCounts = new Map<string, number>();
+  for (const l of listings as any[]) {
+    const k = dupKey(l);
+    dupCounts.set(k, (dupCounts.get(k) ?? 0) + 1);
+  }
+
+  const enriched = listings.map((l: any) => {
+    const reports = Number(l.report_count ?? 0);
+    const isDup = (dupCounts.get(dupKey(l)) ?? 0) > 1;
+    // simple spam/fraud heuristic
+    const titleLen = (l.title ?? "").length;
+    const spamSignal = reports >= 2 || titleLen < 4 || /(http|www\.|@)/i.test(l.title ?? "") || isDup;
+    return {
+      ...l,
+      seller_profile: profileMap.get(l.user_id) ?? { username: "Unknown", avatar_url: null },
+      favorites_count: favCounts.get(l.id) ?? 0,
+      comments_count: commentCounts.get(l.id) ?? 0,
+      orders_count: orderCounts.get(l.id) ?? 0,
+      is_duplicate: isDup,
+      spam_signal: spamSignal,
+    };
+  });
+
+  return { listings: enriched };
+}
+
+async function listingAction(payload: any) {
+  const { listingId, type } = payload ?? {};
+  if (!listingId || !type) throw new Error("listingId and type required");
+
+  switch (type) {
+    case "hide":
+      await safePatch("listings", { id: `eq.${listingId}` }, { status: "hidden" });
+      return { ok: true };
+    case "feature":
+      await safePatch("listings", { id: `eq.${listingId}` }, { status: "featured" });
+      return { ok: true };
+    case "approve":
+    case "restore":
+    case "activate":
+      await safePatch("listings", { id: `eq.${listingId}` }, { status: "active" });
+      return { ok: true };
+    case "reject":
+    case "remove":
+    case "soft_delete":
+      await safePatch("listings", { id: `eq.${listingId}` }, { status: "removed" });
+      return { ok: true };
+    case "archive":
+      await safePatch("listings", { id: `eq.${listingId}` }, { status: "archived" });
+      return { ok: true };
+    case "delete":
+      await rest(query("listings", { id: `eq.${listingId}` }), { method: "DELETE", prefer: "return=minimal" });
+      return { ok: true };
+    default:
+      throw new Error(`Unknown listing action: ${type}`);
+  }
 }
 
 Deno.serve(async (req) => {
@@ -494,6 +776,16 @@ Deno.serve(async (req) => {
         return response(await markSuggestionRead(payload.id));
       case "listTransactions":
         return response(await listTransactions());
+      case "listUsers":
+        return response(await listUsers(payload));
+      case "getUserDetail":
+        return response(await getUserDetail(payload.userId));
+      case "userAction":
+        return response(await userAction(auth.userId, payload));
+      case "listListings":
+        return response(await listListings(payload));
+      case "listingAction":
+        return response(await listingAction(payload));
       default:
         return response({ error: "Unknown admin action" }, 400);
     }
