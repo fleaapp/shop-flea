@@ -182,7 +182,45 @@
 /* Global keyboard-safe height: use dvh so the viewport shrinks when the keyboard opens */
 :root {
   --keyboard-safe-height: 100dvh;
+
+  /* Admin Support Hub design tokens (used inside .admin-scope) */
+  --status-active: 142 76% 36%;
+  --status-active-foreground: 0 0% 100%;
+  --status-resolved: 215 16% 47%;
+  --status-resolved-foreground: 0 0% 100%;
+  --support-bubble: 217 91% 60%;
+  --support-bubble-foreground: 0 0% 100%;
+  --user-bubble: 215 20% 93%;
+  --user-bubble-foreground: 222 47% 11%;
+  --unread: 217 91% 60%;
 }
+
+/* Scoped admin theme: switch to slate/blue support-hub palette */
+.admin-scope {
+  --background: 210 20% 98%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  --primary: 217 91% 60%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 215 20% 95%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 215 20% 93%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 217 91% 95%;
+  --accent-foreground: 217 91% 45%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 217 91% 60%;
+  --radius: 0.75rem;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
 
 /* Keep drawers stable when the keyboard opens so fixed footers don't jump */
 [vaul-drawer] > [vaul-drawer-content] {
