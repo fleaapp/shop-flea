@@ -438,7 +438,8 @@ async function listTransactions() {
   const listingIds = unique(orders.map((o: any) => o.listing_id));
   const groupIds = unique(orders.map((o: any) => o.order_group_id).filter(Boolean));
 
-  const [profiles, listings, messages] = await Promise.all([
+  const messageOrderIds = unique(orders.map((o: any) => o.id));
+  const [profiles, listings, groupMessages, orderMessages] = await Promise.all([
     userIds.length
       ? safeSelect("profiles", { user_id: `in.(${userIds.join(",")})` })
       : Promise.resolve([] as any[]),
@@ -447,6 +448,9 @@ async function listTransactions() {
       : Promise.resolve([] as any[]),
     groupIds.length
       ? safeSelect("order_messages", { order_group_id: `in.(${groupIds.join(",")})`, select: "order_group_id" })
+      : Promise.resolve([] as any[]),
+    messageOrderIds.length
+      ? safeSelect("order_messages", { order_id: `in.(${messageOrderIds.join(",")})`, select: "order_id" })
       : Promise.resolve([] as any[]),
   ]);
 
@@ -461,10 +465,15 @@ async function listTransactions() {
       category: l.category,
     }])
   );
-  const msgCounts = new Map<string, number>();
-  for (const m of messages as any[]) {
+  const groupMsgCounts = new Map<string, number>();
+  for (const m of groupMessages as any[]) {
     if (!m.order_group_id) continue;
-    msgCounts.set(m.order_group_id, (msgCounts.get(m.order_group_id) ?? 0) + 1);
+    groupMsgCounts.set(m.order_group_id, (groupMsgCounts.get(m.order_group_id) ?? 0) + 1);
+  }
+  const orderMsgCounts = new Map<string, number>();
+  for (const m of orderMessages as any[]) {
+    if (!m.order_id) continue;
+    orderMsgCounts.set(m.order_id, (orderMsgCounts.get(m.order_id) ?? 0) + 1);
   }
 
   const enriched = orders.map((o: any) => ({
@@ -472,7 +481,7 @@ async function listTransactions() {
     listing: listingMap.get(o.listing_id) ?? null,
     buyer_profile: profileMap.get(o.buyer_id) ?? { username: "Unknown", avatar_url: null },
     seller_profile: profileMap.get(o.seller_id) ?? { username: "Unknown", avatar_url: null },
-    message_count: o.order_group_id ? (msgCounts.get(o.order_group_id) ?? 0) : 0,
+    message_count: (o.order_group_id ? (groupMsgCounts.get(o.order_group_id) ?? 0) : 0) || (orderMsgCounts.get(o.id) ?? 0),
   }));
 
   return { orders: enriched };
