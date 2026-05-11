@@ -88,26 +88,34 @@ function query(table: string, params: Record<string, string | number | boolean |
 }
 
 async function safeSelect(table: string, params: Record<string, string | number | boolean | null | undefined> = {}) {
-  try {
-    const data = await rest(query(table, { select: "*", ...params }), { prefer: "return=minimal" });
-    return Array.isArray(data) ? data : [];
-  } catch (error) {
-    const missingColumn = missingColumnName(error);
-    const select = typeof params.select === "string" ? params.select : "";
-    if ((error as any)?.missingSchema && missingColumn && select.includes(missingColumn)) {
-      const fallbackSelect = select
-        .split(",")
-        .map((part) => part.trim())
-        .filter((part) => part && part !== missingColumn)
-        .join(",");
-      if (fallbackSelect) {
-        const data = await rest(query(table, { ...params, select: fallbackSelect }), { prefer: "return=minimal" });
-        return Array.isArray(data) ? data : [];
+  let currentParams = { ...params };
+  let currentSelect = typeof params.select === "string" ? params.select : "";
+  // Retry up to 8 times, stripping one missing column per attempt
+  for (let attempt = 0; attempt < 8; attempt++) {
+    try {
+      const reqParams = currentSelect
+        ? { ...currentParams, select: currentSelect }
+        : { select: "*", ...currentParams };
+      const data = await rest(query(table, reqParams), { prefer: "return=minimal" });
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      const missingColumn = missingColumnName(error);
+      if ((error as any)?.missingSchema && missingColumn && currentSelect.includes(missingColumn)) {
+        const fallbackSelect = currentSelect
+          .split(",")
+          .map((p) => p.trim())
+          .filter((p) => p && p !== missingColumn)
+          .join(",");
+        if (fallbackSelect) {
+          currentSelect = fallbackSelect;
+          continue;
+        }
       }
+      if ((error as any)?.missingSchema) return [];
+      throw error;
     }
-    if ((error as any)?.missingSchema) return [];
-    throw error;
   }
+  return [];
 }
 
 async function safePatch(table: string, filters: Record<string, string>, body: Record<string, unknown>) {
