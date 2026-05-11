@@ -484,8 +484,8 @@ async function listUsers(payload: any = {}) {
   const inList = `in.(${userIds.join(",")})`;
   const [listings, ordersAsBuyer, ordersAsSeller, reportsAgainst] = await Promise.all([
     safeSelect("listings", { user_id: inList, select: "user_id,status" }),
-    safeSelect("orders", { buyer_id: inList, select: "buyer_id,price,shipping_price,status,refunded_at" }),
-    safeSelect("orders", { seller_id: inList, select: "seller_id,price,shipping_price,status,refunded_at" }),
+    safeSelect("orders", { buyer_id: inList, select: "buyer_id,price,shipping_price,status" }),
+    safeSelect("orders", { seller_id: inList, select: "seller_id,price,shipping_price,status" }),
     safeSelect("reports", { reported_user_id: inList, select: "reported_user_id" }),
   ]);
 
@@ -502,7 +502,7 @@ async function listUsers(payload: any = {}) {
     const t = buyerStats.get(o.buyer_id) ?? { count: 0, volume: 0, refunds: 0 };
     t.count += 1;
     t.volume += Number(o.price ?? 0) + Number(o.shipping_price ?? 0);
-    if (o.refunded_at || o.status === "refunded") t.refunds += 1;
+    if (o.status === "refunded") t.refunds += 1;
     buyerStats.set(o.buyer_id, t);
   }
   const sellerStats = new Map<string, { count: number; volume: number; refunds: number }>();
@@ -510,7 +510,7 @@ async function listUsers(payload: any = {}) {
     const t = sellerStats.get(o.seller_id) ?? { count: 0, volume: 0, refunds: 0 };
     t.count += 1;
     t.volume += Number(o.price ?? 0) + Number(o.shipping_price ?? 0);
-    if (o.refunded_at || o.status === "refunded") t.refunds += 1;
+    if (o.status === "refunded") t.refunds += 1;
     sellerStats.set(o.seller_id, t);
   }
   const reportCounts = new Map<string, number>();
