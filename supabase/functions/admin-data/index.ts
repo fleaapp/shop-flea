@@ -403,6 +403,55 @@ async function markSuggestionRead(id: string) {
   return { ok: true };
 }
 
+async function listTransactions() {
+  const orders = await safeSelect("orders", { order: "created_at.desc", limit: 1000 });
+  if (orders.length === 0) return { orders: [] };
+
+  const buyerIds = unique(orders.map((o: any) => o.buyer_id));
+  const sellerIds = unique(orders.map((o: any) => o.seller_id));
+  const userIds = unique([...buyerIds, ...sellerIds]);
+  const listingIds = unique(orders.map((o: any) => o.listing_id));
+  const orderIds = unique(orders.map((o: any) => o.id));
+
+  const [profiles, listings, messages] = await Promise.all([
+    userIds.length
+      ? safeSelect("profiles", { user_id: `in.(${userIds.join(",")})` })
+      : Promise.resolve([] as any[]),
+    listingIds.length
+      ? safeSelect("listings", { id: `in.(${listingIds.join(",")})` })
+      : Promise.resolve([] as any[]),
+    orderIds.length
+      ? safeSelect("order_messages", { order_id: `in.(${orderIds.join(",")})`, select: "order_id" })
+      : Promise.resolve([] as any[]),
+  ]);
+
+  const profileMap = new Map(
+    profiles.map((p: any) => [p.user_id, { username: p.username ?? "Unknown", avatar_url: p.avatar_url ?? null }])
+  );
+  const listingMap = new Map(
+    listings.map((l: any) => [l.id, {
+      title: l.title,
+      images: Array.isArray(l.images) ? l.images : [],
+      brand: l.brand,
+      category: l.category,
+    }])
+  );
+  const msgCounts = new Map<string, number>();
+  for (const m of messages as any[]) {
+    msgCounts.set(m.order_id, (msgCounts.get(m.order_id) ?? 0) + 1);
+  }
+
+  const enriched = orders.map((o: any) => ({
+    ...o,
+    listing: listingMap.get(o.listing_id) ?? null,
+    buyer_profile: profileMap.get(o.buyer_id) ?? { username: "Unknown", avatar_url: null },
+    seller_profile: profileMap.get(o.seller_id) ?? { username: "Unknown", avatar_url: null },
+    message_count: msgCounts.get(o.id) ?? 0,
+  }));
+
+  return { orders: enriched };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
