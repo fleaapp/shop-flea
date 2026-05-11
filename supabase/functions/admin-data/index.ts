@@ -491,6 +491,8 @@ Deno.serve(async (req) => {
         return response(await listSuggestions());
       case "markSuggestionRead":
         return response(await markSuggestionRead(payload.id));
+      case "listTransactions":
+        return response(await listTransactions());
       default:
         return response({ error: "Unknown admin action" }, 400);
     }
