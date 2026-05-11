@@ -47,14 +47,15 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (error) {
-      console.error("admin-check-role query error", error);
-      return new Response(JSON.stringify({ isAdmin: false, error: error.message }), {
+      console.error("admin-check-role query error", { userId, code: error.code, message: error.message, details: error.details });
+      return new Response(JSON.stringify({ isAdmin: false, error: error.message, code: error.code, userId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     }
 
-    return new Response(JSON.stringify({ isAdmin: !!data }), {
+    console.log("admin-check-role result", { userId, isAdmin: !!data });
+    return new Response(JSON.stringify({ isAdmin: !!data, userId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
