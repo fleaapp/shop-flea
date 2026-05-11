@@ -49,6 +49,7 @@ const loadAdminDashboard = () => import("./pages/admin/AdminDashboard");
 const loadAdminTransactions = () => import("./pages/admin/AdminTransactions");
 const loadAdminUsers = () => import("./pages/admin/AdminUsers");
 const loadAdminListings = () => import("./pages/admin/AdminListings");
+const loadAdminErrors = () => import("./pages/admin/AdminErrors");
 
 const ListingDetails = lazy(loadListingDetails);
 const Favorites = lazy(loadFavorites);
@@ -80,6 +81,7 @@ const AdminDashboard = lazy(loadAdminDashboard);
 const AdminTransactions = lazy(loadAdminTransactions);
 const AdminUsers = lazy(loadAdminUsers);
 const AdminListings = lazy(loadAdminListings);
+const AdminErrors = lazy(loadAdminErrors);
 import AdminRoute from "@/components/admin/AdminRoute";
 
 const queryClient = new QueryClient({
@@ -162,6 +164,7 @@ const AppContent = () => {
           <Route path="/admin/transactions" element={<AdminRoute><AdminTransactions /></AdminRoute>} />
           <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
           <Route path="/admin/listings" element={<AdminRoute><AdminListings /></AdminRoute>} />
+          <Route path="/admin/errors" element={<AdminRoute><AdminErrors /></AdminRoute>} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="*" element={<NotFound />} />

@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Headphones, MessageCircle, CheckCircle, BarChart3, ArrowLeft, Users, Package } from 'lucide-react';
+import { Headphones, MessageCircle, CheckCircle, BarChart3, ArrowLeft, Users, Package, ShieldAlert } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface DashboardHeaderProps {
@@ -34,6 +34,10 @@ export function DashboardHeader({ totalThreads, activeThreads, resolvedThreads }
           <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/admin/listings')}>
             <Package className="h-4 w-4" />
             <span className="hidden sm:inline">Listings</span>
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/admin/errors')}>
+            <ShieldAlert className="h-4 w-4" />
+            <span className="hidden sm:inline">Diagnostics</span>
           </Button>
           <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/admin/transactions')}>
             <BarChart3 className="h-4 w-4" />
