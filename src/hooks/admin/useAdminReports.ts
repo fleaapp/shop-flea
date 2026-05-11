@@ -11,7 +11,7 @@ export function useAdminReports() {
 
   const fetchReports = useCallback(async () => {
     try {
-      let query = supabase.from('reports').select('*').order('created_at', { ascending: false });
+      let query = (supabase as any).from('reports').select('*').order('created_at', { ascending: false });
       if (filter !== 'all') query = query.eq('status', filter);
       const { data, error } = await query;
       if (error) throw error;
@@ -19,8 +19,8 @@ export function useAdminReports() {
       const enriched = await Promise.all(
         (data || []).map(async (report: any) => {
           const [reportedProfile, reporterProfile] = await Promise.all([
-            supabase.from('profiles').select('username, avatar_url').eq('user_id', report.reported_user_id).maybeSingle(),
-            supabase.from('profiles').select('username, avatar_url').eq('user_id', report.reporter_user_id).maybeSingle(),
+            (supabase as any).from('profiles').select('username, avatar_url').eq('user_id', report.reported_user_id).maybeSingle(),
+            (supabase as any).from('profiles').select('username, avatar_url').eq('user_id', report.reporter_user_id).maybeSingle(),
           ]);
           return {
             ...report,
@@ -48,7 +48,7 @@ export function useAdminReports() {
     try {
       const update: Record<string, unknown> = { status };
       if (adminNotes !== undefined) update.admin_notes = adminNotes;
-      const { error } = await supabase.from('reports').update(update).eq('id', id);
+      const { error } = await (supabase as any).from('reports').update(update).eq('id', id);
       if (error) throw error;
       toast({ title: 'Updated', description: `Report ${status}` });
       fetchReports();

@@ -11,7 +11,7 @@ export function useAdminChatThreads() {
 
   const fetchThreads = useCallback(async () => {
     try {
-      let query = supabase.from('chat_threads').select('*').order('updated_at', { ascending: false });
+      let query = (supabase as any).from('chat_threads').select('*').order('updated_at', { ascending: false });
       if (filter !== 'all') query = query.eq('status', filter);
       const { data: threadsData, error } = await query;
       if (error) throw error;
@@ -55,7 +55,7 @@ export function useAdminChatThreads() {
 
   const updateThreadStatus = async (threadId: string, status: 'active' | 'resolved') => {
     try {
-      const { error } = await supabase.from('chat_threads')
+      const { error } = await (supabase as any).from('chat_threads')
         .update({ status, updated_at: new Date().toISOString() }).eq('id', threadId);
       if (error) throw error;
       toast({ title: 'Updated', description: `Thread marked as ${status}` });
