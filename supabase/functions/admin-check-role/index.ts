@@ -39,6 +39,7 @@ Deno.serve(async (req) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
+    // Check if user is admin
     const { data, error } = await client
       .from("user_roles")
       .select("role")
@@ -46,15 +47,68 @@ Deno.serve(async (req) => {
       .eq("role", "admin")
       .maybeSingle();
 
-    if (error) {
-      console.error("admin-check-role query error", error);
-      return new Response(JSON.stringify({ isAdmin: false, error: error.message }), {
+    // If table doesn't exist, surface clearly
+    if (error && (error.code === "42P01" || /relation .* does not exist/i.test(error.message ?? ""))) {
+      console.error("user_roles table missing on external DB", error);
+      return new Response(JSON.stringify({ isAdmin: false, error: "user_roles table missing on external DB. Run setup SQL.", code: error.code, userId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     }
 
-    return new Response(JSON.stringify({ isAdmin: !!data }), {
+    if (error) {
+      console.error("admin-check-role query error", { userId, code: error.code, message: error.message, details: error.details });
+      return new Response(JSON.stringify({ isAdmin: false, error: error.message, code: error.code, userId }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    if (data) {
+      console.log("admin-check-role: existing admin", { userId });
+      return new Response(JSON.stringify({ isAdmin: true, userId }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // Not an admin — check if there are any admins at all (bootstrap path)
+    const { count, error: countErr } = await client
+      .from("user_roles")
+      .select("*", { count: "exact", head: true })
+      .eq("role", "admin");
+
+    if (countErr) {
+      console.error("admin-check-role count error", countErr);
+      return new Response(JSON.stringify({ isAdmin: false, error: countErr.message, code: countErr.code, userId }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    if ((count ?? 0) === 0) {
+      // No admins exist yet — bootstrap this user as the first admin
+      const { error: insertErr } = await client
+        .from("user_roles")
+        .insert({ user_id: userId, role: "admin" });
+
+      if (insertErr) {
+        console.error("admin bootstrap insert failed", insertErr);
+        return new Response(JSON.stringify({ isAdmin: false, error: insertErr.message, code: insertErr.code, userId, bootstrap: "failed" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+
+      console.log("admin-check-role: bootstrapped first admin", { userId });
+      return new Response(JSON.stringify({ isAdmin: true, userId, bootstrap: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    console.log("admin-check-role: not admin", { userId });
+    return new Response(JSON.stringify({ isAdmin: false, userId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
