@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Report, ReportFilter, TopReportedUser } from '@/types/admin/reports';
 import { useToast } from '@/hooks/use-toast';
 import { callAdminData } from './useAdminData';
@@ -35,7 +35,33 @@ export function useAdminReports() {
     }
   };
 
-  const pendingCount = reports.filter((r) => r.status === 'pending').length;
+  const reportTallyByUser = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const u of topReportedUsers) map[u.user_id] = u.count;
+    // also include any user not in top list, derived from current page
+    for (const r of reports) {
+      if (!map[r.reported_user_id]) {
+        map[r.reported_user_id] = r.reported_user_total_reports ?? 1;
+      }
+    }
+    return map;
+  }, [topReportedUsers, reports]);
 
-  return { reports, topReportedUsers, loading, filter, setFilter, updateReportStatus, pendingCount, refetch: fetchReports };
+  const pendingCount = reports.filter((r) => r.status === 'pending').length;
+  const acceptedCount = reports.filter((r) => r.status === 'accepted').length;
+  const rejectedCount = reports.filter((r) => r.status === 'rejected').length;
+
+  return {
+    reports,
+    topReportedUsers,
+    loading,
+    filter,
+    setFilter,
+    updateReportStatus,
+    pendingCount,
+    acceptedCount,
+    rejectedCount,
+    reportTallyByUser,
+    refetch: fetchReports,
+  };
 }
