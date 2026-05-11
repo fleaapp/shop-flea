@@ -1391,6 +1391,10 @@ Deno.serve(async (req) => {
         return response(await listListings(payload));
       case "listingAction":
         return response(await listingAction(payload));
+      case "listSystemIssues":
+        return response(await listSystemIssues());
+      case "runSystemFix":
+        return response(await runSystemFix(payload.fixId));
       default:
         return response({ error: "Unknown admin action" }, 400);
     }
