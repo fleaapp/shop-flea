@@ -27,6 +27,14 @@ export function DashboardHeader({ totalThreads, activeThreads, resolvedThreads }
           </div>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/admin/users')}>
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Users</span>
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/admin/listings')}>
+            <Package className="h-4 w-4" />
+            <span className="hidden sm:inline">Listings</span>
+          </Button>
           <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate('/admin/transactions')}>
             <BarChart3 className="h-4 w-4" />
             <span className="hidden sm:inline">Transactions</span>
