@@ -50,41 +50,12 @@ const PaymentMethodsSection = () => {
   const returnedFromStripe = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('stripe_success') === 'true';
   const stripePending = !stripeFullyConnected && !stripeDetailsSubmitted && (returnedFromStripe || isChecking);
 
-  const paypalConnected = (profile as any)?.paypal_onboarding_complete === true || localPayPalConnected;
-  const returnedFromPayPal = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('paypal_return') === 'true';
-  const paypalPending = !paypalConnected && (returnedFromPayPal || isCheckingPayPal);
-
   const handleConnectStripe = () => {
     if (!user || !user.email) {
       toast.error('You must be logged in to connect Stripe');
       return;
     }
     setShowStripeOnboarding(true);
-  };
-
-  const handleConnectPayPal = async () => {
-    if (!user || !user.email) {
-      toast.error('You must be logged in to connect PayPal');
-      return;
-    }
-
-    setIsConnectingPayPal(true);
-    try {
-      const { data, error } = await invokeCloudFunction('paypal-connect-onboard', {
-        returnUrl: window.location.origin + '/settings',
-      });
-
-      if (error) throw error;
-      if (!data?.url) throw new Error('No onboarding URL returned');
-
-      localStorage.setItem('flea_paypal_pending', 'true');
-      window.location.href = data.url;
-    } catch (error: any) {
-      console.error('PayPal Connect error:', error);
-      toast.error('Failed to start PayPal connection. Please try again.');
-    } finally {
-      setIsConnectingPayPal(false);
-    }
   };
 
   const handleCheckStatus = useCallback(async (silent = false) => {
