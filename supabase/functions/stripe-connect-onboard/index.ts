@@ -90,18 +90,29 @@ serve(async (req) => {
 
     // Create a new Standard account if needed
     if (!accountId) {
-      // Fetch user profile for pre-filling
+      // Fetch user profile + saved address for pre-filling
       const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '';
       const serviceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
-      const profileRes = await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}&select=first_name,last_name,email,country_code`, {
-        headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` },
-      });
+      const [profileRes, addressRes] = await Promise.all([
+        fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}&select=first_name,last_name,email,country_code,legal_name`, {
+          headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` },
+        }),
+        fetch(`${externalUrl}/rest/v1/buyer_addresses?user_id=eq.${userId}&select=first_name,last_name,address,suburb,state,postcode`, {
+          headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` },
+        }),
+      ]);
       const profiles = await profileRes.json();
+      const addresses = await addressRes.json();
       const userProfile = profiles?.[0];
+      const userAddress = addresses?.[0];
+
+      const country = (userProfile?.country_code || 'AU').toUpperCase();
 
       const createParams: Record<string, unknown> = {
         type: "express",
         email: user.email,
+        country,
+        default_currency: country === 'AU' ? 'aud' : undefined,
         metadata: {
           flea_user_id: userId,
         },
@@ -131,18 +142,26 @@ serve(async (req) => {
         prefillFirst = parts[0];
         prefillLast = parts.slice(1).join(' ') || undefined;
       }
-      const firstName = prefillFirst || userProfile?.first_name;
-      const lastName = prefillLast || userProfile?.last_name;
+      const firstName = prefillFirst || userProfile?.first_name || userAddress?.first_name;
+      const lastName = prefillLast || userProfile?.last_name || userAddress?.last_name;
       if (firstName) individual.first_name = firstName;
       if (lastName) individual.last_name = lastName;
       if (user.email) individual.email = user.email;
-      if (Object.keys(individual).length > 0) {
-        createParams.individual = individual;
+
+      // Pre-fill personal address from saved buyer address (AU sellers)
+      if (userAddress?.address) {
+        const address: Record<string, string> = {
+          line1: userAddress.address,
+          country,
+        };
+        if (userAddress.suburb) address.city = userAddress.suburb;
+        if (userAddress.state) address.state = userAddress.state;
+        if (userAddress.postcode) address.postal_code = userAddress.postcode;
+        individual.address = address;
       }
 
-      // Pre-fill country
-      if (userProfile?.country_code) {
-        createParams.country = userProfile.country_code.toUpperCase();
+      if (Object.keys(individual).length > 0) {
+        createParams.individual = individual;
       }
 
       // Pre-fill business profile.
