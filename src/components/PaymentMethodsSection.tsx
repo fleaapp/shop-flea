@@ -5,8 +5,6 @@ import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { toast } from 'sonner';
 import { ChevronRight } from 'lucide-react';
 import stripeLogo from '@/assets/logo-stripe.png';
-import paypalLogo from '@/assets/logo-paypal.png';
-import { PAYPAL_ENABLED } from '@/config/features';
 import { clearStripeConnectionState, getStripeConnectedStorageKey } from '@/utils/stripeConnectionState';
 import StripeOnboardingSheet from '@/components/StripeOnboardingSheet';
 
