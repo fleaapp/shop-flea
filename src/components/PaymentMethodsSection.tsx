@@ -326,42 +326,7 @@ const PaymentMethodsSection = () => {
           </div>
         </div>
 
-        {/* PayPal — hidden until Partner approval lands. */}
-        {PAYPAL_ENABLED && (
-        <div
-          className="flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow bg-card cursor-pointer"
-          onClick={paypalConnected ? undefined : handleConnectPayPal}
-        >
-          <div className="flex items-center gap-3 max-[375px]:gap-2">
-            <img src={paypalLogo} alt="PayPal" className="h-7 w-7 object-contain" />
-            <div>
-              <span className="text-base max-[375px]:text-sm font-medium text-foreground">
-                PayPal
-              </span>
-              <p className={`text-xs mt-0.5 ${paypalConnected ? 'text-green-600' : paypalPending || isCheckingPayPal ? 'text-amber-600' : 'text-muted-foreground'}`}>
-                {paypalConnected ? '✅ Connected' : paypalPending || isCheckingPayPal ? '⏳ Verifying...' : 'Not connected'}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {isConnectingPayPal ? (
-              <span className="text-xs text-muted-foreground">Connecting...</span>
-            ) : paypalConnected ? (
-              <button
-                onClick={(e) => { e.stopPropagation(); handleCheckPayPalStatus(false); }}
-                disabled={isCheckingPayPal}
-                className="text-xs text-green-600 font-medium hover:text-green-700 disabled:opacity-50"
-              >
-                {isCheckingPayPal ? 'Syncing...' : 'Active ↻'}
-              </button>
-            ) : paypalPending || isCheckingPayPal ? (
-              <span className="text-xs text-amber-600 font-medium">Verifying</span>
-            ) : (
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            )}
-          </div>
-        </div>
-        )}
+        {/* PayPal seller connection removed. PayPal is offered to buyers at checkout only. */}
       </div>
     </div>
     </>
