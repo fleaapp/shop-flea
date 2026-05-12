@@ -1,64 +1,47 @@
 project_id = "teaicrimlqdayqpmxasc"
 
-[functions.moderate-content]
-verify_jwt = false
-
-[functions.stripe-connect-onboard]
-verify_jwt = false
-
-[functions.stripe-connect-status]
-verify_jwt = false
-
-[functions.stripe-connect-checkout]
-verify_jwt = false
-
-[functions.stripe-connect-refund]
-verify_jwt = false
-
-[functions.paypal-connect-refund]
-verify_jwt = false
-
-[functions.paypal-connect-onboard]
-verify_jwt = false
-
-[functions.paypal-connect-status]
-verify_jwt = false
-
-[functions.paypal-connect-checkout]
-verify_jwt = false
-
-[functions.delete-account]
-verify_jwt = false
-
-[functions.shipping-reminders]
-verify_jwt = false
-
-[functions.order-messages]
-verify_jwt = false
-
-[functions.cleanup-stale-saved-listings]
-verify_jwt = false
-
-[functions.send-push-notification]
-verify_jwt = false
-
-[functions.comment-mentions]
-verify_jwt = false
-
-[functions.stripe-webhook]
-verify_jwt = false
-
-[functions.paypal-webhook]
-verify_jwt = false
-
-[functions.finalize-checkout]
-verify_jwt = false
-
-[functions.process-email-queue]
-verify_jwt = true
-
-[functions.admin-check-role]
-verify_jwt = false
-
-[functions.admin-data]
-verify_jwt = false
+[functions]
+  [functions.admin-check-role]
+    verify_jwt = false
+  [functions.admin-data]
+    verify_jwt = false
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.cleanup-stale-saved-listings]
+    verify_jwt = false
+  [functions.comment-mentions]
+    verify_jwt = false
+  [functions.delete-account]
+    verify_jwt = false
+  [functions.finalize-checkout]
+    verify_jwt = false
+  [functions.moderate-content]
+    verify_jwt = false
+  [functions.order-messages]
+    verify_jwt = false
+  [functions.paypal-connect-checkout]
+    verify_jwt = false
+  [functions.paypal-connect-onboard]
+    verify_jwt = false
+  [functions.paypal-connect-refund]
+    verify_jwt = false
+  [functions.paypal-connect-status]
+    verify_jwt = false
+  [functions.paypal-webhook]
+    verify_jwt = false
+  [functions.process-email-queue]
+    verify_jwt = true
+  [functions.send-push-notification]
+    verify_jwt = false
+  [functions.shipping-reminders]
+    verify_jwt = false
+  [functions.stripe-connect-checkout]
+    verify_jwt = false
+  [functions.stripe-connect-onboard]
+    verify_jwt = false
+  [functions.stripe-connect-refund]
+    verify_jwt = false
+  [functions.stripe-connect-status]
+    verify_jwt = false
+  [functions.stripe-webhook]
+    verify_jwt = false
