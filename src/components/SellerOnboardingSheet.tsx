@@ -36,9 +36,10 @@ const SellerOnboardingSheet = ({
   useEffect(() => {
     if (open) {
       setStep(1);
+      const p: any = profile || {};
       const existing =
-        (profile as any)?.legal_name ||
-        [profile?.first_name, profile?.last_name].filter(Boolean).join(' ').trim();
+        p.legal_name ||
+        [p.first_name, p.last_name].filter(Boolean).join(' ').trim();
       setLegalName(existing || '');
     }
   }, [open, profile]);
