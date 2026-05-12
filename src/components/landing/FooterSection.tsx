@@ -61,9 +61,9 @@ const FooterSection = () => {
 
         <div className="flex flex-col items-center gap-2">
           <div className="flex gap-4 text-mint/50 text-xs">
-            <a href="#" className="hover:text-mint transition-colors">Terms & Conditions</a>
+            <Link to="/terms" className="hover:text-mint transition-colors">Terms &amp; Conditions</Link>
             <span>·</span>
-            <a href="#" className="hover:text-mint transition-colors">Privacy Policy</a>
+            <Link to="/privacy" className="hover:text-mint transition-colors">Privacy Policy</Link>
           </div>
           <p className="text-mint/30 text-xs">© {new Date().getFullYear()} Flea. All rights reserved.</p>
         </div>
