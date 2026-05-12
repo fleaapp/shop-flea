@@ -15,11 +15,6 @@ const PaymentMethodsSection = () => {
   const [localAccountId, setLocalAccountId] = useState<string | null>(null);
   const [showStripeOnboarding, setShowStripeOnboarding] = useState(false);
 
-  // PayPal state
-  const [isConnectingPayPal, setIsConnectingPayPal] = useState(false);
-  const [isCheckingPayPal, setIsCheckingPayPal] = useState(false);
-  const [localPayPalConnected, setLocalPayPalConnected] = useState(false);
-
   const clearLocalStripeState = useCallback(() => {
     clearStripeConnectionState(user?.id);
     setLocalConnected(false);
