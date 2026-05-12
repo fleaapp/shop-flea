@@ -25,7 +25,6 @@ const PaymentMethodsSection = () => {
     if (!user) {
       setLocalConnected(false);
       setLocalAccountId(null);
-      setLocalPayPalConnected(false);
       return;
     }
 
@@ -36,9 +35,6 @@ const PaymentMethodsSection = () => {
       const stored = localStorage.getItem(getStripeConnectedStorageKey(user.id)) === 'true';
       setLocalConnected(stored);
     }
-
-    const paypalStored = localStorage.getItem(`flea_paypal_connected_${user.id}`) === 'true';
-    setLocalPayPalConnected(paypalStored);
   }, [clearLocalStripeState, profile?.stripe_account_id, profile?.stripe_onboarding_complete, user]);
 
   // "Connected" = charges + payouts enabled. "Action required" = charges enabled but payouts paused.
