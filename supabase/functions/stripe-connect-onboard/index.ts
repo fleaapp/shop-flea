@@ -63,7 +63,7 @@ serve(async (req) => {
       });
     }
 
-    const { returnUrl, stripeAccountId, forceNew, prefillName } = await req.json();
+    const { returnUrl, stripeAccountId, forceNew, prefillName, prefill } = await req.json();
     const userId = user.id;
 
     const stripe = new Stripe(getStripeSecretKey(), {
@@ -133,7 +133,8 @@ serve(async (req) => {
         },
       };
 
-      // Pre-fill individual details. prefillName takes priority when provided.
+      // Pre-fill individual details. `prefill` (from the in-app form) takes top priority,
+      // then `prefillName`, then values stored on the profile.
       const individual: Record<string, unknown> = {};
       let prefillFirst: string | undefined;
       let prefillLast: string | undefined;
@@ -142,14 +143,37 @@ serve(async (req) => {
         prefillFirst = parts[0];
         prefillLast = parts.slice(1).join(' ') || undefined;
       }
-      const firstName = prefillFirst || userProfile?.first_name || userAddress?.first_name;
-      const lastName = prefillLast || userProfile?.last_name || userAddress?.last_name;
+      const firstName = prefill?.firstName || prefillFirst || userProfile?.first_name || userAddress?.first_name;
+      const lastName = prefill?.lastName || prefillLast || userProfile?.last_name || userAddress?.last_name;
       if (firstName) individual.first_name = firstName;
       if (lastName) individual.last_name = lastName;
       if (user.email) individual.email = user.email;
 
-      // Pre-fill personal address from saved buyer address (AU sellers)
-      if (userAddress?.address) {
+      // DOB from in-app form
+      if (prefill?.dob?.year && prefill?.dob?.month && prefill?.dob?.day) {
+        individual.dob = {
+          year: Number(prefill.dob.year),
+          month: Number(prefill.dob.month),
+          day: Number(prefill.dob.day),
+        };
+      }
+
+      // Phone from in-app form (E.164 preferred, but Stripe accepts national too)
+      if (prefill?.phone) {
+        individual.phone = String(prefill.phone);
+      }
+
+      // Personal address — prefer in-app form, fall back to saved buyer address
+      if (prefill?.address?.line1) {
+        const addr: Record<string, string> = {
+          line1: String(prefill.address.line1),
+          country: String(prefill.address.country || country),
+        };
+        if (prefill.address.city) addr.city = String(prefill.address.city);
+        if (prefill.address.state) addr.state = String(prefill.address.state);
+        if (prefill.address.postal_code) addr.postal_code = String(prefill.address.postal_code);
+        individual.address = addr;
+      } else if (userAddress?.address) {
         const address: Record<string, string> = {
           line1: userAddress.address,
           country,
