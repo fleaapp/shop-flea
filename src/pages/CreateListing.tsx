@@ -502,9 +502,9 @@ const CreateListing = () => {
           </Button>
           <h1 className="text-xl font-bold text-foreground">Add New Listing</h1>
         </header>
-        <ConnectPaymentDialog
+        <SellerOnboardingSheet
           open={true}
-          onOpenChange={() => {}}
+          onOpenChange={(v) => { if (!v) navigate(-1); }}
           stripeActionRequired={stripeActionRequired}
         />
         <BottomNav />
