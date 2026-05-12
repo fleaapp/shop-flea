@@ -267,14 +267,21 @@ const Auth = () => {
     try {
       localStorage.setItem('flea_oauth_signup', '1');
 
-      const result = await lovable.auth.signInWithOAuth('google', {
-        redirect_uri: window.location.origin,
-        extraParams: { prompt: 'select_account' },
+      // Use the external Supabase client directly. The lovable.auth wrapper
+      // sets the session on the Lovable Cloud client, but this app's session
+      // lives on the external Supabase project — using the wrong client makes
+      // OAuth loop back to /auth without a session.
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+          queryParams: { prompt: 'select_account' },
+        },
       });
 
-      if (result.error) {
+      if (error) {
         localStorage.removeItem('flea_oauth_signup');
-        console.error('Google sign-in error:', result.error);
+        console.error('Google sign-in error:', error);
         toast.error('Google sign-in failed. Please try again.');
       }
     } catch (err) {
@@ -288,13 +295,16 @@ const Auth = () => {
     try {
       localStorage.setItem('flea_oauth_signup', '1');
 
-      const result = await lovable.auth.signInWithOAuth('apple', {
-        redirect_uri: window.location.origin,
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: window.location.origin,
+        },
       });
 
-      if (result.error) {
+      if (error) {
         localStorage.removeItem('flea_oauth_signup');
-        console.error('Apple sign-in error:', result.error);
+        console.error('Apple sign-in error:', error);
         toast.error('Apple sign-in failed. Please try again.');
       }
     } catch (err) {
