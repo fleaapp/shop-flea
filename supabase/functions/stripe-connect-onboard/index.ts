@@ -63,7 +63,7 @@ serve(async (req) => {
       });
     }
 
-    const { returnUrl, stripeAccountId, forceNew } = await req.json();
+    const { returnUrl, stripeAccountId, forceNew, prefillName } = await req.json();
     const userId = user.id;
 
     const stripe = new Stripe(getStripeSecretKey(), {
@@ -122,10 +122,19 @@ serve(async (req) => {
         },
       };
 
-      // Pre-fill individual details
+      // Pre-fill individual details. prefillName takes priority when provided.
       const individual: Record<string, unknown> = {};
-      if (userProfile?.first_name) individual.first_name = userProfile.first_name;
-      if (userProfile?.last_name) individual.last_name = userProfile.last_name;
+      let prefillFirst: string | undefined;
+      let prefillLast: string | undefined;
+      if (typeof prefillName === 'string' && prefillName.trim().length > 0) {
+        const parts = prefillName.trim().split(/\s+/);
+        prefillFirst = parts[0];
+        prefillLast = parts.slice(1).join(' ') || undefined;
+      }
+      const firstName = prefillFirst || userProfile?.first_name;
+      const lastName = prefillLast || userProfile?.last_name;
+      if (firstName) individual.first_name = firstName;
+      if (lastName) individual.last_name = lastName;
       if (user.email) individual.email = user.email;
       if (Object.keys(individual).length > 0) {
         createParams.individual = individual;

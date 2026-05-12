@@ -1,76 +1,82 @@
-# Admin section inside Flea (port of Support Hub + extras)
+## Seller Onboarding Refactor
 
-## What you'll get
-
-A new `/admin` area inside the Flea app, accessible only to users with the `admin` role. It contains everything the standalone Support Hub has today — plus a few sensible additions — and reads/writes against your **external Supabase** (the same DB the Flea app uses), so the data is live, not mirrored.
-
-## Sections
-
-```text
-/admin                    → redirects to /admin/support
-  /admin/support          → live support chat (chat_threads + chat_messages)
-  /admin/reports          → user/listing/comment reports queue
-  /admin/bans             → banned/blocked users, lift/restore
-  /admin/suggestions      → user feedback inbox
-  /admin/transactions     → all orders, filters, CSV export
-  /admin/users            → NEW: search any user, view profile + strikes + actions
-  /admin/listings         → NEW: search/remove any listing, view reports
-  /admin/overview         → NEW: KPI dashboard (GMV, active sellers, open reports, etc.)
-```
-
-## Access control
-
-A new `user_roles` table with an `admin` enum value, plus a `has_role(uid, role)` security-definer function. The `/admin/*` routes are gated client-side **and** every admin write goes through edge functions that re-check the role server-side (never trust the client). Non-admins hitting `/admin` get redirected.
-
-You'll grant yourself the admin role with one SQL line after the table is created — I'll give it to you.
-
-## Recommended additions (the "plus" you asked for)
-
-1. **Overview/KPI dashboard** — at-a-glance: GMV last 7/30 days, new signups, active listings, open reports, pending shipments overdue.
-2. **User search & 360° view** — search by username/email, see their listings, orders, reports filed against them, strikes, ban history. One-click ban / lift ban / send support message.
-3. **Listing search & moderate** — search any listing, remove it, see who reported it.
-4. **Audit log** — every admin action (ban, lift, remove listing, status change) writes a row to `admin_actions` so there's a paper trail.
-5. **In-app admin badge** — small "Admin" pill in your bottom nav so you can jump to `/admin` from anywhere.
-
-## Tech approach
-
-- **Routes:** new `src/pages/admin/*` files + an `<AdminLayout>` with sidebar nav (desktop) / tab bar (mobile). Lazy-loaded so it doesn't bloat the main bundle.
-- **Auth gate:** `<AdminRoute>` wrapper that checks `has_role(auth.uid(), 'admin')` and redirects otherwise.
-- **Data:** ports the 9 hooks from the Hub almost verbatim (they already use `supabase` client, which in this project points at the same external Supabase the Hub uses).
-- **Edge functions:** small `admin-action` function that validates the caller is an admin and performs privileged writes (ban user, lift ban, remove listing, mark report resolved). Keeps RLS strict.
-- **Audit:** triggers on `admin_actions` table for an immutable log.
-
-## Database changes needed (in your **external** Supabase)
-
-Because my migration tool only writes to Lovable Cloud, I'll give you the SQL to paste once. It creates:
-
-- `app_role` enum (`admin`, `moderator`, `user`)
-- `user_roles` table with RLS
-- `has_role()` security-definer function
-- `support_suggestions` table (if not present) for the Suggestions tab
-- `user_bans` table for ban records (active, lifted, reason, lifted_by, lifted_at)
-- `admin_actions` audit table
-- Adds a `status` value `'banned'` distinct from `'blocked'` if you want it (optional)
-
-I'll inspect the external DB first to see which of these already exist (suggestions and bans may need to be created — the Hub project has hooks for them).
-
-## Out of scope (call out if you want them)
-
-- Email templates / branded notifications to banned users
-- Multi-admin permissions tiers (just `admin` for now)
-- Mobile push to admins on new reports
-
-## Build order
-
-1. Inspect external DB → confirm which tables exist, give you a single SQL block to run.
-2. After you run it, scaffold `<AdminLayout>`, `<AdminRoute>`, role hook.
-3. Port Support tab (most complex — chat).
-4. Port Reports + Bans + Suggestions + Transactions.
-5. Build new Overview, User search, Listing search, audit log.
-6. Add admin pill to nav, wire `/admin` redirect.
-
-Estimated 4–6 build cycles. I'll do it in stages and check in between each so you can sanity-check before I push further.
+### Goal
+Replace the current "Connect Stripe or PayPal" dialog with a streamlined 3-step seller enablement flow that gates only on what's needed to list & get paid. Remove PayPal from seller side entirely. Keep PayPal as a **buyer** payment option at checkout.
 
 ---
 
-**Approve this plan to start, or tell me what to change.** Likely tweaks: drop the "extras" if you want a pure 1:1 port, or add specific KPIs to the Overview.
+### 1. New Seller Enablement Flow
+
+Create `src/components/SellerOnboardingSheet.tsx` — a bottom sheet (matching `StripeOnboardingSheet` styling: `rounded-t-3xl border-t-[3px] border-charcoal`, Inter, lime CTA) with 3 steps and a progress indicator (`Step X of 3`).
+
+**Step 1 — Welcome**
+- Title: "Start selling on Flea"
+- Subtitle: "List items in minutes and get paid securely"
+- CTA: "Continue"
+
+**Step 2 — Legal name**
+- Single input: "Your name (for payments)"
+- Helper: "This must match your bank account details"
+- Validate non-empty, ≥2 chars, trim. Persist to `profiles.legal_name` (new column).
+- CTA: "Continue"
+
+**Step 3 — Bridge to Stripe**
+- Copy: "To get paid, we securely connect your bank account through Stripe. Flea never holds your money."
+- Keeps the existing 🚨 Individual / Sole trader disclaimer.
+- CTA: "Continue to secure setup" → calls `stripe-connect-onboard` edge function (passing email + legal name) and redirects.
+
+On Stripe return (existing `/settings` return URL flow already verifies via `stripe-connect-status`), success toast: "You're ready to sell on Flea 🎉" and route to `/create-listing`.
+
+---
+
+### 2. Replace ConnectPaymentDialog usage
+
+The "+" listing entry currently triggers `ConnectPaymentDialog` (Stripe vs PayPal choice). Change every entry point so that when the user is NOT yet a connected seller, we open the new `SellerOnboardingSheet` instead.
+
+Touched files (entry points using ConnectPaymentDialog / payment gating):
+- `src/pages/Profile.tsx`
+- `src/pages/CreateListing.tsx`
+- `src/pages/Settings.tsx` (for the seller "Connect payments" row — replace with "Set up selling")
+- `src/components/PaymentMethodsSection.tsx` (remove PayPal block on seller side)
+
+`ConnectPaymentDialog.tsx` and the "stripe vs paypal" choice UI are no longer used for seller onboarding — delete the PayPal connect button and rename/refocus the dialog, or remove it entirely in favor of `SellerOnboardingSheet`. Keep the action-required path (Stripe issues) inside the new sheet's logic.
+
+---
+
+### 3. Remove PayPal seller surfaces
+
+- Remove "Connect PayPal" buttons in `PaymentMethodsSection`, `Settings`, `Profile` and any seller dashboard.
+- Keep edge functions `paypal-connect-*` deployed (no-op for now) — do not delete; they're still referenced by buyer checkout in step 4.
+- Remove `flea_paypal_pending` localStorage handling in seller flows.
+- Remove "Action required" banners for PayPal on seller side.
+
+---
+
+### 4. PayPal as buyer payment option
+
+PayPal Checkout (buyer side) already exists via `paypal-connect-checkout` edge function. Audit `src/pages/Checkout.tsx` — ensure PayPal appears as a buyer payment option alongside Stripe (Apple/Google/Card). If not currently surfaced, add a "Pay with PayPal" button that invokes the existing buyer checkout function. Keep payment-method icons row (Apple/Google/Card) and append PayPal logo per `checkout-payment-methods` memory.
+
+(No changes to fees/fee model.)
+
+---
+
+### 5. Database
+
+New migration:
+```sql
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS legal_name text;
+```
+No RLS change needed — existing profile policies already allow user to update own row.
+
+---
+
+### Technical notes
+- Sheet styling matches existing `StripeOnboardingSheet`/`OnboardingWelcomeDialog` (memory: drawer top-10 offset, px-4 pt-3 pb-4 footer, lime primary).
+- Step state local to component (`useState<1|2|3>`).
+- Mobile-first, max 2–3 min completion, no extra fields.
+- Pass `legal_name` to `stripe-connect-onboard` edge function as optional `prefillName` param; the edge function can include it on `account.individual.first_name`/`last_name` if not yet set.
+
+### Out of scope
+- No changes to platform fees, refunds, or order flow.
+- No deletion of PayPal edge functions (still used for buyer checkout).
+- No changes to app onboarding (welcome/tour) flow.

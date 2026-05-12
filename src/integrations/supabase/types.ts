@@ -689,6 +689,7 @@ export type Database = {
           id: string
           last_name: string | null
           last_sign_in_at: string | null
+          legal_name: string | null
           location: string | null
           marketing_opt_in: boolean
           password_set: boolean
@@ -724,6 +725,7 @@ export type Database = {
           id?: string
           last_name?: string | null
           last_sign_in_at?: string | null
+          legal_name?: string | null
           location?: string | null
           marketing_opt_in?: boolean
           password_set?: boolean
@@ -759,6 +761,7 @@ export type Database = {
           id?: string
           last_name?: string | null
           last_sign_in_at?: string | null
+          legal_name?: string | null
           location?: string | null
           marketing_opt_in?: boolean
           password_set?: boolean

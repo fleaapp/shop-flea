@@ -13,7 +13,7 @@ import CategorySelectionDrawer from '@/components/CategorySelectionDrawer';
 import TieredShippingSetupModal from '@/components/TieredShippingSetupModal';
 import BlockedUserBanner from '@/components/BlockedUserBanner';
 import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
-import ConnectPaymentDialog from '@/components/ConnectPaymentDialog';
+import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -65,9 +65,8 @@ const CreateListing = () => {
   const [hasPaymentMethodStripe, setHasPaymentMethodStripe] = useState(() => typeof window !== 'undefined' && !!stripeLocalKey && localStorage.getItem(stripeLocalKey) === 'true');
   const [stripeActionRequired, setStripeActionRequired] = useState(false);
 
-  // PayPal connected check
-  const hasPayPalConnected = (profile as any)?.paypal_onboarding_complete === true ||
-    (typeof window !== 'undefined' && !!user && localStorage.getItem(`flea_paypal_connected_${user.id}`) === 'true');
+  // PayPal removed from seller flow.
+  const hasPayPalConnected = false;
 
   // Keep local payment state aligned with backend resets
   useEffect(() => {
@@ -503,9 +502,9 @@ const CreateListing = () => {
           </Button>
           <h1 className="text-xl font-bold text-foreground">Add New Listing</h1>
         </header>
-        <ConnectPaymentDialog
+        <SellerOnboardingSheet
           open={true}
-          onOpenChange={() => {}}
+          onOpenChange={(v) => { if (!v) navigate(-1); }}
           stripeActionRequired={stripeActionRequired}
         />
         <BottomNav />

@@ -5,8 +5,6 @@ import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { toast } from 'sonner';
 import { ChevronRight } from 'lucide-react';
 import stripeLogo from '@/assets/logo-stripe.png';
-import paypalLogo from '@/assets/logo-paypal.png';
-import { PAYPAL_ENABLED } from '@/config/features';
 import { clearStripeConnectionState, getStripeConnectedStorageKey } from '@/utils/stripeConnectionState';
 import StripeOnboardingSheet from '@/components/StripeOnboardingSheet';
 
@@ -16,11 +14,6 @@ const PaymentMethodsSection = () => {
   const [localConnected, setLocalConnected] = useState(false);
   const [localAccountId, setLocalAccountId] = useState<string | null>(null);
   const [showStripeOnboarding, setShowStripeOnboarding] = useState(false);
-
-  // PayPal state
-  const [isConnectingPayPal, setIsConnectingPayPal] = useState(false);
-  const [isCheckingPayPal, setIsCheckingPayPal] = useState(false);
-  const [localPayPalConnected, setLocalPayPalConnected] = useState(false);
 
   const clearLocalStripeState = useCallback(() => {
     clearStripeConnectionState(user?.id);
@@ -32,7 +25,6 @@ const PaymentMethodsSection = () => {
     if (!user) {
       setLocalConnected(false);
       setLocalAccountId(null);
-      setLocalPayPalConnected(false);
       return;
     }
 
@@ -43,9 +35,6 @@ const PaymentMethodsSection = () => {
       const stored = localStorage.getItem(getStripeConnectedStorageKey(user.id)) === 'true';
       setLocalConnected(stored);
     }
-
-    const paypalStored = localStorage.getItem(`flea_paypal_connected_${user.id}`) === 'true';
-    setLocalPayPalConnected(paypalStored);
   }, [clearLocalStripeState, profile?.stripe_account_id, profile?.stripe_onboarding_complete, user]);
 
   // "Connected" = charges + payouts enabled. "Action required" = charges enabled but payouts paused.
@@ -61,41 +50,12 @@ const PaymentMethodsSection = () => {
   const returnedFromStripe = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('stripe_success') === 'true';
   const stripePending = !stripeFullyConnected && !stripeDetailsSubmitted && (returnedFromStripe || isChecking);
 
-  const paypalConnected = (profile as any)?.paypal_onboarding_complete === true || localPayPalConnected;
-  const returnedFromPayPal = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('paypal_return') === 'true';
-  const paypalPending = !paypalConnected && (returnedFromPayPal || isCheckingPayPal);
-
   const handleConnectStripe = () => {
     if (!user || !user.email) {
       toast.error('You must be logged in to connect Stripe');
       return;
     }
     setShowStripeOnboarding(true);
-  };
-
-  const handleConnectPayPal = async () => {
-    if (!user || !user.email) {
-      toast.error('You must be logged in to connect PayPal');
-      return;
-    }
-
-    setIsConnectingPayPal(true);
-    try {
-      const { data, error } = await invokeCloudFunction('paypal-connect-onboard', {
-        returnUrl: window.location.origin + '/settings',
-      });
-
-      if (error) throw error;
-      if (!data?.url) throw new Error('No onboarding URL returned');
-
-      localStorage.setItem('flea_paypal_pending', 'true');
-      window.location.href = data.url;
-    } catch (error: any) {
-      console.error('PayPal Connect error:', error);
-      toast.error('Failed to start PayPal connection. Please try again.');
-    } finally {
-      setIsConnectingPayPal(false);
-    }
   };
 
   const handleCheckStatus = useCallback(async (silent = false) => {
@@ -195,33 +155,6 @@ const PaymentMethodsSection = () => {
     }
   }, [clearLocalStripeState, refreshProfile, stripeAccountId, user]);
 
-  const handleCheckPayPalStatus = useCallback(async (silent = false) => {
-    if (!user?.email) return;
-    setIsCheckingPayPal(true);
-
-    try {
-      const { data, error } = await invokeCloudFunction('paypal-connect-status', {});
-
-      if (error) throw error;
-
-      if (data?.connected && data?.merchantId) {
-        setLocalPayPalConnected(true);
-        localStorage.setItem(`flea_paypal_connected_${user.id}`, 'true');
-        await refreshProfile();
-        if (!silent) toast.success('PayPal account connected successfully!');
-      } else {
-        setLocalPayPalConnected(false);
-        localStorage.removeItem(`flea_paypal_connected_${user.id}`);
-        if (!silent) toast('PayPal onboarding incomplete. Please finish setup.');
-      }
-    } catch (error) {
-      console.error('PayPal status check error:', error);
-      if (!silent) toast.error('Failed to check PayPal status.');
-    } finally {
-      setIsCheckingPayPal(false);
-    }
-  }, [refreshProfile, user]);
-
   // Auto-verify on return from Stripe (detected via URL param)
   useEffect(() => {
     if (!user?.email || stripeFullyConnected) return;
@@ -237,20 +170,6 @@ const PaymentMethodsSection = () => {
       window.history.replaceState({}, '', newUrl);
     }
   }, [user?.email, stripeFullyConnected, handleCheckStatus]);
-
-  // Auto-verify on return from PayPal
-  useEffect(() => {
-    if (!user?.email || paypalConnected) return;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('paypal_return') === 'true') {
-      handleCheckPayPalStatus(true);
-      params.delete('paypal_return');
-      const newUrl = params.toString()
-        ? `${window.location.pathname}?${params}`
-        : window.location.pathname;
-      window.history.replaceState({}, '', newUrl);
-    }
-  }, [user?.email, paypalConnected, handleCheckPayPalStatus]);
 
   // Also verify if DB has account but not marked complete (e.g. after login)
   useEffect(() => {
@@ -326,42 +245,7 @@ const PaymentMethodsSection = () => {
           </div>
         </div>
 
-        {/* PayPal — hidden until Partner approval lands. */}
-        {PAYPAL_ENABLED && (
-        <div
-          className="flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow bg-card cursor-pointer"
-          onClick={paypalConnected ? undefined : handleConnectPayPal}
-        >
-          <div className="flex items-center gap-3 max-[375px]:gap-2">
-            <img src={paypalLogo} alt="PayPal" className="h-7 w-7 object-contain" />
-            <div>
-              <span className="text-base max-[375px]:text-sm font-medium text-foreground">
-                PayPal
-              </span>
-              <p className={`text-xs mt-0.5 ${paypalConnected ? 'text-green-600' : paypalPending || isCheckingPayPal ? 'text-amber-600' : 'text-muted-foreground'}`}>
-                {paypalConnected ? '✅ Connected' : paypalPending || isCheckingPayPal ? '⏳ Verifying...' : 'Not connected'}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {isConnectingPayPal ? (
-              <span className="text-xs text-muted-foreground">Connecting...</span>
-            ) : paypalConnected ? (
-              <button
-                onClick={(e) => { e.stopPropagation(); handleCheckPayPalStatus(false); }}
-                disabled={isCheckingPayPal}
-                className="text-xs text-green-600 font-medium hover:text-green-700 disabled:opacity-50"
-              >
-                {isCheckingPayPal ? 'Syncing...' : 'Active ↻'}
-              </button>
-            ) : paypalPending || isCheckingPayPal ? (
-              <span className="text-xs text-amber-600 font-medium">Verifying</span>
-            ) : (
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            )}
-          </div>
-        </div>
-        )}
+        {/* PayPal seller connection removed. PayPal is offered to buyers at checkout only. */}
       </div>
     </div>
     </>
