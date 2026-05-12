@@ -13,7 +13,7 @@ import CategorySelectionDrawer from '@/components/CategorySelectionDrawer';
 import TieredShippingSetupModal from '@/components/TieredShippingSetupModal';
 import BlockedUserBanner from '@/components/BlockedUserBanner';
 import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
-import ConnectPaymentDialog from '@/components/ConnectPaymentDialog';
+import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
