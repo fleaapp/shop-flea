@@ -28,15 +28,11 @@ self.addEventListener('activate', (event) => {
     );
 
     await self.clients.claim();
-
-    const windowClients = await self.clients.matchAll({
-      type: 'window',
-      includeUncontrolled: true,
-    });
-
-    await Promise.all(
-      windowClients.map((client) => client.navigate(client.url).catch(() => undefined))
-    );
+    // NOTE: Do NOT force-navigate clients here. Reloading open tabs during
+    // activate races with in-flight auth flows (sign-in tokens that haven't
+    // been persisted to localStorage yet), causing users to be bounced back
+    // to /auth right after a successful login. Updates apply on next natural
+    // navigation; that's good enough.
   })());
 });
 
