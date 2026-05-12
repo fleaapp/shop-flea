@@ -63,7 +63,7 @@ serve(async (req) => {
       });
     }
 
-    const { returnUrl, stripeAccountId, forceNew } = await req.json();
+    const { returnUrl, stripeAccountId, forceNew, prefillName } = await req.json();
     const userId = user.id;
 
     const stripe = new Stripe(getStripeSecretKey(), {
