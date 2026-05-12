@@ -155,33 +155,6 @@ const PaymentMethodsSection = () => {
     }
   }, [clearLocalStripeState, refreshProfile, stripeAccountId, user]);
 
-  const handleCheckPayPalStatus = useCallback(async (silent = false) => {
-    if (!user?.email) return;
-    setIsCheckingPayPal(true);
-
-    try {
-      const { data, error } = await invokeCloudFunction('paypal-connect-status', {});
-
-      if (error) throw error;
-
-      if (data?.connected && data?.merchantId) {
-        setLocalPayPalConnected(true);
-        localStorage.setItem(`flea_paypal_connected_${user.id}`, 'true');
-        await refreshProfile();
-        if (!silent) toast.success('PayPal account connected successfully!');
-      } else {
-        setLocalPayPalConnected(false);
-        localStorage.removeItem(`flea_paypal_connected_${user.id}`);
-        if (!silent) toast('PayPal onboarding incomplete. Please finish setup.');
-      }
-    } catch (error) {
-      console.error('PayPal status check error:', error);
-      if (!silent) toast.error('Failed to check PayPal status.');
-    } finally {
-      setIsCheckingPayPal(false);
-    }
-  }, [refreshProfile, user]);
-
   // Auto-verify on return from Stripe (detected via URL param)
   useEffect(() => {
     if (!user?.email || stripeFullyConnected) return;
@@ -197,20 +170,6 @@ const PaymentMethodsSection = () => {
       window.history.replaceState({}, '', newUrl);
     }
   }, [user?.email, stripeFullyConnected, handleCheckStatus]);
-
-  // Auto-verify on return from PayPal
-  useEffect(() => {
-    if (!user?.email || paypalConnected) return;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('paypal_return') === 'true') {
-      handleCheckPayPalStatus(true);
-      params.delete('paypal_return');
-      const newUrl = params.toString()
-        ? `${window.location.pathname}?${params}`
-        : window.location.pathname;
-      window.history.replaceState({}, '', newUrl);
-    }
-  }, [user?.email, paypalConnected, handleCheckPayPalStatus]);
 
   // Also verify if DB has account but not marked complete (e.g. after login)
   useEffect(() => {
