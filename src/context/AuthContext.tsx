@@ -114,10 +114,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch profile - defer to avoid blocking
-          setTimeout(() => fetchProfile(session.user.id), 0);
+          // Mark loading until profile fetch completes so consumers don't
+          // briefly see (user && !profile) and flash onboarding UI.
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+            setLoading(true);
+          }
+          // Defer to avoid blocking the auth callback
+          setTimeout(() => {
+            fetchProfile(session.user.id).finally(() => setLoading(false));
+          }, 0);
         } else {
           setProfile(null);
+          setLoading(false);
         }
       }
     );
