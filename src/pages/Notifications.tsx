@@ -83,8 +83,18 @@ const Notifications = () => {
       return;
     }
 
-    // Item sold → navigate to sales
+    // Item sold → open the specific order details sheet
     if (notification.type === 'item_sold') {
+      const matchingGroup = notification.related_order_id
+        ? sellerOrderGroups.find(g => (g.order_group_id || g.id) === notification.related_order_id)
+        : (notification.related_listing_id
+            ? sellerOrderGroups.find(g => g.orders.some(o => o.listing_id === notification.related_listing_id))
+            : null);
+      if (matchingGroup) {
+        setSelectedGroup(matchingGroup);
+        setSaleSheetOpen(true);
+        return;
+      }
       navigate('/sales');
       return;
     }
