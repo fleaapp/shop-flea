@@ -215,7 +215,7 @@ serve(async (req) => {
     // Ensure existing accounts also get daily payouts + Flea branding.
     try {
       await stripe.accounts.update(accountId, {
-        business_profile: { name: "Flea" },
+        business_profile: { name: "Flea Marketplace Seller" },
         settings: {
           payouts: { schedule: { interval: "daily", delay_days: "minimum" } },
         },
