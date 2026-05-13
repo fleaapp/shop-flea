@@ -115,6 +115,31 @@ const AppContent = () => {
     }
   }, [location.pathname, location.search, location.hash]);
 
+  // Keep iOS/PWA status bar (safe-area) color in sync with the current screen background
+  useEffect(() => {
+    const path = location.pathname;
+    // Auth/splash screens use the lime primary as their full-screen background
+    const isPrimaryBg =
+      path === '/auth' ||
+      path === '/forgot-password' ||
+      path === '/reset-password' ||
+      path === '/verify-email';
+
+    const root = getComputedStyle(document.documentElement);
+    const hsl = isPrimaryBg ? root.getPropertyValue('--primary') : root.getPropertyValue('--background');
+    const color = `hsl(${hsl.trim()})`;
+
+    let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', color);
+    document.documentElement.style.backgroundColor = color;
+    document.body.style.backgroundColor = color;
+  }, [location.pathname]);
+
   useEffect(() => {
     const prefetchCoreRoutes = () => {
       void loadFavorites();
