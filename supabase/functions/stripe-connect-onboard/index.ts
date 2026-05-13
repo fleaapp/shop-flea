@@ -156,9 +156,23 @@ serve(async (req) => {
         };
       }
 
-      // Phone from in-app form (E.164 preferred, but Stripe accepts national too)
+      // Phone from in-app form — Stripe requires E.164 (e.g. +61423122882)
       if (prefill?.phone) {
-        individual.phone = String(prefill.phone);
+        const raw = String(prefill.phone).replace(/[^\d+]/g, '');
+        let e164 = raw;
+        if (!raw.startsWith('+')) {
+          if (country === 'AU') {
+            // AU mobile/landline: strip leading 0, prepend +61
+            e164 = '+61' + raw.replace(/^0+/, '');
+          } else {
+            e164 = '+' + raw.replace(/^0+/, '');
+          }
+        }
+        if (/^\+\d{8,15}$/.test(e164)) {
+          individual.phone = e164;
+        } else {
+          console.warn(`[stripe-connect-onboard] Skipping invalid phone: ${raw}`);
+        }
       }
 
       // Personal address — prefer in-app form, fall back to saved buyer address
