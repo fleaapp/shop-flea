@@ -33,6 +33,7 @@ interface SellerOnboardingSheetProps {
 
 const TOTAL_STEPS = 4;
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA'];
+const secondaryActionClass = "w-auto h-10 px-4 rounded-full bg-transparent text-muted-foreground hover:bg-transparent hover:text-muted-foreground focus:bg-transparent focus:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:bg-transparent active:bg-muted/60 active:text-foreground";
 
 const SellerOnboardingSheet = ({
   open,
@@ -185,6 +186,8 @@ const SellerOnboardingSheet = ({
       ))}
     </div>
   );
+
+  const secondaryAction = (className = '') => `${secondaryActionClass} ${className}`.trim();
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
