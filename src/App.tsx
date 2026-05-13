@@ -178,34 +178,46 @@ const AppContent = () => {
       return meta;
     };
 
-    const getBgFromElement = (el: Element | null): string | null => {
-      let node: Element | null = el;
-      while (node) {
-        const c = getComputedStyle(node).backgroundColor;
-        if (c && c !== 'rgba(0, 0, 0, 0)' && c !== 'transparent') return c;
-        node = node.parentElement;
+    const getVisualBgAtPoint = (x: number, y: number, fallbackColor: string) => {
+      let visual = parseCssColor(fallbackColor) || { r: 237, g: 232, b: 220, a: 1 };
+      const elements = document.elementsFromPoint(x, y).reverse();
+
+      for (const el of elements) {
+        const color = parseCssColor(getComputedStyle(el).backgroundColor);
+        if (!color || color.a <= 0) continue;
+        visual = composite(color, visual);
+        if (visual.a >= 0.995) {
+          visual.a = 1;
+        }
       }
-      return null;
+
+      return visual;
+    };
+
+    const isLightColor = ({ r, g, b }: RgbaColor) => {
+      const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+      return luminance > 0.55;
     };
 
     const sync = () => {
       if (cancelled) return;
       const x = Math.floor(window.innerWidth / 2);
-      // Sample a couple of pixels below the very top so we hit content under the safe-area.
-      const el = document.elementFromPoint(x, 4);
       const root = getComputedStyle(document.documentElement);
       const primary = `hsl(${root.getPropertyValue('--primary').trim()})`;
       const fallback = `hsl(${root.getPropertyValue('--background').trim()})`;
-      const color = location.pathname === '/auth' ? primary : (getBgFromElement(el) || fallback);
+      const sampled = getVisualBgAtPoint(x, 4, location.pathname === '/auth' ? primary : fallback);
+      const color = toHexColor(sampled);
 
       ensureMeta().setAttribute('content', color);
       document.documentElement.style.backgroundColor = color;
       document.body.style.backgroundColor = color;
       if (Capacitor.isNativePlatform()) {
-        const hex = toHexColor(color);
-        void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
-        void StatusBar.setStyle({ style: Style.Light }).catch(() => undefined);
-        void StatusBar.setBackgroundColor({ color: hex }).catch(() => undefined);
+        const isIos = Capacitor.getPlatform() === 'ios';
+        void StatusBar.setOverlaysWebView({ overlay: isIos }).catch(() => undefined);
+        void StatusBar.setStyle({ style: isLightColor(sampled) ? Style.Light : Style.Dark }).catch(() => undefined);
+        if (!isIos) {
+          void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
+        }
       }
     };
 
