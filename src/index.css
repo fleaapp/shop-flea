@@ -8,6 +8,7 @@
   :root {
     --background: 40 33% 94%;
     --foreground: 220 20% 20%;
+    --app-top-bg: hsl(40 33% 94%);
 
     --card: 0 0% 100%;
     --card-foreground: 220 20% 20%;
@@ -101,6 +102,7 @@
     -moz-text-size-adjust: 100%;
     text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
+    background-color: var(--app-top-bg);
   }
 
   body {
@@ -109,11 +111,12 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    background-color: var(--app-top-bg);
   }
 
   #root {
     min-height: 100svh;
-    background: inherit;
+    background: hsl(var(--background));
   }
 
   input[type="date"] {
