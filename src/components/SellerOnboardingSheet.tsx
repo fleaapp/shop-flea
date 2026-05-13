@@ -35,6 +35,23 @@ const TOTAL_STEPS = 4;
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA'];
 const secondaryActionClass = "w-auto h-10 px-4 rounded-full bg-transparent text-muted-foreground hover:bg-transparent hover:text-muted-foreground focus:bg-transparent focus:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:bg-transparent active:bg-muted/60 active:text-foreground";
 
+const isStandaloneWebApp = () =>
+  window.matchMedia?.('(display-mode: standalone)').matches ||
+  (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+const prepareExternalProviderWindow = () => {
+  if (!isStandaloneWebApp()) return null;
+
+  const providerWindow = window.open('', '_blank');
+  if (!providerWindow) return null;
+
+  providerWindow.opener = null;
+  providerWindow.document.title = 'Opening secure setup';
+  providerWindow.document.body.style.margin = '0';
+  providerWindow.document.body.style.background = '#F5F1EB';
+  return providerWindow;
+};
+
 const SellerOnboardingSheet = ({
   open,
   onOpenChange,
@@ -149,6 +166,7 @@ const SellerOnboardingSheet = ({
       return;
     }
 
+    const providerWindow = prepareExternalProviderWindow();
     setIsSubmitting(true);
     try {
       const onboardingComplete = (profile as any)?.stripe_onboarding_complete === true;
@@ -179,8 +197,14 @@ const SellerOnboardingSheet = ({
       if (!data?.url) throw new Error('No onboarding URL returned');
 
       onComplete?.();
-      window.location.href = data.url;
+      if (providerWindow && !providerWindow.closed) {
+        providerWindow.location.replace(data.url);
+        return;
+      }
+
+      window.location.assign(data.url);
     } catch (err: any) {
+      if (providerWindow && !providerWindow.closed) providerWindow.close();
       console.error('Seller onboarding error:', err);
       toast.error(err?.message || 'Failed to start setup. Please try again.');
     } finally {
