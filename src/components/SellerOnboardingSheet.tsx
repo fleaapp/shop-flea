@@ -330,7 +330,7 @@ const SellerOnboardingSheet = ({
               <SheetHeader className="space-y-2">
                 <SheetTitle className="text-lg">Secure payment setup</SheetTitle>
                 <p className="text-sm text-muted-foreground text-pretty leading-relaxed max-w-[340px] mx-auto">
-                  We've pre-filled everything for you. On the next screen you'll just need to set a password and add your bank account.
+                  We'll pass these details securely to our payment provider. Follow the prompts to finish your bank details and any required verification.
                 </p>
               </SheetHeader>
 
