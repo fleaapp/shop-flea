@@ -2,18 +2,26 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
+const AUTH_TOP_COLOR = '#DDFED7';
 const APP_TOP_COLOR = '#F5F1EB';
 
+const getInitialTopColor = () => (
+  /^\/(auth|forgot-password|reset-password|verify-email)(\/|$)/.test(window.location.pathname)
+    ? AUTH_TOP_COLOR
+    : APP_TOP_COLOR
+);
+
 const forceLightAppChrome = () => {
+  const topColor = getInitialTopColor();
   document.documentElement.classList.remove('dark');
   document.documentElement.style.colorScheme = 'light';
-  document.documentElement.style.setProperty('--app-top-bg', APP_TOP_COLOR);
-  document.body?.style.setProperty('--app-top-bg', APP_TOP_COLOR);
-  document.documentElement.style.backgroundColor = APP_TOP_COLOR;
-  if (document.body) document.body.style.backgroundColor = APP_TOP_COLOR;
+  document.documentElement.style.setProperty('--app-top-bg', topColor);
+  document.body?.style.setProperty('--app-top-bg', topColor);
+  document.documentElement.style.backgroundColor = topColor;
+  if (document.body) document.body.style.backgroundColor = topColor;
 
   const theme = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
-  theme?.setAttribute('content', APP_TOP_COLOR);
+  theme?.setAttribute('content', topColor);
 
   const status = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]') as HTMLMetaElement | null;
   status?.setAttribute('content', 'default');
