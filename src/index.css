@@ -114,6 +114,19 @@
     background-color: var(--app-top-bg);
   }
 
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top);
+    background-color: var(--app-top-bg);
+    pointer-events: none;
+    z-index: 2147483647;
+    transform: translateZ(0);
+  }
+
   #root {
     min-height: 100svh;
     background: hsl(var(--background));
