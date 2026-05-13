@@ -49,6 +49,7 @@ const SellerOnboardingSheet = ({
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [dob, setDob] = useState(''); // YYYY-MM-DD
+  const [dobInput, setDobInput] = useState('');
   const [phone, setPhone] = useState('');
   const [line1, setLine1] = useState('');
   const [suburb, setSuburb] = useState('');
@@ -63,6 +64,7 @@ const SellerOnboardingSheet = ({
     setFirstName(p.first_name || '');
     setLastName(p.last_name || '');
     setDob('');
+    setDobInput('');
     setPhone('');
     setLine1('');
     setSuburb('');
@@ -83,6 +85,18 @@ const SellerOnboardingSheet = ({
     if (ageYears > 120) return 'Please check your date of birth.';
     if (!/^[\d+\s()-]{8,}$/.test(phone.trim())) return 'Please enter a valid phone number.';
     return null;
+  };
+
+  const handleDobChange = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 8);
+    const formatted = digits.length <= 2
+      ? digits
+      : digits.length <= 4
+        ? `${digits.slice(0, 2)}/${digits.slice(2)}`
+        : `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+
+    setDobInput(formatted);
+    setDob(digits.length === 8 ? `${digits.slice(4)}-${digits.slice(2, 4)}-${digits.slice(0, 2)}` : '');
   };
 
   const validateAddress = () => {
