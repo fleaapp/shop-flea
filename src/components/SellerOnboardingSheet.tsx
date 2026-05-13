@@ -247,7 +247,7 @@ const SellerOnboardingSheet = ({
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="dob" className="text-xs">Date of birth</Label>
-                  <Input id="dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)} className="w-full h-10 min-h-0 block py-0 leading-none" />
+                  <Input id="dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)} className="w-full h-10 min-h-0 py-2 text-left text-base leading-tight" />
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="phone" className="text-xs">Phone</Label>
