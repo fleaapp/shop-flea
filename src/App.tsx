@@ -105,16 +105,48 @@ const queryClient = new QueryClient({
 
 const PageLoader = () => <PageSkeleton />;
 
-const toHexColor = (color: string) => {
+type RgbaColor = { r: number; g: number; b: number; a: number };
+
+const parseCssColor = (color: string): RgbaColor | null => {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
-  if (!ctx) return color;
+  if (!ctx) return null;
   ctx.fillStyle = color;
   const normalized = ctx.fillStyle;
-  if (normalized.startsWith('#')) return normalized;
-  const match = normalized.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  if (!match) return color;
-  return `#${[match[1], match[2], match[3]].map((v) => Number(v).toString(16).padStart(2, '0')).join('')}`;
+  if (normalized.startsWith('#')) {
+    const hex = normalized.length === 4
+      ? normalized.slice(1).split('').map((v) => v + v).join('')
+      : normalized.slice(1, 7);
+    return {
+      r: Number.parseInt(hex.slice(0, 2), 16),
+      g: Number.parseInt(hex.slice(2, 4), 16),
+      b: Number.parseInt(hex.slice(4, 6), 16),
+      a: 1,
+    };
+  }
+  const match = normalized.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+  if (!match) return null;
+  return {
+    r: Number(match[1]),
+    g: Number(match[2]),
+    b: Number(match[3]),
+    a: match[4] === undefined ? 1 : Number(match[4]),
+  };
+};
+
+const composite = (top: RgbaColor, bottom: RgbaColor): RgbaColor => {
+  const alpha = top.a + bottom.a * (1 - top.a);
+  if (alpha <= 0) return { r: 0, g: 0, b: 0, a: 0 };
+  return {
+    r: Math.round((top.r * top.a + bottom.r * bottom.a * (1 - top.a)) / alpha),
+    g: Math.round((top.g * top.a + bottom.g * bottom.a * (1 - top.a)) / alpha),
+    b: Math.round((top.b * top.a + bottom.b * bottom.a * (1 - top.a)) / alpha),
+    a: alpha,
+  };
+};
+
+const toHexColor = ({ r, g, b }: RgbaColor) => {
+  return `#${[r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('')}`;
 };
 
 const AppContent = () => {
