@@ -13,6 +13,17 @@
     <meta name="apple-mobile-web-app-title" content="Flea" id="apple-app-title" />
     <link rel="apple-touch-icon" href="/pwa-icon-192.png" />
     <script>
+      (function () {
+        try {
+          var isAuthLike = /^\/(auth|forgot-password|reset-password|verify-email)(\/|$)/.test(location.pathname);
+          var topColor = isAuthLike ? '#DDFED7' : '#EDE8DC';
+          document.documentElement.style.setProperty('--app-top-bg', topColor);
+          document.documentElement.style.backgroundColor = topColor;
+          var theme = document.querySelector('meta[name="theme-color"]');
+          if (theme) theme.setAttribute('content', topColor);
+        } catch (e) {}
+      })();
+
       // Inject the manifest link *before* the browser ever sees a static one.
       // iOS Safari starts fetching the manifest the moment it parses the
       // <link rel="manifest"> tag, so swapping href via JS afterwards is too
