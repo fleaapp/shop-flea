@@ -106,7 +106,7 @@ const queryClient = new QueryClient({
 const PageLoader = () => <PageSkeleton />;
 
 const AUTH_TOP_COLOR = "#DDFED7";
-const APP_TOP_COLOR = "#EDE8DC";
+const APP_TOP_COLOR = "#F5F1EB";
 
 // Deterministic top color per route. Auth/forgot/reset use the primary brand
 // green; everything else uses the cream background. No DOM sampling — that
@@ -138,28 +138,44 @@ const AppContent = () => {
     }
   }, [location.pathname, location.search, location.hash]);
 
-  // Sync iOS/PWA safe-area strip with the current route background.
+  // Sync iOS/PWA safe-area strip with the current route background, including
+  // bfcache/external-provider returns where React route state may not change.
   useEffect(() => {
-    const color = getRouteTopColor(location.pathname);
+    const syncTopColor = () => {
+      const color = getRouteTopColor(window.location.pathname || location.pathname);
 
-    let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
-    if (!meta) {
-      meta = document.createElement("meta");
-      meta.name = "theme-color";
-      document.head.appendChild(meta);
-    }
-    meta.setAttribute("content", color);
+      let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+      if (!meta) {
+        meta = document.createElement("meta");
+        meta.name = "theme-color";
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute("content", color);
 
-    document.documentElement.style.setProperty("--app-top-bg", color);
-    document.body.style.setProperty("--app-top-bg", color);
-    document.documentElement.style.backgroundColor = color;
-    document.body.style.backgroundColor = color;
+      document.documentElement.style.setProperty("--app-top-bg", color);
+      document.body.style.setProperty("--app-top-bg", color);
+      document.documentElement.style.backgroundColor = color;
+      document.body.style.backgroundColor = color;
 
-    if (Capacitor.isNativePlatform()) {
-      void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
-      void StatusBar.setStyle({ style: isLightHex(color) ? Style.Dark : Style.Light }).catch(() => undefined);
-      void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
-    }
+      if (Capacitor.isNativePlatform()) {
+        void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
+        void StatusBar.setStyle({ style: isLightHex(color) ? Style.Dark : Style.Light }).catch(() => undefined);
+        void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
+      }
+    };
+
+    syncTopColor();
+    const onVisibility = () => {
+      if (!document.hidden) syncTopColor();
+    };
+    window.addEventListener("pageshow", syncTopColor);
+    window.addEventListener("focus", syncTopColor);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pageshow", syncTopColor);
+      window.removeEventListener("focus", syncTopColor);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [location.pathname]);
 
 
