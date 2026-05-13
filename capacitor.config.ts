@@ -30,8 +30,9 @@ const config: CapacitorConfig = {
     },
   },
   ios: {
-    contentInset: 'always',
+    contentInset: 'never',
     limitsNavigationsToAppBoundDomains: false,
+    backgroundColor: '#EDE8DC',
   },
   android: {
     allowMixedContent: false,
