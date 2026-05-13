@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -170,9 +170,9 @@ const AppContent = () => {
     }
   }, [location.pathname, location.search, location.hash]);
 
-  // Sync iOS/PWA safe-area strip with the current route background, including
-  // bfcache/external-provider returns where React route state may not change.
-  useEffect(() => {
+  // Sync iOS/PWA safe-area strip with the current route background before paint,
+  // including bfcache/external-provider returns where React route state may not change.
+  useLayoutEffect(() => {
     const syncTopColor = () => {
       const color = getRouteTopColor(window.location.pathname || location.pathname);
       applyTopChromeColor(color);
@@ -187,12 +187,15 @@ const AppContent = () => {
     window.addEventListener("popstate", syncTopColor);
     document.addEventListener("visibilitychange", onVisibility);
     let resumeHandle: { remove: () => Promise<void> } | undefined;
+    let appStateHandle: { remove: () => Promise<void> } | undefined;
     if (Capacitor.isNativePlatform()) {
       void CapacitorApp.addListener("resume", syncTopColor).then((handle) => {
         resumeHandle = handle;
       });
       void CapacitorApp.addListener("appStateChange", ({ isActive }) => {
         if (isActive) syncTopColor();
+      }).then((handle) => {
+        appStateHandle = handle;
       });
     }
     return () => {
@@ -201,6 +204,7 @@ const AppContent = () => {
       window.removeEventListener("popstate", syncTopColor);
       document.removeEventListener("visibilitychange", onVisibility);
       void resumeHandle?.remove();
+      void appStateHandle?.remove();
     };
   }, [location.pathname]);
 
