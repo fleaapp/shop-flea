@@ -122,6 +122,15 @@ const AppContent = () => {
       void loadProfile();
       void loadNotifications();
       void loadSettings();
+      // Heavy/common destinations users tap from buttons — preload so navigation is instant
+      void loadListingDetails();
+      void loadCheckout();
+      void loadCreateListing();
+      void loadEditListing();
+      void loadSellerProfile();
+      void loadChatConversation();
+      void loadOrderChat();
+      void loadSales();
     };
 
     if (typeof requestIdleCallback !== 'undefined') {
