@@ -199,9 +199,11 @@ const PaymentMethodsSection = () => {
 
   return (
     <>
-    <StripeOnboardingSheet
+    <SellerOnboardingSheet
       open={showStripeOnboarding}
       onOpenChange={setShowStripeOnboarding}
+      stripeActionRequired={stripeActionRequired}
+      returnUrl={typeof window !== 'undefined' ? window.location.origin + '/settings' : undefined}
       onComplete={() => {
         setShowStripeOnboarding(false);
         handleCheckStatus(true);
