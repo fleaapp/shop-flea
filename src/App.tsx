@@ -169,6 +169,12 @@ const AppContent = () => {
       ensureMeta().setAttribute('content', color);
       document.documentElement.style.backgroundColor = color;
       document.body.style.backgroundColor = color;
+      if (Capacitor.isNativePlatform()) {
+        const hex = toHexColor(color);
+        void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
+        void StatusBar.setStyle({ style: Style.Light }).catch(() => undefined);
+        void StatusBar.setBackgroundColor({ color: hex }).catch(() => undefined);
+      }
     };
 
     // Wait one frame so the new route has rendered before we sample.
