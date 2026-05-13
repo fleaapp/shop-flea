@@ -220,7 +220,7 @@ const SellerOnboardingSheet = ({
                 <Button
                   variant="ghost"
                   onClick={() => onOpenChange(false)}
-                  className="w-auto h-10 px-4 text-muted-foreground hover:bg-transparent hover:text-muted-foreground active:bg-muted/60 active:text-foreground"
+                  className={secondaryAction()}
                 >
                   Not now
                 </Button>
@@ -230,13 +230,13 @@ const SellerOnboardingSheet = ({
 
           {step === 2 && (
             <>
-              <SheetHeader className="space-y-2 max-w-[280px] mx-auto">
+              <SheetHeader className="space-y-2 w-full max-w-[280px] mx-auto items-center text-center">
                 <SheetTitle className="text-lg text-center">Your details</SheetTitle>
                 <p className="text-sm text-muted-foreground leading-relaxed text-center">
                   This must match your bank account and ID for payout verification.
                 </p>
               </SheetHeader>
-              <div className="w-[260px] max-w-full mx-auto text-left space-y-3 mt-1">
+              <div className="w-[260px] max-w-[calc(100vw-64px)] mx-auto text-left space-y-3 mt-1">
                 <div className="space-y-1">
                   <Label htmlFor="fn" className="text-xs">First name</Label>
                   <Input id="fn" value={firstName} onChange={(e) => setFirstName(e.target.value)} autoComplete="given-name" className="w-full" />
@@ -264,7 +264,7 @@ const SellerOnboardingSheet = ({
                 <Button
                   variant="ghost"
                   onClick={() => setStep(1)}
-                  className="w-auto h-10 px-4 text-muted-foreground hover:bg-transparent hover:text-muted-foreground active:bg-muted/60 active:text-foreground"
+                  className={secondaryAction()}
                 >
                   Back
                 </Button>
