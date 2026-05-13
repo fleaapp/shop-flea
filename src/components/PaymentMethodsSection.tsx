@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { ChevronRight } from 'lucide-react';
 import stripeLogo from '@/assets/logo-stripe.png';
 import { clearStripeConnectionState, getStripeConnectedStorageKey } from '@/utils/stripeConnectionState';
-import StripeOnboardingSheet from '@/components/StripeOnboardingSheet';
+import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
 
 const PaymentMethodsSection = () => {
   const { user, profile, refreshProfile } = useAuth();
