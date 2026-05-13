@@ -234,25 +234,21 @@ const SellerOnboardingSheet = ({
                 </p>
               </SheetHeader>
               <div className="w-full text-left space-y-3 mt-1">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="fn" className="text-xs">First name</Label>
-                    <Input id="fn" value={firstName} onChange={(e) => setFirstName(e.target.value)} autoComplete="given-name" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="ln" className="text-xs">Last name</Label>
-                    <Input id="ln" value={lastName} onChange={(e) => setLastName(e.target.value)} autoComplete="family-name" />
-                  </div>
+                <div className="space-y-1">
+                  <Label htmlFor="fn" className="text-xs">First name</Label>
+                  <Input id="fn" value={firstName} onChange={(e) => setFirstName(e.target.value)} autoComplete="given-name" />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="dob" className="text-xs">Date of birth</Label>
-                    <Input id="dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="phone" className="text-xs">Phone</Label>
-                    <Input id="phone" type="tel" inputMode="tel" placeholder="04xx xxx xxx" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" />
-                  </div>
+                <div className="space-y-1">
+                  <Label htmlFor="ln" className="text-xs">Last name</Label>
+                  <Input id="ln" value={lastName} onChange={(e) => setLastName(e.target.value)} autoComplete="family-name" />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="dob" className="text-xs">Date of birth</Label>
+                  <Input id="dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="phone" className="text-xs">Phone</Label>
+                  <Input id="phone" type="tel" inputMode="tel" placeholder="04xx xxx xxx" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" />
                 </div>
               </div>
               <div className="w-full space-y-3 mt-3 flex flex-col items-center">
