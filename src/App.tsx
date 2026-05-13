@@ -105,26 +105,17 @@ const queryClient = new QueryClient({
 
 const PageLoader = () => <PageSkeleton />;
 
+const AUTH_TOP_COLOR = "#DDFED7";
+const APP_TOP_COLOR = "#EDE8DC";
+
 // Deterministic top color per route. Auth/forgot/reset use the primary brand
 // green; everything else uses the cream background. No DOM sampling — that
 // approach lagged behind navigation and produced mismatched header bands.
 const getRouteTopColor = (pathname: string) => {
-  const root = getComputedStyle(document.documentElement);
-  const primary = root.getPropertyValue("--primary").trim();
-  const background = root.getPropertyValue("--background").trim();
   const isAuthLike = ["/auth", "/forgot-password", "/reset-password", "/verify-email"].some((p) =>
     pathname.startsWith(p),
   );
-  const hsl = `hsl(${isAuthLike ? primary : background})`;
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return "#EDE8DC";
-  ctx.fillStyle = hsl;
-  const computed = ctx.fillStyle as string;
-  if (computed.startsWith("#")) return computed;
-  const m = computed.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  if (!m) return "#EDE8DC";
-  return `#${[m[1], m[2], m[3]].map((v) => Number(v).toString(16).padStart(2, "0")).join("")}`;
+  return isAuthLike ? AUTH_TOP_COLOR : APP_TOP_COLOR;
 };
 
 const isLightHex = (hex: string) => {
