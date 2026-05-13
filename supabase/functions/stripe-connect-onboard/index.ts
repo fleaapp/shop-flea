@@ -193,8 +193,8 @@ serve(async (req) => {
       // dashboard show "Flea" as the platform/brand rather than the seller's
       // legal name.
       createParams.business_profile = {
-        name: "Flea",
-        product_description: "Selling pre-loved fashion on Flea App. Pick 'Clothing and accessories' for industry.",
+        name: "Flea Marketplace Seller",
+        product_description: "Selling pre-loved fashion on Flea — a peer-to-peer marketplace. Pick 'Clothing and accessories' for industry.",
         url: "https://finditonflea.com",
         support_url: "https://finditonflea.com",
         mcc: "5699", // Miscellaneous Apparel and Accessory Shops
@@ -215,7 +215,7 @@ serve(async (req) => {
     // Ensure existing accounts also get daily payouts + Flea branding.
     try {
       await stripe.accounts.update(accountId, {
-        business_profile: { name: "Flea" },
+        business_profile: { name: "Flea Marketplace Seller" },
         settings: {
           payouts: { schedule: { interval: "daily", delay_days: "minimum" } },
         },

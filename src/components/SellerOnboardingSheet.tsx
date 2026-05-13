@@ -12,64 +12,116 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import fleaLogo from '@/assets/flea-logo.png';
 
 interface SellerOnboardingSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   stripeActionRequired?: boolean;
+  /** Where Stripe should redirect back to. Defaults to current page. */
+  returnUrl?: string;
+  onComplete?: () => void;
 }
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 4;
+const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA'];
 
 const SellerOnboardingSheet = ({
   open,
   onOpenChange,
   stripeActionRequired = false,
+  returnUrl,
+  onComplete,
 }: SellerOnboardingSheetProps) => {
   const { user, profile } = useAuth();
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [legalName, setLegalName] = useState('');
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [dob, setDob] = useState(''); // YYYY-MM-DD
+  const [phone, setPhone] = useState('');
+  const [line1, setLine1] = useState('');
+  const [suburb, setSuburb] = useState('');
+  const [state, setState] = useState('');
+  const [postcode, setPostcode] = useState('');
 
   // Reset on open. Prefill from profile if available.
   useEffect(() => {
-    if (open) {
-      setStep(1);
-      const p: any = profile || {};
-      const existing =
-        p.legal_name ||
-        [p.first_name, p.last_name].filter(Boolean).join(' ').trim();
-      setLegalName(existing || '');
-    }
+    if (!open) return;
+    setStep(1);
+    const p: any = profile || {};
+    setFirstName(p.first_name || '');
+    setLastName(p.last_name || '');
+    setDob('');
+    setPhone('');
+    setLine1('');
+    setSuburb('');
+    setState('');
+    setPostcode('');
   }, [open, profile]);
 
-  const handleContinueFromName = async () => {
-    const trimmed = legalName.trim();
-    if (trimmed.length < 2) {
-      toast.error('Please enter your full legal name.');
+  const validatePersonal = () => {
+    if (firstName.trim().length < 1 || lastName.trim().length < 1) {
+      return 'Please enter your full legal name.';
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) return 'Please enter your date of birth.';
+    const [yStr, mStr, dStr] = dob.split('-');
+    const dobDate = new Date(Date.UTC(+yStr, +mStr - 1, +dStr));
+    if (Number.isNaN(dobDate.getTime())) return 'Invalid date of birth.';
+    const ageYears = (Date.now() - dobDate.getTime()) / (365.25 * 24 * 3600 * 1000);
+    if (ageYears < 18) return 'You must be 18 or older to sell on Flea.';
+    if (ageYears > 120) return 'Please check your date of birth.';
+    if (!/^[\d+\s()-]{8,}$/.test(phone.trim())) return 'Please enter a valid phone number.';
+    return null;
+  };
+
+  const validateAddress = () => {
+    if (!line1.trim()) return 'Please enter your street address.';
+    if (!suburb.trim()) return 'Please enter your suburb.';
+    if (!state) return 'Please select your state.';
+    if (!/^\d{4}$/.test(postcode.trim())) return 'Please enter a valid 4-digit postcode.';
+    return null;
+  };
+
+  const handlePersonalNext = async () => {
+    const err = validatePersonal();
+    if (err) {
+      toast.error(err);
       return;
     }
-    if (!user) return;
-
-    // Persist legal_name. Also split into first/last for Stripe prefill.
-    const parts = trimmed.split(/\s+/);
-    const first_name = parts[0];
-    const last_name = parts.slice(1).join(' ') || null;
-
-    try {
-      await supabase
-        .from('profiles')
-        .update({
-          legal_name: trimmed,
-          first_name,
-          last_name,
-        } as any)
-        .eq('user_id', user.id);
-    } catch (e) {
-      console.warn('legal_name persist failed (non-blocking):', e);
+    if (user) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            legal_name: `${firstName.trim()} ${lastName.trim()}`.trim(),
+          } as any)
+          .eq('user_id', user.id);
+      } catch (e) {
+        console.warn('profile name persist failed (non-blocking):', e);
+      }
     }
     setStep(3);
+  };
+
+  const handleAddressNext = () => {
+    const err = validateAddress();
+    if (err) {
+      toast.error(err);
+      return;
+    }
+    setStep(4);
   };
 
   const handleContinueToStripe = async () => {
@@ -87,16 +139,31 @@ const SellerOnboardingSheet = ({
       const onboardingComplete = (profile as any)?.stripe_onboarding_complete === true;
       const existingAccountId = onboardingComplete ? (profile as any)?.stripe_account_id : undefined;
 
+      const [yStr, mStr, dStr] = dob.split('-');
+
       const { data, error } = await invokeCloudFunction('stripe-connect-onboard', {
-        returnUrl: window.location.origin + '/create-listing',
+        returnUrl: returnUrl || window.location.href.split('?')[0],
         stripeAccountId: existingAccountId,
         forceNew: !onboardingComplete,
-        prefillName: legalName.trim() || undefined,
+        prefill: {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          dob: { year: +yStr, month: +mStr, day: +dStr },
+          phone: phone.trim(),
+          address: {
+            line1: line1.trim(),
+            city: suburb.trim(),
+            state,
+            postal_code: postcode.trim(),
+            country: 'AU',
+          },
+        },
       });
 
       if (error) throw error;
       if (!data?.url) throw new Error('No onboarding URL returned');
 
+      onComplete?.();
       window.location.href = data.url;
     } catch (err: any) {
       console.error('Seller onboarding error:', err);
@@ -108,7 +175,7 @@ const SellerOnboardingSheet = ({
 
   const ProgressDots = () => (
     <div className="flex items-center justify-center gap-1.5 mb-1">
-      {[1, 2, 3].map((n) => (
+      {[1, 2, 3, 4].map((n) => (
         <div
           key={n}
           className={`h-1.5 rounded-full transition-all ${
@@ -123,9 +190,9 @@ const SellerOnboardingSheet = ({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="rounded-t-3xl border-t-[3px] border-charcoal p-0 flex flex-col"
+        className="rounded-t-3xl border-t-[3px] border-charcoal p-0 flex flex-col max-h-[92svh]"
       >
-        <div className="px-5 pt-7 pb-8 flex flex-col items-center text-center gap-5">
+        <div className="px-5 pt-7 pb-8 flex flex-col items-center text-center gap-5 overflow-y-auto">
           <ProgressDots />
           <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
             Step {step} of {TOTAL_STEPS}
@@ -137,7 +204,7 @@ const SellerOnboardingSheet = ({
               <SheetHeader className="space-y-2">
                 <SheetTitle className="text-xl">Start selling on Flea</SheetTitle>
                 <p className="text-sm text-muted-foreground leading-relaxed max-w-[300px] mx-auto">
-                  List items in minutes and get paid securely.
+                  We'll collect a few details up front so the payment setup is quick — you'll only need a password and bank account on the next screen.
                 </p>
               </SheetHeader>
               <div className="w-full space-y-3 mt-4 flex flex-col items-center">
@@ -161,25 +228,36 @@ const SellerOnboardingSheet = ({
           {step === 2 && (
             <>
               <SheetHeader className="space-y-2">
-                <SheetTitle className="text-lg">Your name (for payments)</SheetTitle>
+                <SheetTitle className="text-lg">Your details</SheetTitle>
                 <p className="text-sm text-muted-foreground leading-relaxed max-w-[320px] mx-auto">
-                  This must match your bank account details.
+                  This must match your bank account and ID for payout verification.
                 </p>
               </SheetHeader>
-              <div className="w-full max-w-[320px] mx-auto mt-2">
-                <Input
-                  value={legalName}
-                  onChange={(e) => setLegalName(e.target.value)}
-                  placeholder="Full legal name"
-                  autoFocus
-                  autoComplete="name"
-                  className="h-12 rounded-xl text-base text-center"
-                />
+              <div className="w-full text-left space-y-3 mt-1">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="fn" className="text-xs">First name</Label>
+                    <Input id="fn" value={firstName} onChange={(e) => setFirstName(e.target.value)} autoComplete="given-name" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="ln" className="text-xs">Last name</Label>
+                    <Input id="ln" value={lastName} onChange={(e) => setLastName(e.target.value)} autoComplete="family-name" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="dob" className="text-xs">Date of birth</Label>
+                    <Input id="dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="phone" className="text-xs">Phone</Label>
+                    <Input id="phone" type="tel" inputMode="tel" placeholder="04xx xxx xxx" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" />
+                  </div>
+                </div>
               </div>
               <div className="w-full space-y-3 mt-3 flex flex-col items-center">
                 <Button
-                  onClick={handleContinueFromName}
-                  disabled={legalName.trim().length < 2}
+                  onClick={handlePersonalNext}
                   className="w-52 h-12 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-[15px] font-semibold"
                 >
                   Continue
@@ -198,21 +276,82 @@ const SellerOnboardingSheet = ({
           {step === 3 && (
             <>
               <SheetHeader className="space-y-2">
+                <SheetTitle className="text-lg">Your address</SheetTitle>
+                <p className="text-sm text-muted-foreground leading-relaxed max-w-[320px] mx-auto">
+                  Used to verify your identity for payouts. Australian addresses only.
+                </p>
+              </SheetHeader>
+              <div className="w-full text-left space-y-3 mt-1">
+                <div className="space-y-1">
+                  <Label htmlFor="addr" className="text-xs">Street address</Label>
+                  <Input id="addr" value={line1} onChange={(e) => setLine1(e.target.value)} autoComplete="address-line1" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="suburb" className="text-xs">Suburb</Label>
+                    <Input id="suburb" value={suburb} onChange={(e) => setSuburb(e.target.value)} autoComplete="address-level2" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="state" className="text-xs">State</Label>
+                    <Select value={state} onValueChange={setState}>
+                      <SelectTrigger id="state"><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        {AU_STATES.map((s) => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="postcode" className="text-xs">Postcode</Label>
+                  <Input id="postcode" inputMode="numeric" maxLength={4} value={postcode} onChange={(e) => setPostcode(e.target.value.replace(/\D/g, ''))} autoComplete="postal-code" />
+                </div>
+              </div>
+              <div className="w-full space-y-3 mt-3 flex flex-col items-center">
+                <Button
+                  onClick={handleAddressNext}
+                  className="w-52 h-12 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-[15px] font-semibold"
+                >
+                  Continue
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setStep(2)}
+                  className="w-full h-10 text-muted-foreground"
+                >
+                  Back
+                </Button>
+              </div>
+            </>
+          )}
+
+          {step === 4 && (
+            <>
+              <SheetHeader className="space-y-2">
                 <SheetTitle className="text-lg">Secure payment setup</SheetTitle>
                 <p className="text-sm text-muted-foreground text-pretty leading-relaxed max-w-[340px] mx-auto">
-                  To get paid, we securely connect your bank account through our payment provider. Flea never holds your money.
+                  We've pre-filled everything for you. On the next screen you'll just need to set a password and add your bank account.
                 </p>
               </SheetHeader>
 
-              <div className="bg-muted/60 rounded-xl px-4 py-3 text-center max-w-[310px] w-full">
-                <p className="text-xs font-semibold text-foreground mb-1.5">🚨 Please read 🚨</p>
+              <div className="bg-muted/60 rounded-xl px-4 py-3 text-left max-w-[340px] w-full space-y-2">
+                <p className="text-xs font-semibold text-foreground">⏱️ Please note</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  You'll be asked for some business details — this is standard. Simply select{' '}
-                  <span className="font-medium text-foreground">Individual / Sole trader</span> and enter your personal information. You don't need a registered business to sell on Flea.
+                  Due to security checks and verification, your <span className="font-medium text-foreground">first payout may take around 7 days</span>.
+                </p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  After that, payouts usually arrive in <span className="font-medium text-foreground">1–2 business days</span>, or via <span className="font-medium text-foreground">Instant Payout (≈30 mins)</span> for a 1.5% fee.
                 </p>
               </div>
 
-              <div className="w-full space-y-3 mt-2 flex flex-col items-center">
+              <div className="bg-muted/60 rounded-xl px-4 py-2.5 text-center max-w-[340px] w-full">
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  If asked for a business type, select <span className="font-medium text-foreground">Individual / Sole trader</span>. You don't need a registered business to sell on Flea.
+                </p>
+              </div>
+
+              <div className="w-full space-y-2 mt-1 flex flex-col items-center">
                 <Button
                   onClick={handleContinueToStripe}
                   disabled={isSubmitting}
@@ -229,15 +368,15 @@ const SellerOnboardingSheet = ({
                 </Button>
                 <Button
                   variant="ghost"
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep(3)}
                   disabled={isSubmitting}
-                  className="w-full h-10 text-muted-foreground"
+                  className="w-full h-9 text-muted-foreground"
                 >
                   Back
                 </Button>
               </div>
 
-              <p className="text-[11px] text-muted-foreground/70 mt-1 max-w-[280px]">
+              <p className="text-[11px] text-muted-foreground/70 max-w-[280px]">
                 Flea never stores your bank details. Our payment provider manages everything securely.
               </p>
             </>

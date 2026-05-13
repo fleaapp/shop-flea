@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { ChevronRight } from 'lucide-react';
 import stripeLogo from '@/assets/logo-stripe.png';
 import { clearStripeConnectionState, getStripeConnectedStorageKey } from '@/utils/stripeConnectionState';
-import StripeOnboardingSheet from '@/components/StripeOnboardingSheet';
+import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
 
 const PaymentMethodsSection = () => {
   const { user, profile, refreshProfile } = useAuth();
@@ -199,9 +199,11 @@ const PaymentMethodsSection = () => {
 
   return (
     <>
-    <StripeOnboardingSheet
+    <SellerOnboardingSheet
       open={showStripeOnboarding}
       onOpenChange={setShowStripeOnboarding}
+      stripeActionRequired={stripeActionRequired}
+      returnUrl={typeof window !== 'undefined' ? window.location.origin + '/settings' : undefined}
       onComplete={() => {
         setShowStripeOnboarding(false);
         handleCheckStatus(true);
