@@ -120,14 +120,6 @@ const getRouteTopColor = (pathname: string) => {
   return isAuthLike ? AUTH_TOP_COLOR : APP_TOP_COLOR;
 };
 
-const isLightHex = (hex: string) => {
-  const h = hex.replace("#", "");
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.55;
-};
-
 const applyTopChromeColor = (color: string) => {
   let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
   if (!meta) {
@@ -153,9 +145,8 @@ const applyTopChromeColor = (color: string) => {
   document.body.style.backgroundColor = color;
 
   if (Capacitor.isNativePlatform()) {
-    void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
-    void StatusBar.setStyle({ style: isLightHex(color) ? Style.Dark : Style.Light }).catch(() => undefined);
-    void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
+    void StatusBar.setOverlaysWebView({ overlay: true }).catch(() => undefined);
+    void StatusBar.setStyle({ style: Style.Light }).catch(() => undefined);
   }
 };
 
