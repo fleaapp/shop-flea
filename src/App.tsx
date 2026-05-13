@@ -105,185 +105,72 @@ const queryClient = new QueryClient({
 
 const PageLoader = () => <PageSkeleton />;
 
-type RgbaColor = { r: number; g: number; b: number; a: number };
-
-const parseCssColor = (color: string): RgbaColor | null => {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
-  ctx.fillStyle = color;
-  const normalized = ctx.fillStyle;
-  if (normalized.startsWith('#')) {
-    const hex = normalized.length === 4
-      ? normalized.slice(1).split('').map((v) => v + v).join('')
-      : normalized.slice(1, 7);
-    return {
-      r: Number.parseInt(hex.slice(0, 2), 16),
-      g: Number.parseInt(hex.slice(2, 4), 16),
-      b: Number.parseInt(hex.slice(4, 6), 16),
-      a: 1,
-    };
-  }
-  const match = normalized.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
-  if (!match) return null;
-  return {
-    r: Number(match[1]),
-    g: Number(match[2]),
-    b: Number(match[3]),
-    a: match[4] === undefined ? 1 : Number(match[4]),
-  };
-};
-
-const composite = (top: RgbaColor, bottom: RgbaColor): RgbaColor => {
-  const alpha = top.a + bottom.a * (1 - top.a);
-  if (alpha <= 0) return { r: 0, g: 0, b: 0, a: 0 };
-  return {
-    r: Math.round((top.r * top.a + bottom.r * bottom.a * (1 - top.a)) / alpha),
-    g: Math.round((top.g * top.a + bottom.g * bottom.a * (1 - top.a)) / alpha),
-    b: Math.round((top.b * top.a + bottom.b * bottom.a * (1 - top.a)) / alpha),
-    a: alpha,
-  };
-};
-
-const toHexColor = ({ r, g, b }: RgbaColor) => {
-  return `#${[r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('')}`;
-};
-
-const shouldIgnoreTopColorElement = (el: Element, color: RgbaColor) => {
-  const className = typeof (el as HTMLElement).className === 'string' ? (el as HTMLElement).className : '';
-  const isBlackScrim = color.r < 24 && color.g < 24 && color.b < 24 && color.a >= 0.35 && color.a < 0.98;
-
-  return isBlackScrim && (
-    className.includes('bg-black/') ||
-    className.includes('backdrop-blur') ||
-    el.hasAttribute('data-radix-dialog-overlay') ||
-    el.getAttribute('role') === 'presentation'
-  );
-};
-
-const routeTopFallback = (pathname: string) => {
+// Deterministic top color per route. Auth/forgot/reset use the primary brand
+// green; everything else uses the cream background. No DOM sampling — that
+// approach lagged behind navigation and produced mismatched header bands.
+const getRouteTopColor = (pathname: string) => {
   const root = getComputedStyle(document.documentElement);
-  const primary = `hsl(${root.getPropertyValue('--primary').trim()})`;
-  const background = `hsl(${root.getPropertyValue('--background').trim()})`;
-  return ['/auth', '/forgot-password', '/reset-password'].some((path) => pathname.startsWith(path))
-    ? primary
-    : background;
+  const primary = root.getPropertyValue("--primary").trim();
+  const background = root.getPropertyValue("--background").trim();
+  const isAuthLike = ["/auth", "/forgot-password", "/reset-password", "/verify-email"].some((p) =>
+    pathname.startsWith(p),
+  );
+  const hsl = `hsl(${isAuthLike ? primary : background})`;
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "#EDE8DC";
+  ctx.fillStyle = hsl;
+  const computed = ctx.fillStyle as string;
+  if (computed.startsWith("#")) return computed;
+  const m = computed.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!m) return "#EDE8DC";
+  return `#${[m[1], m[2], m[3]].map((v) => Number(v).toString(16).padStart(2, "0")).join("")}`;
 };
 
-const getSafeAreaTopInset = () => {
-  const probe = document.createElement('div');
-  probe.style.position = 'fixed';
-  probe.style.top = '0';
-  probe.style.height = 'env(safe-area-inset-top)';
-  probe.style.pointerEvents = 'none';
-  probe.style.visibility = 'hidden';
-  document.body.appendChild(probe);
-  const height = probe.getBoundingClientRect().height;
-  probe.remove();
-  return Number.isFinite(height) ? height : 0;
+const isLightHex = (hex: string) => {
+  const h = hex.replace("#", "");
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.55;
 };
 
 const AppContent = () => {
   const { showCarousel, closeCarousel } = useOnboarding();
   const location = useLocation();
-  const isStandaloneSite = location.pathname.startsWith('/about');
+  const isStandaloneSite = location.pathname.startsWith("/about");
 
   useEffect(() => {
     const currentRoute = `${location.pathname}${location.search}${location.hash}`;
-    if (!location.pathname.startsWith('/listing/')) {
-      sessionStorage.setItem('flea_last_non_listing_route', currentRoute);
+    if (!location.pathname.startsWith("/listing/")) {
+      sessionStorage.setItem("flea_last_non_listing_route", currentRoute);
     }
   }, [location.pathname, location.search, location.hash]);
 
-  // Keep the iOS/PWA safe-area strip in sync with the screen underneath it.
-  // Ignore modal/sheet dimming scrims so opening a bottom sheet cannot turn the app header black.
+  // Sync iOS/PWA safe-area strip with the current route'''s background.
   useEffect(() => {
-    let raf = 0;
-    let timeout = 0;
-    let cancelled = false;
-    let lastColor = '';
+    const color = getRouteTopColor(location.pathname);
 
-    const ensureMeta = () => {
-      let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
-      if (!meta) {
-        meta = document.createElement('meta');
-        meta.name = 'theme-color';
-        document.head.appendChild(meta);
-      }
-      return meta;
-    };
+    let meta = document.querySelector("meta[name="theme-color"]") as HTMLMetaElement | null;
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "theme-color";
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute("content", color);
 
-    const getVisualBgAtPoint = (x: number, y: number, fallbackColor: string) => {
-      let visual = parseCssColor(fallbackColor) || { r: 237, g: 232, b: 220, a: 1 };
-      const elements = document.elementsFromPoint(x, y).reverse();
+    document.documentElement.style.setProperty("--app-top-bg", color);
+    document.body.style.setProperty("--app-top-bg", color);
+    document.documentElement.style.backgroundColor = color;
+    document.body.style.backgroundColor = color;
 
-      for (const el of elements) {
-        const color = parseCssColor(getComputedStyle(el).backgroundColor);
-        if (!color || color.a <= 0) continue;
-        if (shouldIgnoreTopColorElement(el, color)) continue;
-        visual = composite(color, visual);
-        if (visual.a >= 0.995) {
-          visual.a = 1;
-        }
-      }
-
-      return visual;
-    };
-
-    const isLightColor = ({ r, g, b }: RgbaColor) => {
-      const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-      return luminance > 0.55;
-    };
-
-    const sync = () => {
-      if (cancelled) return;
-      const x = Math.floor(window.innerWidth / 2);
-      const fallback = routeTopFallback(location.pathname);
-      const sampleY = Math.min(window.innerHeight - 1, Math.max(4, getSafeAreaTopInset() + 4));
-      const sampled = getVisualBgAtPoint(x, sampleY, fallback);
-      const color = toHexColor(sampled);
-
-      if (color === lastColor) return;
-      lastColor = color;
-
-      ensureMeta().setAttribute('content', color);
-      document.documentElement.style.setProperty('--app-top-bg', color);
-      document.body.style.setProperty('--app-top-bg', color);
-      document.documentElement.style.backgroundColor = color;
-      document.body.style.backgroundColor = color;
-      if (Capacitor.isNativePlatform()) {
-        const isIos = Capacitor.getPlatform() === 'ios';
-        void StatusBar.setOverlaysWebView({ overlay: isIos }).catch(() => undefined);
-        void StatusBar.setStyle({ style: isLightColor(sampled) ? Style.Dark : Style.Light }).catch(() => undefined);
-        if (!isIos) {
-          void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
-        }
-      }
-    };
-
-    // Wait one frame so the new route has rendered before we sample.
-    raf = requestAnimationFrame(() => {
-      raf = requestAnimationFrame(sync);
-    });
-    timeout = window.setTimeout(sync, 350);
-
-    // Re-sync on resize (keyboard, rotation) and after DOM updates within the page.
-    window.addEventListener('resize', sync);
-    const observer = new MutationObserver(() => {
-      // Throttle via rAF
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(sync);
-    });
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
-
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(raf);
-      window.clearTimeout(timeout);
-      window.removeEventListener('resize', sync);
-      observer.disconnect();
-    };
+    if (Capacitor.isNativePlatform()) {
+      void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
+      void StatusBar.setStyle({ style: isLightHex(color) ? Style.Dark : Style.Light }).catch(() => undefined);
+      void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
+    }
   }, [location.pathname]);
+
 
   useEffect(() => {
     const prefetchCoreRoutes = () => {
