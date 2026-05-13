@@ -314,7 +314,7 @@ const SellerOnboardingSheet = ({
                 <Button
                   variant="ghost"
                   onClick={() => setStep(2)}
-                  className="w-full h-10 text-muted-foreground"
+                  className="w-auto h-10 px-4 text-muted-foreground hover:bg-transparent hover:text-muted-foreground active:bg-muted/60 active:text-foreground"
                 >
                   Back
                 </Button>
