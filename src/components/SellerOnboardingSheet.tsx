@@ -317,7 +317,7 @@ const SellerOnboardingSheet = ({
                 <Button
                   variant="ghost"
                   onClick={() => setStep(2)}
-                  className="w-auto h-10 px-4 text-muted-foreground hover:bg-transparent hover:text-muted-foreground active:bg-muted/60 active:text-foreground"
+                  className={secondaryAction()}
                 >
                   Back
                 </Button>
@@ -369,7 +369,7 @@ const SellerOnboardingSheet = ({
                   variant="ghost"
                   onClick={() => setStep(3)}
                   disabled={isSubmitting}
-                  className="w-auto h-9 px-4 text-muted-foreground hover:bg-transparent hover:text-muted-foreground active:bg-muted/60 active:text-foreground"
+                  className={secondaryAction('h-9')}
                 >
                   Back
                 </Button>
