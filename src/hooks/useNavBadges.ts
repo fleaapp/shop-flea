@@ -47,8 +47,9 @@ export const useNavBadges = () => {
     },
     enabled: !!user?.id,
     staleTime: 30_000,
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
     refetchOnWindowFocus: false,
+    retry: false,
   });
 
   return data || EMPTY;
