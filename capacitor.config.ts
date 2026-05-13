@@ -21,7 +21,7 @@ const config: CapacitorConfig = {
     SplashScreen: {
       launchShowDuration: 1500,
       launchAutoHide: true,
-      backgroundColor: '#EDE8DC',
+      backgroundColor: '#F5F1EB',
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
@@ -32,7 +32,7 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: 'never',
     limitsNavigationsToAppBoundDomains: false,
-    backgroundColor: '#EDE8DC',
+    backgroundColor: '#F5F1EB',
   },
   android: {
     allowMixedContent: false,
