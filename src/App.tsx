@@ -93,8 +93,9 @@ const queryClient = new QueryClient({
       staleTime: 15_000,
       refetchOnWindowFocus: false,
       // Avoid 3x exponential-backoff retries on missing RPCs / columns which add seconds of latency
-      retry: (failureCount, error: any) => {
-        const code = error?.code ?? error?.status;
+      retry: (failureCount, error: unknown) => {
+        const queryError = error as { code?: string | number; status?: string | number } | null;
+        const code = queryError?.code ?? queryError?.status;
         if (code === 'PGRST202' || code === 'PGRST204' || code === '42703' || code === 404 || code === 400) {
           return false;
         }
