@@ -193,8 +193,8 @@ serve(async (req) => {
       // dashboard show "Flea" as the platform/brand rather than the seller's
       // legal name.
       createParams.business_profile = {
-        name: "Flea",
-        product_description: "Selling pre-loved fashion on Flea App. Pick 'Clothing and accessories' for industry.",
+        name: "Flea Marketplace Seller",
+        product_description: "Selling pre-loved fashion on Flea — a peer-to-peer marketplace. Pick 'Clothing and accessories' for industry.",
         url: "https://finditonflea.com",
         support_url: "https://finditonflea.com",
         mcc: "5699", // Miscellaneous Apparel and Accessory Shops
