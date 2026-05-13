@@ -109,7 +109,7 @@ serve(async (req) => {
       const country = (userProfile?.country_code || 'AU').toUpperCase();
 
       const createParams: Record<string, unknown> = {
-        type: "standard",
+        type: "express",
         email: user.email,
         country,
         default_currency: country === 'AU' ? 'aud' : undefined,
@@ -117,6 +117,18 @@ serve(async (req) => {
           flea_user_id: userId,
         },
         business_type: "individual",
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+        settings: {
+          payouts: {
+            schedule: {
+              interval: "daily",
+              delay_days: "minimum",
+            },
+          },
+        },
       };
 
       // Pre-fill individual details. `prefill` (from the in-app form) takes top priority,
