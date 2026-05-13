@@ -448,7 +448,7 @@ const CreateListing = () => {
   // Show verifying dialog if Stripe is pending (account exists but not yet connected)
   if (stripePending && user && profile) {
     return (
-      <div className="min-h-screen bg-background pb-24">
+      <div className="min-h-screen bg-background pb-24 pt-[env(safe-area-inset-top)]">
         <header className="relative flex items-center justify-center px-4 py-4">
           <Button
             variant="ghost"
@@ -490,7 +490,7 @@ const CreateListing = () => {
   const needsPaymentGate = !hasPaymentMethod || (stripeActionRequired && !hasPayPalConnected);
   if (needsPaymentGate && user && profile) {
     return (
-      <div className="min-h-screen bg-background pb-24">
+      <div className="min-h-screen bg-background pb-24 pt-[env(safe-area-inset-top)]">
         <header className="relative flex items-center justify-center px-4 py-4">
           <Button
             variant="ghost"
@@ -515,7 +515,7 @@ const CreateListing = () => {
   // Block form until shipping setup is complete for first-time sellers
   if (showShippingSetup) {
     return (
-      <div className="min-h-screen bg-background pb-24">
+      <div className="min-h-screen bg-background pb-24 pt-[env(safe-area-inset-top)]">
         <header className="relative flex items-center justify-center px-4 py-4">
           <Button
             variant="ghost"
@@ -538,7 +538,7 @@ const CreateListing = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-24 pt-[env(safe-area-inset-top)]">
       {/* Blocked user banner */}
       {isBlocked && <BlockedUserBanner />}
       {/* Image Crop Dialog */}
