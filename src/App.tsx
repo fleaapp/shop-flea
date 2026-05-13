@@ -115,29 +115,67 @@ const AppContent = () => {
     }
   }, [location.pathname, location.search, location.hash]);
 
-  // Keep iOS/PWA status bar (safe-area) color in sync with the current screen background
+  // Keep iOS/PWA status bar (safe-area) color in sync with the actual top of the screen.
+  // Sample the rendered background color a few pixels below the safe-area inset and apply
+  // it to the html/body so the iOS notch / status bar matches whatever the user is seeing.
   useEffect(() => {
-    const path = location.pathname;
-    // Auth/splash screens use the lime primary as their full-screen background
-    const isPrimaryBg =
-      path === '/auth' ||
-      path === '/forgot-password' ||
-      path === '/reset-password' ||
-      path === '/verify-email';
+    let raf = 0;
+    let cancelled = false;
 
-    const root = getComputedStyle(document.documentElement);
-    const hsl = isPrimaryBg ? root.getPropertyValue('--primary') : root.getPropertyValue('--background');
-    const color = `hsl(${hsl.trim()})`;
+    const ensureMeta = () => {
+      let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = 'theme-color';
+        document.head.appendChild(meta);
+      }
+      return meta;
+    };
 
-    let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
-    if (!meta) {
-      meta = document.createElement('meta');
-      meta.name = 'theme-color';
-      document.head.appendChild(meta);
-    }
-    meta.setAttribute('content', color);
-    document.documentElement.style.backgroundColor = color;
-    document.body.style.backgroundColor = color;
+    const getBgFromElement = (el: Element | null): string | null => {
+      let node: Element | null = el;
+      while (node) {
+        const c = getComputedStyle(node).backgroundColor;
+        if (c && c !== 'rgba(0, 0, 0, 0)' && c !== 'transparent') return c;
+        node = node.parentElement;
+      }
+      return null;
+    };
+
+    const sync = () => {
+      if (cancelled) return;
+      const x = Math.floor(window.innerWidth / 2);
+      // Sample a couple of pixels below the very top so we hit content under the safe-area.
+      const el = document.elementFromPoint(x, 4);
+      const root = getComputedStyle(document.documentElement);
+      const fallback = `hsl(${root.getPropertyValue('--background').trim()})`;
+      const color = getBgFromElement(el) || fallback;
+
+      ensureMeta().setAttribute('content', color);
+      document.documentElement.style.backgroundColor = color;
+      document.body.style.backgroundColor = color;
+    };
+
+    // Wait one frame so the new route has rendered before we sample.
+    raf = requestAnimationFrame(() => {
+      raf = requestAnimationFrame(sync);
+    });
+
+    // Re-sync on resize (keyboard, rotation) and after DOM updates within the page.
+    window.addEventListener('resize', sync);
+    const observer = new MutationObserver(() => {
+      // Throttle via rAF
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(sync);
+    });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', sync);
+      observer.disconnect();
+    };
   }, [location.pathname]);
 
   useEffect(() => {

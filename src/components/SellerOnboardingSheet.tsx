@@ -204,7 +204,7 @@ const SellerOnboardingSheet = ({
               <SheetHeader className="space-y-2">
                 <SheetTitle className="text-xl">Start selling on Flea</SheetTitle>
                 <p className="text-sm text-muted-foreground leading-relaxed max-w-[300px] mx-auto">
-                  We'll collect a few details up front so the payment setup is quick — you'll only need a password and bank account on the next screen.
+                  We'll collect a few quick details — your name, date of birth, phone and address — so the secure payment setup at the end is fast.
                 </p>
               </SheetHeader>
               <div className="w-full space-y-3 mt-4 flex flex-col items-center">
@@ -217,7 +217,7 @@ const SellerOnboardingSheet = ({
                 <Button
                   variant="ghost"
                   onClick={() => onOpenChange(false)}
-                  className="w-full h-10 text-muted-foreground"
+                  className="w-auto h-10 px-4 text-muted-foreground hover:bg-transparent hover:text-muted-foreground active:bg-muted/60 active:text-foreground"
                 >
                   Not now
                 </Button>
@@ -227,28 +227,28 @@ const SellerOnboardingSheet = ({
 
           {step === 2 && (
             <>
-              <SheetHeader className="space-y-2">
-                <SheetTitle className="text-lg">Your details</SheetTitle>
-                <p className="text-sm text-muted-foreground leading-relaxed max-w-[320px] mx-auto">
+              <SheetHeader className="space-y-2 max-w-[280px] mx-auto">
+                <SheetTitle className="text-lg text-center">Your details</SheetTitle>
+                <p className="text-sm text-muted-foreground leading-relaxed text-center">
                   This must match your bank account and ID for payout verification.
                 </p>
               </SheetHeader>
-              <div className="w-full text-left space-y-3 mt-1">
+              <div className="w-[260px] max-w-full mx-auto text-left space-y-3 mt-1">
                 <div className="space-y-1">
                   <Label htmlFor="fn" className="text-xs">First name</Label>
-                  <Input id="fn" value={firstName} onChange={(e) => setFirstName(e.target.value)} autoComplete="given-name" />
+                  <Input id="fn" value={firstName} onChange={(e) => setFirstName(e.target.value)} autoComplete="given-name" className="w-full" />
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="ln" className="text-xs">Last name</Label>
-                  <Input id="ln" value={lastName} onChange={(e) => setLastName(e.target.value)} autoComplete="family-name" />
+                  <Input id="ln" value={lastName} onChange={(e) => setLastName(e.target.value)} autoComplete="family-name" className="w-full" />
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="dob" className="text-xs">Date of birth</Label>
-                  <Input id="dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
+                  <Input id="dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)} className="w-full block" />
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="phone" className="text-xs">Phone</Label>
-                  <Input id="phone" type="tel" inputMode="tel" placeholder="04xx xxx xxx" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" />
+                  <Input id="phone" type="tel" inputMode="tel" placeholder="04xx xxx xxx" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" className="w-full" />
                 </div>
               </div>
               <div className="w-full space-y-3 mt-3 flex flex-col items-center">
@@ -261,7 +261,7 @@ const SellerOnboardingSheet = ({
                 <Button
                   variant="ghost"
                   onClick={() => setStep(1)}
-                  className="w-full h-10 text-muted-foreground"
+                  className="w-auto h-10 px-4 text-muted-foreground hover:bg-transparent hover:text-muted-foreground active:bg-muted/60 active:text-foreground"
                 >
                   Back
                 </Button>
@@ -314,7 +314,7 @@ const SellerOnboardingSheet = ({
                 <Button
                   variant="ghost"
                   onClick={() => setStep(2)}
-                  className="w-full h-10 text-muted-foreground"
+                  className="w-auto h-10 px-4 text-muted-foreground hover:bg-transparent hover:text-muted-foreground active:bg-muted/60 active:text-foreground"
                 >
                   Back
                 </Button>
@@ -366,7 +366,7 @@ const SellerOnboardingSheet = ({
                   variant="ghost"
                   onClick={() => setStep(3)}
                   disabled={isSubmitting}
-                  className="w-full h-9 text-muted-foreground"
+                  className="w-auto h-9 px-4 text-muted-foreground hover:bg-transparent hover:text-muted-foreground active:bg-muted/60 active:text-foreground"
                 >
                   Back
                 </Button>
