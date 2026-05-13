@@ -148,8 +148,9 @@ const AppContent = () => {
       // Sample a couple of pixels below the very top so we hit content under the safe-area.
       const el = document.elementFromPoint(x, 4);
       const root = getComputedStyle(document.documentElement);
+      const primary = `hsl(${root.getPropertyValue('--primary').trim()})`;
       const fallback = `hsl(${root.getPropertyValue('--background').trim()})`;
-      const color = getBgFromElement(el) || fallback;
+      const color = location.pathname === '/auth' ? primary : (getBgFromElement(el) || fallback);
 
       ensureMeta().setAttribute('content', color);
       document.documentElement.style.backgroundColor = color;
