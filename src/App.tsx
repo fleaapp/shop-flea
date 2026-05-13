@@ -149,6 +149,40 @@ const toHexColor = ({ r, g, b }: RgbaColor) => {
   return `#${[r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('')}`;
 };
 
+const shouldIgnoreTopColorElement = (el: Element, color: RgbaColor) => {
+  const className = typeof (el as HTMLElement).className === 'string' ? (el as HTMLElement).className : '';
+  const isBlackScrim = color.r < 24 && color.g < 24 && color.b < 24 && color.a >= 0.35 && color.a < 0.98;
+
+  return isBlackScrim && (
+    className.includes('bg-black/') ||
+    className.includes('backdrop-blur') ||
+    el.hasAttribute('data-radix-dialog-overlay') ||
+    el.getAttribute('role') === 'presentation'
+  );
+};
+
+const routeTopFallback = (pathname: string) => {
+  const root = getComputedStyle(document.documentElement);
+  const primary = `hsl(${root.getPropertyValue('--primary').trim()})`;
+  const background = `hsl(${root.getPropertyValue('--background').trim()})`;
+  return ['/auth', '/forgot-password', '/reset-password'].some((path) => pathname.startsWith(path))
+    ? primary
+    : background;
+};
+
+const getSafeAreaTopInset = () => {
+  const probe = document.createElement('div');
+  probe.style.position = 'fixed';
+  probe.style.top = '0';
+  probe.style.height = 'env(safe-area-inset-top)';
+  probe.style.pointerEvents = 'none';
+  probe.style.visibility = 'hidden';
+  document.body.appendChild(probe);
+  const height = probe.getBoundingClientRect().height;
+  probe.remove();
+  return Number.isFinite(height) ? height : 0;
+};
+
 const AppContent = () => {
   const { showCarousel, closeCarousel } = useOnboarding();
   const location = useLocation();
@@ -161,12 +195,13 @@ const AppContent = () => {
     }
   }, [location.pathname, location.search, location.hash]);
 
-  // Keep iOS/PWA status bar (safe-area) color in sync with the actual top of the screen.
-  // Sample the rendered background color a few pixels below the safe-area inset and apply
-  // it to the html/body so the iOS notch / status bar matches whatever the user is seeing.
+  // Keep the iOS/PWA safe-area strip in sync with the screen underneath it.
+  // Ignore modal/sheet dimming scrims so opening a bottom sheet cannot turn the app header black.
   useEffect(() => {
     let raf = 0;
+    let timeout = 0;
     let cancelled = false;
+    let lastColor = '';
 
     const ensureMeta = () => {
       let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
@@ -185,6 +220,7 @@ const AppContent = () => {
       for (const el of elements) {
         const color = parseCssColor(getComputedStyle(el).backgroundColor);
         if (!color || color.a <= 0) continue;
+        if (shouldIgnoreTopColorElement(el, color)) continue;
         visual = composite(color, visual);
         if (visual.a >= 0.995) {
           visual.a = 1;
@@ -202,19 +238,23 @@ const AppContent = () => {
     const sync = () => {
       if (cancelled) return;
       const x = Math.floor(window.innerWidth / 2);
-      const root = getComputedStyle(document.documentElement);
-      const primary = `hsl(${root.getPropertyValue('--primary').trim()})`;
-      const fallback = `hsl(${root.getPropertyValue('--background').trim()})`;
-      const sampled = getVisualBgAtPoint(x, 4, location.pathname === '/auth' ? primary : fallback);
+      const fallback = routeTopFallback(location.pathname);
+      const sampleY = Math.min(window.innerHeight - 1, Math.max(4, getSafeAreaTopInset() + 4));
+      const sampled = getVisualBgAtPoint(x, sampleY, fallback);
       const color = toHexColor(sampled);
 
+      if (color === lastColor) return;
+      lastColor = color;
+
       ensureMeta().setAttribute('content', color);
+      document.documentElement.style.setProperty('--app-top-bg', color);
+      document.body.style.setProperty('--app-top-bg', color);
       document.documentElement.style.backgroundColor = color;
       document.body.style.backgroundColor = color;
       if (Capacitor.isNativePlatform()) {
         const isIos = Capacitor.getPlatform() === 'ios';
         void StatusBar.setOverlaysWebView({ overlay: isIos }).catch(() => undefined);
-        void StatusBar.setStyle({ style: isLightColor(sampled) ? Style.Light : Style.Dark }).catch(() => undefined);
+        void StatusBar.setStyle({ style: isLightColor(sampled) ? Style.Dark : Style.Light }).catch(() => undefined);
         if (!isIos) {
           void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
         }
@@ -225,6 +265,7 @@ const AppContent = () => {
     raf = requestAnimationFrame(() => {
       raf = requestAnimationFrame(sync);
     });
+    timeout = window.setTimeout(sync, 350);
 
     // Re-sync on resize (keyboard, rotation) and after DOM updates within the page.
     window.addEventListener('resize', sync);
@@ -238,6 +279,7 @@ const AppContent = () => {
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
+      window.clearTimeout(timeout);
       window.removeEventListener('resize', sync);
       observer.disconnect();
     };
