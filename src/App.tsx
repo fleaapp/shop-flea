@@ -14,6 +14,7 @@ import RealtimeAlerts from "./components/RealtimeAlerts";
 import { PushNotificationSubscriber } from "./components/PushNotificationSubscriber";
 import ErrorBoundary from "./components/ErrorBoundary";
 import PageSkeleton from "./components/PageSkeleton";
+import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { StatusBar, Style } from "@capacitor/status-bar";
 
@@ -126,6 +127,37 @@ const isLightHex = (hex: string) => {
   return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.55;
 };
 
+const applyTopChromeColor = (color: string) => {
+  let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.name = "theme-color";
+    document.head.appendChild(meta);
+  }
+  meta.setAttribute("content", color);
+
+  let colorScheme = document.querySelector('meta[name="color-scheme"]') as HTMLMetaElement | null;
+  if (!colorScheme) {
+    colorScheme = document.createElement("meta");
+    colorScheme.name = "color-scheme";
+    document.head.appendChild(colorScheme);
+  }
+  colorScheme.setAttribute("content", "light");
+
+  document.documentElement.classList.remove("dark");
+  document.documentElement.style.colorScheme = "light";
+  document.documentElement.style.setProperty("--app-top-bg", color);
+  document.body.style.setProperty("--app-top-bg", color);
+  document.documentElement.style.backgroundColor = color;
+  document.body.style.backgroundColor = color;
+
+  if (Capacitor.isNativePlatform()) {
+    void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
+    void StatusBar.setStyle({ style: isLightHex(color) ? Style.Dark : Style.Light }).catch(() => undefined);
+    void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
+  }
+};
+
 const AppContent = () => {
   const { showCarousel, closeCarousel } = useOnboarding();
   const location = useLocation();
@@ -143,25 +175,7 @@ const AppContent = () => {
   useEffect(() => {
     const syncTopColor = () => {
       const color = getRouteTopColor(window.location.pathname || location.pathname);
-
-      let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
-      if (!meta) {
-        meta = document.createElement("meta");
-        meta.name = "theme-color";
-        document.head.appendChild(meta);
-      }
-      meta.setAttribute("content", color);
-
-      document.documentElement.style.setProperty("--app-top-bg", color);
-      document.body.style.setProperty("--app-top-bg", color);
-      document.documentElement.style.backgroundColor = color;
-      document.body.style.backgroundColor = color;
-
-      if (Capacitor.isNativePlatform()) {
-        void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
-        void StatusBar.setStyle({ style: isLightHex(color) ? Style.Dark : Style.Light }).catch(() => undefined);
-        void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
-      }
+      applyTopChromeColor(color);
     };
 
     syncTopColor();
@@ -170,11 +184,23 @@ const AppContent = () => {
     };
     window.addEventListener("pageshow", syncTopColor);
     window.addEventListener("focus", syncTopColor);
+    window.addEventListener("popstate", syncTopColor);
     document.addEventListener("visibilitychange", onVisibility);
+    let resumeHandle: { remove: () => Promise<void> } | undefined;
+    if (Capacitor.isNativePlatform()) {
+      void CapacitorApp.addListener("resume", syncTopColor).then((handle) => {
+        resumeHandle = handle;
+      });
+      void CapacitorApp.addListener("appStateChange", ({ isActive }) => {
+        if (isActive) syncTopColor();
+      });
+    }
     return () => {
       window.removeEventListener("pageshow", syncTopColor);
       window.removeEventListener("focus", syncTopColor);
+      window.removeEventListener("popstate", syncTopColor);
       document.removeEventListener("visibilitychange", onVisibility);
+      void resumeHandle?.remove();
     };
   }, [location.pathname]);
 
