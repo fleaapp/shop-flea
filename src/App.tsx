@@ -145,8 +145,9 @@ const applyTopChromeColor = (color: string) => {
   document.body.style.backgroundColor = color;
 
   if (Capacitor.isNativePlatform()) {
-    void StatusBar.setOverlaysWebView({ overlay: true }).catch(() => undefined);
+    void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
     void StatusBar.setStyle({ style: Style.Light }).catch(() => undefined);
+    void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
   }
 };
 

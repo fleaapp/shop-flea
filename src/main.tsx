@@ -24,7 +24,7 @@ const forceLightAppChrome = () => {
   theme?.setAttribute('content', topColor);
 
   const status = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]') as HTMLMetaElement | null;
-  status?.setAttribute('content', 'black-translucent');
+  status?.setAttribute('content', 'default');
 };
 
 forceLightAppChrome();
