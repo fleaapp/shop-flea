@@ -338,7 +338,7 @@ const Auth = () => {
   }
 
   return (
-    <div className="auth-screen fixed inset-0 bg-primary flex flex-col overflow-hidden">
+    <div className="auth-screen fixed inset-0 bg-primary flex flex-col overflow-hidden pt-[env(safe-area-inset-top)]">
       {/* Logo - positioned at top */}
       <div className="auth-logo absolute top-20 max-[375px]:top-12 left-0 right-0 flex justify-center">
         <img 

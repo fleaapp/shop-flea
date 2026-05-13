@@ -33,6 +33,7 @@ interface SellerOnboardingSheetProps {
 
 const TOTAL_STEPS = 4;
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA'];
+const secondaryActionClass = "w-auto h-10 px-4 rounded-full bg-transparent text-muted-foreground hover:bg-transparent hover:text-muted-foreground focus:bg-transparent focus:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:bg-transparent active:bg-muted/60 active:text-foreground";
 
 const SellerOnboardingSheet = ({
   open,
@@ -186,13 +187,15 @@ const SellerOnboardingSheet = ({
     </div>
   );
 
+  const secondaryAction = (className = '') => `${secondaryActionClass} ${className}`.trim();
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="rounded-t-3xl border-t-[3px] border-charcoal p-0 flex flex-col max-h-[92svh]"
+        className="rounded-t-3xl border-t-[3px] border-charcoal p-0 flex flex-col max-h-[92svh] bg-background"
       >
-        <div className="px-5 pt-7 pb-8 flex flex-col items-center text-center gap-5 overflow-y-auto">
+        <div className="px-5 pt-7 pb-8 flex flex-col items-center text-center gap-5 overflow-x-hidden overflow-y-auto">
           <ProgressDots />
           <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
             Step {step} of {TOTAL_STEPS}
@@ -217,7 +220,7 @@ const SellerOnboardingSheet = ({
                 <Button
                   variant="ghost"
                   onClick={() => onOpenChange(false)}
-                  className="w-auto h-10 px-4 text-muted-foreground hover:bg-transparent hover:text-muted-foreground active:bg-muted/60 active:text-foreground"
+                  className={secondaryAction()}
                 >
                   Not now
                 </Button>
@@ -227,13 +230,13 @@ const SellerOnboardingSheet = ({
 
           {step === 2 && (
             <>
-              <SheetHeader className="space-y-2 max-w-[280px] mx-auto">
+              <SheetHeader className="space-y-2 w-full max-w-[280px] mx-auto items-center text-center">
                 <SheetTitle className="text-lg text-center">Your details</SheetTitle>
                 <p className="text-sm text-muted-foreground leading-relaxed text-center">
                   This must match your bank account and ID for payout verification.
                 </p>
               </SheetHeader>
-              <div className="w-[260px] max-w-full mx-auto text-left space-y-3 mt-1">
+              <div className="w-[260px] max-w-[calc(100vw-64px)] mx-auto text-left space-y-3 mt-1">
                 <div className="space-y-1">
                   <Label htmlFor="fn" className="text-xs">First name</Label>
                   <Input id="fn" value={firstName} onChange={(e) => setFirstName(e.target.value)} autoComplete="given-name" className="w-full" />
@@ -261,7 +264,7 @@ const SellerOnboardingSheet = ({
                 <Button
                   variant="ghost"
                   onClick={() => setStep(1)}
-                  className="w-auto h-10 px-4 text-muted-foreground hover:bg-transparent hover:text-muted-foreground active:bg-muted/60 active:text-foreground"
+                  className={secondaryAction()}
                 >
                   Back
                 </Button>
@@ -314,7 +317,7 @@ const SellerOnboardingSheet = ({
                 <Button
                   variant="ghost"
                   onClick={() => setStep(2)}
-                  className="w-auto h-10 px-4 text-muted-foreground hover:bg-transparent hover:text-muted-foreground active:bg-muted/60 active:text-foreground"
+                  className={secondaryAction()}
                 >
                   Back
                 </Button>
@@ -327,7 +330,7 @@ const SellerOnboardingSheet = ({
               <SheetHeader className="space-y-2">
                 <SheetTitle className="text-lg">Secure payment setup</SheetTitle>
                 <p className="text-sm text-muted-foreground text-pretty leading-relaxed max-w-[340px] mx-auto">
-                  We've pre-filled everything for you. On the next screen you'll just need to set a password and add your bank account.
+                  We'll pass these details securely to our payment provider. Follow the prompts to finish your bank details and any required verification.
                 </p>
               </SheetHeader>
 
@@ -366,7 +369,7 @@ const SellerOnboardingSheet = ({
                   variant="ghost"
                   onClick={() => setStep(3)}
                   disabled={isSubmitting}
-                  className="w-auto h-9 px-4 text-muted-foreground hover:bg-transparent hover:text-muted-foreground active:bg-muted/60 active:text-foreground"
+                  className={secondaryAction('h-9')}
                 >
                   Back
                 </Button>
