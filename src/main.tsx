@@ -82,6 +82,7 @@ const registerServiceWorker = async () => {
 
 if (isPreviewHost || isInIframe) {
   void resetAppCache();
+} else {
   const storedBuild = localStorage.getItem(STORED_BUILD_KEY);
 
   if (storedBuild && storedBuild !== BUILD_ID) {

@@ -79,6 +79,10 @@ const Settings = () => {
   const handleLogout = async () => {
     navigate('/auth', { replace: true });
     await signOut();
+    if ((window.navigator as Navigator & { standalone?: boolean }).standalone) {
+      window.location.replace('/auth');
+      return;
+    }
     toast.success('Logged out');
   };
   const handleTogglePauseSelling = async (checked: boolean) => {
