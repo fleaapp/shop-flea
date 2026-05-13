@@ -89,6 +89,14 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 15_000,
       refetchOnWindowFocus: false,
+      // Avoid 3x exponential-backoff retries on missing RPCs / columns which add seconds of latency
+      retry: (failureCount, error: any) => {
+        const code = error?.code ?? error?.status;
+        if (code === 'PGRST202' || code === 'PGRST204' || code === '42703' || code === 404 || code === 400) {
+          return false;
+        }
+        return failureCount < 1;
+      },
     },
   },
 });
@@ -114,6 +122,15 @@ const AppContent = () => {
       void loadProfile();
       void loadNotifications();
       void loadSettings();
+      // Heavy/common destinations users tap from buttons — preload so navigation is instant
+      void loadListingDetails();
+      void loadCheckout();
+      void loadCreateListing();
+      void loadEditListing();
+      void loadSellerProfile();
+      void loadChatConversation();
+      void loadOrderChat();
+      void loadSales();
     };
 
     if (typeof requestIdleCallback !== 'undefined') {
