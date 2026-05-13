@@ -193,9 +193,9 @@ const SellerOnboardingSheet = ({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="rounded-t-3xl border-t-[3px] border-charcoal p-0 flex flex-col max-h-[92svh]"
+        className="rounded-t-3xl border-t-[3px] border-charcoal p-0 flex flex-col max-h-[92svh] bg-background"
       >
-        <div className="px-5 pt-7 pb-8 flex flex-col items-center text-center gap-5 overflow-y-auto">
+        <div className="px-5 pt-7 pb-8 flex flex-col items-center text-center gap-5 overflow-x-hidden overflow-y-auto">
           <ProgressDots />
           <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
             Step {step} of {TOTAL_STEPS}
