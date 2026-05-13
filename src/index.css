@@ -111,6 +111,25 @@
     text-rendering: optimizeLegibility;
   }
 
+  #root {
+    min-height: 100svh;
+    background: inherit;
+  }
+
+  input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-height: 0;
+  }
+
+  input[type="date"]::-webkit-date-and-time-value {
+    min-height: 0;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    margin: 0;
+  }
+
   /* Normalize emoji sizing across platforms (Android emojis render larger/smaller) */
   .text-lg > span,
   span[role="img"] {
