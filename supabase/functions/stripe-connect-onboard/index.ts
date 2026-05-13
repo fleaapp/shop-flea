@@ -109,7 +109,7 @@ serve(async (req) => {
       const country = (userProfile?.country_code || 'AU').toUpperCase();
 
       const createParams: Record<string, unknown> = {
-        type: "express",
+        type: "standard",
         email: user.email,
         country,
         default_currency: country === 'AU' ? 'aud' : undefined,
@@ -117,20 +117,6 @@ serve(async (req) => {
           flea_user_id: userId,
         },
         business_type: "individual",
-        capabilities: {
-          card_payments: { requested: true },
-          transfers: { requested: true },
-        },
-        // Daily automatic payouts with the minimum delay (AU minimum is 2 business days).
-        // Sellers can still trigger Instant Payouts from their Express dashboard when eligible.
-        settings: {
-          payouts: {
-            schedule: {
-              interval: "daily",
-              delay_days: "minimum",
-            },
-          },
-        },
       };
 
       // Pre-fill individual details. `prefill` (from the in-app form) takes top priority,
@@ -212,17 +198,8 @@ serve(async (req) => {
     // Persist stripe_account_id to DB immediately
     await persistStripeAccount(userId, accountId);
 
-    // Ensure existing accounts also get daily payouts + Flea branding.
-    try {
-      await stripe.accounts.update(accountId, {
-        business_profile: { name: "Flea Marketplace Seller" },
-        settings: {
-          payouts: { schedule: { interval: "daily", delay_days: "minimum" } },
-        },
-      } as any);
-    } catch (e) {
-      console.warn(`[stripe-connect-onboard] Account update failed for ${accountId}:`, (e as Error)?.message);
-    }
+    // Standard accounts manage their own payout schedule and branding;
+    // platform-side updates would be rejected, so we skip them here.
 
     // Create an account link — Stripe handles the entire onboarding/login flow
     const accountLink = await stripe.accountLinks.create({
