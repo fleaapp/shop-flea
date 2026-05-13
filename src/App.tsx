@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,6 +14,7 @@ import RealtimeAlerts from "./components/RealtimeAlerts";
 import { PushNotificationSubscriber } from "./components/PushNotificationSubscriber";
 import ErrorBoundary from "./components/ErrorBoundary";
 import PageSkeleton from "./components/PageSkeleton";
+import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { StatusBar, Style } from "@capacitor/status-bar";
 
@@ -92,8 +93,9 @@ const queryClient = new QueryClient({
       staleTime: 15_000,
       refetchOnWindowFocus: false,
       // Avoid 3x exponential-backoff retries on missing RPCs / columns which add seconds of latency
-      retry: (failureCount, error: any) => {
-        const code = error?.code ?? error?.status;
+      retry: (failureCount, error: unknown) => {
+        const queryError = error as { code?: string | number; status?: string | number } | null;
+        const code = queryError?.code ?? queryError?.status;
         if (code === 'PGRST202' || code === 'PGRST204' || code === '42703' || code === 404 || code === 400) {
           return false;
         }
@@ -126,6 +128,37 @@ const isLightHex = (hex: string) => {
   return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.55;
 };
 
+const applyTopChromeColor = (color: string) => {
+  let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.name = "theme-color";
+    document.head.appendChild(meta);
+  }
+  meta.setAttribute("content", color);
+
+  let colorScheme = document.querySelector('meta[name="color-scheme"]') as HTMLMetaElement | null;
+  if (!colorScheme) {
+    colorScheme = document.createElement("meta");
+    colorScheme.name = "color-scheme";
+    document.head.appendChild(colorScheme);
+  }
+  colorScheme.setAttribute("content", "light");
+
+  document.documentElement.classList.remove("dark");
+  document.documentElement.style.colorScheme = "light";
+  document.documentElement.style.setProperty("--app-top-bg", color);
+  document.body.style.setProperty("--app-top-bg", color);
+  document.documentElement.style.backgroundColor = color;
+  document.body.style.backgroundColor = color;
+
+  if (Capacitor.isNativePlatform()) {
+    void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
+    void StatusBar.setStyle({ style: isLightHex(color) ? Style.Dark : Style.Light }).catch(() => undefined);
+    void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
+  }
+};
+
 const AppContent = () => {
   const { showCarousel, closeCarousel } = useOnboarding();
   const location = useLocation();
@@ -138,30 +171,12 @@ const AppContent = () => {
     }
   }, [location.pathname, location.search, location.hash]);
 
-  // Sync iOS/PWA safe-area strip with the current route background, including
-  // bfcache/external-provider returns where React route state may not change.
-  useEffect(() => {
+  // Sync iOS/PWA safe-area strip with the current route background before paint,
+  // including bfcache/external-provider returns where React route state may not change.
+  useLayoutEffect(() => {
     const syncTopColor = () => {
       const color = getRouteTopColor(window.location.pathname || location.pathname);
-
-      let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
-      if (!meta) {
-        meta = document.createElement("meta");
-        meta.name = "theme-color";
-        document.head.appendChild(meta);
-      }
-      meta.setAttribute("content", color);
-
-      document.documentElement.style.setProperty("--app-top-bg", color);
-      document.body.style.setProperty("--app-top-bg", color);
-      document.documentElement.style.backgroundColor = color;
-      document.body.style.backgroundColor = color;
-
-      if (Capacitor.isNativePlatform()) {
-        void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
-        void StatusBar.setStyle({ style: isLightHex(color) ? Style.Dark : Style.Light }).catch(() => undefined);
-        void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
-      }
+      applyTopChromeColor(color);
     };
 
     syncTopColor();
@@ -170,11 +185,27 @@ const AppContent = () => {
     };
     window.addEventListener("pageshow", syncTopColor);
     window.addEventListener("focus", syncTopColor);
+    window.addEventListener("popstate", syncTopColor);
     document.addEventListener("visibilitychange", onVisibility);
+    let resumeHandle: { remove: () => Promise<void> } | undefined;
+    let appStateHandle: { remove: () => Promise<void> } | undefined;
+    if (Capacitor.isNativePlatform()) {
+      void CapacitorApp.addListener("resume", syncTopColor).then((handle) => {
+        resumeHandle = handle;
+      });
+      void CapacitorApp.addListener("appStateChange", ({ isActive }) => {
+        if (isActive) syncTopColor();
+      }).then((handle) => {
+        appStateHandle = handle;
+      });
+    }
     return () => {
       window.removeEventListener("pageshow", syncTopColor);
       window.removeEventListener("focus", syncTopColor);
+      window.removeEventListener("popstate", syncTopColor);
       document.removeEventListener("visibilitychange", onVisibility);
+      void resumeHandle?.remove();
+      void appStateHandle?.remove();
     };
   }, [location.pathname]);
 
