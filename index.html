@@ -8,8 +8,9 @@
     <meta name="description" content="Like your favourite Sunday flea market, but at your fingertips. Shop &amp; sell preloved fashion and goods with a swipe.">
     <meta name="author" content="Flea" />
     <meta name="theme-color" content="#F5F1EB" />
+    <meta name="color-scheme" content="light" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Flea" id="apple-app-title" />
     <link rel="apple-touch-icon" href="/pwa-icon-192.png" />
     <script>
@@ -17,10 +18,15 @@
         try {
           var isAuthLike = /^\/(auth|forgot-password|reset-password|verify-email)(\/|$)/.test(location.pathname);
           var topColor = isAuthLike ? '#DDFED7' : '#F5F1EB';
+          document.documentElement.style.colorScheme = 'light';
           document.documentElement.style.setProperty('--app-top-bg', topColor);
           document.documentElement.style.backgroundColor = topColor;
           var theme = document.querySelector('meta[name="theme-color"]');
           if (theme) theme.setAttribute('content', topColor);
+          var colorScheme = document.querySelector('meta[name="color-scheme"]');
+          if (colorScheme) colorScheme.setAttribute('content', 'light');
+          var appleStatus = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+          if (appleStatus) appleStatus.setAttribute('content', 'default');
         } catch (e) {}
       })();
 
