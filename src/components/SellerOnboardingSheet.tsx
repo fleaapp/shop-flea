@@ -261,7 +261,7 @@ const SellerOnboardingSheet = ({
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="dob" className="text-xs">Date of birth</Label>
-                  <Input id="dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)} className="w-full h-10 min-h-0 py-2 text-left text-base leading-tight" />
+                  <Input id="dob" type="text" inputMode="numeric" placeholder="DD/MM/YYYY" value={dobInput} onChange={(e) => handleDobChange(e.target.value)} className="w-full h-10 text-base" />
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="phone" className="text-xs">Phone</Label>
