@@ -207,7 +207,7 @@ const SellerOnboardingSheet = ({
               <SheetHeader className="space-y-2">
                 <SheetTitle className="text-xl">Start selling on Flea</SheetTitle>
                 <p className="text-sm text-muted-foreground leading-relaxed max-w-[300px] mx-auto">
-                  We'll collect a few quick details — your name, date of birth, phone and address — so the secure payment setup at the end is fast.
+                  We'll collect a few quick details - your name, date of birth, phone and address - so the secure payment setup at the end is fast.
                 </p>
               </SheetHeader>
               <div className="w-full space-y-3 mt-4 flex flex-col items-center">
@@ -236,7 +236,7 @@ const SellerOnboardingSheet = ({
                   This must match your bank account and ID for payout verification.
                 </p>
               </SheetHeader>
-              <div className="w-[260px] max-w-[calc(100vw-64px)] mx-auto text-left space-y-3 mt-1">
+              <div className="w-[230px] max-w-[calc(100vw-96px)] mx-auto text-left space-y-3 mt-1">
                 <div className="space-y-1">
                   <Label htmlFor="fn" className="text-xs">First name</Label>
                   <Input id="fn" value={firstName} onChange={(e) => setFirstName(e.target.value)} autoComplete="given-name" className="w-full" />
@@ -247,7 +247,7 @@ const SellerOnboardingSheet = ({
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="dob" className="text-xs">Date of birth</Label>
-                  <Input id="dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)} className="w-full block" />
+                  <Input id="dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)} className="w-full h-10 min-h-0 block py-0 leading-none" />
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="phone" className="text-xs">Phone</Label>
