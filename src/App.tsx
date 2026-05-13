@@ -14,6 +14,8 @@ import RealtimeAlerts from "./components/RealtimeAlerts";
 import { PushNotificationSubscriber } from "./components/PushNotificationSubscriber";
 import ErrorBoundary from "./components/ErrorBoundary";
 import PageSkeleton from "./components/PageSkeleton";
+import { Capacitor } from "@capacitor/core";
+import { StatusBar, Style } from "@capacitor/status-bar";
 
 // Critical path – loaded eagerly
 import Index from "./pages/Index";
@@ -102,6 +104,18 @@ const queryClient = new QueryClient({
 });
 
 const PageLoader = () => <PageSkeleton />;
+
+const toHexColor = (color: string) => {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return color;
+  ctx.fillStyle = color;
+  const normalized = ctx.fillStyle;
+  if (normalized.startsWith('#')) return normalized;
+  const match = normalized.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!match) return color;
+  return `#${[match[1], match[2], match[3]].map((v) => Number(v).toString(16).padStart(2, '0')).join('')}`;
+};
 
 const AppContent = () => {
   const { showCarousel, closeCarousel } = useOnboarding();
