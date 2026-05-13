@@ -229,9 +229,16 @@ const SellerOnboardingSheet = ({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
+      {open && (
+        <div
+          className="fixed inset-0 z-40 bg-black/80"
+          onClick={() => onOpenChange(false)}
+          aria-hidden="true"
+        />
+      )}
       <SheetContent
         side="bottom"
-        overlayClassName="data-[state=closed]:hidden data-[state=closed]:animate-none data-[state=closed]:bg-transparent data-[state=closed]:opacity-0 data-[state=closed]:duration-0"
+        hideOverlay
         className="rounded-t-3xl border-t-[3px] border-charcoal p-0 flex flex-col max-h-[92svh] bg-background"
       >
         <div className="px-5 pt-7 pb-8 flex flex-col items-center text-center gap-5 overflow-x-hidden overflow-y-auto">
