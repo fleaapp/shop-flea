@@ -210,8 +210,17 @@ serve(async (req) => {
     // Persist stripe_account_id to DB immediately
     await persistStripeAccount(userId, accountId);
 
-    // Standard accounts manage their own payout schedule and branding;
-    // platform-side updates would be rejected, so we skip them here.
+    // Ensure existing accounts also get daily payouts + Flea branding.
+    try {
+      await stripe.accounts.update(accountId, {
+        business_profile: { name: "Flea Marketplace Seller" },
+        settings: {
+          payouts: { schedule: { interval: "daily", delay_days: "minimum" } },
+        },
+      } as any);
+    } catch (e) {
+      console.warn(`[stripe-connect-onboard] Account update failed for ${accountId}:`, (e as Error)?.message);
+    }
 
     // Create an account link — Stripe handles the entire onboarding/login flow
     const accountLink = await stripe.accountLinks.create({
