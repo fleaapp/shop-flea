@@ -2,6 +2,30 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
+const APP_TOP_COLOR = '#F5F1EB';
+
+const forceLightAppChrome = () => {
+  document.documentElement.classList.remove('dark');
+  document.documentElement.style.colorScheme = 'light';
+  document.documentElement.style.setProperty('--app-top-bg', APP_TOP_COLOR);
+  document.body?.style.setProperty('--app-top-bg', APP_TOP_COLOR);
+  document.documentElement.style.backgroundColor = APP_TOP_COLOR;
+  if (document.body) document.body.style.backgroundColor = APP_TOP_COLOR;
+
+  const theme = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+  theme?.setAttribute('content', APP_TOP_COLOR);
+
+  const status = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]') as HTMLMetaElement | null;
+  status?.setAttribute('content', 'default');
+};
+
+forceLightAppChrome();
+window.addEventListener('pageshow', forceLightAppChrome, { capture: true });
+window.addEventListener('focus', forceLightAppChrome, { capture: true });
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) forceLightAppChrome();
+}, { capture: true });
+
 // Detect Android and add class to html for platform-specific CSS
 if (/android/i.test(navigator.userAgent)) {
   document.documentElement.classList.add('android');
