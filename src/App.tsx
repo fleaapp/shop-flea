@@ -147,11 +147,11 @@ const AppContent = () => {
     }
   }, [location.pathname, location.search, location.hash]);
 
-  // Sync iOS/PWA safe-area strip with the current route'''s background.
+  // Sync iOS/PWA safe-area strip with the current route background.
   useEffect(() => {
     const color = getRouteTopColor(location.pathname);
 
-    let meta = document.querySelector("meta[name="theme-color"]") as HTMLMetaElement | null;
+    let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
     if (!meta) {
       meta = document.createElement("meta");
       meta.name = "theme-color";
