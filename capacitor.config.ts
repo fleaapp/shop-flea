@@ -18,6 +18,11 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
+    StatusBar: {
+      overlaysWebView: false,
+      style: 'DARK',
+      backgroundColor: '#F5F1EB',
+    },
     SplashScreen: {
       launchShowDuration: 1500,
       launchAutoHide: true,
