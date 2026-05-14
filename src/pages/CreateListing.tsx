@@ -35,7 +35,7 @@ import { COLOUR_SWATCHES } from '@/utils/colourSwatches';
 import ConditionInfoPopover from '@/components/ConditionInfoPopover';
 import BrandAutocomplete from '@/components/BrandAutocomplete';
 import { safeNavigateBack } from '@/utils/safeBack';
-import { restoreRouteAppChrome } from '@/lib/appChrome';
+import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
 
 interface ImageFile {
   file: File;
@@ -509,7 +509,7 @@ const CreateListing = () => {
           onOpenChange={(v) => {
             setPaymentGateOpen(v);
             if (!v) {
-              restoreRouteAppChrome();
+              forceRestoreRouteAppChrome();
               safeNavigateBack(navigate, '/profile');
             }
           }}
