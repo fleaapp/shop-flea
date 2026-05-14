@@ -121,35 +121,28 @@ const AppContent = () => {
   // Sync iOS/PWA safe-area strip with the current route background before paint,
   // including bfcache/external-provider returns where React route state may not change.
   useLayoutEffect(() => {
-    const syncTopColor = () => {
-      const color = getRouteTopColor(window.location.pathname || location.pathname);
-      applyTopChromeColor(color);
-    };
-
-    syncTopColor();
+    restoreRouteAppChrome();
     const onVisibility = () => {
-      if (!document.hidden) syncTopColor();
+      if (!document.hidden) restoreRouteAppChrome();
     };
-    window.addEventListener("pageshow", syncTopColor);
-    window.addEventListener("focus", syncTopColor);
-    window.addEventListener("popstate", syncTopColor);
+    window.addEventListener("pageshow", restoreRouteAppChrome);
+    window.addEventListener("focus", restoreRouteAppChrome);
+    window.addEventListener("popstate", restoreRouteAppChrome);
     document.addEventListener("visibilitychange", onVisibility);
     let resumeHandle: { remove: () => Promise<void> } | undefined;
     let appStateHandle: { remove: () => Promise<void> } | undefined;
-    if (Capacitor.isNativePlatform()) {
-      void CapacitorApp.addListener("resume", syncTopColor).then((handle) => {
+    void CapacitorApp.addListener("resume", restoreRouteAppChrome).then((handle) => {
         resumeHandle = handle;
       });
       void CapacitorApp.addListener("appStateChange", ({ isActive }) => {
-        if (isActive) syncTopColor();
+        if (isActive) restoreRouteAppChrome();
       }).then((handle) => {
         appStateHandle = handle;
       });
-    }
     return () => {
-      window.removeEventListener("pageshow", syncTopColor);
-      window.removeEventListener("focus", syncTopColor);
-      window.removeEventListener("popstate", syncTopColor);
+      window.removeEventListener("pageshow", restoreRouteAppChrome);
+      window.removeEventListener("focus", restoreRouteAppChrome);
+      window.removeEventListener("popstate", restoreRouteAppChrome);
       document.removeEventListener("visibilitychange", onVisibility);
       void resumeHandle?.remove();
       void appStateHandle?.remove();
