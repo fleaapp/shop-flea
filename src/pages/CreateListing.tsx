@@ -510,10 +510,7 @@ const CreateListing = () => {
             setPaymentGateOpen(v);
             if (!v) {
               restoreRouteAppChrome();
-              window.setTimeout(() => {
-                restoreRouteAppChrome();
-                safeNavigateBack(navigate, '/profile');
-              }, 300);
+              safeNavigateBack(navigate, '/profile');
             }
           }}
           stripeActionRequired={stripeActionRequired}
