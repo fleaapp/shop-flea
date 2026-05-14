@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { useAuth } from '@/context/AuthContext';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { supabase } from '@/lib/supabase';
@@ -179,7 +180,9 @@ const SellerOnboardingSheet = ({
       if (error) throw error;
       if (!data?.url) throw new Error('No onboarding URL returned');
 
-      onComplete?.();
+      flushSync(() => {
+        onComplete?.();
+      });
       forceRestoreRouteAppChrome();
       // In installed PWAs, Stripe's blank popup/new-window handoff leaves iOS
       // showing its dark transient status bar after the popup closes. Keep this
