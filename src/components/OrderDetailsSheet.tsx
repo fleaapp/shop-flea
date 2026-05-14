@@ -26,6 +26,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import ShippingStatusTracker from '@/components/ShippingStatusTracker';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
+import { openTrackingUrl } from '@/lib/tracking';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
