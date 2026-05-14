@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { restoreRouteAppChrome } from '@/lib/appChrome';
+import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
 import {
   Select,
   SelectContent,
@@ -180,7 +180,7 @@ const SellerOnboardingSheet = ({
       if (!data?.url) throw new Error('No onboarding URL returned');
 
       onComplete?.();
-      restoreRouteAppChrome();
+      forceRestoreRouteAppChrome();
       // In installed PWAs, Stripe's blank popup/new-window handoff leaves iOS
       // showing its dark transient status bar after the popup closes. Keep this
       // as a normal top-level redirect, matching Stripe's hosted-onboarding
