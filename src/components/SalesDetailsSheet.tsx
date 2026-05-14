@@ -14,6 +14,7 @@ import OrderReceiptDialog from '@/components/OrderReceiptDialog';
 import { useAuth } from '@/context/AuthContext';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import ShippingStatusTracker from '@/components/ShippingStatusTracker';
+import { openTrackingUrl } from '@/lib/tracking';
 
 interface SalesDetailsSheetProps {
   orders: Order[] | null;
@@ -269,6 +270,20 @@ const SalesDetailsSheet = ({
                         className="bg-background disabled:opacity-70"
                       />
                     </div>
+                    {trackingNumberDisplay && trackingNumberDisplay !== 'Multiple' && (
+                      <Button
+                        type="button"
+                        onClick={() =>
+                          openTrackingUrl(
+                            trackingProviderDisplay === 'Multiple' ? null : trackingProviderDisplay,
+                            trackingNumberDisplay,
+                          )
+                        }
+                        className="w-full rounded-full bg-charcoal text-white hover:bg-charcoal-light h-10"
+                      >
+                        📦 Track parcel
+                      </Button>
+                    )}
                   </>
                 )}
               </div>
