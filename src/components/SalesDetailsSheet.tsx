@@ -14,6 +14,7 @@ import OrderReceiptDialog from '@/components/OrderReceiptDialog';
 import { useAuth } from '@/context/AuthContext';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import ShippingStatusTracker from '@/components/ShippingStatusTracker';
+import { openTrackingUrl } from '@/lib/tracking';
 
 interface SalesDetailsSheetProps {
   orders: Order[] | null;
