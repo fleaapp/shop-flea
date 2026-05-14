@@ -45,8 +45,11 @@ export const applyAppChromeColor = (color: string, statusBarStyle: 'default' | '
   const theme = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
   theme?.setAttribute('content', color);
 
+  // Always keep iOS PWA status bar style as 'black-translucent' so the webview
+  // (and any dim overlay) extends UNDER the status bar. iOS freezes this value
+  // at install time, so it MUST match index.html. Don't toggle it dynamically.
   const status = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]') as HTMLMetaElement | null;
-  status?.setAttribute('content', statusBarStyle);
+  status?.setAttribute('content', 'black-translucent');
 
   syncNativeStatusBar(color, isOverlay);
 };
