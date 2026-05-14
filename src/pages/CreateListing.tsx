@@ -35,6 +35,7 @@ import { COLOUR_SWATCHES } from '@/utils/colourSwatches';
 import ConditionInfoPopover from '@/components/ConditionInfoPopover';
 import BrandAutocomplete from '@/components/BrandAutocomplete';
 import { safeNavigateBack } from '@/utils/safeBack';
+import { restoreRouteAppChrome } from '@/lib/appChrome';
 
 interface ImageFile {
   file: File;
@@ -57,6 +58,7 @@ const CreateListing = () => {
   const [shippingChecked, setShippingChecked] = useState(false);
   const [showVerifyingDialog, setShowVerifyingDialog] = useState(false);
   const [showShippingSettings, setShowShippingSettings] = useState(false);
+  const [paymentGateOpen, setPaymentGateOpen] = useState(true);
 
   // Check if seller has connected a payment method
   const hasPaymentMethodDB = profile?.stripe_onboarding_complete === true;
@@ -503,9 +505,19 @@ const CreateListing = () => {
           <h1 className="text-xl font-bold text-foreground">Add New Listing</h1>
         </header>
         <SellerOnboardingSheet
-          open={true}
-          onOpenChange={(v) => { if (!v) navigate(-1); }}
+          open={paymentGateOpen}
+          onOpenChange={(v) => {
+            setPaymentGateOpen(v);
+            if (!v) {
+              restoreRouteAppChrome();
+              window.setTimeout(() => {
+                restoreRouteAppChrome();
+                safeNavigateBack(navigate, '/profile');
+              }, 300);
+            }
+          }}
           stripeActionRequired={stripeActionRequired}
+          returnUrl={typeof window !== 'undefined' ? window.location.origin + '/profile' : undefined}
         />
         <BottomNav />
       </div>
