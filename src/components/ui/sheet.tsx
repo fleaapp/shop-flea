@@ -23,7 +23,7 @@ const SheetOverlay = React.forwardRef<
   return (
     <SheetPrimitive.Overlay
       className={cn(
-        "fixed inset-0 z-[60] bg-black/80 data-[state=open]:animate-in data-[state=open]:fade-in-0",
+        "fixed inset-x-0 bottom-0 top-[calc(-1*env(safe-area-inset-top,0px))] z-[60] bg-black/80 data-[state=open]:animate-in data-[state=open]:fade-in-0",
         className,
       )}
       {...props}
