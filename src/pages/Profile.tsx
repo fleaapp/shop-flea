@@ -386,6 +386,20 @@ const Profile = () => {
         />
       )}
 
+      <SellerOnboardingSheet
+        open={paymentGateOpen}
+        onOpenChange={(v) => {
+          setPaymentGateOpen(v);
+          if (!v) forceRestoreRouteAppChrome();
+        }}
+        returnUrl={typeof window !== 'undefined' ? window.location.origin + '/profile' : undefined}
+        onComplete={() => {
+          setPaymentGateOpen(false);
+          forceRestoreRouteAppChrome();
+          navigate('/create');
+        }}
+      />
+
       <BottomNav />
     </div>
   );
