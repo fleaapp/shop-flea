@@ -10,22 +10,31 @@ const getRouteTopColor = () => {
   return isAuthLike ? AUTH_TOP_COLOR : APP_TOP_COLOR;
 };
 
-const syncNativeStatusBar = (color: string) => {
+const syncNativeStatusBar = (color: string, isOverlay: boolean) => {
   const requestId = ++nativeChromeRequest;
 
   void Promise.all([import('@capacitor/core'), import('@capacitor/status-bar')])
     .then(([{ Capacitor }, { StatusBar, Style }]) => {
       if (requestId !== nativeChromeRequest) return;
       if (!Capacitor.isNativePlatform()) return;
-      // overlay:false + Style.Dark (dark text) so the cream bg actually paints under the status bar
-      void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
-      void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
-      void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
+      if (isOverlay) {
+        // While a dim scrim is up, let the webview paint UNDER the status bar
+        // so the dark backdrop visually extends to the top of the screen.
+        void StatusBar.setOverlaysWebView({ overlay: true }).catch(() => undefined);
+        void StatusBar.setStyle({ style: Style.Light }).catch(() => undefined);
+        void StatusBar.setBackgroundColor({ color: '#00000000' }).catch(() => undefined);
+      } else {
+        // Normal app chrome: solid status bar painted with the route color.
+        void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
+        void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
+        void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
+      }
     })
     .catch(() => undefined);
 };
 
 export const applyAppChromeColor = (color: string, statusBarStyle: 'default' | 'black-translucent' = 'default') => {
+  const isOverlay = statusBarStyle === 'black-translucent';
   document.documentElement.classList.remove('dark');
   document.documentElement.style.colorScheme = 'light';
   document.documentElement.style.setProperty('--app-top-bg', color);
@@ -39,7 +48,7 @@ export const applyAppChromeColor = (color: string, statusBarStyle: 'default' | '
   const status = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]') as HTMLMetaElement | null;
   status?.setAttribute('content', statusBarStyle);
 
-  syncNativeStatusBar(color);
+  syncNativeStatusBar(color, isOverlay);
 };
 
 const applyOverlayAppChrome = () => {
