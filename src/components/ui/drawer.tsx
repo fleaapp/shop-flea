@@ -14,7 +14,7 @@ const DrawerOverlay = React.forwardRef<React.ElementRef<typeof DrawerPrimitive.O
   className,
   ...props
 }, ref) => {
-  React.useEffect(() => pushOverlayAppChrome(), []);
+  React.useLayoutEffect(() => pushOverlayAppChrome(), []);
 
   return <DrawerPrimitive.Overlay ref={ref} className={cn("fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm", className)} {...props} />;
 });

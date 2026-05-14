@@ -15,7 +15,7 @@ const AlertDialogOverlay = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Overlay>
 >(({ className, ...props }, ref) => {
-  React.useEffect(() => pushOverlayAppChrome(), []);
+  React.useLayoutEffect(() => pushOverlayAppChrome(), []);
 
   return (
     <AlertDialogPrimitive.Overlay

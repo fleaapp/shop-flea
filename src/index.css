@@ -127,6 +127,22 @@
     transform: translateZ(0);
   }
 
+  html.app-overlay-chrome::before {
+    content: "";
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: max(env(safe-area-inset-top), 0px);
+    background-color: var(--app-top-bg);
+    pointer-events: none;
+    z-index: 2147483647;
+    transform: translateZ(0);
+  }
+
+  body.app-overlay-chrome::before {
+    background-color: var(--app-top-bg);
+    z-index: 2147483646;
+  }
+
   #root {
     min-height: 100svh;
     background: hsl(var(--background));

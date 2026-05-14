@@ -17,7 +17,7 @@ const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
 >(({ className, ...props }, ref) => {
-  React.useEffect(() => pushOverlayAppChrome(), []);
+  React.useLayoutEffect(() => pushOverlayAppChrome(), []);
 
   return (
     <DialogPrimitive.Overlay

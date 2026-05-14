@@ -18,7 +18,7 @@ const SheetOverlay = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Overlay>
 >(({ className, ...props }, ref) => {
-  React.useEffect(() => pushOverlayAppChrome(), []);
+  React.useLayoutEffect(() => pushOverlayAppChrome(), []);
 
   return (
     <SheetPrimitive.Overlay
