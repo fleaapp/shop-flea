@@ -15,8 +15,7 @@ import { PushNotificationSubscriber } from "./components/PushNotificationSubscri
 import ErrorBoundary from "./components/ErrorBoundary";
 import PageSkeleton from "./components/PageSkeleton";
 import { App as CapacitorApp } from "@capacitor/app";
-import { Capacitor } from "@capacitor/core";
-import { StatusBar, Style } from "@capacitor/status-bar";
+import { restoreRouteAppChrome } from "@/lib/appChrome";
 
 // Critical path – loaded eagerly
 import Index from "./pages/Index";
@@ -106,50 +105,6 @@ const queryClient = new QueryClient({
 });
 
 const PageLoader = () => <PageSkeleton />;
-
-const AUTH_TOP_COLOR = "#DDFED7";
-const APP_TOP_COLOR = "#F5F1EB";
-
-// Deterministic top color per route. Auth/forgot/reset use the primary brand
-// green; everything else uses the cream background. No DOM sampling — that
-// approach lagged behind navigation and produced mismatched header bands.
-const getRouteTopColor = (pathname: string) => {
-  const isAuthLike = ["/auth", "/forgot-password", "/reset-password", "/verify-email"].some((p) =>
-    pathname.startsWith(p),
-  );
-  return isAuthLike ? AUTH_TOP_COLOR : APP_TOP_COLOR;
-};
-
-const applyTopChromeColor = (color: string) => {
-  let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
-  if (!meta) {
-    meta = document.createElement("meta");
-    meta.name = "theme-color";
-    document.head.appendChild(meta);
-  }
-  meta.setAttribute("content", color);
-
-  let colorScheme = document.querySelector('meta[name="color-scheme"]') as HTMLMetaElement | null;
-  if (!colorScheme) {
-    colorScheme = document.createElement("meta");
-    colorScheme.name = "color-scheme";
-    document.head.appendChild(colorScheme);
-  }
-  colorScheme.setAttribute("content", "light");
-
-  document.documentElement.classList.remove("dark");
-  document.documentElement.style.colorScheme = "light";
-  document.documentElement.style.setProperty("--app-top-bg", color);
-  document.body.style.setProperty("--app-top-bg", color);
-  document.documentElement.style.backgroundColor = color;
-  document.body.style.backgroundColor = color;
-
-  if (Capacitor.isNativePlatform()) {
-    void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
-    void StatusBar.setStyle({ style: Style.Light }).catch(() => undefined);
-    void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
-  }
-};
 
 const AppContent = () => {
   const { showCarousel, closeCarousel } = useOnboarding();
