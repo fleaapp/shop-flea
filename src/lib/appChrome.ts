@@ -1,9 +1,5 @@
 const AUTH_TOP_COLOR = '#DDFED7';
 const APP_TOP_COLOR = '#F5F1EB';
-const OVERLAY_TOP_COLOR = '#141414';
-
-let overlayDepth = 0;
-let restoreTimer: number | undefined;
 
 const getRouteTopColor = () => {
   const isAuthLike = /^\/(auth|forgot-password|reset-password|verify-email)(\/|$)/.test(window.location.pathname);
@@ -39,34 +35,10 @@ export const applyAppChromeColor = (color: string) => {
 };
 
 export const restoreRouteAppChrome = () => {
-  if (overlayDepth > 0) {
-    applyAppChromeColor(OVERLAY_TOP_COLOR);
-    return;
-  }
-
   applyAppChromeColor(getRouteTopColor());
 };
 
 export const pushOverlayAppChrome = () => {
-  if (restoreTimer !== undefined) {
-    window.clearTimeout(restoreTimer);
-    restoreTimer = undefined;
-  }
-
-  overlayDepth += 1;
-  applyAppChromeColor(OVERLAY_TOP_COLOR);
-
-  let released = false;
-  return () => {
-    if (released) return;
-    released = true;
-    overlayDepth = Math.max(0, overlayDepth - 1);
-
-    if (overlayDepth === 0) {
-      restoreTimer = window.setTimeout(() => {
-        restoreTimer = undefined;
-        if (overlayDepth === 0) restoreRouteAppChrome();
-      }, 0);
-    }
-  };
+  restoreRouteAppChrome();
+  return restoreRouteAppChrome;
 };
