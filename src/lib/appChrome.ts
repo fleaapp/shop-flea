@@ -36,7 +36,9 @@ const syncNativeStatusBar = (color: string, isOverlay: boolean) => {
 export const applyAppChromeColor = (color: string, statusBarStyle: 'default' | 'black-translucent' = 'default') => {
   const isOverlay = statusBarStyle === 'black-translucent';
   document.documentElement.classList.remove('dark');
-  document.documentElement.style.colorScheme = 'light';
+  document.documentElement.classList.toggle('app-overlay-chrome', isOverlay);
+  document.body?.classList.toggle('app-overlay-chrome', isOverlay);
+  document.documentElement.style.colorScheme = isOverlay ? 'dark' : 'light';
   document.documentElement.style.setProperty('--app-top-bg', color);
   document.body?.style.setProperty('--app-top-bg', color);
   document.documentElement.style.backgroundColor = color;
@@ -44,6 +46,9 @@ export const applyAppChromeColor = (color: string, statusBarStyle: 'default' | '
 
   const theme = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
   theme?.setAttribute('content', color);
+
+  const colorScheme = document.querySelector('meta[name="color-scheme"]') as HTMLMetaElement | null;
+  colorScheme?.setAttribute('content', isOverlay ? 'dark light' : 'light');
 
   // Always keep iOS PWA status bar style as 'black-translucent' so the webview
   // (and any dim overlay) extends UNDER the status bar. iOS freezes this value
