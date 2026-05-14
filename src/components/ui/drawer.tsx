@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Drawer as DrawerPrimitive } from "vaul";
 import { cn } from "@/lib/utils";
+import { pushOverlayAppChrome } from "@/lib/appChrome";
 const Drawer = ({
   shouldScaleBackground = true,
   ...props
@@ -12,7 +13,11 @@ const DrawerClose = DrawerPrimitive.Close;
 const DrawerOverlay = React.forwardRef<React.ElementRef<typeof DrawerPrimitive.Overlay>, React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay>>(({
   className,
   ...props
-}, ref) => <DrawerPrimitive.Overlay ref={ref} className={cn("fixed inset-0 z-50 bg-black/50 backdrop-blur-sm", className)} {...props} />);
+}, ref) => {
+  React.useEffect(() => pushOverlayAppChrome(), []);
+
+  return <DrawerPrimitive.Overlay ref={ref} className={cn("fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm", className)} {...props} />;
+});
 DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName;
 const DrawerContent = React.forwardRef<React.ElementRef<typeof DrawerPrimitive.Content>, React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content>>(({
   className,
@@ -20,7 +25,7 @@ const DrawerContent = React.forwardRef<React.ElementRef<typeof DrawerPrimitive.C
   ...props
 }, ref) => <DrawerPortal>
     <DrawerOverlay />
-    <DrawerPrimitive.Content ref={ref} className={cn("fixed inset-x-0 bottom-0 top-10 z-50 flex flex-col rounded-t-3xl bg-background", className)} {...props}>
+    <DrawerPrimitive.Content ref={ref} className={cn("fixed inset-x-0 bottom-0 top-10 z-[60] flex flex-col rounded-t-3xl bg-background", className)} {...props}>
       <div className="mx-auto my-3 h-2 w-[80px] shrink-0 rounded-full bg-muted-foreground/30" />
       {children}
     </DrawerPrimitive.Content>
