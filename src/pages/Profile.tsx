@@ -33,6 +33,20 @@ const Profile = () => {
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [salesSheetOpen, setSalesSheetOpen] = useState(false);
   const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [paymentGateOpen, setPaymentGateOpen] = useState(false);
+
+  const stripeLocalKey = user ? `stripe_onboarding_complete_${user.id}` : null;
+  const hasPaymentMethod =
+    (profile as any)?.stripe_onboarding_complete === true ||
+    (typeof window !== 'undefined' && !!stripeLocalKey && localStorage.getItem(stripeLocalKey) === 'true');
+
+  const handleNewListing = () => {
+    if (!hasPaymentMethod) {
+      setPaymentGateOpen(true);
+    } else {
+      navigate('/create');
+    }
+  };
   
   const { listings: activeListings, loading: activeLoading } = useUserListings('active');
   const { listings: soldListings, loading: soldLoading } = useUserListings('sold');
