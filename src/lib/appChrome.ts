@@ -39,6 +39,11 @@ export const applyAppChromeColor = (color: string) => {
 };
 
 export const restoreRouteAppChrome = () => {
+  if (overlayDepth > 0) {
+    applyAppChromeColor(OVERLAY_TOP_COLOR);
+    return;
+  }
+
   applyAppChromeColor(getRouteTopColor());
 };
 
