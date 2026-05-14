@@ -222,7 +222,7 @@ const Profile = () => {
 
       <div className="mt-5 max-[430px]:mt-4 max-[393px]:mt-3 max-[375px]:mt-2 flex justify-center items-center gap-2">
         <button 
-          onClick={() => navigate('/create')} 
+          onClick={handleNewListing} 
           className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground"
         >
           <Plus className="h-5 w-5" />
