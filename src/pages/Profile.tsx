@@ -18,6 +18,8 @@ import { toast } from 'sonner';
 import AvatarCropDialog from '@/components/AvatarCropDialog';
 import ProfileGridCard from '@/components/ProfileGridCard';
 import { Button } from '@/components/ui/button';
+import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
+import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
 
 const Profile = () => {
   const navigate = useNavigate();
