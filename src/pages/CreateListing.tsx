@@ -492,18 +492,7 @@ const CreateListing = () => {
   const needsPaymentGate = !hasPaymentMethod || (stripeActionRequired && !hasPayPalConnected);
   if (needsPaymentGate && user && profile) {
     return (
-      <div className="min-h-screen bg-background pb-24 pt-[env(safe-area-inset-top)]">
-        <header className="relative flex items-center justify-center px-4 py-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(-1)}
-            className="absolute left-4 h-10 w-10 rounded-full"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-xl font-bold text-foreground">Add New Listing</h1>
-        </header>
+      <div className="min-h-svh bg-background">
         <SellerOnboardingSheet
           open={paymentGateOpen}
           onOpenChange={(v) => {
@@ -515,8 +504,8 @@ const CreateListing = () => {
           }}
           stripeActionRequired={stripeActionRequired}
           returnUrl={typeof window !== 'undefined' ? window.location.origin + '/profile' : undefined}
+          onComplete={() => setPaymentGateOpen(false)}
         />
-        <BottomNav />
       </div>
     );
   }
