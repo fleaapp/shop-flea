@@ -1,8 +1,5 @@
 const AUTH_TOP_COLOR = '#DDFED7';
 const APP_TOP_COLOR = '#F5F1EB';
-const ROUTE_CHROME_RESTORE_DELAYS = [50, 150, 300, 700, 1200, 2200];
-
-let restoreTimers: number[] = [];
 
 const getRouteTopColor = () => {
   const isAuthLike = /^\/(auth|forgot-password|reset-password|verify-email)(\/|$)/.test(window.location.pathname);
@@ -13,7 +10,8 @@ const syncNativeStatusBar = (color: string) => {
   void Promise.all([import('@capacitor/core'), import('@capacitor/status-bar')])
     .then(([{ Capacitor }, { StatusBar, Style }]) => {
       if (!Capacitor.isNativePlatform()) return;
-      void StatusBar.setOverlaysWebView({ overlay: true }).catch(() => undefined);
+      // overlay:false + Style.Dark (dark text) so the cream bg actually paints under the status bar
+      void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
       void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
       void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
     })
@@ -38,16 +36,36 @@ export const applyAppChromeColor = (color: string) => {
 };
 
 export const restoreRouteAppChrome = () => {
-  restoreTimers.forEach((timer) => window.clearTimeout(timer));
-  restoreTimers = [];
-
-  const applyRouteColor = () => applyAppChromeColor(getRouteTopColor());
-  applyRouteColor();
-
-  restoreTimers = ROUTE_CHROME_RESTORE_DELAYS.map((delay) => window.setTimeout(applyRouteColor, delay));
+  applyAppChromeColor(getRouteTopColor());
 };
 
-export const pushOverlayAppChrome = () => {
-  restoreRouteAppChrome();
-  return restoreRouteAppChrome;
+// No-op kept for back-compat with existing imports — overlays must NEVER recolor the chrome.
+export const pushOverlayAppChrome = () => restoreRouteAppChrome;
+
+// Re-apply on every foreground / visibility change. iOS resets the native status bar
+// when the webview navigates away (e.g. Stripe Connect redirect) and on resume the
+// boot config briefly paints a dark bar until our JS re-asserts the cream color.
+let resumeListenersInstalled = false;
+const installResumeListeners = () => {
+  if (resumeListenersInstalled || typeof window === 'undefined') return;
+  resumeListenersInstalled = true;
+
+  const reapply = () => restoreRouteAppChrome();
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') reapply();
+  });
+  window.addEventListener('pageshow', reapply);
+  window.addEventListener('focus', reapply);
+
+  void import('@capacitor/app')
+    .then(({ App }) => {
+      App.addListener('appStateChange', ({ isActive }) => {
+        if (isActive) reapply();
+      });
+      App.addListener('resume', reapply);
+    })
+    .catch(() => undefined);
 };
+
+installResumeListeners();
