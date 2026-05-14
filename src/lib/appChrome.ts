@@ -39,8 +39,19 @@ export const restoreRouteAppChrome = () => {
   applyAppChromeColor(getRouteTopColor());
 };
 
-// No-op kept for back-compat with existing imports — overlays must NEVER recolor the chrome.
-export const pushOverlayAppChrome = () => restoreRouteAppChrome;
+// While an overlay (Dialog/Sheet/Drawer/AlertDialog) is mounted, paint the
+// status-bar / theme-color black so the dim backdrop visually extends all the
+// way to the top of the screen on iOS PWA + Android. Cleanup restores the
+// route's normal cream/auth-green chrome.
+const OVERLAY_TOP_COLOR = '#000000';
+export const pushOverlayAppChrome = () => {
+  const theme = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+  theme?.setAttribute('content', OVERLAY_TOP_COLOR);
+  const status = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]') as HTMLMetaElement | null;
+  status?.setAttribute('content', 'black-translucent');
+  syncNativeStatusBar(OVERLAY_TOP_COLOR);
+  return () => restoreRouteAppChrome();
+};
 
 // Re-apply on every foreground / visibility change. iOS resets the native status bar
 // when the webview navigates away (e.g. Stripe Connect redirect) and on resume the
