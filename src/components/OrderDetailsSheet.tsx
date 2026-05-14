@@ -258,6 +258,15 @@ const OrderDetailsSheet = ({
                     className="bg-background disabled:opacity-70"
                   />
                 </div>
+                {primaryOrder.status !== 'awaiting' && primaryOrder.tracking_number && (
+                  <Button
+                    type="button"
+                    onClick={() => openTrackingUrl(primaryOrder.tracking_provider, primaryOrder.tracking_number!)}
+                    className="w-full rounded-full bg-charcoal text-white hover:bg-charcoal-light h-10"
+                  >
+                    📦 Track parcel
+                  </Button>
+                )}
               </div>
             </div>
 
