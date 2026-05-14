@@ -15,6 +15,7 @@ import { PushNotificationSubscriber } from "./components/PushNotificationSubscri
 import ErrorBoundary from "./components/ErrorBoundary";
 import PageSkeleton from "./components/PageSkeleton";
 import { App as CapacitorApp } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 import { restoreRouteAppChrome } from "@/lib/appChrome";
 
 // Critical path – loaded eagerly
@@ -131,7 +132,8 @@ const AppContent = () => {
     document.addEventListener("visibilitychange", onVisibility);
     let resumeHandle: { remove: () => Promise<void> } | undefined;
     let appStateHandle: { remove: () => Promise<void> } | undefined;
-    void CapacitorApp.addListener("resume", restoreRouteAppChrome).then((handle) => {
+    if (Capacitor.isNativePlatform()) {
+      void CapacitorApp.addListener("resume", restoreRouteAppChrome).then((handle) => {
         resumeHandle = handle;
       });
       void CapacitorApp.addListener("appStateChange", ({ isActive }) => {
@@ -139,6 +141,7 @@ const AppContent = () => {
       }).then((handle) => {
         appStateHandle = handle;
       });
+    }
     return () => {
       window.removeEventListener("pageshow", restoreRouteAppChrome);
       window.removeEventListener("focus", restoreRouteAppChrome);
