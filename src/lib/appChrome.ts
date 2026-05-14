@@ -1,5 +1,9 @@
 const AUTH_TOP_COLOR = '#DDFED7';
 const APP_TOP_COLOR = '#F5F1EB';
+const OVERLAY_TOP_COLOR = '#000000';
+
+let nativeChromeRequest = 0;
+let activeOverlayCount = 0;
 
 const getRouteTopColor = () => {
   const isAuthLike = /^\/(auth|forgot-password|reset-password|verify-email)(\/|$)/.test(window.location.pathname);
@@ -7,8 +11,11 @@ const getRouteTopColor = () => {
 };
 
 const syncNativeStatusBar = (color: string) => {
+  const requestId = ++nativeChromeRequest;
+
   void Promise.all([import('@capacitor/core'), import('@capacitor/status-bar')])
     .then(([{ Capacitor }, { StatusBar, Style }]) => {
+      if (requestId !== nativeChromeRequest) return;
       if (!Capacitor.isNativePlatform()) return;
       // overlay:false + Style.Dark (dark text) so the cream bg actually paints under the status bar
       void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
@@ -18,7 +25,7 @@ const syncNativeStatusBar = (color: string) => {
     .catch(() => undefined);
 };
 
-export const applyAppChromeColor = (color: string) => {
+export const applyAppChromeColor = (color: string, statusBarStyle: 'default' | 'black-translucent' = 'default') => {
   document.documentElement.classList.remove('dark');
   document.documentElement.style.colorScheme = 'light';
   document.documentElement.style.setProperty('--app-top-bg', color);
@@ -30,27 +37,43 @@ export const applyAppChromeColor = (color: string) => {
   theme?.setAttribute('content', color);
 
   const status = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]') as HTMLMetaElement | null;
-  status?.setAttribute('content', 'default');
+  status?.setAttribute('content', statusBarStyle);
 
   syncNativeStatusBar(color);
 };
 
-export const restoreRouteAppChrome = () => {
+const applyOverlayAppChrome = () => {
+  applyAppChromeColor(OVERLAY_TOP_COLOR, 'black-translucent');
+};
+
+const applyRouteAppChrome = () => {
   applyAppChromeColor(getRouteTopColor());
+};
+
+export const restoreRouteAppChrome = () => {
+  if (activeOverlayCount > 0) {
+    applyOverlayAppChrome();
+    return;
+  }
+  applyRouteAppChrome();
+};
+
+export const forceRestoreRouteAppChrome = () => {
+  applyRouteAppChrome();
 };
 
 // While an overlay (Dialog/Sheet/Drawer/AlertDialog) is mounted, paint the
 // status-bar / theme-color black so the dim backdrop visually extends all the
 // way to the top of the screen on iOS PWA + Android. Cleanup restores the
 // route's normal cream/auth-green chrome.
-const OVERLAY_TOP_COLOR = '#000000';
 export const pushOverlayAppChrome = () => {
-  const theme = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
-  theme?.setAttribute('content', OVERLAY_TOP_COLOR);
-  const status = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]') as HTMLMetaElement | null;
-  status?.setAttribute('content', 'black-translucent');
-  syncNativeStatusBar(OVERLAY_TOP_COLOR);
-  return () => restoreRouteAppChrome();
+  activeOverlayCount += 1;
+  applyOverlayAppChrome();
+
+  return () => {
+    activeOverlayCount = Math.max(0, activeOverlayCount - 1);
+    restoreRouteAppChrome();
+  };
 };
 
 // Re-apply on every foreground / visibility change. iOS resets the native status bar
