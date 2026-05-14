@@ -18,6 +18,8 @@ import { toast } from 'sonner';
 import AvatarCropDialog from '@/components/AvatarCropDialog';
 import ProfileGridCard from '@/components/ProfileGridCard';
 import { Button } from '@/components/ui/button';
+import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
+import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -31,6 +33,20 @@ const Profile = () => {
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [salesSheetOpen, setSalesSheetOpen] = useState(false);
   const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [paymentGateOpen, setPaymentGateOpen] = useState(false);
+
+  const stripeLocalKey = user ? `stripe_onboarding_complete_${user.id}` : null;
+  const hasPaymentMethod =
+    (profile as any)?.stripe_onboarding_complete === true ||
+    (typeof window !== 'undefined' && !!stripeLocalKey && localStorage.getItem(stripeLocalKey) === 'true');
+
+  const handleNewListing = () => {
+    if (!hasPaymentMethod) {
+      setPaymentGateOpen(true);
+    } else {
+      navigate('/create');
+    }
+  };
   
   const { listings: activeListings, loading: activeLoading } = useUserListings('active');
   const { listings: soldListings, loading: soldLoading } = useUserListings('sold');
@@ -206,7 +222,7 @@ const Profile = () => {
 
       <div className="mt-5 max-[430px]:mt-4 max-[393px]:mt-3 max-[375px]:mt-2 flex justify-center items-center gap-2">
         <button 
-          onClick={() => navigate('/create')} 
+          onClick={handleNewListing} 
           className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground"
         >
           <Plus className="h-5 w-5" />
@@ -369,6 +385,20 @@ const Profile = () => {
           onOpenChange={setReviewsOpen}
         />
       )}
+
+      <SellerOnboardingSheet
+        open={paymentGateOpen}
+        onOpenChange={(v) => {
+          setPaymentGateOpen(v);
+          if (!v) forceRestoreRouteAppChrome();
+        }}
+        returnUrl={typeof window !== 'undefined' ? window.location.origin + '/profile' : undefined}
+        onComplete={() => {
+          setPaymentGateOpen(false);
+          forceRestoreRouteAppChrome();
+          navigate('/create');
+        }}
+      />
 
       <BottomNav />
     </div>
