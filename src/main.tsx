@@ -1,37 +1,13 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { restoreRouteAppChrome } from "./lib/appChrome.ts";
 
-const AUTH_TOP_COLOR = '#DDFED7';
-const APP_TOP_COLOR = '#F5F1EB';
-
-const getInitialTopColor = () => (
-  /^\/(auth|forgot-password|reset-password|verify-email)(\/|$)/.test(window.location.pathname)
-    ? AUTH_TOP_COLOR
-    : APP_TOP_COLOR
-);
-
-const forceLightAppChrome = () => {
-  const topColor = getInitialTopColor();
-  document.documentElement.classList.remove('dark');
-  document.documentElement.style.colorScheme = 'light';
-  document.documentElement.style.setProperty('--app-top-bg', topColor);
-  document.body?.style.setProperty('--app-top-bg', topColor);
-  document.documentElement.style.backgroundColor = topColor;
-  if (document.body) document.body.style.backgroundColor = topColor;
-
-  const theme = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
-  theme?.setAttribute('content', topColor);
-
-  const status = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]') as HTMLMetaElement | null;
-  status?.setAttribute('content', 'default');
-};
-
-forceLightAppChrome();
-window.addEventListener('pageshow', forceLightAppChrome, { capture: true });
-window.addEventListener('focus', forceLightAppChrome, { capture: true });
+restoreRouteAppChrome();
+window.addEventListener('pageshow', restoreRouteAppChrome, { capture: true });
+window.addEventListener('focus', restoreRouteAppChrome, { capture: true });
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) forceLightAppChrome();
+  if (!document.hidden) restoreRouteAppChrome();
 }, { capture: true });
 
 // Detect Android and add class to html for platform-specific CSS
