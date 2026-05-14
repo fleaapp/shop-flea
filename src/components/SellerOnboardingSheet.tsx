@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { restoreRouteAppChrome } from '@/lib/appChrome';
 import {
   Select,
   SelectContent,
@@ -196,12 +197,15 @@ const SellerOnboardingSheet = ({
       if (error) throw error;
       if (!data?.url) throw new Error('No onboarding URL returned');
 
-      onComplete?.();
+      restoreRouteAppChrome();
       if (providerWindow && !providerWindow.closed) {
         providerWindow.location.replace(data.url);
+        onComplete?.();
         return;
       }
 
+      onComplete?.();
+      restoreRouteAppChrome();
       window.location.assign(data.url);
     } catch (err: any) {
       if (providerWindow && !providerWindow.closed) providerWindow.close();
