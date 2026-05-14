@@ -270,6 +270,20 @@ const SalesDetailsSheet = ({
                         className="bg-background disabled:opacity-70"
                       />
                     </div>
+                    {trackingNumberDisplay && trackingNumberDisplay !== 'Multiple' && (
+                      <Button
+                        type="button"
+                        onClick={() =>
+                          openTrackingUrl(
+                            trackingProviderDisplay === 'Multiple' ? null : trackingProviderDisplay,
+                            trackingNumberDisplay,
+                          )
+                        }
+                        className="w-full rounded-full bg-charcoal text-white hover:bg-charcoal-light h-10"
+                      >
+                        📦 Track parcel
+                      </Button>
+                    )}
                   </>
                 )}
               </div>
