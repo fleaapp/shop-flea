@@ -13,23 +13,29 @@ const SaveSearchButton = ({ query, filters }: SaveSearchButtonProps) => {
   const { saveSearch, isSaved } = useSavedSearches();
 
   const trimmed = (query || '').trim();
-  const filterCount = Object.keys(filters || {}).length;
+  const cleanedFilters = Object.fromEntries(
+    Object.entries(filters || {}).filter(([, v]) => {
+      if (v === null || v === undefined || v === '') return false;
+      if (Array.isArray(v)) return v.length > 0;
+      return true;
+    })
+  );
+  const filterCount = Object.keys(cleanedFilters).length;
   const canSave = trimmed.length > 0 || filterCount > 0;
 
   if (!canSave) return null;
 
-  const alreadySaved = isSaved(trimmed, filters || {});
+  // Only show "saved" state when the EXACT query+filters combo is already saved.
+  const alreadySaved = isSaved(trimmed, cleanedFilters);
 
   const handleClick = async () => {
     if (!user) {
       toast.error('Sign in to save searches.');
       return;
     }
-    if (alreadySaved) {
-      toast('💾 Search already saved.');
-      return;
-    }
-    await saveSearch(trimmed, filters || {});
+    // Always attempt to save — the server is the source of truth on duplicates.
+    // This way "red tee" with no filters and "red tee" + 3 filters are both savable.
+    await saveSearch(trimmed, cleanedFilters);
   };
 
   return (
