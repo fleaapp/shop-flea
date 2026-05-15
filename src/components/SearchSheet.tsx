@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, X, Clock, User, Tag } from 'lucide-react';
+import { ArrowLeft, X, Clock, User, Tag, Bookmark } from 'lucide-react';
 import { Listing } from '@/types/listing';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -10,12 +10,15 @@ import { isSimilar } from '@/utils/fuzzyMatch';
 import { useTrendingSearches } from '@/hooks/useTrendingSearches';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useBrands } from '@/hooks/useBrands';
+import { useSavedSearches, SavedSearch } from '@/hooks/useSavedSearches';
 
 interface SearchSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSearch: (query: string) => void;
   listings: Listing[];
+  currentFilters?: Record<string, any>;
+  onApplySavedSearch?: (saved: SavedSearch) => void;
 }
 
 interface SellerSuggestion {
@@ -24,7 +27,7 @@ interface SellerSuggestion {
   avatar_url: string | null;
 }
 
-const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProps) => {
+const SearchSheet = ({ open, onOpenChange, onSearch, listings, currentFilters, onApplySavedSearch }: SearchSheetProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -33,6 +36,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
   const [sellers, setSellers] = useState<SellerSuggestion[]>([]);
   const { trending, recordSearch, refetchTrending } = useTrendingSearches();
   const { brands: allBrands } = useBrands();
+  const { saved: savedSearches, saveSearch, removeSaved, isSaved, refetch: refetchSaved } = useSavedSearches();
   // User-specific localStorage key for recent searches
   const storageKey = user ? `recentSearches_${user.id}` : null;
 
@@ -71,6 +75,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
     if (open) {
       fetchSellers();
       refetchTrending();
+      refetchSaved();
     }
   }, [open]);
 
@@ -297,9 +302,17 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
                 </button>
               )}
             </div>
+            {query.trim() && user && !isSaved(query) && (
+              <button
+                onClick={() => saveSearch(query, currentFilters || {})}
+                className="mt-3 w-full flex items-center justify-center gap-2 h-10 rounded-xl bg-primary/10 text-foreground text-sm font-medium hover:bg-primary/20 transition-colors"
+              >
+                <Bookmark className="h-4 w-4" />
+                Save this search & get alerts on new matches
+              </button>
+            )}
           </div>
         </div>
-
         {/* Scroll area */}
         <div className="flex-1 overflow-y-auto overscroll-contain px-6 pb-[calc(env(safe-area-inset-bottom)+24px)] [-webkit-overflow-scrolling:touch]">
           {/* Search Suggestions */}
@@ -402,6 +415,41 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
             </div>
           )}
 
+          {/* Saved Searches (above Trending) */}
+          {!query && savedSearches.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-foreground mb-3">Saved searches</h3>
+              <div className="bg-card rounded-2xl p-4 space-y-1">
+                {savedSearches.map((s) => {
+                  const filterCount = Object.keys(s.filters || {}).length;
+                  return (
+                    <div key={s.id} className="flex items-center justify-between py-2">
+                      <button
+                        onClick={() => {
+                          onApplySavedSearch?.(s);
+                          onSearch(s.query);
+                          onOpenChange(false);
+                        }}
+                        className="flex items-center gap-3 flex-1 text-left min-w-0"
+                      >
+                        <span className="text-base shrink-0">💾</span>
+                        <span className="text-foreground font-medium truncate">{s.query}</span>
+                        {filterCount > 0 && (
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            +{filterCount} filter{filterCount > 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </button>
+                      <button onClick={() => removeSaved(s.id)} className="p-1 shrink-0">
+                        <X className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Trending Searches (shown before typing, below Recent Searches) */}
           {!query && trending.length > 0 && (
             <div className="mb-6">
@@ -422,7 +470,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
           )}
 
           {/* Empty state when no recent searches and no query */}
-          {!query && recentSearches.length === 0 && trending.length === 0 && (
+          {!query && recentSearches.length === 0 && trending.length === 0 && savedSearches.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <span className="text-5xl opacity-50 mb-4">🔍</span>
               <p className="text-muted-foreground">Start typing to search listings</p>
