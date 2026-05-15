@@ -417,7 +417,8 @@ const Index = () => {
       
       {/* Active Filters */}
       {(activeFilterChips.length > 0 || searchQuery) && (
-        <div className="flex gap-2 px-6 pb-2 flex-shrink-0 overflow-x-auto scrollbar-hide">
+        <div className="flex items-center gap-2 px-6 pb-2 flex-shrink-0 overflow-x-auto scrollbar-hide">
+          <SaveSearchButton query={searchQuery} filters={listingFilters} />
           {searchQuery && (
             <FilterChip 
               label={`"${searchQuery}"`} 
