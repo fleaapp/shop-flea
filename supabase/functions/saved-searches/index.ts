@@ -8,7 +8,8 @@ const corsHeaders = {
 
 const EXTERNAL_URL = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? 'https://dzglehiopfgfjmxtejve.supabase.co';
 const EXTERNAL_ANON_KEY = Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY') ?? '';
-const EXTERNAL_SERVICE_ROLE_KEY = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
+const CLOUD_URL = Deno.env.get('SUPABASE_URL') ?? '';
+const CLOUD_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
 type SavedSearchFilters = Record<string, unknown>;
 
@@ -84,14 +85,14 @@ const getUserId = async (req: Request): Promise<string | null> => {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
-  if (!EXTERNAL_URL || !EXTERNAL_ANON_KEY || !EXTERNAL_SERVICE_ROLE_KEY) {
+  if (!EXTERNAL_URL || !EXTERNAL_ANON_KEY || !CLOUD_URL || !CLOUD_SERVICE_ROLE_KEY) {
     return json({ error: 'Server misconfiguration' }, 500);
   }
 
   const userId = await getUserId(req);
   if (!userId) return json({ error: 'Unauthorized' }, 401);
 
-  const admin = createClient(EXTERNAL_URL, EXTERNAL_SERVICE_ROLE_KEY, {
+  const admin = createClient(CLOUD_URL, CLOUD_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
