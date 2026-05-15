@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, X, Clock, User, Tag } from 'lucide-react';
+import { ArrowLeft, X, Clock, User, Tag, Bookmark } from 'lucide-react';
 import { Listing } from '@/types/listing';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -10,12 +10,15 @@ import { isSimilar } from '@/utils/fuzzyMatch';
 import { useTrendingSearches } from '@/hooks/useTrendingSearches';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useBrands } from '@/hooks/useBrands';
+import { useSavedSearches, SavedSearch } from '@/hooks/useSavedSearches';
 
 interface SearchSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSearch: (query: string) => void;
   listings: Listing[];
+  currentFilters?: Record<string, any>;
+  onApplySavedSearch?: (saved: SavedSearch) => void;
 }
 
 interface SellerSuggestion {
