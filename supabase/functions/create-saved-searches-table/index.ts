@@ -9,8 +9,8 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const dbUrl = Deno.env.get("SUPABASE_DB_URL") ?? "";
-    if (!dbUrl) throw new Error("SUPABASE_DB_URL missing");
+    const dbUrl = Deno.env.get("EXTERNAL_SUPABASE_DB_URL") ?? Deno.env.get("SUPABASE_DB_URL") ?? "";
+    if (!dbUrl) throw new Error("EXTERNAL_SUPABASE_DB_URL missing");
     const sql = postgres(dbUrl, { max: 1 });
     try {
       await sql.unsafe(`
