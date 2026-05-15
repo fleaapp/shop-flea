@@ -413,6 +413,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings, currentFilters, o
               <div className="bg-card rounded-2xl p-4 space-y-1">
                 {savedSearches.map((s) => {
                   const filterCount = Object.keys(s.filters || {}).length;
+                  const label = s.query?.trim() || `Filters (${filterCount})`;
                   return (
                     <div key={s.id} className="flex items-center justify-between py-2">
                       <button
@@ -424,7 +425,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings, currentFilters, o
                         className="flex items-center gap-3 flex-1 text-left min-w-0"
                       >
                         <span className="text-base shrink-0">💾</span>
-                        <span className="text-foreground font-medium truncate">{s.query}</span>
+                        <span className="text-foreground font-medium truncate">{label}</span>
                         {filterCount > 0 && (
                           <span className="text-xs text-muted-foreground shrink-0">
                             +{filterCount} filter{filterCount > 1 ? 's' : ''}
