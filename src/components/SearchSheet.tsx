@@ -302,15 +302,6 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings, currentFilters, o
                 </button>
               )}
             </div>
-            {query.trim() && user && !isSaved(query) && (
-              <button
-                onClick={() => saveSearch(query, currentFilters || {})}
-                className="mt-3 w-full flex items-center justify-center gap-2 h-10 rounded-xl bg-primary/10 text-foreground text-sm font-medium hover:bg-primary/20 transition-colors"
-              >
-                <Bookmark className="h-4 w-4" />
-                Save this search & get alerts on new matches
-              </button>
-            )}
           </div>
         </div>
         {/* Scroll area */}
