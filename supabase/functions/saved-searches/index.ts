@@ -118,14 +118,13 @@ Deno.serve(async (req) => {
         return json({ error: 'Search or filters required' }, 400);
       }
 
-      const label = query || `Filters (${Object.keys(filters).length})`;
       const signature = await makeSignature(query, filters, regionId);
 
       const { data, error } = await admin
         .from('saved_searches')
         .insert({
           user_id: userId,
-          query: label,
+          query,
           filters,
           region_id: regionId,
           signature,
