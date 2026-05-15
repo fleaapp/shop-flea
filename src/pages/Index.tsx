@@ -9,6 +9,7 @@ import FilterChip from '@/components/FilterChip';
 import SwipeCard from '@/components/SwipeCard';
 import FilterSheet, { FilterState } from '@/components/FilterSheet';
 import SearchSheet from '@/components/SearchSheet';
+import SaveSearchButton from '@/components/SaveSearchButton';
 import WelcomeSetupDialog from '@/components/WelcomeSetupDialog';
 import PasswordSetupDialog from '@/components/PasswordSetupDialog';
 
