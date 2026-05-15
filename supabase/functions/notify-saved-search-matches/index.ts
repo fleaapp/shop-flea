@@ -23,7 +23,7 @@ interface SavedSearchRow {
 
 const matchesQuery = (listing: any, q: string) => {
   const needle = q.toLowerCase().trim();
-  if (!needle) return false;
+  if (!needle) return true;
   const hay = [
     listing.title,
     listing.brand,
@@ -94,10 +94,11 @@ Deno.serve(async (req) => {
 
       const top = matches[0];
       const extra = matches.length - 1;
+      const searchLabel = s.query?.trim() || 'your saved filters';
       const message =
         extra > 0
-          ? `🔔 New match for "${s.query}": ${top.title} and ${extra} more. Tap to view.`
-          : `🔔 New match for "${s.query}": ${top.title}. Tap to view.`;
+          ? `🔔 New match for "${searchLabel}": ${top.title} and ${extra} more. Tap to view.`
+          : `🔔 New match for "${searchLabel}": ${top.title}. Tap to view.`;
 
       await admin.from('notifications').insert({
         user_id: s.user_id,
