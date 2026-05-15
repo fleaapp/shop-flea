@@ -950,6 +950,7 @@ export type Database = {
           last_notified_at: string
           query: string
           region_id: string | null
+          signature: string
           updated_at: string
           user_id: string
         }
@@ -958,8 +959,9 @@ export type Database = {
           filters?: Json
           id?: string
           last_notified_at?: string
-          query: string
+          query?: string
           region_id?: string | null
+          signature: string
           updated_at?: string
           user_id: string
         }
@@ -970,6 +972,7 @@ export type Database = {
           last_notified_at?: string
           query?: string
           region_id?: string | null
+          signature?: string
           updated_at?: string
           user_id?: string
         }

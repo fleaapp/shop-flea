@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { toast } from 'sonner';
 
 export interface SavedSearch {
@@ -10,6 +10,29 @@ export interface SavedSearch {
   region_id: string | null;
   created_at: string;
 }
+
+const normalizeFilters = (filters: Record<string, any> = {}) =>
+  Object.fromEntries(
+    Object.entries(filters).filter(([, value]) => {
+      if (value === null || value === undefined || value === '') return false;
+      if (Array.isArray(value)) return value.length > 0;
+      return true;
+    })
+  );
+
+const stableStringify = (value: unknown): string => {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.entries(value as Record<string, unknown>)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, entryValue]) => `${JSON.stringify(key)}:${stableStringify(entryValue)}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(value);
+};
+
+const savedSearchKey = (query: string, filters: Record<string, any> = {}, regionId: string | null = null) =>
+  `${query.trim().toLowerCase()}|${stableStringify(normalizeFilters(filters))}|${regionId ?? ''}`;
 
 export const useSavedSearches = () => {
   const { user, profile } = useAuth();
@@ -22,12 +45,10 @@ export const useSavedSearches = () => {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase
-      .from('saved_searches' as any)
-      .select('id, query, filters, region_id, created_at')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    if (!error && data) setSaved(data as any);
+    const { data, error } = await invokeCloudFunction('saved-searches', { method: 'GET' });
+    if (!error && data) {
+      setSaved(((data as any).saved || []) as SavedSearch[]);
+    }
     setLoading(false);
   }, [user]);
 
@@ -42,20 +63,22 @@ export const useSavedSearches = () => {
         return false;
       }
       const trimmed = query.trim();
-      if (!trimmed) return false;
+      const cleanedFilters = normalizeFilters(filters);
+      if (!trimmed && Object.keys(cleanedFilters).length === 0) return false;
 
-      const { error } = await supabase.from('saved_searches' as any).insert({
-        user_id: user.id,
-        query: trimmed,
-        filters,
-        region_id: profile?.region_id ?? null,
+      const { error } = await invokeCloudFunction('saved-searches', {
+        body: {
+          query: trimmed,
+          filters: cleanedFilters,
+          region_id: profile?.region_id ?? null,
+        },
       });
 
       if (error) {
-        if ((error as any).code === '23505') {
+        if ((error as any).context?.status === 409 || /already saved/i.test((error as any).message ?? '')) {
           toast('You already saved this search.');
         } else {
-          toast.error('Could not save search.');
+          toast.error('Could not save this search.');
         }
         return false;
       }
@@ -71,7 +94,10 @@ export const useSavedSearches = () => {
       if (!user) return;
       const prev = saved;
       setSaved((s) => s.filter((x) => x.id !== id));
-      const { error } = await supabase.from('saved_searches' as any).delete().eq('id', id);
+      const { error } = await invokeCloudFunction('saved-searches', {
+        method: 'DELETE',
+        query: { id },
+      });
       if (error) {
         setSaved(prev);
         toast.error('Could not remove saved search.');
@@ -81,9 +107,11 @@ export const useSavedSearches = () => {
   );
 
   const isSaved = useCallback(
-    (query: string) =>
-      saved.some((s) => s.query.toLowerCase() === query.trim().toLowerCase()),
-    [saved]
+    (query: string, filters: Record<string, any> = {}) => {
+      const key = savedSearchKey(query, filters, profile?.region_id ?? null);
+      return saved.some((s) => savedSearchKey(s.query, s.filters || {}, s.region_id) === key);
+    },
+    [saved, profile?.region_id]
   );
 
   return { saved, loading, saveSearch, removeSaved, isSaved, refetch: fetchSaved };

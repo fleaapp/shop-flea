@@ -18,11 +18,7 @@ const SaveSearchButton = ({ query, filters }: SaveSearchButtonProps) => {
 
   if (!canSave) return null;
 
-  // Use query as the saved key. If only filters are active (no query), build a synthetic label.
-  const savedKey = trimmed.length > 0
-    ? trimmed
-    : `Filters (${filterCount})`;
-  const alreadySaved = isSaved(savedKey);
+  const alreadySaved = isSaved(trimmed, filters || {});
 
   const handleClick = async () => {
     if (!user) {
@@ -33,7 +29,7 @@ const SaveSearchButton = ({ query, filters }: SaveSearchButtonProps) => {
       toast('💾 Search already saved.');
       return;
     }
-    await saveSearch(savedKey, filters || {});
+    await saveSearch(trimmed, filters || {});
   };
 
   return (
