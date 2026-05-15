@@ -75,6 +75,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings, currentFilters, o
     if (open) {
       fetchSellers();
       refetchTrending();
+      refetchSaved();
     }
   }, [open]);
 
