@@ -509,6 +509,22 @@ const Index = () => {
         onOpenChange={setSearchSheetOpen}
         onSearch={handleSearch}
         listings={searchListings}
+        currentFilters={listingFilters}
+        onApplySavedSearch={(s) => {
+          const f = s.filters || {};
+          setAppliedFilters({
+            preferences: false,
+            hideSoldItems: appliedFilters.hideSoldItems,
+            sizes: f.sizes || [],
+            categories: f.categories || [],
+            genders: f.genders || [],
+            condition: f.condition || '',
+            colours: f.colours || [],
+            styles: f.styles || [],
+            brands: f.brands || [],
+            priceRange: [f.minPrice ?? 0, f.maxPrice ?? 1000],
+          });
+        }}
       />
       <WelcomeSetupDialog
         open={showWelcomeDialog}
