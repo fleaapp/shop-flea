@@ -35,6 +35,8 @@ project_id = "teaicrimlqdayqpmxasc"
     verify_jwt = false
   [functions.shipping-reminders]
     verify_jwt = false
+  [functions.notify-saved-search-matches]
+    verify_jwt = false
   [functions.stripe-connect-checkout]
     verify_jwt = false
   [functions.stripe-connect-onboard]
