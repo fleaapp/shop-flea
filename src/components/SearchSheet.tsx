@@ -415,6 +415,41 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings, currentFilters, o
             </div>
           )}
 
+          {/* Saved Searches (above Trending) */}
+          {!query && savedSearches.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-foreground mb-3">Saved searches</h3>
+              <div className="bg-card rounded-2xl p-4 space-y-1">
+                {savedSearches.map((s) => {
+                  const filterCount = Object.keys(s.filters || {}).length;
+                  return (
+                    <div key={s.id} className="flex items-center justify-between py-2">
+                      <button
+                        onClick={() => {
+                          onApplySavedSearch?.(s);
+                          onSearch(s.query);
+                          onOpenChange(false);
+                        }}
+                        className="flex items-center gap-3 flex-1 text-left min-w-0"
+                      >
+                        <span className="text-base shrink-0">💾</span>
+                        <span className="text-foreground font-medium truncate">{s.query}</span>
+                        {filterCount > 0 && (
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            +{filterCount} filter{filterCount > 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </button>
+                      <button onClick={() => removeSaved(s.id)} className="p-1 shrink-0">
+                        <X className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Trending Searches (shown before typing, below Recent Searches) */}
           {!query && trending.length > 0 && (
             <div className="mb-6">
