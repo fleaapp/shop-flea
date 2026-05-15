@@ -313,8 +313,6 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings, currentFilters, o
             )}
           </div>
         </div>
-        </div>
-
         {/* Scroll area */}
         <div className="flex-1 overflow-y-auto overscroll-contain px-6 pb-[calc(env(safe-area-inset-bottom)+24px)] [-webkit-overflow-scrolling:touch]">
           {/* Search Suggestions */}
