@@ -470,7 +470,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings, currentFilters, o
           )}
 
           {/* Empty state when no recent searches and no query */}
-          {!query && recentSearches.length === 0 && trending.length === 0 && (
+          {!query && recentSearches.length === 0 && trending.length === 0 && savedSearches.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <span className="text-5xl opacity-50 mb-4">🔍</span>
               <p className="text-muted-foreground">Start typing to search listings</p>
