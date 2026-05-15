@@ -33,6 +33,8 @@ project_id = "teaicrimlqdayqpmxasc"
     verify_jwt = true
   [functions.send-push-notification]
     verify_jwt = false
+  [functions.saved-searches]
+    verify_jwt = false
   [functions.shipping-reminders]
     verify_jwt = false
   [functions.notify-saved-search-matches]
