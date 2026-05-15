@@ -27,7 +27,7 @@ interface SellerSuggestion {
   avatar_url: string | null;
 }
 
-const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProps) => {
+const SearchSheet = ({ open, onOpenChange, onSearch, listings, currentFilters, onApplySavedSearch }: SearchSheetProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -36,6 +36,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings }: SearchSheetProp
   const [sellers, setSellers] = useState<SellerSuggestion[]>([]);
   const { trending, recordSearch, refetchTrending } = useTrendingSearches();
   const { brands: allBrands } = useBrands();
+  const { saved: savedSearches, saveSearch, removeSaved, isSaved, refetch: refetchSaved } = useSavedSearches();
   // User-specific localStorage key for recent searches
   const storageKey = user ? `recentSearches_${user.id}` : null;
 
