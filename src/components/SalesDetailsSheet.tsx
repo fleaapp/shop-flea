@@ -47,7 +47,8 @@ const SalesDetailsSheet = ({
   onMarkShipped,
 }: SalesDetailsSheetProps) => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const stripeFullyVerified = profile?.stripe_onboarding_complete === true;
   const [serviceProvider, setServiceProvider] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [validationError, setValidationError] = useState('');
@@ -331,13 +332,20 @@ const SalesDetailsSheet = ({
                     <span className="text-muted-foreground">Request an instant payout for a 1.5% fee.</span>
                   </p>
                   <Button
-                    className="rounded-full h-10 px-6 text-sm bg-primary text-primary-foreground hover:bg-primary/90"
+                    disabled={!stripeFullyVerified}
+                    className="rounded-full h-10 px-6 text-sm bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none"
                     onClick={() => {
+                      if (!stripeFullyVerified) return;
                       window.open('https://dashboard.stripe.com/payouts', '_blank');
                     }}
                   >
                     Instant payout (1.5% fee)
                   </Button>
+                  {!stripeFullyVerified && (
+                    <p className="text-xs text-center text-muted-foreground max-w-[280px] leading-snug">
+                      🔒 Instant payouts unlock once your Stripe account is fully verified — usually after your first or second sale.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
