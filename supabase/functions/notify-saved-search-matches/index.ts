@@ -6,8 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SUPABASE_URL = Deno.env.get('EXTERNAL_SUPABASE_URL') || Deno.env.get('SUPABASE_URL')!;
+const EXTERNAL_SUPABASE_URL = Deno.env.get('EXTERNAL_SUPABASE_URL') || Deno.env.get('SUPABASE_URL')!;
+const CLOUD_SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY =
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const EXTERNAL_SERVICE_KEY =
   Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const PUBLISHABLE_KEY =
   Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_PUBLISHABLE_KEY')!;
@@ -53,7 +56,10 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
+    const admin = createClient(CLOUD_SUPABASE_URL, SERVICE_KEY, {
+      auth: { persistSession: false },
+    });
+    const externalAdmin = createClient(EXTERNAL_SUPABASE_URL, EXTERNAL_SERVICE_KEY, {
       auth: { persistSession: false },
     });
 
@@ -67,7 +73,7 @@ Deno.serve(async (req) => {
 
     for (const s of (searches || []) as SavedSearchRow[]) {
       // Find new active listings since last_notified_at, region-matched
-      let q = admin
+      let q = externalAdmin
         .from('listings')
         .select('id, title, brand, category, subcategory, size, gender, condition, price, tags, user_id, region_id, created_at')
         .eq('status', 'active')
@@ -100,7 +106,7 @@ Deno.serve(async (req) => {
           ? `🔔 New match for "${searchLabel}": ${top.title} and ${extra} more. Tap to view.`
           : `🔔 New match for "${searchLabel}": ${top.title}. Tap to view.`;
 
-      await admin.from('notifications').insert({
+      await externalAdmin.from('notifications').insert({
         user_id: s.user_id,
         type: 'saved_search_match',
         title: 'New match for saved search',
@@ -110,7 +116,7 @@ Deno.serve(async (req) => {
 
       // Push notification
       try {
-        await fetch(`${SUPABASE_URL}/functions/v1/send-push-notification`, {
+        await fetch(`${CLOUD_SUPABASE_URL}/functions/v1/send-push-notification`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
