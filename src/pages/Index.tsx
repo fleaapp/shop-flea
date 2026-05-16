@@ -245,32 +245,68 @@ const Index = () => {
     }
   }, [dbListings, discardedIds, favoriteIds, isInCart, loading, loadingMore, hasMore, loadMore]);
 
-  // Filter out listings that are discarded, favorited, or in cart.
+  // Filter out listings that are favorited, in cart, or (when viewing 'new')
+  // already passed/marked-maybe. Revisit modes intentionally bypass the
+  // passed/maybe filters so users can swipe through those queues again.
   // IMPORTANT: while the top card is animating out, keep it in the stack so
   // the two cards behind don't collapse/disappear.
-  // Split listings into non-skipped and skipped
-  const { newListings, skippedListings } = useMemo(() => {
-    const base = dbListings.filter((listing) => {
-      if (pendingExitId && listing.id === pendingExitId) return true;
-      return (
-        !discardedIds.has(listing.id) &&
-        !favoriteIds.has(listing.id) &&
-        !isInCart(listing.id)
-      );
+  const { newListings, maybeListings, passedListings, allRevisitListings } = useMemo(() => {
+    const isInteractable = (id: string) => !favoriteIds.has(id) && !isInCart(id);
+    const keepPending = (id: string) => pendingExitId === id;
+
+    const newOnes = dbListings.filter((l) => {
+      if (keepPending(l.id)) return true;
+      if (!isInteractable(l.id)) return false;
+      if (discardedIds.has(l.id) || passedIds.has(l.id)) return false;
+      if (maybeIds.has(l.id)) return false;
+      return true;
     });
-    const newOnes = base.filter(l => l.id === pendingExitId || !skippedIds.has(l.id));
-    const skipped = base.filter(l => l.id !== pendingExitId && skippedIds.has(l.id));
-    return { newListings: newOnes, skippedListings: skipped };
-  }, [dbListings, discardedIds, favoriteIds, isInCart, pendingExitId, skippedIds]);
 
-  // When new listings run out, show popup then switch to skipped
+    const maybes = dbListings.filter((l) => {
+      if (keepPending(l.id) && maybeIds.has(l.id)) return true;
+      if (l.id === pendingExitId) return false;
+      return maybeIds.has(l.id) && isInteractable(l.id);
+    });
+
+    const passes = dbListings.filter((l) => {
+      if (keepPending(l.id) && passedIds.has(l.id)) return true;
+      if (l.id === pendingExitId) return false;
+      return passedIds.has(l.id) && isInteractable(l.id);
+    });
+
+    const seen = new Set<string>();
+    const combined: DbListing[] = [];
+    [...maybes, ...passes].forEach((l) => {
+      if (!seen.has(l.id)) {
+        seen.add(l.id);
+        combined.push(l);
+      }
+    });
+
+    return { newListings: newOnes, maybeListings: maybes, passedListings: passes, allRevisitListings: combined };
+  }, [dbListings, discardedIds, favoriteIds, isInCart, pendingExitId, maybeIds, passedIds]);
+
+  // When the active queue runs out, show the end-of-stack popup with revisit options.
   useEffect(() => {
-    if (!loading && newListings.length === 0 && skippedListings.length > 0 && !showingSkipped) {
-      setSkippedPopupOpen(true);
-    }
-  }, [loading, newListings.length, skippedListings.length, showingSkipped]);
+    if (loading) return;
+    if (viewMode !== 'new') return;
+    if (newListings.length > 0) return;
+    if (maybeIds.size === 0 && passedIds.size === 0) return;
+    setEndPopupOpen(true);
+  }, [loading, viewMode, newListings.length, maybeIds.size, passedIds.size]);
 
-  const availableListings = showingSkipped ? skippedListings : newListings;
+  // When a revisit queue empties, flip back to 'new' so the popup logic can re-trigger.
+  useEffect(() => {
+    if (viewMode === 'maybe' && maybeListings.length === 0) setViewMode('new');
+    else if (viewMode === 'passed' && passedListings.length === 0) setViewMode('new');
+    else if (viewMode === 'all' && allRevisitListings.length === 0) setViewMode('new');
+  }, [viewMode, maybeListings.length, passedListings.length, allRevisitListings.length]);
+
+  const availableListings =
+    viewMode === 'maybe' ? maybeListings
+    : viewMode === 'passed' ? passedListings
+    : viewMode === 'all' ? allRevisitListings
+    : newListings;
   const currentListings = availableListings.slice(0, 3);
 
   const handleSwipeLeft = useCallback(async (listingId: string) => {
@@ -278,6 +314,17 @@ const Index = () => {
 
     setPendingExitId(listingId);
     await addDiscarded(listingId);
+    setPassedIds((prev) => {
+      const next = new Set(prev);
+      next.add(listingId);
+      return next;
+    });
+    setMaybeIds((prev) => {
+      if (!prev.has(listingId)) return prev;
+      const next = new Set(prev);
+      next.delete(listingId);
+      return next;
+    });
     setLastAction({ listingId, type: 'discard' });
   }, [addDiscarded, pendingExitId]);
 
@@ -297,12 +344,26 @@ const Index = () => {
     setLastAction({ listingId: listing.id, type: 'cart' });
   }, [addToCart, pendingExitId]);
 
-  const handleSwipeDown = useCallback((listingId: string) => {
+  const handleSwipeDown = useCallback(async (listingId: string) => {
     if (pendingExitId) return;
     setPendingExitId(listingId);
-    setSkippedIds(prev => new Set(prev).add(listingId));
-    setLastAction({ listingId, type: 'skip' });
-  }, [pendingExitId]);
+    setMaybeIds((prev) => {
+      const next = new Set(prev);
+      next.add(listingId);
+      return next;
+    });
+    // If the listing was previously passed/discarded, un-pass it so it lives in Maybe only.
+    setPassedIds((prev) => {
+      if (!prev.has(listingId)) return prev;
+      const next = new Set(prev);
+      next.delete(listingId);
+      return next;
+    });
+    if (discardedIds.has(listingId)) {
+      await removeDiscarded(listingId);
+    }
+    setLastAction({ listingId, type: 'maybe' });
+  }, [pendingExitId, discardedIds, removeDiscarded]);
 
   const handleUndo = useCallback(async () => {
     if (!lastAction) return;
@@ -311,12 +372,18 @@ const Index = () => {
     
     if (type === 'discard') {
       await removeDiscarded(listingId);
+      setPassedIds((prev) => {
+        if (!prev.has(listingId)) return prev;
+        const next = new Set(prev);
+        next.delete(listingId);
+        return next;
+      });
     } else if (type === 'favorite') {
       await removeFavorite(listingId);
     } else if (type === 'cart') {
       await removeFromCart(listingId);
-    } else if (type === 'skip') {
-      setSkippedIds(prev => {
+    } else if (type === 'maybe') {
+      setMaybeIds((prev) => {
         const next = new Set(prev);
         next.delete(listingId);
         return next;
