@@ -33,8 +33,7 @@ const SaveSearchButton = ({ query, filters }: SaveSearchButtonProps) => {
       toast.error('Sign in to save searches.');
       return;
     }
-    // Always attempt to save — the server is the source of truth on duplicates.
-    // This way "red tee" with no filters and "red tee" + 3 filters are both savable.
+    console.log('[SaveSearchButton] saving', { trimmed, cleanedFilters, rawFilters: filters });
     await saveSearch(trimmed, cleanedFilters);
   };
 
