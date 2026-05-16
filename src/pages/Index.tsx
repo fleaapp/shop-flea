@@ -475,7 +475,7 @@ const Index = () => {
   const handleApplyFilters = (filterState: FilterState) => {
     setAppliedFilters(filterState);
     setPendingExitId(null);
-    setShowingSkipped(false); // Reset to show new listings first with new filters
+    setViewMode('new');
     toast.success('Filters applied!');
   };
 
