@@ -33,7 +33,6 @@ const SaveSearchButton = ({ query, filters }: SaveSearchButtonProps) => {
       toast.error('Sign in to save searches.');
       return;
     }
-    console.log('[SaveSearchButton] saving', { trimmed, cleanedFilters, rawFilters: filters });
     await saveSearch(trimmed, cleanedFilters);
   };
 
