@@ -158,11 +158,14 @@ const Index = () => {
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [searchSheetOpen, setSearchSheetOpen] = useState(false);
   
-  // Skip queue: listing IDs that were skipped, shown after all new cards
-  const [skippedIds, setSkippedIds] = useState<Set<string>>(new Set());
-  const [showingSkipped, setShowingSkipped] = useState(false);
-  const [skippedPopupOpen, setSkippedPopupOpen] = useState(false);
-  
+  // Maybe stack: listings the user marked "Maybe" (swipe down). Soft-saved for revisit at end of stack.
+  const [maybeIds, setMaybeIds] = useState<Set<string>>(new Set());
+  // Passed stack: session-tracked IDs that were passed (swipe left). Discarded is persistent; this lets us revisit them this session.
+  const [passedIds, setPassedIds] = useState<Set<string>>(new Set());
+  // Which queue are we currently viewing
+  const [viewMode, setViewMode] = useState<'new' | 'maybe' | 'passed' | 'all'>('new');
+  const [endPopupOpen, setEndPopupOpen] = useState(false);
+
   // Store the full filter state from FilterSheet
   const [appliedFilters, setAppliedFilters] = useState<FilterState>({
     preferences: false,
@@ -183,7 +186,7 @@ const Index = () => {
   // Track the last action for undo functionality
   const [lastAction, setLastAction] = useState<{
     listingId: string;
-    type: 'discard' | 'favorite' | 'cart' | 'skip';
+    type: 'discard' | 'favorite' | 'cart' | 'maybe';
   } | null>(null);
 
 
@@ -242,32 +245,68 @@ const Index = () => {
     }
   }, [dbListings, discardedIds, favoriteIds, isInCart, loading, loadingMore, hasMore, loadMore]);
 
-  // Filter out listings that are discarded, favorited, or in cart.
+  // Filter out listings that are favorited, in cart, or (when viewing 'new')
+  // already passed/marked-maybe. Revisit modes intentionally bypass the
+  // passed/maybe filters so users can swipe through those queues again.
   // IMPORTANT: while the top card is animating out, keep it in the stack so
   // the two cards behind don't collapse/disappear.
-  // Split listings into non-skipped and skipped
-  const { newListings, skippedListings } = useMemo(() => {
-    const base = dbListings.filter((listing) => {
-      if (pendingExitId && listing.id === pendingExitId) return true;
-      return (
-        !discardedIds.has(listing.id) &&
-        !favoriteIds.has(listing.id) &&
-        !isInCart(listing.id)
-      );
+  const { newListings, maybeListings, passedListings, allRevisitListings } = useMemo(() => {
+    const isInteractable = (id: string) => !favoriteIds.has(id) && !isInCart(id);
+    const keepPending = (id: string) => pendingExitId === id;
+
+    const newOnes = dbListings.filter((l) => {
+      if (keepPending(l.id)) return true;
+      if (!isInteractable(l.id)) return false;
+      if (discardedIds.has(l.id) || passedIds.has(l.id)) return false;
+      if (maybeIds.has(l.id)) return false;
+      return true;
     });
-    const newOnes = base.filter(l => l.id === pendingExitId || !skippedIds.has(l.id));
-    const skipped = base.filter(l => l.id !== pendingExitId && skippedIds.has(l.id));
-    return { newListings: newOnes, skippedListings: skipped };
-  }, [dbListings, discardedIds, favoriteIds, isInCart, pendingExitId, skippedIds]);
 
-  // When new listings run out, show popup then switch to skipped
+    const maybes = dbListings.filter((l) => {
+      if (keepPending(l.id) && maybeIds.has(l.id)) return true;
+      if (l.id === pendingExitId) return false;
+      return maybeIds.has(l.id) && isInteractable(l.id);
+    });
+
+    const passes = dbListings.filter((l) => {
+      if (keepPending(l.id) && passedIds.has(l.id)) return true;
+      if (l.id === pendingExitId) return false;
+      return passedIds.has(l.id) && isInteractable(l.id);
+    });
+
+    const seen = new Set<string>();
+    const combined: DbListing[] = [];
+    [...maybes, ...passes].forEach((l) => {
+      if (!seen.has(l.id)) {
+        seen.add(l.id);
+        combined.push(l);
+      }
+    });
+
+    return { newListings: newOnes, maybeListings: maybes, passedListings: passes, allRevisitListings: combined };
+  }, [dbListings, discardedIds, favoriteIds, isInCart, pendingExitId, maybeIds, passedIds]);
+
+  // When the active queue runs out, show the end-of-stack popup with revisit options.
   useEffect(() => {
-    if (!loading && newListings.length === 0 && skippedListings.length > 0 && !showingSkipped) {
-      setSkippedPopupOpen(true);
-    }
-  }, [loading, newListings.length, skippedListings.length, showingSkipped]);
+    if (loading) return;
+    if (viewMode !== 'new') return;
+    if (newListings.length > 0) return;
+    if (maybeIds.size === 0 && passedIds.size === 0) return;
+    setEndPopupOpen(true);
+  }, [loading, viewMode, newListings.length, maybeIds.size, passedIds.size]);
 
-  const availableListings = showingSkipped ? skippedListings : newListings;
+  // When a revisit queue empties, flip back to 'new' so the popup logic can re-trigger.
+  useEffect(() => {
+    if (viewMode === 'maybe' && maybeListings.length === 0) setViewMode('new');
+    else if (viewMode === 'passed' && passedListings.length === 0) setViewMode('new');
+    else if (viewMode === 'all' && allRevisitListings.length === 0) setViewMode('new');
+  }, [viewMode, maybeListings.length, passedListings.length, allRevisitListings.length]);
+
+  const availableListings =
+    viewMode === 'maybe' ? maybeListings
+    : viewMode === 'passed' ? passedListings
+    : viewMode === 'all' ? allRevisitListings
+    : newListings;
   const currentListings = availableListings.slice(0, 3);
 
   const handleSwipeLeft = useCallback(async (listingId: string) => {
@@ -275,6 +314,17 @@ const Index = () => {
 
     setPendingExitId(listingId);
     await addDiscarded(listingId);
+    setPassedIds((prev) => {
+      const next = new Set(prev);
+      next.add(listingId);
+      return next;
+    });
+    setMaybeIds((prev) => {
+      if (!prev.has(listingId)) return prev;
+      const next = new Set(prev);
+      next.delete(listingId);
+      return next;
+    });
     setLastAction({ listingId, type: 'discard' });
   }, [addDiscarded, pendingExitId]);
 
@@ -294,12 +344,26 @@ const Index = () => {
     setLastAction({ listingId: listing.id, type: 'cart' });
   }, [addToCart, pendingExitId]);
 
-  const handleSwipeDown = useCallback((listingId: string) => {
+  const handleSwipeDown = useCallback(async (listingId: string) => {
     if (pendingExitId) return;
     setPendingExitId(listingId);
-    setSkippedIds(prev => new Set(prev).add(listingId));
-    setLastAction({ listingId, type: 'skip' });
-  }, [pendingExitId]);
+    setMaybeIds((prev) => {
+      const next = new Set(prev);
+      next.add(listingId);
+      return next;
+    });
+    // If the listing was previously passed/discarded, un-pass it so it lives in Maybe only.
+    setPassedIds((prev) => {
+      if (!prev.has(listingId)) return prev;
+      const next = new Set(prev);
+      next.delete(listingId);
+      return next;
+    });
+    if (discardedIds.has(listingId)) {
+      await removeDiscarded(listingId);
+    }
+    setLastAction({ listingId, type: 'maybe' });
+  }, [pendingExitId, discardedIds, removeDiscarded]);
 
   const handleUndo = useCallback(async () => {
     if (!lastAction) return;
@@ -308,12 +372,18 @@ const Index = () => {
     
     if (type === 'discard') {
       await removeDiscarded(listingId);
+      setPassedIds((prev) => {
+        if (!prev.has(listingId)) return prev;
+        const next = new Set(prev);
+        next.delete(listingId);
+        return next;
+      });
     } else if (type === 'favorite') {
       await removeFavorite(listingId);
     } else if (type === 'cart') {
       await removeFromCart(listingId);
-    } else if (type === 'skip') {
-      setSkippedIds(prev => {
+    } else if (type === 'maybe') {
+      setMaybeIds((prev) => {
         const next = new Set(prev);
         next.delete(listingId);
         return next;
@@ -391,7 +461,7 @@ const Index = () => {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    setShowingSkipped(false); // Reset to show new listings first with new search
+    setViewMode('new');
   };
 
   const clearSearch = () => {
@@ -405,7 +475,7 @@ const Index = () => {
   const handleApplyFilters = (filterState: FilterState) => {
     setAppliedFilters(filterState);
     setPendingExitId(null);
-    setShowingSkipped(false); // Reset to show new listings first with new filters
+    setViewMode('new');
     toast.success('Filters applied!');
   };
 
@@ -556,24 +626,43 @@ const Index = () => {
           supabase.auth.refreshSession();
         }}
       />
-      {/* Skipped listings popup */}
-      <Dialog open={skippedPopupOpen} onOpenChange={setSkippedPopupOpen}>
-        <DialogContent className="max-w-[320px] rounded-2xl text-center">
+      {/* End-of-stack revisit popup */}
+      <Dialog open={endPopupOpen} onOpenChange={setEndPopupOpen}>
+        <DialogContent className="max-w-[320px] rounded-2xl text-center" hideCloseButton>
           <div className="flex flex-col items-center gap-3 py-2">
             <span className="text-5xl">🎉</span>
             <h3 className="text-lg font-semibold text-foreground">All caught up!</h3>
             <p className="text-sm text-muted-foreground">
-              You've gone through all your new listings. Ready to revisit your skipped ones?
+              You've gone through all your new listings. Want to revisit any?
             </p>
-            <Button
-              onClick={() => {
-                setSkippedPopupOpen(false);
-                setShowingSkipped(true);
-              }}
-              className="w-full mt-1 rounded-full"
-            >
-              Show Skipped Listings
-            </Button>
+            <div className="flex w-full flex-col gap-2 mt-1">
+              {passedIds.size > 0 && (
+                <Button
+                  onClick={() => { setEndPopupOpen(false); setViewMode('passed'); }}
+                  className="w-full rounded-full"
+                  variant="outline"
+                >
+                  🔁❌ Revisit Passed Listings
+                </Button>
+              )}
+              {maybeIds.size > 0 && (
+                <Button
+                  onClick={() => { setEndPopupOpen(false); setViewMode('maybe'); }}
+                  className="w-full rounded-full"
+                  variant="outline"
+                >
+                  🔁🤔 Revisit Maybe Listings
+                </Button>
+              )}
+              {maybeIds.size > 0 && passedIds.size > 0 && (
+                <Button
+                  onClick={() => { setEndPopupOpen(false); setViewMode('all'); }}
+                  className="w-full rounded-full"
+                >
+                  🔁❌🤔 Revisit All Listings
+                </Button>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

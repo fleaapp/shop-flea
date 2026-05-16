@@ -14,7 +14,7 @@ const cards = [
   { header: "Swipe Up 👆", subhead: "Add to Cart 🛒", direction: "up" as const },
   { header: "Swipe Left 👈", subhead: "Pass ❌", direction: "left" as const },
   { header: "Swipe Right 👉", subhead: "Add to Wishlist 💌", direction: "right" as const },
-  { header: "Swipe Down 👇", subhead: "Skip ⏭️", direction: "down" as const },
+  { header: "Swipe Down 👇", subhead: "Maybe 🤔", direction: "down" as const },
   { header: "Tap 👆", subhead: "View More Info ℹ️", direction: "tap" as const },
 ];
 
@@ -32,7 +32,7 @@ const GestureCardsSection = () => {
           <h2 className="text-secondary font-black text-lg md:text-xl uppercase tracking-wider mb-2">
             Swiping, Simplified
           </h2>
-          <p className="text-mint text-sm md:text-base">Save. Skip. Shop. See More.</p>
+          <p className="text-mint text-sm md:text-base">Save. Maybe. Shop. See More.</p>
         </motion.div>
 
         <motion.div className="hidden md:grid md:grid-cols-5 gap-10" {...reveal(0.08)}>

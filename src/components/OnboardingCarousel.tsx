@@ -62,8 +62,8 @@ const slides: Slide[] = [
   },
   {
     gesture: 'down',
-    text: ['Swipe Down 👇', 'Skip for Later ⏭️'],
-    alt: 'Swipe down to skip',
+    text: ['Swipe Down 👇', 'Maybe 🤔'],
+    alt: 'Swipe down for maybe',
   },
   {
     gesture: 'right',
