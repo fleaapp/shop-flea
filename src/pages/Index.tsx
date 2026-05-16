@@ -164,7 +164,7 @@ const Index = () => {
   const [passedIds, setPassedIds] = useState<Set<string>>(new Set());
   // Which queue are we currently viewing
   const [viewMode, setViewMode] = useState<'new' | 'maybe' | 'passed' | 'all'>('new');
-  const [endPopupOpen, setEndPopupOpen] = useState(false);
+  
 
   // Store the full filter state from FilterSheet
   const [appliedFilters, setAppliedFilters] = useState<FilterState>({
@@ -627,46 +627,6 @@ const Index = () => {
           supabase.auth.refreshSession();
         }}
       />
-      {/* End-of-stack revisit popup */}
-      <Dialog open={endPopupOpen} onOpenChange={setEndPopupOpen}>
-        <DialogContent className="max-w-[320px] rounded-2xl text-center" hideCloseButton>
-          <div className="flex flex-col items-center gap-3 py-2">
-            <span className="text-5xl">🎉</span>
-            <h3 className="text-lg font-semibold text-foreground">All caught up!</h3>
-            <p className="text-sm text-muted-foreground">
-              You've gone through all your new listings. Want to revisit any?
-            </p>
-            <div className="flex w-full flex-col gap-2 mt-1">
-              {passedIds.size > 0 && (
-                <Button
-                  onClick={() => { setEndPopupOpen(false); setViewMode('passed'); }}
-                  className="w-full rounded-full"
-                  variant="outline"
-                >
-                  🔁❌ Revisit Passed Listings
-                </Button>
-              )}
-              {maybeIds.size > 0 && (
-                <Button
-                  onClick={() => { setEndPopupOpen(false); setViewMode('maybe'); }}
-                  className="w-full rounded-full"
-                  variant="outline"
-                >
-                  🔁🤔 Revisit Maybe Listings
-                </Button>
-              )}
-              {maybeIds.size > 0 && passedIds.size > 0 && (
-                <Button
-                  onClick={() => { setEndPopupOpen(false); setViewMode('all'); }}
-                  className="w-full rounded-full"
-                >
-                  🔁❌🤔 Revisit All Listings
-                </Button>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
       <BottomNav />
     </div>
   );
