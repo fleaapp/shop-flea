@@ -461,7 +461,7 @@ const Index = () => {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    setShowingSkipped(false); // Reset to show new listings first with new search
+    setViewMode('new');
   };
 
   const clearSearch = () => {
