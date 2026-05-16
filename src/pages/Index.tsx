@@ -158,11 +158,14 @@ const Index = () => {
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [searchSheetOpen, setSearchSheetOpen] = useState(false);
   
-  // Skip queue: listing IDs that were skipped, shown after all new cards
-  const [skippedIds, setSkippedIds] = useState<Set<string>>(new Set());
-  const [showingSkipped, setShowingSkipped] = useState(false);
-  const [skippedPopupOpen, setSkippedPopupOpen] = useState(false);
-  
+  // Maybe stack: listings the user marked "Maybe" (swipe down). Soft-saved for revisit at end of stack.
+  const [maybeIds, setMaybeIds] = useState<Set<string>>(new Set());
+  // Passed stack: session-tracked IDs that were passed (swipe left). Discarded is persistent; this lets us revisit them this session.
+  const [passedIds, setPassedIds] = useState<Set<string>>(new Set());
+  // Which queue are we currently viewing
+  const [viewMode, setViewMode] = useState<'new' | 'maybe' | 'passed' | 'all'>('new');
+  const [endPopupOpen, setEndPopupOpen] = useState(false);
+
   // Store the full filter state from FilterSheet
   const [appliedFilters, setAppliedFilters] = useState<FilterState>({
     preferences: false,
@@ -183,7 +186,7 @@ const Index = () => {
   // Track the last action for undo functionality
   const [lastAction, setLastAction] = useState<{
     listingId: string;
-    type: 'discard' | 'favorite' | 'cart' | 'skip';
+    type: 'discard' | 'favorite' | 'cart' | 'maybe';
   } | null>(null);
 
 
