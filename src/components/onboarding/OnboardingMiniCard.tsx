@@ -120,7 +120,7 @@ const OnboardingMiniCard = ({ direction }: OnboardingMiniCardProps) => {
         : direction === "up"
           ? "🛒"
           : direction === "down"
-            ? "⏭️"
+            ? "🤔"
             : "ℹ️";
 
   return (
