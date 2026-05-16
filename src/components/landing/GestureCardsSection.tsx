@@ -32,7 +32,7 @@ const GestureCardsSection = () => {
           <h2 className="text-secondary font-black text-lg md:text-xl uppercase tracking-wider mb-2">
             Swiping, Simplified
           </h2>
-          <p className="text-mint text-sm md:text-base">Save. Skip. Shop. See More.</p>
+          <p className="text-mint text-sm md:text-base">Save. Maybe. Shop. See More.</p>
         </motion.div>
 
         <motion.div className="hidden md:grid md:grid-cols-5 gap-10" {...reveal(0.08)}>
