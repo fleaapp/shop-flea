@@ -286,21 +286,22 @@ const Index = () => {
     return { newListings: newOnes, maybeListings: maybes, passedListings: passes, allRevisitListings: combined };
   }, [dbListings, discardedIds, favoriteIds, isInCart, pendingExitId, maybeIds, passedIds]);
 
-  // When the active queue runs out, show the end-of-stack popup with revisit options.
+  // When the new-listings queue runs out, automatically transition into the Maybe queue
+  // (if any) with a brief toast. Passed listings are NOT included here — they're only
+  // refreshable via Settings → Refresh Passed Listings.
   useEffect(() => {
     if (loading) return;
     if (viewMode !== 'new') return;
     if (newListings.length > 0) return;
-    if (maybeIds.size === 0 && passedIds.size === 0) return;
-    setEndPopupOpen(true);
-  }, [loading, viewMode, newListings.length, maybeIds.size, passedIds.size]);
+    if (maybeIds.size === 0) return;
+    toast('You\'ve seen all new listings. Now showing your Maybes 🤔.');
+    setViewMode('maybe');
+  }, [loading, viewMode, newListings.length, maybeIds.size]);
 
-  // When a revisit queue empties, flip back to 'new' so the popup logic can re-trigger.
+  // When the Maybe revisit queue empties, flip back to 'new'.
   useEffect(() => {
     if (viewMode === 'maybe' && maybeListings.length === 0) setViewMode('new');
-    else if (viewMode === 'passed' && passedListings.length === 0) setViewMode('new');
-    else if (viewMode === 'all' && allRevisitListings.length === 0) setViewMode('new');
-  }, [viewMode, maybeListings.length, passedListings.length, allRevisitListings.length]);
+  }, [viewMode, maybeListings.length]);
 
   const availableListings =
     viewMode === 'maybe' ? maybeListings
