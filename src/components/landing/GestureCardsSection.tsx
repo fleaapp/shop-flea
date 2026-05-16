@@ -14,7 +14,7 @@ const cards = [
   { header: "Swipe Up 👆", subhead: "Add to Cart 🛒", direction: "up" as const },
   { header: "Swipe Left 👈", subhead: "Pass ❌", direction: "left" as const },
   { header: "Swipe Right 👉", subhead: "Add to Wishlist 💌", direction: "right" as const },
-  { header: "Swipe Down 👇", subhead: "Skip ⏭️", direction: "down" as const },
+  { header: "Swipe Down 👇", subhead: "Maybe 🤔", direction: "down" as const },
   { header: "Tap 👆", subhead: "View More Info ℹ️", direction: "tap" as const },
 ];
 
