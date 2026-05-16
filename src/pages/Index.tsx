@@ -1,8 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import FilterChip from '@/components/FilterChip';
@@ -164,7 +162,7 @@ const Index = () => {
   const [passedIds, setPassedIds] = useState<Set<string>>(new Set());
   // Which queue are we currently viewing
   const [viewMode, setViewMode] = useState<'new' | 'maybe' | 'passed' | 'all'>('new');
-  const [endPopupOpen, setEndPopupOpen] = useState(false);
+  
 
   // Store the full filter state from FilterSheet
   const [appliedFilters, setAppliedFilters] = useState<FilterState>({
@@ -286,21 +284,22 @@ const Index = () => {
     return { newListings: newOnes, maybeListings: maybes, passedListings: passes, allRevisitListings: combined };
   }, [dbListings, discardedIds, favoriteIds, isInCart, pendingExitId, maybeIds, passedIds]);
 
-  // When the active queue runs out, show the end-of-stack popup with revisit options.
+  // When the new-listings queue runs out, automatically transition into the Maybe queue
+  // (if any) with a brief toast. Passed listings are NOT included here — they're only
+  // refreshable via Settings → Refresh Passed Listings.
   useEffect(() => {
     if (loading) return;
     if (viewMode !== 'new') return;
     if (newListings.length > 0) return;
-    if (maybeIds.size === 0 && passedIds.size === 0) return;
-    setEndPopupOpen(true);
-  }, [loading, viewMode, newListings.length, maybeIds.size, passedIds.size]);
+    if (maybeIds.size === 0) return;
+    toast('You\'ve seen all new listings. Now showing your Maybes 🤔.');
+    setViewMode('maybe');
+  }, [loading, viewMode, newListings.length, maybeIds.size]);
 
-  // When a revisit queue empties, flip back to 'new' so the popup logic can re-trigger.
+  // When the Maybe revisit queue empties, flip back to 'new'.
   useEffect(() => {
     if (viewMode === 'maybe' && maybeListings.length === 0) setViewMode('new');
-    else if (viewMode === 'passed' && passedListings.length === 0) setViewMode('new');
-    else if (viewMode === 'all' && allRevisitListings.length === 0) setViewMode('new');
-  }, [viewMode, maybeListings.length, passedListings.length, allRevisitListings.length]);
+  }, [viewMode, maybeListings.length]);
 
   const availableListings =
     viewMode === 'maybe' ? maybeListings
@@ -626,46 +625,6 @@ const Index = () => {
           supabase.auth.refreshSession();
         }}
       />
-      {/* End-of-stack revisit popup */}
-      <Dialog open={endPopupOpen} onOpenChange={setEndPopupOpen}>
-        <DialogContent className="max-w-[320px] rounded-2xl text-center" hideCloseButton>
-          <div className="flex flex-col items-center gap-3 py-2">
-            <span className="text-5xl">🎉</span>
-            <h3 className="text-lg font-semibold text-foreground">All caught up!</h3>
-            <p className="text-sm text-muted-foreground">
-              You've gone through all your new listings. Want to revisit any?
-            </p>
-            <div className="flex w-full flex-col gap-2 mt-1">
-              {passedIds.size > 0 && (
-                <Button
-                  onClick={() => { setEndPopupOpen(false); setViewMode('passed'); }}
-                  className="w-full rounded-full"
-                  variant="outline"
-                >
-                  🔁❌ Revisit Passed Listings
-                </Button>
-              )}
-              {maybeIds.size > 0 && (
-                <Button
-                  onClick={() => { setEndPopupOpen(false); setViewMode('maybe'); }}
-                  className="w-full rounded-full"
-                  variant="outline"
-                >
-                  🔁🤔 Revisit Maybe Listings
-                </Button>
-              )}
-              {maybeIds.size > 0 && passedIds.size > 0 && (
-                <Button
-                  onClick={() => { setEndPopupOpen(false); setViewMode('all'); }}
-                  className="w-full rounded-full"
-                >
-                  🔁❌🤔 Revisit All Listings
-                </Button>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
       <BottomNav />
     </div>
   );
