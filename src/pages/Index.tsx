@@ -626,24 +626,43 @@ const Index = () => {
           supabase.auth.refreshSession();
         }}
       />
-      {/* Skipped listings popup */}
-      <Dialog open={skippedPopupOpen} onOpenChange={setSkippedPopupOpen}>
-        <DialogContent className="max-w-[320px] rounded-2xl text-center">
+      {/* End-of-stack revisit popup */}
+      <Dialog open={endPopupOpen} onOpenChange={setEndPopupOpen}>
+        <DialogContent className="max-w-[320px] rounded-2xl text-center" hideCloseButton>
           <div className="flex flex-col items-center gap-3 py-2">
             <span className="text-5xl">🎉</span>
             <h3 className="text-lg font-semibold text-foreground">All caught up!</h3>
             <p className="text-sm text-muted-foreground">
-              You've gone through all your new listings. Ready to revisit your skipped ones?
+              You've gone through all your new listings. Want to revisit any?
             </p>
-            <Button
-              onClick={() => {
-                setSkippedPopupOpen(false);
-                setShowingSkipped(true);
-              }}
-              className="w-full mt-1 rounded-full"
-            >
-              Show Skipped Listings
-            </Button>
+            <div className="flex w-full flex-col gap-2 mt-1">
+              {passedIds.size > 0 && (
+                <Button
+                  onClick={() => { setEndPopupOpen(false); setViewMode('passed'); }}
+                  className="w-full rounded-full"
+                  variant="outline"
+                >
+                  🔁❌ Revisit Passed Listings
+                </Button>
+              )}
+              {maybeIds.size > 0 && (
+                <Button
+                  onClick={() => { setEndPopupOpen(false); setViewMode('maybe'); }}
+                  className="w-full rounded-full"
+                  variant="outline"
+                >
+                  🔁🤔 Revisit Maybe Listings
+                </Button>
+              )}
+              {maybeIds.size > 0 && passedIds.size > 0 && (
+                <Button
+                  onClick={() => { setEndPopupOpen(false); setViewMode('all'); }}
+                  className="w-full rounded-full"
+                >
+                  🔁❌🤔 Revisit All Listings
+                </Button>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
