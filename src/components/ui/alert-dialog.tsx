@@ -3,7 +3,7 @@ import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
-import { pushOverlayAppChrome } from "@/lib/appChrome";
+import { useOverlayChrome } from "@/lib/useOverlayChrome";
 
 const AlertDialog = AlertDialogPrimitive.Root;
 
@@ -15,7 +15,9 @@ const AlertDialogOverlay = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Overlay>
 >(({ className, ...props }, ref) => {
-  React.useLayoutEffect(() => pushOverlayAppChrome(), []);
+  const innerRef = React.useRef<HTMLDivElement>(null);
+  React.useImperativeHandle(ref, () => innerRef.current as HTMLDivElement);
+  useOverlayChrome(innerRef);
 
   return (
     <AlertDialogPrimitive.Overlay
@@ -24,7 +26,7 @@ const AlertDialogOverlay = React.forwardRef<
         className,
       )}
       {...props}
-      ref={ref}
+      ref={innerRef}
     />
   );
 });

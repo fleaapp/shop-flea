@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Drawer as DrawerPrimitive } from "vaul";
 import { cn } from "@/lib/utils";
-import { pushOverlayAppChrome } from "@/lib/appChrome";
+import { useOverlayChrome } from "@/lib/useOverlayChrome";
 const Drawer = ({
   shouldScaleBackground = true,
   ...props
@@ -14,9 +14,11 @@ const DrawerOverlay = React.forwardRef<React.ElementRef<typeof DrawerPrimitive.O
   className,
   ...props
 }, ref) => {
-  React.useLayoutEffect(() => pushOverlayAppChrome(), []);
+  const innerRef = React.useRef<HTMLDivElement>(null);
+  React.useImperativeHandle(ref, () => innerRef.current as HTMLDivElement);
+  useOverlayChrome(innerRef);
 
-  return <DrawerPrimitive.Overlay ref={ref} className={cn("fixed inset-x-0 bottom-0 top-[calc(-1*env(safe-area-inset-top,0px))] z-[60] bg-black/50 backdrop-blur-sm", className)} {...props} />;
+  return <DrawerPrimitive.Overlay ref={innerRef} className={cn("fixed inset-x-0 bottom-0 top-[calc(-1*env(safe-area-inset-top,0px))] z-[60] bg-black/50 backdrop-blur-sm", className)} {...props} />;
 });
 DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName;
 const DrawerContent = React.forwardRef<React.ElementRef<typeof DrawerPrimitive.Content>, React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content>>(({

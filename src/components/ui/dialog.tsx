@@ -3,7 +3,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { pushOverlayAppChrome } from "@/lib/appChrome";
+import { useOverlayChrome } from "@/lib/useOverlayChrome";
 
 const Dialog = DialogPrimitive.Root;
 
@@ -17,11 +17,13 @@ const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
 >(({ className, ...props }, ref) => {
-  React.useLayoutEffect(() => pushOverlayAppChrome(), []);
+  const innerRef = React.useRef<HTMLDivElement>(null);
+  React.useImperativeHandle(ref, () => innerRef.current as HTMLDivElement);
+  useOverlayChrome(innerRef);
 
   return (
     <DialogPrimitive.Overlay
-      ref={ref}
+      ref={innerRef}
       className={cn(
         "fixed inset-x-0 bottom-0 top-[calc(-1*env(safe-area-inset-top,0px))] z-[60] bg-black/50 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0",
         className,
