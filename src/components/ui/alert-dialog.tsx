@@ -15,7 +15,9 @@ const AlertDialogOverlay = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Overlay>
 >(({ className, ...props }, ref) => {
-  React.useLayoutEffect(() => pushOverlayAppChrome(), []);
+  const innerRef = React.useRef<HTMLDivElement>(null);
+  React.useImperativeHandle(ref, () => innerRef.current as HTMLDivElement);
+  useOverlayChrome(innerRef);
 
   return (
     <AlertDialogPrimitive.Overlay
@@ -24,7 +26,7 @@ const AlertDialogOverlay = React.forwardRef<
         className,
       )}
       {...props}
-      ref={ref}
+      ref={innerRef}
     />
   );
 });
