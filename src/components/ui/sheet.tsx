@@ -18,7 +18,9 @@ const SheetOverlay = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Overlay>
 >(({ className, ...props }, ref) => {
-  React.useLayoutEffect(() => pushOverlayAppChrome(), []);
+  const innerRef = React.useRef<HTMLDivElement>(null);
+  React.useImperativeHandle(ref, () => innerRef.current as HTMLDivElement);
+  useOverlayChrome(innerRef);
 
   return (
     <SheetPrimitive.Overlay
@@ -27,7 +29,7 @@ const SheetOverlay = React.forwardRef<
         className,
       )}
       {...props}
-      ref={ref}
+      ref={innerRef}
     />
   );
 });
