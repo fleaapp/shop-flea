@@ -3,7 +3,7 @@ import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
-import { pushOverlayAppChrome } from "@/lib/appChrome";
+import { useOverlayChrome } from "@/lib/useOverlayChrome";
 
 const AlertDialog = AlertDialogPrimitive.Root;
 
