@@ -83,14 +83,10 @@ export const forceRestoreRouteAppChrome = () => {
 // status-bar / theme-color black so the dim backdrop visually extends all the
 // way to the top of the screen on iOS PWA + Android. Cleanup restores the
 // route's normal cream/auth-green chrome.
+// Overlays (Dialog/Sheet/Drawer/AlertDialog) should NOT recolor the status bar.
+// Keep the route's normal chrome painted underneath the dim scrim.
 export const pushOverlayAppChrome = () => {
-  activeOverlayCount += 1;
-  applyOverlayAppChrome();
-
-  return () => {
-    activeOverlayCount = Math.max(0, activeOverlayCount - 1);
-    restoreRouteAppChrome();
-  };
+  return () => undefined;
 };
 
 // Re-apply on every foreground / visibility change. iOS resets the native status bar
