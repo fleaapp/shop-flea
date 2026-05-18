@@ -145,17 +145,17 @@ const WaitlistSignupSection = () => {
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="p-0 w-[--radix-popover-trigger-width] !bg-[hsl(var(--flea-navy))] border-[hsl(var(--flea-mint))]/30 text-[hsl(var(--flea-mint))] z-[60] shadow-xl"
+                  className="p-0 w-[--radix-popover-trigger-width] border-[hsl(var(--flea-navy))]/25 z-[60] shadow-xl"
                   align="start"
-                  style={{ backgroundColor: "hsl(var(--flea-navy))" }}
+                  style={{ backgroundColor: "hsl(var(--card))" }}
                 >
-                  <Command className="bg-transparent text-[hsl(var(--flea-mint))]">
+                  <Command className="bg-transparent">
                     <CommandInput
                       placeholder="Search country..."
-                      className="text-[hsl(var(--flea-mint))] placeholder:text-[hsl(var(--flea-mint))]/50"
+                      className="text-[hsl(var(--flea-navy))] placeholder:text-[hsl(var(--flea-navy))]/50"
                     />
                     <CommandList className="max-h-64">
-                      <CommandEmpty>No country found.</CommandEmpty>
+                      <CommandEmpty className="py-3 text-sm text-[hsl(var(--flea-navy))]/60">No country found.</CommandEmpty>
                       <CommandGroup>
                         {countries.map((c) => (
                           <CommandItem
@@ -165,7 +165,7 @@ const WaitlistSignupSection = () => {
                               setCountry(c.code);
                               setOpenCountry(false);
                             }}
-                            className="aria-selected:bg-[hsl(var(--flea-mint))]/15 aria-selected:text-[hsl(var(--flea-mint))]"
+                            className="text-[hsl(var(--flea-navy))] data-[selected=true]:bg-[hsl(var(--flea-navy))]/10 data-[selected=true]:text-[hsl(var(--flea-navy))]"
                           >
                             <Check
                               className={cn(
