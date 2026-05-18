@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { z } from "zod";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -17,7 +17,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 
-type Country = { code: string; name: string };
+import { COUNTRIES, type Country } from "@/data/countries";
 
 const schema = z.object({
   first_name: z.string().trim().min(1, "First name is required").max(60),
@@ -30,7 +30,7 @@ const inputCls =
   "w-full h-12 rounded-xl bg-[hsl(var(--flea-navy))] border border-[hsl(var(--flea-mint))]/30 px-4 text-[hsl(var(--flea-mint))] placeholder:text-[hsl(var(--flea-mint))]/50 outline-none transition-all focus:border-[hsl(var(--flea-mint))] focus:ring-2 focus:ring-[hsl(var(--flea-mint))]/40 hover:border-[hsl(var(--flea-mint))]/60";
 
 const WaitlistSignupSection = () => {
-  const [countries, setCountries] = useState<Country[]>([]);
+  const countries = COUNTRIES;
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
   const [email, setEmail] = useState("");
@@ -40,15 +40,6 @@ const WaitlistSignupSection = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    supabase
-      .from("countries")
-      .select("code,name")
-      .order("name", { ascending: true })
-      .then(({ data }) => {
-        if (data) setCountries(data as Country[]);
-      });
-  }, []);
 
   const selectedCountryName = useMemo(
     () => countries.find((c) => c.code === country)?.name ?? "",

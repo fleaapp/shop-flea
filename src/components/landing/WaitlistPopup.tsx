@@ -19,7 +19,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 
-type Country = { code: string; name: string };
+import { COUNTRIES, type Country } from "@/data/countries";
 
 const schema = z.object({
   first_name: z.string().trim().min(1, "First name is required").max(60),
@@ -36,7 +36,7 @@ const inputCls =
 
 const WaitlistPopup = () => {
   const [open, setOpen] = useState(false);
-  const [countries, setCountries] = useState<Country[]>([]);
+  const countries = COUNTRIES;
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
   const [email, setEmail] = useState("");
@@ -56,16 +56,6 @@ const WaitlistPopup = () => {
     return () => clearTimeout(t);
   }, []);
 
-  useEffect(() => {
-    if (!open || countries.length) return;
-    supabase
-      .from("countries")
-      .select("code,name")
-      .order("name", { ascending: true })
-      .then(({ data }) => {
-        if (data) setCountries(data as Country[]);
-      });
-  }, [open, countries.length]);
 
   const selectedCountryName = useMemo(
     () => countries.find((c) => c.code === country)?.name ?? "",
@@ -127,7 +117,7 @@ const WaitlistPopup = () => {
 
         <div className="flex flex-col items-center text-center space-y-2 pt-1">
           <img src={fleaLogo} alt="Flea" className="h-12 w-auto pt-0 mt-[10px]" />
-          <h2 className="text-xl font-extrabold uppercase tracking-tight text-[hsl(var(--flea-navy))] whitespace-pre-line mt-[25px]">
+          <h2 className="text-xl font-extrabold uppercase tracking-tight text-[hsl(var(--flea-navy))] whitespace-pre-line mt-16">
             {"GET 2 MONTHS\nFREE LISTINGS"}
           </h2>
           <p className="text-sm text-muted-foreground">
