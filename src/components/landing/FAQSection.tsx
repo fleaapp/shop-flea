@@ -2,12 +2,30 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import ScallopEdge from "./ScallopEdge";
 
 const faqs = [
-  { q: "How does Flea work?", a: "Flea shows you one listing at a time, full-screen. Swipe right to save, left to pass, up for more details. No grids, no clutter - just the spotlight on each piece." },
-  { q: "How does the swiping work?", a: "Swipe right to save a listing, left to pass, and up to see more details. Every swipe trains your feed." },
-  { q: "When is Flea launching?", a: "We're cooking. Sign up for early access to be the first to know when the app drops." },
-  { q: "Where can I download Flea?", a: "You'll be able to download Flea on Apple, Google, and as a web app." },
-  { q: "What are the fees?", a: "FREE selling fees for May, June & July 2026! Buyers cover payment processing (around 1.7%). After that, fees for sellers will be 7%." },
-  { q: "How does Flea learn my style?", a: "Every swipe trains Flea to learn your taste. Your feed is built on your actual behaviour - not generic suggestions or a lucky dip." },
+  {
+    q: "How does Flea work?",
+    a: "Flea is a swipe-first secondhand marketplace built for Australia. Instead of endless grids and search bars, you get one listing at a time, full-screen - so every piece gets its moment. Swipe right to add to your wishlist, left to pass, and up to open the full details (photos, condition, measurements, seller). The more you swipe, the smarter your feed gets - it learns your taste and only shows you things you'd actually wear.",
+  },
+  {
+    q: "How does the swiping work?",
+    a: "Four simple gestures. Swipe right to save a listing to your wishlist. Swipe left to pass - you won't see it again. Swipe up to open the listing for full details, more photos and to message the seller or buy. Swipe down to skip and send it to the bottom of your stack for later. That's it - no menus, no clutter, just you and the next piece.",
+  },
+  {
+    q: "When is Flea launching?",
+    a: "We're launching in Australia in May 2026. Sign up to the waitlist above to be one of the first inside - early users get 2 months of free listings plus first dibs before the app goes public.",
+  },
+  {
+    q: "Where can I download Flea?",
+    a: "Flea will be available on the Apple App Store, Google Play, and as a web app at finditonflea.com - so you can swipe from your phone, tablet or laptop. Join the waitlist and we'll email you the moment it goes live.",
+  },
+  {
+    q: "What are the fees?",
+    a: "Selling on Flea is FREE for May, June and July 2026 - zero selling fees while we launch. After that, sellers pay a flat 7% platform fee on the item price (one of the lowest in the market). Buyers cover the payment processing fee at checkout - around 1.7% with card or Apple/Google Pay, or 3% with PayPal. No listing fees, no monthly fees, no surprises.",
+  },
+  {
+    q: "How does Flea learn my style?",
+    a: "Every swipe is a signal. Flea quietly tracks the brands, sizes, categories, colours and price points you save versus pass, and tunes your feed in real time. You're not stuck with a generic 'For You' algorithm built for everyone - your stack is built from your actual behaviour, so the more you use it, the more it feels like a feed curated just for you.",
+  },
 ];
 
 const FAQSection = () => {
