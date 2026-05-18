@@ -1405,6 +1405,10 @@ Deno.serve(async (req) => {
         return response(await listSystemIssues());
       case "runSystemFix":
         return response(await runSystemFix(payload.fixId));
+      case "listWaitlist": {
+        const rows = await safeSelect("waitlist", { order: "created_at.desc", limit: 5000 });
+        return response({ entries: rows });
+      }
       default:
         return response({ error: "Unknown admin action" }, 400);
     }
