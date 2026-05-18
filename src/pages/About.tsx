@@ -62,6 +62,7 @@ const About = () => {
       <WaitlistSignupSection />
       <div className="[&>section]:py-8 [&>section]:md:py-10"><FAQSection /></div>
       <FooterSection />
+      <WaitlistPopup />
     </div>
   );
 };
