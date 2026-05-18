@@ -37,7 +37,7 @@ const Auth = () => {
   const [passwordFocused, setPasswordFocused] = useState(false);
 
   const redirectParam = new URLSearchParams(location.search).get('redirect');
-  const redirectTo = redirectParam?.startsWith('/') && !redirectParam.startsWith('//') ? redirectParam : '/';
+  const redirectTo = redirectParam?.startsWith('/') && !redirectParam.startsWith('//') ? redirectParam : '/app';
   
   // Detect user location on mount
   useEffect(() => {
