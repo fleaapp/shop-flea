@@ -3,6 +3,7 @@ import { Mail, Loader2, Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import fleaLogo from "@/assets/flea-landing/flea-logo.png";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -55,12 +56,18 @@ const FooterSection = () => {
     <footer className="bg-navy px-6 pt-16 pb-8 md:pt-20 md:pb-10">
       <div className="container mx-auto max-w-xl text-center">
         <motion.h2
-          className="text-2xl md:text-4xl font-black text-mint uppercase tracking-wider mb-2"
+          className="text-2xl md:text-4xl font-black text-mint uppercase tracking-wider mb-3"
           initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
         >
           FIND IT ON
         </motion.h2>
-        <motion.p className="text-mint/70 text-base md:text-lg mb-8" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.1, duration: 0.5 }}>
+        <motion.img
+          src={fleaLogo}
+          alt="Flea"
+          className="h-[34px] md:h-[40px] object-contain mx-auto mb-3"
+          initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.08, duration: 0.5 }}
+        />
+        <motion.p className="text-mint/70 text-base md:text-lg mb-8" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.15, duration: 0.5 }}>
           Start Swiping
         </motion.p>
 
