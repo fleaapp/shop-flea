@@ -175,17 +175,17 @@ const WaitlistPopup = () => {
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="p-0 w-[--radix-popover-trigger-width] !bg-card border-[hsl(var(--flea-navy))]/25 text-foreground z-[80] shadow-xl"
+                  className="p-0 w-[--radix-popover-trigger-width] border-[hsl(var(--flea-navy))]/25 z-[80] shadow-xl"
                   align="start"
                   style={{ backgroundColor: "hsl(var(--card))" }}
                 >
-                  <Command className="bg-transparent text-foreground">
+                  <Command className="bg-transparent">
                     <CommandInput
                       placeholder="Search country..."
-                      className="text-foreground placeholder:text-muted-foreground"
+                      className="text-[hsl(var(--flea-navy))] placeholder:text-[hsl(var(--flea-navy))]/50"
                     />
                     <CommandList className="max-h-56">
-                      <CommandEmpty>No country found.</CommandEmpty>
+                      <CommandEmpty className="py-3 text-sm text-[hsl(var(--flea-navy))]/60">No country found.</CommandEmpty>
                       <CommandGroup>
                         {countries.map((c) => (
                           <CommandItem
@@ -195,7 +195,7 @@ const WaitlistPopup = () => {
                               setCountry(c.code);
                               setOpenCountry(false);
                             }}
-                            className="aria-selected:bg-[hsl(var(--flea-navy))]/10 aria-selected:text-[hsl(var(--flea-navy))]"
+                            className="text-[hsl(var(--flea-navy))] data-[selected=true]:bg-[hsl(var(--flea-navy))]/10 data-[selected=true]:text-[hsl(var(--flea-navy))]"
                           >
                             <Check
                               className={cn(
