@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
-import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2, X } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import {
@@ -26,10 +27,14 @@ const schema = z.object({
   country_code: z.string().min(2, "Select your country").max(2),
 });
 
-const inputCls =
-  "w-full h-12 rounded-xl bg-[hsl(var(--flea-navy))] border border-[hsl(var(--flea-mint))]/30 px-4 text-[hsl(var(--flea-mint))] placeholder:text-[hsl(var(--flea-mint))]/50 outline-none transition-all focus:border-[hsl(var(--flea-mint))] focus:ring-2 focus:ring-[hsl(var(--flea-mint))]/40 hover:border-[hsl(var(--flea-mint))]/60";
+const STORAGE_KEY = "flea_waitlist_popup_shown";
+const DELAY_MS = 10000;
 
-const WaitlistSignupSection = () => {
+const inputCls =
+  "w-full h-11 rounded-xl bg-[hsl(var(--flea-navy))] border border-[hsl(var(--flea-mint))]/30 px-3 text-[hsl(var(--flea-mint))] text-sm placeholder:text-[hsl(var(--flea-mint))]/50 outline-none transition-all focus:border-[hsl(var(--flea-mint))] focus:ring-2 focus:ring-[hsl(var(--flea-mint))]/40";
+
+const WaitlistPopup = () => {
+  const [open, setOpen] = useState(false);
   const [countries, setCountries] = useState<Country[]>([]);
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
@@ -41,6 +46,17 @@ const WaitlistSignupSection = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem(STORAGE_KEY)) return;
+    const t = setTimeout(() => {
+      setOpen(true);
+      sessionStorage.setItem(STORAGE_KEY, "1");
+    }, DELAY_MS);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (!open || countries.length) return;
     supabase
       .from("countries")
       .select("code,name")
@@ -48,7 +64,7 @@ const WaitlistSignupSection = () => {
       .then(({ data }) => {
         if (data) setCountries(data as Country[]);
       });
-  }, []);
+  }, [open, countries.length]);
 
   const selectedCountryName = useMemo(
     () => countries.find((c) => c.code === country)?.name ?? "",
@@ -94,27 +110,39 @@ const WaitlistSignupSection = () => {
   };
 
   return (
-    <section className="w-full bg-[hsl(var(--flea-navy))] text-[hsl(var(--flea-mint))] py-14 md:py-20 px-5">
-      <div className="mx-auto max-w-xl text-center">
-        <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight uppercase leading-tight">
-          <span className="block md:inline text-center">Get 2 months</span>{" "}
-          <span className="block md:inline text-center">FREE LISTINGS</span>
-        </h2>
-        <p className="mt-3 md:mt-4 text-[hsl(var(--flea-mint))]/80 text-base md:text-lg">
-          <span className="block md:inline text-center">Sign up to be notified for</span>{" "}
-          <span className="block md:inline text-center">when we launch.</span>
-        </p>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent
+        className="w-[90vw] max-w-sm rounded-3xl border-[3px] border-charcoal bg-[hsl(var(--flea-navy))] p-5 text-[hsl(var(--flea-mint))]"
+        hideCloseButton
+      >
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          aria-label="Close"
+          className="absolute right-3 top-3 rounded-full p-1 text-[hsl(var(--flea-mint))]/70 hover:text-[hsl(var(--flea-mint))]"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="text-center space-y-1 pt-2">
+          <h2 className="text-xl font-extrabold uppercase tracking-tight">
+            Get 2 months free listings
+          </h2>
+          <p className="text-sm text-[hsl(var(--flea-mint))]/80">
+            Sign up to be notified when we launch.
+          </p>
+        </div>
 
         {success ? (
-          <div className="mt-8 rounded-2xl border border-[hsl(var(--flea-mint))]/40 bg-[hsl(var(--flea-mint))]/10 p-6 animate-in fade-in zoom-in-95 duration-300">
+          <div className="mt-4 rounded-2xl border border-[hsl(var(--flea-mint))]/40 bg-[hsl(var(--flea-mint))]/10 p-5 text-center">
             <div className="text-2xl">🎉</div>
-            <h3 className="mt-2 text-xl font-bold">You're on the list!</h3>
-            <p className="mt-1 text-sm text-[hsl(var(--flea-mint))]/80">
+            <h3 className="mt-1 text-base font-bold">You're on the list!</h3>
+            <p className="mt-1 text-xs text-[hsl(var(--flea-mint))]/80">
               We'll email you the moment Flea launches.
             </p>
           </div>
         ) : (
-          <form onSubmit={onSubmit} className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+          <form onSubmit={onSubmit} className="mt-4 grid grid-cols-2 gap-2 text-left">
             <input
               className={inputCls}
               placeholder="First name"
@@ -132,7 +160,7 @@ const WaitlistSignupSection = () => {
               required
             />
             <input
-              className={cn(inputCls, "sm:col-span-2")}
+              className={cn(inputCls, "col-span-2")}
               type="email"
               placeholder="Email address"
               value={email}
@@ -141,7 +169,7 @@ const WaitlistSignupSection = () => {
               required
             />
 
-            <div className="sm:col-span-2">
+            <div className="col-span-2">
               <Popover open={openCountry} onOpenChange={setOpenCountry}>
                 <PopoverTrigger asChild>
                   <button
@@ -155,7 +183,7 @@ const WaitlistSignupSection = () => {
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="p-0 w-[--radix-popover-trigger-width] !bg-[hsl(var(--flea-navy))] border-[hsl(var(--flea-mint))]/30 text-[hsl(var(--flea-mint))] z-[60] shadow-xl"
+                  className="p-0 w-[--radix-popover-trigger-width] !bg-[hsl(var(--flea-navy))] border-[hsl(var(--flea-mint))]/30 text-[hsl(var(--flea-mint))] z-[80] shadow-xl"
                   align="start"
                   style={{ backgroundColor: "hsl(var(--flea-navy))" }}
                 >
@@ -164,7 +192,7 @@ const WaitlistSignupSection = () => {
                       placeholder="Search country..."
                       className="text-[hsl(var(--flea-mint))] placeholder:text-[hsl(var(--flea-mint))]/50"
                     />
-                    <CommandList className="max-h-64">
+                    <CommandList className="max-h-56">
                       <CommandEmpty>No country found.</CommandEmpty>
                       <CommandGroup>
                         {countries.map((c) => (
@@ -194,13 +222,13 @@ const WaitlistSignupSection = () => {
             </div>
 
             {error && (
-              <p className="sm:col-span-2 text-sm text-red-300">{error}</p>
+              <p className="col-span-2 text-xs text-red-300">{error}</p>
             )}
 
             <button
               type="submit"
               disabled={submitting}
-              className="sm:col-span-2 mt-1 h-12 rounded-xl bg-[hsl(var(--flea-mint))] text-[hsl(var(--flea-navy))] font-bold uppercase tracking-wide transition-all hover:brightness-95 active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="col-span-2 mt-1 h-11 rounded-full bg-[hsl(var(--flea-mint))] text-[hsl(var(--flea-navy))] font-bold uppercase tracking-wide transition-all hover:brightness-95 active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>
@@ -212,9 +240,9 @@ const WaitlistSignupSection = () => {
             </button>
           </form>
         )}
-      </div>
-    </section>
+      </DialogContent>
+    </Dialog>
   );
 };
 
-export default WaitlistSignupSection;
+export default WaitlistPopup;

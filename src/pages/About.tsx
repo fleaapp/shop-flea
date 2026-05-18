@@ -8,6 +8,7 @@ import GestureCardsSection from "@/components/landing/GestureCardsSection";
 import FeaturesGrid from "@/components/landing/FeaturesGrid";
 import FAQSection from "@/components/landing/FAQSection";
 import WaitlistSignupSection from "@/components/landing/WaitlistSignupSection";
+import WaitlistPopup from "@/components/landing/WaitlistPopup";
 import FooterSection from "@/components/landing/FooterSection";
 
 const About = () => {
@@ -61,6 +62,7 @@ const About = () => {
       <WaitlistSignupSection />
       <div className="[&>section]:py-8 [&>section]:md:py-10"><FAQSection /></div>
       <FooterSection />
+      <WaitlistPopup />
     </div>
   );
 };
