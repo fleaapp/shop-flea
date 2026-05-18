@@ -190,13 +190,14 @@ const AppContent = () => {
       {!isStandaloneSite && <OnboardingCarousel open={showCarousel} onComplete={closeCarousel} />}
       <Suspense fallback={<PageLoader />}>
         <Routes>
+          <Route path="/" element={<About />} />
           <Route path="/about" element={<About />} />
           <Route path="/install" element={<Install />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/auth" element={<Navigate to="/" replace />} />
+          <Route path="/forgot-password" element={<Navigate to="/" replace />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+          <Route path="/app" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/listing/:id" element={<ProtectedRoute><ListingDetails /></ProtectedRoute>} />
           <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
           <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
