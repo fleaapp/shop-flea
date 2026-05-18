@@ -40,13 +40,14 @@ function getExternalServiceClient(authHeader?: string | null) {
 async function getUserId(req: Request): Promise<string | null> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return null;
-
   try {
     const token = authHeader.replace("Bearer ", "");
-    const payload = JSON.parse(atob(token.split(".")[1] ?? "")) as { sub?: string; exp?: number };
-    if (!payload.sub) return null;
-    if (payload.exp && payload.exp * 1000 < Date.now()) return null;
-    return payload.sub;
+    const verifier = createClient(EXTERNAL_PUBLIC_URL, EXTERNAL_PUBLIC_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data, error } = await verifier.auth.getUser(token);
+    if (error || !data?.user?.id) return null;
+    return data.user.id;
   } catch {
     return null;
   }
