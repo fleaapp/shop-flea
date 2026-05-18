@@ -67,7 +67,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
       </>
     ),
     animation: (
-      <div className="relative mt-2 mb-2 w-full flex justify-center">
+      <div className="relative mt-2 mb-2 w-full md:w-screen md:max-w-none flex justify-center">
         <img src={phoneMockup} alt="Flea app showing a listing with full-screen attention" className="w-56 md:w-60 drop-shadow-2xl" />
         <FloatingCardMarquee />
       </div>
@@ -106,11 +106,11 @@ const Block = ({ heading, detail, animation, isAccent, index }: { heading: React
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       className="absolute inset-0 flex flex-col pointer-events-none"
     >
-      <div className="px-16 min-[390px]:px-8 md:px-12 lg:px-16 flex-shrink-0 pt-[calc(env(safe-area-inset-top,0px)+7rem)] min-[390px]:pt-[calc(env(safe-area-inset-top,0px)+10rem)] md:pt-[calc(env(safe-area-inset-top,0px)+7rem)]">
-        <h3 className={`text-2xl min-[390px]:text-[28px] md:text-[1.75rem] lg:text-[2.5rem] font-bold leading-tight md:leading-tight text-center max-w-sm md:max-w-none mx-auto ${textColor}`}>{heading}</h3>
+      <div className="px-16 min-[390px]:px-8 md:px-12 lg:px-16 flex-shrink-0 pt-[calc(env(safe-area-inset-top,0px)+7rem)] min-[390px]:pt-[calc(env(safe-area-inset-top,0px)+10rem)] md:pt-[calc(env(safe-area-inset-top,0px)+9rem)] lg:pt-[calc(env(safe-area-inset-top,0px)+10rem)]">
+        <h3 className={`text-2xl min-[390px]:text-[28px] md:text-[1.5rem] lg:text-[2.125rem] font-bold leading-tight md:leading-tight text-center max-w-sm md:max-w-none mx-auto ${textColor}`}>{heading}</h3>
       </div>
       <div className="flex-1 min-h-0 flex items-center justify-center pointer-events-auto">
-        <div className="w-full h-full flex items-center justify-center md:scale-[0.8] lg:scale-[0.85] origin-center">{animation}</div>
+        <div className={`w-full h-full flex items-center justify-center origin-center ${index === 3 ? "md:scale-[0.78] lg:scale-[0.82]" : "md:scale-[0.72] lg:scale-[0.78]"}`}>{animation}</div>
       </div>
       <div className={`px-16 min-[390px]:px-8 md:px-12 lg:px-16 flex-shrink-0 pb-[calc(env(safe-area-inset-bottom,0px)+4rem)] ${extraBottom} md:pb-[calc(env(safe-area-inset-bottom,0px)+4rem)]`}>
         <p className={`text-base md:text-xl lg:text-2xl font-normal leading-relaxed text-center max-w-sm md:max-w-2xl lg:max-w-3xl mx-auto ${textColor}`}>{detail}</p>
