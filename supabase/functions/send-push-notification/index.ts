@@ -51,15 +51,21 @@ serve(async (req) => {
     // on this project) or the external Supabase service role.
     const cloudServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     let authorized = false;
+    let isServiceRole = false;
+    let callerUserId: string | null = null;
     if (bearer && ((serviceRoleKey && bearer === serviceRoleKey) || (cloudServiceRoleKey && bearer === cloudServiceRoleKey))) {
       authorized = true;
+      isServiceRole = true;
     } else if (bearer) {
       try {
         const verifier = createClient(supabaseUrl, anonKey, {
           auth: { persistSession: false, autoRefreshToken: false },
         });
         const { data, error } = await verifier.auth.getUser(bearer);
-        if (!error && data?.user?.id) authorized = true;
+        if (!error && data?.user?.id) {
+          authorized = true;
+          callerUserId = data.user.id;
+        }
       } catch (_) {
         authorized = false;
       }
@@ -73,6 +79,14 @@ serve(async (req) => {
     }
 
     const { user_id, notification } = await req.json();
+
+    // SECURITY: non-service-role callers may only push to themselves.
+    if (!isServiceRole && user_id !== callerUserId) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (!user_id || !notification) {
       return new Response(JSON.stringify({ error: "Missing user_id or notification" }), {
