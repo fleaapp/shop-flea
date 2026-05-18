@@ -224,13 +224,13 @@ const WaitlistPopup = () => {
             </div>
 
             {error && (
-              <p className="col-span-2 text-xs text-red-300">{error}</p>
+              <p className="col-span-2 text-xs text-destructive">{error}</p>
             )}
 
             <button
               type="submit"
               disabled={submitting}
-              className="col-span-2 mt-1 h-11 rounded-full bg-[hsl(var(--flea-mint))] text-[hsl(var(--flea-navy))] font-bold uppercase tracking-wide transition-all hover:brightness-95 active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="col-span-2 mt-1 h-11 rounded-full bg-[hsl(var(--flea-navy))] text-[hsl(var(--flea-mint))] font-bold uppercase tracking-wide transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>
