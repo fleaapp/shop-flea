@@ -50,6 +50,7 @@ const About = () => {
 
   return (
     <div className="flea-landing min-h-screen" style={{ overflowX: "clip" }}>
+      <LaunchMarquee />
       <ScallopHeader />
       <HeroSection />
       <div className="relative z-10"><StickyFeaturesScroll /></div>
