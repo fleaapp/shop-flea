@@ -135,6 +135,12 @@ export default function AdminDashboard() {
             <WaitlistList entries={waitlistEntries} loading={wLoading} error={wError} onRefresh={refreshWaitlist} />
           </div>
         )}
+
+        {tab === 'contact' && (
+          <div className="flex-1">
+            <ContactSubmissionsList submissions={contactSubs} loading={cLoading} error={cError} onRefresh={refreshContact} />
+          </div>
+        )}
       </div>
     </div>
   );
