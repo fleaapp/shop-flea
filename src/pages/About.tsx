@@ -7,6 +7,7 @@ import StickyFeaturesScroll from "@/components/landing/StickyFeaturesScroll";
 import GestureCardsSection from "@/components/landing/GestureCardsSection";
 import FeaturesGrid from "@/components/landing/FeaturesGrid";
 import FAQSection from "@/components/landing/FAQSection";
+import WaitlistSignupSection from "@/components/landing/WaitlistSignupSection";
 import FooterSection from "@/components/landing/FooterSection";
 
 const About = () => {
