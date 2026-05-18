@@ -3,7 +3,7 @@ import { z } from "zod";
 import { Check, ChevronsUpDown, Loader2, X } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import fleaLogo from "@/assets/flea-landing/flea-logo-v2.png";
+import fleaLogo from "@/assets/flea-landing/flea-logo-v2.webp";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -117,12 +117,12 @@ const WaitlistPopup = () => {
           <X className="h-4 w-4" />
         </button>
 
-        <div className="flex flex-col items-center text-center space-y-2 pt-4 pb-2">
-          <img src={fleaLogo} alt="Flea" className="h-14 w-auto" />
-          <h2 className="text-lg font-extrabold uppercase tracking-tight text-[hsl(var(--flea-navy))] whitespace-nowrap mt-10">
+        <div className="flex flex-col items-center text-center pt-4 pb-2">
+          <img src={fleaLogo} alt="Flea" className="h-14 w-auto object-contain" width={155} height={56} decoding="async" />
+          <h2 className="mt-8 text-lg font-extrabold uppercase tracking-tight text-[hsl(var(--flea-navy))] whitespace-nowrap">
             GET 2 MONTHS FREE LISTINGS
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="mt-2 text-sm text-muted-foreground">
             Sign up to be notified when we launch.
           </p>
         </div>

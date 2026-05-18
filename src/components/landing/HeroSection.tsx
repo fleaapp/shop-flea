@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import heroCombinedGif from "@/assets/flea-landing/hero-combined.gif";
+import heroCombinedVideo from "@/assets/flea-landing/hero-combined.mp4";
 
 const HeroSection = () => {
   return (
@@ -54,9 +54,14 @@ const HeroSection = () => {
           </div>
           <div className="-mt-8 md:-mt-6 flex justify-center -mx-6 relative">
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[90%] h-[68%] bg-navy rounded-3xl md:w-[40rem] lg:w-[44rem]" />
-            <img
-              src={heroCombinedGif}
-              alt="Flea app showing swipe interface"
+            <video
+              src={heroCombinedVideo}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              aria-label="Flea app showing swipe interface"
               className="relative z-10 block w-[130%] max-w-none md:w-full md:max-w-[50rem] lg:max-w-[58rem] mb-0"
             />
           </div>

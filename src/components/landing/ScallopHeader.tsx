@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
-import fleaLogo from "@/assets/flea-landing/flea-logo.png";
+import fleaLogo from "@/assets/flea-landing/flea-logo.webp";
 
 const ScallopHeader = () => {
   const shouldReduceMotion = useReducedMotion();
@@ -28,6 +28,9 @@ const ScallopHeader = () => {
               src={fleaLogo}
               alt="Flea"
               className="h-[28px] md:h-[30px] object-contain z-10 -mt-1.5"
+              width={75}
+              height={30}
+              decoding="async"
               initial={shouldReduceMotion ? false : { y: -12, opacity: 0, scale: 0.96 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
               transition={

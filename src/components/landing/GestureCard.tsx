@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { motion, useMotionValue, animate, useReducedMotion } from "framer-motion";
-import listingSneakers from "@/assets/flea-landing/listing-sneakers.jpg";
-import listingBag from "@/assets/flea-landing/listing-bag.jpg";
+import listingSneakers from "@/assets/flea-landing/listing-sneakers.webp";
+import listingBag from "@/assets/flea-landing/listing-bag.webp";
 
 type GestureDirection = "right" | "left" | "up" | "down" | "tap";
 

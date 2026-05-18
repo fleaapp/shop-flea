@@ -2,10 +2,10 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { motion, useMotionValue, animate, type MotionValue } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
-import listingBag from "@/assets/flea-landing/listing-bag.jpg";
-import listingJacket from "@/assets/flea-landing/listing-jacket.jpg";
-import listingSneakers from "@/assets/flea-landing/listing-sneakers.jpg";
-import listingSweater from "@/assets/flea-landing/listing-sweater.jpg";
+import listingBag from "@/assets/flea-landing/listing-bag.webp";
+import listingJacket from "@/assets/flea-landing/listing-jacket.webp";
+import listingSneakers from "@/assets/flea-landing/listing-sneakers.webp";
+import listingSweater from "@/assets/flea-landing/listing-sweater.webp";
 
 const listings = [
   { image: listingBag, title: "Vintage Leather Bag", size: "One Size", brand: "Coach", price: 45, shipping: 8 },

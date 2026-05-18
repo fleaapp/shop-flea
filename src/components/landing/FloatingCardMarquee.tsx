@@ -1,9 +1,9 @@
 import { useRef, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import listingBag from "@/assets/flea-landing/listing-bag.jpg";
-import listingJacket from "@/assets/flea-landing/listing-jacket.jpg";
-import listingSneakers from "@/assets/flea-landing/listing-sneakers.jpg";
-import listingSweater from "@/assets/flea-landing/listing-sweater.jpg";
+import listingBag from "@/assets/flea-landing/listing-bag.webp";
+import listingJacket from "@/assets/flea-landing/listing-jacket.webp";
+import listingSneakers from "@/assets/flea-landing/listing-sneakers.webp";
+import listingSweater from "@/assets/flea-landing/listing-sweater.webp";
 
 const listings = [
   { image: listingBag, title: "Bag", size: "M", brand: "Coach", price: 45, shipping: 8 },
