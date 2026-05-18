@@ -153,14 +153,14 @@ const MiniCard = ({ direction }: { direction: GestureDirection }) => {
 
 const GestureCard = ({ header, subhead, direction }: GestureCardProps) => {
   return (
-    <div className="relative flex-shrink-0 w-full max-w-[340px] md:max-w-none rounded-3xl pt-20 pb-14 px-6 md:py-14 md:px-6 flex flex-col items-center justify-center gap-6 md:gap-8 md:hover:scale-[1.03] md:transition-transform">
+    <div className="relative flex-shrink-0 w-full max-w-[340px] rounded-3xl pt-20 pb-14 px-6 flex flex-col items-center justify-center gap-6 md:hover:scale-[1.03] md:transition-transform">
       <div className="absolute inset-0 rounded-3xl bg-cream opacity-10" />
-      <div className="relative z-20 w-full max-w-[200px] md:max-w-[170px]">
+      <div className="relative z-20 w-full max-w-[200px]">
         <MiniCard direction={direction} />
       </div>
-      <div className="relative z-10 text-center mt-4 translate-y-4 md:mt-2 md:translate-y-0">
-        <p className="text-flea-cream font-black text-lg md:text-base">{header}</p>
-        <p className="text-flea-cream text-base md:text-sm mt-1">{subhead}</p>
+      <div className="relative z-10 text-center mt-4 translate-y-4">
+        <p className="text-flea-cream font-black text-lg">{header}</p>
+        <p className="text-flea-cream text-base mt-1">{subhead}</p>
       </div>
     </div>
   );
