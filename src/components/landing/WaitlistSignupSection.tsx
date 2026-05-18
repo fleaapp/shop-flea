@@ -40,15 +40,6 @@ const WaitlistSignupSection = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    supabase
-      .from("countries")
-      .select("code,name")
-      .order("name", { ascending: true })
-      .then(({ data }) => {
-        if (data) setCountries(data as Country[]);
-      });
-  }, []);
 
   const selectedCountryName = useMemo(
     () => countries.find((c) => c.code === country)?.name ?? "",
