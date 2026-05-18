@@ -52,10 +52,51 @@ serve(async (req) => {
       });
     }
 
-    const { items, shipping, sellerPayPalMerchantId } = await req.json();
+    const { items, shipping } = await req.json();
 
     if (!items || !items.length) throw new Error("No items provided");
-    if (!sellerPayPalMerchantId) throw new Error("Seller PayPal merchant ID is required");
+
+    // SECURITY: resolve seller payment account server-side from listing IDs.
+    // Never trust client-supplied seller merchant IDs.
+    const itemIds = (items as Array<{ id: string }>).map((i) => i.id).filter(Boolean);
+    if (!itemIds.length) throw new Error("Invalid items");
+
+    const serviceClient = createClient(
+      Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "",
+      Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false, autoRefreshToken: false } }
+    );
+
+    const { data: listings, error: listingsErr } = await serviceClient
+      .from("listings")
+      .select("id, user_id, status")
+      .in("id", itemIds);
+
+    if (listingsErr || !listings || listings.length !== itemIds.length) {
+      throw new Error("One or more listings not found");
+    }
+    if (listings.some((l) => l.status !== "active")) {
+      throw new Error("One or more listings are no longer available");
+    }
+    const sellerIds = Array.from(new Set(listings.map((l) => l.user_id)));
+    if (sellerIds.length !== 1) {
+      throw new Error("Cart must contain items from a single seller");
+    }
+    const sellerId = sellerIds[0];
+    if (sellerId === user.id) {
+      throw new Error("You cannot purchase your own listing");
+    }
+
+    const { data: sellerProfile, error: profileErr } = await serviceClient
+      .from("profiles")
+      .select("paypal_merchant_id, paypal_onboarding_complete")
+      .eq("user_id", sellerId)
+      .maybeSingle();
+
+    if (profileErr || !sellerProfile?.paypal_merchant_id || !sellerProfile.paypal_onboarding_complete) {
+      throw new Error("Seller has not completed PayPal onboarding");
+    }
+    const sellerPayPalMerchantId = sellerProfile.paypal_merchant_id as string;
 
     const accessToken = await getPayPalAccessToken();
 
