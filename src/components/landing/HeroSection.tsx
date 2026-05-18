@@ -52,7 +52,7 @@ const HeroSection = () => {
             </button>
             <p className="text-navy/60 text-[10px] font-semibold uppercase tracking-widest mt-1">COMING MAY</p>
           </div>
-          <div className="-mt-2 flex justify-center -mx-6 relative">
+          <div className="-mt-8 md:-mt-6 flex justify-center -mx-6 relative">
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[90%] h-[68%] bg-navy rounded-3xl md:w-[40rem] lg:w-[44rem]" />
             <img
               src={heroCombinedGif}
