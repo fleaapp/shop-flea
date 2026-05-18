@@ -58,6 +58,8 @@ const About = () => {
       <div className="relative z-10"><FeaturesGrid /></div>
       <div className="relative z-10"><GestureCardsSection /></div>
       <LaunchMarquee size="md" />
+      <WaitlistSignupSection />
+      <LaunchMarquee size="md" />
       <div className="[&>section]:py-8 [&>section]:md:py-10"><FAQSection /></div>
       <FooterSection />
     </div>
