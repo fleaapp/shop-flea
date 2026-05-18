@@ -30,7 +30,7 @@ const inputCls =
   "w-full h-12 rounded-xl bg-[hsl(var(--flea-navy))] border border-[hsl(var(--flea-mint))]/30 px-4 text-[hsl(var(--flea-mint))] placeholder:text-[hsl(var(--flea-mint))]/50 outline-none transition-all focus:border-[hsl(var(--flea-mint))] focus:ring-2 focus:ring-[hsl(var(--flea-mint))]/40 hover:border-[hsl(var(--flea-mint))]/60";
 
 const WaitlistSignupSection = () => {
-  const [countries, setCountries] = useState<Country[]>([]);
+  const countries = COUNTRIES;
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
   const [email, setEmail] = useState("");
