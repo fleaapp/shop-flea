@@ -242,7 +242,7 @@ const FooterSection = () => {
             <span>·</span>
             <Link to="/privacy" className="hover:text-mint transition-colors">Privacy Policy</Link>
           </div>
-          <p className="text-mint/30 text-xs">© {new Date().getFullYear()} Flea. All rights reserved.</p>
+          <p className="text-mint/30 text-xs">© {new Date().getFullYear()} Flea™. All rights reserved. Trademark pending.</p>
         </div>
       </div>
     </footer>
