@@ -7,6 +7,7 @@ import StickyFeaturesScroll from "@/components/landing/StickyFeaturesScroll";
 import GestureCardsSection from "@/components/landing/GestureCardsSection";
 import FeaturesGrid from "@/components/landing/FeaturesGrid";
 import FAQSection from "@/components/landing/FAQSection";
+import WaitlistSignupSection from "@/components/landing/WaitlistSignupSection";
 import FooterSection from "@/components/landing/FooterSection";
 
 const About = () => {
@@ -57,6 +58,7 @@ const About = () => {
       <div className="relative z-10"><FeaturesGrid /></div>
       <div className="relative z-10"><GestureCardsSection /></div>
       <LaunchMarquee size="md" />
+      <WaitlistSignupSection />
       <div className="[&>section]:py-8 [&>section]:md:py-10"><FAQSection /></div>
       <FooterSection />
     </div>

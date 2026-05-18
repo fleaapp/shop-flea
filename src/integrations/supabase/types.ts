@@ -1028,7 +1028,9 @@ export type Database = {
           country_code: string
           created_at: string
           email: string
+          first_name: string | null
           id: string
+          last_name: string | null
           notified_at: string | null
           region_id: string | null
         }
@@ -1036,7 +1038,9 @@ export type Database = {
           country_code: string
           created_at?: string
           email: string
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           notified_at?: string | null
           region_id?: string | null
         }
@@ -1044,7 +1048,9 @@ export type Database = {
           country_code?: string
           created_at?: string
           email?: string
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           notified_at?: string | null
           region_id?: string | null
         }
