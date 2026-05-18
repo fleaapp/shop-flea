@@ -155,8 +155,9 @@ const WaitlistSignupSection = () => {
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="p-0 w-[--radix-popover-trigger-width] bg-[hsl(var(--flea-navy))] border-[hsl(var(--flea-mint))]/30 text-[hsl(var(--flea-mint))]"
+                  className="p-0 w-[--radix-popover-trigger-width] !bg-[hsl(var(--flea-navy))] border-[hsl(var(--flea-mint))]/30 text-[hsl(var(--flea-mint))] z-[60] shadow-xl"
                   align="start"
+                  style={{ backgroundColor: "hsl(var(--flea-navy))" }}
                 >
                   <Command className="bg-transparent text-[hsl(var(--flea-mint))]">
                     <CommandInput
