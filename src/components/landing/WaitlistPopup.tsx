@@ -3,7 +3,7 @@ import { z } from "zod";
 import { Check, ChevronsUpDown, Loader2, X } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/lib/supabase";
-import fleaLogo from "@/assets/flea-landing/flea-logo.png";
+import fleaLogo from "@/assets/flea-landing/flea-logo-v2.png";
 import { cn } from "@/lib/utils";
 import {
   Popover,
