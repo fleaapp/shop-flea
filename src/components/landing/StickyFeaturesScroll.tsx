@@ -5,7 +5,7 @@ import FloatingCardMarquee from "./FloatingCardMarquee";
 import FilterBubblesCloud from "./FilterBubblesCloud";
 import GridToStackAnimation from "./GridToStackAnimation";
 import phoneMockup from "@/assets/flea-landing/phone-mockup.png";
-import shopSellSwipeGif from "@/assets/flea-landing/shop-sell-swipe.gif";
+import shopSellSwipeGif from "@/assets/flea-landing/australian-female-founded.gif";
 
 const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[] = [
   {
