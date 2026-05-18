@@ -56,16 +56,6 @@ const WaitlistPopup = () => {
     return () => clearTimeout(t);
   }, []);
 
-  useEffect(() => {
-    if (!open || countries.length) return;
-    supabase
-      .from("countries")
-      .select("code,name")
-      .order("name", { ascending: true })
-      .then(({ data }) => {
-        if (data) setCountries(data as Country[]);
-      });
-  }, [open, countries.length]);
 
   const selectedCountryName = useMemo(
     () => countries.find((c) => c.code === country)?.name ?? "",
