@@ -178,21 +178,21 @@ const WaitlistPopup = () => {
                     type="button"
                     className={cn(inputCls, "flex items-center justify-between text-left")}
                   >
-                    <span className={cn(!selectedCountryName && "text-[hsl(var(--flea-mint))]/50")}>
+                    <span className={cn(!selectedCountryName && "text-muted-foreground")}>
                       {selectedCountryName || "Select country"}
                     </span>
                     <ChevronsUpDown className="h-4 w-4 opacity-70" />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="p-0 w-[--radix-popover-trigger-width] !bg-[hsl(var(--flea-navy))] border-[hsl(var(--flea-mint))]/30 text-[hsl(var(--flea-mint))] z-[80] shadow-xl"
+                  className="p-0 w-[--radix-popover-trigger-width] !bg-card border-[hsl(var(--flea-navy))]/25 text-foreground z-[80] shadow-xl"
                   align="start"
-                  style={{ backgroundColor: "hsl(var(--flea-navy))" }}
+                  style={{ backgroundColor: "hsl(var(--card))" }}
                 >
-                  <Command className="bg-transparent text-[hsl(var(--flea-mint))]">
+                  <Command className="bg-transparent text-foreground">
                     <CommandInput
                       placeholder="Search country..."
-                      className="text-[hsl(var(--flea-mint))] placeholder:text-[hsl(var(--flea-mint))]/50"
+                      className="text-foreground placeholder:text-muted-foreground"
                     />
                     <CommandList className="max-h-56">
                       <CommandEmpty>No country found.</CommandEmpty>
@@ -205,7 +205,7 @@ const WaitlistPopup = () => {
                               setCountry(c.code);
                               setOpenCountry(false);
                             }}
-                            className="aria-selected:bg-[hsl(var(--flea-mint))]/15 aria-selected:text-[hsl(var(--flea-mint))]"
+                            className="aria-selected:bg-[hsl(var(--flea-navy))]/10 aria-selected:text-[hsl(var(--flea-navy))]"
                           >
                             <Check
                               className={cn(
