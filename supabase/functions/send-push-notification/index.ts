@@ -47,8 +47,11 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("EXTERNAL_SUPABASE_URL")!;
     const anonKey = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "";
 
+    // Accept either the Lovable Cloud service role (used by webhooks/triggers
+    // on this project) or the external Supabase service role.
+    const cloudServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     let authorized = false;
-    if (bearer && serviceRoleKey && bearer === serviceRoleKey) {
+    if (bearer && ((serviceRoleKey && bearer === serviceRoleKey) || (cloudServiceRoleKey && bearer === cloudServiceRoleKey))) {
       authorized = true;
     } else if (bearer) {
       try {
