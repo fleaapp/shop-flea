@@ -13,12 +13,14 @@ import { ReportList } from '@/components/admin/dashboard/ReportList';
 import { ReportDetail } from '@/components/admin/dashboard/ReportDetail';
 import { BannedUsersList } from '@/components/admin/dashboard/BannedUsersList';
 import { SuggestionsList } from '@/components/admin/dashboard/SuggestionsList';
+import { WaitlistList } from '@/components/admin/dashboard/WaitlistList';
+import { useAdminWaitlist } from '@/hooks/admin/useAdminWaitlist';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageCircle, Flag, ShieldBan, Mailbox } from 'lucide-react';
+import { MessageCircle, Flag, ShieldBan, Mailbox, Mail } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
-type Tab = 'support' | 'reports' | 'bans' | 'suggestions';
+type Tab = 'support' | 'reports' | 'bans' | 'suggestions' | 'waitlist';
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState<Tab>('support');
