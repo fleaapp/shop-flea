@@ -24,8 +24,10 @@ const ScallopHeader = () => {
       >
         <div className="relative bg-primary">
           <div className="flex items-center justify-center h-[52px] md:h-[54px] pt-3">
-            <motion.div
-              className="relative inline-flex z-10 -mt-1.5"
+            <motion.img
+              src={fleaLogo}
+              alt="Flea"
+              className="h-[28px] md:h-[30px] object-contain z-10 -mt-1.5"
               initial={shouldReduceMotion ? false : { y: -12, opacity: 0, scale: 0.96 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
               transition={
@@ -33,14 +35,7 @@ const ScallopHeader = () => {
                   ? { duration: 0 }
                   : { duration: 0.7, delay: 0.14, ease: [0.16, 1, 0.3, 1] }
               }
-            >
-              <img
-                src={fleaLogo}
-                alt="Flea"
-                className="h-[28px] md:h-[30px] object-contain"
-              />
-              <span className="text-navy text-[9px] md:text-[10px] font-bold leading-none ml-0.5 mt-0.5" aria-hidden="true">™</span>
-            </motion.div>
+            />
           </div>
         </div>
 

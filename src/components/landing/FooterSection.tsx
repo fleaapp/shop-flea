@@ -61,17 +61,12 @@ const FooterSection = () => {
         >
           FIND IT ON
         </motion.h2>
-        <motion.div
-          className="relative inline-flex mx-auto mb-3"
+        <motion.img
+          src={fleaLogo}
+          alt="Flea"
+          className="h-16 md:h-20 object-contain mx-auto mb-3"
           initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.08, duration: 0.5 }}
-        >
-          <img
-            src={fleaLogo}
-            alt="Flea"
-            className="h-16 md:h-20 object-contain"
-          />
-          <span className="text-mint text-sm md:text-base font-bold leading-none ml-1 mt-1" aria-hidden="true">™</span>
-        </motion.div>
+        />
         <motion.p className="text-mint/70 text-base md:text-lg mb-8" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.15, duration: 0.5 }}>
           Start Swiping
         </motion.p>
@@ -242,7 +237,7 @@ const FooterSection = () => {
             <span>·</span>
             <Link to="/privacy" className="hover:text-mint transition-colors">Privacy Policy</Link>
           </div>
-          <p className="text-mint/30 text-xs">© {new Date().getFullYear()} Flea™. All rights reserved. Trademark pending.</p>
+          <p className="text-mint/30 text-xs">© {new Date().getFullYear()} Flea App™. All rights reserved. Trademark pending.</p>
         </div>
       </div>
     </footer>
