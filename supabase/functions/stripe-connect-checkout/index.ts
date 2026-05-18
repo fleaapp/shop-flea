@@ -28,10 +28,50 @@ serve(async (req) => {
       });
     }
 
-    const { items, shipping, sellerStripeAccountId } = await req.json();
+    const { items, shipping } = await req.json();
 
     if (!items || !items.length) throw new Error("No items provided");
-    if (!sellerStripeAccountId) throw new Error("Seller Stripe account is required");
+
+    // SECURITY: Never trust a client-supplied seller Stripe account id.
+    // Resolve it server-side from the listing IDs using the service role,
+    // and verify all items belong to the same active seller.
+    const serviceClient = createClient(
+      Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '',
+      Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false, autoRefreshToken: false } }
+    );
+    const itemIds = items.map((i: { id: string }) => i.id).filter(Boolean);
+    if (itemIds.length !== items.length) throw new Error("Invalid item ids");
+
+    const { data: listingRows, error: listingErr } = await serviceClient
+      .from('listings')
+      .select('id, user_id, status')
+      .in('id', itemIds);
+    if (listingErr || !listingRows || listingRows.length !== itemIds.length) {
+      throw new Error("Could not verify listings");
+    }
+    if (listingRows.some((l: any) => l.status !== 'active')) {
+      throw new Error("One or more items are no longer available");
+    }
+    const sellerIds = Array.from(new Set(listingRows.map((l: any) => l.user_id)));
+    if (sellerIds.length !== 1) {
+      throw new Error("All items in a checkout must belong to the same seller");
+    }
+    const sellerId = sellerIds[0];
+    if (sellerId === user.id) throw new Error("Cannot purchase your own items");
+
+    const { data: sellerProfile, error: profileErr } = await serviceClient
+      .from('profiles')
+      .select('stripe_account_id, stripe_onboarding_complete')
+      .eq('user_id', sellerId)
+      .maybeSingle();
+    if (profileErr || !sellerProfile?.stripe_account_id || !sellerProfile.stripe_onboarding_complete) {
+      return new Response(
+        JSON.stringify({ error: "Seller is not set up to receive payments.", code: "seller_not_connected" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 },
+      );
+    }
+    const sellerStripeAccountId = sellerProfile.stripe_account_id;
 
     const userEmail = user.email;
 
