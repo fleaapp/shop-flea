@@ -32,7 +32,7 @@ const STORAGE_KEY = "flea_waitlist_popup_shown";
 const DELAY_MS = 10000;
 
 const inputCls =
-  "w-full h-11 rounded-xl bg-[hsl(var(--flea-navy))] border border-[hsl(var(--flea-mint))]/30 px-3 text-[hsl(var(--flea-mint))] text-sm placeholder:text-[hsl(var(--flea-mint))]/50 outline-none transition-all focus:border-[hsl(var(--flea-mint))] focus:ring-2 focus:ring-[hsl(var(--flea-mint))]/40";
+  "w-full h-11 rounded-xl bg-background border border-[hsl(var(--flea-navy))]/25 px-3 text-foreground text-sm placeholder:text-muted-foreground outline-none transition-all focus:border-[hsl(var(--flea-navy))] focus:ring-2 focus:ring-[hsl(var(--flea-navy))]/30";
 
 const WaitlistPopup = () => {
   const [open, setOpen] = useState(false);
