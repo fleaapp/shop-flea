@@ -35,11 +35,7 @@ const GestureCardsSection = () => {
           <p className="text-mint text-sm md:text-base">Save. Maybe. Shop. See More.</p>
         </motion.div>
 
-        <motion.div className="hidden md:grid md:grid-cols-5 gap-10" {...reveal(0.08)}>
-          {cards.map((card) => (<GestureCard key={card.direction} {...card} />))}
-        </motion.div>
-
-        <motion.div className="flex flex-col items-center md:hidden" {...reveal(0.08)}>
+        <motion.div className="flex flex-col items-center" {...reveal(0.08)}>
           <div className="w-full flex justify-center">
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
