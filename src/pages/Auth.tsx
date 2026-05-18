@@ -152,7 +152,8 @@ const Auth = () => {
       }
       setIsLoading(false);
     } else {
-      navigate(redirectTo, { replace: true });
+      // Let the useEffect above handle navigation once auth state syncs,
+      // to avoid ProtectedRoute redirecting to /about before user is set.
     }
   };
 
