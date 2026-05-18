@@ -61,7 +61,7 @@ const HeroSection = () => {
               loop
               playsInline
               preload="auto"
-              alt="Flea app showing swipe interface"
+              aria-label="Flea app showing swipe interface"
               className="relative z-10 block w-[130%] max-w-none md:w-full md:max-w-[50rem] lg:max-w-[58rem] mb-0"
             />
           </div>
