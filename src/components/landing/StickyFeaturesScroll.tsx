@@ -18,7 +18,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
     detail: (
       <>
         <span className="md:hidden">Ditch the crowded, noisy feeds.<br />One listing, full screen, no distractions.</span>
-        <span className="hidden md:inline whitespace-nowrap">Ditch the crowded, headache causing grids.<br />One listing, full screen, zero distractions.</span>
+        <span className="hidden md:inline">Ditch the crowded, headache causing grids.<br />One listing, full screen, zero distractions.</span>
       </>
     ),
     animation: <GridToStackAnimation />,
@@ -33,7 +33,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
     detail: (
       <>
         <span className="md:hidden">Stop sifting through the same, stale listings.<br />Our swipe logic clears the deck,<br />so every swipe is a first look.</span>
-        <span className="hidden md:inline whitespace-nowrap">Stop sifting through the same, stale listings.<br />Our swipe logic clears the deck, so every swipe is a first look.</span>
+        <span className="hidden md:inline">Stop sifting through the same, stale listings.<br />Our swipe logic clears the deck, so every swipe is a first look.</span>
       </>
     ),
     animation: <SwipeCardStack />,
@@ -48,7 +48,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
     detail: (
       <>
         <span className="md:hidden">Forget the lucky dip “suggested” feed.<br />Every swipe trains Flea to learn your style.</span>
-        <span className="hidden md:inline whitespace-nowrap">Forget the generic, lucky dip "suggested" feed.<br />Every swipe trains Flea to learn your style.</span>
+        <span className="hidden md:inline">Forget the generic, lucky dip "suggested" feed.<br />Every swipe trains Flea to learn your style.</span>
       </>
     ),
     animation: <FilterBubblesCloud />,
@@ -63,7 +63,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
     detail: (
       <>
         <span className="md:hidden">Why be one tile amongst hundreds?<br />On Flea, your listing is the only<br />one on the screen.</span>
-        <span className="hidden md:inline whitespace-nowrap">Why be one tile in a crowd?<br />On Flea, your listing is the only one on the screen.</span>
+        <span className="hidden md:inline">Why be one tile in a crowd?<br />On Flea, your listing is the only one on the screen.</span>
       </>
     ),
     animation: (
@@ -83,7 +83,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
     detail: (
       <>
         <span className="md:hidden">We've kept our cut <strong>fair</strong>,<br />so the post office run is <strong>actually worth it</strong>.</span>
-        <span className="hidden md:inline whitespace-nowrap">We've kept our cut <strong>fair</strong> so the post office run is <strong>actually worth it</strong>.</span>
+        <span className="hidden md:inline">We've kept our cut <strong>fair</strong> so the post office run is <strong>actually worth it</strong>.</span>
       </>
     ),
     animation: (
