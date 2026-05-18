@@ -23,6 +23,10 @@ const faqs = [
     a: "Join the waitlist in May and selling on Flea is FREE until the end of July - two full months of zero selling fees. From August onwards, sellers pay a flat 7% platform fee on the item price (one of the lowest in the market), and buyers cover the payment processing fee at checkout - around 1.7% with card or Apple/Google Pay. No listing fees, no monthly fees, no surprises.",
   },
   {
+    q: "Who's behind Flea?",
+    a: "Flea is Australian, female founded and built. It's not backed by a big overseas marketplace or a faceless team - it's a small Aussie operation building the secondhand app we always wanted to use ourselves. Every design decision, every line of code, every fee structure is made with Aussie buyers and sellers in mind, not shareholders on the other side of the world.",
+  },
+  {
     q: "How does Flea learn my style?",
     a: "Every swipe is a signal. Flea quietly tracks the brands, sizes, categories, colours and price points you save versus pass, and tunes your feed in real time. You're not stuck with a generic 'For You' algorithm built for everyone - your stack is built from your actual behaviour, so the more you use it, the more it feels like a feed curated just for you.",
   },
