@@ -8,9 +8,10 @@ const LaunchMarquee = () => {
         {items.concat(items).map((_, i) => (
           <span
             key={i}
-            className="px-6 text-[hsl(var(--flea-navy))] font-bold tracking-[0.2em] text-xs md:text-sm whitespace-nowrap"
+            className="flex items-center text-[hsl(var(--flea-navy))] font-bold tracking-[0.2em] text-xs md:text-sm whitespace-nowrap"
           >
-            LAUNCHING MAY <span className="mx-1">{EMOJIS[i % EMOJIS.length]}</span>
+            <span className="px-4">LAUNCHING MAY</span>
+            <span className="px-4">{EMOJIS[i % EMOJIS.length]}</span>
           </span>
         ))}
       </div>
