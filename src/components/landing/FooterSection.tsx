@@ -56,7 +56,7 @@ const FooterSection = () => {
     <footer className="bg-navy px-6 pt-16 pb-8 md:pt-20 md:pb-10">
       <div className="container mx-auto max-w-xl text-center">
         <motion.h2
-          className="text-2xl font-black text-mint uppercase tracking-wider mb-3 md:text-2xl"
+          className="font-black text-mint uppercase tracking-wider mb-3 md:text-2xl text-lg"
           initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
         >
           FIND IT ON
