@@ -58,7 +58,7 @@ const FooterSection = () => {
           className="text-2xl md:text-4xl font-black text-mint uppercase tracking-wider mb-2"
           initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
         >
-          Find It On Flea
+          FIND IT ON
         </motion.h2>
         <motion.p className="text-mint/70 text-base md:text-lg mb-8" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.1, duration: 0.5 }}>
           Start Swiping
