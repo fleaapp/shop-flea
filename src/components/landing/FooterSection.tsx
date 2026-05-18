@@ -84,6 +84,7 @@ const FooterSection = () => {
             <p className="text-mint/50 text-[10px] font-semibold uppercase tracking-widest mt-1">COMING MAY</p>
           </div>
 
+          {/* App Store / Google Play badges hidden for now — design preserved below for future use.
           <div className="flex flex-row justify-center items-start gap-3">
             <div className="flex flex-col items-center gap-1.5">
               <button
@@ -110,6 +111,7 @@ const FooterSection = () => {
               <p className="text-mint/50 text-[10px] font-semibold uppercase tracking-widest">COMING MAY</p>
             </div>
           </div>
+          */}
         </motion.div>
 
         {/* Contact Us */}
