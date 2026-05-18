@@ -97,10 +97,12 @@ const WaitlistSignupSection = () => {
     <section className="w-full bg-[hsl(var(--flea-navy))] text-[hsl(var(--flea-mint))] py-14 md:py-20 px-5">
       <div className="mx-auto max-w-xl text-center">
         <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight uppercase leading-tight">
-          Get 2 months free listings
+          <span className="block md:inline">Get 2 months</span>{" "}
+          <span className="block md:inline">free listings</span>
         </h2>
         <p className="mt-3 md:mt-4 text-[hsl(var(--flea-mint))]/80 text-base md:text-lg">
-          Sign up to be notified for when we launch.
+          <span className="block md:inline">Sign up to be notified</span>{" "}
+          <span className="block md:inline">for when we launch.</span>
         </p>
 
         {success ? (
@@ -204,7 +206,7 @@ const WaitlistSignupSection = () => {
                   <Loader2 className="h-4 w-4 animate-spin" /> Signing up...
                 </>
               ) : (
-                "Notify me at launch"
+                "Notify me"
               )}
             </button>
           </form>

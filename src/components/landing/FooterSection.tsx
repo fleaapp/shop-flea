@@ -72,7 +72,7 @@ const FooterSection = () => {
               aria-label="Download Flea — coming May"
               className="flex items-center justify-center gap-2 bg-mint/30 rounded-xl w-[170px] py-3.5 cursor-not-allowed pointer-events-none"
             >
-              <p className="text-navy/60 text-xs font-bold uppercase tracking-wide">📲 Download Flea</p>
+              <p className="text-mint/60 text-xs font-bold uppercase tracking-wide">📲 Download Flea</p>
             </button>
             <p className="text-mint/50 text-[10px] font-semibold uppercase tracking-wide">Coming May</p>
           </div>
