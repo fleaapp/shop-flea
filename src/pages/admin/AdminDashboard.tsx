@@ -33,6 +33,7 @@ export default function AdminDashboard() {
   const { reports, loading: rLoading, filter: rFilter, setFilter: setRFilter, updateReportStatus, pendingCount, reportTallyByUser } = useAdminReports();
   const { bannedUsers, loading: bLoading, filter: bFilter, setFilter: setBFilter, banUser, updateBanStatus, activeCount, liftedCount } = useAdminBannedUsers();
   const { suggestions, loading: sLoading, unreadCount, markAsRead } = useAdminSuggestions();
+  const { entries: waitlistEntries, loading: wLoading, error: wError, refresh: refreshWaitlist } = useAdminWaitlist();
 
   const activeThreads = threads.filter((t) => t.status === 'active').length;
   const totalUnread = threads.reduce((s, t) => s + (t.unread_count || 0), 0);
