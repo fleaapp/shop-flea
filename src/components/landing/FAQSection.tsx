@@ -3,11 +3,11 @@ import ScallopEdge from "./ScallopEdge";
 
 const faqs = [
   { q: "How does Flea work?", a: "Flea shows you one listing at a time, full-screen. Swipe right to save, left to pass, up for more details. No grids, no clutter - just the spotlight on each piece." },
-  { q: "Will I see the same listings over and over?", a: "Nope. Once you swipe past a listing, it's gone from your feed. Every scroll is a fresh hunt - zero repeats, zero deja-vu. (Unless you undo or refresh passed listings.)" },
-  { q: "What are the fees for selling?", a: "We've kept our cut fair so the post office run is actually worth it. Our fee structure is built to keep the profit in your pocket - not to fund another tech bro's yacht." },
-  { q: "How does Flea learn my style?", a: "Every swipe trains Flea to learn your taste. Your feed is built on your actual behaviour - not generic suggestions or a lucky dip." },
+  { q: "How does the swiping work?", a: "Swipe right to save a listing, left to pass, and up to see more details. Every swipe trains your feed." },
   { q: "When is Flea launching?", a: "We're cooking. Sign up for early access to be the first to know when the app drops." },
-  { q: "Where can I download Flea?", a: "Flea will be available on the App Store and Google Play. Join the waitlist to get notified at launch." },
+  { q: "Where can I download Flea?", a: "You'll be able to download Flea on Apple, Google, and as a web app." },
+  { q: "What are the fees?", a: "FREE selling fees for May, June & July 2026! Buyers cover payment processing (around 1.7%). After that, fees for sellers will be 7%." },
+  { q: "How does Flea learn my style?", a: "Every swipe trains Flea to learn your taste. Your feed is built on your actual behaviour - not generic suggestions or a lucky dip." },
 ];
 
 const FAQSection = () => {
