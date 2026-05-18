@@ -24,7 +24,7 @@ const faqs = [
   },
   {
     q: "Who's behind Flea?",
-    a: "Flea is Australian, female founded and built. It's not backed by a big overseas marketplace or a faceless team - it's a small Aussie operation building the secondhand app we always wanted to use ourselves. Every design decision, every line of code, every fee structure is made with Aussie buyers and sellers in mind, not shareholders on the other side of the world.",
+    a: "Flea is Australian, female founded and built. It's not backed by a big overseas marketplace or a faceless team - it's a small Aussie operation building the secondhand app we always wanted to use ourselves. Every design decision, every line of code, every fee structure is made with Aussie buyers and sellers in mind.",
   },
   {
     q: "How does Flea learn my style?",
