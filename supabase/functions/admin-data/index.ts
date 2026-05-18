@@ -30,7 +30,8 @@ type AdminAction =
   | "listingAction"
   | "listSystemIssues"
   | "runSystemFix"
-  | "listWaitlist";
+  | "listWaitlist"
+  | "listContactSubmissions";
 
 type RestOptions = {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
