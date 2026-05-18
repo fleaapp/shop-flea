@@ -36,7 +36,7 @@ const inputCls =
 
 const WaitlistPopup = () => {
   const [open, setOpen] = useState(false);
-  const [countries, setCountries] = useState<Country[]>([]);
+  const countries = COUNTRIES;
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
   const [email, setEmail] = useState("");
