@@ -113,32 +113,33 @@ const WaitlistPopup = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent
-        className="w-[90vw] max-w-sm rounded-3xl border-[3px] border-charcoal bg-[hsl(var(--flea-navy))] p-5 text-[hsl(var(--flea-mint))]"
+        className="w-[90vw] max-w-sm rounded-3xl border-[3px] border-[hsl(var(--flea-navy))] bg-card p-5 text-foreground"
         hideCloseButton
       >
         <button
           type="button"
           onClick={() => setOpen(false)}
           aria-label="Close"
-          className="absolute right-3 top-3 rounded-full p-1 text-[hsl(var(--flea-mint))]/70 hover:text-[hsl(var(--flea-mint))]"
+          className="absolute right-3 top-3 rounded-full p-1 text-muted-foreground hover:text-foreground"
         >
           <X className="h-4 w-4" />
         </button>
 
-        <div className="text-center space-y-1 pt-2">
-          <h2 className="text-xl font-extrabold uppercase tracking-tight">
+        <div className="flex flex-col items-center text-center space-y-2 pt-1">
+          <img src={fleaLogo} alt="Flea" className="h-12 w-auto" />
+          <h2 className="text-xl font-extrabold uppercase tracking-tight text-[hsl(var(--flea-navy))]">
             Get 2 months free listings
           </h2>
-          <p className="text-sm text-[hsl(var(--flea-mint))]/80">
+          <p className="text-sm text-muted-foreground">
             Sign up to be notified when we launch.
           </p>
         </div>
 
         {success ? (
-          <div className="mt-4 rounded-2xl border border-[hsl(var(--flea-mint))]/40 bg-[hsl(var(--flea-mint))]/10 p-5 text-center">
+          <div className="mt-4 rounded-2xl border border-[hsl(var(--flea-navy))]/25 bg-background p-5 text-center">
             <div className="text-2xl">🎉</div>
-            <h3 className="mt-1 text-base font-bold">You're on the list!</h3>
-            <p className="mt-1 text-xs text-[hsl(var(--flea-mint))]/80">
+            <h3 className="mt-1 text-base font-bold text-[hsl(var(--flea-navy))]">You're on the list!</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
               We'll email you the moment Flea launches.
             </p>
           </div>
