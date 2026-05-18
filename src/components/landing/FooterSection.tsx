@@ -64,7 +64,7 @@ const FooterSection = () => {
         <motion.img
           src={fleaLogo}
           alt="Flea"
-          className="h-[34px] md:h-[40px] object-contain mx-auto mb-3"
+          className="h-16 md:h-20 object-contain mx-auto mb-3"
           initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.08, duration: 0.5 }}
         />
         <motion.p className="text-mint/70 text-base md:text-lg mb-8" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.15, duration: 0.5 }}>
