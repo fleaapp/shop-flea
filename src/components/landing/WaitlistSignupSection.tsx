@@ -97,12 +97,12 @@ const WaitlistSignupSection = () => {
     <section className="w-full bg-[hsl(var(--flea-navy))] text-[hsl(var(--flea-mint))] py-14 md:py-20 px-5">
       <div className="mx-auto max-w-xl text-center">
         <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight uppercase leading-tight">
-          <span className="block md:inline">Get 2 months</span>{" "}
-          <span className="block md:inline">free listings</span>
+          <span className="block md:inline text-center">Get 2 months</span>{" "}
+          <span className="block md:inline text-center">FREE LISTINGS</span>
         </h2>
         <p className="mt-3 md:mt-4 text-[hsl(var(--flea-mint))]/80 text-base md:text-lg">
-          <span className="block md:inline">Sign up to be notified for</span>{" "}
-          <span className="block md:inline">when we launch.</span>
+          <span className="block md:inline text-center">Sign up to be notified for</span>{" "}
+          <span className="block md:inline text-center">when we launch.</span>
         </p>
 
         {success ? (
