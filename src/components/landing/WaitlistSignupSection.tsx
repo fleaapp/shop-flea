@@ -101,8 +101,8 @@ const WaitlistSignupSection = () => {
           <span className="block md:inline">free listings</span>
         </h2>
         <p className="mt-3 md:mt-4 text-[hsl(var(--flea-mint))]/80 text-base md:text-lg">
-          <span className="block md:inline">Sign up to be notified</span>{" "}
-          <span className="block md:inline">for when we launch.</span>
+          <span className="block md:inline">Sign up to be notified for</span>{" "}
+          <span className="block md:inline">when we launch.</span>
         </p>
 
         {success ? (
