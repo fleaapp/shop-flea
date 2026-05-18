@@ -131,6 +131,25 @@ Reply directly to this email to respond.`;
   for (const to of EMAIL_TO) {
     const messageId = crypto.randomUUID();
     try {
+      // Get or create a stable unsubscribe token for this recipient
+      let unsubscribeToken: string | null = null;
+      const { data: existingTok } = await supabase
+        .from("email_unsubscribe_tokens")
+        .select("token")
+        .eq("email", to)
+        .maybeSingle();
+      if (existingTok?.token) {
+        unsubscribeToken = existingTok.token as string;
+      } else {
+        const newToken = crypto.randomUUID();
+        const { data: inserted } = await supabase
+          .from("email_unsubscribe_tokens")
+          .insert({ email: to, token: newToken })
+          .select("token")
+          .maybeSingle();
+        unsubscribeToken = (inserted?.token as string | undefined) ?? newToken;
+      }
+
       await supabase.from("email_send_log").insert({
         message_id: messageId,
         template_name: "contact_form",
@@ -152,6 +171,7 @@ Reply directly to this email to respond.`;
           label: "contact_form",
           idempotency_key: `contact-${submissionId}-${to}`,
           reply_to: email,
+          unsubscribe_token: unsubscribeToken,
           queued_at: new Date().toISOString(),
         },
       });
