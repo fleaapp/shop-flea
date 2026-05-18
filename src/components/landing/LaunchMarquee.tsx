@@ -13,7 +13,7 @@ const LaunchMarquee = ({
   const fg = variant === "navy" ? "text-[hsl(var(--flea-mint))]" : "text-[hsl(var(--flea-navy))]";
   return (
     <div className={`w-full ${bg} overflow-hidden`}>
-      <div className="flex w-max animate-[marquee_60s_linear_infinite] py-1.5 md:py-2">
+      <div className="flex w-max animate-[marquee_60s_linear_infinite] py-4 md:py-5">
         {items.concat(items).map((_, i) => (
           <span
             key={i}
