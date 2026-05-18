@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import "@/styles/flea-landing.css";
 import ScallopHeader from "@/components/landing/ScallopHeader";
+import LaunchMarquee from "@/components/landing/LaunchMarquee";
 import HeroSection from "@/components/landing/HeroSection";
 import StickyFeaturesScroll from "@/components/landing/StickyFeaturesScroll";
 import GestureCardsSection from "@/components/landing/GestureCardsSection";
@@ -49,6 +50,7 @@ const About = () => {
 
   return (
     <div className="flea-landing min-h-screen" style={{ overflowX: "clip" }}>
+      <LaunchMarquee />
       <ScallopHeader />
       <HeroSection />
       <div className="relative z-10"><StickyFeaturesScroll /></div>
