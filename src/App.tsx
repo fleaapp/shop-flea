@@ -110,7 +110,7 @@ const PageLoader = () => <PageSkeleton />;
 const AppContent = () => {
   const { showCarousel, closeCarousel } = useOnboarding();
   const location = useLocation();
-  const isStandaloneSite = location.pathname === "/" || location.pathname.startsWith("/about");
+  const isStandaloneSite = location.pathname.startsWith("/about");
 
   useEffect(() => {
     const currentRoute = `${location.pathname}${location.search}${location.hash}`;
