@@ -18,11 +18,11 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (!user) {
     if ((window.navigator as Navigator & { standalone?: boolean }).standalone) {
-      window.location.replace('/auth');
+      window.location.replace('/about');
       return null;
     }
 
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/about" replace />;
   }
 
   return <>{children}</>;

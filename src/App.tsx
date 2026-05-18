@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { OnboardingProvider, useOnboarding } from "@/context/OnboardingContext";
@@ -110,7 +110,7 @@ const PageLoader = () => <PageSkeleton />;
 const AppContent = () => {
   const { showCarousel, closeCarousel } = useOnboarding();
   const location = useLocation();
-  const isStandaloneSite = location.pathname.startsWith("/about");
+  const isStandaloneSite = location.pathname === "/" || location.pathname.startsWith("/about");
 
   useEffect(() => {
     const currentRoute = `${location.pathname}${location.search}${location.hash}`;
@@ -190,13 +190,14 @@ const AppContent = () => {
       {!isStandaloneSite && <OnboardingCarousel open={showCarousel} onComplete={closeCarousel} />}
       <Suspense fallback={<PageLoader />}>
         <Routes>
+          <Route path="/" element={<About />} />
           <Route path="/about" element={<About />} />
           <Route path="/install" element={<Install />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/auth" element={<Navigate to="/" replace />} />
+          <Route path="/forgot-password" element={<Navigate to="/" replace />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+          <Route path="/app" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/listing/:id" element={<ProtectedRoute><ListingDetails /></ProtectedRoute>} />
           <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
           <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />

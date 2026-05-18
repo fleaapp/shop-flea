@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Check, ChevronsUpDown, Loader2, X } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/lib/supabase";
+import fleaLogo from "@/assets/flea-landing/flea-logo.png";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -31,7 +32,7 @@ const STORAGE_KEY = "flea_waitlist_popup_shown";
 const DELAY_MS = 10000;
 
 const inputCls =
-  "w-full h-11 rounded-xl bg-[hsl(var(--flea-navy))] border border-[hsl(var(--flea-mint))]/30 px-3 text-[hsl(var(--flea-mint))] text-sm placeholder:text-[hsl(var(--flea-mint))]/50 outline-none transition-all focus:border-[hsl(var(--flea-mint))] focus:ring-2 focus:ring-[hsl(var(--flea-mint))]/40";
+  "w-full h-11 rounded-xl bg-background border border-[hsl(var(--flea-navy))]/25 px-3 text-foreground text-sm placeholder:text-muted-foreground outline-none transition-all focus:border-[hsl(var(--flea-navy))] focus:ring-2 focus:ring-[hsl(var(--flea-navy))]/30";
 
 const WaitlistPopup = () => {
   const [open, setOpen] = useState(false);
@@ -112,32 +113,33 @@ const WaitlistPopup = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent
-        className="w-[90vw] max-w-sm rounded-3xl border-[3px] border-charcoal bg-[hsl(var(--flea-navy))] p-5 text-[hsl(var(--flea-mint))]"
+        className="w-[90vw] max-w-sm rounded-3xl border-[3px] border-[hsl(var(--flea-navy))] bg-card p-5 text-foreground"
         hideCloseButton
       >
         <button
           type="button"
           onClick={() => setOpen(false)}
           aria-label="Close"
-          className="absolute right-3 top-3 rounded-full p-1 text-[hsl(var(--flea-mint))]/70 hover:text-[hsl(var(--flea-mint))]"
+          className="absolute right-3 top-3 rounded-full p-1 text-muted-foreground hover:text-foreground"
         >
           <X className="h-4 w-4" />
         </button>
 
-        <div className="text-center space-y-1 pt-2">
-          <h2 className="text-xl font-extrabold uppercase tracking-tight">
+        <div className="flex flex-col items-center text-center space-y-2 pt-1">
+          <img src={fleaLogo} alt="Flea" className="h-12 w-auto" />
+          <h2 className="text-xl font-extrabold uppercase tracking-tight text-[hsl(var(--flea-navy))]">
             Get 2 months free listings
           </h2>
-          <p className="text-sm text-[hsl(var(--flea-mint))]/80">
+          <p className="text-sm text-muted-foreground">
             Sign up to be notified when we launch.
           </p>
         </div>
 
         {success ? (
-          <div className="mt-4 rounded-2xl border border-[hsl(var(--flea-mint))]/40 bg-[hsl(var(--flea-mint))]/10 p-5 text-center">
+          <div className="mt-4 rounded-2xl border border-[hsl(var(--flea-navy))]/25 bg-background p-5 text-center">
             <div className="text-2xl">🎉</div>
-            <h3 className="mt-1 text-base font-bold">You're on the list!</h3>
-            <p className="mt-1 text-xs text-[hsl(var(--flea-mint))]/80">
+            <h3 className="mt-1 text-base font-bold text-[hsl(var(--flea-navy))]">You're on the list!</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
               We'll email you the moment Flea launches.
             </p>
           </div>
@@ -176,21 +178,21 @@ const WaitlistPopup = () => {
                     type="button"
                     className={cn(inputCls, "flex items-center justify-between text-left")}
                   >
-                    <span className={cn(!selectedCountryName && "text-[hsl(var(--flea-mint))]/50")}>
+                    <span className={cn(!selectedCountryName && "text-muted-foreground")}>
                       {selectedCountryName || "Select country"}
                     </span>
                     <ChevronsUpDown className="h-4 w-4 opacity-70" />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="p-0 w-[--radix-popover-trigger-width] !bg-[hsl(var(--flea-navy))] border-[hsl(var(--flea-mint))]/30 text-[hsl(var(--flea-mint))] z-[80] shadow-xl"
+                  className="p-0 w-[--radix-popover-trigger-width] !bg-card border-[hsl(var(--flea-navy))]/25 text-foreground z-[80] shadow-xl"
                   align="start"
-                  style={{ backgroundColor: "hsl(var(--flea-navy))" }}
+                  style={{ backgroundColor: "hsl(var(--card))" }}
                 >
-                  <Command className="bg-transparent text-[hsl(var(--flea-mint))]">
+                  <Command className="bg-transparent text-foreground">
                     <CommandInput
                       placeholder="Search country..."
-                      className="text-[hsl(var(--flea-mint))] placeholder:text-[hsl(var(--flea-mint))]/50"
+                      className="text-foreground placeholder:text-muted-foreground"
                     />
                     <CommandList className="max-h-56">
                       <CommandEmpty>No country found.</CommandEmpty>
@@ -203,7 +205,7 @@ const WaitlistPopup = () => {
                               setCountry(c.code);
                               setOpenCountry(false);
                             }}
-                            className="aria-selected:bg-[hsl(var(--flea-mint))]/15 aria-selected:text-[hsl(var(--flea-mint))]"
+                            className="aria-selected:bg-[hsl(var(--flea-navy))]/10 aria-selected:text-[hsl(var(--flea-navy))]"
                           >
                             <Check
                               className={cn(
@@ -222,13 +224,13 @@ const WaitlistPopup = () => {
             </div>
 
             {error && (
-              <p className="col-span-2 text-xs text-red-300">{error}</p>
+              <p className="col-span-2 text-xs text-destructive">{error}</p>
             )}
 
             <button
               type="submit"
               disabled={submitting}
-              className="col-span-2 mt-1 h-11 rounded-full bg-[hsl(var(--flea-mint))] text-[hsl(var(--flea-navy))] font-bold uppercase tracking-wide transition-all hover:brightness-95 active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="col-span-2 mt-1 h-11 rounded-full bg-[hsl(var(--flea-navy))] text-[hsl(var(--flea-mint))] font-bold uppercase tracking-wide transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>
