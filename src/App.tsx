@@ -110,7 +110,7 @@ const PageLoader = () => <PageSkeleton />;
 const AppContent = () => {
   const { showCarousel, closeCarousel } = useOnboarding();
   const location = useLocation();
-  const isStandaloneSite = location.pathname === "/" || location.pathname.startsWith("/about");
+  const isStandaloneSite = location.pathname.startsWith("/about");
 
   useEffect(() => {
     const currentRoute = `${location.pathname}${location.search}${location.hash}`;
@@ -190,14 +190,14 @@ const AppContent = () => {
       {!isStandaloneSite && <OnboardingCarousel open={showCarousel} onComplete={closeCarousel} />}
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/" element={<About />} />
+          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/about" element={<About />} />
           <Route path="/install" element={<Install />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/app" element={<Navigate to="/" replace />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/app" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/listing/:id" element={<ProtectedRoute><ListingDetails /></ProtectedRoute>} />
           <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
           <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
