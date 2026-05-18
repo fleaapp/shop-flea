@@ -67,7 +67,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
       </>
     ),
     animation: (
-      <div className="relative mt-2 mb-2 w-full flex justify-center">
+      <div className="relative mt-2 mb-2 w-full md:w-screen md:max-w-none flex justify-center">
         <img src={phoneMockup} alt="Flea app showing a listing with full-screen attention" className="w-56 md:w-60 drop-shadow-2xl" />
         <FloatingCardMarquee />
       </div>
