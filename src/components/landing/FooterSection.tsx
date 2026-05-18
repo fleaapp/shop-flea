@@ -3,7 +3,7 @@ import { Mail, Loader2, Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import fleaLogo from "@/assets/flea-landing/flea-logo.png";
+import fleaLogo from "@/assets/flea-landing/flea-logo.webp";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -65,6 +65,10 @@ const FooterSection = () => {
           src={fleaLogo}
           alt="Flea"
           className="h-16 md:h-20 object-contain mx-auto mb-3"
+          width={144}
+          height={58}
+          loading="lazy"
+          decoding="async"
           initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.08, duration: 0.5 }}
         />
         <motion.p className="text-mint/70 text-base md:text-lg mb-8" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.15, duration: 0.5 }}>
