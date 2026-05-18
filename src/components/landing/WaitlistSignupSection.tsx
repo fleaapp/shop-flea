@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { z } from "zod";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
