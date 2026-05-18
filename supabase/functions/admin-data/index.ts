@@ -29,7 +29,8 @@ type AdminAction =
   | "listListings"
   | "listingAction"
   | "listSystemIssues"
-  | "runSystemFix";
+  | "runSystemFix"
+  | "listWaitlist";
 
 type RestOptions = {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
