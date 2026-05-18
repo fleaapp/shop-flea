@@ -97,8 +97,8 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
 const Block = ({ heading, detail, animation, isAccent, index }: { heading: ReactNode; detail: ReactNode; animation?: ReactNode; isAccent: boolean; index: number; }) => {
   const textColor = isAccent ? "text-navy" : "text-mint";
   const extraBottom = index === 2 || index === 4
-    ? "min-[390px]:pb-[calc(env(safe-area-inset-bottom,0px)+8rem)]"
-    : "min-[390px]:pb-[calc(env(safe-area-inset-bottom,0px)+5.5rem)]";
+    ? "pb-[calc(env(safe-area-inset-bottom,0px)+5.5rem)] min-[390px]:pb-[calc(env(safe-area-inset-bottom,0px)+8rem)]"
+    : "pb-[calc(env(safe-area-inset-bottom,0px)+3.25rem)] min-[390px]:pb-[calc(env(safe-area-inset-bottom,0px)+5.5rem)]";
   return (
     <motion.div
       initial={{ y: 28 }}
@@ -106,14 +106,14 @@ const Block = ({ heading, detail, animation, isAccent, index }: { heading: React
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       className="absolute inset-0 flex flex-col pointer-events-none"
     >
-      <div className="px-16 min-[390px]:px-8 md:px-12 lg:px-16 flex-shrink-0 pt-[calc(env(safe-area-inset-top,0px)+7rem)] min-[390px]:pt-[calc(env(safe-area-inset-top,0px)+10rem)] md:pt-[calc(env(safe-area-inset-top,0px)+9rem)] lg:pt-[calc(env(safe-area-inset-top,0px)+10rem)]">
-        <h3 className={`text-2xl min-[390px]:text-[28px] md:text-[1.5rem] lg:text-[2.125rem] font-bold leading-tight md:leading-tight text-center max-w-sm md:max-w-none mx-auto ${textColor}`}>{heading}</h3>
+      <div className="px-8 min-[390px]:px-8 md:px-12 lg:px-16 flex-shrink-0 pt-[calc(env(safe-area-inset-top,0px)+4.5rem)] min-[390px]:pt-[calc(env(safe-area-inset-top,0px)+10rem)] md:pt-[calc(env(safe-area-inset-top,0px)+9rem)] lg:pt-[calc(env(safe-area-inset-top,0px)+10rem)]">
+        <h3 className={`text-[22px] min-[390px]:text-[28px] md:text-[1.5rem] lg:text-[2.125rem] font-bold leading-tight md:leading-tight text-center max-w-sm md:max-w-none mx-auto ${textColor}`}>{heading}</h3>
       </div>
       <div className="flex-1 min-h-0 flex items-center justify-center pointer-events-auto">
         <div className={`w-full h-full flex items-center justify-center origin-center ${index === 3 ? "" : "md:scale-[0.72] lg:scale-[0.78]"}`}>{animation}</div>
       </div>
-      <div className={`px-16 min-[390px]:px-8 md:px-12 lg:px-16 flex-shrink-0 pb-[calc(env(safe-area-inset-bottom,0px)+4rem)] ${extraBottom} md:pb-[calc(env(safe-area-inset-bottom,0px)+4rem)]`}>
-        <p className={`text-base md:text-xl lg:text-2xl font-normal leading-relaxed text-center max-w-sm md:max-w-2xl lg:max-w-3xl mx-auto ${textColor}`}>{detail}</p>
+      <div className={`px-8 min-[390px]:px-8 md:px-12 lg:px-16 flex-shrink-0 ${extraBottom} md:pb-[calc(env(safe-area-inset-bottom,0px)+4rem)]`}>
+        <p className={`text-[14px] min-[390px]:text-base md:text-xl lg:text-2xl font-normal leading-relaxed text-center max-w-sm md:max-w-2xl lg:max-w-3xl mx-auto ${textColor}`}>{detail}</p>
       </div>
     </motion.div>
   );
