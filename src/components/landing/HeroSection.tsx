@@ -41,7 +41,18 @@ const HeroSection = () => {
           <p className="mt-8 md:mt-10 text-sm md:text-lg text-charcoal leading-relaxed max-w-lg mx-auto">
             Like your favourite Sunday flea market, but without the overpriced iced lattes, awkward small talk or having to even put on pants.
           </p>
-          <div className="-mt-6 flex justify-center -mx-6 relative">
+          <div className="mt-6 flex flex-col items-center gap-1.5">
+            <button
+              type="button"
+              disabled
+              aria-label="Download Flea — coming May"
+              className="flex items-center justify-center gap-2 bg-navy/20 rounded-xl w-[170px] py-3.5 cursor-not-allowed pointer-events-none"
+            >
+              <p className="text-navy/70 text-xs font-bold uppercase tracking-wide">📲 &nbsp; DOWNLOAD FLEA</p>
+            </button>
+            <p className="text-navy/60 text-[10px] font-semibold uppercase tracking-widest mt-1">COMING MAY</p>
+          </div>
+          <div className="mt-6 flex justify-center -mx-6 relative">
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[90%] h-[68%] bg-navy rounded-3xl md:w-[40rem] lg:w-[44rem]" />
             <img
               src={heroCombinedGif}
