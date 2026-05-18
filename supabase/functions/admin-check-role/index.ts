@@ -7,17 +7,20 @@ const corsHeaders = {
 };
 
 const EXTERNAL_URL = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "https://dzglehiopfgfjmxtejve.supabase.co";
+const EXTERNAL_ANON_KEY = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6Z2xlaGlvcGZnZmpteHRlanZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzI0MjUsImV4cCI6MjA4NDU0ODQyNX0.qfOBjubnuod5iGF_G_gH2ZhMDJ1fVwAO9p5BZSxG0xI";
 const EXTERNAL_SERVICE_ROLE_KEY = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-function getUserId(req: Request): string | null {
+async function getUserId(req: Request): Promise<string | null> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return null;
   try {
     const token = authHeader.replace("Bearer ", "");
-    const payload = JSON.parse(atob(token.split(".")[1] ?? "")) as { sub?: string; exp?: number };
-    if (!payload.sub) return null;
-    if (payload.exp && payload.exp * 1000 < Date.now()) return null;
-    return payload.sub;
+    const verifier = createClient(EXTERNAL_URL, EXTERNAL_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data, error } = await verifier.auth.getUser(token);
+    if (error || !data?.user?.id) return null;
+    return data.user.id;
   } catch {
     return null;
   }
@@ -26,7 +29,7 @@ function getUserId(req: Request): string | null {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const userId = getUserId(req);
+  const userId = await getUserId(req);
   if (!userId) {
     return new Response(JSON.stringify({ isAdmin: false, reason: "no-auth" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
