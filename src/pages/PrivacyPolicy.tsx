@@ -170,7 +170,7 @@ const PrivacyPolicy = () => {
               <li>Delete your account via <em>Settings → Edit Profile → Delete Account</em>. Deletion is gated by a 14-day cooldown after your most recent delivery and requires that you have no outstanding orders, so dispute and refund rights are preserved.</li>
             </ul>
             <p>
-              For any other request, email <a href="mailto:support@finditonflea.com" className="underline">support@finditonflea.com</a>. We will respond within a reasonable time (and within 30 days for access requests). We may need to verify your identity before acting. Some information cannot be deleted while we have legal obligations to keep it (for example, tax records of completed sales).
+              For any other request, email <a href="mailto:hello@finditonflea.com" className="underline">hello@finditonflea.com</a>. We will respond within a reasonable time (and within 30 days for access requests). We may need to verify your identity before acting. Some information cannot be deleted while we have legal obligations to keep it (for example, tax records of completed sales).
             </p>
           </section>
 
@@ -234,7 +234,7 @@ const PrivacyPolicy = () => {
           <section className={SECTION}>
             <h2 className="text-base font-bold mb-2">16. Complaints and contact</h2>
             <p>
-              If you have a question, concern or complaint about how we handle your personal information, contact our Privacy Officer at <a href="mailto:support@finditonflea.com" className="underline">support@finditonflea.com</a>. We will acknowledge your complaint within 7 days and aim to resolve it within 30 days.
+              If you have a question, concern or complaint about how we handle your personal information, contact our Privacy Officer at <a href="mailto:hello@finditonflea.com" className="underline">hello@finditonflea.com</a>. We will acknowledge your complaint within 7 days and aim to resolve it within 30 days.
             </p>
             <p>
               If you are not satisfied with our response, you can lodge a complaint with the Office of the Australian Information Commissioner:

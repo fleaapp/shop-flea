@@ -52,7 +52,7 @@ const Terms = () => {
           <section className={SECTION}>
             <h2 className="text-base font-bold mb-2">3. Your account</h2>
             <p>
-              You are responsible for keeping your login details, password and connected payment accounts secure and for all activity that occurs under your account. Notify us immediately at <a href="mailto:support@finditonflea.com" className="underline">support@finditonflea.com</a> if you suspect unauthorised access.
+              You are responsible for keeping your login details, password and connected payment accounts secure and for all activity that occurs under your account. Notify us immediately at <a href="mailto:hello@finditonflea.com" className="underline">hello@finditonflea.com</a> if you suspect unauthorised access.
             </p>
             <p>
               You can update your profile, username, email, password, shipping settings, filter preferences and notification settings from <em>Settings</em> at any time. You may pause selling at any time via <em>Settings → Pause Selling</em>.
@@ -213,14 +213,14 @@ const Terms = () => {
           <section className={SECTION}>
             <h2 className="text-base font-bold mb-2">18. Governing law and disputes</h2>
             <p>
-              These Terms are governed by the laws of New South Wales, Australia. You and Flea submit to the non-exclusive jurisdiction of the courts of New South Wales and the Commonwealth of Australia. Before commencing any court action, you agree to first contact us at <a href="mailto:support@finditonflea.com" className="underline">support@finditonflea.com</a> and attempt in good faith to resolve the dispute.
+              These Terms are governed by the laws of New South Wales, Australia. You and Flea submit to the non-exclusive jurisdiction of the courts of New South Wales and the Commonwealth of Australia. Before commencing any court action, you agree to first contact us at <a href="mailto:hello@finditonflea.com" className="underline">hello@finditonflea.com</a> and attempt in good faith to resolve the dispute.
             </p>
           </section>
 
           <section className={SECTION}>
             <h2 className="text-base font-bold mb-2">19. Contact</h2>
             <p>
-              Questions about these Terms? Contact us at <a href="mailto:support@finditonflea.com" className="underline">support@finditonflea.com</a> or via <em>Settings → Help Centre → Contact Support</em>.
+              Questions about these Terms? Contact us at <a href="mailto:hello@finditonflea.com" className="underline">hello@finditonflea.com</a> or via <em>Settings → Help Centre → Contact Support</em>.
             </p>
           </section>
 
