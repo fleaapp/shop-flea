@@ -17,7 +17,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 
-type Country = { code: string; name: string };
+import { COUNTRIES, type Country } from "@/data/countries";
 
 const schema = z.object({
   first_name: z.string().trim().min(1, "First name is required").max(60),
