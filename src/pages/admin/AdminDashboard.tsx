@@ -79,6 +79,10 @@ export default function AdminDashboard() {
               <Mail className="h-4 w-4" /><span className="hidden sm:inline">Waitlist</span>
               {waitlistEntries.length > 0 && <Badge variant="secondary" className="h-5 min-w-5 px-1 text-xs">{waitlistEntries.length}</Badge>}
             </TabsTrigger>
+            <TabsTrigger value="contact" className="gap-2 data-[state=active]:bg-accent">
+              <Inbox className="h-4 w-4" /><span className="hidden sm:inline">Contact</span>
+              {contactSubs.length > 0 && <Badge variant="secondary" className="h-5 min-w-5 px-1 text-xs">{contactSubs.length}</Badge>}
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
