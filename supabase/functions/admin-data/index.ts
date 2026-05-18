@@ -30,7 +30,8 @@ type AdminAction =
   | "listingAction"
   | "listSystemIssues"
   | "runSystemFix"
-  | "listWaitlist";
+  | "listWaitlist"
+  | "listContactSubmissions";
 
 type RestOptions = {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
@@ -1408,6 +1409,10 @@ Deno.serve(async (req) => {
       case "listWaitlist": {
         const rows = await safeSelect("waitlist", { order: "created_at.desc", limit: 5000 });
         return response({ entries: rows });
+      }
+      case "listContactSubmissions": {
+        const rows = await safeSelect("contact_submissions", { order: "created_at.desc", limit: 5000 });
+        return response({ submissions: rows });
       }
       default:
         return response({ error: "Unknown admin action" }, 400);

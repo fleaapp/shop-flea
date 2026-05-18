@@ -14,13 +14,15 @@ import { ReportDetail } from '@/components/admin/dashboard/ReportDetail';
 import { BannedUsersList } from '@/components/admin/dashboard/BannedUsersList';
 import { SuggestionsList } from '@/components/admin/dashboard/SuggestionsList';
 import { WaitlistList } from '@/components/admin/dashboard/WaitlistList';
+import { ContactSubmissionsList } from '@/components/admin/dashboard/ContactSubmissionsList';
 import { useAdminWaitlist } from '@/hooks/admin/useAdminWaitlist';
+import { useAdminContactSubmissions } from '@/hooks/admin/useAdminContactSubmissions';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageCircle, Flag, ShieldBan, Mailbox, Mail } from 'lucide-react';
+import { MessageCircle, Flag, ShieldBan, Mailbox, Mail, Inbox } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
-type Tab = 'support' | 'reports' | 'bans' | 'suggestions' | 'waitlist';
+type Tab = 'support' | 'reports' | 'bans' | 'suggestions' | 'waitlist' | 'contact';
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState<Tab>('support');
@@ -34,6 +36,7 @@ export default function AdminDashboard() {
   const { bannedUsers, loading: bLoading, filter: bFilter, setFilter: setBFilter, banUser, updateBanStatus, activeCount, liftedCount } = useAdminBannedUsers();
   const { suggestions, loading: sLoading, unreadCount, markAsRead } = useAdminSuggestions();
   const { entries: waitlistEntries, loading: wLoading, error: wError, refresh: refreshWaitlist } = useAdminWaitlist();
+  const { submissions: contactSubs, loading: cLoading, error: cError, refresh: refreshContact } = useAdminContactSubmissions();
 
   const activeThreads = threads.filter((t) => t.status === 'active').length;
   const totalUnread = threads.reduce((s, t) => s + (t.unread_count || 0), 0);
@@ -75,6 +78,10 @@ export default function AdminDashboard() {
             <TabsTrigger value="waitlist" className="gap-2 data-[state=active]:bg-accent">
               <Mail className="h-4 w-4" /><span className="hidden sm:inline">Waitlist</span>
               {waitlistEntries.length > 0 && <Badge variant="secondary" className="h-5 min-w-5 px-1 text-xs">{waitlistEntries.length}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger value="contact" className="gap-2 data-[state=active]:bg-accent">
+              <Inbox className="h-4 w-4" /><span className="hidden sm:inline">Contact</span>
+              {contactSubs.length > 0 && <Badge variant="secondary" className="h-5 min-w-5 px-1 text-xs">{contactSubs.length}</Badge>}
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -126,6 +133,12 @@ export default function AdminDashboard() {
         {tab === 'waitlist' && (
           <div className="flex-1">
             <WaitlistList entries={waitlistEntries} loading={wLoading} error={wError} onRefresh={refreshWaitlist} />
+          </div>
+        )}
+
+        {tab === 'contact' && (
+          <div className="flex-1">
+            <ContactSubmissionsList submissions={contactSubs} loading={cLoading} error={cError} onRefresh={refreshContact} />
           </div>
         )}
       </div>
