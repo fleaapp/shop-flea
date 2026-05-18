@@ -122,6 +122,12 @@ export default function AdminDashboard() {
             <SuggestionsList suggestions={suggestions} loading={sLoading} onMarkAsRead={markAsRead} />
           </div>
         )}
+
+        {tab === 'waitlist' && (
+          <div className="flex-1">
+            <WaitlistList entries={waitlistEntries} loading={wLoading} error={wError} onRefresh={refreshWaitlist} />
+          </div>
+        )}
       </div>
     </div>
   );
