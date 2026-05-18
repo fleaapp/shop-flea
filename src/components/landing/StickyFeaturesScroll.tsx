@@ -4,8 +4,8 @@ import SwipeCardStack from "./SwipeCardStack";
 import FloatingCardMarquee from "./FloatingCardMarquee";
 import FilterBubblesCloud from "./FilterBubblesCloud";
 import GridToStackAnimation from "./GridToStackAnimation";
-import phoneMockup from "@/assets/flea-landing/phone-mockup.png";
-import shopSellSwipeGif from "@/assets/flea-landing/australian-female-founded.gif";
+import phoneMockup from "@/assets/flea-landing/phone-mockup.webp";
+import shopSellSwipeVideo from "@/assets/flea-landing/australian-female-founded.mp4";
 
 const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[] = [
   {
@@ -68,7 +68,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
     ),
     animation: (
       <div className="relative mt-2 mb-2 w-full md:w-screen md:max-w-none flex justify-center">
-        <img src={phoneMockup} alt="Flea app showing a listing with full-screen attention" className="w-56 md:w-60 drop-shadow-2xl" />
+        <img src={phoneMockup} alt="Flea app showing a listing with full-screen attention" className="w-56 md:w-60 drop-shadow-2xl" loading="lazy" decoding="async" />
         <FloatingCardMarquee />
       </div>
     ),
@@ -88,7 +88,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
     ),
     animation: (
       <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="w-full max-w-[18rem] min-[390px]:max-w-[20rem] md:max-w-xs mx-auto">
-        <img src={shopSellSwipeGif} alt="Shop and sell secondhand with a swipe" className="w-full rounded-2xl shadow-2xl" />
+        <video src={shopSellSwipeVideo} aria-label="Shop and sell secondhand with a swipe" className="w-full rounded-2xl shadow-2xl" autoPlay muted loop playsInline preload="metadata" />
       </motion.div>
     ),
   },
