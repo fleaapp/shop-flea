@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${SERVICE_KEY}`,
           },
           body: JSON.stringify({
             user_id: s.user_id,
