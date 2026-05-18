@@ -24,6 +24,16 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Require service-role bearer — only pg_cron / internal callers
+  const expectedKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const authHeader = req.headers.get('Authorization') ?? '';
+  if (!expectedKey || authHeader !== `Bearer ${expectedKey}`) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const supabaseAdmin = createClient(
       Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '',
