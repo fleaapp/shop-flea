@@ -4,15 +4,15 @@ import ScallopEdge from "./ScallopEdge";
 const faqs = [
   {
     q: "How does Flea work?",
-    a: "Flea is a swipe-first secondhand marketplace built for Australia. Instead of endless grids and search bars, you get one listing at a time, full-screen - so every piece gets its moment. Swipe right to add to your wishlist, left to pass, and up to open the full details (photos, condition, measurements, seller). The more you swipe, the smarter your feed gets - it learns your taste and only shows you things you'd actually wear.",
+    a: "Flea is a swipe-first secondhand marketplace built for Australia. Instead of endless grids and search bars, you get one listing at a time, full-screen - so every piece gets its moment. Swipe right to add to your wishlist, left to pass, up to open the full details, and down to mark it as a maybe and come back to it later. The more you swipe, the smarter your feed gets - it learns your taste and only shows you things you'd actually wear.",
   },
   {
     q: "How does the swiping work?",
-    a: "Four simple gestures. Swipe right to save a listing to your wishlist. Swipe left to pass - you won't see it again. Swipe up to open the listing for full details, more photos and to message the seller or buy. Swipe down to skip and send it to the bottom of your stack for later. That's it - no menus, no clutter, just you and the next piece.",
+    a: "Four simple gestures. Swipe right to save a listing to your wishlist. Swipe left to pass - you won't see it again. Swipe up to open the listing for full details, more photos, comments and to buy. Swipe down for maybe / skip - it sends the listing to the bottom of your stack so you can come back to it later. That's it - no menus, no clutter, just you and the next piece.",
   },
   {
     q: "When is Flea launching?",
-    a: "We're launching in Australia in May 2026. Sign up to the waitlist above to be one of the first inside - early users get 2 months of free listings plus first dibs before the app goes public.",
+    a: "We're launching in Australia in May 2026. Sign up to the waitlist above to be one of the first inside - anyone who joins the waitlist in May gets free selling on Flea right through to the end of July.",
   },
   {
     q: "Where can I download Flea?",
@@ -20,7 +20,7 @@ const faqs = [
   },
   {
     q: "What are the fees?",
-    a: "Selling on Flea is FREE for May, June and July 2026 - zero selling fees while we launch. After that, sellers pay a flat 7% platform fee on the item price (one of the lowest in the market). Buyers cover the payment processing fee at checkout - around 1.7% with card or Apple/Google Pay, or 3% with PayPal. No listing fees, no monthly fees, no surprises.",
+    a: "Join the waitlist in May and selling on Flea is FREE until the end of July - two full months of zero selling fees. From August onwards, sellers pay a flat 7% platform fee on the item price (one of the lowest in the market), and buyers cover the payment processing fee at checkout - around 1.7% with card or Apple/Google Pay. No listing fees, no monthly fees, no surprises.",
   },
   {
     q: "How does Flea learn my style?",
