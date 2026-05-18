@@ -38,6 +38,37 @@ serve(async (req) => {
   }
 
   try {
+    // SECURITY: require either the service role key (used by server-side
+    // edge functions / triggers) OR a valid user JWT. This blocks anonymous
+    // callers from sending arbitrary push notifications to any user.
+    const authHeader = req.headers.get("Authorization") || "";
+    const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    const serviceRoleKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const supabaseUrl = Deno.env.get("EXTERNAL_SUPABASE_URL")!;
+    const anonKey = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "";
+
+    let authorized = false;
+    if (bearer && serviceRoleKey && bearer === serviceRoleKey) {
+      authorized = true;
+    } else if (bearer) {
+      try {
+        const verifier = createClient(supabaseUrl, anonKey, {
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
+        const { data, error } = await verifier.auth.getUser(bearer);
+        if (!error && data?.user?.id) authorized = true;
+      } catch (_) {
+        authorized = false;
+      }
+    }
+
+    if (!authorized) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { user_id, notification } = await req.json();
 
     if (!user_id || !notification) {
