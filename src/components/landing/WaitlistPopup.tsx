@@ -84,16 +84,18 @@ const WaitlistPopup = () => {
         country_code: parsed.data.country_code,
       });
       if (insertError) {
+        console.error("[waitlist-popup] insert failed", insertError);
         if (insertError.code === "23505") {
           setError("This email is already on the waitlist.");
         } else {
-          setError("Something went wrong. Please try again.");
+          setError(insertError.message || "Something went wrong. Please try again.");
         }
         setSubmitting(false);
         return;
       }
       setSuccess(true);
-    } catch {
+    } catch (err) {
+      console.error("[waitlist-popup] submit threw", err);
       setError("Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
