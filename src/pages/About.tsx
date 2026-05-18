@@ -56,6 +56,7 @@ const About = () => {
       <div className="relative z-10"><StickyFeaturesScroll /></div>
       <div className="relative z-10"><FeaturesGrid /></div>
       <div className="relative z-10"><GestureCardsSection /></div>
+      <LaunchMarquee />
       <FAQSection />
       <FooterSection />
     </div>
