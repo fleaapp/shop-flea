@@ -29,7 +29,7 @@ const GestureCardsSection = () => {
     <section className="bg-navy px-4 py-14 md:py-18">
       <div className="container mx-auto max-w-7xl">
         <motion.div className="text-center mb-14" {...reveal(0)}>
-          <h2 className="text-secondary font-black text-lg md:text-xl uppercase tracking-wider mb-2">
+          <h2 className="text-secondary font-black md:text-xl uppercase tracking-wider mb-2 text-2xl">
             Swiping, Simplified
           </h2>
           <p className="text-mint text-sm md:text-base">Save. Maybe. Shop. See More.</p>
