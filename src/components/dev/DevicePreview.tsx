@@ -256,7 +256,7 @@ export default function DevicePreview() {
               Hide
             </button>
           </div>
-        </div>
+        </ScaledFrame>
         );
       })()}
 
