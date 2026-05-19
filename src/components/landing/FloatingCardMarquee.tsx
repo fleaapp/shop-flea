@@ -19,7 +19,7 @@ const listings = [
 const MiniCard = ({ card, index }: { card: (typeof listings)[0]; index: number }) => {
   const angle = index % 2 === 0 ? "rotate-[3deg]" : "rotate-[-3deg]";
   return (
-    <div className={`flex flex-col overflow-hidden rounded-2xl bg-card p-1.5 shadow-xl w-[130px] h-[186px] md:w-[150px] md:h-[214px] flex-shrink-0 ${angle}`}>
+    <div className={`flex flex-col overflow-hidden rounded-2xl bg-card p-1.5 shadow-xl w-[100px] h-[143px] min-[390px]:w-[115px] min-[390px]:h-[164px] min-[440px]:w-[130px] min-[440px]:h-[186px] md:w-[150px] md:h-[214px] flex-shrink-0 ${angle}`}>
       <div className="relative flex-1 min-h-0 overflow-hidden rounded-xl bg-muted">
         <img src={card.image} alt={card.title} className="h-full w-full object-cover" draggable={false} />
       </div>
