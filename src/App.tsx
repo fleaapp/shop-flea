@@ -40,7 +40,7 @@ const loadSellerProfile = () => import("./pages/SellerProfile");
 const loadFAQ = () => import("./pages/FAQ");
 const loadOrderChat = () => import("./pages/OrderChat");
 const loadSales = () => import("./pages/Sales");
-const loadAbout = () => import("./pages/About");
+
 const loadInstall = () => import("./pages/Install");
 const loadSuggestionBox = () => import("./pages/SuggestionBox");
 const loadForgotPassword = () => import("./pages/ForgotPassword");
