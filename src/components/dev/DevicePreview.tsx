@@ -15,23 +15,61 @@ type Device = {
   width: number;
   height: number;
   dpr: number;
-  // Safari visible viewport height (URL bar collapsed + bottom toolbar shown), portrait
-  safariVisibleHeight: number;
-  // PWA standalone visible height (no Safari chrome, just status bar)
-  standaloneVisibleHeight: number;
+  hasNotch: boolean; // notched/Dynamic Island iPhones — bigger Safari chrome offset
 };
 
-// Real CSS dimensions. safariVisibleHeight reflects what you actually see on the
-// device when Safari's bottom toolbar is visible (the common case while browsing).
+// Real CSS pixel dimensions (portrait) — public Apple/Android specs.
 const DEVICES: Device[] = [
-  { id: "iphone-se",        label: "iPhone SE",         width: 375, height: 667, dpr: 2,     safariVisibleHeight: 553, standaloneVisibleHeight: 647 },
-  { id: "iphone-13-mini",   label: "iPhone 12/13 Mini", width: 375, height: 812, dpr: 3,     safariVisibleHeight: 663, standaloneVisibleHeight: 778 },
-  { id: "iphone-standard",  label: "iPhone (15/16)",    width: 393, height: 852, dpr: 3,     safariVisibleHeight: 695, standaloneVisibleHeight: 818 },
-  { id: "iphone-pro",       label: "iPhone Pro",        width: 402, height: 874, dpr: 3,     safariVisibleHeight: 715, standaloneVisibleHeight: 840 },
-  { id: "iphone-17-pro-max",label: "iPhone 17 Pro Max", width: 440, height: 956, dpr: 3,     safariVisibleHeight: 791, standaloneVisibleHeight: 922 },
-  { id: "android-small",    label: "Small Android",     width: 360, height: 740, dpr: 2,     safariVisibleHeight: 620, standaloneVisibleHeight: 716 },
-  { id: "android-large",    label: "Large Android",     width: 412, height: 915, dpr: 2.625, safariVisibleHeight: 791, standaloneVisibleHeight: 891 },
+  // iPhone SE — Touch ID, no notch
+  { id: "iphone-se",            label: "iPhone SE",              width: 375, height: 667, dpr: 2, hasNotch: false },
+
+  // 13 family
+  { id: "iphone-13-mini",       label: "iPhone 13 mini",         width: 375, height: 812, dpr: 3, hasNotch: true },
+  { id: "iphone-13",            label: "iPhone 13 / 13 Pro",     width: 390, height: 844, dpr: 3, hasNotch: true },
+  { id: "iphone-13-pro-max",    label: "iPhone 13 Pro Max",      width: 428, height: 926, dpr: 3, hasNotch: true },
+
+  // 14 family
+  { id: "iphone-14",            label: "iPhone 14",              width: 390, height: 844, dpr: 3, hasNotch: true },
+  { id: "iphone-14-plus",       label: "iPhone 14 Plus",         width: 428, height: 926, dpr: 3, hasNotch: true },
+  { id: "iphone-14-pro",        label: "iPhone 14 Pro",          width: 393, height: 852, dpr: 3, hasNotch: true },
+  { id: "iphone-14-pro-max",    label: "iPhone 14 Pro Max",      width: 430, height: 932, dpr: 3, hasNotch: true },
+
+  // 15 family
+  { id: "iphone-15",            label: "iPhone 15 / 15 Pro",     width: 393, height: 852, dpr: 3, hasNotch: true },
+  { id: "iphone-15-plus",       label: "iPhone 15 Plus / Pro Max", width: 430, height: 932, dpr: 3, hasNotch: true },
+
+  // 16 family
+  { id: "iphone-16",            label: "iPhone 16",              width: 393, height: 852, dpr: 3, hasNotch: true },
+  { id: "iphone-16-plus",       label: "iPhone 16 Plus",         width: 430, height: 932, dpr: 3, hasNotch: true },
+  { id: "iphone-16-pro",        label: "iPhone 16 Pro",          width: 402, height: 874, dpr: 3, hasNotch: true },
+  { id: "iphone-16-pro-max",    label: "iPhone 16 Pro Max",      width: 440, height: 956, dpr: 3, hasNotch: true },
+
+  // 17 family
+  { id: "iphone-17",            label: "iPhone 17",              width: 402, height: 874, dpr: 3, hasNotch: true },
+  { id: "iphone-17-pro",        label: "iPhone 17 Pro",          width: 402, height: 874, dpr: 3, hasNotch: true },
+  { id: "iphone-17-pro-max",    label: "iPhone 17 Pro Max",      width: 440, height: 992, dpr: 3, hasNotch: true },
+
+  // Android
+  { id: "android-small",        label: "Small Android",          width: 360, height: 740, dpr: 2,     hasNotch: false },
+  { id: "android-large",        label: "Large Android",          width: 412, height: 915, dpr: 2.625, hasNotch: false },
 ];
+
+// Mobile Safari (or Chrome on Android) UI eats space at top + bottom.
+// Notched iPhones: ~59px top + ~114px bottom toolbar visible.
+// Touch-ID SE: ~50px top + ~64px bottom.
+// Android Chrome: ~56px top + ~48px bottom.
+function getSafariVisibleHeight(d: Device): number {
+  if (d.id === "iphone-se") return d.height - 114;
+  if (d.hasNotch) return d.height - 173;
+  return d.height - 104; // android
+}
+// PWA / standalone: only status bar / status bar + gesture pill.
+function getStandaloneVisibleHeight(d: Device): number {
+  if (d.id === "iphone-se") return d.height - 20;
+  if (d.hasNotch) return d.height - 34; // status area; home-indicator overlays content
+  return d.height - 24;
+}
+
 
 
 const STORAGE_KEY = "flea_dev_device_preview";
