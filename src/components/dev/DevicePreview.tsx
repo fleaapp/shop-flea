@@ -213,8 +213,8 @@ export default function DevicePreview() {
       {/* Fullscreen frame */}
       {open && device && (() => {
         const visibleHeight =
-          chromeMode === "safari" ? device.safariVisibleHeight :
-          chromeMode === "standalone" ? device.standaloneVisibleHeight :
+          chromeMode === "safari" ? getSafariVisibleHeight(device) :
+          chromeMode === "standalone" ? getStandaloneVisibleHeight(device) :
           device.height;
         return (
         <ScaledFrame
