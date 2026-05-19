@@ -173,7 +173,12 @@ export default function DevicePreview() {
       )}
 
       {/* Fullscreen frame */}
-      {open && device && (
+      {open && device && (() => {
+        const visibleHeight =
+          chromeMode === "safari" ? device.safariVisibleHeight :
+          chromeMode === "standalone" ? device.standaloneVisibleHeight :
+          device.height;
+        return (
         <div
           style={{
             position: "fixed",
@@ -189,12 +194,12 @@ export default function DevicePreview() {
           <div
             style={{
               width: device.width,
-              height: device.height,
+              height: visibleHeight,
               maxWidth: "100%",
               maxHeight: "100%",
               background: "#000",
-              borderRadius: 40,
-              padding: 10,
+              borderRadius: chromeMode === "full" ? 40 : 20,
+              padding: chromeMode === "full" ? 10 : 2,
               boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
               border: "1px solid #222",
               boxSizing: "content-box",
@@ -208,7 +213,7 @@ export default function DevicePreview() {
                 width: "100%",
                 height: "100%",
                 border: "none",
-                borderRadius: 30,
+                borderRadius: chromeMode === "full" ? 30 : 18,
                 background: "#fff",
                 display: "block",
               }}
@@ -224,29 +229,57 @@ export default function DevicePreview() {
               fontSize: 12,
             }}
           >
-            {device.label} · {device.width}×{device.height} @{device.dpr}x
+            {device.label} · {device.width}×{visibleHeight} @{device.dpr}x · {chromeMode}
           </div>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
+          <div
             style={{
               position: "fixed",
               top: 12,
               right: 12,
-              background: "#222",
-              color: "#fff",
-              border: "1px solid #333",
-              borderRadius: 999,
-              padding: "6px 12px",
-              fontSize: 12,
-              cursor: "pointer",
+              display: "flex",
+              gap: 6,
               fontFamily: "ui-sans-serif, system-ui, sans-serif",
             }}
           >
-            Hide frame
-          </button>
+            {(["safari", "standalone", "full"] as ChromeMode[]).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setChromeMode(m)}
+                style={{
+                  background: chromeMode === m ? "#fff" : "#222",
+                  color: chromeMode === m ? "#000" : "#fff",
+                  border: "1px solid #333",
+                  borderRadius: 999,
+                  padding: "6px 10px",
+                  fontSize: 11,
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                {m === "safari" ? "Safari" : m === "standalone" ? "PWA" : "Full"}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              style={{
+                background: "#222",
+                color: "#fff",
+                border: "1px solid #333",
+                borderRadius: 999,
+                padding: "6px 12px",
+                fontSize: 11,
+                cursor: "pointer",
+              }}
+            >
+              Hide
+            </button>
+          </div>
         </div>
-      )}
+        );
+      })()}
+
     </>
   );
 }
