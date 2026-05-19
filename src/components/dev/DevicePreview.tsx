@@ -57,13 +57,25 @@ const isInsideDevicePreviewFrame = (() => {
   }
 })();
 
+type ChromeMode = "safari" | "standalone" | "full";
+const CHROME_KEY = "flea_dev_device_chrome";
+
 export default function DevicePreview() {
   const [open, setOpen] = useState(false);
   const [deviceId, setDeviceId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     return localStorage.getItem(STORAGE_KEY);
   });
+  const [chromeMode, setChromeMode] = useState<ChromeMode>(() => {
+    if (typeof window === "undefined") return "safari";
+    return (localStorage.getItem(CHROME_KEY) as ChromeMode) || "safari";
+  });
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem(CHROME_KEY, chromeMode);
+  }, [chromeMode]);
+
 
   const device = useMemo(() => DEVICES.find((d) => d.id === deviceId) ?? null, [deviceId]);
 
