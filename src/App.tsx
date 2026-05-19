@@ -21,6 +21,7 @@ import { restoreRouteAppChrome } from "@/lib/appChrome";
 // Critical path – loaded eagerly
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import DevicePreview from "./components/dev/DevicePreview";
 
 const loadListingDetails = () => import("./pages/ListingDetails");
 const loadFavorites = () => import("./pages/Favorites");
