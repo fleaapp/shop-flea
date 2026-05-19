@@ -15,17 +15,24 @@ type Device = {
   width: number;
   height: number;
   dpr: number;
+  // Safari visible viewport height (URL bar collapsed + bottom toolbar shown), portrait
+  safariVisibleHeight: number;
+  // PWA standalone visible height (no Safari chrome, just status bar)
+  standaloneVisibleHeight: number;
 };
 
+// Real CSS dimensions. safariVisibleHeight reflects what you actually see on the
+// device when Safari's bottom toolbar is visible (the common case while browsing).
 const DEVICES: Device[] = [
-  { id: "iphone-se", label: "iPhone SE", width: 375, height: 667, dpr: 2 },
-  { id: "iphone-13-mini", label: "iPhone 12/13 Mini", width: 375, height: 812, dpr: 3 },
-  { id: "iphone-standard", label: "iPhone (15/16)", width: 393, height: 852, dpr: 3 },
-  { id: "iphone-pro", label: "iPhone Pro", width: 402, height: 874, dpr: 3 },
-  { id: "iphone-17-pro-max", label: "iPhone 17 Pro Max", width: 440, height: 956, dpr: 3 },
-  { id: "android-small", label: "Small Android", width: 360, height: 740, dpr: 2 },
-  { id: "android-large", label: "Large Android", width: 412, height: 915, dpr: 2.625 },
+  { id: "iphone-se",        label: "iPhone SE",         width: 375, height: 667, dpr: 2,     safariVisibleHeight: 553, standaloneVisibleHeight: 647 },
+  { id: "iphone-13-mini",   label: "iPhone 12/13 Mini", width: 375, height: 812, dpr: 3,     safariVisibleHeight: 663, standaloneVisibleHeight: 778 },
+  { id: "iphone-standard",  label: "iPhone (15/16)",    width: 393, height: 852, dpr: 3,     safariVisibleHeight: 695, standaloneVisibleHeight: 818 },
+  { id: "iphone-pro",       label: "iPhone Pro",        width: 402, height: 874, dpr: 3,     safariVisibleHeight: 715, standaloneVisibleHeight: 840 },
+  { id: "iphone-17-pro-max",label: "iPhone 17 Pro Max", width: 440, height: 956, dpr: 3,     safariVisibleHeight: 791, standaloneVisibleHeight: 922 },
+  { id: "android-small",    label: "Small Android",     width: 360, height: 740, dpr: 2,     safariVisibleHeight: 620, standaloneVisibleHeight: 716 },
+  { id: "android-large",    label: "Large Android",     width: 412, height: 915, dpr: 2.625, safariVisibleHeight: 791, standaloneVisibleHeight: 891 },
 ];
+
 
 const STORAGE_KEY = "flea_dev_device_preview";
 const IFRAME_PARAM = "devpreview";
