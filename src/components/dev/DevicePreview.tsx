@@ -179,46 +179,26 @@ export default function DevicePreview() {
           chromeMode === "standalone" ? device.standaloneVisibleHeight :
           device.height;
         return (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 2147483646,
-            background: "#0a0a0a",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 24,
-          }}
+        <ScaledFrame
+          device={device}
+          visibleHeight={visibleHeight}
+          chromeMode={chromeMode}
+          iframeSrc={iframeSrc}
         >
           <div
             style={{
-              width: device.width,
-              height: visibleHeight,
-              maxWidth: "100%",
-              maxHeight: "100%",
-              background: "#000",
-              borderRadius: chromeMode === "full" ? 40 : 20,
-              padding: chromeMode === "full" ? 10 : 2,
-              boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
-              border: "1px solid #222",
-              boxSizing: "content-box",
+              position: "fixed",
+              top: 12,
+              left: 12,
+              color: "#aaa",
+              fontFamily: "ui-sans-serif, system-ui, sans-serif",
+              fontSize: 12,
+              zIndex: 10,
             }}
           >
-            <iframe
-              key={device.id}
-              src={iframeSrc}
-              title={device.label}
-              style={{
-                width: "100%",
-                height: "100%",
-                border: "none",
-                borderRadius: chromeMode === "full" ? 30 : 18,
-                background: "#fff",
-                display: "block",
-              }}
-            />
+            {device.label} · {device.width}×{visibleHeight} @{device.dpr}x · {chromeMode}
           </div>
+
           <div
             style={{
               position: "fixed",
