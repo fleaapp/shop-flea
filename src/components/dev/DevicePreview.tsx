@@ -280,3 +280,91 @@ function menuItemStyle(active: boolean): React.CSSProperties {
     fontSize: 13,
   };
 }
+
+function ScaledFrame({
+  device,
+  visibleHeight,
+  chromeMode,
+  iframeSrc,
+  children,
+}: {
+  device: Device;
+  visibleHeight: number;
+  chromeMode: ChromeMode;
+  iframeSrc: string;
+  children?: React.ReactNode;
+}) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [scale, setScale] = useState(1);
+
+  const bezel = chromeMode === "full" ? 10 : 2;
+  const frameWidth = device.width + bezel * 2;
+  const frameHeight = visibleHeight + bezel * 2;
+
+  useLayoutEffect(() => {
+    const compute = () => {
+      const el = containerRef.current;
+      if (!el) return;
+      // Leave ~80px margin for the top chrome toolbar + breathing room
+      const availW = el.clientWidth - 32;
+      const availH = el.clientHeight - 80;
+      const s = Math.min(availW / frameWidth, availH / frameHeight, 1);
+      setScale(s > 0 ? s : 1);
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    if (containerRef.current) ro.observe(containerRef.current);
+    window.addEventListener("resize", compute);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", compute);
+    };
+  }, [frameWidth, frameHeight]);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 2147483646,
+        background: "#0a0a0a",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          width: frameWidth,
+          height: frameHeight,
+          transform: `scale(${scale})`,
+          transformOrigin: "center center",
+          background: "#000",
+          borderRadius: chromeMode === "full" ? 40 : 20,
+          padding: bezel,
+          boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
+          border: "1px solid #222",
+          boxSizing: "border-box",
+          flexShrink: 0,
+        }}
+      >
+        <iframe
+          src={iframeSrc}
+          title={device.label}
+          style={{
+            width: device.width,
+            height: visibleHeight,
+            border: "none",
+            borderRadius: chromeMode === "full" ? 30 : 18,
+            background: "#fff",
+            display: "block",
+          }}
+        />
+      </div>
+      {children}
+    </div>
+  );
+}
+
