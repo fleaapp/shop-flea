@@ -32,7 +32,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
     ),
     detail: (
       <>
-        <span className="md:hidden">Stop sifting through the same,<br />stale&nbsp;listings.<br />Our swipe logic clears the deck,<br />so every swipe is a first&nbsp;look.</span>
+        <span className="md:hidden text-[13px] min-[360px]:text-sm min-[390px]:text-base">Stop sifting through the same,&nbsp;stale&nbsp;listings.<br />Our swipe logic clears the deck,<br />so every swipe is a first&nbsp;look.</span>
         <span className="hidden md:inline">Stop sifting through the same, stale listings.<br />Our swipe logic clears the deck, so every swipe is a first look.</span>
       </>
     ),
@@ -67,7 +67,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
       </>
     ),
     animation: (
-      <div className="relative mt-2 mb-2 w-screen max-w-none flex justify-center">
+      <div className="relative mt-2 mb-2 flex justify-center">
         <img src={phoneMockup} alt="Flea app showing a listing with full-screen attention" className="w-36 min-[360px]:w-40 min-[390px]:w-44 min-[414px]:w-52 min-[440px]:w-56 md:w-60 drop-shadow-2xl" loading="lazy" decoding="async" />
         <FloatingCardMarquee />
       </div>
@@ -97,8 +97,8 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
 const Block = ({ heading, detail, animation, isAccent, index }: { heading: ReactNode; detail: ReactNode; animation?: ReactNode; isAccent: boolean; index: number; }) => {
   const textColor = isAccent ? "text-navy" : "text-mint";
   const extraBottom = index === 2 || index === 4
-    ? "pb-[calc(env(safe-area-inset-bottom,0px)+3.5rem)] min-[390px]:pb-[calc(env(safe-area-inset-bottom,0px)+4rem)] min-[440px]:pb-[calc(env(safe-area-inset-bottom,0px)+8rem)]"
-    : "pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] min-[390px]:pb-[calc(env(safe-area-inset-bottom,0px)+2.5rem)] min-[440px]:pb-[calc(env(safe-area-inset-bottom,0px)+5.5rem)]";
+    ? "pb-[calc(env(safe-area-inset-bottom,0px)+2.25rem)] min-[390px]:pb-[calc(env(safe-area-inset-bottom,0px)+2.75rem)] min-[440px]:pb-[calc(env(safe-area-inset-bottom,0px)+8rem)]"
+    : "pb-[calc(env(safe-area-inset-bottom,0px)+1.5rem)] min-[390px]:pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] min-[440px]:pb-[calc(env(safe-area-inset-bottom,0px)+5.5rem)]";
   return (
     <motion.div
       initial={{ y: 28 }}
@@ -106,7 +106,7 @@ const Block = ({ heading, detail, animation, isAccent, index }: { heading: React
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       className="absolute inset-0 flex flex-col pointer-events-none"
     >
-      <div className="px-8 min-[390px]:px-8 md:px-12 lg:px-16 flex-shrink-0 pt-[calc(env(safe-area-inset-top,0px)+2.5rem)] min-[390px]:pt-[calc(env(safe-area-inset-top,0px)+3rem)] min-[440px]:pt-[calc(env(safe-area-inset-top,0px)+10rem)] md:pt-[calc(env(safe-area-inset-top,0px)+9rem)] lg:pt-[calc(env(safe-area-inset-top,0px)+10rem)]">
+      <div className="px-8 min-[390px]:px-8 md:px-12 lg:px-16 flex-shrink-0 pt-[calc(env(safe-area-inset-top,0px)+3.75rem)] min-[390px]:pt-[calc(env(safe-area-inset-top,0px)+4.5rem)] min-[440px]:pt-[calc(env(safe-area-inset-top,0px)+10rem)] md:pt-[calc(env(safe-area-inset-top,0px)+9rem)] lg:pt-[calc(env(safe-area-inset-top,0px)+10rem)]">
         <h3 className={`text-[22px] min-[390px]:text-[28px] md:text-[1.5rem] lg:text-[2.125rem] font-bold leading-tight md:leading-tight text-center max-w-sm md:max-w-none mx-auto ${textColor}`}>{heading}</h3>
       </div>
       <div className={`flex-1 min-h-0 flex items-center justify-center pointer-events-auto ${index === 3 ? "" : "overflow-hidden"}`}>
