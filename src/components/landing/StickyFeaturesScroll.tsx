@@ -32,7 +32,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
     ),
     detail: (
       <>
-        <span className="md:hidden">Stop sifting through the same, stale listings.<br />Our swipe logic clears the deck,<br />so every swipe is a first look.</span>
+        <span className="md:hidden">Stop sifting through the same,<br />stale&nbsp;listings.<br />Our swipe logic clears the deck,<br />so every swipe is a first&nbsp;look.</span>
         <span className="hidden md:inline">Stop sifting through the same, stale listings.<br />Our swipe logic clears the deck, so every swipe is a first look.</span>
       </>
     ),
@@ -62,13 +62,13 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
     ),
     detail: (
       <>
-        <span className="md:hidden">Why be one tile amongst hundreds?<br />On Flea, your listing is the only<br />one on the screen.</span>
+        <span className="md:hidden">Why be one tile amongst&nbsp;hundreds?<br />On Flea, your listing is<br />the only one on the&nbsp;screen.</span>
         <span className="hidden md:inline">Why be one tile in a crowd?<br />On Flea, your listing is the only one on the screen.</span>
       </>
     ),
     animation: (
       <div className="relative mt-2 mb-2 w-screen max-w-none flex justify-center">
-        <img src={phoneMockup} alt="Flea app showing a listing with full-screen attention" className="w-44 min-[390px]:w-48 min-[440px]:w-56 md:w-60 drop-shadow-2xl" loading="lazy" decoding="async" />
+        <img src={phoneMockup} alt="Flea app showing a listing with full-screen attention" className="w-36 min-[360px]:w-40 min-[390px]:w-44 min-[414px]:w-52 min-[440px]:w-56 md:w-60 drop-shadow-2xl" loading="lazy" decoding="async" />
         <FloatingCardMarquee />
       </div>
     ),
