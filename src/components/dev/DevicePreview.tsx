@@ -1,0 +1,250 @@
+import { useEffect, useMemo, useState } from "react";
+
+/**
+ * Dev-only device preview toggle.
+ * Renders a floating button on Lovable preview / localhost only.
+ * Opens an overlay with an <iframe> of the same origin sized to the chosen device,
+ * giving an exact simulation (media queries respond to the iframe's real viewport).
+ *
+ * Hidden completely on production hosts (finditonflea.com, shop-flea.lovable.app, etc.).
+ */
+
+type Device = {
+  id: string;
+  label: string;
+  width: number;
+  height: number;
+  dpr: number;
+};
+
+const DEVICES: Device[] = [
+  { id: "iphone-se", label: "iPhone SE", width: 375, height: 667, dpr: 2 },
+  { id: "iphone-13-mini", label: "iPhone 12/13 Mini", width: 375, height: 812, dpr: 3 },
+  { id: "iphone-standard", label: "iPhone (15/16)", width: 393, height: 852, dpr: 3 },
+  { id: "iphone-pro", label: "iPhone Pro", width: 402, height: 874, dpr: 3 },
+  { id: "iphone-17-pro-max", label: "iPhone 17 Pro Max", width: 440, height: 956, dpr: 3 },
+  { id: "android-small", label: "Small Android", width: 360, height: 740, dpr: 2 },
+  { id: "android-large", label: "Large Android", width: 412, height: 915, dpr: 2.625 },
+];
+
+const STORAGE_KEY = "flea_dev_device_preview";
+const IFRAME_PARAM = "devpreview";
+
+const isPreviewHost = (() => {
+  if (typeof window === "undefined") return false;
+  const h = window.location.hostname;
+  return (
+    h === "localhost" ||
+    h === "127.0.0.1" ||
+    h.includes("id-preview--") ||
+    h.endsWith("lovableproject.com")
+  );
+})();
+
+const isInsideDevicePreviewFrame = (() => {
+  if (typeof window === "undefined") return false;
+  try {
+    return new URLSearchParams(window.location.search).has(IFRAME_PARAM);
+  } catch {
+    return false;
+  }
+})();
+
+export default function DevicePreview() {
+  const [open, setOpen] = useState(false);
+  const [deviceId, setDeviceId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem(STORAGE_KEY);
+  });
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const device = useMemo(() => DEVICES.find((d) => d.id === deviceId) ?? null, [deviceId]);
+
+  useEffect(() => {
+    if (deviceId) localStorage.setItem(STORAGE_KEY, deviceId);
+    else localStorage.removeItem(STORAGE_KEY);
+  }, [deviceId]);
+
+  useEffect(() => {
+    if (device) setOpen(true);
+  }, [device]);
+
+  if (!isPreviewHost || isInsideDevicePreviewFrame) return null;
+
+  const iframeSrc = (() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set(IFRAME_PARAM, "1");
+    return url.toString();
+  })();
+
+  return (
+    <>
+      {/* Floating toggle */}
+      <button
+        type="button"
+        onClick={() => setMenuOpen((v) => !v)}
+        style={{
+          position: "fixed",
+          bottom: 16,
+          right: 16,
+          zIndex: 2147483647,
+          background: "#111",
+          color: "#fff",
+          fontFamily: "ui-sans-serif, system-ui, sans-serif",
+          fontSize: 12,
+          fontWeight: 600,
+          padding: "8px 12px",
+          borderRadius: 999,
+          border: "1px solid #333",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.35)",
+          cursor: "pointer",
+        }}
+        aria-label="Device preview"
+      >
+        📱 {device ? device.label : "Device"}
+      </button>
+
+      {menuOpen && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 60,
+            right: 16,
+            zIndex: 2147483647,
+            background: "#1a1a1a",
+            color: "#fff",
+            border: "1px solid #333",
+            borderRadius: 12,
+            padding: 6,
+            minWidth: 200,
+            fontFamily: "ui-sans-serif, system-ui, sans-serif",
+            fontSize: 13,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setDeviceId(null);
+              setOpen(false);
+              setMenuOpen(false);
+            }}
+            style={menuItemStyle(!device)}
+          >
+            Off (responsive)
+          </button>
+          {DEVICES.map((d) => (
+            <button
+              key={d.id}
+              type="button"
+              onClick={() => {
+                setDeviceId(d.id);
+                setOpen(true);
+                setMenuOpen(false);
+              }}
+              style={menuItemStyle(device?.id === d.id)}
+            >
+              <span>{d.label}</span>
+              <span style={{ opacity: 0.5, marginLeft: 8, fontSize: 11 }}>
+                {d.width}×{d.height}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Fullscreen frame */}
+      {open && device && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 2147483646,
+            background: "#0a0a0a",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <div
+            style={{
+              width: device.width,
+              height: device.height,
+              maxWidth: "100%",
+              maxHeight: "100%",
+              background: "#000",
+              borderRadius: 40,
+              padding: 10,
+              boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
+              border: "1px solid #222",
+              boxSizing: "content-box",
+            }}
+          >
+            <iframe
+              key={device.id}
+              src={iframeSrc}
+              title={device.label}
+              style={{
+                width: "100%",
+                height: "100%",
+                border: "none",
+                borderRadius: 30,
+                background: "#fff",
+                display: "block",
+              }}
+            />
+          </div>
+          <div
+            style={{
+              position: "fixed",
+              top: 12,
+              left: 12,
+              color: "#aaa",
+              fontFamily: "ui-sans-serif, system-ui, sans-serif",
+              fontSize: 12,
+            }}
+          >
+            {device.label} · {device.width}×{device.height} @{device.dpr}x
+          </div>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            style={{
+              position: "fixed",
+              top: 12,
+              right: 12,
+              background: "#222",
+              color: "#fff",
+              border: "1px solid #333",
+              borderRadius: 999,
+              padding: "6px 12px",
+              fontSize: 12,
+              cursor: "pointer",
+              fontFamily: "ui-sans-serif, system-ui, sans-serif",
+            }}
+          >
+            Hide frame
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
+function menuItemStyle(active: boolean): React.CSSProperties {
+  return {
+    display: "flex",
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "8px 10px",
+    background: active ? "#2a2a2a" : "transparent",
+    color: "#fff",
+    border: "none",
+    borderRadius: 8,
+    cursor: "pointer",
+    textAlign: "left",
+    fontSize: 13,
+  };
+}
