@@ -32,7 +32,7 @@ const blocks: { heading: ReactNode; detail: ReactNode; animation?: ReactNode }[]
     ),
     detail: (
       <>
-        <span className="md:hidden text-[13px] min-[360px]:text-sm min-[390px]:text-base">Stop sifting through the same,&nbsp;stale&nbsp;listings.<br />Our swipe logic clears the deck,<br />so every swipe is a first&nbsp;look.</span>
+        <span className="md:hidden text-[12px] min-[360px]:text-[13px] min-[390px]:text-sm min-[440px]:text-base"><span className="whitespace-nowrap">Stop sifting through the same,&nbsp;stale&nbsp;listings.</span><br />Our swipe logic clears the deck,<br />so every swipe is a first&nbsp;look.</span>
         <span className="hidden md:inline">Stop sifting through the same, stale listings.<br />Our swipe logic clears the deck, so every swipe is a first look.</span>
       </>
     ),
