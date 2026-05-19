@@ -15,17 +15,24 @@ type Device = {
   width: number;
   height: number;
   dpr: number;
+  // Safari visible viewport height (URL bar collapsed + bottom toolbar shown), portrait
+  safariVisibleHeight: number;
+  // PWA standalone visible height (no Safari chrome, just status bar)
+  standaloneVisibleHeight: number;
 };
 
+// Real CSS dimensions. safariVisibleHeight reflects what you actually see on the
+// device when Safari's bottom toolbar is visible (the common case while browsing).
 const DEVICES: Device[] = [
-  { id: "iphone-se", label: "iPhone SE", width: 375, height: 667, dpr: 2 },
-  { id: "iphone-13-mini", label: "iPhone 12/13 Mini", width: 375, height: 812, dpr: 3 },
-  { id: "iphone-standard", label: "iPhone (15/16)", width: 393, height: 852, dpr: 3 },
-  { id: "iphone-pro", label: "iPhone Pro", width: 402, height: 874, dpr: 3 },
-  { id: "iphone-17-pro-max", label: "iPhone 17 Pro Max", width: 440, height: 956, dpr: 3 },
-  { id: "android-small", label: "Small Android", width: 360, height: 740, dpr: 2 },
-  { id: "android-large", label: "Large Android", width: 412, height: 915, dpr: 2.625 },
+  { id: "iphone-se",        label: "iPhone SE",         width: 375, height: 667, dpr: 2,     safariVisibleHeight: 553, standaloneVisibleHeight: 647 },
+  { id: "iphone-13-mini",   label: "iPhone 12/13 Mini", width: 375, height: 812, dpr: 3,     safariVisibleHeight: 663, standaloneVisibleHeight: 778 },
+  { id: "iphone-standard",  label: "iPhone (15/16)",    width: 393, height: 852, dpr: 3,     safariVisibleHeight: 695, standaloneVisibleHeight: 818 },
+  { id: "iphone-pro",       label: "iPhone Pro",        width: 402, height: 874, dpr: 3,     safariVisibleHeight: 715, standaloneVisibleHeight: 840 },
+  { id: "iphone-17-pro-max",label: "iPhone 17 Pro Max", width: 440, height: 956, dpr: 3,     safariVisibleHeight: 791, standaloneVisibleHeight: 922 },
+  { id: "android-small",    label: "Small Android",     width: 360, height: 740, dpr: 2,     safariVisibleHeight: 620, standaloneVisibleHeight: 716 },
+  { id: "android-large",    label: "Large Android",     width: 412, height: 915, dpr: 2.625, safariVisibleHeight: 791, standaloneVisibleHeight: 891 },
 ];
+
 
 const STORAGE_KEY = "flea_dev_device_preview";
 const IFRAME_PARAM = "devpreview";
@@ -50,13 +57,25 @@ const isInsideDevicePreviewFrame = (() => {
   }
 })();
 
+type ChromeMode = "safari" | "standalone" | "full";
+const CHROME_KEY = "flea_dev_device_chrome";
+
 export default function DevicePreview() {
   const [open, setOpen] = useState(false);
   const [deviceId, setDeviceId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     return localStorage.getItem(STORAGE_KEY);
   });
+  const [chromeMode, setChromeMode] = useState<ChromeMode>(() => {
+    if (typeof window === "undefined") return "safari";
+    return (localStorage.getItem(CHROME_KEY) as ChromeMode) || "safari";
+  });
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem(CHROME_KEY, chromeMode);
+  }, [chromeMode]);
+
 
   const device = useMemo(() => DEVICES.find((d) => d.id === deviceId) ?? null, [deviceId]);
 
@@ -154,7 +173,12 @@ export default function DevicePreview() {
       )}
 
       {/* Fullscreen frame */}
-      {open && device && (
+      {open && device && (() => {
+        const visibleHeight =
+          chromeMode === "safari" ? device.safariVisibleHeight :
+          chromeMode === "standalone" ? device.standaloneVisibleHeight :
+          device.height;
+        return (
         <div
           style={{
             position: "fixed",
@@ -170,12 +194,12 @@ export default function DevicePreview() {
           <div
             style={{
               width: device.width,
-              height: device.height,
+              height: visibleHeight,
               maxWidth: "100%",
               maxHeight: "100%",
               background: "#000",
-              borderRadius: 40,
-              padding: 10,
+              borderRadius: chromeMode === "full" ? 40 : 20,
+              padding: chromeMode === "full" ? 10 : 2,
               boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
               border: "1px solid #222",
               boxSizing: "content-box",
@@ -189,7 +213,7 @@ export default function DevicePreview() {
                 width: "100%",
                 height: "100%",
                 border: "none",
-                borderRadius: 30,
+                borderRadius: chromeMode === "full" ? 30 : 18,
                 background: "#fff",
                 display: "block",
               }}
@@ -205,29 +229,57 @@ export default function DevicePreview() {
               fontSize: 12,
             }}
           >
-            {device.label} · {device.width}×{device.height} @{device.dpr}x
+            {device.label} · {device.width}×{visibleHeight} @{device.dpr}x · {chromeMode}
           </div>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
+          <div
             style={{
               position: "fixed",
               top: 12,
               right: 12,
-              background: "#222",
-              color: "#fff",
-              border: "1px solid #333",
-              borderRadius: 999,
-              padding: "6px 12px",
-              fontSize: 12,
-              cursor: "pointer",
+              display: "flex",
+              gap: 6,
               fontFamily: "ui-sans-serif, system-ui, sans-serif",
             }}
           >
-            Hide frame
-          </button>
+            {(["safari", "standalone", "full"] as ChromeMode[]).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setChromeMode(m)}
+                style={{
+                  background: chromeMode === m ? "#fff" : "#222",
+                  color: chromeMode === m ? "#000" : "#fff",
+                  border: "1px solid #333",
+                  borderRadius: 999,
+                  padding: "6px 10px",
+                  fontSize: 11,
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                {m === "safari" ? "Safari" : m === "standalone" ? "PWA" : "Full"}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              style={{
+                background: "#222",
+                color: "#fff",
+                border: "1px solid #333",
+                borderRadius: 999,
+                padding: "6px 12px",
+                fontSize: 11,
+                cursor: "pointer",
+              }}
+            >
+              Hide
+            </button>
+          </div>
         </div>
-      )}
+        );
+      })()}
+
     </>
   );
 }
