@@ -30,29 +30,8 @@
         } catch (e) {}
       })();
 
-      // Inject the manifest link *before* the browser ever sees a static one.
-      // iOS Safari starts fetching the manifest the moment it parses the
-      // <link rel="manifest"> tag, so swapping href via JS afterwards is too
-      // late — iOS has already captured start_url=/ from the main manifest
-      // and "Add to Home Screen" on /about then opens the main app (→ /auth).
-      // By writing the link tag here based on the current path, /about gets
-      // its own standalone shortcut scoped to /about.
-      (function () {
-        try {
-          var isAbout = location.pathname.indexOf('/about') === 0;
-          var href = isAbout ? '/about.webmanifest' : '/manifest.webmanifest';
-          var link = document.createElement('link');
-          link.rel = 'manifest';
-          link.href = href;
-          link.id = 'app-manifest';
-          document.head.appendChild(link);
-          if (isAbout) {
-            var t = document.getElementById('apple-app-title');
-            if (t) t.setAttribute('content', 'Flea Site');
-          }
-        } catch (e) {}
-      })();
     </script>
+    <link rel="manifest" href="/manifest.webmanifest" id="app-manifest" />
 
     
     
