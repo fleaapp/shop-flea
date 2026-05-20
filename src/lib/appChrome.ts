@@ -50,9 +50,8 @@ export const applyAppChromeColor = (color: string, statusBarStyle: 'default' | '
   const colorScheme = document.querySelector('meta[name="color-scheme"]') as HTMLMetaElement | null;
   colorScheme?.setAttribute('content', isOverlay ? 'dark light' : 'light');
 
-  status?.setAttribute('content', 'default');
   const status = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]') as HTMLMetaElement | null;
-  status?.setAttribute('content', 'black-translucent');
+  status?.setAttribute('content', 'default');
 
   syncNativeStatusBar(color, isOverlay);
 };
