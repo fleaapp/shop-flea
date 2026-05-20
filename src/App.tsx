@@ -40,7 +40,7 @@ const loadSellerProfile = () => import("./pages/SellerProfile");
 const loadFAQ = () => import("./pages/FAQ");
 const loadOrderChat = () => import("./pages/OrderChat");
 const loadSales = () => import("./pages/Sales");
-const loadAbout = () => import("./pages/About");
+
 const loadInstall = () => import("./pages/Install");
 const loadSuggestionBox = () => import("./pages/SuggestionBox");
 const loadForgotPassword = () => import("./pages/ForgotPassword");
@@ -72,7 +72,7 @@ const SellerProfile = lazy(loadSellerProfile);
 const FAQ = lazy(loadFAQ);
 const OrderChat = lazy(loadOrderChat);
 const Sales = lazy(loadSales);
-const About = lazy(loadAbout);
+
 const Install = lazy(loadInstall);
 const SuggestionBox = lazy(loadSuggestionBox);
 const ForgotPassword = lazy(loadForgotPassword);
@@ -111,7 +111,7 @@ const PageLoader = () => <PageSkeleton />;
 const AppContent = () => {
   const { showCarousel, closeCarousel } = useOnboarding();
   const location = useLocation();
-  const isStandaloneSite = location.pathname.startsWith("/about");
+  const isStandaloneSite = false;
 
   useEffect(() => {
     const currentRoute = `${location.pathname}${location.search}${location.hash}`;
@@ -192,7 +192,7 @@ const AppContent = () => {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-          <Route path="/about" element={<About />} />
+          
           <Route path="/install" element={<Install />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/app" element={<Navigate to="/" replace />} />
