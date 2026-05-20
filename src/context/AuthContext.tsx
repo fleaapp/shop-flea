@@ -243,8 +243,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     localStorage.removeItem('flea_stripe_connected');
     localStorage.removeItem('flea_oauth_signup');
-    await supabase.auth.signOut();
+    // Clear local session immediately so UI reflects logout even if the
+    // network call to revoke the server-side session hangs (common on iOS PWA).
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+    setIsBanned(false);
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (e) {
+      console.error('signOut failed, clearing local storage anyway', e);
+    }
+    // Defensive: nuke any leftover supabase auth tokens from localStorage
+    try {
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith('sb-') && k.endsWith('-auth-token'))
+        .forEach((k) => localStorage.removeItem(k));
+    } catch {}
   };
+
   return (
     <AuthContext.Provider value={{ user, session, profile, loading, isBanned, signUp, signIn, signOut, refreshProfile }}>
       {children}
