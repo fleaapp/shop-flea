@@ -398,7 +398,7 @@ const Index = () => {
   }, []);
 
   const handleCardClick = (listing: DbListing) => {
-    navigate(`/listing/${listing.id}`);
+    navigate(`/listing/${listing.id}`, { state: { listing: toDisplayListing(listing) } });
   };
 
   // Build display chips from applied filters
