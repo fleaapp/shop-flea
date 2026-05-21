@@ -15,6 +15,17 @@ if (/android/i.test(navigator.userAgent)) {
   document.documentElement.classList.add('android');
 }
 
+// Detect installed/standalone (PWA home-screen or Capacitor native) for platform-specific spacing
+const detectInstalled = () => {
+  const isStandalone =
+    window.matchMedia?.('(display-mode: standalone)').matches ||
+    (navigator as any).standalone === true ||
+    !!(window as any).Capacitor?.isNativePlatform?.();
+  document.documentElement.classList.toggle('is-installed', isStandalone);
+};
+detectInstalled();
+window.matchMedia?.('(display-mode: standalone)').addEventListener?.('change', detectInstalled);
+
 const BUILD_ID = (import.meta.env.VITE_BUILD_ID as string | undefined) ?? '0';
 const STORED_BUILD_KEY = 'flea_build_id';
 const SW_URL = `/sw.js?build=${encodeURIComponent(BUILD_ID)}`;
