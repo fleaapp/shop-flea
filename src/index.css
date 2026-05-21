@@ -357,3 +357,16 @@
   width: 20px !important;
   height: 20px !important;
 }
+/* Installed (PWA home-screen / Capacitor native) spacing — restore original
+   bottom-nav and listing-footer padding without affecting Safari browser. */
+html.is-installed nav[data-onboarding="bottom-nav"] {
+  padding-bottom: 2.25rem; /* pb-9 */
+}
+@media (max-width: 375px) {
+  html.is-installed nav[data-onboarding="bottom-nav"] {
+    padding-bottom: 1.75rem; /* pb-7 */
+  }
+}
+html.is-installed [data-listing-footer] {
+  padding-bottom: 2rem; /* pb-8 */
+}
