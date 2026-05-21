@@ -125,7 +125,7 @@ const ListingDetails = () => {
         location?: string;
       }) | undefined;
 
-      const hydrateFromState = (forcedStatus: 'removed' | 'sold' = 'removed') => {
+        const hydrateFromState = (forcedStatus: 'active' | 'removed' | 'sold' = 'removed') => {
         if (!stateListing) return false;
 
         const fallbackImages = stateListing.images?.length
@@ -204,6 +204,10 @@ const ListingDetails = () => {
         return true;
       };
       
+      if (stateListing) {
+        hydrateFromState(location.state?.isSold ? 'sold' : location.state?.isRemoved ? 'removed' : 'active');
+      }
+
       // Fetch listing and profile in parallel
       const { data: listingData, error: listingError } = await supabase
         .from('listings')
@@ -683,7 +687,7 @@ const ListingDetails = () => {
 
           {/* Sticky Footer Actions */}
           {!isTextInputFocused && (
-          <div className="left-0 right-0 z-10 flex shrink-0 justify-center gap-3 border-t border-border bg-background px-4 pt-4 pb-8 transition-all duration-200">
+          <div className="left-0 right-0 z-10 flex shrink-0 justify-center gap-3 border-t border-border bg-background px-4 pt-4 pb-4 transition-all duration-200">
             {isRemoved && !isOwner ? (
               // Removed listing footer
               <div className="flex flex-col items-center gap-3">
