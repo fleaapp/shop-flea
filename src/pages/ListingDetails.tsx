@@ -687,7 +687,7 @@ const ListingDetails = () => {
 
           {/* Sticky Footer Actions */}
           {!isTextInputFocused && (
-          <div className="left-0 right-0 z-10 flex shrink-0 justify-center gap-3 border-t border-border bg-background px-4 pt-4 pb-4 transition-all duration-200">
+          <div data-listing-footer className="left-0 right-0 z-10 flex shrink-0 justify-center gap-3 border-t border-border bg-background px-4 pt-4 pb-4 transition-all duration-200">
             {isRemoved && !isOwner ? (
               // Removed listing footer
               <div className="flex flex-col items-center gap-3">
