@@ -178,8 +178,7 @@ export const installNetLogger = () => {
     return xhr;
   }
   PatchedXHR.prototype = OriginalXHR.prototype;
-  // @ts-expect-error - reassigning constructor
-  window.XMLHttpRequest = PatchedXHR;
+  window.XMLHttpRequest = PatchedXHR as unknown as typeof XMLHttpRequest;
 
   // Periodic re-render so the overlay shows stuck-pending durations ticking up
   setInterval(() => {
