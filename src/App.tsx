@@ -22,6 +22,7 @@ import { restoreRouteAppChrome } from "@/lib/appChrome";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import DevicePreview from "./components/dev/DevicePreview";
+import NetworkLogOverlay from "./components/dev/NetworkLogOverlay";
 
 const loadListingDetails = () => import("./pages/ListingDetails");
 const loadFavorites = () => import("./pages/Favorites");
@@ -228,6 +229,7 @@ const AppContent = () => {
         </Routes>
       </Suspense>
       <DevicePreview />
+      <NetworkLogOverlay />
     </>
   );
 };
