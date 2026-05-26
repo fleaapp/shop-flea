@@ -2,6 +2,10 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { restoreRouteAppChrome } from "./lib/appChrome.ts";
+import { installNetLogger } from "./lib/netLogger.ts";
+
+// Install network logger BEFORE any other code makes requests (Supabase, etc.)
+installNetLogger();
 
 restoreRouteAppChrome();
 window.addEventListener('pageshow', restoreRouteAppChrome, { capture: true });
