@@ -107,6 +107,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [user, fetchProfile]);
 
   useEffect(() => {
+    // Safety: never let loading hang more than 4s (e.g. WKWebView storage issue,
+    // blocked network to Supabase on iOS Capacitor). Falls back to signed-out state.
+    const safetyTimer = setTimeout(() => {
+      console.warn('[auth] getSession() timed out after 4s — falling back to signed-out state');
+      setLoading(false);
+    }, 4000);
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -121,10 +128,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
           // Defer to avoid blocking the auth callback
           setTimeout(() => {
-            fetchProfile(session.user.id).finally(() => setLoading(false));
+            fetchProfile(session.user.id).finally(() => {
+              clearTimeout(safetyTimer);
+              setLoading(false);
+            });
           }, 0);
         } else {
           setProfile(null);
+          clearTimeout(safetyTimer);
           setLoading(false);
         }
       }
@@ -136,14 +147,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        fetchProfile(session.user.id).then(() => setLoading(false));
+        fetchProfile(session.user.id).finally(() => {
+          clearTimeout(safetyTimer);
+          setLoading(false);
+        });
       } else {
+        clearTimeout(safetyTimer);
         setLoading(false);
       }
+    }).catch((err) => {
+      console.error('[auth] getSession() failed:', err);
+      clearTimeout(safetyTimer);
+      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
   }, [fetchProfile]);
+
 
   // Reset stripe verification when user changes (e.g. logout → login)
   const stripeVerifiedRef = useRef(false);
