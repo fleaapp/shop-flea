@@ -136,8 +136,7 @@ export const installNetLogger = () => {
     xhr.open = function (m: string, u: string | URL, ...rest: unknown[]) {
       method = (m || "GET").toUpperCase();
       url = typeof u === "string" ? u : u.toString();
-      // @ts-expect-error - passthrough rest args
-      return origOpen(m, u, ...rest);
+      return (origOpen as (...args: unknown[]) => void)(m, u, ...rest);
     } as typeof xhr.open;
 
     const origSend = xhr.send.bind(xhr);
