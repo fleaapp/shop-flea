@@ -322,15 +322,10 @@ const Auth = () => {
     toast.info('Facebook login is not yet available');
   };
 
-  // Show loading while detecting location
-  if (authLoading || isDetectingLocation) {
-    return (
-      <div className="fixed inset-0 bg-primary flex items-center justify-center overflow-hidden">
-        <span className="text-5xl">⏳</span>
-        <InAppDebugOverlay context={`splash authLoading=${authLoading} detecting=${isDetectingLocation}`} />
-      </div>
-    );
-  }
+  // NOTE: do NOT gate the splash on authLoading. On iOS WKWebView,
+  // supabase.auth.getSession() can hang and leave the user stuck on lime.
+  // Render the login form immediately; the redirect effect above will
+  // navigate away once a session resolves.
 
   // Show region blocked screen if user is outside active regions
   if (isRegionBlocked && detectedCountry) {
