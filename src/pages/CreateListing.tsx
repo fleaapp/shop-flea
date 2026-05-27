@@ -460,7 +460,7 @@ const CreateListing = () => {
           <DialogContent hideCloseButton className="w-[88vw] max-w-sm rounded-3xl border-[3px] border-charcoal bg-card p-6 pt-10 pb-8" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
             <DialogHeader className="space-y-2">
               <DialogTitle className="text-center text-lg">
-                ⏳ Verifying Your Connection
+                Verifying Your Connection
               </DialogTitle>
               <DialogDescription className="text-center text-balance max-w-[260px] mx-auto">
                 Your Stripe account is being verified. This can take a couple of minutes. Please check back shortly!
