@@ -107,10 +107,13 @@ const queryClient = new QueryClient({
 
 const PageLoader = () => <PageSkeleton />;
 
+const AuthRouteFallback = () => <div className="fixed inset-0 bg-primary" />;
+
 const AppContent = () => {
   const { showCarousel, closeCarousel } = useOnboarding();
   const location = useLocation();
   const isStandaloneSite = false;
+  const isAuthRoute = /^\/(auth|forgot-password|reset-password|verify-email)(\/|$)/.test(location.pathname);
 
   useEffect(() => {
     const currentRoute = `${location.pathname}${location.search}${location.hash}`;
@@ -172,11 +175,11 @@ const AppContent = () => {
     <>
       <Toaster />
       <Sonner position="top-center" />
-      {!isStandaloneSite && <RealtimeAlerts />}
-      {!isStandaloneSite && <PushNotificationSubscriber />}
-      {!isStandaloneSite && <OnboardingOverlay />}
-      {!isStandaloneSite && <OnboardingCarousel open={showCarousel} onComplete={closeCarousel} />}
-      <Suspense fallback={<PageLoader />}>
+      {!isStandaloneSite && !isAuthRoute && <RealtimeAlerts />}
+      {!isStandaloneSite && !isAuthRoute && <PushNotificationSubscriber />}
+      {!isStandaloneSite && !isAuthRoute && <OnboardingOverlay />}
+      {!isStandaloneSite && !isAuthRoute && <OnboardingCarousel open={showCarousel} onComplete={closeCarousel} />}
+      <Suspense fallback={isAuthRoute ? <AuthRouteFallback /> : <PageLoader />}>
         <Routes>
           <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/about" element={<Navigate to="/" replace />} />

@@ -85,6 +85,22 @@ const isNativePlatform =
   window.location.protocol === 'capacitor:' ||
   !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
 
+const hideNativeSplash = () => {
+  if (!isNativePlatform) return;
+  void import('@capacitor/splash-screen')
+    .then(({ SplashScreen }) => {
+      void SplashScreen.hide({ fadeOutDuration: 0 })
+        .then(() => console.log('[boot] splash hidden'))
+        .catch((err) => console.warn('[boot] splash hide failed', err));
+    })
+    .catch((err) => console.warn('[boot] splash plugin failed', err));
+};
+
+if (isNativePlatform) {
+  console.log('[boot] native bundle marker', JSON.stringify({ buildId: BUILD_ID, href: window.location.href }));
+  hideNativeSplash();
+}
+
 const registerServiceWorker = async () => {
   if (!('serviceWorker' in navigator)) return;
 
@@ -148,18 +164,7 @@ createRoot(document.getElementById("root")!).render(<App />);
 // as "SplashScreen was automatically hidden after default timeout"), which
 // leaves the splash covering the WebView for ~3s and looks like a stall.
 if (isNativePlatform) {
-  void import('@capacitor/splash-screen')
-    .then(({ SplashScreen }) => {
-      const hideSplash = () => {
-        void SplashScreen.hide({ fadeOutDuration: 0 })
-          .then(() => console.log('[boot] splash hidden'))
-          .catch((err) => console.warn('[boot] splash hide failed', err));
-      };
-
-      hideSplash();
-      requestAnimationFrame(hideSplash);
-      window.setTimeout(hideSplash, 250);
-      window.setTimeout(hideSplash, 1000);
-    })
-    .catch((err) => console.warn('[boot] splash plugin failed', err));
+  requestAnimationFrame(hideNativeSplash);
+  window.setTimeout(hideNativeSplash, 250);
+  window.setTimeout(hideNativeSplash, 1000);
 }
