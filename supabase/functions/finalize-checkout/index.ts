@@ -323,9 +323,6 @@ serve(async (req) => {
       });
     }
 
-    // VERIFY PAYMENT WITH PROVIDER — fail closed.
-    await verifyPayment({ provider, reference: checkoutReference });
-
     const itemIds = [...new Set(items.map((i) => i.id))];
     const { data: listingRows, error: listingError } = await serviceClient
       .from("listings")
@@ -336,6 +333,28 @@ serve(async (req) => {
     const listingMap = new Map((listingRows ?? []).map((r) => [r.id, r as ListingRow]));
     const authoritativeItems = itemIds.map((id) => listingMap.get(id)).filter((x): x is ListingRow => !!x);
     if (authoritativeItems.length === 0) throw new Error("Purchased items could not be found.");
+
+    // Compute expected paid amount from DB-authoritative prices (items +
+    // shipping + buyer-paid processing fee). This is what we passed the
+    // provider when creating the checkout, so the provider's recorded
+    // amount must match within rounding tolerance.
+    const shippingMap = new Map<string, number>(Array.isArray(shippingBySeller) ? shippingBySeller : []);
+    const dbItemsTotal = authoritativeItems.reduce((s, i) => s + Number(i.price), 0);
+    const dbShippingTotal = Array.from(shippingMap.values()).reduce((s, v) => s + Number(v || 0), 0);
+    const subtotalForFee = dbItemsTotal + dbShippingTotal;
+    const STRIPE_RATE = 0.0175, STRIPE_FIXED = 0.30;
+    const PAYPAL_RATE = 0.026, PAYPAL_FIXED = 0.30;
+    const rate = provider === "paypal" ? PAYPAL_RATE : STRIPE_RATE;
+    const fixed = provider === "paypal" ? PAYPAL_FIXED : STRIPE_FIXED;
+    const processingFee = Math.round(
+      ((subtotalForFee + fixed) / (1 - rate) - subtotalForFee) * 100,
+    ) / 100;
+    const expectedAmountAud = Math.round((subtotalForFee + processingFee) * 100) / 100;
+
+    // VERIFY PAYMENT WITH PROVIDER — fail closed. Enforces both that payment
+    // succeeded AND that the amount paid matches what we should have charged
+    // based on DB prices (prevents client-supplied price tampering).
+    await verifyPayment({ provider, reference: checkoutReference, expectedAmountAud });
 
     // Filter out listings already sold by another order (defensive — payment
     // already succeeded so we cannot just refuse; we still record what we can).
