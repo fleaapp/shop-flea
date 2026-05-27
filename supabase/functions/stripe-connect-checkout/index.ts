@@ -45,7 +45,7 @@ serve(async (req) => {
 
     const { data: listingRows, error: listingErr } = await serviceClient
       .from('listings')
-      .select('id, user_id, status')
+      .select('id, user_id, status, price, title, images')
       .in('id', itemIds);
     if (listingErr || !listingRows || listingRows.length !== itemIds.length) {
       throw new Error("Could not verify listings");
@@ -59,6 +59,18 @@ serve(async (req) => {
     }
     const sellerId = sellerIds[0];
     if (sellerId === user.id) throw new Error("Cannot purchase your own items");
+
+    // SECURITY: Use DB-authoritative prices, never trust client-supplied prices.
+    const listingById = new Map(listingRows.map((l: any) => [l.id, l]));
+    const authoritativeItems = itemIds.map((id: string) => {
+      const l: any = listingById.get(id);
+      return {
+        id: l.id,
+        title: l.title,
+        price: Number(l.price),
+        image: Array.isArray(l.images) && l.images.length > 0 ? l.images[0] : undefined,
+      };
+    });
 
     const { data: sellerProfile, error: profileErr } = await serviceClient
       .from('profiles')
