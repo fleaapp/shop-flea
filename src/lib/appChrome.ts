@@ -10,27 +10,44 @@ const getRouteTopColor = () => {
   return isAuthLike ? AUTH_TOP_COLOR : APP_TOP_COLOR;
 };
 
-const syncNativeStatusBar = (color: string, isOverlay: boolean) => {
-  const requestId = ++nativeChromeRequest;
+let lastAppliedColor: string | null = null;
+let lastAppliedOverlay: boolean | null = null;
+let pendingTimer: ReturnType<typeof setTimeout> | null = null;
 
-  void Promise.all([import('@capacitor/core'), import('@capacitor/status-bar')])
-    .then(([{ Capacitor }, { StatusBar, Style }]) => {
-      if (requestId !== nativeChromeRequest) return;
-      if (!Capacitor.isNativePlatform()) return;
-      if (isOverlay) {
-        // While a dim scrim is up, let the webview paint UNDER the status bar
-        // so the dark backdrop visually extends to the top of the screen.
-        void StatusBar.setOverlaysWebView({ overlay: true }).catch(() => undefined);
-        void StatusBar.setStyle({ style: Style.Light }).catch(() => undefined);
-        void StatusBar.setBackgroundColor({ color: '#00000000' }).catch(() => undefined);
-      } else {
-        // Normal app chrome: solid status bar painted with the route color.
-        void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
-        void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
-        void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
-      }
-    })
-    .catch(() => undefined);
+const isNativeBridgeReady = (): boolean => {
+  const cap = (window as { Capacitor?: { isNativePlatform?: () => boolean; isPluginAvailable?: (n: string) => boolean } }).Capacitor;
+  if (!cap?.isNativePlatform?.()) return false;
+  // Avoid calling StatusBar before the native bridge has registered its plugins.
+  return cap.isPluginAvailable?.('StatusBar') ?? true;
+};
+
+const syncNativeStatusBar = (color: string, isOverlay: boolean) => {
+  // Debounce + dedupe to stop the boot-time flood of StatusBar calls that
+  // can race with the Capacitor bridge before window.Capacitor.triggerEvent exists.
+  if (color === lastAppliedColor && isOverlay === lastAppliedOverlay) return;
+  const requestId = ++nativeChromeRequest;
+  if (pendingTimer) clearTimeout(pendingTimer);
+  pendingTimer = setTimeout(() => {
+    pendingTimer = null;
+    if (!isNativeBridgeReady()) return;
+    void Promise.all([import('@capacitor/core'), import('@capacitor/status-bar')])
+      .then(([{ Capacitor }, { StatusBar, Style }]) => {
+        if (requestId !== nativeChromeRequest) return;
+        if (!Capacitor.isNativePlatform()) return;
+        lastAppliedColor = color;
+        lastAppliedOverlay = isOverlay;
+        if (isOverlay) {
+          void StatusBar.setOverlaysWebView({ overlay: true }).catch(() => undefined);
+          void StatusBar.setStyle({ style: Style.Light }).catch(() => undefined);
+          void StatusBar.setBackgroundColor({ color: '#00000000' }).catch(() => undefined);
+        } else {
+          void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
+          void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
+          void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
+        }
+      })
+      .catch(() => undefined);
+  }, 60);
 };
 
 export const applyAppChromeColor = (color: string, statusBarStyle: 'default' | 'black-translucent' = 'default') => {
@@ -86,9 +103,9 @@ export const pushOverlayAppChrome = () => {
   return () => undefined;
 };
 
-// Re-apply on every foreground / visibility change. iOS resets the native status bar
-// when the webview navigates away (e.g. Stripe Connect redirect) and on resume the
-// boot config briefly paints a dark bar until our JS re-asserts the cream color.
+// Web-only visibility re-apply. Native (Capacitor) resume/appStateChange
+// listeners are registered ONCE inside AppContent (src/App.tsx) so we don't
+// double-register and flood the bridge during boot.
 let resumeListenersInstalled = false;
 const installResumeListeners = () => {
   if (resumeListenersInstalled || typeof window === 'undefined') return;
@@ -101,15 +118,6 @@ const installResumeListeners = () => {
   });
   window.addEventListener('pageshow', reapply);
   window.addEventListener('focus', reapply);
-
-  void import('@capacitor/app')
-    .then(({ App }) => {
-      App.addListener('appStateChange', ({ isActive }) => {
-        if (isActive) reapply();
-      });
-      App.addListener('resume', reapply);
-    })
-    .catch(() => undefined);
 };
 
 installResumeListeners();

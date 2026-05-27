@@ -1,39 +1,42 @@
-## Plan
+## Plan to fix the Xcode simulator green hourglass stall
 
-Do I know what the issue is? Yes: the green screen plus hourglass is app-rendered UI, not the native splash screen or the harmless `interactive-widget` warning. In the current web preview, `/auth` renders the login form, so Xcode is very likely still loading an old copied web bundle or a remaining protected-route/listings loader is being hit before `/auth`.
+The meaningful error is not the `UIScene`, WebPrivacy, RTI, or network noise. The actionable line is:
 
-### What I will change
+```text
+JS Eval error A JavaScript exception occurred
+TypeError: undefined is not an object (evaluating 'window.Capacitor.triggerEvent')
+```
 
-1. **Make `/auth` impossible to stall**
-   - Keep the auth page rendering the login form immediately.
-   - Remove unused location-loading state/imports from the auth page so `ipapi.co` can no longer influence the auth screen at all.
+That means the native WebView is trying to fire Capacitor lifecycle events before the Capacitor JS bridge is ready. The repeated `App.addListener` and `StatusBar` calls show our app is registering native listeners very early and more than once.
 
-2. **Remove the hourglass loading UI from app startup paths**
-   - Replace the `ProtectedRoute` hourglass screen with an immediate redirect to `/auth` when auth is unresolved or signed out.
-   - Replace the home listing `⏳` loader with a non-blocking skeleton/message so users never see the same green/hourglass stall again.
+There is also still one exact green-screen/hourglass path in the app: `ResetPassword.tsx` renders `fixed inset-0 bg-primary` with `⏳` while waiting for `supabase.auth.getSession()`, with no timeout. If the simulator has restored or retained `/reset-password`, it can look like “before auth” forever.
 
-3. **Make native builds clearly identifiable**
-   - Add a small always-visible build stamp early in the app so you can tell instantly whether Xcode is running the new bundle.
-   - Keep the debug overlay mounted outside the route tree, so it survives route crashes/stalls.
+## Changes I will make
 
-4. **Stop native from using web/PWA cache behavior**
-   - Disable service worker/cache registration when running inside Capacitor native, because native apps ship local files and should not rely on PWA caching.
-   - Remove the invalid `interactive-widget=resizes-content` viewport token so that warning stops distracting from real issues.
+1. **Remove duplicate early native App listeners**
+   - Stop registering Capacitor `App.addListener('resume')` / `appStateChange` in both `src/lib/appChrome.ts` and `src/App.tsx`.
+   - Keep one guarded native-listener path only, after React has mounted.
 
-5. **Give you one clean Xcode deploy command**
-   - After code changes, I’ll provide one exact rebuild/sync command that removes the copied iOS public web bundle before syncing, so Xcode cannot keep serving stale web assets.
+2. **Make native status bar updates safe**
+   - Debounce/guard `StatusBar.setOverlaysWebView`, `setStyle`, and `setBackgroundColor` so they do not spam native calls during boot.
+   - Only run them when `window.Capacitor` is actually present and native.
 
-### Files I expect to update
+3. **Fix the remaining indefinite green hourglass**
+   - Update `src/pages/ResetPassword.tsx` so `getSession()` cannot leave the screen stuck.
+   - Add a short fallback timeout/error path that routes back to `/auth` or shows a normal auth-facing fallback instead of a green hourglass forever.
 
-- `src/pages/Auth.tsx`
-- `src/components/ProtectedRoute.tsx`
-- `src/pages/Index.tsx`
-- `src/main.tsx`
-- `index.html`
+4. **Add native boot diagnostics that show in Xcode/Web Inspector**
+   - Add a tiny boot log around route, protocol, bridge availability, and first React render.
+   - This will confirm whether the simulator is actually opening `/auth`, `/`, or a retained `/reset-password` route.
 
-### Expected result
+5. **Validation target**
+   - Verify the web preview still loads `/auth` normally.
+   - For native, the expected result after sync/run is: no permanent green hourglass; either the auth form appears or an explicit error/fallback appears.
 
-On the next native run, either the login page appears immediately, or the visible build stamp proves whether Xcode is still serving an old bundle. The lime-green hourglass loading screen will no longer exist in the app paths that run before auth.
+## What this avoids
+
+- I will not change backend/auth rules.
+- I will not keep chasing network requests, because your latest logs show the WebView loaded and the issue is now native boot/lifecycle handling.
 
 <presentation-actions>
   <presentation-open-history>View History</presentation-open-history>
