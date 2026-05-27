@@ -14,13 +14,12 @@ const isNativeCapacitor =
   !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
 
 const NetworkLogOverlay = () => {
+  // Network debug overlay permanently disabled across all environments.
+  return null;
+  // eslint-disable-next-line no-unreachable
   const [entries, setEntries] = useState<NetEntry[]>(netLogger.getEntries());
   const [open, setOpen] = useState(false);
-  const [enabled, setEnabled] = useState(
-    typeof window !== "undefined" &&
-      !isNativeCapacitor &&
-      localStorage.getItem("flea_net_overlay") !== "off"
-  );
+  const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
     return netLogger.subscribe(setEntries);
