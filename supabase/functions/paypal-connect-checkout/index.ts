@@ -141,7 +141,7 @@ serve(async (req) => {
           {
             description: "Flea order",
             soft_descriptor: "FLEA",
-            custom_id: items.map((i: { id: string }) => i.id).join(","),
+            custom_id: authoritativeItems.map((i) => i.id).join(","),
             amount: {
               currency_code: "AUD",
               value: totalCharge.toFixed(2),
