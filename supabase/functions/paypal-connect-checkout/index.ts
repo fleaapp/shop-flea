@@ -174,7 +174,7 @@ serve(async (req) => {
                 },
               ],
             },
-            items: items.map((item: { title: string; price: number }) => ({
+            items: authoritativeItems.map((item) => ({
               name: item.title.substring(0, 127),
               unit_amount: {
                 currency_code: "AUD",
