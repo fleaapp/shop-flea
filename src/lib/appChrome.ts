@@ -103,9 +103,10 @@ export const pushOverlayAppChrome = () => {
   return () => undefined;
 };
 
-// Web-only visibility re-apply. Native (Capacitor) resume/appStateChange
-// listeners are registered ONCE inside AppContent (src/App.tsx) so we don't
-// double-register and flood the bridge during boot.
+// Web visibility re-apply + a SINGLE native resume listener.
+// Previously these were also registered in src/App.tsx, which caused the
+// duplicate `App addListener` floods visible in Xcode and raced the bridge
+// during boot. Keep registration here only, gated to run exactly once.
 let resumeListenersInstalled = false;
 const installResumeListeners = () => {
   if (resumeListenersInstalled || typeof window === 'undefined') return;
@@ -118,6 +119,24 @@ const installResumeListeners = () => {
   });
   window.addEventListener('pageshow', reapply);
   window.addEventListener('focus', reapply);
+
+  // Native resume/appStateChange — registered ONCE, only after the bridge
+  // is actually present, to avoid `JS Eval error` races during cold boot.
+  const cap = (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+  if (cap?.isNativePlatform?.()) {
+    // Defer until the next tick so the Capacitor JS bridge has finished
+    // wiring `window.Capacitor.triggerEvent` before we add native listeners.
+    setTimeout(() => {
+      void import('@capacitor/app')
+        .then(({ App }) => {
+          void App.addListener('resume', reapply).catch(() => undefined);
+          void App.addListener('appStateChange', ({ isActive }) => {
+            if (isActive) reapply();
+          }).catch(() => undefined);
+        })
+        .catch(() => undefined);
+    }, 0);
+  }
 };
 
 installResumeListeners();
