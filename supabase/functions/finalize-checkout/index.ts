@@ -1,18 +1,16 @@
 // finalize-checkout
 // Server-authoritative order finalization. NEVER creates orders without first
-// confirming the actual payment status with the payment provider (Stripe or
-// PayPal). Also captures PayPal authorizations that haven't been captured yet.
+// confirming the actual payment status with Stripe.
 //
 // Flow:
 //   1. Auth (manual JWT parse to keep cross-project compatibility — this only
 //      identifies the buyer; we re-verify payment ownership against the
 //      provider before trusting anything).
 //   2. Pull authoritative listing rows (price, title, seller).
-//   3. Verify the checkoutReference with the provider:
-//        - Stripe: session.payment_status === 'paid' AND payment_intent.status
-//          IN ('succeeded','requires_capture'); customer email must match the
-//          authenticated buyer.
-//        - PayPal: order status COMPLETED, capturing it first if APPROVED.
+//   3. Verify the checkoutReference with Stripe:
+//        session.payment_status === 'paid' AND payment_intent.status
+//        IN ('succeeded','requires_capture'); customer email must match the
+//        authenticated buyer.
 //   4. Idempotency: bail if an order with the same checkout_reference already
 //      exists for this buyer.
 //   5. Insert order rows, THEN flip listings -> sold (only if all rows
@@ -27,7 +25,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PAYPAL_API = "https://api-m.paypal.com";
 
 async function checkRateLimit(key: string, max: number, windowSeconds: number): Promise<boolean> {
   try {
