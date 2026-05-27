@@ -19,18 +19,41 @@ const ResetPassword = () => {
   const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
-    // Check if we have a valid session from the reset link
+    let settled = false;
+    // Safety: never let getSession() hang on iOS WKWebView. Bounce to /auth
+    // after 2s so the user can never get stuck on a green hourglass.
+    const safety = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      console.warn('[reset-password] getSession() timed out — redirecting to /auth');
+      navigate('/auth', { replace: true });
+    }, 2000);
+
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setHasSession(true);
-      } else {
-        // If no session, the reset link may be invalid or expired
-        toast.error('Invalid or expired reset link');
-        navigate('/auth');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (settled) return;
+        settled = true;
+        clearTimeout(safety);
+        if (session) {
+          setHasSession(true);
+        } else {
+          toast.error('Invalid or expired reset link');
+          navigate('/auth', { replace: true });
+        }
+      } catch (err) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(safety);
+        console.error('[reset-password] getSession() failed:', err);
+        navigate('/auth', { replace: true });
       }
     };
     checkSession();
+    return () => {
+      settled = true;
+      clearTimeout(safety);
+    };
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {

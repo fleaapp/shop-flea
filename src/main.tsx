@@ -8,6 +8,21 @@ import { installNetLogger } from "./lib/netLogger.ts";
 // Install network logger BEFORE any other code makes requests (Supabase, etc.)
 installNetLogger();
 
+// Native boot diagnostics — visible in Xcode/Web Inspector to confirm
+// which route the WebView actually opened, and whether the Capacitor
+// bridge is present yet. Helps disambiguate "stuck on green hourglass".
+try {
+  const cap = (window as { Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string } }).Capacitor;
+  console.log('[boot]', JSON.stringify({
+    href: window.location.href,
+    pathname: window.location.pathname,
+    protocol: window.location.protocol,
+    native: !!cap?.isNativePlatform?.(),
+    platform: cap?.getPlatform?.() ?? 'web',
+    ua: navigator.userAgent.slice(0, 80),
+  }));
+} catch {}
+
 restoreRouteAppChrome();
 window.addEventListener('pageshow', restoreRouteAppChrome, { capture: true });
 window.addEventListener('focus', restoreRouteAppChrome, { capture: true });
