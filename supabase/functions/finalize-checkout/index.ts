@@ -182,7 +182,7 @@ async function verifyPayment(opts: {
   provider: "stripe" | "paypal";
   reference: string;
   expectedAmountAud?: number;
-}): Promise<{ verifiedEmail?: string }> {
+}): Promise<{ verifiedEmail?: string; paidAmountAud?: number }> {
   if (opts.provider === "stripe") {
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
     const session = await stripe.checkout.sessions.retrieve(opts.reference, { expand: ["payment_intent"] });
@@ -196,7 +196,16 @@ async function verifyPayment(opts: {
     if (!paid) {
       throw new Error(`Stripe session not paid (status=${session.payment_status}, pi=${piStatus})`);
     }
-    return { verifiedEmail: session.customer_details?.email ?? session.customer_email ?? undefined };
+    const amountTotal = typeof session.amount_total === "number" ? session.amount_total / 100 : undefined;
+    if (opts.expectedAmountAud != null && amountTotal != null) {
+      if (Math.abs(amountTotal - opts.expectedAmountAud) > 0.05) {
+        throw new Error(`Stripe paid amount mismatch: paid ${amountTotal} expected ${opts.expectedAmountAud}`);
+      }
+    }
+    return {
+      verifiedEmail: session.customer_details?.email ?? session.customer_email ?? undefined,
+      paidAmountAud: amountTotal,
+    };
   }
 
   // PayPal — capture if APPROVED, then require COMPLETED.
@@ -232,7 +241,30 @@ async function verifyPayment(opts: {
   if (data.status !== "COMPLETED") {
     throw new Error(`PayPal order not completed (status=${data.status})`);
   }
-  return { verifiedEmail: data.payer?.email_address ?? undefined };
+
+  // Sum captured amounts across purchase_units for amount verification.
+  let paidAmountAud: number | undefined;
+  try {
+    const pus = Array.isArray(data.purchase_units) ? data.purchase_units : [];
+    let sum = 0;
+    let any = false;
+    for (const pu of pus) {
+      const caps = pu?.payments?.captures ?? [];
+      for (const c of caps) {
+        const v = parseFloat(c?.amount?.value ?? "");
+        if (!isNaN(v)) { sum += v; any = true; }
+      }
+    }
+    if (any) paidAmountAud = Math.round(sum * 100) / 100;
+  } catch { /* ignore */ }
+
+  if (opts.expectedAmountAud != null && paidAmountAud != null) {
+    if (Math.abs(paidAmountAud - opts.expectedAmountAud) > 0.05) {
+      throw new Error(`PayPal paid amount mismatch: paid ${paidAmountAud} expected ${opts.expectedAmountAud}`);
+    }
+  }
+
+  return { verifiedEmail: data.payer?.email_address ?? undefined, paidAmountAud };
 }
 
 serve(async (req) => {
