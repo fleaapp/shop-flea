@@ -1,3 +1,4 @@
+const AUTH_TOP_COLOR = '#DDFED7';
 const APP_TOP_COLOR = '#F5F1EB';
 const OVERLAY_TOP_COLOR = '#000000';
 
@@ -5,7 +6,8 @@ let nativeChromeRequest = 0;
 let activeOverlayCount = 0;
 
 const getRouteTopColor = () => {
-  return APP_TOP_COLOR;
+  const isAuthLike = /^\/(auth|forgot-password|reset-password|verify-email)(\/|$)/.test(window.location.pathname);
+  return isAuthLike ? AUTH_TOP_COLOR : APP_TOP_COLOR;
 };
 
 let lastAppliedColor: string | null = null;

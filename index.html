@@ -16,7 +16,8 @@
     <script>
       (function () {
         try {
-          var topColor = '#F5F1EB';
+          var isAuthLike = /^\/(auth|forgot-password|reset-password|verify-email)(\/|$)/.test(location.pathname);
+          var topColor = isAuthLike ? '#DDFED7' : '#F5F1EB';
           document.documentElement.style.colorScheme = 'light';
           document.documentElement.style.setProperty('--app-top-bg', topColor);
           document.documentElement.style.backgroundColor = topColor;

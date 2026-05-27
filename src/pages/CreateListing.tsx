@@ -36,7 +36,6 @@ import ConditionInfoPopover from '@/components/ConditionInfoPopover';
 import BrandAutocomplete from '@/components/BrandAutocomplete';
 import { safeNavigateBack } from '@/utils/safeBack';
 import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
-import PageSkeleton from '@/components/PageSkeleton';
 
 interface ImageFile {
   file: File;
@@ -438,7 +437,14 @@ const CreateListing = () => {
 
   // Show loading only while auth is loading
   if (authLoading) {
-    return <PageSkeleton />;
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-8">
+        <span className="text-5xl">⏳</span>
+        <p className="text-sm text-muted-foreground text-center leading-relaxed">
+          Loading...
+        </p>
+      </div>
+    );
   }
 
   // Show verifying dialog if Stripe is pending (account exists but not yet connected)
@@ -460,7 +466,7 @@ const CreateListing = () => {
           <DialogContent hideCloseButton className="w-[88vw] max-w-sm rounded-3xl border-[3px] border-charcoal bg-card p-6 pt-10 pb-8" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
             <DialogHeader className="space-y-2">
               <DialogTitle className="text-center text-lg">
-                Verifying Your Connection
+                ⏳ Verifying Your Connection
               </DialogTitle>
               <DialogDescription className="text-center text-balance max-w-[260px] mx-auto">
                 Your Stripe account is being verified. This can take a couple of minutes. Please check back shortly!

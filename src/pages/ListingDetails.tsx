@@ -40,7 +40,6 @@ import OrderReceiptDialog from '@/components/OrderReceiptDialog';
 import { canOpenListing } from '@/utils/listingAccess';
 import { loadSavedListingSnapshot } from '@/utils/savedListingSnapshots';
 import type { Listing } from '@/types/listing';
-import PageSkeleton from '@/components/PageSkeleton';
 
 interface DbListing {
   id: string;
@@ -321,7 +320,11 @@ const ListingDetails = () => {
   }, [carouselApi]);
 
   if (loading) {
-    return <PageSkeleton />;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <span className="text-5xl">⏳</span>
+      </div>
+    );
   }
 
   if (!listing) {

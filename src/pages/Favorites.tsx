@@ -14,7 +14,6 @@ import { useCart } from '@/context/CartContext';
 import { Listing } from '@/types/listing';
 import { ListingFilters } from '@/hooks/useListings';
 import { toast } from 'sonner';
-import { Skeleton } from '@/components/ui/skeleton';
 
 // Convert DbListing to Listing display type
 interface DisplayListing extends Listing {
@@ -159,9 +158,8 @@ const Favorites = () => {
       {/* Listings Horizontal Scroll - centered first card */}
       <div className="flex-1 flex items-center pb-24 max-[393px]:pb-20 max-[375px]:pb-16 min-h-0 overflow-hidden">
         {loading ? (
-          <div className="grid w-full grid-cols-2 gap-3 px-4">
-            <Skeleton className="aspect-[4/5] w-full rounded-2xl" />
-            <Skeleton className="aspect-[4/5] w-full rounded-2xl" />
+          <div className="flex items-center justify-center w-full">
+            <span className="text-5xl">⏳</span>
           </div>
         ) : displayListings.length > 0 ? (
           viewMode === 'single' ? (

@@ -8,7 +8,6 @@ import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface ReviewsDrawerProps {
   userId: string;
@@ -113,9 +112,8 @@ function ReviewsDrawer({ userId, username, open, onOpenChange }: ReviewsDrawerPr
 
             <div className="px-4 pb-8 space-y-4">
               {isLoading ? (
-                <div className="space-y-3 py-4">
-                  <Skeleton className="h-24 w-full rounded-2xl" />
-                  <Skeleton className="h-24 w-full rounded-2xl" />
+                <div className="flex justify-center py-12">
+                  <span className="text-4xl">⏳</span>
                 </div>
               ) : filteredReviews.length > 0 ? (
                 filteredReviews.map((review) => {
