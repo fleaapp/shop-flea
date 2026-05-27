@@ -32,6 +32,7 @@ import { COLOUR_SWATCHES } from '@/utils/colourSwatches';
 import ConditionInfoPopover from '@/components/ConditionInfoPopover';
 import BrandAutocomplete from '@/components/BrandAutocomplete';
 import { safeNavigateBack } from '@/utils/safeBack';
+import PageSkeleton from '@/components/PageSkeleton';
 
 interface ImageFile {
   file: File;
@@ -451,11 +452,7 @@ const EditListing = () => {
   const totalImages = existingImages.length + newImageFiles.length;
 
   if (authLoading || isFetching) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <span className="text-5xl">⏳</span>
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   return (
