@@ -341,6 +341,7 @@ const Auth = () => {
     return (
       <div className="fixed inset-0 bg-primary flex items-center justify-center overflow-hidden">
         <span className="text-5xl">⏳</span>
+        <InAppDebugOverlay context={`splash authLoading=${authLoading} detecting=${isDetectingLocation}`} />
       </div>
     );
   }
