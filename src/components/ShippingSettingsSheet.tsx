@@ -8,7 +8,6 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { loadShippingPrefs, saveShippingPrefs } from '@/utils/shippingPrefs';
 import { toast } from 'sonner';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface ShippingSettingsSheetProps {
   open: boolean;
@@ -155,9 +154,8 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
         </DrawerHeader>
 
         {initialLoading ? (
-          <div className="space-y-3 py-2">
-            <Skeleton className="h-16 w-full rounded-xl" />
-            <Skeleton className="h-16 w-full rounded-xl" />
+          <div className="flex items-center justify-center py-8">
+            <span className="text-3xl">⏳</span>
           </div>
         ) : (
           <div className="space-y-4">

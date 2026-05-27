@@ -20,8 +20,6 @@ import ProfileGridCard from '@/components/ProfileGridCard';
 import { Button } from '@/components/ui/button';
 import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
 import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
-import PageSkeleton from '@/components/PageSkeleton';
-import { Skeleton } from '@/components/ui/skeleton';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -141,7 +139,11 @@ const Profile = () => {
   };
 
   if (authLoading) {
-    return <PageSkeleton />;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <span className="text-5xl">⏳</span>
+      </div>
+    );
   }
 
   if (!user) {
@@ -255,9 +257,8 @@ const Profile = () => {
 
       <div className={`flex-1 min-h-0 flex flex-col ${viewMode === 'single' ? 'justify-center overflow-x-auto overflow-y-hidden snap-x snap-mandatory' : 'overflow-y-auto overflow-x-hidden'} scrollbar-hide py-6 max-[430px]:py-5 max-[393px]:py-4 max-[375px]:py-3`} style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {isLoading ? (
-          <div className="grid grid-cols-2 gap-3 px-4">
-            <Skeleton className="aspect-[4/5] w-full rounded-2xl" />
-            <Skeleton className="aspect-[4/5] w-full rounded-2xl" />
+          <div className="flex justify-center py-12">
+            <span className="text-5xl">⏳</span>
           </div>
         ) : pauseSelling && activeTab === 'listings' ? (
           <div className="flex flex-col items-center justify-center px-4 py-12">

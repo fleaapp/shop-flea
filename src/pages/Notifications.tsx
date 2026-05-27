@@ -10,7 +10,6 @@ import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
 import { OrderGroup } from '@/hooks/useOrders';
-import { Skeleton } from '@/components/ui/skeleton';
 
 const ProductThumbnail = ({
   image,
@@ -269,10 +268,8 @@ const Notifications = () => {
       {/* Content */}
       <div className="px-4 space-y-3">
         {loadingNotifications ? (
-          <div className="space-y-3 pt-4">
-            <Skeleton className="h-24 w-full rounded-2xl" />
-            <Skeleton className="h-24 w-full rounded-2xl" />
-            <Skeleton className="h-24 w-full rounded-2xl" />
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+            <span className="text-5xl mb-4">⏳</span>
           </div>
         ) : notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
