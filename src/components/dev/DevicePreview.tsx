@@ -106,6 +106,9 @@ type ChromeMode = "safari" | "standalone" | "full";
 const CHROME_KEY = "flea_dev_device_chrome";
 
 export default function DevicePreview() {
+  // Device simulator overlay permanently disabled across all environments.
+  return null;
+  // eslint-disable-next-line no-unreachable
   const [open, setOpen] = useState(false);
   const [deviceId, setDeviceId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
