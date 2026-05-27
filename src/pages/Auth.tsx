@@ -24,7 +24,9 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   // Region detection state
-  const [isDetectingLocation, setIsDetectingLocation] = useState(true);
+  // Default to NOT blocking — detect lazily in background. Splash must never
+  // depend on ipapi.co reachability (it's blocked/unreachable on simulators).
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [detectedCountry, setDetectedCountry] = useState<{ code: string; name: string } | null>(null);
   const [detectedRegion, setDetectedRegion] = useState<string | null>(null);
   const [isRegionBlocked, setIsRegionBlocked] = useState(false);
