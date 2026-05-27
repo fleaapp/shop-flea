@@ -42,51 +42,34 @@ const Auth = () => {
   const redirectParam = new URLSearchParams(location.search).get('redirect');
   const redirectTo = redirectParam?.startsWith('/') && !redirectParam.startsWith('//') ? redirectParam : '/';
   
-  // Detect user location on mount
+  // Detect user location in BACKGROUND. Splash is never gated on this.
   useEffect(() => {
+    // Optimistic AU default so UI renders immediately.
+    setDetectedCountry({ code: 'AU', name: 'Australia' });
+    setDetectedRegion('AU');
+    setIsRegionBlocked(false);
+
     const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
+    if (isNative) return; // native = AU only, skip ipapi entirely
 
-    // On native iOS/Android, skip detection entirely — default to AU.
-    if (isNative) {
-      setDetectedCountry({ code: 'AU', name: 'Australia' });
-      setDetectedRegion('AU');
-      setIsRegionBlocked(false);
-      setIsDetectingLocation(false);
-      return;
-    }
-
-    // Hard safety timeout so the splash never sticks
-    const safety = setTimeout(() => {
-      setDetectedCountry((c) => c ?? { code: 'AU', name: 'Australia' });
-      setDetectedRegion((r) => r ?? 'AU');
-      setIsRegionBlocked(false);
-      setIsDetectingLocation(false);
-    }, 8000);
-
-    const detectLocation = async () => {
+    let cancelled = false;
+    (async () => {
       try {
-        const location = await detectUserLocation();
-        setDetectedCountry({ code: location.country_code, name: location.country_name });
-        setDetectedRegion(location.region_id);
-        if (location.region_id) {
-          const isActive = await checkRegionActive(location.region_id);
-          setIsRegionBlocked(!isActive);
-        } else {
-          setIsRegionBlocked(true);
+        const loc = await detectUserLocation();
+        if (cancelled) return;
+        setDetectedCountry({ code: loc.country_code, name: loc.country_name });
+        setDetectedRegion(loc.region_id);
+        if (loc.region_id) {
+          const isActive = await checkRegionActive(loc.region_id);
+          if (!cancelled) setIsRegionBlocked(!isActive);
         }
-      } catch (error) {
-        console.error('Location detection failed:', error);
-        setIsRegionBlocked(true);
-        setDetectedCountry({ code: 'UNKNOWN', name: 'Unknown' });
-      } finally {
-        clearTimeout(safety);
-        setIsDetectingLocation(false);
+      } catch (e) {
+        console.warn('[auth] background location detect failed:', e);
       }
-    };
-
-    detectLocation();
-    return () => clearTimeout(safety);
+    })();
+    return () => { cancelled = true; };
   }, []);
+
   
   // Redirect if already logged in
   // Redirect if already logged in
