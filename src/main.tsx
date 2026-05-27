@@ -66,7 +66,9 @@ const isPreviewHost =
   window.location.hostname.includes("id-preview--") ||
   window.location.hostname.includes("lovableproject.com");
 
-const isNativePlatform = !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
+const isNativePlatform =
+  window.location.protocol === 'capacitor:' ||
+  !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
 
 const registerServiceWorker = async () => {
   if (!('serviceWorker' in navigator)) return;
