@@ -111,7 +111,7 @@ serve(async (req) => {
     // Buyer pays subtotal + grossed-up processing fee.
     // PayPal deducts its fee from the seller side (via payment_instruction).
     // Flea takes a clean 7% of subtotal as platform_fees.
-    const itemsTotal = items.reduce((sum: number, item: { price: number }) => sum + item.price, 0);
+    const itemsTotal = authoritativeItems.reduce((sum, item) => sum + item.price, 0);
     const shippingAmount = shipping || 0;
     const subtotal = itemsTotal + shippingAmount;
 
