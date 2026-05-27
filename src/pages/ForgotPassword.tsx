@@ -37,7 +37,7 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-primary flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-background flex flex-col overflow-hidden">
       {/* Back button */}
       {!emailSent && (
         <button
