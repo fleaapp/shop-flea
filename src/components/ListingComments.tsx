@@ -27,6 +27,7 @@ import { useContentModeration } from '@/hooks/useContentModeration';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { sendPushNotification } from '@/utils/pushNotify';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Comment {
   id: string;
@@ -550,8 +551,9 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
 
           {/* Comments List */}
           {isLoading ? (
-            <div className="flex justify-center py-4">
-              <span className="text-4xl">⏳</span>
+            <div className="space-y-3 py-4">
+              <Skeleton className="h-14 w-full rounded-xl" />
+              <Skeleton className="h-14 w-full rounded-xl" />
             </div>
           ) : comments.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">

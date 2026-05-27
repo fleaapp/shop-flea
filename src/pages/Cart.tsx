@@ -17,6 +17,7 @@ import { fetchSellerShippingSettings, SellerShippingInfo } from '@/utils/shippin
 import { getAvatarUrl } from '@/utils/optimizedImage';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const getOrderStatusBadge = (status: Order['status']) => {
   switch (status) {
@@ -436,8 +437,10 @@ const Cart = () => {
       ) : (
         <div className="px-4 max-[375px]:px-3 space-y-6 max-[375px]:space-y-4">
           {loadingBuyerOrders ? (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-              <span className="text-5xl mb-4">⏳</span>
+            <div className="space-y-3 pt-4">
+              <Skeleton className="h-24 w-full rounded-2xl" />
+              <Skeleton className="h-24 w-full rounded-2xl" />
+              <Skeleton className="h-24 w-full rounded-2xl" />
             </div>
           ) : (() => {
             const filteredOrders = buyerOrderGroups.filter((g) => g.status === orderStatusFilter);

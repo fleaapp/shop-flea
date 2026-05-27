@@ -11,6 +11,7 @@ import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { safeNavigateBack } from '@/utils/safeBack';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const getStatusBadge = (status: Order['status']) => {
   switch (status) {
@@ -138,8 +139,10 @@ const Sales = () => {
       {/* Content */}
       <div className="px-4 space-y-3">
         {loadingSellerOrders ? (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-            <span className="text-5xl mb-4">⏳</span>
+          <div className="space-y-3 pt-4">
+            <Skeleton className="h-24 w-full rounded-2xl" />
+            <Skeleton className="h-24 w-full rounded-2xl" />
+            <Skeleton className="h-24 w-full rounded-2xl" />
           </div>
         ) : (() => {
           const filteredSales = sellerOrderGroups.filter(g => g.status === salesStatusFilter);

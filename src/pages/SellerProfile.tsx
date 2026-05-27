@@ -17,6 +17,8 @@ import { ArrowLeft, MoreVertical, LayoutGrid, Rows3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProfileGridCard from '@/components/ProfileGridCard';
 import { safeNavigateBack } from '@/utils/safeBack';
+import PageSkeleton from '@/components/PageSkeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -244,11 +246,7 @@ const SellerProfile = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <span className="text-5xl">⏳</span>
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   if (!sellerProfile) {
@@ -347,8 +345,9 @@ const SellerProfile = () => {
 
       <div className={`flex-1 min-h-0 flex flex-col ${viewMode === 'single' ? 'justify-center overflow-x-auto overflow-y-hidden snap-x snap-mandatory' : 'overflow-y-auto overflow-x-hidden'} scrollbar-hide py-6 max-[430px]:py-5 max-[393px]:py-4 max-[375px]:py-3`} style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {listingsLoading ? (
-          <div className="flex justify-center py-12">
-            <span className="text-5xl">⏳</span>
+          <div className="grid grid-cols-2 gap-3 px-4">
+            <Skeleton className="aspect-[4/5] w-full rounded-2xl" />
+            <Skeleton className="aspect-[4/5] w-full rounded-2xl" />
           </div>
         ) : (() => {
           const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
