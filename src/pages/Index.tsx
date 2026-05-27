@@ -539,8 +539,9 @@ const Index = () => {
           data-onboarding="swipe-card-stack"
         >
           {loading ? (
-            <div className="flex h-full flex-col items-center justify-center text-center">
-              <span className="text-5xl">⏳</span>
+            <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+              <div className="aspect-[4/5] w-full rounded-2xl bg-card/70 shadow-card" />
+              <p className="text-sm font-medium text-muted-foreground">Loading listings.</p>
             </div>
           ) : currentListings.length > 0 ? (
             <>
