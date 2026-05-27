@@ -163,31 +163,3 @@ if (isNativePlatform) {
     })
     .catch((err) => console.warn('[boot] splash plugin failed', err));
 }
-
-// === Global, always-visible debug overlay (mounted OUTSIDE the React app tree) ===
-// Survives React crashes, ErrorBoundary fallbacks, and any route stall.
-// Tagged with a build stamp so you can confirm the new JS is actually running on device.
-(() => {
-  const BUILD_STAMP = `${BUILD_ID}·${new Date().toISOString().slice(11, 19)}`;
-  const host = document.createElement("div");
-  host.id = "global-debug-root";
-  document.body.appendChild(host);
-
-  // Tiny always-on build badge in the top-left so you can SEE the new build loaded.
-  const badge = document.createElement("div");
-  badge.textContent = `build ${BUILD_STAMP}`;
-  Object.assign(badge.style, {
-    position: "fixed", top: "calc(env(safe-area-inset-top, 0px) + 4px)", left: "4px",
-    zIndex: "2147483647", background: "#000", color: "#0f0",
-    font: "10px ui-monospace,Menlo,monospace", padding: "2px 6px",
-    borderRadius: "6px", pointerEvents: "none", opacity: "0.85",
-  } as CSSStyleDeclaration);
-  document.body.appendChild(badge);
-
-  import("./components/dev/InAppDebugOverlay").then(({ InAppDebugOverlay }) => {
-    createRoot(host).render(<InAppDebugOverlay context={`global build=${BUILD_STAMP}`} />);
-  }).catch((e) => {
-    host.textContent = "debug overlay failed to load: " + (e?.message || e);
-    host.style.cssText = "position:fixed;bottom:8px;left:8px;right:8px;z-index:2147483647;background:#000;color:#f88;padding:8px;font:11px monospace;border-radius:8px;";
-  });
-})();
