@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import "./components/dev/InAppDebugOverlay"; // installs console/error hooks at boot
 import { restoreRouteAppChrome } from "./lib/appChrome.ts";
 import { installNetLogger } from "./lib/netLogger.ts";
 
