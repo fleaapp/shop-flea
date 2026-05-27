@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { lovable } from '@/integrations/lovable';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import fleaLogoAuth from '@/assets/flea-logo-auth.jpeg';
@@ -10,9 +9,6 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { useOnboarding } from '@/context/OnboardingContext';
 import { supabase } from '@/lib/supabase';
-import { detectUserLocation, checkRegionActive } from '@/services/geolocation';
-import RegionBlockedScreen from '@/components/RegionBlockedScreen';
-import { InAppDebugOverlay } from '@/components/dev/InAppDebugOverlay';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -23,13 +19,10 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Region detection state
-  // Default to NOT blocking — detect lazily in background. Splash must never
-  // depend on ipapi.co reachability (it's blocked/unreachable on simulators).
-  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
-  const [detectedCountry, setDetectedCountry] = useState<{ code: string; name: string } | null>(null);
-  const [detectedRegion, setDetectedRegion] = useState<string | null>(null);
-  const [isRegionBlocked, setIsRegionBlocked] = useState(false);
+  // Auth must never wait on geolocation/IP services. Flea is AU-only at launch,
+  // so native and auth startup both use the AU fallback immediately.
+  const detectedCountry = { code: 'AU', name: 'Australia' };
+  const detectedRegion = 'AU';
   
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -41,35 +34,6 @@ const Auth = () => {
 
   const redirectParam = new URLSearchParams(location.search).get('redirect');
   const redirectTo = redirectParam?.startsWith('/') && !redirectParam.startsWith('//') ? redirectParam : '/';
-  
-  // Detect user location in BACKGROUND. Splash is never gated on this.
-  useEffect(() => {
-    // Optimistic AU default so UI renders immediately.
-    setDetectedCountry({ code: 'AU', name: 'Australia' });
-    setDetectedRegion('AU');
-    setIsRegionBlocked(false);
-
-    const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
-    if (isNative) return; // native = AU only, skip ipapi entirely
-
-    let cancelled = false;
-    (async () => {
-      try {
-        const loc = await detectUserLocation();
-        if (cancelled) return;
-        setDetectedCountry({ code: loc.country_code, name: loc.country_name });
-        setDetectedRegion(loc.region_id);
-        if (loc.region_id) {
-          const isActive = await checkRegionActive(loc.region_id);
-          if (!cancelled) setIsRegionBlocked(!isActive);
-        }
-      } catch (e) {
-        console.warn('[auth] background location detect failed:', e);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
   
   // Redirect if already logged in
   // Redirect if already logged in
@@ -326,16 +290,6 @@ const Auth = () => {
   // supabase.auth.getSession() can hang and leave the user stuck on lime.
   // Render the login form immediately; the redirect effect above will
   // navigate away once a session resolves.
-
-  // Show region blocked screen if user is outside active regions
-  if (isRegionBlocked && detectedCountry) {
-    return (
-      <RegionBlockedScreen 
-        countryCode={detectedCountry.code} 
-        countryName={detectedCountry.name} 
-      />
-    );
-  }
 
   return (
     <div className="auth-screen fixed inset-0 bg-primary flex flex-col overflow-hidden pt-[env(safe-area-inset-top)]">
