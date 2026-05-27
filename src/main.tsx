@@ -149,9 +149,19 @@ createRoot(document.getElementById("root")!).render(<App />);
 // leaves the splash covering the WebView for ~3s and looks like a stall.
 if (isNativePlatform) {
   void import('@capacitor/splash-screen')
-    .then(({ SplashScreen }) => SplashScreen.hide({ fadeOutDuration: 200 }))
-    .then(() => console.log('[boot] splash hidden'))
-    .catch((err) => console.warn('[boot] splash hide failed', err));
+    .then(({ SplashScreen }) => {
+      const hideSplash = () => {
+        void SplashScreen.hide({ fadeOutDuration: 0 })
+          .then(() => console.log('[boot] splash hidden'))
+          .catch((err) => console.warn('[boot] splash hide failed', err));
+      };
+
+      hideSplash();
+      requestAnimationFrame(hideSplash);
+      window.setTimeout(hideSplash, 250);
+      window.setTimeout(hideSplash, 1000);
+    })
+    .catch((err) => console.warn('[boot] splash plugin failed', err));
 }
 
 // === Global, always-visible debug overlay (mounted OUTSIDE the React app tree) ===
