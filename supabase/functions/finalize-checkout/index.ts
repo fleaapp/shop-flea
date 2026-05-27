@@ -204,7 +204,7 @@ serve(async (req) => {
       });
     }
 
-    const { items, shipping, shippingBySeller, paymentMethod, checkoutReference } = await req.json() as {
+    const { items, shipping, shippingBySeller, checkoutReference } = await req.json() as {
       items?: CheckoutItem[];
       shipping?: ShippingDetails;
       shippingBySeller?: Array<[string, number]>;
@@ -216,7 +216,6 @@ serve(async (req) => {
     if (!shipping) throw new Error("Missing shipping details.");
     if (!checkoutReference) throw new Error("Missing checkoutReference — payment cannot be verified.");
 
-    const provider: "stripe" | "paypal" = paymentMethod === "paypal" ? "paypal" : "stripe";
 
     const serviceClient = createClient(
       Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "",
@@ -263,18 +262,15 @@ serve(async (req) => {
     const dbShippingTotal = Array.from(shippingMap.values()).reduce((s, v) => s + Number(v || 0), 0);
     const subtotalForFee = dbItemsTotal + dbShippingTotal;
     const STRIPE_RATE = 0.0175, STRIPE_FIXED = 0.30;
-    const PAYPAL_RATE = 0.026, PAYPAL_FIXED = 0.30;
-    const rate = provider === "paypal" ? PAYPAL_RATE : STRIPE_RATE;
-    const fixed = provider === "paypal" ? PAYPAL_FIXED : STRIPE_FIXED;
     const processingFee = Math.round(
-      ((subtotalForFee + fixed) / (1 - rate) - subtotalForFee) * 100,
+      ((subtotalForFee + STRIPE_FIXED) / (1 - STRIPE_RATE) - subtotalForFee) * 100,
     ) / 100;
     const expectedAmountAud = Math.round((subtotalForFee + processingFee) * 100) / 100;
 
-    // VERIFY PAYMENT WITH PROVIDER — fail closed. Enforces both that payment
+    // VERIFY PAYMENT WITH STRIPE — fail closed. Enforces both that payment
     // succeeded AND that the amount paid matches what we should have charged
     // based on DB prices (prevents client-supplied price tampering).
-    await verifyPayment({ provider, reference: checkoutReference, expectedAmountAud });
+    await verifyPayment({ reference: checkoutReference, expectedAmountAud });
 
     // Filter out listings already sold by another order (defensive — payment
     // already succeeded so we cannot just refuse; we still record what we can).
@@ -299,7 +295,7 @@ serve(async (req) => {
           price: Number(item.price),
           shipping_price: index === 0 ? sellerShipping : 0,
           status: "awaiting",
-          payment_method: paymentMethod || "stripe",
+          payment_method: "stripe",
           shipping_first_name: shipping.shippingFirstName,
           shipping_last_name: shipping.shippingLastName,
           shipping_address: shipping.shippingAddress,
