@@ -1,47 +1,47 @@
-## Plan to fix the Xcode simulator green hourglass stall
+## Root causes (from Xcode logs)
 
-The meaningful error is not the `UIScene`, WebPrivacy, RTI, or network noise. The actionable line is:
+1. `SplashScreen.hide()` is never called — splash only goes away on default timeout, leaving a long green/cream blank window during which any loading UI underneath looks "stuck".
+2. Native `App.addListener` and `StatusBar` calls are registered multiple times during boot (visible as duplicate `App addListener` / `setOverlaysWebView` lines), racing the Capacitor bridge before it's ready (`JS Eval error A JavaScript exception occurred`).
+3. `main.tsx` runs `resetAppCache()` on every native launch, unregistering the service worker and clearing all caches mid-boot, which makes the first paint slower and amplifies any loading-screen visibility.
+4. Several screens still render a full-screen `bg-primary` + `⏳` (`ResetPassword`, `Profile`, `CreateListing`, `EditListing`, `SellerProfile`) which on iOS WKWebView with slow auth boot looks exactly like the user-reported "green hourglass that never goes away".
 
-```text
-JS Eval error A JavaScript exception occurred
-TypeError: undefined is not an object (evaluating 'window.Capacitor.triggerEvent')
+## Plan
+
+1. Explicitly hide the native splash as soon as React mounts
+   - Install/use `@capacitor/splash-screen` and call `SplashScreen.hide()` from `main.tsx` right after `createRoot(...).render(<App />)`, guarded behind `Capacitor.isNativePlatform()`.
+   - Remove reliance on the default 1500ms auto-hide; this is what stack-overflow guidance for this exact log message recommends.
+
+2. Stop registering native lifecycle listeners more than once
+   - Remove the `CapacitorApp.addListener('resume')` / `appStateChange` registrations from `src/App.tsx` (these are what produced the duplicate `App addListener` calls in your log).
+   - Keep one guarded, deduped path inside `src/lib/appChrome.ts` that only attaches when the bridge is actually ready.
+
+3. Stop wiping the cache on every native launch
+   - Update the native branch in `src/main.tsx` so it does NOT unconditionally call `resetAppCache()` every time; only clear caches when a real new build is detected (same `flea_build_id` pattern used for web), and never unregister the service worker on native (irrelevant there anyway).
+
+4. Kill the full-screen green-hourglass loading states
+   - `ResetPassword`, `Profile`, `CreateListing`, `EditListing`, `SellerProfile` will no longer render `fixed inset-0 bg-primary` + `⏳` as their loading fallback. They'll render the neutral `PageSkeleton` instead, which uses `bg-background` (cream), not lime green. This means even if auth/profile boot is slow on native, the user never sees a frozen green hourglass.
+   - Keep `ResetPassword`'s existing 2s safety redirect to `/auth`.
+
+5. Add a clear boot trace for native
+   - Keep the existing `[boot]` log and add one log line after `SplashScreen.hide()` resolves and after the first React render, so the next Xcode log will definitively show whether the WebView is stuck on splash, on a loading shell, or on a real route.
+
+## Validation
+
+- Web preview: confirm `/auth` still renders normally and nothing depends on the removed listeners.
+- Native: after you pull + `npx cap sync ios` + run in Xcode, the expected log sequence is:
+  - `WebView loaded`
+  - `[boot] {...}` printed once
+  - splash hidden explicitly (no more "automatically hidden after default timeout" warning)
+  - a single set of `StatusBar` calls (not three duplicate sets)
+  - either the login screen OR the real home — never a permanent green hourglass.
+
+## What you'll run after I implement this
+
+```bash
+git pull
+npm install
+npx cap sync ios
+open ios/App/App.xcodeproj
 ```
 
-That means the native WebView is trying to fire Capacitor lifecycle events before the Capacitor JS bridge is ready. The repeated `App.addListener` and `StatusBar` calls show our app is registering native listeners very early and more than once.
-
-There is also still one exact green-screen/hourglass path in the app: `ResetPassword.tsx` renders `fixed inset-0 bg-primary` with `⏳` while waiting for `supabase.auth.getSession()`, with no timeout. If the simulator has restored or retained `/reset-password`, it can look like “before auth” forever.
-
-## Changes I will make
-
-1. **Remove duplicate early native App listeners**
-   - Stop registering Capacitor `App.addListener('resume')` / `appStateChange` in both `src/lib/appChrome.ts` and `src/App.tsx`.
-   - Keep one guarded native-listener path only, after React has mounted.
-
-2. **Make native status bar updates safe**
-   - Debounce/guard `StatusBar.setOverlaysWebView`, `setStyle`, and `setBackgroundColor` so they do not spam native calls during boot.
-   - Only run them when `window.Capacitor` is actually present and native.
-
-3. **Fix the remaining indefinite green hourglass**
-   - Update `src/pages/ResetPassword.tsx` so `getSession()` cannot leave the screen stuck.
-   - Add a short fallback timeout/error path that routes back to `/auth` or shows a normal auth-facing fallback instead of a green hourglass forever.
-
-4. **Add native boot diagnostics that show in Xcode/Web Inspector**
-   - Add a tiny boot log around route, protocol, bridge availability, and first React render.
-   - This will confirm whether the simulator is actually opening `/auth`, `/`, or a retained `/reset-password` route.
-
-5. **Validation target**
-   - Verify the web preview still loads `/auth` normally.
-   - For native, the expected result after sync/run is: no permanent green hourglass; either the auth form appears or an explicit error/fallback appears.
-
-## What this avoids
-
-- I will not change backend/auth rules.
-- I will not keep chasing network requests, because your latest logs show the WebView loaded and the issue is now native boot/lifecycle handling.
-
-<presentation-actions>
-  <presentation-open-history>View History</presentation-open-history>
-</presentation-actions>
-
-<presentation-actions>
-<presentation-link url="https://docs.lovable.dev/tips-tricks/troubleshooting">Troubleshooting docs</presentation-link>
-</presentation-actions>
+Then press Run in Xcode.

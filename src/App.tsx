@@ -14,8 +14,6 @@ import RealtimeAlerts from "./components/RealtimeAlerts";
 import { PushNotificationSubscriber } from "./components/PushNotificationSubscriber";
 import ErrorBoundary from "./components/ErrorBoundary";
 import PageSkeleton from "./components/PageSkeleton";
-import { App as CapacitorApp } from "@capacitor/app";
-import { Capacitor } from "@capacitor/core";
 import { restoreRouteAppChrome } from "@/lib/appChrome";
 
 // Critical path – loaded eagerly
@@ -121,8 +119,10 @@ const AppContent = () => {
     }
   }, [location.pathname, location.search, location.hash]);
 
-  // Sync iOS/PWA safe-area strip with the current route background before paint,
-  // including bfcache/external-provider returns where React route state may not change.
+  // Sync iOS/PWA safe-area strip with the current route background before paint.
+  // Native resume/appStateChange listeners are registered ONCE inside
+  // src/lib/appChrome.ts — do NOT register them here too (caused duplicate
+  // App.addListener calls in Xcode and raced the Capacitor bridge during boot).
   useLayoutEffect(() => {
     restoreRouteAppChrome();
     const onVisibility = () => {
@@ -132,25 +132,11 @@ const AppContent = () => {
     window.addEventListener("focus", restoreRouteAppChrome);
     window.addEventListener("popstate", restoreRouteAppChrome);
     document.addEventListener("visibilitychange", onVisibility);
-    let resumeHandle: { remove: () => Promise<void> } | undefined;
-    let appStateHandle: { remove: () => Promise<void> } | undefined;
-    if (Capacitor.isNativePlatform()) {
-      void CapacitorApp.addListener("resume", restoreRouteAppChrome).then((handle) => {
-        resumeHandle = handle;
-      });
-      void CapacitorApp.addListener("appStateChange", ({ isActive }) => {
-        if (isActive) restoreRouteAppChrome();
-      }).then((handle) => {
-        appStateHandle = handle;
-      });
-    }
     return () => {
       window.removeEventListener("pageshow", restoreRouteAppChrome);
       window.removeEventListener("focus", restoreRouteAppChrome);
       window.removeEventListener("popstate", restoreRouteAppChrome);
       document.removeEventListener("visibilitychange", onVisibility);
-      void resumeHandle?.remove();
-      void appStateHandle?.remove();
     };
   }, [location.pathname]);
 

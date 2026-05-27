@@ -124,7 +124,9 @@ const registerServiceWorker = async () => {
 };
 
 if (isNativePlatform) {
-  void resetAppCache();
+  // On native, the WebView already manages its own cache. Wiping caches and
+  // unregistering service workers on every launch slows down first paint
+  // (which previously made loading screens look "stuck") — skip it.
 } else if (isPreviewHost || isInIframe) {
   void resetAppCache();
 } else {
@@ -140,6 +142,17 @@ if (isNativePlatform) {
 }
 
 createRoot(document.getElementById("root")!).render(<App />);
+
+// Explicitly hide the native splash screen as soon as React has rendered.
+// Without this, Capacitor's default auto-hide timeout fires (visible in Xcode
+// as "SplashScreen was automatically hidden after default timeout"), which
+// leaves the splash covering the WebView for ~3s and looks like a stall.
+if (isNativePlatform) {
+  void import('@capacitor/splash-screen')
+    .then(({ SplashScreen }) => SplashScreen.hide({ fadeOutDuration: 200 }))
+    .then(() => console.log('[boot] splash hidden'))
+    .catch((err) => console.warn('[boot] splash hide failed', err));
+}
 
 // === Global, always-visible debug overlay (mounted OUTSIDE the React app tree) ===
 // Survives React crashes, ErrorBoundary fallbacks, and any route stall.
