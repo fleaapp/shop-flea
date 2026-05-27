@@ -41,31 +41,48 @@ const Auth = () => {
   
   // Detect user location on mount
   useEffect(() => {
+    const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
+
+    // On native iOS/Android, skip detection entirely — default to AU.
+    if (isNative) {
+      setDetectedCountry({ code: 'AU', name: 'Australia' });
+      setDetectedRegion('AU');
+      setIsRegionBlocked(false);
+      setIsDetectingLocation(false);
+      return;
+    }
+
+    // Hard safety timeout so the splash never sticks
+    const safety = setTimeout(() => {
+      setDetectedCountry((c) => c ?? { code: 'AU', name: 'Australia' });
+      setDetectedRegion((r) => r ?? 'AU');
+      setIsRegionBlocked(false);
+      setIsDetectingLocation(false);
+    }, 8000);
+
     const detectLocation = async () => {
       try {
         const location = await detectUserLocation();
         setDetectedCountry({ code: location.country_code, name: location.country_name });
         setDetectedRegion(location.region_id);
-        
-        // Check if their region is active
         if (location.region_id) {
           const isActive = await checkRegionActive(location.region_id);
           setIsRegionBlocked(!isActive);
         } else {
-          // Unknown region - block access
           setIsRegionBlocked(true);
         }
       } catch (error) {
         console.error('Location detection failed:', error);
-        // On error, block access to be safe
         setIsRegionBlocked(true);
         setDetectedCountry({ code: 'UNKNOWN', name: 'Unknown' });
       } finally {
+        clearTimeout(safety);
         setIsDetectingLocation(false);
       }
     };
-    
+
     detectLocation();
+    return () => clearTimeout(safety);
   }, []);
   
   // Redirect if already logged in
