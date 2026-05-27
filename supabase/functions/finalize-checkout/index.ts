@@ -154,114 +154,37 @@ async function getUserId(req: Request): Promise<string | null> {
   }
 }
 
-async function getPayPalAccessToken(): Promise<string> {
-  const clientId = Deno.env.get("PAYPAL_CLIENT_ID");
-  const secret = Deno.env.get("PAYPAL_SECRET_KEY");
-  if (!clientId || !secret) throw new Error("PayPal credentials not configured");
-  const res = await fetch(`${PAYPAL_API}/v1/oauth2/token`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Basic ${btoa(`${clientId}:${secret}`)}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: "grant_type=client_credentials",
-  });
-  if (!res.ok) throw new Error(`PayPal auth failed: ${res.status}`);
-  return (await res.json()).access_token as string;
-}
-
 /**
- * Verify the payment with the provider. Throws if not actually paid.
- * Also returns the buyer email reported by the provider so we can sanity-check
+ * Verify the payment with Stripe. Throws if not actually paid.
+ * Also returns the buyer email reported by Stripe so we can sanity-check
  * it matches the authenticated user.
  */
 async function verifyPayment(opts: {
-  provider: "stripe" | "paypal";
   reference: string;
   expectedAmountAud?: number;
 }): Promise<{ verifiedEmail?: string; paidAmountAud?: number }> {
-  if (opts.provider === "stripe") {
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
-    const session = await stripe.checkout.sessions.retrieve(opts.reference, { expand: ["payment_intent"] });
-    const piStatus = typeof session.payment_intent === "object" && session.payment_intent
-      ? (session.payment_intent as Stripe.PaymentIntent).status
-      : null;
-    const paid = session.payment_status === "paid"
-      || session.payment_status === "no_payment_required"
-      || piStatus === "succeeded"
-      || piStatus === "requires_capture";
-    if (!paid) {
-      throw new Error(`Stripe session not paid (status=${session.payment_status}, pi=${piStatus})`);
-    }
-    const amountTotal = typeof session.amount_total === "number" ? session.amount_total / 100 : undefined;
-    if (opts.expectedAmountAud != null && amountTotal != null) {
-      if (Math.abs(amountTotal - opts.expectedAmountAud) > 0.05) {
-        throw new Error(`Stripe paid amount mismatch: paid ${amountTotal} expected ${opts.expectedAmountAud}`);
-      }
-    }
-    return {
-      verifiedEmail: session.customer_details?.email ?? session.customer_email ?? undefined,
-      paidAmountAud: amountTotal,
-    };
+  const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
+  const session = await stripe.checkout.sessions.retrieve(opts.reference, { expand: ["payment_intent"] });
+  const piStatus = typeof session.payment_intent === "object" && session.payment_intent
+    ? (session.payment_intent as Stripe.PaymentIntent).status
+    : null;
+  const paid = session.payment_status === "paid"
+    || session.payment_status === "no_payment_required"
+    || piStatus === "succeeded"
+    || piStatus === "requires_capture";
+  if (!paid) {
+    throw new Error(`Stripe session not paid (status=${session.payment_status}, pi=${piStatus})`);
   }
-
-  // PayPal — capture if APPROVED, then require COMPLETED.
-  const token = await getPayPalAccessToken();
-  let lookup = await fetch(`${PAYPAL_API}/v2/checkout/orders/${opts.reference}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!lookup.ok) throw new Error(`PayPal order lookup failed: ${lookup.status}`);
-  let data = await lookup.json();
-
-  if (data.status === "APPROVED") {
-    const cap = await fetch(`${PAYPAL_API}/v2/checkout/orders/${opts.reference}/capture`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        "PayPal-Request-Id": `flea-cap-${opts.reference}`,
-        "PayPal-Partner-Attribution-Id": Deno.env.get("PAYPAL_CLIENT_ID") || "",
-      },
-    });
-    if (!cap.ok && cap.status !== 422 /* already captured */) {
-      throw new Error(`PayPal capture failed: ${cap.status}`);
-    }
-    if (cap.ok) data = await cap.json();
-    else {
-      lookup = await fetch(`${PAYPAL_API}/v2/checkout/orders/${opts.reference}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      data = await lookup.json();
+  const amountTotal = typeof session.amount_total === "number" ? session.amount_total / 100 : undefined;
+  if (opts.expectedAmountAud != null && amountTotal != null) {
+    if (Math.abs(amountTotal - opts.expectedAmountAud) > 0.05) {
+      throw new Error(`Stripe paid amount mismatch: paid ${amountTotal} expected ${opts.expectedAmountAud}`);
     }
   }
-
-  if (data.status !== "COMPLETED") {
-    throw new Error(`PayPal order not completed (status=${data.status})`);
-  }
-
-  // Sum captured amounts across purchase_units for amount verification.
-  let paidAmountAud: number | undefined;
-  try {
-    const pus = Array.isArray(data.purchase_units) ? data.purchase_units : [];
-    let sum = 0;
-    let any = false;
-    for (const pu of pus) {
-      const caps = pu?.payments?.captures ?? [];
-      for (const c of caps) {
-        const v = parseFloat(c?.amount?.value ?? "");
-        if (!isNaN(v)) { sum += v; any = true; }
-      }
-    }
-    if (any) paidAmountAud = Math.round(sum * 100) / 100;
-  } catch { /* ignore */ }
-
-  if (opts.expectedAmountAud != null && paidAmountAud != null) {
-    if (Math.abs(paidAmountAud - opts.expectedAmountAud) > 0.05) {
-      throw new Error(`PayPal paid amount mismatch: paid ${paidAmountAud} expected ${opts.expectedAmountAud}`);
-    }
-  }
-
-  return { verifiedEmail: data.payer?.email_address ?? undefined, paidAmountAud };
+  return {
+    verifiedEmail: session.customer_details?.email ?? session.customer_email ?? undefined,
+    paidAmountAud: amountTotal,
+  };
 }
 
 serve(async (req) => {
