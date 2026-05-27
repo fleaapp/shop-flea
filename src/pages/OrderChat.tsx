@@ -291,15 +291,12 @@ const OrderChat = () => {
                     setRefundActioning(false);
                   }
                 }}
-                onRefund={async (paymentMethod: string) => {
-                  // Both rails — execute refund directly via Connect/Partner.
-                  // Stripe: reverse_transfer + refund_application_fee.
-                  // PayPal: capture refund auto-reverses platform_fees.
-                  // Both unwind seller payout AND Flea's 7% cleanly.
-                  const fnName = paymentMethod === 'paypal' ? 'paypal-connect-refund' : 'stripe-connect-refund';
+                onRefund={async () => {
+                  // Stripe Connect: reverse_transfer + refund_application_fee
+                  // unwinds the seller payout AND Flea's 7% cleanly.
                   setRefundActioning(true);
                   try {
-                    const { data, error } = await invokeCloudFunction(fnName, {
+                    const { data, error } = await invokeCloudFunction('stripe-connect-refund', {
                       orderId: orderId!,
                     });
                     if (error || !(data as any)?.success) {

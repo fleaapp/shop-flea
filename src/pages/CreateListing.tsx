@@ -67,8 +67,6 @@ const CreateListing = () => {
   const [hasPaymentMethodStripe, setHasPaymentMethodStripe] = useState(() => typeof window !== 'undefined' && !!stripeLocalKey && localStorage.getItem(stripeLocalKey) === 'true');
   const [stripeActionRequired, setStripeActionRequired] = useState(false);
 
-  // PayPal removed from seller flow.
-  const hasPayPalConnected = false;
 
   // Keep local payment state aligned with backend resets
   useEffect(() => {
@@ -118,7 +116,7 @@ const CreateListing = () => {
     return () => { cancelled = true; };
   }, [user, profile?.stripe_account_id]);
 
-  const hasPaymentMethod = hasPaymentMethodDB || hasPaymentMethodStripe || hasPayPalConnected;
+  const hasPaymentMethod = hasPaymentMethodDB || hasPaymentMethodStripe;
 
   // Only show "verifying" if user just returned from Stripe with success param
   // or if they have a completed account in DB that needs syncing
@@ -489,7 +487,7 @@ const CreateListing = () => {
   }
 
   // Show payment gate if user has no fully connected payment method or action required
-  const needsPaymentGate = !hasPaymentMethod || (stripeActionRequired && !hasPayPalConnected);
+  const needsPaymentGate = !hasPaymentMethod || stripeActionRequired;
   if (needsPaymentGate && user && profile) {
     return (
       <div className="min-h-svh bg-background">

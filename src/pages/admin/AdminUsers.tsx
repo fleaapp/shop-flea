@@ -168,7 +168,6 @@ export default function AdminUsers() {
 
               <div className="flex flex-wrap gap-2">
                 <Badge variant="outline" className="gap-1"><CreditCard className="h-3 w-3" /> Stripe {selected.stripe_onboarding_complete ? '✓' : '—'}</Badge>
-                <Badge variant="outline" className="gap-1"><CreditCard className="h-3 w-3" /> PayPal {selected.paypal_onboarding_complete ? '✓' : '—'}</Badge>
                 {selected.country_code && <Badge variant="outline">{selected.country_code}</Badge>}
                 {selected.region_id && <Badge variant="outline">{selected.region_id}</Badge>}
               </div>

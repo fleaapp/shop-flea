@@ -247,7 +247,7 @@ const PaymentMethodsSection = () => {
           </div>
         </div>
 
-        {/* PayPal seller connection removed. PayPal is offered to buyers at checkout only. */}
+        
       </div>
     </div>
     </>

@@ -131,14 +131,9 @@ const Notifications = () => {
       return;
     }
 
-    // Payment action required → open Stripe or PayPal dashboard
+    // Payment action required → open Stripe dashboard
     if (notification.type === 'payment_action_required') {
-      const msg = (notification.message || '').toLowerCase();
-      if (msg.includes('paypal')) {
-        window.open('https://www.paypal.com/businessmanage', '_blank');
-      } else {
-        window.open('https://dashboard.stripe.com', '_blank');
-      }
+      window.open('https://dashboard.stripe.com', '_blank');
       return;
     }
 

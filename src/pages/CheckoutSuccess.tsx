@@ -23,9 +23,8 @@ const CheckoutSuccess = () => {
   useEffect(() => {
     const processOrder = async () => {
       const sessionId = searchParams.get('session_id');
-      const isPayPal = searchParams.get('paypal') === 'true';
-      
-      if (!sessionId && !isPayPal) {
+
+      if (!sessionId) {
         navigate('/');
         return;
       }
@@ -67,7 +66,7 @@ const CheckoutSuccess = () => {
             items: items.map(item => ({ id: item.id, sellerId: item.sellerId, price: item.price })),
             shipping,
             shippingBySeller: Array.from(shippingBySeller.entries()),
-            paymentMethod: localStorage.getItem('checkout_payment_method') || (isPayPal ? 'paypal' : 'stripe'),
+            paymentMethod: 'stripe',
             checkoutReference,
           });
 

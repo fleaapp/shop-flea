@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, CheckCircle, XCircle, ExternalLink, Clock } from 'lucide-react';
+import { CheckCircle, ExternalLink, Clock } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 interface RefundRequestData {
@@ -9,45 +9,34 @@ interface RefundRequestData {
   reason: string;
   details: string;
   image_urls: string[];
-  payment_method: string;
+  payment_method?: string;
   requested_at: string;
 }
 
 interface RefundRejectedData {
   type: 'refund_rejected';
   seller_username: string;
-  payment_method: string;
+  payment_method?: string;
   rejected_at: string;
 }
 
 interface RefundInitiatedData {
   type: 'refund_initiated';
   seller_username: string;
-  payment_method: string;
+  payment_method?: string;
   initiated_at: string;
 }
 
 interface RefundReminderData {
   type: 'refund_reminder';
-  payment_method: string;
+  payment_method?: string;
 }
 
 type RefundData = RefundRequestData | RefundRejectedData | RefundInitiatedData | RefundReminderData;
 
-const getPaymentProviderUrl = (paymentMethod: string, role: 'buyer' | 'seller') => {
-  if (paymentMethod === 'paypal') {
-    return role === 'buyer'
-      ? 'https://www.paypal.com/disputes'
-      : 'https://www.paypal.com/disputes';
-  }
-  return role === 'buyer'
-    ? 'https://support.stripe.com'
-    : 'https://dashboard.stripe.com/payments';
-};
-
-const getPaymentProviderName = (paymentMethod: string) => {
-  return paymentMethod === 'paypal' ? 'PayPal' : 'Stripe';
-};
+const STRIPE_BUYER_URL = 'https://support.stripe.com';
+const STRIPE_SELLER_URL = 'https://dashboard.stripe.com/payments';
+const PROVIDER_NAME = 'Stripe';
 
 const formatUsername = (u: string) => u.startsWith('@') ? u : `@${u}`;
 
@@ -130,7 +119,7 @@ const RefundSystemMessage = ({
               </Button>
               <Button
                 size="sm"
-                onClick={() => onRefund?.(d.payment_method)}
+                onClick={() => onRefund?.('stripe')}
                 disabled={isActioning}
                 className="rounded-full flex-1 h-12 bg-charcoal text-white hover:bg-charcoal-light gap-1.5 items-center justify-center"
               >
@@ -148,11 +137,11 @@ const RefundSystemMessage = ({
               </div>
               <Button
                 size="sm"
-                onClick={() => window.open(getPaymentProviderUrl(d.payment_method, 'buyer'), '_blank')}
+                onClick={() => window.open(STRIPE_BUYER_URL, '_blank')}
                 className="rounded-full w-full bg-charcoal text-white hover:bg-charcoal-light"
               >
                 <ExternalLink className="h-3.5 w-3.5 mr-1" />
-                Request Refund via {getPaymentProviderName(d.payment_method)}
+                Request Refund via {PROVIDER_NAME}
               </Button>
             </div>
           )}
@@ -191,11 +180,11 @@ const RefundSystemMessage = ({
             <div className="flex justify-center">
               <Button
                 size="sm"
-                onClick={() => window.open(getPaymentProviderUrl(d.payment_method, 'buyer'), '_blank')}
+                onClick={() => window.open(STRIPE_BUYER_URL, '_blank')}
                 className="rounded-full w-3/4 h-12 bg-charcoal text-white hover:bg-charcoal-light gap-1.5 items-center justify-center"
               >
                 <span className="leading-none">↩️</span>
-                Request Refund via {getPaymentProviderName(d.payment_method)}
+                Request Refund via {PROVIDER_NAME}
               </Button>
             </div>
           )}
@@ -215,7 +204,7 @@ const RefundSystemMessage = ({
           </div>
 
           <p className="text-sm text-foreground">
-            <span className="font-semibold">{formatUsername(d.seller_username)}</span> has initiated a refund via {getPaymentProviderName(d.payment_method)}.
+            <span className="font-semibold">{formatUsername(d.seller_username)}</span> has initiated a refund via {PROVIDER_NAME}.
           </p>
         </div>
       </div>

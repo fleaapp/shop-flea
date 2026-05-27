@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { X, Download } from 'lucide-react';
 import fleaLogo from '@/assets/flea-logo-receipt.jpeg';
 import stripeLogo from '@/assets/logo-stripe.png';
-import paypalLogo from '@/assets/logo-paypal.png';
+
 
 interface OrderReceiptDialogProps {
   orders: Order[];

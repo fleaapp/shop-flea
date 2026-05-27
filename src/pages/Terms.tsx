@@ -117,12 +117,12 @@ const Terms = () => {
             <h2 className="text-base font-bold mb-2">8. Fees and payments</h2>
             <ul className="list-disc pl-5 space-y-1.5">
               <li><strong>Platform fee:</strong> Sellers pay a 7% platform fee on the item price (excluding shipping) per completed sale.</li>
-              <li><strong>Buyer service fee:</strong> Buyers pay a service fee on each order — currently 2% when paying by card via our card processor and 3% when paying via PayPal — added at checkout.</li>
+              <li><strong>Buyer service fee:</strong> Buyers pay a 2% service fee on each order paid by card via our card processor, added at checkout.</li>
               <li><strong>Instant payout:</strong> Sellers who choose an instant payout to their bank account pay an additional 1.5% instant payout fee charged by our payment processor.</li>
               <li><strong>Listing items:</strong> Listing items is free.</li>
             </ul>
             <p>
-              All amounts are shown in AUD. Payments are processed by third-party providers (currently our card processor and PayPal) under their own terms. Flea does not store your full card or bank details. Payouts to sellers are made to the connected payment account in the seller's name; sellers are responsible for ensuring those details are accurate. Sellers are responsible for their own tax obligations including any GST and income tax. Fees may change on 30 days' notice via in-app notice or email.
+              All amounts are shown in AUD. Payments are processed by our third-party card processor under its own terms. Flea does not store your full card or bank details. Payouts to sellers are made to the connected payment account in the seller's name; sellers are responsible for ensuring those details are accurate. Sellers are responsible for their own tax obligations including any GST and income tax. Fees may change on 30 days' notice via in-app notice or email.
             </p>
           </section>
 
