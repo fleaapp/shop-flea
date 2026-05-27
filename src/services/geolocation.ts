@@ -103,24 +103,44 @@ async function getCountryFromIP(): Promise<{ country_code: string; country_name:
   }
 }
 
+// Hard outer timeout so we never hang the splash screen forever
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
+  return new Promise((resolve) => {
+    const t = setTimeout(() => resolve(null), ms);
+    p.then((v) => { clearTimeout(t); resolve(v); }).catch(() => { clearTimeout(t); resolve(null); });
+  });
+}
+
+const isNative = (): boolean => {
+  try {
+    return !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+      .Capacitor?.isNativePlatform?.();
+  } catch {
+    return false;
+  }
+};
+
 // Main function to detect user's location
 export async function detectUserLocation(): Promise<GeoLocationResult> {
-  // Try GPS first (more accurate, harder to spoof)
-  const gpsResult = await getCountryFromGPS();
-  
-  if (gpsResult) {
-    const region_id = COUNTRY_TO_REGION[gpsResult.country_code] || null;
-    return {
-      country_code: gpsResult.country_code,
-      country_name: gpsResult.country_code, // Will be resolved by IP call if needed
-      region_id,
-      source: 'gps',
-    };
+  // On native iOS/Android, skip GPS — requires Info.plist usage description
+  // (NSLocationWhenInUseUsageDescription) and can hang indefinitely if missing.
+  // IP geo is enough for region gating.
+  if (!isNative()) {
+    const gpsResult = await withTimeout(getCountryFromGPS(), 6000);
+    if (gpsResult) {
+      const region_id = COUNTRY_TO_REGION[gpsResult.country_code] || null;
+      return {
+        country_code: gpsResult.country_code,
+        country_name: gpsResult.country_code,
+        region_id,
+        source: 'gps',
+      };
+    }
   }
-  
-  // Fallback to IP geolocation
-  const ipResult = await getCountryFromIP();
-  
+
+  // Fallback to IP geolocation (with hard timeout)
+  const ipResult = await withTimeout(getCountryFromIP(), 6000);
+
   if (ipResult) {
     const region_id = COUNTRY_TO_REGION[ipResult.country_code] || null;
     return {
@@ -130,7 +150,7 @@ export async function detectUserLocation(): Promise<GeoLocationResult> {
       source: 'ip',
     };
   }
-  
+
   // Unable to detect location — default to AU so preview/dev isn't blocked
   return {
     country_code: 'AU',
