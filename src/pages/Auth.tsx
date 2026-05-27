@@ -12,6 +12,7 @@ import { useOnboarding } from '@/context/OnboardingContext';
 import { supabase } from '@/lib/supabase';
 import { detectUserLocation, checkRegionActive } from '@/services/geolocation';
 import RegionBlockedScreen from '@/components/RegionBlockedScreen';
+import { InAppDebugOverlay } from '@/components/dev/InAppDebugOverlay';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -341,6 +342,7 @@ const Auth = () => {
     return (
       <div className="fixed inset-0 bg-primary flex items-center justify-center overflow-hidden">
         <span className="text-5xl">⏳</span>
+        <InAppDebugOverlay context={`splash authLoading=${authLoading} detecting=${isDetectingLocation}`} />
       </div>
     );
   }
