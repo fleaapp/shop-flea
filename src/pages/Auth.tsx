@@ -12,6 +12,7 @@ import { useOnboarding } from '@/context/OnboardingContext';
 import { supabase } from '@/lib/supabase';
 import { detectUserLocation, checkRegionActive } from '@/services/geolocation';
 import RegionBlockedScreen from '@/components/RegionBlockedScreen';
+import { InAppDebugOverlay } from '@/components/dev/InAppDebugOverlay';
 
 const Auth = () => {
   const navigate = useNavigate();
