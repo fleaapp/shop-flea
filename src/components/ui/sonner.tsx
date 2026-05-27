@@ -16,7 +16,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         error: <span className="text-base">❌</span>,
         info: <span className="text-base">ℹ️</span>,
         warning: <span className="text-base">⚠️</span>,
-        loading: <span className="text-base animate-spin">⏳</span>,
+        loading: <span className="text-base animate-pulse">…</span>,
       }}
       toastOptions={{
         duration: 1800,
