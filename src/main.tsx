@@ -66,6 +66,10 @@ const isPreviewHost =
   window.location.hostname.includes("id-preview--") ||
   window.location.hostname.includes("lovableproject.com");
 
+const isNativePlatform =
+  window.location.protocol === 'capacitor:' ||
+  !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
+
 const registerServiceWorker = async () => {
   if (!('serviceWorker' in navigator)) return;
 
@@ -104,7 +108,9 @@ const registerServiceWorker = async () => {
   }
 };
 
-if (isPreviewHost || isInIframe) {
+if (isNativePlatform) {
+  void resetAppCache();
+} else if (isPreviewHost || isInIframe) {
   void resetAppCache();
 } else {
   const storedBuild = localStorage.getItem(STORED_BUILD_KEY);
