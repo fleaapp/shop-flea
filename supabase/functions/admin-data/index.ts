@@ -591,7 +591,7 @@ async function listUsers(payload: any = {}) {
       total_reviews: Number(u.total_reviews ?? 0),
       report_strike_count: strikes,
       stripe_onboarding_complete: !!u.stripe_onboarding_complete,
-      paypal_onboarding_complete: !!u.paypal_onboarding_complete,
+      
       listings_total: listing.total,
       listings_active: listing.active,
       listings_sold: listing.sold,
@@ -819,7 +819,7 @@ async function listSystemIssues() {
   ] = await Promise.all([
     safeSelect("listings", { status: "eq.active", select: "id,user_id,title,brand,images,report_count,region_id,shipping_price,created_at" }),
     safeSelect("listings", { status: "eq.sold", select: "id,user_id,title,updated_at" }),
-    safeSelect("profiles", { select: "user_id,username,status,report_strike_count,stripe_account_id,stripe_onboarding_complete,paypal_merchant_id,paypal_onboarding_complete,pause_selling" }),
+    safeSelect("profiles", { select: "user_id,username,status,report_strike_count,stripe_account_id,stripe_onboarding_complete,pause_selling" }),
     safeSelect("orders", { status: "eq.awaiting", select: "id,buyer_id,seller_id,listing_id,price,created_at,checkout_reference" }),
     safeSelect("orders", { status: "eq.shipped", select: "id,buyer_id,seller_id,listing_id,shipped_at,tracking_number,tracking_provider,delivered_at" }),
     safeSelect("orders", { status: "eq.refunded", select: "id,refunded_at,updated_at,buyer_id,seller_id" }),
@@ -900,14 +900,13 @@ async function listSystemIssues() {
     const p = profileMap.get(sid);
     if (!p) continue;
     const noStripe = !p.stripe_onboarding_complete || !p.stripe_account_id;
-    const noPaypal = !p.paypal_onboarding_complete || !p.paypal_merchant_id;
-    if (noStripe && noPaypal) sellersNoPayout.push(p);
+    if (noStripe) sellersNoPayout.push(p);
   }
   if (sellersNoPayout.length) {
     issues.push({
       id: "sellers_no_payout",
       title: "Sellers with sales but no payout method",
-      description: `${sellersNoPayout.length} seller(s) have orders but no working Stripe or PayPal connection.`,
+      description: `${sellersNoPayout.length} seller(s) have orders but no working Stripe connection.`,
       severity: "critical",
       user_impact: "Sellers cannot receive their money. Funds may be held by payment provider indefinitely.",
       suggested_fix: "Email affected sellers to complete payment onboarding via Settings.",
@@ -939,25 +938,6 @@ async function listSystemIssues() {
     });
   }
 
-  // 6. Stale PayPal onboarding flag
-  const stalePaypal = profiles.filter(
-    (p: any) => p.paypal_onboarding_complete && !p.paypal_merchant_id
-  );
-  if (stalePaypal.length) {
-    issues.push({
-      id: "stale_paypal_flag",
-      title: "Inconsistent PayPal onboarding state",
-      description: `${stalePaypal.length} profile(s) marked PayPal-complete but have no PayPal merchant ID.`,
-      severity: "medium",
-      user_impact: "Sellers won't reconnect, blocking PayPal payouts.",
-      suggested_fix: "Auto-reset the onboarding flag so they can reconnect.",
-      auto_fix_id: "fix_stale_paypal_flag",
-      category: "Payments",
-      count: stalePaypal.length,
-      examples: stalePaypal.slice(0, 5).map((p: any) => ({ user_id: p.user_id, username: p.username })),
-      detected_at: now,
-    });
-  }
 
   // 7. Listings reported >=3 still active
   const heavyReported = (flaggedListings as any[]).filter(
@@ -1221,19 +1201,6 @@ async function runSystemFix(fixId: string) {
       return { ok: true, fixed, message: `Reset Stripe onboarding flag for ${fixed} profile(s).` };
     }
 
-    case "fix_stale_paypal_flag": {
-      const stale = await safeSelect("profiles", {
-        paypal_onboarding_complete: "eq.true",
-        paypal_merchant_id: "is.null",
-        select: "user_id",
-      });
-      let fixed = 0;
-      for (const p of stale as any[]) {
-        await safePatch("profiles", { user_id: `eq.${p.user_id}` }, { paypal_onboarding_complete: false });
-        fixed++;
-      }
-      return { ok: true, fixed, message: `Reset PayPal onboarding flag for ${fixed} profile(s).` };
-    }
 
     case "fix_remove_heavily_reported": {
       const targets = await safeSelect("listings", {

@@ -18,7 +18,6 @@ export type AdminUser = {
   total_reviews: number;
   report_strike_count: number;
   stripe_onboarding_complete: boolean;
-  paypal_onboarding_complete: boolean;
   listings_total: number;
   listings_active: number;
   listings_sold: number;

@@ -662,11 +662,9 @@ Deno.serve(async (req) => {
       }
 
       if (action === "refund_initiate" && isSeller) {
-        // For Stripe orders the refund is executed atomically by
-        // stripe-connect-refund before this is called, so the
-        // refund_initiated system message + buyer notification are safe to
-        // emit now. PayPal still falls through to the same flow (the seller
-        // completes the refund in PayPal's dashboard).
+        // Stripe refund is executed atomically by stripe-connect-refund before
+        // this is called, so the refund_initiated system message + buyer
+        // notification are safe to emit now.
         const systemContent = JSON.stringify({
           type: "refund_initiated",
           seller_username: senderUsername,

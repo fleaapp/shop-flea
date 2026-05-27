@@ -57,7 +57,7 @@ const PrivacyPolicy = () => {
             </ul>
             <p className="font-semibold mt-3">Payment information</p>
             <ul className="list-disc pl-5 space-y-1">
-              <li>Identifiers issued by our payment partners (e.g. Stripe Connect account ID, PayPal merchant ID), payout status and onboarding status.</li>
+              <li>Identifiers issued by our payment partner (e.g. Stripe Connect account ID), payout status and onboarding status.</li>
               <li>Limited transaction metadata (amount, currency, timestamp, payment method, refund status).</li>
               <li>Webhook event data sent by payment partners (e.g. payment failures, disputes, refunds).</li>
               <li>We do <strong>not</strong> see or store your full card number, CVV or bank account number — those are collected directly by our payment partners.</li>
@@ -83,7 +83,7 @@ const PrivacyPolicy = () => {
             <ul className="list-disc pl-5 space-y-1.5">
               <li><strong>Directly from you</strong> — when you sign up, complete your profile, list an item, place an order, message a user, contact support, or change your settings.</li>
               <li><strong>Automatically</strong> — when you use the Platform (device data, IP address, approximate region, page interactions, push token).</li>
-              <li><strong>From third parties</strong> — Google (if you sign in with Google), Stripe and PayPal (account verification and payout status), AfterShip (delivery tracking), and OpenStreetMap (address autocomplete).</li>
+              <li><strong>From third parties</strong> — Google (if you sign in with Google), Stripe (account verification and payout status), AfterShip (delivery tracking), and OpenStreetMap (address autocomplete).</li>
             </ul>
           </section>
 
@@ -108,7 +108,7 @@ const PrivacyPolicy = () => {
             <p>We share personal information only as needed to operate the Platform or as required by law:</p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li><strong>With other users</strong> — your username, profile photo, listings, ratings and reviews are public to other Flea users in your region. Buyers and sellers exchange shipping address and contact details necessary to complete an order.</li>
-              <li><strong>With our service providers</strong> — including Supabase (hosting, database, authentication, storage), Lovable (app delivery), Stripe (card payments and seller payouts), PayPal (alternative payments), AfterShip (parcel tracking), Resend (transactional email), Google (sign-in), web push services run by Apple, Google and Mozilla, and OpenStreetMap (address lookup). These providers process data only on our instructions and under their own privacy obligations.</li>
+              <li><strong>With our service providers</strong> — including Supabase (hosting, database, authentication, storage), Lovable (app delivery), Stripe (card payments and seller payouts), AfterShip (parcel tracking), Resend (transactional email), Google (sign-in), web push services run by Apple, Google and Mozilla, and OpenStreetMap (address lookup). These providers process data only on our instructions and under their own privacy obligations.</li>
               <li><strong>For legal reasons</strong> — to comply with a law, court order, regulator's request, or to protect our rights, property or safety, or those of our users or the public.</li>
               <li><strong>In a corporate transaction</strong> — if Flea is involved in a merger, acquisition or sale of assets, your information may be transferred subject to confidentiality obligations.</li>
               <li><strong>With your consent</strong> — for any other purpose disclosed at the time of collection.</li>
@@ -215,7 +215,7 @@ const PrivacyPolicy = () => {
             </p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li><strong>Stripe</strong> (card payments and seller payouts) — <a href="https://stripe.com/au/privacy" target="_blank" rel="noreferrer" className="underline">stripe.com/au/privacy</a></li>
-              <li><strong>PayPal</strong> (alternative payment method) — <a href="https://www.paypal.com/au/legalhub/privacy-full" target="_blank" rel="noreferrer" className="underline">paypal.com/au/legalhub/privacy-full</a></li>
+              
               <li><strong>Supabase</strong> (database, authentication, storage) — <a href="https://supabase.com/privacy" target="_blank" rel="noreferrer" className="underline">supabase.com/privacy</a></li>
               <li><strong>Google</strong> (Google sign-in) — <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">policies.google.com/privacy</a></li>
               <li><strong>AfterShip</strong> (parcel tracking) — <a href="https://www.aftership.com/legal/privacy" target="_blank" rel="noreferrer" className="underline">aftership.com/legal/privacy</a></li>
