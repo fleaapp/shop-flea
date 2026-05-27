@@ -100,11 +100,10 @@ const ResetPassword = () => {
   };
 
   if (!hasSession) {
-    return (
-      <div className="fixed inset-0 bg-primary flex items-center justify-center overflow-hidden">
-        <span className="text-5xl">⏳</span>
-      </div>
-    );
+    // Render a neutral background while we check the recovery session. Never
+    // show a full-screen lime "green hourglass" here — on slow native boot it
+    // looks like the app is stuck. The 2s safety above redirects to /auth.
+    return <div className="fixed inset-0 bg-background overflow-hidden" />;
   }
 
   return (
