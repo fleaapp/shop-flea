@@ -19,16 +19,6 @@ project_id = "teaicrimlqdayqpmxasc"
     verify_jwt = false
   [functions.order-messages]
     verify_jwt = false
-  [functions.paypal-connect-checkout]
-    verify_jwt = false
-  [functions.paypal-connect-onboard]
-    verify_jwt = false
-  [functions.paypal-connect-refund]
-    verify_jwt = false
-  [functions.paypal-connect-status]
-    verify_jwt = false
-  [functions.paypal-webhook]
-    verify_jwt = false
   [functions.process-email-queue]
     verify_jwt = true
   [functions.send-push-notification]

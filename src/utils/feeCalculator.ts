@@ -2,7 +2,7 @@
  * Single source of truth for Flea's fee model.
  *
  * Money flow per sale:
- *  Buyer pays:    items + shipping + processing fee (covers payment provider's actual cost)
+ *  Buyer pays:    items + shipping + processing fee (covers Stripe's actual cost)
  *  Stripe takes:  ~1.75% + $0.30 of total charge — deducted from SELLER (on_behalf_of=seller)
  *  Flea takes:    7% of (items + shipping) — application_fee_amount
  *  Seller gets:   (items + shipping) − 7% Flea fee  (Stripe fees absorbed by buyer-paid line)
@@ -16,15 +16,10 @@
 export const STRIPE_PROCESSING_RATE = 0.0175;
 export const STRIPE_PROCESSING_FIXED = 0.30;
 
-// PayPal AU domestic Checkout standard rate — same gross-up model as Stripe
-// so PayPal's actual deduction is fully covered by the buyer-paid fee.
-export const PAYPAL_PROCESSING_RATE = 0.026;
-export const PAYPAL_PROCESSING_FIXED = 0.30;
-
 // Flea platform fee — what the seller pays out of the sale
 export const PLATFORM_FEE_RATE = 0.07;
 
-export type PaymentMethod = 'stripe' | 'paypal';
+export type PaymentMethod = 'stripe';
 
 export interface FeeBreakdown {
   itemsTotal: number;       // sum of item prices
@@ -43,23 +38,13 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 export function calculateFees(
   itemsTotal: number,
   shipping: number,
-  paymentMethod: PaymentMethod = 'stripe'
+  _paymentMethod: PaymentMethod = 'stripe'
 ): FeeBreakdown {
   const subtotal = itemsTotal + shipping;
 
-  let processingFee: number;
-  let rateLabel: string;
-
-  if (paymentMethod === 'paypal') {
-    // Same gross-up formula as Stripe so PayPal's deduction
-    // (rate × buyerTotal + fixed) is fully covered.
-    processingFee = (subtotal + PAYPAL_PROCESSING_FIXED) / (1 - PAYPAL_PROCESSING_RATE) - subtotal;
-    rateLabel = `${(PAYPAL_PROCESSING_RATE * 100).toFixed(1)}% + $${PAYPAL_PROCESSING_FIXED.toFixed(2)}`;
-  } else {
-    // Gross-up so Stripe's deduction (rate × buyerTotal + fixed) is fully covered.
-    processingFee = (subtotal + STRIPE_PROCESSING_FIXED) / (1 - STRIPE_PROCESSING_RATE) - subtotal;
-    rateLabel = `${(STRIPE_PROCESSING_RATE * 100).toFixed(2)}% + $${STRIPE_PROCESSING_FIXED.toFixed(2)}`;
-  }
+  // Gross-up so Stripe's deduction (rate × buyerTotal + fixed) is fully covered.
+  let processingFee = (subtotal + STRIPE_PROCESSING_FIXED) / (1 - STRIPE_PROCESSING_RATE) - subtotal;
+  const rateLabel = `${(STRIPE_PROCESSING_RATE * 100).toFixed(2)}% + $${STRIPE_PROCESSING_FIXED.toFixed(2)}`;
 
   processingFee = r2(processingFee);
   const buyerTotal = r2(subtotal + processingFee);
@@ -75,7 +60,7 @@ export function calculateFees(
     buyerTotal,
     platformFee,
     sellerReceives,
-    paymentMethod,
+    paymentMethod: 'stripe',
     rateLabel,
   };
 }
