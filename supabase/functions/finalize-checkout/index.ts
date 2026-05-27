@@ -359,7 +359,7 @@ serve(async (req) => {
     // Filter out listings already sold by another order (defensive — payment
     // already succeeded so we cannot just refuse; we still record what we can).
     const orderGroupId = crypto.randomUUID();
-    const shippingMap = new Map<string, number>(Array.isArray(shippingBySeller) ? shippingBySeller : []);
+    // shippingMap already initialized above for amount verification.
     const itemsBySeller = new Map<string, ListingRow[]>();
     for (const item of authoritativeItems) {
       const arr = itemsBySeller.get(item.user_id) ?? [];
