@@ -107,12 +107,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [user, fetchProfile]);
 
   useEffect(() => {
-    // Safety: never let loading hang more than 4s (e.g. WKWebView storage issue,
-    // blocked network to Supabase on iOS Capacitor). Falls back to signed-out state.
+    // Safety: never let loading hang more than 1.5s. iOS WKWebView can leave
+    // supabase.auth.getSession() pending indefinitely if the network request
+    // to the auth server stalls. Falls back to signed-out state.
     const safetyTimer = setTimeout(() => {
-      console.warn('[auth] getSession() timed out after 4s — falling back to signed-out state');
+      console.warn('[auth] getSession() timed out — falling back to signed-out state');
       setLoading(false);
-    }, 4000);
+    }, 1500);
 
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
