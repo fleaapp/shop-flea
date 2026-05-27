@@ -75,8 +75,15 @@ function getStandaloneVisibleHeight(d: Device): number {
 const STORAGE_KEY = "flea_dev_device_preview";
 const IFRAME_PARAM = "devpreview";
 
+const isNativeCapacitor = (() => {
+  if (typeof window === "undefined") return false;
+  const cap = (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+  return !!cap?.isNativePlatform?.();
+})();
+
 const isPreviewHost = (() => {
   if (typeof window === "undefined") return false;
+  if (isNativeCapacitor) return false;
   const h = window.location.hostname;
   return (
     h === "localhost" ||

@@ -9,11 +9,16 @@ import { netLogger, NetEntry } from "@/lib/netLogger";
  * To hide permanently, remove <NetworkLogOverlay /> from App.tsx, or
  * set localStorage.setItem('flea_net_overlay', 'off').
  */
+const isNativeCapacitor =
+  typeof window !== "undefined" &&
+  !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
+
 const NetworkLogOverlay = () => {
   const [entries, setEntries] = useState<NetEntry[]>(netLogger.getEntries());
   const [open, setOpen] = useState(false);
   const [enabled, setEnabled] = useState(
     typeof window !== "undefined" &&
+      !isNativeCapacitor &&
       localStorage.getItem("flea_net_overlay") !== "off"
   );
 
