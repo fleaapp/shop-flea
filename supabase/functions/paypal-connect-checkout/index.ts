@@ -69,7 +69,7 @@ serve(async (req) => {
 
     const { data: listings, error: listingsErr } = await serviceClient
       .from("listings")
-      .select("id, user_id, status")
+      .select("id, user_id, status, price, title")
       .in("id", itemIds);
 
     if (listingsErr || !listings || listings.length !== itemIds.length) {
@@ -86,6 +86,13 @@ serve(async (req) => {
     if (sellerId === user.id) {
       throw new Error("You cannot purchase your own listing");
     }
+
+    // SECURITY: Use DB-authoritative prices, never trust client-supplied prices.
+    const listingById = new Map(listings.map((l: any) => [l.id, l]));
+    const authoritativeItems = itemIds.map((id: string) => {
+      const l: any = listingById.get(id);
+      return { id: l.id, title: l.title as string, price: Number(l.price) };
+    });
 
     const { data: sellerProfile, error: profileErr } = await serviceClient
       .from("profiles")
@@ -104,7 +111,7 @@ serve(async (req) => {
     // Buyer pays subtotal + grossed-up processing fee.
     // PayPal deducts its fee from the seller side (via payment_instruction).
     // Flea takes a clean 7% of subtotal as platform_fees.
-    const itemsTotal = items.reduce((sum: number, item: { price: number }) => sum + item.price, 0);
+    const itemsTotal = authoritativeItems.reduce((sum, item) => sum + item.price, 0);
     const shippingAmount = shipping || 0;
     const subtotal = itemsTotal + shippingAmount;
 
@@ -134,7 +141,7 @@ serve(async (req) => {
           {
             description: "Flea order",
             soft_descriptor: "FLEA",
-            custom_id: items.map((i: { id: string }) => i.id).join(","),
+            custom_id: authoritativeItems.map((i) => i.id).join(","),
             amount: {
               currency_code: "AUD",
               value: totalCharge.toFixed(2),
@@ -167,7 +174,7 @@ serve(async (req) => {
                 },
               ],
             },
-            items: items.map((item: { title: string; price: number }) => ({
+            items: authoritativeItems.map((item) => ({
               name: item.title.substring(0, 127),
               unit_amount: {
                 currency_code: "AUD",

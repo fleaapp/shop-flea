@@ -182,7 +182,7 @@ async function verifyPayment(opts: {
   provider: "stripe" | "paypal";
   reference: string;
   expectedAmountAud?: number;
-}): Promise<{ verifiedEmail?: string }> {
+}): Promise<{ verifiedEmail?: string; paidAmountAud?: number }> {
   if (opts.provider === "stripe") {
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
     const session = await stripe.checkout.sessions.retrieve(opts.reference, { expand: ["payment_intent"] });
@@ -196,7 +196,16 @@ async function verifyPayment(opts: {
     if (!paid) {
       throw new Error(`Stripe session not paid (status=${session.payment_status}, pi=${piStatus})`);
     }
-    return { verifiedEmail: session.customer_details?.email ?? session.customer_email ?? undefined };
+    const amountTotal = typeof session.amount_total === "number" ? session.amount_total / 100 : undefined;
+    if (opts.expectedAmountAud != null && amountTotal != null) {
+      if (Math.abs(amountTotal - opts.expectedAmountAud) > 0.05) {
+        throw new Error(`Stripe paid amount mismatch: paid ${amountTotal} expected ${opts.expectedAmountAud}`);
+      }
+    }
+    return {
+      verifiedEmail: session.customer_details?.email ?? session.customer_email ?? undefined,
+      paidAmountAud: amountTotal,
+    };
   }
 
   // PayPal — capture if APPROVED, then require COMPLETED.
@@ -232,7 +241,30 @@ async function verifyPayment(opts: {
   if (data.status !== "COMPLETED") {
     throw new Error(`PayPal order not completed (status=${data.status})`);
   }
-  return { verifiedEmail: data.payer?.email_address ?? undefined };
+
+  // Sum captured amounts across purchase_units for amount verification.
+  let paidAmountAud: number | undefined;
+  try {
+    const pus = Array.isArray(data.purchase_units) ? data.purchase_units : [];
+    let sum = 0;
+    let any = false;
+    for (const pu of pus) {
+      const caps = pu?.payments?.captures ?? [];
+      for (const c of caps) {
+        const v = parseFloat(c?.amount?.value ?? "");
+        if (!isNaN(v)) { sum += v; any = true; }
+      }
+    }
+    if (any) paidAmountAud = Math.round(sum * 100) / 100;
+  } catch { /* ignore */ }
+
+  if (opts.expectedAmountAud != null && paidAmountAud != null) {
+    if (Math.abs(paidAmountAud - opts.expectedAmountAud) > 0.05) {
+      throw new Error(`PayPal paid amount mismatch: paid ${paidAmountAud} expected ${opts.expectedAmountAud}`);
+    }
+  }
+
+  return { verifiedEmail: data.payer?.email_address ?? undefined, paidAmountAud };
 }
 
 serve(async (req) => {
@@ -291,9 +323,6 @@ serve(async (req) => {
       });
     }
 
-    // VERIFY PAYMENT WITH PROVIDER — fail closed.
-    await verifyPayment({ provider, reference: checkoutReference });
-
     const itemIds = [...new Set(items.map((i) => i.id))];
     const { data: listingRows, error: listingError } = await serviceClient
       .from("listings")
@@ -305,10 +334,32 @@ serve(async (req) => {
     const authoritativeItems = itemIds.map((id) => listingMap.get(id)).filter((x): x is ListingRow => !!x);
     if (authoritativeItems.length === 0) throw new Error("Purchased items could not be found.");
 
+    // Compute expected paid amount from DB-authoritative prices (items +
+    // shipping + buyer-paid processing fee). This is what we passed the
+    // provider when creating the checkout, so the provider's recorded
+    // amount must match within rounding tolerance.
+    const shippingMap = new Map<string, number>(Array.isArray(shippingBySeller) ? shippingBySeller : []);
+    const dbItemsTotal = authoritativeItems.reduce((s, i) => s + Number(i.price), 0);
+    const dbShippingTotal = Array.from(shippingMap.values()).reduce((s, v) => s + Number(v || 0), 0);
+    const subtotalForFee = dbItemsTotal + dbShippingTotal;
+    const STRIPE_RATE = 0.0175, STRIPE_FIXED = 0.30;
+    const PAYPAL_RATE = 0.026, PAYPAL_FIXED = 0.30;
+    const rate = provider === "paypal" ? PAYPAL_RATE : STRIPE_RATE;
+    const fixed = provider === "paypal" ? PAYPAL_FIXED : STRIPE_FIXED;
+    const processingFee = Math.round(
+      ((subtotalForFee + fixed) / (1 - rate) - subtotalForFee) * 100,
+    ) / 100;
+    const expectedAmountAud = Math.round((subtotalForFee + processingFee) * 100) / 100;
+
+    // VERIFY PAYMENT WITH PROVIDER — fail closed. Enforces both that payment
+    // succeeded AND that the amount paid matches what we should have charged
+    // based on DB prices (prevents client-supplied price tampering).
+    await verifyPayment({ provider, reference: checkoutReference, expectedAmountAud });
+
     // Filter out listings already sold by another order (defensive — payment
     // already succeeded so we cannot just refuse; we still record what we can).
     const orderGroupId = crypto.randomUUID();
-    const shippingMap = new Map<string, number>(Array.isArray(shippingBySeller) ? shippingBySeller : []);
+    // shippingMap already initialized above for amount verification.
     const itemsBySeller = new Map<string, ListingRow[]>();
     for (const item of authoritativeItems) {
       const arr = itemsBySeller.get(item.user_id) ?? [];

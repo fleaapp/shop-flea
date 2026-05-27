@@ -45,7 +45,7 @@ serve(async (req) => {
 
     const { data: listingRows, error: listingErr } = await serviceClient
       .from('listings')
-      .select('id, user_id, status')
+      .select('id, user_id, status, price, title, images')
       .in('id', itemIds);
     if (listingErr || !listingRows || listingRows.length !== itemIds.length) {
       throw new Error("Could not verify listings");
@@ -59,6 +59,18 @@ serve(async (req) => {
     }
     const sellerId = sellerIds[0];
     if (sellerId === user.id) throw new Error("Cannot purchase your own items");
+
+    // SECURITY: Use DB-authoritative prices, never trust client-supplied prices.
+    const listingById = new Map(listingRows.map((l: any) => [l.id, l]));
+    const authoritativeItems = itemIds.map((id: string) => {
+      const l: any = listingById.get(id);
+      return {
+        id: l.id,
+        title: l.title,
+        price: Number(l.price),
+        image: Array.isArray(l.images) && l.images.length > 0 ? l.images[0] : undefined,
+      };
+    });
 
     const { data: sellerProfile, error: profileErr } = await serviceClient
       .from('profiles')
@@ -79,14 +91,12 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    // Calculate totals
-    const itemsTotal = items.reduce((sum: number, item: { price: number }) => sum + item.price, 0);
+    // Calculate totals from DB-authoritative prices.
+    const itemsTotal = authoritativeItems.reduce((sum, item) => sum + item.price, 0);
     const shippingAmount = shipping || 0;
     const subtotal = itemsTotal + shippingAmount;
 
     // Stripe AU domestic card pricing — buyer covers this in full.
-    // Formula grosses up so Stripe's actual deduction (rate × buyerTotal + fixed)
-    // is fully covered by the buyer-paid line item. See src/utils/feeCalculator.ts.
     const STRIPE_RATE = 0.0175;
     const STRIPE_FIXED = 0.30;
     const processingFee = Math.round(
@@ -97,22 +107,11 @@ serve(async (req) => {
     // Flea platform fee — flat 7% of items + shipping.
     const platformFeeDollars = subtotal * 0.07;
 
-    // application_fee_amount is what Flea retains from the charge before the
-    // remainder is transferred to the seller. With destination charges, Stripe
-    // deducts processing fees from the PLATFORM balance regardless of
-    // on_behalf_of — that param only changes fee pricing (seller's country),
-    // not who pays. So we MUST add the buyer-paid processing fee into the
-    // application fee, otherwise Flea absorbs Stripe's cut out of pocket.
-    //
-    // Result per sale:
-    //   Platform balance: +buyerTotal − stripeFee − (buyerTotal − appFee)
-    //                   = appFee − stripeFee = platformFee  ✅ (clean 7%)
-    //   Seller receives: buyerTotal − appFee = subtotal − platformFee  ✅
     const applicationFeeAmount = Math.round((platformFeeDollars + processingFee) * 100);
 
-    // Build line items
-    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map(
-      (item: { title: string; price: number; image?: string }) => ({
+    // Build line items from DB-authoritative items.
+    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = authoritativeItems.map(
+      (item) => ({
         price_data: {
           currency: "aud",
           product_data: {
