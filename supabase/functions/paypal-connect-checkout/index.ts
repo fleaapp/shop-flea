@@ -69,7 +69,7 @@ serve(async (req) => {
 
     const { data: listings, error: listingsErr } = await serviceClient
       .from("listings")
-      .select("id, user_id, status")
+      .select("id, user_id, status, price, title")
       .in("id", itemIds);
 
     if (listingsErr || !listings || listings.length !== itemIds.length) {
@@ -86,6 +86,13 @@ serve(async (req) => {
     if (sellerId === user.id) {
       throw new Error("You cannot purchase your own listing");
     }
+
+    // SECURITY: Use DB-authoritative prices, never trust client-supplied prices.
+    const listingById = new Map(listings.map((l: any) => [l.id, l]));
+    const authoritativeItems = itemIds.map((id: string) => {
+      const l: any = listingById.get(id);
+      return { id: l.id, title: l.title as string, price: Number(l.price) };
+    });
 
     const { data: sellerProfile, error: profileErr } = await serviceClient
       .from("profiles")
