@@ -20,9 +20,6 @@
           var isAuthLike = /^\/(auth|forgot-password|reset-password|verify-email)(\/|$)/.test(pathname);
           var cap = window.Capacitor;
           var isNative = (cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform()) || location.protocol === 'capacitor:';
-          // On native cold boot the WebView opens at '/' before React redirects to /auth.
-          // If there's no Supabase auth token in localStorage, the user will land on /auth,
-          // so paint lime now to avoid a cream flash between splash and auth.
           var hasAuthToken = false;
           try {
             for (var i = 0; i < localStorage.length; i++) {
@@ -31,10 +28,17 @@
             }
           } catch (e) {}
           var nativeLoggedOutAtRoot = isNative && !hasAuthToken && (pathname === '/' || pathname === '');
-          var topColor = (isAuthLike || nativeLoggedOutAtRoot) ? '#DDFED7' : '#F5F1EB';
+          var paintLime = isAuthLike || nativeLoggedOutAtRoot;
+          var topColor = paintLime ? '#DDFED7' : '#F5F1EB';
           document.documentElement.style.colorScheme = 'light';
           document.documentElement.style.setProperty('--app-top-bg', topColor);
           document.documentElement.style.backgroundColor = topColor;
+          if (paintLime) {
+            // Override --background so #root (which uses hsl(var(--background))) also paints lime
+            // before React mounts. Cleared by appChrome once a non-auth route activates.
+            document.documentElement.style.setProperty('--background', '111 95% 92%');
+            document.documentElement.classList.add('boot-auth');
+          }
           var theme = document.querySelector('meta[name="theme-color"]');
           if (theme) theme.setAttribute('content', topColor);
           var colorScheme = document.querySelector('meta[name="color-scheme"]');

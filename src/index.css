@@ -148,6 +148,13 @@
     background: hsl(var(--background));
   }
 
+  /* Native cold boot + auth routes: paint #root lime to match splash/auth */
+  html.boot-auth,
+  html.boot-auth body,
+  html.boot-auth #root {
+    background-color: var(--app-top-bg) !important;
+  }
+
   input[type="date"] {
     -webkit-appearance: none;
     appearance: none;
