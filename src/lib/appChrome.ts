@@ -6,9 +6,26 @@ let nativeChromeRequest = 0;
 let activeOverlayCount = 0;
 
 const getRouteTopColor = () => {
-  const isAuthLike = /^\/(auth|forgot-password|reset-password|verify-email)(\/|$)/.test(window.location.pathname);
-  return isAuthLike ? AUTH_TOP_COLOR : APP_TOP_COLOR;
+  const pathname = window.location.pathname;
+  const isAuthLike = /^\/(auth|forgot-password|reset-password|verify-email)(\/|$)/.test(pathname);
+  if (isAuthLike) return AUTH_TOP_COLOR;
+  // On native cold boot the WebView opens at '/' before React redirects to /auth.
+  // If no Supabase auth token is present, paint lime to avoid a cream flash.
+  try {
+    const cap = (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+    const isNative = !!cap?.isNativePlatform?.() || window.location.protocol === 'capacitor:';
+    if (isNative && (pathname === '/' || pathname === '')) {
+      let hasAuthToken = false;
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('sb-') && k.includes('-auth-token')) { hasAuthToken = true; break; }
+      }
+      if (!hasAuthToken) return AUTH_TOP_COLOR;
+    }
+  } catch {}
+  return APP_TOP_COLOR;
 };
+
 
 let lastAppliedColor: string | null = null;
 let lastAppliedOverlay: boolean | null = null;
