@@ -69,6 +69,7 @@ const syncNativeStatusBar = (color: string, isOverlay: boolean) => {
 
 export const applyAppChromeColor = (color: string, statusBarStyle: 'default' | 'black-translucent' = 'default') => {
   const isOverlay = statusBarStyle === 'black-translucent';
+  const isAuthColor = color === AUTH_TOP_COLOR;
   document.documentElement.classList.remove('dark');
   document.documentElement.classList.toggle('app-overlay-chrome', isOverlay);
   document.body?.classList.toggle('app-overlay-chrome', isOverlay);
@@ -77,6 +78,16 @@ export const applyAppChromeColor = (color: string, statusBarStyle: 'default' | '
   document.body?.style.setProperty('--app-top-bg', color);
   document.documentElement.style.backgroundColor = color;
   if (document.body) document.body.style.backgroundColor = color;
+
+  // Keep #root in sync with route chrome so auth-like routes (and native
+  // cold boot) paint lime end-to-end, while in-app routes restore cream.
+  if (isAuthColor) {
+    document.documentElement.style.setProperty('--background', '111 95% 92%');
+    document.documentElement.classList.add('boot-auth');
+  } else if (!isOverlay) {
+    document.documentElement.style.removeProperty('--background');
+    document.documentElement.classList.remove('boot-auth');
+  }
 
   const theme = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
   theme?.setAttribute('content', color);
