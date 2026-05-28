@@ -1,45 +1,27 @@
-What is likely happening:
+## What's happening
 
-The web app and PWA working means the React/auth flow itself is not the main problem. The iOS simulator is probably running an old native web bundle from `dist` or an old copied bundle inside the iOS project. The previous local instructions missed one critical step: `npm run build` before `npx cap sync ios`. Without that, Capacitor can keep copying or running stale built files, so the simulator can still show the old green hourglass even after Lovable has newer source code.
+The splash screen is lime green (`#DDFED7`). The auth screen is lime green. But for ~100–300ms in between, the screen flashes cream (`#F5F1EB`).
 
-About the cream fallback:
+Cause: the inline boot script in `index.html` and `src/main.tsx`/`appChrome.ts` decide background color from `window.location.pathname`. On native cold boot, the WebView opens at `/` (not `/auth`), so the "default app top color" (`#F5F1EB` cream) is painted on `<html>` and `<body>` immediately. React then mounts, AuthContext resolves "no session", redirects to `/auth`, and only then `appChrome` repaints lime. The gap between WebView paint and that redirect is the cream flash.
 
-The cream colour is coming from the native/Capacitor launch background and app chrome settings, not from the restored web auth UI. It was likely introduced as a native splash fallback to stop the green screen from looking permanently stuck. If you want the original auth visual restored exactly, I would revert the native fallback/background back to the auth green where appropriate, but the bigger issue is that the simulator may not be running the updated bundle at all.
+This only happens on native because on web the user is usually already on `/auth` URL when refreshing, and the native WebView's own background is also set to cream-ish via the OS, so the seam is more visible.
 
-Plan:
+## The fix
 
-1. Restore the visual fallback to match the original auth UI
-   - Keep the web auth UI unchanged.
-   - Remove or adjust the cream native fallback so the auth startup does not look like a changed UX.
-   - Keep any fix native-only and avoid changing normal web/PWA screens.
+Make the "before-React" background match the splash (`#DDFED7`) on native, so there is nothing to flash between. On web, keep the current behavior (cream default, lime on auth) so nothing changes for browser users.
 
-2. Fix the local simulator update workflow
-   - Update the instructions to include the missing build step:
+### Changes
 
-```bash
-cd ~/Desktop/shop-flea
-git pull
-npm install
-npm run build
-npx cap sync ios
-```
+1. **`index.html` inline boot script** — extend the route check so that when the app is running inside Capacitor (`window.Capacitor?.isNativePlatform?.()` or `location.protocol === 'capacitor:'`) AND the user is not yet signed in (no Supabase auth token in localStorage), default the top bg to lime `#DDFED7` instead of cream. This paints lime on `<html>`, `<body>`, theme-color, and `--app-top-bg` before React mounts.
 
-   - Then in Xcode:
-     - Product → Clean Build Folder.
-     - Delete the app from the simulator.
-     - Run again.
+   Detection for "logged out" pre-React: check `localStorage` for the Supabase auth key (`sb-<project-ref>-auth-token`). If absent → user will land on `/auth` → paint lime. If present → user will land in-app → paint cream as today.
 
-3. Add a native-only bundle/version marker
-   - Add a tiny console log at boot showing the build id and route in the simulator.
-   - This confirms whether Xcode is actually running the latest JavaScript bundle after sync.
-   - No visible web UI change.
+2. **`src/lib/appChrome.ts`** — mirror the same logic in `getRouteTopColor()`: when native + no auth token + pathname is `/`, treat it as auth-like and return lime. This prevents React's first paint from briefly setting cream before the redirect to `/auth` runs.
 
-4. Check whether the simulator is bundled or loading a remote URL
-   - If your local `CAP_SERVER_URL` is set, the native app may be loading a remote Lovable URL.
-   - If it is loading the published Lovable URL, then yes, you need to publish/update the Lovable app.
-   - If it is not using `CAP_SERVER_URL`, then publishing Lovable is irrelevant; the simulator only updates after local `npm run build` + `npx cap sync ios`.
+3. **`capacitor.config.ts`** — already has `ios.backgroundColor: '#DDFED7'`, so the native WebView container is already lime. No change needed there.
 
-5. If it still stalls after a clean rebuild
-   - The next step is to inspect the simulator through Safari Web Inspector/Xcode console and confirm whether React is booting, whether `/auth` is reached, and whether the native splash is simply covering the WebView.
+4. **No change** to `LaunchScreen.storyboard`, splash plugin config, or auth page itself.
 
-Direct answer: you are not necessarily supposed to push/publish the Lovable app for the simulator. You only need to publish if your native app is configured to load the published URL. Otherwise, the simulator needs a fresh local build and Capacitor sync.
+## Result
+
+Cold boot on iOS: lime launch screen → lime WebView container → lime HTML/body (pre-React) → lime auth screen. No cream frame anywhere in the sign-in flow. Web users and already-signed-in native users see no behavioral change.
