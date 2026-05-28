@@ -16,8 +16,22 @@
     <script>
       (function () {
         try {
-          var isAuthLike = /^\/(auth|forgot-password|reset-password|verify-email)(\/|$)/.test(location.pathname);
-          var topColor = isAuthLike ? '#DDFED7' : '#F5F1EB';
+          var pathname = location.pathname;
+          var isAuthLike = /^\/(auth|forgot-password|reset-password|verify-email)(\/|$)/.test(pathname);
+          var cap = window.Capacitor;
+          var isNative = (cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform()) || location.protocol === 'capacitor:';
+          // On native cold boot the WebView opens at '/' before React redirects to /auth.
+          // If there's no Supabase auth token in localStorage, the user will land on /auth,
+          // so paint lime now to avoid a cream flash between splash and auth.
+          var hasAuthToken = false;
+          try {
+            for (var i = 0; i < localStorage.length; i++) {
+              var k = localStorage.key(i);
+              if (k && k.indexOf('sb-') === 0 && k.indexOf('-auth-token') !== -1) { hasAuthToken = true; break; }
+            }
+          } catch (e) {}
+          var nativeLoggedOutAtRoot = isNative && !hasAuthToken && (pathname === '/' || pathname === '');
+          var topColor = (isAuthLike || nativeLoggedOutAtRoot) ? '#DDFED7' : '#F5F1EB';
           document.documentElement.style.colorScheme = 'light';
           document.documentElement.style.setProperty('--app-top-bg', topColor);
           document.documentElement.style.backgroundColor = topColor;
@@ -29,6 +43,7 @@
           if (appleStatus) appleStatus.setAttribute('content', 'default');
         } catch (e) {}
       })();
+
 
     </script>
     <link rel="manifest" href="/manifest.webmanifest" id="app-manifest" />
