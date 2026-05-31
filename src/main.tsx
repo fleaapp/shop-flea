@@ -62,6 +62,7 @@ try {
       const key = localStorage.key(i);
       if (!key) continue;
       if (
+        key.startsWith('saved-listing-snapshots:') ||
         key.startsWith('flea_saved_listings:') ||
         key.startsWith('flea_removed_listings:') ||
         key.startsWith('flea_discarded:') ||
