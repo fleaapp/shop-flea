@@ -1203,6 +1203,39 @@ export type Database = {
         Returns: number
       }
       get_email_by_username: { Args: { p_username: string }; Returns: string }
+      get_home_feed: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: {
+          brand: string
+          category: string
+          colour: string | null
+          condition: string
+          country_code: string | null
+          created_at: string
+          description: string | null
+          gender: string | null
+          id: string
+          images: string[]
+          price: number
+          region_id: string | null
+          report_count: number
+          shipping_price: number | null
+          size: string
+          status: string
+          style: string | null
+          subcategory: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "listings"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_nav_badges: { Args: { _user_id: string }; Returns: Json }
       get_seller_payment_accounts: {
         Args: { seller_ids: string[] }
