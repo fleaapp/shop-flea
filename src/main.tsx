@@ -50,34 +50,63 @@ const BUILD_ID = (import.meta.env.VITE_BUILD_ID as string | undefined) ?? '0';
 const STORED_BUILD_KEY = 'flea_build_id';
 const SW_URL = `/sw.js?build=${encodeURIComponent(BUILD_ID)}`;
 
-// One-time marketplace reset purge: clears stale localStorage snapshots
-// (saved cart/wishlist listings, removed-item placeholders) left behind
-// after the server-side data wipe. Bump the version to trigger again.
-const MARKETPLACE_RESET_VERSION = '2026-05-31-wipe-1';
+// One-time marketplace reset purge: clears ALL stale client-side state
+// (localStorage, sessionStorage, Cache Storage, service workers) left
+// behind after the server-side data wipe. Bump the version to trigger again.
+const MARKETPLACE_RESET_VERSION = '2026-05-31-wipe-2';
 const MARKETPLACE_RESET_KEY = 'flea_marketplace_reset_version';
+let needsMarketplaceReset = false;
 try {
-  if (localStorage.getItem(MARKETPLACE_RESET_KEY) !== MARKETPLACE_RESET_VERSION) {
+  needsMarketplaceReset =
+    localStorage.getItem(MARKETPLACE_RESET_KEY) !== MARKETPLACE_RESET_VERSION;
+} catch {
+  needsMarketplaceReset = false;
+}
+
+if (needsMarketplaceReset) {
+  try {
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (!key) continue;
+      if (key === MARKETPLACE_RESET_KEY) continue;
+      if (key.startsWith('sb-')) continue; // preserve Supabase auth session
       if (
-        key.startsWith('saved-listing-snapshots:') ||
-        key.startsWith('flea_saved_listings:') ||
-        key.startsWith('flea_removed_listings:') ||
-        key.startsWith('flea_discarded:') ||
-        key.startsWith('flea_cart_snapshot:') ||
-        key.startsWith('flea_wishlist_snapshot:')
+        key.startsWith('flea_') ||
+        key.startsWith('saved-listing-snapshots') ||
+        key.startsWith('rq-') ||
+        key.toLowerCase().includes('react-query') ||
+        key.toLowerCase().includes('query-cache')
       ) {
         keysToRemove.push(key);
       }
     }
     keysToRemove.forEach((k) => localStorage.removeItem(k));
+    try { sessionStorage.clear(); } catch {}
     localStorage.setItem(MARKETPLACE_RESET_KEY, MARKETPLACE_RESET_VERSION);
     console.log('[reset] purged', keysToRemove.length, 'stale marketplace cache keys');
+
+    // Nuke Cache Storage + service workers, then hard reload so the user
+    // sees the truly-empty backend instead of cached HTML/JSON responses.
+    (async () => {
+      try {
+        if (typeof caches !== 'undefined') {
+          const names = await caches.keys();
+          await Promise.all(names.map((n) => caches.delete(n)));
+        }
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map((r) => r.unregister()));
+        }
+      } catch (err) {
+        console.warn('[reset] cache/SW purge failed', err);
+      } finally {
+        location.reload();
+      }
+    })();
+  } catch (err) {
+    console.warn('[reset] marketplace purge failed', err);
   }
-} catch (err) {
-  console.warn('[reset] marketplace purge failed', err);
 }
 
 const clearAppCaches = async () => {
