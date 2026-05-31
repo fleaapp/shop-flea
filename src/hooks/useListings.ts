@@ -56,10 +56,11 @@ export interface ListingFilters {
 
 const PAGE_SIZE = 50;
 
-export const useListings = (filters?: ListingFilters) => {
+export const useListings = (filters?: ListingFilters, options?: { enabled?: boolean }) => {
+  const enabled = options?.enabled !== false;
   const { user } = useAuth();
   const [listings, setListings] = useState<DbListing[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +68,11 @@ export const useListings = (filters?: ListingFilters) => {
   const [cursor, setCursor] = useState<string | null>(null);
 
   const fetchListings = useCallback(async (mode: 'reset' | 'append' = 'reset', cursorOverride?: string | null) => {
+    if (!enabled) {
+      setLoading(false);
+      setLoadingMore(false);
+      return;
+    }
     if (mode === 'reset') {
       setLoading(true);
     } else {
@@ -239,7 +245,7 @@ export const useListings = (filters?: ListingFilters) => {
     }
     setLoading(false);
     setLoadingMore(false);
-  }, [user, filters?.category, filters?.categories, filters?.size, filters?.sizes, filters?.condition, filters?.gender, filters?.genders, filters?.colours, filters?.styles, filters?.brands, filters?.minPrice, filters?.maxPrice, filters?.search]);
+  }, [enabled, user, filters?.category, filters?.categories, filters?.size, filters?.sizes, filters?.condition, filters?.gender, filters?.genders, filters?.colours, filters?.styles, filters?.brands, filters?.minPrice, filters?.maxPrice, filters?.search]);
 
   // Reset + fetch first page whenever filters/user change
   useEffect(() => {
