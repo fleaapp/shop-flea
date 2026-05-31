@@ -53,7 +53,7 @@ const SW_URL = `/sw.js?build=${encodeURIComponent(BUILD_ID)}`;
 // One-time marketplace reset purge: clears ALL stale client-side state
 // (localStorage, sessionStorage, Cache Storage, service workers) left
 // behind after the server-side data wipe. Bump the version to trigger again.
-const MARKETPLACE_RESET_VERSION = '2026-05-31-wipe-2';
+const MARKETPLACE_RESET_VERSION = '2026-05-31-wipe-3';
 const MARKETPLACE_RESET_KEY = 'flea_marketplace_reset_version';
 let needsMarketplaceReset = false;
 try {
