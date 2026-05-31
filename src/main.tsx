@@ -50,6 +50,36 @@ const BUILD_ID = (import.meta.env.VITE_BUILD_ID as string | undefined) ?? '0';
 const STORED_BUILD_KEY = 'flea_build_id';
 const SW_URL = `/sw.js?build=${encodeURIComponent(BUILD_ID)}`;
 
+// One-time marketplace reset purge: clears stale localStorage snapshots
+// (saved cart/wishlist listings, removed-item placeholders) left behind
+// after the server-side data wipe. Bump the version to trigger again.
+const MARKETPLACE_RESET_VERSION = '2026-05-31-wipe-1';
+const MARKETPLACE_RESET_KEY = 'flea_marketplace_reset_version';
+try {
+  if (localStorage.getItem(MARKETPLACE_RESET_KEY) !== MARKETPLACE_RESET_VERSION) {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      if (
+        key.startsWith('saved-listing-snapshots:') ||
+        key.startsWith('flea_saved_listings:') ||
+        key.startsWith('flea_removed_listings:') ||
+        key.startsWith('flea_discarded:') ||
+        key.startsWith('flea_cart_snapshot:') ||
+        key.startsWith('flea_wishlist_snapshot:')
+      ) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((k) => localStorage.removeItem(k));
+    localStorage.setItem(MARKETPLACE_RESET_KEY, MARKETPLACE_RESET_VERSION);
+    console.log('[reset] purged', keysToRemove.length, 'stale marketplace cache keys');
+  }
+} catch (err) {
+  console.warn('[reset] marketplace purge failed', err);
+}
+
 const clearAppCaches = async () => {
   if (typeof caches === 'undefined') return;
 
