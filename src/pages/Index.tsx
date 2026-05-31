@@ -12,6 +12,7 @@ import WelcomeSetupDialog from '@/components/WelcomeSetupDialog';
 import PasswordSetupDialog from '@/components/PasswordSetupDialog';
 
 import { useListings, DbListing } from '@/hooks/useListings';
+import { useHomeFeed } from '@/hooks/useHomeFeed';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 import { useCart } from '@/context/CartContext';
