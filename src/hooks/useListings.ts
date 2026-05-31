@@ -245,7 +245,7 @@ export const useListings = (filters?: ListingFilters, options?: { enabled?: bool
     }
     setLoading(false);
     setLoadingMore(false);
-  }, [user, filters?.category, filters?.categories, filters?.size, filters?.sizes, filters?.condition, filters?.gender, filters?.genders, filters?.colours, filters?.styles, filters?.brands, filters?.minPrice, filters?.maxPrice, filters?.search]);
+  }, [enabled, user, filters?.category, filters?.categories, filters?.size, filters?.sizes, filters?.condition, filters?.gender, filters?.genders, filters?.colours, filters?.styles, filters?.brands, filters?.minPrice, filters?.maxPrice, filters?.search]);
 
   // Reset + fetch first page whenever filters/user change
   useEffect(() => {
