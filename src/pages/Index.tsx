@@ -232,7 +232,14 @@ const Index = () => {
     return listingFilters;
   }, [listingFilters, searchQuery]);
 
-  const { listings: dbListings, loading, loadMore, hasMore, loadingMore } = useListings(finalFilters);
+  // Use the personalised home feed (cart+wishlist signals, 70/30 mix) when no
+  // filters or search are active. When the user filters or searches, fall back
+  // to the standard filtered listings query so filtering keeps working.
+  const hasActiveFilters = Object.keys(finalFilters).length > 0;
+  const filteredQuery = useListings(hasActiveFilters ? finalFilters : undefined);
+  const homeFeed = useHomeFeed();
+  const { listings: dbListings, loading, loadMore, hasMore, loadingMore } =
+    hasActiveFilters ? filteredQuery : homeFeed;
 
   // Auto-fetch next page when the unswiped stack is running low.
   useEffect(() => {
