@@ -47,6 +47,7 @@ const loadAdminTransactions = () => import("./pages/admin/AdminTransactions");
 const loadAdminUsers = () => import("./pages/admin/AdminUsers");
 const loadAdminListings = () => import("./pages/admin/AdminListings");
 const loadAdminErrors = () => import("./pages/admin/AdminErrors");
+const loadAuthenticatedProviders = () => import("./components/AuthenticatedProviders");
 
 const Index = lazy(loadIndex);
 const ListingDetails = lazy(loadListingDetails);
@@ -80,6 +81,7 @@ const AdminTransactions = lazy(loadAdminTransactions);
 const AdminUsers = lazy(loadAdminUsers);
 const AdminListings = lazy(loadAdminListings);
 const AdminErrors = lazy(loadAdminErrors);
+const AuthenticatedProviders = lazy(loadAuthenticatedProviders);
 import AdminRoute from "@/components/admin/AdminRoute";
 
 const queryClient = new QueryClient({
@@ -165,13 +167,8 @@ const AppContent = () => {
     return () => window.clearTimeout(timeoutId);
   }, []);
 
-  return (
-    <>
-      <Toaster />
-      <Sonner position="top-center" />
-      {!isStandaloneSite && !isAuthRoute && <AppProviders />}
-      <Suspense fallback={isAuthRoute ? <AuthRouteFallback /> : <PageLoader />}>
-        <Routes>
+  const routes = (
+    <Routes>
           <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/about" element={<Navigate to="/" replace />} />
           <Route path="/install" element={<Install />} />
@@ -206,31 +203,24 @@ const AppContent = () => {
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
+    </Routes>
+  );
+
+  return (
+    <>
+      <Toaster />
+      <Sonner position="top-center" />
+      {isAuthRoute ? (
+        <Suspense fallback={<AuthRouteFallback />}>{routes}</Suspense>
+      ) : (
+        <Suspense fallback={<PageLoader />}>
+          <AuthenticatedProviders enabled={!isStandaloneSite}>{routes}</AuthenticatedProviders>
+        </Suspense>
+      )}
       <DevicePreview />
       <NetworkLogOverlay />
     </>
   );
-};
-
-const CartProvider = lazy(() => import("@/context/CartContext").then((m) => ({ default: m.CartProvider })));
-const OnboardingProvider = lazy(() => import("@/context/OnboardingContext").then((m) => ({ default: m.OnboardingProvider })));
-const RealtimeAlerts = lazy(() => import("./components/RealtimeAlerts"));
-const PushNotificationSubscriber = lazy(() => import("./components/PushNotificationSubscriber").then((m) => ({ default: m.PushNotificationSubscriber })));
-const OnboardingOverlay = lazy(() => import("@/components/OnboardingOverlay"));
-const OnboardingCarousel = lazy(() => import("@/components/OnboardingCarousel"));
-
-const OnboardingChrome = () => {
-  const [state, setState] = useState<{ showCarousel: boolean; closeCarousel: () => void } | null>(null);
-
-  useEffect(() => {
-    import("@/context/OnboardingContext").then(({ useOnboarding }) => {
-      // This component only exists inside OnboardingProvider after lazy load.
-    });
-  }, []);
-
-  return null;
 };
 
 const App = () => (
@@ -238,13 +228,9 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <CartProvider>
-            <OnboardingProvider>
-              <TooltipProvider>
-                <AppContent />
-              </TooltipProvider>
-            </OnboardingProvider>
-          </CartProvider>
+          <TooltipProvider>
+            <AppContent />
+          </TooltipProvider>
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
