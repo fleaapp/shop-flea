@@ -53,6 +53,21 @@ const Auth = () => {
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const [conflictProvider, setConflictProvider] = useState<ConflictProvider | null>(null);
+
+  // Listen for OAuth conflicts surfaced by AuthContext after redirect.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.provider === 'google' || detail?.provider === 'apple' || detail?.provider === 'email') {
+        setConflictProvider(detail.provider);
+        toast.error('That email is already registered with a different sign-in method.');
+      }
+    };
+    window.addEventListener('flea-auth-conflict', handler);
+    return () => window.removeEventListener('flea-auth-conflict', handler);
+  }, []);
+
 
   const redirectParam = new URLSearchParams(location.search).get('redirect');
   const redirectTo = redirectParam?.startsWith('/') && !redirectParam.startsWith('//') ? redirectParam : '/';
