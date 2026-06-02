@@ -12,8 +12,6 @@ import { restoreRouteAppChrome } from "@/lib/appChrome";
 
 // Critical path – auth is loaded eagerly; app/feed routes are lazy so /auth paints first.
 import Auth from "./pages/Auth";
-import DevicePreview from "./components/dev/DevicePreview";
-import NetworkLogOverlay from "./components/dev/NetworkLogOverlay";
 
 const loadIndex = () => import("./pages/Index");
 const loadListingDetails = () => import("./pages/ListingDetails");
@@ -219,8 +217,6 @@ const AppContent = () => {
           <AuthenticatedProviders enabled={!isStandaloneSite}>{routes}</AuthenticatedProviders>
         </Suspense>
       )}
-      <DevicePreview />
-      <NetworkLogOverlay />
     </>
   );
 };
