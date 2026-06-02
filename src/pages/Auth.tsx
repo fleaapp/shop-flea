@@ -9,6 +9,29 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { nativeAppleSignIn, isIosNative } from '@/lib/appleSignIn';
+import ProviderConflictDialog, { type ConflictProvider } from '@/components/ProviderConflictDialog';
+
+const CHECK_EMAIL_PROVIDER_URL =
+  `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/check-email-provider`;
+
+async function checkEmailProvider(email: string): Promise<ConflictProvider | null> {
+  try {
+    const resp = await fetch(CHECK_EMAIL_PROVIDER_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({ email }),
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return (data?.provider ?? null) as ConflictProvider | null;
+  } catch {
+    return null;
+  }
+}
+
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -30,6 +53,21 @@ const Auth = () => {
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const [conflictProvider, setConflictProvider] = useState<ConflictProvider | null>(null);
+
+  // Listen for OAuth conflicts surfaced by AuthContext after redirect.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.provider === 'google' || detail?.provider === 'apple' || detail?.provider === 'email') {
+        setConflictProvider(detail.provider);
+        toast.error('That email is already registered with a different sign-in method.');
+      }
+    };
+    window.addEventListener('flea-auth-conflict', handler);
+    return () => window.removeEventListener('flea-auth-conflict', handler);
+  }, []);
+
 
   const redirectParam = new URLSearchParams(location.search).get('redirect');
   const redirectTo = redirectParam?.startsWith('/') && !redirectParam.startsWith('//') ? redirectParam : '/';
@@ -154,52 +192,32 @@ const Auth = () => {
       return;
     }
     setIsLoading(true);
-    
-    // Pre-check: see if this email is already registered
-    // Try signing in with a dummy password to detect existing accounts
-    const { data: existingCheck, error: checkError } = await supabase.auth.signInWithPassword({
-      email: signupEmail.trim(),
-      password: '__dummy_check_' + Date.now(),
-    });
-    
-    if (checkError) {
-      const msg = checkError.message || '';
-      // "Invalid login credentials" means account exists (wrong password)
-      if (msg.includes('Invalid login credentials')) {
-        // Check if account might be OAuth-based by looking for profile
-        const { data: profileData } = await supabase
-          .from('profiles_public')
-          .select('user_id')
-          .limit(1);
-        
-        // We can't easily determine OAuth vs email, so show a helpful message
-        toast.error(
-          'This email is already registered. Try logging in or use "Continue with Google" if you signed up with Google.',
-          { duration: 6000 }
-        );
-        setActiveTab('login');
-        setLoginIdentifier(signupEmail);
-        setSignupEmail('');
-        setSignupPassword('');
-        setSignupConfirmPassword('');
-        setIsLoading(false);
-        return;
-      }
-      // "Email not confirmed" also means account exists
-      if (msg.includes('Email not confirmed')) {
-        toast.error(
-          'This email is already registered but not yet verified. Check your inbox for the verification email.',
-          { duration: 6000 }
-        );
-        setActiveTab('login');
-        setLoginIdentifier(signupEmail);
-        setSignupEmail('');
-        setSignupPassword('');
-        setSignupConfirmPassword('');
-        setIsLoading(false);
-        return;
-      }
+
+    // Pre-check: is this email already registered with any provider?
+    const existingProvider = await checkEmailProvider(signupEmail.trim());
+
+    if (existingProvider === 'google' || existingProvider === 'apple') {
+      // Conflict: account exists with a social provider.
+      setIsLoading(false);
+      setConflictProvider(existingProvider);
+      return;
     }
+
+    if (existingProvider === 'email') {
+      toast.error(
+        'This email is already registered. Try logging in instead.',
+        { duration: 5000 },
+      );
+      setActiveTab('login');
+      setLoginIdentifier(signupEmail);
+      setSignupEmail('');
+      setSignupPassword('');
+      setSignupConfirmPassword('');
+      setIsLoading(false);
+      return;
+    }
+
+
     
     // Use a placeholder username - user will set it in the welcome popup
     const placeholderUsername = `user_${Date.now()}`;
@@ -530,8 +548,30 @@ const Auth = () => {
           </div>
         </div>
       </div>
+
+      <ProviderConflictDialog
+        open={!!conflictProvider}
+        provider={conflictProvider}
+        onCancel={() => setConflictProvider(null)}
+        onContinue={() => {
+          const p = conflictProvider;
+          setConflictProvider(null);
+          if (p === 'google') {
+            handleGoogleSignIn();
+          } else if (p === 'apple') {
+            handleAppleSignIn();
+          } else if (p === 'email') {
+            setActiveTab('login');
+            setLoginIdentifier(signupEmail || loginIdentifier);
+            setSignupEmail('');
+            setSignupPassword('');
+            setSignupConfirmPassword('');
+          }
+        }}
+      />
     </div>
   );
 };
+
 
 export default Auth;

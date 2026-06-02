@@ -43,3 +43,7 @@ project_id = "teaicrimlqdayqpmxasc"
     verify_jwt = false
   [functions.contact-form-submit]
     verify_jwt = false
+  [functions.check-email-provider]
+    verify_jwt = false
+  [functions.resolve-oauth-conflict]
+    verify_jwt = false
