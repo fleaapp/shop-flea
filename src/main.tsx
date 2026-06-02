@@ -147,16 +147,3 @@ if (isNativePlatform) {
   window.setTimeout(hideNativeSplash, 400);
   window.setTimeout(hideNativeSplash, 1500);
 }
-
-const root = createRoot(document.getElementById("root")!);
-void import("./App.tsx").then(({ default: App }) => root.render(<App />));
-
-// Explicitly hide the native splash screen as soon as React has rendered.
-// Without this, Capacitor's default auto-hide timeout fires (visible in Xcode
-// as "SplashScreen was automatically hidden after default timeout"), which
-// leaves the splash covering the WebView for ~3s and looks like a stall.
-if (isNativePlatform) {
-  requestAnimationFrame(hideNativeSplash);
-  window.setTimeout(hideNativeSplash, 250);
-  window.setTimeout(hideNativeSplash, 1000);
-}
