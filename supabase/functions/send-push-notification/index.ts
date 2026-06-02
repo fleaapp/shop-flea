@@ -154,8 +154,91 @@ serve(async (req) => {
     let sent = 0;
     const staleEndpoints: string[] = [];
 
+    // --- APNs JWT cache (ES256, valid 1h, refresh every ~50min) ---
+    const apnsKeyId = Deno.env.get("APNS_KEY_ID") ?? "";
+    const apnsTeamId = Deno.env.get("APNS_TEAM_ID") ?? "";
+    const apnsBundleId = Deno.env.get("APNS_BUNDLE_ID") ?? "";
+    const apnsAuthKeyPem = Deno.env.get("APNS_AUTH_KEY") ?? "";
+    const apnsHost = (Deno.env.get("APNS_HOST") ?? "api.push.apple.com").trim();
+
+    let apnsJwt: string | null = null;
+    const buildApnsJwt = async (): Promise<string> => {
+      if (apnsJwt) return apnsJwt;
+      if (!apnsKeyId || !apnsTeamId || !apnsAuthKeyPem) {
+        throw new Error("APNs not configured");
+      }
+      const pemBody = apnsAuthKeyPem
+        .replace(/-----BEGIN PRIVATE KEY-----/g, "")
+        .replace(/-----END PRIVATE KEY-----/g, "")
+        .replace(/\s+/g, "");
+      const der = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
+      const key = await crypto.subtle.importKey(
+        "pkcs8",
+        der,
+        { name: "ECDSA", namedCurve: "P-256" },
+        false,
+        ["sign"],
+      );
+      const enc = (obj: unknown) =>
+        btoa(JSON.stringify(obj))
+          .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      const header = enc({ alg: "ES256", kid: apnsKeyId });
+      const payload = enc({ iss: apnsTeamId, iat: Math.floor(Date.now() / 1000) });
+      const signingInput = `${header}.${payload}`;
+      const sig = new Uint8Array(
+        await crypto.subtle.sign(
+          { name: "ECDSA", hash: "SHA-256" },
+          key,
+          new TextEncoder().encode(signingInput),
+        ),
+      );
+      const sigB64 = btoa(String.fromCharCode(...sig))
+        .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      apnsJwt = `${signingInput}.${sigB64}`;
+      return apnsJwt;
+    };
+
+    const sendApns = async (deviceToken: string) => {
+      const jwt = await buildApnsJwt();
+      const apsPayload = JSON.stringify({
+        aps: {
+          alert: { title, body },
+          sound: "default",
+          badge: 1,
+        },
+        type: notification.type,
+        related_listing_id: notification.related_listing_id,
+        related_order_id: notification.related_order_id,
+        related_thread_id: notification.related_thread_id,
+      });
+      const res = await fetch(`https://${apnsHost}/3/device/${deviceToken}`, {
+        method: "POST",
+        headers: {
+          "authorization": `bearer ${jwt}`,
+          "apns-topic": apnsBundleId,
+          "apns-push-type": "alert",
+          "content-type": "application/json",
+        },
+        body: apsPayload,
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        const err: any = new Error(`APNs ${res.status}: ${text}`);
+        err.statusCode = res.status;
+        err.body = text;
+        throw err;
+      }
+    };
+
     for (const sub of subscriptions) {
       try {
+        if (sub.platform === "ios") {
+          console.log(`[Push] APNs → ${sub.endpoint.slice(0, 16)}…`);
+          await sendApns(sub.endpoint);
+          sent++;
+          continue;
+        }
+
         const pushSubscription = {
           endpoint: sub.endpoint,
           keys: {
@@ -164,16 +247,14 @@ serve(async (req) => {
           },
         };
 
-        console.log(`[Push] Sending to endpoint: ${sub.endpoint.slice(0, 60)}...`);
-        console.log(`[Push] Subscription updated_at: ${sub.updated_at}, created_at: ${sub.created_at}`);
-        
+        console.log(`[Push] Web → ${sub.endpoint.slice(0, 60)}…`);
         const result = await webpush.sendNotification(pushSubscription, pushPayload);
         sent++;
-        console.log(`[Push] Success! Status: ${result.statusCode}, Headers: ${JSON.stringify(result.headers)}`);
+        console.log(`[Push] Web success status=${result.statusCode}`);
       } catch (e: any) {
-        console.error(`[Push] Failed for endpoint:`, e?.statusCode, e?.body || e?.message);
-        console.error(`[Push] Full error:`, JSON.stringify({ statusCode: e?.statusCode, body: e?.body, message: e?.message, headers: e?.headers }));
-        if (e?.statusCode === 404 || e?.statusCode === 410) {
+        console.error(`[Push] Failed (${sub.platform || "web"}):`, e?.statusCode, e?.body || e?.message);
+        // APNs 410 = unregistered, 400 BadDeviceToken; web-push 404/410 = gone
+        if (e?.statusCode === 404 || e?.statusCode === 410 || /BadDeviceToken/i.test(e?.body || "")) {
           staleEndpoints.push(sub.endpoint);
         }
       }
@@ -188,6 +269,7 @@ serve(async (req) => {
         .eq("user_id", user_id)
         .in("endpoint", staleEndpoints);
     }
+
 
     console.log(`[Push] Result: sent=${sent}, total=${subscriptions.length}`);
     return new Response(JSON.stringify({ sent, total: subscriptions.length }), {
