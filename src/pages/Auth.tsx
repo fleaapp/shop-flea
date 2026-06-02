@@ -548,8 +548,30 @@ const Auth = () => {
           </div>
         </div>
       </div>
+
+      <ProviderConflictDialog
+        open={!!conflictProvider}
+        provider={conflictProvider}
+        onCancel={() => setConflictProvider(null)}
+        onContinue={() => {
+          const p = conflictProvider;
+          setConflictProvider(null);
+          if (p === 'google') {
+            handleGoogleSignIn();
+          } else if (p === 'apple') {
+            handleAppleSignIn();
+          } else if (p === 'email') {
+            setActiveTab('login');
+            setLoginIdentifier(signupEmail || loginIdentifier);
+            setSignupEmail('');
+            setSignupPassword('');
+            setSignupConfirmPassword('');
+          }
+        }}
+      />
     </div>
   );
 };
+
 
 export default Auth;
