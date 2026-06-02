@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import App from "./App.tsx";
+import { SplashScreen } from '@capacitor/splash-screen';
 import "./index.css";
 import { restoreRouteAppChrome } from "./lib/appChrome.ts";
 
@@ -151,13 +151,9 @@ const isPreviewHost =
 
 const hideNativeSplash = () => {
   if (!isNativePlatform) return;
-  void import('@capacitor/splash-screen')
-    .then(({ SplashScreen }) => {
-      void SplashScreen.hide({ fadeOutDuration: 0 })
-        .then(() => console.log('[boot] splash hidden'))
-        .catch((err) => console.warn('[boot] splash hide failed', err));
-    })
-    .catch((err) => console.warn('[boot] splash plugin failed', err));
+  void SplashScreen.hide({ fadeOutDuration: 0 })
+    .then(() => console.log('[boot] splash hidden'))
+    .catch((err) => console.warn('[boot] splash hide failed', err));
 };
 
 if (isNativePlatform) {
@@ -221,7 +217,8 @@ if (isNativePlatform) {
   void registerServiceWorker();
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+const root = createRoot(document.getElementById("root")!);
+void import("./App.tsx").then(({ default: App }) => root.render(<App />));
 
 // Explicitly hide the native splash screen as soon as React has rendered.
 // Without this, Capacitor's default auto-hide timeout fires (visible in Xcode
