@@ -1,6 +1,6 @@
 ## Plan: pre-submission deploy work I can do for you
 
-I'll handle everything that lives in code or in the Lovable Cloud project. At the end I'll hand you a clean checklist of items that only you can do (Xcode, App Store Connect, Stripe/PayPal live cutover, APNs upload, TestFlight).
+I'll handle everything that lives in code or in the Lovable Cloud project. At the end I'll hand you a clean checklist of items that only you can do (Xcode, App Store Connect, Stripe live cutover, APNs upload, TestFlight).
 
 ### 1. Audit native auth wiring
 - Verify `nativeAppleSignIn` is invoked from `Auth.tsx` on iOS native and falls back to web OAuth elsewhere
@@ -19,7 +19,7 @@ Scan the codebase for everything actually collected and produce a ready-to-paste
 - User content (photos, messages, reviews, listings)
 - Identifiers (user id, device id, push token)
 - Location (coarse, region detection)
-- Financial info (handled by Stripe/PayPal — disclosed as "not collected by us")
+- Financial info (handled by Stripe — disclosed as "not collected by us")
 - Diagnostics (logs, crash data)
 For each: linked to user? used for tracking? purpose?
 
@@ -38,10 +38,10 @@ For each: linked to user? used for tracking? purpose?
 - Verify `usePushNotifications` + `PushNotificationSubscriber` register a token on iOS native, persist to `push_subscriptions`, and renew on remount (per memory)
 - Verify `send-push-notification` edge function reads APNs key from secrets (so it works the moment you upload the key in Lovable Cloud) — flag the exact secret name to add
 
-### 7. Stripe / PayPal live-cutover prep
+### 7. Stripe live-cutover prep
 - Audit edge functions for any hardcoded `test` mode assumptions
 - Confirm webhook handlers verify signatures and tolerate live event ids
-- Produce the exact secret names you'll update (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `PAYPAL_CLIENT_ID`, `PAYPAL_SECRET_KEY`) and the webhook URLs to paste into Stripe/PayPal live dashboards
+- Produce the exact secret names you'll update (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) and the webhook URLs to paste into Stripe live dashboards
 
 ### 8. Smoke-test prep (web preview)
 - Run the full path in preview and report breakages: signup → email verify → onboarding → create listing → checkout (test) → message seller → leave review
@@ -49,12 +49,12 @@ For each: linked to user? used for tracking? purpose?
 
 ### Deliverables at the end
 - All code edits applied
-- One markdown checklist of remaining items only you can do, grouped: **Local machine (Xcode/cap sync)**, **App Store Connect**, **Stripe dashboard**, **PayPal dashboard**, **Lovable Cloud secrets**, **TestFlight**
+- One markdown checklist of remaining items only you can do, grouped: **Local machine (Xcode/cap sync)**, **App Store Connect**, **Stripe dashboard**, **Lovable Cloud secrets**, **TestFlight**
 
 ### Out of scope (your side)
 - `npx cap sync ios`, `pod install`, Xcode build & device test
 - App Store Connect: privacy URL field, reviewer demo account, screenshots, App Privacy submission
-- Generating live Stripe/PayPal keys (I'll swap secrets once you paste them)
+- Generating live Stripe keys (I'll swap secrets once you paste them)
 - Uploading APNs key in Lovable Cloud
 - TestFlight upload + submission
 
