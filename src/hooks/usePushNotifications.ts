@@ -1,7 +1,9 @@
 import { useEffect, useCallback, useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+
 
 const VAPID_PUBLIC_KEY = 'BOaAjWRbh4KQDJcS-Cx8XHtz7MFnI9RAfnXSW2U2J48f7gQiud-cFkT2jjSluV2tR_MQIDHYUPh-5AJucHLbmhA';
 
@@ -22,10 +24,13 @@ export function usePushNotifications() {
 
   const subscribe = useCallback(async () => {
     if (!user?.id || subscribedRef.current) return;
+    // Native iOS uses APNs via useNativePushNotifications, not web push.
+    if (Capacitor.isNativePlatform()) return;
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       console.log('[Push] Service worker or PushManager not available');
       return;
     }
+
 
     // Don't run in preview/iframe
     const isInIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
