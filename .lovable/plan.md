@@ -1,40 +1,27 @@
-## Why the phone keeps showing the old version
+## Plan to make auth appear immediately after the native splash
 
-Two things can cause this, and we'll close both:
+1. **Remove the extra green-screen gap**
+   - Change the native splash handoff so the first WebView frame is the actual auth screen, not an empty lime fallback.
+   - Stop showing the current full-screen auth fallback unless a genuinely lazy auth route is loading.
 
-1. **Stale `dist/` getting copied into iOS.** If `vite build` is skipped, `cap sync` copies whatever was in `dist/` last time — which can be days old.
-2. **Capacitor loading a remote URL instead of the bundled files.** Right now `capacitor.config.ts` honors a `CAP_SERVER_URL` env var. If that's ever set on your Mac (even leftover from a previous shell), the app loads a live URL and ignores the freshly bundled code. Apple also rejects App Store builds that ship with this enabled, so it shouldn't exist as a normal path.
+2. **Make `/auth` part of the initial bundle**
+   - Keep the login screen eager, but reduce what it pulls in before first paint.
+   - Replace heavy `lucide-react` auth icons with tiny inline SVGs or lightweight local components so the auth page does not load the full icon bundle before rendering.
+   - Defer non-critical auth-only UI, especially `ProviderConflictDialog`, until it is actually needed.
 
-## Changes
+3. **Move auth-session checking off the first visual paint**
+   - Let `AuthProvider` render children immediately instead of holding startup behind `getSession()` state.
+   - Run the session check after mount and redirect only if a valid user session exists.
+   - Keep the safety timeout, but lower its impact so signed-out users never wait on the network before seeing auth.
 
-1. **Remove `CAP_SERVER_URL` from `capacitor.config.ts`.** The iOS app will always load the bundled `dist/`. No live-reload shortcut, no risk of accidentally pointing at a remote URL, no App Store rejection risk.
+4. **Clean native boot diagnostics for production startup**
+   - Remove remaining startup console diagnostics and duplicate chrome restore listeners from `main.tsx` that are useful for debugging but unnecessary for real-device launch.
+   - Keep the native `SplashScreen.hide()` call immediate.
 
-2. **Replace the iOS scripts in `package.json` with one forceful command:**
+5. **Verify the result**
+   - Check `/auth` in the preview performance profile for improved FCP and no error overlay.
+   - You’ll then run:
+   ```bash
+   git pull && npm install && npm run ios:fresh
    ```
-   npm run ios:fresh
-   ```
-   It will:
-   - delete the old `dist/` folder,
-   - run `vite build`,
-   - run `npx cap sync ios`,
-   - open Xcode.
-   
-   This makes it impossible to ship a stale bundle.
-
-3. **Keep the boot log marker** (`[boot] native bundle marker ... buildId: ...`) so if it ever happens again, we can confirm in Xcode's console which build the phone actually loaded.
-
-## Your everyday command after this
-
-```bash
-git pull && npm install && npm run ios:fresh
-```
-
-Then in Xcode hit ▶.
-
-## If the phone STILL shows the old version after that
-
-The remaining cause is the iPhone caching the old install. One-time fix:
-- Delete the Flea app from the iPhone (long press → Remove App → Delete App)
-- Run `npm run ios:fresh` again, hit ▶ in Xcode
-
-After that, every future build will be fresh automatically.
+   If the old app is still visible on the phone, delete Flea from the iPhone once and run the command again.
