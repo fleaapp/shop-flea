@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { nativeAppleSignIn, isIosNative } from '@/lib/appleSignIn';
 
 const Auth = () => {
   const navigate = useNavigate();
