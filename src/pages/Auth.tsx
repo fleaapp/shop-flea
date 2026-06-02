@@ -192,52 +192,32 @@ const Auth = () => {
       return;
     }
     setIsLoading(true);
-    
-    // Pre-check: see if this email is already registered
-    // Try signing in with a dummy password to detect existing accounts
-    const { data: existingCheck, error: checkError } = await supabase.auth.signInWithPassword({
-      email: signupEmail.trim(),
-      password: '__dummy_check_' + Date.now(),
-    });
-    
-    if (checkError) {
-      const msg = checkError.message || '';
-      // "Invalid login credentials" means account exists (wrong password)
-      if (msg.includes('Invalid login credentials')) {
-        // Check if account might be OAuth-based by looking for profile
-        const { data: profileData } = await supabase
-          .from('profiles_public')
-          .select('user_id')
-          .limit(1);
-        
-        // We can't easily determine OAuth vs email, so show a helpful message
-        toast.error(
-          'This email is already registered. Try logging in or use "Continue with Google" if you signed up with Google.',
-          { duration: 6000 }
-        );
-        setActiveTab('login');
-        setLoginIdentifier(signupEmail);
-        setSignupEmail('');
-        setSignupPassword('');
-        setSignupConfirmPassword('');
-        setIsLoading(false);
-        return;
-      }
-      // "Email not confirmed" also means account exists
-      if (msg.includes('Email not confirmed')) {
-        toast.error(
-          'This email is already registered but not yet verified. Check your inbox for the verification email.',
-          { duration: 6000 }
-        );
-        setActiveTab('login');
-        setLoginIdentifier(signupEmail);
-        setSignupEmail('');
-        setSignupPassword('');
-        setSignupConfirmPassword('');
-        setIsLoading(false);
-        return;
-      }
+
+    // Pre-check: is this email already registered with any provider?
+    const existingProvider = await checkEmailProvider(signupEmail.trim());
+
+    if (existingProvider === 'google' || existingProvider === 'apple') {
+      // Conflict: account exists with a social provider.
+      setIsLoading(false);
+      setConflictProvider(existingProvider);
+      return;
     }
+
+    if (existingProvider === 'email') {
+      toast.error(
+        'This email is already registered. Try logging in instead.',
+        { duration: 5000 },
+      );
+      setActiveTab('login');
+      setLoginIdentifier(signupEmail);
+      setSignupEmail('');
+      setSignupPassword('');
+      setSignupConfirmPassword('');
+      setIsLoading(false);
+      return;
+    }
+
+
     
     // Use a placeholder username - user will set it in the welcome popup
     const placeholderUsername = `user_${Date.now()}`;
