@@ -10,12 +10,12 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import PageSkeleton from "./components/PageSkeleton";
 import { restoreRouteAppChrome } from "@/lib/appChrome";
 
-// Critical path – loaded eagerly
-import Index from "./pages/Index";
+// Critical path – auth is loaded eagerly; app/feed routes are lazy so /auth paints first.
 import Auth from "./pages/Auth";
 import DevicePreview from "./components/dev/DevicePreview";
 import NetworkLogOverlay from "./components/dev/NetworkLogOverlay";
 
+const loadIndex = () => import("./pages/Index");
 const loadListingDetails = () => import("./pages/ListingDetails");
 const loadFavorites = () => import("./pages/Favorites");
 const loadCart = () => import("./pages/Cart");
@@ -48,6 +48,7 @@ const loadAdminUsers = () => import("./pages/admin/AdminUsers");
 const loadAdminListings = () => import("./pages/admin/AdminListings");
 const loadAdminErrors = () => import("./pages/admin/AdminErrors");
 
+const Index = lazy(loadIndex);
 const ListingDetails = lazy(loadListingDetails);
 const Favorites = lazy(loadFavorites);
 const Cart = lazy(loadCart);
