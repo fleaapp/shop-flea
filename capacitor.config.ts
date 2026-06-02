@@ -1,19 +1,13 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
-const liveReloadUrl = process.env.CAP_SERVER_URL;
-
+// The iOS app ALWAYS loads the bundled `dist/` folder. We deliberately do
+// NOT support a remote `server.url` here — Apple rejects App Store builds
+// that load remote web content, and a stray CAP_SERVER_URL env var was
+// causing the device to show stale code instead of the freshly built bundle.
 const config: CapacitorConfig = {
   appId: 'com.finditonflea.app',
   appName: 'Flea',
   webDir: 'dist',
-  ...(liveReloadUrl
-    ? {
-        server: {
-          url: liveReloadUrl,
-          cleartext: true,
-        },
-      }
-    : {}),
   plugins: {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],

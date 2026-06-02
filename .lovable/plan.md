@@ -1,36 +1,40 @@
-## Goals
+## Why the phone keeps showing the old version
 
-1. Stop the doubled splash on native iOS cold boot.
-2. Make it impossible to ship a stale web bundle inside the iOS app.
+Two things can cause this, and we'll close both:
+
+1. **Stale `dist/` getting copied into iOS.** If `vite build` is skipped, `cap sync` copies whatever was in `dist/` last time — which can be days old.
+2. **Capacitor loading a remote URL instead of the bundled files.** Right now `capacitor.config.ts` honors a `CAP_SERVER_URL` env var. If that's ever set on your Mac (even leftover from a previous shell), the app loads a live URL and ignores the freshly bundled code. Apple also rejects App Store builds that ship with this enabled, so it shouldn't exist as a normal path.
 
 ## Changes
 
-### 1. `src/main.tsx` — skip marketplace reset purge on native
+1. **Remove `CAP_SERVER_URL` from `capacitor.config.ts`.** The iOS app will always load the bundled `dist/`. No live-reload shortcut, no risk of accidentally pointing at a remote URL, no App Store rejection risk.
 
-The `MARKETPLACE_RESET_VERSION` block currently runs on every platform. On a fresh iOS install, localStorage is empty so it triggers, wipes caches/SW, then calls `location.reload()` — the WebView boots twice, doubling perceived splash time.
+2. **Replace the iOS scripts in `package.json` with one forceful command:**
+   ```
+   npm run ios:fresh
+   ```
+   It will:
+   - delete the old `dist/` folder,
+   - run `vite build`,
+   - run `npx cap sync ios`,
+   - open Xcode.
+   
+   This makes it impossible to ship a stale bundle.
 
-Move the `isNativePlatform` detection above the reset block and wrap the entire reset block (including the async cache/SW purge + reload) in `if (!isNativePlatform)`. Native WebViews don't need this purge — they ship a fresh `dist/` with every build, and there's no service worker to clear.
+3. **Keep the boot log marker** (`[boot] native bundle marker ... buildId: ...`) so if it ever happens again, we can confirm in Xcode's console which build the phone actually loaded.
 
-### 2. `package.json` — add iOS sync script
+## Your everyday command after this
 
-Add:
-
-```json
-"scripts": {
-  "ios:sync": "vite build && npx cap sync ios",
-  "ios:run": "vite build && npx cap sync ios && npx cap open ios"
-}
+```bash
+git pull && npm install && npm run ios:fresh
 ```
 
-Now the iOS rebuild workflow is one command instead of two, which prevents the stale-bundle problem (missing "Terms & Privacy" line) from recurring.
+Then in Xcode hit ▶.
 
-## What this does NOT change
+## If the phone STILL shows the old version after that
 
-- Splash storyboard, `capacitor.config.ts`, `appChrome.ts`, service worker behaviour on web — all untouched.
-- Web behaviour is unchanged: the reset purge still runs once per `MARKETPLACE_RESET_VERSION` bump on web/PWA.
+The remaining cause is the iPhone caching the old install. One-time fix:
+- Delete the Flea app from the iPhone (long press → Remove App → Delete App)
+- Run `npm run ios:fresh` again, hit ▶ in Xcode
 
-## Verification steps (you, after I implement)
-
-1. `npm run ios:sync`
-2. Xcode → Product → Clean Build Folder → Run on device
-3. Confirm: splash → auth in ~1 boot (no reload flash), and the auth screen shows the "By continuing you agree to our Terms & Privacy." line.
+After that, every future build will be fresh automatically.
