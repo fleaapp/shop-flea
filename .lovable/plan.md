@@ -1,61 +1,36 @@
-## Plan: pre-submission deploy work I can do for you
+## Goals
 
-I'll handle everything that lives in code or in the Lovable Cloud project. At the end I'll hand you a clean checklist of items that only you can do (Xcode, App Store Connect, Stripe live cutover, APNs upload, TestFlight).
+1. Stop the doubled splash on native iOS cold boot.
+2. Make it impossible to ship a stale web bundle inside the iOS app.
 
-### 1. Audit native auth wiring
-- Verify `nativeAppleSignIn` is invoked from `Auth.tsx` on iOS native and falls back to web OAuth elsewhere
-- Confirm Google sign-in path works alongside Apple (no double-trigger, no missing nonce)
-- Confirm `ProviderConflictDialog` fires correctly after the new Apple native path (post-callback guard + pre-check both apply)
+## Changes
 
-### 2. Account deletion end-to-end check
-- Re-read `delete-account` edge function + Settings entry point
-- Confirm 14-day cooldown + active-order gate are enforced
-- Confirm cascade: listings archived, cart/favorites/discards cleared, auth user removed
-- Confirm UI sign-out + redirect after success
+### 1. `src/main.tsx` — skip marketplace reset purge on native
 
-### 3. App Privacy data-collection audit (for App Store Connect questionnaire)
-Scan the codebase for everything actually collected and produce a ready-to-paste table covering, per Apple's categories:
-- Contact info (email, name)
-- User content (photos, messages, reviews, listings)
-- Identifiers (user id, device id, push token)
-- Location (coarse, region detection)
-- Financial info (handled by Stripe — disclosed as "not collected by us")
-- Diagnostics (logs, crash data)
-For each: linked to user? used for tracking? purpose?
+The `MARKETPLACE_RESET_VERSION` block currently runs on every platform. On a fresh iOS install, localStorage is empty so it triggers, wipes caches/SW, then calls `location.reload()` — the WebView boots twice, doubling perceived splash time.
 
-### 4. App Store review-blocker audit
-- `capacitor.config.ts` — confirm bundle id, no leftover `server.url` pointing to sandbox for production builds (flag if present, give you the toggle)
-- `Info.plist`-equivalent strings via Capacitor: camera, photo library, location, push, Apple sign-in entitlement, ATS
-- Deep links: scan for any `lovableproject.com` / preview URLs hardcoded in user-visible flows
-- Reject-risk copy: scan for any user-facing strings mentioning "Stripe" / "Supabase" (memory rule)
-- Confirm Privacy Policy + Terms reachable from Auth screen and Settings (required for sign-in with Apple + App Store)
+Move the `isNativePlatform` detection above the reset block and wrap the entire reset block (including the async cache/SW purge + reload) in `if (!isNativePlatform)`. Native WebViews don't need this purge — they ship a fresh `dist/` with every build, and there's no service worker to clear.
 
-### 5. Settings / Auth surface for legal links
-- Add Privacy Policy + Terms links to the Auth screen footer (currently only in Settings) — Apple requires both reachable before account creation
-- Confirm both pages render standalone (no auth required) so the reviewer can open them
+### 2. `package.json` — add iOS sync script
 
-### 6. Push notification client-side readiness
-- Verify `usePushNotifications` + `PushNotificationSubscriber` register a token on iOS native, persist to `push_subscriptions`, and renew on remount (per memory)
-- Verify `send-push-notification` edge function reads APNs key from secrets (so it works the moment you upload the key in Lovable Cloud) — flag the exact secret name to add
+Add:
 
-### 7. Stripe live-cutover prep
-- Audit edge functions for any hardcoded `test` mode assumptions
-- Confirm webhook handlers verify signatures and tolerate live event ids
-- Produce the exact secret names you'll update (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) and the webhook URLs to paste into Stripe live dashboards
+```json
+"scripts": {
+  "ios:sync": "vite build && npx cap sync ios",
+  "ios:run": "vite build && npx cap sync ios && npx cap open ios"
+}
+```
 
-### 8. Smoke-test prep (web preview)
-- Run the full path in preview and report breakages: signup → email verify → onboarding → create listing → checkout (test) → message seller → leave review
-- Anything broken gets fixed in the same pass
+Now the iOS rebuild workflow is one command instead of two, which prevents the stale-bundle problem (missing "Terms & Privacy" line) from recurring.
 
-### Deliverables at the end
-- All code edits applied
-- One markdown checklist of remaining items only you can do, grouped: **Local machine (Xcode/cap sync)**, **App Store Connect**, **Stripe dashboard**, **Lovable Cloud secrets**, **TestFlight**
+## What this does NOT change
 
-### Out of scope (your side)
-- `npx cap sync ios`, `pod install`, Xcode build & device test
-- App Store Connect: privacy URL field, reviewer demo account, screenshots, App Privacy submission
-- Generating live Stripe keys (I'll swap secrets once you paste them)
-- Uploading APNs key in Lovable Cloud
-- TestFlight upload + submission
+- Splash storyboard, `capacitor.config.ts`, `appChrome.ts`, service worker behaviour on web — all untouched.
+- Web behaviour is unchanged: the reset purge still runs once per `MARKETPLACE_RESET_VERSION` bump on web/PWA.
 
-Approve and I'll start with sections 1–5 in parallel (read-heavy, no DB changes), then 6–8.
+## Verification steps (you, after I implement)
+
+1. `npm run ios:sync`
+2. Xcode → Product → Clean Build Folder → Run on device
+3. Confirm: splash → auth in ~1 boot (no reload flash), and the auth screen shows the "By continuing you agree to our Terms & Privacy." line.

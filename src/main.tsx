@@ -50,14 +50,25 @@ const BUILD_ID = (import.meta.env.VITE_BUILD_ID as string | undefined) ?? '0';
 const STORED_BUILD_KEY = 'flea_build_id';
 const SW_URL = `/sw.js?build=${encodeURIComponent(BUILD_ID)}`;
 
+// Detect native platform early so we can skip web-only boot work
+// (cache purges, service-worker reloads) that would otherwise double
+// the perceived splash time on iOS/Android cold boot.
+const isNativePlatform =
+  window.location.protocol === 'capacitor:' ||
+  !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
+
 // One-time marketplace reset purge: clears ALL stale client-side state
 // (localStorage, sessionStorage, Cache Storage, service workers) left
 // behind after the server-side data wipe. Bump the version to trigger again.
+// Skipped on native — the WebView ships a fresh `dist/` with every build
+// and has no service worker to clear, so the reload-after-purge here was
+// causing iOS to boot twice on first launch.
 const MARKETPLACE_RESET_VERSION = '2026-05-31-wipe-3';
 const MARKETPLACE_RESET_KEY = 'flea_marketplace_reset_version';
 let needsMarketplaceReset = false;
 try {
   needsMarketplaceReset =
+    !isNativePlatform &&
     localStorage.getItem(MARKETPLACE_RESET_KEY) !== MARKETPLACE_RESET_VERSION;
 } catch {
   needsMarketplaceReset = false;
@@ -140,9 +151,8 @@ const isPreviewHost =
   window.location.hostname.includes("id-preview--") ||
   window.location.hostname.includes("lovableproject.com");
 
-const isNativePlatform =
-  window.location.protocol === 'capacitor:' ||
-  !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
+// `isNativePlatform` is declared earlier in this file (above the marketplace
+// reset block) so it can gate the web-only cache purge.
 
 const hideNativeSplash = () => {
   if (!isNativePlatform) return;
