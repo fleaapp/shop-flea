@@ -151,9 +151,8 @@ const isPreviewHost =
   window.location.hostname.includes("id-preview--") ||
   window.location.hostname.includes("lovableproject.com");
 
-const isNativePlatform =
-  window.location.protocol === 'capacitor:' ||
-  !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
+// `isNativePlatform` is declared earlier in this file (above the marketplace
+// reset block) so it can gate the web-only cache purge.
 
 const hideNativeSplash = () => {
   if (!isNativePlatform) return;
