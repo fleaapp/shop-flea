@@ -9,6 +9,29 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { nativeAppleSignIn, isIosNative } from '@/lib/appleSignIn';
+import ProviderConflictDialog, { type ConflictProvider } from '@/components/ProviderConflictDialog';
+
+const CHECK_EMAIL_PROVIDER_URL =
+  `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/check-email-provider`;
+
+async function checkEmailProvider(email: string): Promise<ConflictProvider | null> {
+  try {
+    const resp = await fetch(CHECK_EMAIL_PROVIDER_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({ email }),
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return (data?.provider ?? null) as ConflictProvider | null;
+  } catch {
+    return null;
+  }
+}
+
 
 const Auth = () => {
   const navigate = useNavigate();
