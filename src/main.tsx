@@ -1,12 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import "./components/dev/InAppDebugOverlay"; // installs console/error hooks at boot
 import { restoreRouteAppChrome } from "./lib/appChrome.ts";
-import { installNetLogger } from "./lib/netLogger.ts";
-
-// Install network logger BEFORE any other code makes requests (Supabase, etc.)
-installNetLogger();
 
 // Native boot diagnostics — visible in Xcode/Web Inspector to confirm
 // which route the WebView actually opened, and whether the Capacitor
