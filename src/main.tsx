@@ -1,29 +1,10 @@
 import { createRoot } from "react-dom/client";
 import { SplashScreen } from '@capacitor/splash-screen';
+import App from "./App.tsx";
 import "./index.css";
 import { restoreRouteAppChrome } from "./lib/appChrome.ts";
 
-// Native boot diagnostics — visible in Xcode/Web Inspector to confirm
-// which route the WebView actually opened, and whether the Capacitor
-// bridge is present yet. Helps disambiguate "stuck on green hourglass".
-try {
-  const cap = (window as { Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string } }).Capacitor;
-  console.log('[boot]', JSON.stringify({
-    href: window.location.href,
-    pathname: window.location.pathname,
-    protocol: window.location.protocol,
-    native: !!cap?.isNativePlatform?.(),
-    platform: cap?.getPlatform?.() ?? 'web',
-    ua: navigator.userAgent.slice(0, 80),
-  }));
-} catch {}
-
 restoreRouteAppChrome();
-window.addEventListener('pageshow', restoreRouteAppChrome, { capture: true });
-window.addEventListener('focus', restoreRouteAppChrome, { capture: true });
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) restoreRouteAppChrome();
-}, { capture: true });
 
 // Detect Android and add class to html for platform-specific CSS
 if (/android/i.test(navigator.userAgent)) {
@@ -151,81 +132,18 @@ const isPreviewHost =
 
 const hideNativeSplash = () => {
   if (!isNativePlatform) return;
-  void SplashScreen.hide({ fadeOutDuration: 0 })
-    .then(() => console.log('[boot] splash hidden'))
-    .catch((err) => console.warn('[boot] splash hide failed', err));
+  void SplashScreen.hide({ fadeOutDuration: 0 }).catch(() => undefined);
 };
-
-if (isNativePlatform) {
-  console.log('[boot] native bundle marker', JSON.stringify({ buildId: BUILD_ID, href: window.location.href }));
-  hideNativeSplash();
-}
-
-const registerServiceWorker = async () => {
-  if (!('serviceWorker' in navigator)) return;
-
-  let reloadingForServiceWorker = false;
-
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloadingForServiceWorker) return;
-    reloadingForServiceWorker = true;
-    window.location.reload();
-  });
-
-  try {
-    const registration = await navigator.serviceWorker.register(SW_URL, {
-      scope: '/',
-      updateViaCache: 'none',
-    });
-
-    await registration.update().catch(() => undefined);
-
-    if (registration.waiting) {
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-    }
-
-    registration.addEventListener('updatefound', () => {
-      const installingWorker = registration.installing;
-      if (!installingWorker) return;
-
-      installingWorker.addEventListener('statechange', () => {
-        if (installingWorker.state === 'installed' && registration.waiting) {
-          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-        }
-      });
-    });
-  } catch (error) {
-    console.error('[service-worker] Registration failed', error);
-  }
-};
-
-if (isNativePlatform) {
-  // On native, the WebView already manages its own cache. Wiping caches and
-  // unregistering service workers on every launch slows down first paint
-  // (which previously made loading screens look "stuck") — skip it.
-} else if (isPreviewHost || isInIframe) {
-  void resetAppCache();
-} else {
-  const storedBuild = localStorage.getItem(STORED_BUILD_KEY);
-
-  if (storedBuild && storedBuild !== BUILD_ID) {
-    console.log('[cache-bust] New build detected, clearing old caches…');
-    void clearAppCaches();
-  }
-
-  localStorage.setItem(STORED_BUILD_KEY, BUILD_ID);
-  void registerServiceWorker();
-}
 
 const root = createRoot(document.getElementById("root")!);
-void import("./App.tsx").then(({ default: App }) => root.render(<App />));
+root.render(<App />);
 
-// Explicitly hide the native splash screen as soon as React has rendered.
-// Without this, Capacitor's default auto-hide timeout fires (visible in Xcode
-// as "SplashScreen was automatically hidden after default timeout"), which
-// leaves the splash covering the WebView for ~3s and looks like a stall.
+// Hide native splash AFTER React has actually rendered the first frame
+// (Auth screen). Hiding it earlier exposes the lime WebView background
+// for hundreds of ms — that's the "green screen" gap users were seeing.
 if (isNativePlatform) {
-  requestAnimationFrame(hideNativeSplash);
-  window.setTimeout(hideNativeSplash, 250);
-  window.setTimeout(hideNativeSplash, 1000);
+  requestAnimationFrame(() => requestAnimationFrame(hideNativeSplash));
+  // Safety fallbacks in case rAF is throttled during cold boot
+  window.setTimeout(hideNativeSplash, 400);
+  window.setTimeout(hideNativeSplash, 1500);
 }
