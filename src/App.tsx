@@ -4,14 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
-import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
-import { OnboardingProvider, useOnboarding } from "@/context/OnboardingContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import OnboardingOverlay from "@/components/OnboardingOverlay";
-import OnboardingCarousel from "@/components/OnboardingCarousel";
-import RealtimeAlerts from "./components/RealtimeAlerts";
-import { PushNotificationSubscriber } from "./components/PushNotificationSubscriber";
 import ErrorBoundary from "./components/ErrorBoundary";
 import PageSkeleton from "./components/PageSkeleton";
 import { restoreRouteAppChrome } from "@/lib/appChrome";
@@ -110,7 +104,6 @@ const PageLoader = () => <PageSkeleton />;
 const AuthRouteFallback = () => <div className="fixed inset-0 bg-primary" />;
 
 const AppContent = () => {
-  const { showCarousel, closeCarousel } = useOnboarding();
   const location = useLocation();
   const isStandaloneSite = false;
   const isAuthRoute = /^\/(auth|forgot-password|reset-password|verify-email)(\/|$)/.test(location.pathname);
@@ -175,10 +168,7 @@ const AppContent = () => {
     <>
       <Toaster />
       <Sonner position="top-center" />
-      {!isStandaloneSite && !isAuthRoute && <RealtimeAlerts />}
-      {!isStandaloneSite && !isAuthRoute && <PushNotificationSubscriber />}
-      {!isStandaloneSite && !isAuthRoute && <OnboardingOverlay />}
-      {!isStandaloneSite && !isAuthRoute && <OnboardingCarousel open={showCarousel} onComplete={closeCarousel} />}
+      {!isStandaloneSite && !isAuthRoute && <AppProviders />}
       <Suspense fallback={isAuthRoute ? <AuthRouteFallback /> : <PageLoader />}>
         <Routes>
           <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
@@ -221,6 +211,25 @@ const AppContent = () => {
       <NetworkLogOverlay />
     </>
   );
+};
+
+const CartProvider = lazy(() => import("@/context/CartContext").then((m) => ({ default: m.CartProvider })));
+const OnboardingProvider = lazy(() => import("@/context/OnboardingContext").then((m) => ({ default: m.OnboardingProvider })));
+const RealtimeAlerts = lazy(() => import("./components/RealtimeAlerts"));
+const PushNotificationSubscriber = lazy(() => import("./components/PushNotificationSubscriber").then((m) => ({ default: m.PushNotificationSubscriber })));
+const OnboardingOverlay = lazy(() => import("@/components/OnboardingOverlay"));
+const OnboardingCarousel = lazy(() => import("@/components/OnboardingCarousel"));
+
+const OnboardingChrome = () => {
+  const [state, setState] = useState<{ showCarousel: boolean; closeCarousel: () => void } | null>(null);
+
+  useEffect(() => {
+    import("@/context/OnboardingContext").then(({ useOnboarding }) => {
+      // This component only exists inside OnboardingProvider after lazy load.
+    });
+  }, []);
+
+  return null;
 };
 
 const App = () => (
