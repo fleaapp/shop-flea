@@ -712,6 +712,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          auth_provider: string | null
           avatar_url: string | null
           country_code: string | null
           created_at: string
@@ -748,6 +749,7 @@ export type Database = {
           username: string
         }
         Insert: {
+          auth_provider?: string | null
           avatar_url?: string | null
           country_code?: string | null
           created_at?: string
@@ -784,6 +786,7 @@ export type Database = {
           username: string
         }
         Update: {
+          auth_provider?: string | null
           avatar_url?: string | null
           country_code?: string | null
           created_at?: string
