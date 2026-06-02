@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { nativeAppleSignIn, isIosNative } from '@/lib/appleSignIn';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -261,6 +262,23 @@ const Auth = () => {
     try {
       localStorage.setItem('flea_oauth_signup', '1');
 
+      // iOS native: use the system Sign in with Apple sheet (no Safari bounce).
+      if (isIosNative()) {
+        const result = await nativeAppleSignIn();
+        if (result.handled) {
+          if (result.error) {
+            localStorage.removeItem('flea_oauth_signup');
+            if (!result.cancelled) {
+              console.error('Native Apple sign-in error:', result.error);
+              toast.error('Apple sign-in failed. Please try again.');
+            }
+          }
+          // On success the auth state change triggers redirect via useEffect.
+          return;
+        }
+      }
+
+      // Web / PWA / Android: web OAuth redirect flow.
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: {
