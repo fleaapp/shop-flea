@@ -467,7 +467,7 @@ const CreateListing = () => {
                 ⏳ Verifying Your Connection
               </DialogTitle>
               <DialogDescription className="text-center text-balance max-w-[260px] mx-auto">
-                Your Stripe account is being verified. This can take a couple of minutes. Please check back shortly!
+                Your payment account is being verified. This can take a couple of minutes. Please check back shortly!
               </DialogDescription>
             </DialogHeader>
             <div className="mt-4 flex flex-col items-center">

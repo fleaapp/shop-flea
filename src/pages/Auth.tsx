@@ -409,6 +409,13 @@ const Auth = () => {
                 </button>
               </div>
               
+              <p className="text-[10px] text-foreground/70 text-center pt-2 leading-snug">
+                By continuing you agree to our{' '}
+                <button type="button" onClick={() => navigate('/terms')} className="underline hover:text-foreground">Terms</button>
+                {' & '}
+                <button type="button" onClick={() => navigate('/privacy')} className="underline hover:text-foreground">Privacy</button>.
+              </p>
+
               <div className="pt-1">
                 <Button
                   type="submit"

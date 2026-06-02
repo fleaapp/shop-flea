@@ -1,52 +1,61 @@
-## Goal
+## Plan: pre-submission deploy work I can do for you
 
-Prevent duplicate accounts when the same email is used across different sign-in methods (email/password, Google, Apple). When a conflict is detected, show a dialog that auto-redirects the user to the correct provider they originally signed up with.
+I'll handle everything that lives in code or in the Lovable Cloud project. At the end I'll hand you a clean checklist of items that only you can do (Xcode, App Store Connect, Stripe/PayPal live cutover, APNs upload, TestFlight).
 
-## How it works
+### 1. Audit native auth wiring
+- Verify `nativeAppleSignIn` is invoked from `Auth.tsx` on iOS native and falls back to web OAuth elsewhere
+- Confirm Google sign-in path works alongside Apple (no double-trigger, no missing nonce)
+- Confirm `ProviderConflictDialog` fires correctly after the new Apple native path (post-callback guard + pre-check both apply)
 
-1. **Track original provider** on every account in a new `auth_provider` column on `profiles` (`email` | `google` | `apple`).
-2. **Before any sign-up attempt**, call an edge function that looks up the email in `auth.users` (service role, server-side) and returns its provider — or `null` if the email is free.
-3. If the email already exists with a different provider, **cancel the sign-up/sign-in attempt** and show a dialog: *"This email is already registered with Google. Continue with Google to sign in."* → on Continue, auto-trigger the correct OAuth flow.
-4. If it matches the same provider, proceed normally.
+### 2. Account deletion end-to-end check
+- Re-read `delete-account` edge function + Settings entry point
+- Confirm 14-day cooldown + active-order gate are enforced
+- Confirm cascade: listings archived, cart/favorites/discards cleared, auth user removed
+- Confirm UI sign-out + redirect after success
 
-## Files
+### 3. App Privacy data-collection audit (for App Store Connect questionnaire)
+Scan the codebase for everything actually collected and produce a ready-to-paste table covering, per Apple's categories:
+- Contact info (email, name)
+- User content (photos, messages, reviews, listings)
+- Identifiers (user id, device id, push token)
+- Location (coarse, region detection)
+- Financial info (handled by Stripe/PayPal — disclosed as "not collected by us")
+- Diagnostics (logs, crash data)
+For each: linked to user? used for tracking? purpose?
 
-### Database (1 migration)
-- Add `auth_provider text` column to `profiles`.
-- Update `handle_new_user()` trigger to populate it from `NEW.raw_app_meta_data->>'provider'` (falls back to `'email'`).
-- Backfill existing rows by reading `auth.users.raw_app_meta_data->>'provider'`.
+### 4. App Store review-blocker audit
+- `capacitor.config.ts` — confirm bundle id, no leftover `server.url` pointing to sandbox for production builds (flag if present, give you the toggle)
+- `Info.plist`-equivalent strings via Capacitor: camera, photo library, location, push, Apple sign-in entitlement, ATS
+- Deep links: scan for any `lovableproject.com` / preview URLs hardcoded in user-visible flows
+- Reject-risk copy: scan for any user-facing strings mentioning "Stripe" / "Supabase" (memory rule)
+- Confirm Privacy Policy + Terms reachable from Auth screen and Settings (required for sign-in with Apple + App Store)
 
-### Edge function (new): `supabase/functions/check-email-provider/index.ts`
-- POST `{ email }` → returns `{ provider: 'email' | 'google' | 'apple' | null }`.
-- Uses `EXTERNAL_SUPABASE_SERVICE_ROLE_KEY` per project convention; case-insensitive lookup against `auth.users.email`.
-- Rate-limited via existing `check_and_record_rate_limit` RPC (10/min per IP) to prevent email enumeration abuse.
-- `verify_jwt = false` (public, called pre-auth).
+### 5. Settings / Auth surface for legal links
+- Add Privacy Policy + Terms links to the Auth screen footer (currently only in Settings) — Apple requires both reachable before account creation
+- Confirm both pages render standalone (no auth required) so the reviewer can open them
 
-### Frontend
-- **New component** `src/components/ProviderConflictDialog.tsx` — small confirm dialog matching the existing `mem://style/ui-elements/confirmation-dialog-style` (max-w 280-340, rounded-2xl, lime CTA). Shows: *"This email is registered with {Google/Apple/email & password}. {CTA}"*. CTA = "Continue with Google" / "Continue with Apple" / "Log in with password" → triggers the right flow on click.
-- **`src/pages/Auth.tsx`** — three changes:
-  1. `handleSignup`: replace the dummy-password probe with a call to `check-email-provider`. If `provider` is `'google'`/`'apple'` → open dialog. If `'email'` → existing "already registered, log in" toast + switch to login tab.
-  2. `handleGoogleSignIn`: before redirect, prompt user for the email is impossible (Google chooses), so we add a **post-callback guard**: after Supabase returns, check `user.app_metadata.provider` vs `profiles.auth_provider`. If mismatch and the profile already existed before this sign-in, sign the user out immediately and open the dialog with the correct provider. (Edge case: rare, but covers users who pick the "wrong" Google account.)
-  3. `handleAppleSignIn`: same post-callback guard. For native iOS Apple sign-in we get the email from `identityToken`, so we can also pre-check via `check-email-provider` before calling `signInWithIdToken`.
-- **`src/context/AuthContext.tsx`** — on `SIGNED_IN` event, run the mismatch guard once: compare `session.user.app_metadata.provider` to `profiles.auth_provider`. If mismatch, sign out + emit a global event the Auth page listens for to open the dialog.
+### 6. Push notification client-side readiness
+- Verify `usePushNotifications` + `PushNotificationSubscriber` register a token on iOS native, persist to `push_subscriptions`, and renew on remount (per memory)
+- Verify `send-push-notification` edge function reads APNs key from secrets (so it works the moment you upload the key in Lovable Cloud) — flag the exact secret name to add
 
-## Edge cases handled
+### 7. Stripe / PayPal live-cutover prep
+- Audit edge functions for any hardcoded `test` mode assumptions
+- Confirm webhook handlers verify signatures and tolerate live event ids
+- Produce the exact secret names you'll update (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `PAYPAL_CLIENT_ID`, `PAYPAL_SECRET_KEY`) and the webhook URLs to paste into Stripe/PayPal live dashboards
 
-- **Same provider, second sign-in**: pre-check returns same provider → proceed as normal login.
-- **Brand-new email**: pre-check returns `null` → proceed with signup.
-- **Apple "Hide my email"**: relay address is unique per app, so it's treated like any normal email — no special handling needed.
-- **Google account picker shows wrong account**: post-callback guard catches it, signs out, shows dialog.
-- **Race condition** (user creates account between pre-check and OAuth callback): post-callback guard catches it.
-- **Enumeration abuse**: rate-limit on `check-email-provider` + only reveals "this email is registered" when user is already attempting to sign up with it (same info the existing dummy-password probe leaks).
+### 8. Smoke-test prep (web preview)
+- Run the full path in preview and report breakages: signup → email verify → onboarding → create listing → checkout (test) → message seller → leave review
+- Anything broken gets fixed in the same pass
 
-## Out of scope
+### Deliverables at the end
+- All code edits applied
+- One markdown checklist of remaining items only you can do, grouped: **Local machine (Xcode/cap sync)**, **App Store Connect**, **Stripe dashboard**, **PayPal dashboard**, **Lovable Cloud secrets**, **TestFlight**
 
-- Actual account merging (Supabase manual-linking would be needed). Users with two existing duplicate accounts from before this change keep them; this only prevents *future* duplicates.
-- Phone/SMS provider (not enabled).
-- Changing email on an existing account.
+### Out of scope (your side)
+- `npx cap sync ios`, `pod install`, Xcode build & device test
+- App Store Connect: privacy URL field, reviewer demo account, screenshots, App Privacy submission
+- Generating live Stripe/PayPal keys (I'll swap secrets once you paste them)
+- Uploading APNs key in Lovable Cloud
+- TestFlight upload + submission
 
-## Technical notes
-
-- All Supabase writes go through the project's "external Supabase via service role" pattern per `mem://infrastructure/supabase-configuration-external-persistence`.
-- Dialog styling follows `mem://style/ui-elements/confirmation-dialog-style`.
-- "Stripe/Supabase" naming rule doesn't apply here — provider names (Google, Apple) are surfaced to users intentionally.
+Approve and I'll start with sections 1–5 in parallel (read-heavy, no DB changes), then 6–8.
