@@ -132,70 +132,20 @@ const isPreviewHost =
 
 const hideNativeSplash = () => {
   if (!isNativePlatform) return;
-  void SplashScreen.hide({ fadeOutDuration: 0 })
-    .then(() => console.log('[boot] splash hidden'))
-    .catch((err) => console.warn('[boot] splash hide failed', err));
+  void SplashScreen.hide({ fadeOutDuration: 0 }).catch(() => undefined);
 };
 
+const root = createRoot(document.getElementById("root")!);
+root.render(<App />);
+
+// Hide native splash AFTER React has actually rendered the first frame
+// (Auth screen). Hiding it earlier exposes the lime WebView background
+// for hundreds of ms — that's the "green screen" gap users were seeing.
 if (isNativePlatform) {
-  console.log('[boot] native bundle marker', JSON.stringify({ buildId: BUILD_ID, href: window.location.href }));
-  hideNativeSplash();
-}
-
-const registerServiceWorker = async () => {
-  if (!('serviceWorker' in navigator)) return;
-
-  let reloadingForServiceWorker = false;
-
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloadingForServiceWorker) return;
-    reloadingForServiceWorker = true;
-    window.location.reload();
-  });
-
-  try {
-    const registration = await navigator.serviceWorker.register(SW_URL, {
-      scope: '/',
-      updateViaCache: 'none',
-    });
-
-    await registration.update().catch(() => undefined);
-
-    if (registration.waiting) {
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-    }
-
-    registration.addEventListener('updatefound', () => {
-      const installingWorker = registration.installing;
-      if (!installingWorker) return;
-
-      installingWorker.addEventListener('statechange', () => {
-        if (installingWorker.state === 'installed' && registration.waiting) {
-          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-        }
-      });
-    });
-  } catch (error) {
-    console.error('[service-worker] Registration failed', error);
-  }
-};
-
-if (isNativePlatform) {
-  // On native, the WebView already manages its own cache. Wiping caches and
-  // unregistering service workers on every launch slows down first paint
-  // (which previously made loading screens look "stuck") — skip it.
-} else if (isPreviewHost || isInIframe) {
-  void resetAppCache();
-} else {
-  const storedBuild = localStorage.getItem(STORED_BUILD_KEY);
-
-  if (storedBuild && storedBuild !== BUILD_ID) {
-    console.log('[cache-bust] New build detected, clearing old caches…');
-    void clearAppCaches();
-  }
-
-  localStorage.setItem(STORED_BUILD_KEY, BUILD_ID);
-  void registerServiceWorker();
+  requestAnimationFrame(() => requestAnimationFrame(hideNativeSplash));
+  // Safety fallbacks in case rAF is throttled during cold boot
+  window.setTimeout(hideNativeSplash, 400);
+  window.setTimeout(hideNativeSplash, 1500);
 }
 
 const root = createRoot(document.getElementById("root")!);
