@@ -141,6 +141,8 @@ const AppContent = () => {
 
 
   useEffect(() => {
+    if (isAuthRoute) return;
+
     const prefetchCoreRoutes = () => {
       void loadFavorites();
       void loadCart();
@@ -165,7 +167,7 @@ const AppContent = () => {
 
     const timeoutId = window.setTimeout(prefetchCoreRoutes, 1200);
     return () => window.clearTimeout(timeoutId);
-  }, []);
+  }, [isAuthRoute]);
 
   const routes = (
     <Routes>
