@@ -4,24 +4,16 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
-import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
-import { OnboardingProvider, useOnboarding } from "@/context/OnboardingContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import OnboardingOverlay from "@/components/OnboardingOverlay";
-import OnboardingCarousel from "@/components/OnboardingCarousel";
-import RealtimeAlerts from "./components/RealtimeAlerts";
-import { PushNotificationSubscriber } from "./components/PushNotificationSubscriber";
 import ErrorBoundary from "./components/ErrorBoundary";
 import PageSkeleton from "./components/PageSkeleton";
 import { restoreRouteAppChrome } from "@/lib/appChrome";
 
-// Critical path – loaded eagerly
-import Index from "./pages/Index";
+// Critical path – auth is loaded eagerly; app/feed routes are lazy so /auth paints first.
 import Auth from "./pages/Auth";
-import DevicePreview from "./components/dev/DevicePreview";
-import NetworkLogOverlay from "./components/dev/NetworkLogOverlay";
 
+const loadIndex = () => import("./pages/Index");
 const loadListingDetails = () => import("./pages/ListingDetails");
 const loadFavorites = () => import("./pages/Favorites");
 const loadCart = () => import("./pages/Cart");
@@ -53,7 +45,9 @@ const loadAdminTransactions = () => import("./pages/admin/AdminTransactions");
 const loadAdminUsers = () => import("./pages/admin/AdminUsers");
 const loadAdminListings = () => import("./pages/admin/AdminListings");
 const loadAdminErrors = () => import("./pages/admin/AdminErrors");
+const loadAuthenticatedProviders = () => import("./components/AuthenticatedProviders");
 
+const Index = lazy(loadIndex);
 const ListingDetails = lazy(loadListingDetails);
 const Favorites = lazy(loadFavorites);
 const Cart = lazy(loadCart);
@@ -85,6 +79,7 @@ const AdminTransactions = lazy(loadAdminTransactions);
 const AdminUsers = lazy(loadAdminUsers);
 const AdminListings = lazy(loadAdminListings);
 const AdminErrors = lazy(loadAdminErrors);
+const AuthenticatedProviders = lazy(loadAuthenticatedProviders);
 import AdminRoute from "@/components/admin/AdminRoute";
 
 const queryClient = new QueryClient({
@@ -110,7 +105,6 @@ const PageLoader = () => <PageSkeleton />;
 const AuthRouteFallback = () => <div className="fixed inset-0 bg-primary" />;
 
 const AppContent = () => {
-  const { showCarousel, closeCarousel } = useOnboarding();
   const location = useLocation();
   const isStandaloneSite = false;
   const isAuthRoute = /^\/(auth|forgot-password|reset-password|verify-email)(\/|$)/.test(location.pathname);
@@ -145,6 +139,8 @@ const AppContent = () => {
 
 
   useEffect(() => {
+    if (isAuthRoute) return;
+
     const prefetchCoreRoutes = () => {
       void loadFavorites();
       void loadCart();
@@ -169,18 +165,10 @@ const AppContent = () => {
 
     const timeoutId = window.setTimeout(prefetchCoreRoutes, 1200);
     return () => window.clearTimeout(timeoutId);
-  }, []);
+  }, [isAuthRoute]);
 
-  return (
-    <>
-      <Toaster />
-      <Sonner position="top-center" />
-      {!isStandaloneSite && !isAuthRoute && <RealtimeAlerts />}
-      {!isStandaloneSite && !isAuthRoute && <PushNotificationSubscriber />}
-      {!isStandaloneSite && !isAuthRoute && <OnboardingOverlay />}
-      {!isStandaloneSite && !isAuthRoute && <OnboardingCarousel open={showCarousel} onComplete={closeCarousel} />}
-      <Suspense fallback={isAuthRoute ? <AuthRouteFallback /> : <PageLoader />}>
-        <Routes>
+  const routes = (
+    <Routes>
           <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/about" element={<Navigate to="/" replace />} />
           <Route path="/install" element={<Install />} />
@@ -215,10 +203,20 @@ const AppContent = () => {
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
-      <DevicePreview />
-      <NetworkLogOverlay />
+    </Routes>
+  );
+
+  return (
+    <>
+      <Toaster />
+      <Sonner position="top-center" />
+      {isAuthRoute ? (
+        <Suspense fallback={<AuthRouteFallback />}>{routes}</Suspense>
+      ) : (
+        <Suspense fallback={<PageLoader />}>
+          <AuthenticatedProviders enabled={!isStandaloneSite}>{routes}</AuthenticatedProviders>
+        </Suspense>
+      )}
     </>
   );
 };
@@ -228,13 +226,9 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <CartProvider>
-            <OnboardingProvider>
-              <TooltipProvider>
-                <AppContent />
-              </TooltipProvider>
-            </OnboardingProvider>
-          </CartProvider>
+          <TooltipProvider>
+            <AppContent />
+          </TooltipProvider>
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
