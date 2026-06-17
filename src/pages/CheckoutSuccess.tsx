@@ -23,8 +23,10 @@ const CheckoutSuccess = () => {
   useEffect(() => {
     const processOrder = async () => {
       const sessionId = searchParams.get('session_id');
+      const isDemo = searchParams.get('demo') === '1';
+      const demoOrderGroup = searchParams.get('order_group');
 
-      if (!sessionId) {
+      if (!sessionId && !isDemo) {
         navigate('/');
         return;
       }
@@ -37,6 +39,26 @@ const CheckoutSuccess = () => {
         navigate('/');
         return;
       }
+
+      // Demo bypass: orders were already inserted by the edge function.
+      // Skip finalize-checkout, just clear local state and show success.
+      if (isDemo) {
+        try {
+          const itemsJson = localStorage.getItem('checkout_items');
+          if (itemsJson) {
+            const items: Listing[] = JSON.parse(itemsJson);
+            items.forEach(item => removeFromCart(item.id));
+          }
+          await refetchCart();
+          await queryClient.invalidateQueries({ queryKey: ['orders'] });
+          ['checkout_items','checkout_shipping','checkout_seller_settings','checkout_shipping_by_seller','checkout_payment_method','checkout_reference']
+            .forEach(k => localStorage.removeItem(k));
+        } catch (e) { console.error('Demo cleanup failed:', e); }
+        setShowSuccess(true);
+        setProcessing(false);
+        return;
+      }
+
 
       try {
         // Retrieve saved checkout data
