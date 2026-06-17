@@ -104,6 +104,25 @@ serve(async (req) => {
       lookupUserId = sellerUserId;
     }
 
+    // -------- DEMO BYPASS (Apple App Review) --------
+    // Demo accounts use synthetic IDs like `acct_demo_*`. Never call Stripe
+    // for these — return a fully-verified state so the reviewer can list/buy.
+    if (accountId && accountId.startsWith('acct_demo_')) {
+      await persistStripeStatus(lookupUserId, accountId);
+      return new Response(
+        JSON.stringify({
+          chargesEnabled: true,
+          detailsSubmitted: true,
+          payoutsEnabled: true,
+          accountId,
+          accountExists: true,
+          requirementsDisabledReason: null,
+          demo: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
     if (!accountId) {
       console.log(`[stripe-connect-status] No stored Stripe account for user ${lookupUserId}; skipping email lookup.`);
       return new Response(
