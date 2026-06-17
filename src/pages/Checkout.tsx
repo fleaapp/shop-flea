@@ -233,11 +233,12 @@ const Checkout = () => {
       const sellerId = validItems[0]?.sellerId;
       const sellerStripeAccountId = sellerStripeAccounts.get(sellerId);
 
-      if (!sellerStripeAccountId) {
+      if (!sellerStripeAccountId && !isReviewer) {
         toast.error('This seller has not connected a payment method yet.');
         setIsSubmitting(false);
         return;
       }
+
 
       localStorage.setItem('checkout_payment_method', 'stripe');
 
