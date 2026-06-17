@@ -22,6 +22,11 @@ import { calculateFees } from '@/utils/feeCalculator';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import { useBuyerAddress } from '@/hooks/useBuyerAddress';
 
+// Apple App Review demo account — bypasses the seller-Stripe-connected check
+// so the reviewer can complete a purchase against demo listings.
+const REVIEWER_USER_ID = '9465a71e-73f0-4873-a18f-cb2cffcc914e';
+
+
 
 const Checkout = () => {
   const navigate = useNavigate();
