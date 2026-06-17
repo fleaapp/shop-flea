@@ -72,6 +72,16 @@ serve(async (req) => {
 
     let accountId = forceNew ? null : (stripeAccountId || null);
 
+    // -------- DEMO BYPASS (Apple App Review) --------
+    // Reviewer accounts already have a synthetic `acct_demo_*` ID. Return a
+    // no-op success so the UI shows "Connected" without ever calling Stripe.
+    if (accountId && accountId.startsWith('acct_demo_')) {
+      return new Response(
+        JSON.stringify({ url: returnUrl || '/settings', accountId, demo: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
     // Check if existing account is reusable
     if (accountId) {
       try {
