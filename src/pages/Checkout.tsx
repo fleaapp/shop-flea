@@ -22,6 +22,11 @@ import { calculateFees } from '@/utils/feeCalculator';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import { useBuyerAddress } from '@/hooks/useBuyerAddress';
 
+// Apple App Review demo account — bypasses the seller-Stripe-connected check
+// so the reviewer can complete a purchase against demo listings.
+const REVIEWER_USER_ID = '9465a71e-73f0-4873-a18f-cb2cffcc914e';
+
+
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -164,10 +169,12 @@ const Checkout = () => {
   
   // Determine whether the seller can accept payments
   const sellerId = validItems[0]?.sellerId;
-  const sellerHasStripe = sellerId ? sellerStripeAccounts.has(sellerId) : false;
+  const isReviewer = user?.id === REVIEWER_USER_ID;
+  const sellerHasStripe = isReviewer ? true : (sellerId ? sellerStripeAccounts.has(sellerId) : false);
 
   // Single payment rail — Stripe.
   const selectedRail: 'stripe' | null = sellerHasStripe ? 'stripe' : null;
+
 
   // Single source of truth for fees — see src/utils/feeCalculator.ts
   const itemsTotal = validItems.reduce((sum: number, item: any) => sum + item.price, 0);
@@ -226,11 +233,12 @@ const Checkout = () => {
       const sellerId = validItems[0]?.sellerId;
       const sellerStripeAccountId = sellerStripeAccounts.get(sellerId);
 
-      if (!sellerStripeAccountId) {
+      if (!sellerStripeAccountId && !isReviewer) {
         toast.error('This seller has not connected a payment method yet.');
         setIsSubmitting(false);
         return;
       }
+
 
       localStorage.setItem('checkout_payment_method', 'stripe');
 

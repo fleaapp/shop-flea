@@ -72,9 +72,29 @@ serve(async (req) => {
     if (!order) throw new Error("Order not found");
     if (order.seller_id !== user.id) throw new Error("Only the seller can initiate this refund");
     if (order.refunded_at) throw new Error("Order already refunded");
+
+    // Demo orders (Apple App Review bypass) have no Stripe payment intent —
+    // just mark refunded directly so reviewers can exercise the refund flow.
+    if (order.payment_method === 'demo') {
+      await fetch(`${externalUrl}/rest/v1/orders?id=eq.${orderId}`, {
+        method: "PATCH",
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({ refunded_at: new Date().toISOString() }),
+      });
+      return new Response(JSON.stringify({ success: true, demo: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (order.payment_method && order.payment_method !== "stripe") {
       throw new Error("Refund only supported for Stripe orders here");
     }
+
 
     // Refund window — server-side enforcement. Up to 10 days after delivery,
     // or up to 30 days after order if undelivered. Beyond that, only support

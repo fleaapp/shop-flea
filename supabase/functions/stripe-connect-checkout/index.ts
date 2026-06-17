@@ -8,6 +8,14 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Apple App Review demo account(s). When signed in as any of these UUIDs,
+// checkout skips Stripe entirely and inserts orders directly so reviewers
+// can complete the full purchase flow without real card processing.
+const REVIEWER_USER_IDS = new Set<string>([
+  "9465a71e-73f0-4873-a18f-cb2cffcc914e", // appreview@finditonflea.com
+]);
+
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -71,6 +79,57 @@ serve(async (req) => {
         image: Array.isArray(l.images) && l.images.length > 0 ? l.images[0] : undefined,
       };
     });
+
+    // -------- DEMO BYPASS (Apple App Review) --------
+    // Skip Stripe end-to-end: insert paid orders directly, mark listings sold,
+    // and return a synthetic success URL the frontend recognises via ?demo=1.
+    if (REVIEWER_USER_IDS.has(user.id)) {
+      const origin = req.headers.get("origin") || "https://shop-flea.lovable.app";
+      const orderGroupId = crypto.randomUUID();
+      const shippingPerItem = (Number(shipping) || 0) / Math.max(authoritativeItems.length, 1);
+
+      // Fetch reviewer's shipping address (best-effort).
+      const { data: addr } = await serviceClient
+        .from('buyer_addresses')
+        .select('first_name,last_name,address,suburb,state,postcode')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const orderRows = authoritativeItems.map((it) => ({
+        listing_id: it.id,
+        buyer_id: user.id,
+        seller_id: sellerId,
+        status: 'awaiting',
+        price: it.price,
+        shipping_price: shippingPerItem,
+        order_group_id: orderGroupId,
+        payment_method: 'demo',
+        checkout_reference: `demo-${orderGroupId}`,
+        shipping_first_name: addr?.first_name ?? 'App',
+        shipping_last_name: addr?.last_name ?? 'Reviewer',
+        shipping_address: addr?.address ?? '1 Apple Park Way',
+        shipping_city: addr?.suburb ?? 'Sydney',
+        shipping_state: addr?.state ?? 'NSW',
+        shipping_postcode: addr?.postcode ?? '2000',
+      }));
+
+      const { error: insertErr } = await serviceClient.from('orders').insert(orderRows);
+      if (insertErr) {
+        console.error('[demo-bypass] order insert failed:', insertErr);
+        return new Response(JSON.stringify({ error: 'Demo order insert failed', detail: insertErr.message }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        });
+      }
+
+      const successUrl = `${origin}/checkout/success?demo=1&order_group=${orderGroupId}`;
+      return new Response(JSON.stringify({ url: successUrl, sessionId: `demo-${orderGroupId}`, demo: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+    // -------- END DEMO BYPASS --------
+
 
     const { data: sellerProfile, error: profileErr } = await serviceClient
       .from('profiles')
