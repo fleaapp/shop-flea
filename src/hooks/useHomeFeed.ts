@@ -23,7 +23,7 @@ const PAGE_SIZE = 50;
  * unfiltered home swipe stack.
  */
 export const useHomeFeed = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [listings, setListings] = useState<DbListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -44,15 +44,42 @@ export const useHomeFeed = () => {
         p_offset: useOffset,
       });
 
-      if (rpcError) {
-        setError(rpcError.message);
-        if (mode === 'reset') setListings([]);
-        setLoading(false);
-        setLoadingMore(false);
-        return;
-      }
+      let rows = (data || []) as DbListing[];
 
-      const rows = (data || []) as DbListing[];
+      if (rpcError) {
+        const functionMissing = rpcError.code === 'PGRST202' || /could not find the function/i.test(rpcError.message || '');
+
+        if (!functionMissing) {
+          setError(rpcError.message);
+          if (mode === 'reset') setListings([]);
+          setLoading(false);
+          setLoadingMore(false);
+          return;
+        }
+
+        const regionId = profile?.region_id || 'AU';
+        let fallbackQuery = supabase
+          .from('listings')
+          .select('*')
+          .eq('status', 'active')
+          .or(`region_id.is.null,region_id.eq.${regionId}`)
+          .order('created_at', { ascending: false })
+          .range(useOffset, useOffset + PAGE_SIZE - 1);
+
+        if (user?.id) fallbackQuery = fallbackQuery.neq('user_id', user.id);
+
+        const { data: fallbackData, error: fallbackError } = await fallbackQuery;
+
+        if (fallbackError) {
+          setError(fallbackError.message);
+          if (mode === 'reset') setListings([]);
+          setLoading(false);
+          setLoadingMore(false);
+          return;
+        }
+
+        rows = (fallbackData || []) as DbListing[];
+      }
       setHasMore(rows.length === PAGE_SIZE);
 
       if (rows.length === 0) {
@@ -102,7 +129,7 @@ export const useHomeFeed = () => {
       setLoading(false);
       setLoadingMore(false);
     },
-    [],
+    [profile?.region_id, user?.id],
   );
 
   useEffect(() => {
