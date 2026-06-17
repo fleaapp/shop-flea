@@ -24,7 +24,7 @@ import { useBuyerAddress } from '@/hooks/useBuyerAddress';
 
 // Apple App Review demo account — bypasses the seller-Stripe-connected check
 // so the reviewer can complete a purchase against demo listings.
-const REVIEWER_USER_ID = '9465a71e-73f0-4873-a18f-cb2cffcc914e';
+const REVIEWER_USER_ID = '5883f33c-07f3-4f6a-9a2d-a7e0ea864142';
 
 
 

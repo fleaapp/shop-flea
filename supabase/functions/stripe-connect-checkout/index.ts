@@ -12,7 +12,7 @@ const corsHeaders = {
 // checkout skips Stripe entirely and inserts orders directly so reviewers
 // can complete the full purchase flow without real card processing.
 const REVIEWER_USER_IDS = new Set<string>([
-  "9465a71e-73f0-4873-a18f-cb2cffcc914e", // appreview@finditonflea.com
+  "5883f33c-07f3-4f6a-9a2d-a7e0ea864142", // appreview@finditonflea.com
 ]);
 
 
