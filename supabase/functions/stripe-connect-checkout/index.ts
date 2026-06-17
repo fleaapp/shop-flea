@@ -8,6 +8,14 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Apple App Review demo account(s). When signed in as any of these UUIDs,
+// checkout skips Stripe entirely and inserts orders directly so reviewers
+// can complete the full purchase flow without real card processing.
+const REVIEWER_USER_IDS = new Set<string>([
+  "9465a71e-73f0-4873-a18f-cb2cffcc914e", // appreview@finditonflea.com
+]);
+
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
