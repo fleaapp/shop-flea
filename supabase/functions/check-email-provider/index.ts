@@ -81,12 +81,16 @@ Deno.serve(async (req) => {
       );
       if (match) {
         const p = match?.app_metadata?.provider;
+        // Only disclose OAuth provider conflicts — needed so the client can
+        // redirect users to "Continue with Google/Apple" instead of failing
+        // signup silently. Email-only accounts are not disclosed here to
+        // limit account enumeration; the signup attempt itself will surface
+        // the duplicate.
         if (p === 'google' || p === 'apple') {
           provider = p;
-        } else {
-          provider = 'email';
         }
       }
+
     }
 
     return new Response(JSON.stringify({ provider }), {
