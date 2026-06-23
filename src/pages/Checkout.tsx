@@ -228,11 +228,11 @@ const Checkout = () => {
       localStorage.setItem('checkout_seller_settings', JSON.stringify(Array.from(sellerSettings.entries())));
       localStorage.setItem('checkout_shipping_by_seller', JSON.stringify(Array.from(shippingBySeller.entries())));
 
-      // Get the seller's Stripe account
+      // Seller's Stripe account is fetched server-side by the checkout edge function.
       const sellerId = validItems[0]?.sellerId;
-      const sellerStripeAccountId = sellerStripeAccounts.get(sellerId);
+      const sellerHasStripeAccount = sellerId ? sellerStripeAccounts.has(sellerId) : false;
 
-      if (!sellerStripeAccountId && !isReviewer) {
+      if (!sellerHasStripeAccount && !isReviewer) {
         toast.error('This seller has not connected a payment method yet.');
         setIsSubmitting(false);
         return;
@@ -249,7 +249,6 @@ const Checkout = () => {
           image: item.image,
         })),
         shipping: totalShipping,
-        sellerStripeAccountId,
       });
 
       if (error) throw error;
