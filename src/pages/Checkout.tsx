@@ -95,22 +95,23 @@ const Checkout = () => {
   }, [items]);
 
   // Fetch seller Stripe accounts
-  const [sellerStripeAccounts, setSellerStripeAccounts] = useState<Map<string, string>>(new Map());
+  const [sellerStripeAccounts, setSellerStripeAccounts] = useState<Map<string, boolean>>(new Map());
   const [sellerStripeLoading, setSellerStripeLoading] = useState(true);
   useEffect(() => {
     const loadSellerPayments = async () => {
       if (items.length === 0) { setSellerStripeLoading(false); return; }
       const sellerIds = [...new Set(items.map(item => item.sellerId))];
 
-      // Use SECURITY DEFINER RPC — base profiles table no longer exposes payment account ids cross-user.
+      // SECURITY DEFINER RPC — returns only onboarding flags (no raw account IDs).
+      // The checkout edge function re-fetches stripe_account_id server-side.
       const { data } = await (supabase as any).rpc('get_seller_payment_accounts', {
         seller_ids: sellerIds,
       });
 
-      const stripeAccounts = new Map<string, string>();
+      const stripeAccounts = new Map<string, boolean>();
       data?.forEach((p: any) => {
-        if (p.stripe_account_id && p.stripe_onboarding_complete) {
-          stripeAccounts.set(p.user_id, p.stripe_account_id);
+        if (p.stripe_onboarding_complete) {
+          stripeAccounts.set(p.user_id, true);
         }
       });
 
@@ -118,13 +119,11 @@ const Checkout = () => {
       const unconfirmedSellerIds = sellerIds.filter(id => !stripeAccounts.has(id));
       for (const sellerId of unconfirmedSellerIds) {
         try {
-          const dbEntry = data?.find((p: any) => p.user_id === sellerId);
           const { data: statusData, error } = await invokeCloudFunction('stripe-connect-status', {
-            stripeAccountId: dbEntry?.stripe_account_id || undefined,
             sellerUserId: sellerId,
           });
           if (!error && statusData && (statusData.chargesEnabled || statusData.detailsSubmitted) && statusData.accountId) {
-            stripeAccounts.set(sellerId, statusData.accountId);
+            stripeAccounts.set(sellerId, true);
           }
         } catch (e) {
           console.error('Seller Stripe verify failed:', e);
