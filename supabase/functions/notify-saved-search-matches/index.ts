@@ -55,6 +55,17 @@ const matchesFilters = (listing: any, f: Record<string, any>) => {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
+  // Require service-role auth — this is an internal cron/admin function.
+  const authHeader = req.headers.get('Authorization') ?? '';
+  const expectedKeys = [SERVICE_KEY, EXTERNAL_SERVICE_KEY].filter(Boolean);
+  const isAuthorized = expectedKeys.some((k) => authHeader === `Bearer ${k}`);
+  if (!isAuthorized) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const admin = createClient(CLOUD_SUPABASE_URL, SERVICE_KEY, {
       auth: { persistSession: false },
