@@ -9,7 +9,8 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "ios:fresh": "rm -rf dist && vite build && npx cap sync ios && npx cap open ios"
+    "ios:fresh": "rm -rf dist && vite build && npx cap sync ios && npx cap open ios",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@capacitor-community/apple-sign-in": "^7.1.0",
