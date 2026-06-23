@@ -3,23 +3,13 @@
 // email but a different provider. If so, deletes the new user and returns
 // the original provider so the client can redirect.
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const EXTERNAL_URL = Deno.env.get('EXTERNAL_SUPABASE_URL')!;
+const EXTERNAL_ANON_KEY = Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY')!;
 const SERVICE_KEY = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY')!;
 
 type Provider = 'email' | 'google' | 'apple';
-
-function decodeJwt(jwt: string): { sub?: string; email?: string } | null {
-  try {
-    const parts = jwt.split('.');
-    if (parts.length !== 3) return null;
-    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    const padded = payload + '='.repeat((4 - (payload.length % 4)) % 4);
-    return JSON.parse(atob(padded));
-  } catch {
-    return null;
-  }
-}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -36,9 +26,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    const claims = decodeJwt(token);
-    const currentUserId = claims?.sub;
-    if (!currentUserId) {
+    // Cryptographically verify the JWT via the external Supabase auth server.
+    const verifier = createClient(EXTERNAL_URL, EXTERNAL_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: userData, error: verifyErr } = await verifier.auth.getUser(token);
+    const currentUserId = userData?.user?.id;
+    if (verifyErr || !currentUserId) {
       return new Response(JSON.stringify({ error: 'invalid_token' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
