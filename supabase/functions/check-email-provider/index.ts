@@ -24,32 +24,40 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Rate limit per IP via existing RPC (10/min).
+    // Tight per-IP rate limit (5/min) to slow enumeration.
     const ip =
       req.headers.get('cf-connecting-ip') ||
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       'unknown';
 
-    const rlRes = await fetch(`${EXTERNAL_URL}/rest/v1/rpc/check_and_record_rate_limit`, {
-      method: 'POST',
-      headers: {
-        apikey: SERVICE_KEY,
-        Authorization: `Bearer ${SERVICE_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        _key: `check_email_provider:${ip}`,
-        _max: 10,
-        _window_seconds: 60,
-      }),
-    });
-    const allowed = await rlRes.json().catch(() => true);
-    if (allowed === false) {
+    const callRl = async (key: string, max: number, windowSeconds: number) => {
+      const r = await fetch(`${EXTERNAL_URL}/rest/v1/rpc/check_and_record_rate_limit`, {
+        method: 'POST',
+        headers: {
+          apikey: SERVICE_KEY,
+          Authorization: `Bearer ${SERVICE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ _key: key, _max: max, _window_seconds: windowSeconds }),
+      });
+      const allowed = await r.json().catch(() => true);
+      return allowed !== false;
+    };
+
+    if (!(await callRl(`check_email_provider:ip:${ip}`, 5, 60))) {
       return new Response(JSON.stringify({ error: 'rate_limited' }), {
         status: 429,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    // Per-email rate limit caps targeted enumeration of a specific account.
+    if (!(await callRl(`check_email_provider:email:${rawEmail}`, 5, 3600))) {
+      return new Response(JSON.stringify({ error: 'rate_limited' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
 
     // Look up user via admin API (case-insensitive by Supabase default).
     // Use the listUsers admin endpoint with a filter.
@@ -73,12 +81,16 @@ Deno.serve(async (req) => {
       );
       if (match) {
         const p = match?.app_metadata?.provider;
+        // Only disclose OAuth provider conflicts — needed so the client can
+        // redirect users to "Continue with Google/Apple" instead of failing
+        // signup silently. Email-only accounts are not disclosed here to
+        // limit account enumeration; the signup attempt itself will surface
+        // the duplicate.
         if (p === 'google' || p === 'apple') {
           provider = p;
-        } else {
-          provider = 'email';
         }
       }
+
     }
 
     return new Response(JSON.stringify({ provider }), {

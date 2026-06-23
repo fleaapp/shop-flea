@@ -1246,9 +1246,7 @@ export type Database = {
       get_seller_payment_accounts: {
         Args: { seller_ids: string[] }
         Returns: {
-          paypal_merchant_id: string
           paypal_onboarding_complete: boolean
-          stripe_account_id: string
           stripe_onboarding_complete: boolean
           user_id: string
         }[]
@@ -1261,6 +1259,7 @@ export type Database = {
         }[]
       }
       get_user_region_id: { Args: { user_uuid: string }; Returns: string }
+      increment_brand_usage: { Args: { _brand_id: string }; Returns: undefined }
       is_region_active: { Args: { region: string }; Returns: boolean }
       is_user_blocked: { Args: { user_uuid: string }; Returns: boolean }
       mark_order_delivered: {

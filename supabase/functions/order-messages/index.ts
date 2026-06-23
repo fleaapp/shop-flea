@@ -507,10 +507,17 @@ async function uploadRefundImages(
 ): Promise<string[]> {
   const imageUrls: string[] = [];
 
+  const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif']);
+
   for (const [index, image] of imageUploads.entries()) {
     const safeFileName = image.fileName.replace(/[^a-zA-Z0-9._-]/g, "-");
     const path = `${userId}/${orderId}/refund-${Date.now()}-${index}-${safeFileName}`;
-    const contentType = image.contentType || "image/jpeg";
+    // Whitelist MIME types — never trust client-supplied contentType, since the
+    // bucket serves files with whatever Content-Type is stored, which would
+    // allow a buyer to upload text/html and trigger stored XSS when the seller
+    // opens the attachment.
+    const requestedType = (image.contentType || '').toLowerCase();
+    const contentType = ALLOWED_IMAGE_TYPES.has(requestedType) ? requestedType : 'image/jpeg';
 
     const { error: uploadError } = await extClient.storage
       .from("order-attachments")
