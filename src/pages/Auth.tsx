@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { nativeAppleSignIn, isIosNative } from '@/lib/appleSignIn';
+import { nativeGoogleSignIn } from '@/lib/googleSignIn';
 import ProviderConflictDialog, { type ConflictProvider } from '@/components/ProviderConflictDialog';
 
 const CHECK_EMAIL_PROVIDER_URL =
@@ -252,6 +253,25 @@ const Auth = () => {
     try {
       localStorage.setItem('flea_oauth_signup', '1');
 
+      // iOS native: use the system Google credential sheet (no Safari bounce).
+      if (isIosNative()) {
+        const result = await nativeGoogleSignIn();
+        if (result.handled) {
+          if (result.error) {
+            localStorage.removeItem('flea_oauth_signup');
+            if (!result.cancelled) {
+              console.error('Native Google sign-in error:', result.error);
+              toast.error(
+                `Google sign-in failed: ${result.error.message || 'Please try again.'}`,
+              );
+            }
+          }
+          // On success the auth state change triggers redirect via useEffect.
+          return;
+        }
+      }
+
+      // Web / PWA / Android: web OAuth redirect flow.
       // Use the external Supabase client directly. The lovable.auth wrapper
       // sets the session on the Lovable Cloud client, but this app's session
       // lives on the external Supabase project — using the wrong client makes
@@ -288,7 +308,12 @@ const Auth = () => {
             localStorage.removeItem('flea_oauth_signup');
             if (!result.cancelled) {
               console.error('Native Apple sign-in error:', result.error);
-              toast.error('Apple sign-in failed. Please try again.');
+              // Surface the real reason so we can debug TestFlight failures
+              // (e.g. "Unacceptable audience in id_token" when the Supabase
+              // Apple provider isn't configured with the iOS bundle ID).
+              toast.error(
+                `Apple sign-in failed: ${result.error.message || 'Please try again.'}`,
+              );
             }
           }
           // On success the auth state change triggers redirect via useEffect.
