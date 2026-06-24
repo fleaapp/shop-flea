@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core';
-import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
+import { SocialLogin } from '@capgo/capacitor-social-login';
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -31,11 +31,12 @@ let initialized = false;
 async function ensureInit() {
   if (initialized) return;
   try {
-    // The plugin reads the iOS client id from capacitor.config.ts or
-    // ios/App/App/GoogleService-Info.plist. It does not read GIDClientID alone.
-    await GoogleAuth.initialize({
-      scopes: ['email', 'profile', 'openid'],
-      grantOfflineAccess: false,
+    // Use the Capacitor 8-compatible native Google SDK wrapper. Its iOS side
+    // is patched to read GIDClientID from Info.plist so Google stays native.
+    await SocialLogin.initialize({
+      google: {
+        mode: 'online',
+      },
     });
     initialized = true;
   } catch (e) {
@@ -49,8 +50,16 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
 
   try {
     await ensureInit();
-    const res = await GoogleAuth.signIn();
-    const idToken = res?.authentication?.idToken;
+    const res = await SocialLogin.login({
+      provider: 'google',
+      options: {
+        scopes: ['email', 'profile'],
+        forcePrompt: true,
+      },
+    });
+    const idToken = res?.provider === 'google' && res.result.responseType === 'online'
+      ? res.result.idToken
+      : null;
     if (!idToken) {
       return {
         handled: true,
@@ -73,6 +82,7 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
     const message = String(err?.message ?? err ?? '');
     const cancelled =
       /cancel/i.test(message) ||
+      err?.code === 'USER_CANCELLED' ||
       err?.code === '12501' ||
       err?.code === 12501 ||
       err?.code === '-5';

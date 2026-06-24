@@ -28,9 +28,14 @@ const config: CapacitorConfig = {
       splashFullScreen: true,
       splashImmersive: true,
     },
-    GoogleAuth: {
-      scopes: ['email', 'profile', 'openid'],
-      grantOfflineAccess: false,
+    SocialLogin: {
+      providers: {
+        google: true,
+        facebook: false,
+        apple: false,
+        twitter: false,
+      },
+      logLevel: 1,
     },
   },
   ios: {
