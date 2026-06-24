@@ -17,13 +17,22 @@ export type NativeGoogleResult =
 
 export function isIosNative(): boolean {
   try {
-    const capacitorIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios';
+    const capacitorIos = Capacitor.getPlatform() === 'ios'
+      && (Capacitor.isNativePlatform() || window.location.protocol === 'capacitor:');
+    const windowCapacitor = typeof window !== 'undefined'
+      && (window as any).Capacitor?.getPlatform?.() === 'ios';
     const bridgeIos = typeof window !== 'undefined'
       && !!(window as any).webkit?.messageHandlers?.bridge;
-    return capacitorIos || bridgeIos;
+    const capacitorProtocol = typeof window !== 'undefined'
+      && window.location.protocol === 'capacitor:';
+    return capacitorIos || windowCapacitor || bridgeIos || capacitorProtocol;
   } catch {
     return typeof window !== 'undefined'
-      && !!(window as any).webkit?.messageHandlers?.bridge;
+      && (
+        window.location.protocol === 'capacitor:' ||
+        !!(window as any).webkit?.messageHandlers?.bridge ||
+        (window as any).Capacitor?.getPlatform?.() === 'ios'
+      );
   }
 }
 
