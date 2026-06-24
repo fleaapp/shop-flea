@@ -1,8 +1,6 @@
-diff --git a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift
-index 1111111..2222222 100644
 --- a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift
 +++ b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift
-@@ -65,6 +65,20 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
+@@ -66,6 +66,19 @@
      private let oauth2 = OAuth2Provider()
      private var openSecureWindowCall: CAPPluginCall?
  
@@ -22,7 +20,7 @@ index 1111111..2222222 100644
      // Helper to get Facebook provider (returns nil if unavailable)
      private var facebookProvider: FacebookProvider? {
          #if canImport(FBSDKLoginKit)
-@@ -173,7 +187,9 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
+@@ -173,7 +186,9 @@
          }
  
          if let googleSettings = call.getObject("google") {
@@ -32,11 +30,10 @@ index 1111111..2222222 100644
 +            let iOSClientId = configuredIOSClientId ?? plistIOSClientId
              let iOSServerClientId = googleSettings["iOSServerClientId"] as? String
              let hostedDomain = googleSettings["hostedDomain"] as? String
-diff --git a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
-index 3333333..4444444 100644
+ 
 --- a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
 +++ b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
-@@ -38,7 +38,13 @@ class GoogleProvider {
+@@ -38,7 +38,13 @@
              }
  
              func login() {
