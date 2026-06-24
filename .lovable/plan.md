@@ -18,16 +18,22 @@ git pull origin main
 
 Replace `main` with your actual branch name if you use a different one (e.g. `develop`).
 
-## Step 2: update native iOS project files
+## Step 2: generate the iOS project files
 
-After pulling the latest code, run these commands from your project folder:
+The Info.plist file does not exist yet — it gets created in this step. From your project folder, run:
 
 ```bash
 npm install
 npx cap sync ios
 ```
 
-This installs the new Google sign-in plugin and copies it into the iOS project.
+After this finishes, you will have a new `ios/` folder. The file you need to edit later is at:
+
+```
+ios/App/App/Info.plist
+```
+
+This command installs the new Google sign-in plugin and copies it into the iOS project.
 
 ## Step 3: configure Google sign-in
 
@@ -43,9 +49,9 @@ This installs the new Google sign-in plugin and copies it into the iOS project.
 npx cap open ios
 ```
 
-8. In Xcode, open `App/App/Info.plist`.
-9. Add a new key `GIDClientID` and paste your client ID as the value.
-10. Also add a `CFBundleURLTypes` array so the app can receive the Google redirect:
+8. In Xcode, open `ios/App/App/Info.plist` (it was created in Step 2).
+9. Add a new key `GIDClientID` and paste your client ID from step 6 as the value.
+10. Also add a `CFBundleURLTypes` array so the app can receive the Google redirect. The easiest way is to paste this block right before the final `</dict>` at the bottom of the file:
 
 ```xml
 <key>CFBundleURLTypes</key>
@@ -63,7 +69,9 @@ npx cap open ios
 <string>YOUR_IOS_CLIENT_ID</string>
 ```
 
-Replace `YOUR_IOS_CLIENT_ID` with the actual ID from step 6.
+Replace `YOUR_IOS_CLIENT_ID` with the actual ID from step 6 in **both** places.
+
+**Tip:** The reverse-client-id in the URL scheme is your client ID written backwards. If your client ID is `123456789012-abcdef123.apps.googleusercontent.com`, the URL scheme is `com.googleusercontent.apps.123456789012-abcdef123`.
 
 ## Step 4: fix Apple sign-in
 
