@@ -65,7 +65,7 @@ npx cap open ios
 
 Replace `YOUR_IOS_CLIENT_ID` with the actual ID from step 6.
 
-## Step 3: fix Apple sign-in
+## Step 4: fix Apple sign-in
 
 Most Apple sign-in failures are caused by the bundle ID not being allowed by the backend.
 
@@ -89,7 +89,7 @@ Then in Xcode:
 4. Click **+ Capability** and add **Sign in with Apple**.
 5. Make sure your Apple Developer account has the bundle ID `com.finditonflea.app` with Sign in with Apple enabled at https://developer.apple.com/account/resources/identifiers/list
 
-## Step 4: build and push to TestFlight
+## Step 5: build and push to TestFlight
 
 Run these commands in order from the project root:
 
