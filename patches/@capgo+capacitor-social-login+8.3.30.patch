@@ -1,0 +1,15 @@
+diff --git a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift
+index 1111111..2222222 100644
+--- a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift
++++ b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift
+@@ -173,7 +173,9 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
+         }
+ 
+         if let googleSettings = call.getObject("google") {
+-            let iOSClientId = googleSettings["iOSClientId"] as? String
++            let configuredIOSClientId = googleSettings["iOSClientId"] as? String
++            let plistIOSClientId = Bundle.main.object(forInfoDictionaryKey: "GIDClientID") as? String
++            let iOSClientId = configuredIOSClientId ?? plistIOSClientId
+             let iOSServerClientId = googleSettings["iOSServerClientId"] as? String
+             let hostedDomain = googleSettings["hostedDomain"] as? String
+ 
