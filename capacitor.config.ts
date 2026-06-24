@@ -28,6 +28,10 @@ const config: CapacitorConfig = {
       splashFullScreen: true,
       splashImmersive: true,
     },
+    GoogleAuth: {
+      scopes: ['email', 'profile', 'openid'],
+      grantOfflineAccess: false,
+    },
   },
   ios: {
     contentInset: 'never',
