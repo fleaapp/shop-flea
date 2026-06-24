@@ -8,8 +8,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { nativeAppleSignIn, isIosNative } from '@/lib/appleSignIn';
-import { nativeGoogleSignIn } from '@/lib/googleSignIn';
+import { nativeAppleSignIn, isIosNative as isAppleIosNative } from '@/lib/appleSignIn';
+import { nativeGoogleSignIn, isIosNative as isGoogleIosNative } from '@/lib/googleSignIn';
 import ProviderConflictDialog, { type ConflictProvider } from '@/components/ProviderConflictDialog';
 
 const CHECK_EMAIL_PROVIDER_URL =
@@ -253,22 +253,28 @@ const Auth = () => {
     try {
       localStorage.setItem('flea_oauth_signup', '1');
 
-      // iOS native: use the system Google credential sheet (no Safari bounce).
-      if (isIosNative()) {
-        const result = await nativeGoogleSignIn();
-        if (result.handled) {
-          if (result.error) {
-            localStorage.removeItem('flea_oauth_signup');
-            if (!result.cancelled) {
-              console.error('Native Google sign-in error:', result.error);
-              toast.error(
-                `Google sign-in failed: ${result.error.message || 'Please try again.'}`,
-              );
-            }
+      // Always ask the native helper first. It has the most reliable iOS
+      // WKWebView detection; using the Apple helper here made TestFlight fall
+      // through to web OAuth, which opens Safari.
+      const nativeResult = await nativeGoogleSignIn();
+      if (nativeResult.handled) {
+        if (nativeResult.error) {
+          localStorage.removeItem('flea_oauth_signup');
+          if (!nativeResult.cancelled) {
+            console.error('Native Google sign-in error:', nativeResult.error);
+            toast.error(
+              `Google sign-in failed: ${nativeResult.error.message || 'Please try again.'}`,
+            );
           }
-          // On success the auth state change triggers redirect via useEffect.
-          return;
         }
+        // On success the auth state change triggers redirect via useEffect.
+        return;
+      }
+
+      if (isGoogleIosNative()) {
+        localStorage.removeItem('flea_oauth_signup');
+        toast.error('Google sign-in is not available in this build. Please update the app and try again.');
+        return;
       }
 
       // Web / PWA / Android: web OAuth redirect flow.
@@ -301,7 +307,7 @@ const Auth = () => {
       localStorage.setItem('flea_oauth_signup', '1');
 
       // iOS native: use the system Sign in with Apple sheet (no Safari bounce).
-      if (isIosNative()) {
+      if (isAppleIosNative()) {
         const result = await nativeAppleSignIn();
         if (result.handled) {
           if (result.error) {
