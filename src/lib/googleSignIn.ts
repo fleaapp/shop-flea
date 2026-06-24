@@ -17,32 +17,37 @@ export type NativeGoogleResult =
 
 export function isIosNative(): boolean {
   try {
-    const capacitorIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios';
+    const capacitorIos = Capacitor.getPlatform() === 'ios'
+      && (Capacitor.isNativePlatform() || window.location.protocol === 'capacitor:');
+    const windowCapacitor = typeof window !== 'undefined'
+      && (window as any).Capacitor?.getPlatform?.() === 'ios';
     const bridgeIos = typeof window !== 'undefined'
       && !!(window as any).webkit?.messageHandlers?.bridge;
-    return capacitorIos || bridgeIos;
+    const capacitorProtocol = typeof window !== 'undefined'
+      && window.location.protocol === 'capacitor:';
+    return capacitorIos || windowCapacitor || bridgeIos || capacitorProtocol;
   } catch {
     return typeof window !== 'undefined'
-      && !!(window as any).webkit?.messageHandlers?.bridge;
+      && (
+        window.location.protocol === 'capacitor:' ||
+        !!(window as any).webkit?.messageHandlers?.bridge ||
+        (window as any).Capacitor?.getPlatform?.() === 'ios'
+      );
   }
 }
 
 let initialized = false;
 async function ensureInit() {
   if (initialized) return;
-  try {
-    // Use the Capacitor 8-compatible native Google SDK wrapper. Its iOS side
-    // is patched to read GIDClientID from Info.plist so Google stays native.
-    await SocialLogin.initialize({
-      google: {
-        mode: 'online',
-      },
-    });
-    initialized = true;
-  } catch (e) {
-    console.warn('[googleSignIn] initialize() warning:', e);
-    initialized = true;
-  }
+  // Use the Capacitor 8-compatible native Google SDK wrapper. Its iOS side
+  // is patched to read GIDClientID from Info.plist so Google stays native.
+  // Do not swallow init failures: falling back to web OAuth is what opened Safari.
+  await SocialLogin.initialize({
+    google: {
+      mode: 'online',
+    },
+  });
+  initialized = true;
 }
 
 export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {

@@ -2,7 +2,27 @@ diff --git a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginP
 index 1111111..2222222 100644
 --- a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift
 +++ b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift
-@@ -173,7 +173,9 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
+@@ -66,6 +66,19 @@
+     private let oauth2 = OAuth2Provider()
+     private var openSecureWindowCall: CAPPluginCall?
+ 
++    public override func load() {
++        NotificationCenter.default.addObserver(self, selector: #selector(handleCapacitorOpenURL(notification:)), name: Notification.Name.capacitorOpenURL, object: nil)
++    }
++
++    @objc private func handleCapacitorOpenURL(notification: Notification) {
++        #if canImport(GoogleSignIn)
++        guard let object = notification.object as? [String: Any], let url = object["url"] as? URL else {
++            return
++        }
++        _ = GIDSignIn.sharedInstance.handle(url)
++        #endif
++    }
++
+     // Helper to get Facebook provider (returns nil if unavailable)
+     private var facebookProvider: FacebookProvider? {
+         #if canImport(FBSDKLoginKit)
+@@ -173,7 +186,9 @@
          }
  
          if let googleSettings = call.getObject("google") {
@@ -12,4 +32,24 @@ index 1111111..2222222 100644
 +            let iOSClientId = configuredIOSClientId ?? plistIOSClientId
              let iOSServerClientId = googleSettings["iOSServerClientId"] as? String
              let hostedDomain = googleSettings["hostedDomain"] as? String
+ 
+diff --git a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
+index 3333333..4444444 100644
+--- a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
++++ b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
+@@ -38,7 +38,13 @@
+             }
+ 
+             func login() {
+-                guard let presentingVc = UIApplication.shared.windows.first?.rootViewController else {
++                let presentingVc = UIApplication.shared.connectedScenes
++                    .compactMap { $0 as? UIWindowScene }
++                    .flatMap { $0.windows }
++                    .first { $0.isKeyWindow }?
++                    .rootViewController ?? UIApplication.shared.windows.first?.rootViewController
++
++                guard let presentingVc = presentingVc else {
+                     completion(.failure(NSError(domain: "GoogleProvider", code: 0, userInfo: [NSLocalizedDescriptionKey: "No presenting view controller found"])))
+                     return
+                 }
  
