@@ -39,19 +39,15 @@ export function isIosNative(): boolean {
 let initialized = false;
 async function ensureInit() {
   if (initialized) return;
-  try {
-    // Use the Capacitor 8-compatible native Google SDK wrapper. Its iOS side
-    // is patched to read GIDClientID from Info.plist so Google stays native.
-    await SocialLogin.initialize({
-      google: {
-        mode: 'online',
-      },
-    });
-    initialized = true;
-  } catch (e) {
-    console.warn('[googleSignIn] initialize() warning:', e);
-    initialized = true;
-  }
+  // Use the Capacitor 8-compatible native Google SDK wrapper. Its iOS side
+  // is patched to read GIDClientID from Info.plist so Google stays native.
+  // Do not swallow init failures: falling back to web OAuth is what opened Safari.
+  await SocialLogin.initialize({
+    google: {
+      mode: 'online',
+    },
+  });
+  initialized = true;
 }
 
 export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
