@@ -17,9 +17,13 @@ export type NativeGoogleResult =
 
 export function isIosNative(): boolean {
   try {
-    return Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios';
+    const capacitorIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios';
+    const bridgeIos = typeof window !== 'undefined'
+      && !!(window as any).webkit?.messageHandlers?.bridge;
+    return capacitorIos || bridgeIos;
   } catch {
-    return false;
+    return typeof window !== 'undefined'
+      && !!(window as any).webkit?.messageHandlers?.bridge;
   }
 }
 
@@ -27,8 +31,8 @@ let initialized = false;
 async function ensureInit() {
   if (initialized) return;
   try {
-    // clientId is read from ios/App/App/GoogleService-Info.plist / Info.plist (GIDClientID)
-    // at the native layer, so we can call initialize() with no args on iOS.
+    // The plugin reads the iOS client id from capacitor.config.ts or
+    // ios/App/App/GoogleService-Info.plist. It does not read GIDClientID alone.
     await GoogleAuth.initialize({
       scopes: ['email', 'profile', 'openid'],
       grantOfflineAccess: false,
