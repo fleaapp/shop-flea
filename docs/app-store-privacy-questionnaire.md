@@ -61,3 +61,21 @@ Supabase (backend), Stripe (payments/payouts), PayPal (payments/payouts), AfterS
 ## Source of truth
 
 Selections derive from `src/pages/PrivacyPolicy.tsx` sections 2 and 3. Update this file whenever the privacy policy is amended or a new SDK / data field is added.
+
+## ATT / Tracking (NSUserTrackingUsageDescription)
+
+**Current state:** `NSUserTrackingUsageDescription` is removed from `ios/App/App/Info.plist`. Nothing in Flea is "Used for tracking" under Apple's definition. In App Store Connect → App Privacy, every data type's "Used for tracking" toggle stays **off**.
+
+**Rule of thumb:**
+- Advertising Flea ON Meta / Google (paid install campaigns) → does **NOT** require ATT or the Info.plist key. Those ads run on Meta/Google's platforms, not inside Flea.
+- Showing third-party ads INSIDE Flea (AdMob, Meta Audience Network, etc.) → **does** require ATT.
+- Adding an install-attribution SDK (Meta SDK, Google Ads SDK, AppsFlyer, Adjust) to measure which marketing ad caused each install → **does** require ATT.
+
+**Re-enable checklist (only when adding in-app ads or attribution SDKs):**
+1. Re-add `NSUserTrackingUsageDescription` to `ios/App/App/Info.plist` with an honest purpose string (e.g. *"We use this to show you more relevant ads inside Flea."* or *"We use this to measure which ads led you to install Flea."*).
+2. Install the ATT plugin: `@capacitor-community/app-tracking-transparency`. Call `requestPermission()` once after onboarding — never on first launch.
+3. Install and configure the actual ad / attribution SDK.
+4. Update `src/pages/PrivacyPolicy.tsx` to disclose the new SDK, what it collects, and that data may be used for tracking.
+5. Update this file's "Data types to select" section, and in App Store Connect toggle "Used for tracking" on for the relevant data types (commonly: Device ID / IDFA, Coarse Location, Product Interaction, Advertising Data, Purchases).
+6. Submit the new build and the updated App Privacy answers in the **same** review.
+
