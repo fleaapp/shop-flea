@@ -8,7 +8,17 @@ The app now uses native iOS sign-in for both Google and Apple, so it should stay
 
 You still need to do three pieces of configuration locally on your Mac / in Apple/Google portals before the next TestFlight build.
 
-## Step 1: update native iOS project files
+## Step 1: pull the latest code first
+
+Before you run anything, make sure you have the latest code from the repository:
+
+```bash
+git pull origin main
+```
+
+Replace `main` with your actual branch name if you use a different one (e.g. `develop`).
+
+## Step 2: update native iOS project files
 
 After pulling the latest code, run these commands from your project folder:
 
@@ -19,7 +29,7 @@ npx cap sync ios
 
 This installs the new Google sign-in plugin and copies it into the iOS project.
 
-## Step 2: configure Google sign-in
+## Step 3: configure Google sign-in
 
 1. Go to the Google Cloud Console: https://console.cloud.google.com/apis/credentials
 2. Make sure your project is selected.
