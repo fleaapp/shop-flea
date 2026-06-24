@@ -190,9 +190,13 @@ const PrivacyPolicy = () => {
               We use cookies, local storage and similar device storage to keep you signed in, remember your preferences (e.g. dismissed onboarding tutorials, items you've passed on), measure basic usage and improve performance. We do not use third-party advertising cookies.
             </p>
             <p>
+              <strong>No cross-app or cross-site tracking.</strong> Flea does not track you across other apps or websites owned by other companies. We do not use the iOS App Tracking Transparency (ATT) prompt, we do not share your data with advertising networks or data brokers, and we do not use your device's advertising identifier (IDFA / GAID). If this ever changes (for example, if we introduce in-app advertising or install-attribution analytics), we will update this Policy and request your permission first.
+            </p>
+            <p>
               You can clear cookies and local storage at any time using your browser or device settings. Some features of the Platform will not work correctly without them.
             </p>
           </section>
+
 
           <section className={SECTION}>
             <h2 className="text-base font-bold mb-2">12. Location information</h2>
