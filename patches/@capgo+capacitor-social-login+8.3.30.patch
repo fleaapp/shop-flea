@@ -1,49 +1,14 @@
-diff --git a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift
-index 1111111..2222222 100644
---- a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift
-+++ b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift
-@@ -66,6 +66,19 @@
-     private let oauth2 = OAuth2Provider()
-     private var openSecureWindowCall: CAPPluginCall?
- 
-+    public override func load() {
-+        NotificationCenter.default.addObserver(self, selector: #selector(handleCapacitorOpenURL(notification:)), name: Notification.Name.capacitorOpenURL, object: nil)
-+    }
-+
-+    @objc private func handleCapacitorOpenURL(notification: Notification) {
-+        #if canImport(GoogleSignIn)
-+        guard let object = notification.object as? [String: Any], let url = object["url"] as? URL else {
-+            return
-+        }
-+        _ = GIDSignIn.sharedInstance.handle(url)
-+        #endif
-+    }
-+
-     // Helper to get Facebook provider (returns nil if unavailable)
-     private var facebookProvider: FacebookProvider? {
-         #if canImport(FBSDKLoginKit)
-@@ -173,7 +186,9 @@
-         }
- 
-         if let googleSettings = call.getObject("google") {
--            let iOSClientId = googleSettings["iOSClientId"] as? String
-+            let configuredIOSClientId = googleSettings["iOSClientId"] as? String
-+            let plistIOSClientId = Bundle.main.object(forInfoDictionaryKey: "GIDClientID") as? String
-+            let iOSClientId = configuredIOSClientId ?? plistIOSClientId
-             let iOSServerClientId = googleSettings["iOSServerClientId"] as? String
-             let hostedDomain = googleSettings["hostedDomain"] as? String
- 
-diff --git a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
-index 3333333..4444444 100644
---- a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
-+++ b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
+diff --git a/a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift b/b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
+index 9169503..de4c4c6 100644
+--- a/a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
++++ b/b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
 @@ -1,4 +1,5 @@
  import Foundation
 +import UIKit
  
  #if canImport(GoogleSignIn)
  import GoogleSignIn
-@@ -18,6 +19,31 @@
+@@ -18,6 +19,32 @@ class GoogleProvider {
      var mode = GoogleProviderLoginType.ONLINE
      private let offlineRefreshNotSupportedMessage = "Google refresh() is not available when using offline mode. Offline mode only returns serverAuthCode for backend token exchange. Send serverAuthCode to your backend and refresh tokens there, or switch google.mode to 'online' for client-side refresh."
  
@@ -76,7 +41,7 @@ index 3333333..4444444 100644
      func initialize(clientId: String, mode: GoogleProviderLoginType, serverClientId: String? = nil, hostedDomain: String? = nil) {
          configuration = GIDConfiguration(clientID: clientId, serverClientID: serverClientId, hostedDomain: hostedDomain, openIDRealm: nil)
          self.mode = mode
-@@ -38,8 +64,10 @@
+@@ -38,11 +65,13 @@ class GoogleProvider {
              }
  
              func login() {
@@ -85,9 +50,13 @@ index 3333333..4444444 100644
                      completion(.failure(NSError(domain: "GoogleProvider", code: 0, userInfo: [NSLocalizedDescriptionKey: "No presenting view controller found"])))
                      return
                  }
-+
+ 
 +                print("[GoogleProvider] Starting native Google Sign-In with presenting view controller: \(type(of: presentingVc))")
-@@ -61,11 +85,13 @@
++
+                 let shouldGrantOfflineAccess = payload["grantOfflineAccess"] as? Bool ?? false
+                 var scopes = payload["scopes"] as? [String] ?? self.defaultGrantedScopes
+                 if shouldGrantOfflineAccess {
+@@ -55,10 +84,11 @@ class GoogleProvider {
                  GIDSignIn.sharedInstance.signIn(
                      withPresenting: presentingVc,
                      hint: nil,
@@ -100,10 +69,62 @@ index 3333333..4444444 100644
                          completion(.failure(error))
                          return
                      }
-@@ -74,6 +100,7 @@
+@@ -66,6 +96,7 @@ class GoogleProvider {
                          completion(.failure(NSError(domain: "GoogleProvider", code: 0, userInfo: [NSLocalizedDescriptionKey: "No result returned"])))
                          return
                      }
 +                    print("[GoogleProvider] Native Google Sign-In returned a result")
                      if self.mode == .OFFLINE {
+                         guard let serverAuthCode = result.serverAuthCode else {
+                             completion(.failure(NSError(domain: "GoogleProvider", code: 0, userInfo: [NSLocalizedDescriptionKey: "Cannot find serverAuthCode, make sure to set iOSServerClientId in the configuration"])))
+@@ -131,6 +162,7 @@ class GoogleProvider {
+             if GIDSignIn.sharedInstance.hasPreviousSignIn() {
+                 GIDSignIn.sharedInstance.restorePreviousSignIn { user, error in
+                     if let error = error {
++                        print("[GoogleProvider] Native Google Sign-In failed: \(error.localizedDescription)")
+                         completion(.failure(error))
+                         return
+                     }
+@@ -166,6 +198,7 @@ class GoogleProvider {
+             if GIDSignIn.sharedInstance.hasPreviousSignIn() {
+                 GIDSignIn.sharedInstance.restorePreviousSignIn { user, error in
+                     if let error = error {
++                        print("[GoogleProvider] Native Google Sign-In failed: \(error.localizedDescription)")
+                         completion(.failure(error))
+                         return
+                     }
+diff --git a/a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift b/b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift
+index b67befe..6b63f8d 100644
+--- a/a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift
++++ b/b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift
+@@ -66,6 +66,19 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
+     private let oauth2 = OAuth2Provider()
+     private var openSecureWindowCall: CAPPluginCall?
+ 
++    public override func load() {
++        NotificationCenter.default.addObserver(self, selector: #selector(handleCapacitorOpenURL(notification:)), name: Notification.Name.capacitorOpenURL, object: nil)
++    }
++
++    @objc private func handleCapacitorOpenURL(notification: Notification) {
++        #if canImport(GoogleSignIn)
++        guard let object = notification.object as? [String: Any], let url = object["url"] as? URL else {
++            return
++        }
++        _ = GIDSignIn.sharedInstance.handle(url)
++        #endif
++    }
++
+     // Helper to get Facebook provider (returns nil if unavailable)
+     private var facebookProvider: FacebookProvider? {
+         #if canImport(FBSDKLoginKit)
+@@ -173,7 +186,9 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
+         }
+ 
+         if let googleSettings = call.getObject("google") {
+-            let iOSClientId = googleSettings["iOSClientId"] as? String
++            let configuredIOSClientId = googleSettings["iOSClientId"] as? String
++            let plistIOSClientId = Bundle.main.object(forInfoDictionaryKey: "GIDClientID") as? String
++            let iOSClientId = configuredIOSClientId ?? plistIOSClientId
+             let iOSServerClientId = googleSettings["iOSServerClientId"] as? String
+             let hostedDomain = googleSettings["hostedDomain"] as? String
  
