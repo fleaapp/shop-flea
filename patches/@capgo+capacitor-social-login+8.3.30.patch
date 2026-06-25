@@ -76,7 +76,7 @@ index 3333333..4444444 100644
      func initialize(clientId: String, mode: GoogleProviderLoginType, serverClientId: String? = nil, hostedDomain: String? = nil) {
          configuration = GIDConfiguration(clientID: clientId, serverClientID: serverClientId, hostedDomain: hostedDomain, openIDRealm: nil)
          self.mode = mode
-@@ -38,12 +64,10 @@
+@@ -38,8 +64,10 @@
              }
  
              func login() {
