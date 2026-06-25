@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core';
-import { SocialLogin } from '@capgo/capacitor-social-login';
+import { GoogleSignIn } from '@capawesome/capacitor-google-sign-in';
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -60,13 +60,13 @@ export function isIosNative(): boolean {
   return hasCapacitorIosBridge() || isPackagedIosShell();
 }
 
-function hasNativeSocialLoginPlugin(): boolean {
+function hasNativeGoogleSignInPlugin(): boolean {
   if (typeof window === 'undefined') return false;
   if (!hasCapacitorIosBridge()) return false;
 
   try {
     if (typeof Capacitor.isPluginAvailable === 'function') {
-      return Capacitor.isPluginAvailable('SocialLogin');
+      return Capacitor.isPluginAvailable('GoogleSignIn');
     }
   } catch {
     // Continue to bridge/header fallbacks below.
@@ -76,11 +76,11 @@ function hasNativeSocialLoginPlugin(): boolean {
   const pluginHeaders = cap?.PluginHeaders;
 
   if (Array.isArray(pluginHeaders)) {
-    return pluginHeaders.some((plugin: any) => plugin?.name === 'SocialLogin');
+    return pluginHeaders.some((plugin: any) => plugin?.name === 'GoogleSignIn');
   }
 
   if (pluginHeaders && typeof pluginHeaders === 'object') {
-    return Boolean(pluginHeaders.SocialLogin || pluginHeaders.SocialLoginPlugin);
+    return Boolean(pluginHeaders.GoogleSignIn || pluginHeaders.GoogleSignInPlugin);
   }
 
   // Last resort: in a real Capacitor iOS bridge, let the native proxy call fail
@@ -101,7 +101,7 @@ function googleNativeDiagnostics() {
     locationProtocol: typeof window !== 'undefined' ? window.location.protocol : 'none',
     locationHost: typeof window !== 'undefined' ? window.location.host : 'none',
     hasBridge: hasCapacitorIosBridge(),
-    hasPlugin: hasNativeSocialLoginPlugin(),
+    hasPlugin: hasNativeGoogleSignInPlugin(),
     pluginHeaders: Array.isArray(headers)
       ? headers.map((plugin: any) => plugin?.name).filter(Boolean)
       : headers && typeof headers === 'object'
@@ -110,39 +110,21 @@ function googleNativeDiagnostics() {
   };
 }
 
-function randomNonce(length = 32): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  const bytes = new Uint8Array(length);
-  crypto.getRandomValues(bytes);
-  let out = '';
-  for (let i = 0; i < length; i++) out += chars[bytes[i] % chars.length];
-  return out;
-}
-
-async function sha256Hex(input: string): Promise<string> {
-  const data = new TextEncoder().encode(input);
-  const hash = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hash))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
 let initialized = false;
 async function ensureInit() {
   if (initialized) return;
-  const iosClientId = import.meta.env.VITE_GOOGLE_IOS_CLIENT_ID as string | undefined;
-  const iosServerClientId = import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string | undefined;
+  const webClientId = import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string | undefined;
 
-  // Use the Capacitor 8-compatible native Google SDK wrapper. Pass explicit
-  // client IDs when present, and keep the native patch as a fallback so the
-  // iOS side can also read GIDClientID/GIDServerClientID from Info.plist.
-  // Do not swallow init failures: falling back to web OAuth is what opened Safari.
-  await SocialLogin.initialize({
-    google: {
-      mode: 'online',
-      ...(iosClientId ? { iOSClientId: iosClientId } : {}),
-      ...(iosServerClientId ? { iOSServerClientId: iosServerClientId } : {}),
-    },
+  if (!webClientId) {
+    throw new Error('Missing VITE_GOOGLE_WEB_CLIENT_ID. Add the Google web client ID, then rebuild the iOS app.');
+  }
+
+  // Use the dedicated native Google SDK plugin. Do not use the Capgo social
+  // login plugin for iOS Google auth: its iOS implementation can still use an
+  // external browser-auth session, which is exactly what we must avoid.
+  await GoogleSignIn.initialize({
+    clientId: webClientId,
+    scopes: ['email', 'profile'],
   });
   initialized = true;
 }
@@ -155,7 +137,7 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
 
   console.info('[googleSignIn] iOS native-only path selected', googleNativeDiagnostics());
 
-  if (!hasNativeSocialLoginPlugin()) {
+  if (!hasNativeGoogleSignInPlugin()) {
     return {
       handled: true,
       error: new Error('Native Google sign-in is missing from this iOS build. Run npm install, npm run build, npx cap sync ios, then archive a fresh TestFlight build.'),
@@ -164,23 +146,11 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
   }
 
   try {
-    const rawNonce = randomNonce();
-    const hashedNonce = await sha256Hex(rawNonce);
-
-    console.info('[googleSignIn] Initializing native SocialLogin Google provider');
+    console.info('[googleSignIn] Initializing dedicated native GoogleSignIn provider');
     await ensureInit();
-    console.info('[googleSignIn] Launching native Google SDK flow');
-    const res = await SocialLogin.login({
-      provider: 'google',
-      options: {
-        scopes: ['email', 'profile'],
-        forcePrompt: true,
-        nonce: hashedNonce,
-      },
-    });
-    const idToken = res?.provider === 'google' && res.result.responseType === 'online'
-      ? res.result.idToken
-      : null;
+    console.info('[googleSignIn] Launching dedicated native Google SDK flow');
+    const res = await GoogleSignIn.signIn();
+    const idToken = res?.idToken ?? null;
     if (!idToken) {
       return {
         handled: true,
@@ -192,7 +162,6 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
     const { error } = await supabase.auth.signInWithIdToken({
       provider: 'google',
       token: idToken,
-      nonce: rawNonce,
     });
 
     if (error) {
@@ -206,6 +175,7 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
     const cancelled =
       /cancel/i.test(message) ||
       err?.code === 'USER_CANCELLED' ||
+      err?.code === 'SIGN_IN_CANCELED' ||
       err?.code === '12501' ||
       err?.code === 12501 ||
       err?.code === '-5';

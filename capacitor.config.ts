@@ -28,15 +28,6 @@ const config: CapacitorConfig = {
       splashFullScreen: true,
       splashImmersive: true,
     },
-    SocialLogin: {
-      providers: {
-        google: true,
-        facebook: false,
-        apple: false,
-        twitter: false,
-      },
-      logLevel: 1,
-    },
   },
   ios: {
     contentInset: 'never',
