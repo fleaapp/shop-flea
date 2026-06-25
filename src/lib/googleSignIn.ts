@@ -130,12 +130,18 @@ async function sha256Hex(input: string): Promise<string> {
 let initialized = false;
 async function ensureInit() {
   if (initialized) return;
-  // Use the Capacitor 8-compatible native Google SDK wrapper. Its iOS side
-  // is patched to read GIDClientID from Info.plist so Google stays native.
+  const iosClientId = import.meta.env.VITE_GOOGLE_IOS_CLIENT_ID as string | undefined;
+  const iosServerClientId = import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string | undefined;
+
+  // Use the Capacitor 8-compatible native Google SDK wrapper. Pass explicit
+  // client IDs when present, and keep the native patch as a fallback so the
+  // iOS side can also read GIDClientID/GIDServerClientID from Info.plist.
   // Do not swallow init failures: falling back to web OAuth is what opened Safari.
   await SocialLogin.initialize({
     google: {
       mode: 'online',
+      ...(iosClientId ? { iOSClientId: iosClientId } : {}),
+      ...(iosServerClientId ? { iOSServerClientId: iosServerClientId } : {}),
     },
   });
   initialized = true;
