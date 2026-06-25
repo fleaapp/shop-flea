@@ -15,6 +15,20 @@ import ProviderConflictDialog, { type ConflictProvider } from '@/components/Prov
 const CHECK_EMAIL_PROVIDER_URL =
   `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/check-email-provider`;
 
+function isIosLikeRuntime(): boolean {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+  const cap = (window as any).Capacitor;
+  return (
+    isGoogleIosRuntime() ||
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1) ||
+    window.location.protocol === 'capacitor:' ||
+    cap?.getPlatform?.() === 'ios' ||
+    !!cap?.isNativePlatform?.() ||
+    !!(window as any).webkit?.messageHandlers?.bridge
+  );
+}
+
 async function checkEmailProvider(email: string): Promise<ConflictProvider | null> {
   try {
     const resp = await fetch(CHECK_EMAIL_PROVIDER_URL, {
@@ -283,11 +297,12 @@ const Auth = () => {
       // sets the session on the Lovable Cloud client, but this app's session
       // lives on the external Supabase project — using the wrong client makes
       // OAuth loop back to /auth without a session.
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: window.location.origin,
           queryParams: { prompt: 'select_account' },
+          skipBrowserRedirect: true,
         },
       });
 
@@ -295,7 +310,19 @@ const Auth = () => {
         localStorage.removeItem('flea_oauth_signup');
         console.error('Google sign-in error:', error);
         toast.error('Google sign-in failed. Please try again.');
+        return;
       }
+
+      // Fail closed even if iOS detection above ever regresses: Google web OAuth
+      // is the only path that opens Safari, so never auto-navigate to it on iOS.
+      if (isIosLikeRuntime()) {
+        localStorage.removeItem('flea_oauth_signup');
+        console.error('[Auth] Blocked Google web OAuth redirect on iOS runtime');
+        toast.error('Google sign-in is blocked in this iOS build because it would open Safari. Please update the app.');
+        return;
+      }
+
+      if (data?.url) window.location.assign(data.url);
     } catch (err) {
       localStorage.removeItem('flea_oauth_signup');
       console.error('Google sign-in exception:', err);
