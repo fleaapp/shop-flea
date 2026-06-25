@@ -36,7 +36,7 @@ supabase.auth.signInWithOAuth = ((credentials: any) => {
     console.error('[supabase] Blocked Google web OAuth on iOS runtime');
     return Promise.resolve({
       data: { provider: 'google', url: null },
-      error: new Error('Google web OAuth is blocked on iOS because it opens Safari. Use native Google sign-in.'),
+      error: new Error('Google web OAuth is blocked on iOS because it opens Safari. Use Apple or email sign-in.'),
     } as any);
   }
 
