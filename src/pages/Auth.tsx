@@ -270,7 +270,7 @@ const Auth = () => {
       // iOS must never use Supabase web OAuth for Google. That flow opens
       // Safari. Native Google Sign-In is the only allowed iOS path, and it
       // fails closed if the native plugin/config is missing.
-      if (isGoogleIosRuntime()) {
+      if (isIosLikeRuntime()) {
         console.info('[Auth] Google button selected iOS native-only flow');
         const nativeResult = await nativeGoogleSignIn();
         if (!nativeResult.handled) {
