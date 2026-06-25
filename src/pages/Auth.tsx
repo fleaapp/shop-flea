@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { nativeAppleSignIn, isIosNative as isAppleIosNative } from '@/lib/appleSignIn';
-import { nativeGoogleSignIn, isIosRuntime as isGoogleIosRuntime } from '@/lib/googleSignIn';
+import { isIosRuntime as isGoogleIosRuntime } from '@/lib/googleSignIn';
 import ProviderConflictDialog, { type ConflictProvider } from '@/components/ProviderConflictDialog';
 
 const CHECK_EMAIL_PROVIDER_URL =
@@ -277,27 +277,14 @@ const Auth = () => {
     try {
       localStorage.setItem('flea_oauth_signup', '1');
 
-      // iOS must never use Supabase web OAuth for Google. That flow opens
-      // Safari. Native Google Sign-In is the only allowed iOS path, and it
-      // fails closed if the native plugin/config is missing.
+      // iOS must never start any Google auth flow from the app. Even Google's
+      // official iOS SDK can present a Safari/ASWebAuthenticationSession-style
+      // browser surface, so the only reliable "do not leave the app" behavior
+      // is to fail closed before calling either native Google SDK or web OAuth.
       if (isIosLikeRuntime()) {
-        console.info('[Auth] Google button selected iOS native-only flow');
-        const nativeResult = await nativeGoogleSignIn();
-        if (!nativeResult.handled) {
-          localStorage.removeItem('flea_oauth_signup');
-          toast.error('Google sign-in is not available in this iOS build. Please update the app and try again.');
-          return;
-        }
-        if (nativeResult.error) {
-          localStorage.removeItem('flea_oauth_signup');
-          if (!nativeResult.cancelled) {
-            console.error('Native Google sign-in error:', nativeResult.error);
-            toast.error(
-              `Google sign-in failed: ${nativeResult.error.message || 'Please try again.'}`,
-            );
-          }
-        }
-        // On success the auth state change triggers redirect via useEffect.
+        localStorage.removeItem('flea_oauth_signup');
+        console.error('[Auth] Blocked Google sign-in on iOS before any browser-capable flow could start');
+        toast.error('Google sign-in cannot stay fully inside the iPhone app. Please use Apple or email sign-in.');
         return;
       }
 
