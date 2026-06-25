@@ -37,7 +37,7 @@ diff --git a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginP
 index 3333333..4444444 100644
 --- a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
 +++ b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
-@@ -38,7 +38,13 @@
+@@ -38,8 +38,14 @@
              }
  
              func login() {

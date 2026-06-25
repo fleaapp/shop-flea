@@ -15,25 +15,58 @@ export type NativeGoogleResult =
   | { handled: true; error: null; cancelled?: false }
   | { handled: true; error: Error; cancelled: boolean };
 
-export function isIosNative(): boolean {
+function isIosUserAgent(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
+}
+
+function hasCapacitorIosBridge(): boolean {
+  if (typeof window === 'undefined') return false;
   try {
-    const capacitorIos = Capacitor.getPlatform() === 'ios'
-      && (Capacitor.isNativePlatform() || window.location.protocol === 'capacitor:');
-    const windowCapacitor = typeof window !== 'undefined'
-      && (window as any).Capacitor?.getPlatform?.() === 'ios';
-    const bridgeIos = typeof window !== 'undefined'
-      && !!(window as any).webkit?.messageHandlers?.bridge;
-    const capacitorProtocol = typeof window !== 'undefined'
-      && window.location.protocol === 'capacitor:';
-    return capacitorIos || windowCapacitor || bridgeIos || capacitorProtocol;
+    const cap = (window as any).Capacitor;
+    return (
+      (Capacitor.getPlatform() === 'ios' && Capacitor.isNativePlatform()) ||
+      (cap?.getPlatform?.() === 'ios' && cap?.isNativePlatform?.()) ||
+      typeof cap?.nativePromise === 'function' ||
+      !!(window as any).webkit?.messageHandlers?.bridge ||
+      window.location.protocol === 'capacitor:'
+    );
   } catch {
-    return typeof window !== 'undefined'
-      && (
-        window.location.protocol === 'capacitor:' ||
-        !!(window as any).webkit?.messageHandlers?.bridge ||
-        (window as any).Capacitor?.getPlatform?.() === 'ios'
-      );
+    return !!(window as any).webkit?.messageHandlers?.bridge ||
+      typeof (window as any).Capacitor?.nativePromise === 'function' ||
+      window.location.protocol === 'capacitor:';
   }
+}
+
+function isPackagedIosShell(): boolean {
+  if (typeof window === 'undefined') return false;
+  return isIosUserAgent() && (
+    window.location.protocol === 'capacitor:' ||
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+  );
+}
+
+export function isIosNative(): boolean {
+  return hasCapacitorIosBridge() || isPackagedIosShell();
+}
+
+function randomNonce(length = 32): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  let out = '';
+  for (let i = 0; i < length; i++) out += chars[bytes[i] % chars.length];
+  return out;
+}
+
+async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 let initialized = false;
@@ -53,13 +86,25 @@ async function ensureInit() {
 export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
   if (!isIosNative()) return { handled: false };
 
+  if (!hasCapacitorIosBridge()) {
+    return {
+      handled: true,
+      error: new Error('Native Google sign-in is unavailable in this iOS build.'),
+      cancelled: false,
+    };
+  }
+
   try {
+    const rawNonce = randomNonce();
+    const hashedNonce = await sha256Hex(rawNonce);
+
     await ensureInit();
     const res = await SocialLogin.login({
       provider: 'google',
       options: {
         scopes: ['email', 'profile'],
         forcePrompt: true,
+        nonce: hashedNonce,
       },
     });
     const idToken = res?.provider === 'google' && res.result.responseType === 'online'
@@ -76,6 +121,7 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
     const { error } = await supabase.auth.signInWithIdToken({
       provider: 'google',
       token: idToken,
+      nonce: rawNonce,
     });
 
     if (error) {
