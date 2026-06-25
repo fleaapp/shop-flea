@@ -21,6 +21,14 @@ function isIosUserAgent(): boolean {
     (navigator.platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
 }
 
+export function isIosRuntime(): boolean {
+  try {
+    return Capacitor.getPlatform() === 'ios' || isIosUserAgent();
+  } catch {
+    return isIosUserAgent();
+  }
+}
+
 function hasCapacitorIosBridge(): boolean {
   if (typeof window === 'undefined') return false;
   try {
@@ -50,6 +58,19 @@ function isPackagedIosShell(): boolean {
 
 export function isIosNative(): boolean {
   return hasCapacitorIosBridge() || isPackagedIosShell();
+}
+
+function hasNativeSocialLoginPlugin(): boolean {
+  if (typeof window === 'undefined') return false;
+  const cap = (window as any).Capacitor;
+  const pluginHeaders = cap?.PluginHeaders;
+
+  return (
+    hasCapacitorIosBridge() &&
+    typeof cap?.nativePromise === 'function' &&
+    Array.isArray(pluginHeaders) &&
+    pluginHeaders.some((plugin: any) => plugin?.name === 'SocialLogin')
+  );
 }
 
 function randomNonce(length = 32): string {
@@ -84,12 +105,15 @@ async function ensureInit() {
 }
 
 export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
-  if (!isIosNative()) return { handled: false };
+  // On any iOS runtime, this function owns Google sign-in. Returning
+  // handled:false on iOS lets callers fall through to web OAuth, which opens
+  // Safari. If the native bridge/plugin is missing, fail closed instead.
+  if (!isIosRuntime()) return { handled: false };
 
-  if (!hasCapacitorIosBridge()) {
+  if (!hasNativeSocialLoginPlugin()) {
     return {
       handled: true,
-      error: new Error('Native Google sign-in is unavailable in this iOS build.'),
+      error: new Error('Native Google sign-in is missing from this iOS build. Run npm install, npm run build, npx cap sync ios, then archive a fresh TestFlight build.'),
       cancelled: false,
     };
   }
