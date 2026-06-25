@@ -52,15 +52,23 @@ export function installIosGoogleSafariGuard() {
     return originalOpen(url, target, features);
   }) as typeof window.open;
 
-  const originalAssign = window.location.assign.bind(window.location);
-  window.location.assign = ((url: string | URL) => {
-    if (block(String(url))) return;
-    return originalAssign(url);
-  }) as typeof window.location.assign;
+  try {
+    const originalAssign = window.location.assign.bind(window.location);
+    window.location.assign = ((url: string | URL) => {
+      if (block(String(url))) return;
+      return originalAssign(url);
+    }) as typeof window.location.assign;
+  } catch {
+    // Some WebKit builds expose Location methods as non-writable.
+  }
 
-  const originalReplace = window.location.replace.bind(window.location);
-  window.location.replace = ((url: string | URL) => {
-    if (block(String(url))) return;
-    return originalReplace(url);
-  }) as typeof window.location.replace;
+  try {
+    const originalReplace = window.location.replace.bind(window.location);
+    window.location.replace = ((url: string | URL) => {
+      if (block(String(url))) return;
+      return originalReplace(url);
+    }) as typeof window.location.replace;
+  } catch {
+    // Some WebKit builds expose Location methods as non-writable.
+  }
 }
