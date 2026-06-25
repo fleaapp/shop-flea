@@ -37,19 +37,73 @@ diff --git a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginP
 index 3333333..4444444 100644
 --- a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
 +++ b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
-@@ -38,8 +38,14 @@
+@@ -1,4 +1,5 @@
+ import Foundation
++import UIKit
+ 
+ #if canImport(GoogleSignIn)
+ import GoogleSignIn
+@@ -18,6 +19,31 @@
+     var mode = GoogleProviderLoginType.ONLINE
+     private let offlineRefreshNotSupportedMessage = "Google refresh() is not available when using offline mode. Offline mode only returns serverAuthCode for backend token exchange. Send serverAuthCode to your backend and refresh tokens there, or switch google.mode to 'online' for client-side refresh."
+ 
++    private func topViewController(from rootViewController: UIViewController?) -> UIViewController? {
++        if let navigationController = rootViewController as? UINavigationController {
++            return topViewController(from: navigationController.visibleViewController)
++        }
++
++        if let tabBarController = rootViewController as? UITabBarController {
++            return topViewController(from: tabBarController.selectedViewController)
++        }
++
++        if let presentedViewController = rootViewController?.presentedViewController {
++            return topViewController(from: presentedViewController)
++        }
++
++        return rootViewController
++    }
++
++    private func currentPresentingViewController() -> UIViewController? {
++        let rootViewController = UIApplication.shared.connectedScenes
++            .compactMap { $0 as? UIWindowScene }
++            .flatMap { $0.windows }
++            .first { $0.isKeyWindow }?
++            .rootViewController ?? UIApplication.shared.windows.first?.rootViewController
++
++        return topViewController(from: rootViewController)
++    }
++
+     func initialize(clientId: String, mode: GoogleProviderLoginType, serverClientId: String? = nil, hostedDomain: String? = nil) {
+         configuration = GIDConfiguration(clientID: clientId, serverClientID: serverClientId, hostedDomain: hostedDomain, openIDRealm: nil)
+         self.mode = mode
+@@ -38,12 +64,10 @@
              }
  
              func login() {
 -                guard let presentingVc = UIApplication.shared.windows.first?.rootViewController else {
-+                let presentingVc = UIApplication.shared.connectedScenes
-+                    .compactMap { $0 as? UIWindowScene }
-+                    .flatMap { $0.windows }
-+                    .first { $0.isKeyWindow }?
-+                    .rootViewController ?? UIApplication.shared.windows.first?.rootViewController
-+
-+                guard let presentingVc = presentingVc else {
++                guard let presentingVc = self.currentPresentingViewController() else {
                      completion(.failure(NSError(domain: "GoogleProvider", code: 0, userInfo: [NSLocalizedDescriptionKey: "No presenting view controller found"])))
                      return
                  }
++
++                print("[GoogleProvider] Starting native Google Sign-In with presenting view controller: \(type(of: presentingVc))")
+@@ -61,11 +85,13 @@
+                 GIDSignIn.sharedInstance.signIn(
+                     withPresenting: presentingVc,
+                     hint: nil,
+-                    additionalScopes: payload["scopes"] as? [String] ?? self.defaultGrantedScopes,
++                    additionalScopes: scopes,
+                     nonce: nonce
+                 ) { result, error in
+                     if let error = error {
++                        print("[GoogleProvider] Native Google Sign-In failed: \(error.localizedDescription)")
+                         completion(.failure(error))
+                         return
+                     }
+@@ -74,6 +100,7 @@
+                         completion(.failure(NSError(domain: "GoogleProvider", code: 0, userInfo: [NSLocalizedDescriptionKey: "No result returned"])))
+                         return
+                     }
++                    print("[GoogleProvider] Native Google Sign-In returned a result")
+                     if self.mode == .OFFLINE {
  

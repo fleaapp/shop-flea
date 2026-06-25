@@ -62,15 +62,52 @@ export function isIosNative(): boolean {
 
 function hasNativeSocialLoginPlugin(): boolean {
   if (typeof window === 'undefined') return false;
+  if (!hasCapacitorIosBridge()) return false;
+
+  try {
+    if (typeof Capacitor.isPluginAvailable === 'function') {
+      return Capacitor.isPluginAvailable('SocialLogin');
+    }
+  } catch {
+    // Continue to bridge/header fallbacks below.
+  }
+
   const cap = (window as any).Capacitor;
   const pluginHeaders = cap?.PluginHeaders;
 
-  return (
-    hasCapacitorIosBridge() &&
-    typeof cap?.nativePromise === 'function' &&
-    Array.isArray(pluginHeaders) &&
-    pluginHeaders.some((plugin: any) => plugin?.name === 'SocialLogin')
-  );
+  if (Array.isArray(pluginHeaders)) {
+    return pluginHeaders.some((plugin: any) => plugin?.name === 'SocialLogin');
+  }
+
+  if (pluginHeaders && typeof pluginHeaders === 'object') {
+    return Boolean(pluginHeaders.SocialLogin || pluginHeaders.SocialLoginPlugin);
+  }
+
+  // Last resort: in a real Capacitor iOS bridge, let the native proxy call fail
+  // closed with a clear error instead of ever falling through to web OAuth.
+  return typeof cap?.nativePromise === 'function';
+}
+
+function googleNativeDiagnostics() {
+  const cap = typeof window !== 'undefined' ? (window as any).Capacitor : null;
+  const headers = cap?.PluginHeaders;
+  return {
+    capacitorPlatform: (() => {
+      try { return Capacitor.getPlatform(); } catch { return 'unknown'; }
+    })(),
+    capacitorNative: (() => {
+      try { return Capacitor.isNativePlatform(); } catch { return false; }
+    })(),
+    locationProtocol: typeof window !== 'undefined' ? window.location.protocol : 'none',
+    locationHost: typeof window !== 'undefined' ? window.location.host : 'none',
+    hasBridge: hasCapacitorIosBridge(),
+    hasPlugin: hasNativeSocialLoginPlugin(),
+    pluginHeaders: Array.isArray(headers)
+      ? headers.map((plugin: any) => plugin?.name).filter(Boolean)
+      : headers && typeof headers === 'object'
+        ? Object.keys(headers)
+        : [],
+  };
 }
 
 function randomNonce(length = 32): string {
@@ -110,6 +147,8 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
   // Safari. If the native bridge/plugin is missing, fail closed instead.
   if (!isIosRuntime()) return { handled: false };
 
+  console.info('[googleSignIn] iOS native-only path selected', googleNativeDiagnostics());
+
   if (!hasNativeSocialLoginPlugin()) {
     return {
       handled: true,
@@ -122,7 +161,9 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
     const rawNonce = randomNonce();
     const hashedNonce = await sha256Hex(rawNonce);
 
+    console.info('[googleSignIn] Initializing native SocialLogin Google provider');
     await ensureInit();
+    console.info('[googleSignIn] Launching native Google SDK flow');
     const res = await SocialLogin.login({
       provider: 'google',
       options: {
@@ -152,6 +193,7 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
       console.error('[googleSignIn] signInWithIdToken error:', error);
       return { handled: true, error, cancelled: false };
     }
+    console.info('[googleSignIn] Native Google sign-in completed');
     return { handled: true, error: null };
   } catch (err: any) {
     const message = String(err?.message ?? err ?? '');

@@ -257,6 +257,7 @@ const Auth = () => {
       // Safari. Native Google Sign-In is the only allowed iOS path, and it
       // fails closed if the native plugin/config is missing.
       if (isGoogleIosRuntime()) {
+        console.info('[Auth] Google button selected iOS native-only flow');
         const nativeResult = await nativeGoogleSignIn();
         if (!nativeResult.handled) {
           localStorage.removeItem('flea_oauth_signup');
@@ -277,6 +278,7 @@ const Auth = () => {
       }
 
       // Web / PWA / Android: web OAuth redirect flow.
+      console.info('[Auth] Google button selected non-iOS web OAuth flow');
       // Use the external Supabase client directly. The lovable.auth wrapper
       // sets the session on the Lovable Cloud client, but this app's session
       // lives on the external Supabase project — using the wrong client makes
