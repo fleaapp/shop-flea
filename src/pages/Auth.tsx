@@ -83,6 +83,16 @@ const Auth = () => {
     return () => window.removeEventListener('flea-auth-conflict', handler);
   }, []);
 
+  useEffect(() => {
+    const handler = () => {
+      localStorage.removeItem('flea_oauth_signup');
+      toast.error('Google sign-in must use the native app flow. Please update the app and try again.');
+    };
+
+    window.addEventListener('flea-ios-google-web-oauth-blocked', handler);
+    return () => window.removeEventListener('flea-ios-google-web-oauth-blocked', handler);
+  }, []);
+
 
   const redirectParam = new URLSearchParams(location.search).get('redirect');
   const redirectTo = redirectParam?.startsWith('/') && !redirectParam.startsWith('//') ? redirectParam : '/';

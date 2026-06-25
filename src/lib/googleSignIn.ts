@@ -124,7 +124,6 @@ async function ensureInit() {
   // external browser-auth session, which is exactly what we must avoid.
   await GoogleSignIn.initialize({
     clientId: webClientId,
-    scopes: ['email', 'profile'],
   });
   initialized = true;
 }
