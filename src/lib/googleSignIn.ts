@@ -1,14 +1,11 @@
 import { Capacitor } from '@capacitor/core';
-import { GoogleSignIn } from '@capawesome/capacitor-google-sign-in';
-import { supabase } from '@/lib/supabase';
 
 /**
- * iOS native Google Sign-In using the system credential flow (no Safari bounce).
+ * Google sign-in platform guard.
  *
- * Returns:
- *  - { handled: false } on non-iOS-native platforms → caller should fall back to web OAuth.
- *  - { handled: true, error: null } on success → session is set on the supabase client.
- *  - { handled: true, error, cancelled } when the native flow ran but failed/was cancelled.
+ * The product requirement is strict: Google sign-in must not leave the iOS app.
+ * Google's iOS OAuth/authentication surfaces can open Safari-like system browser
+ * UI, so iOS fails closed and web/Android can continue using web OAuth.
  */
 export type NativeGoogleResult =
   | { handled: false }
@@ -60,37 +57,7 @@ export function isIosNative(): boolean {
   return hasCapacitorIosBridge() || isPackagedIosShell();
 }
 
-function hasNativeGoogleSignInPlugin(): boolean {
-  if (typeof window === 'undefined') return false;
-  if (!hasCapacitorIosBridge()) return false;
-
-  try {
-    if (typeof Capacitor.isPluginAvailable === 'function') {
-      return Capacitor.isPluginAvailable('GoogleSignIn');
-    }
-  } catch {
-    // Continue to bridge/header fallbacks below.
-  }
-
-  const cap = (window as any).Capacitor;
-  const pluginHeaders = cap?.PluginHeaders;
-
-  if (Array.isArray(pluginHeaders)) {
-    return pluginHeaders.some((plugin: any) => plugin?.name === 'GoogleSignIn');
-  }
-
-  if (pluginHeaders && typeof pluginHeaders === 'object') {
-    return Boolean(pluginHeaders.GoogleSignIn || pluginHeaders.GoogleSignInPlugin);
-  }
-
-  // Last resort: in a real Capacitor iOS bridge, let the native proxy call fail
-  // closed with a clear error instead of ever falling through to web OAuth.
-  return typeof cap?.nativePromise === 'function';
-}
-
-function googleNativeDiagnostics() {
-  const cap = typeof window !== 'undefined' ? (window as any).Capacitor : null;
-  const headers = cap?.PluginHeaders;
+function googleIosBlockDiagnostics() {
   return {
     capacitorPlatform: (() => {
       try { return Capacitor.getPlatform(); } catch { return 'unknown'; }
@@ -101,87 +68,18 @@ function googleNativeDiagnostics() {
     locationProtocol: typeof window !== 'undefined' ? window.location.protocol : 'none',
     locationHost: typeof window !== 'undefined' ? window.location.host : 'none',
     hasBridge: hasCapacitorIosBridge(),
-    hasPlugin: hasNativeGoogleSignInPlugin(),
-    pluginHeaders: Array.isArray(headers)
-      ? headers.map((plugin: any) => plugin?.name).filter(Boolean)
-      : headers && typeof headers === 'object'
-        ? Object.keys(headers)
-        : [],
   };
 }
 
-let initialized = false;
-async function ensureInit() {
-  if (initialized) return;
-  const webClientId = import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string | undefined;
-
-  if (!webClientId) {
-    throw new Error('Missing VITE_GOOGLE_WEB_CLIENT_ID. Add the Google web client ID, then rebuild the iOS app.');
-  }
-
-  // Use the dedicated native Google SDK plugin. Do not use the Capgo social
-  // login plugin for iOS Google auth: its iOS implementation can still use an
-  // external browser-auth session, which is exactly what we must avoid.
-  await GoogleSignIn.initialize({
-    clientId: webClientId,
-  });
-  initialized = true;
-}
-
 export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
-  // On any iOS runtime, this function owns Google sign-in. Returning
-  // handled:false on iOS lets callers fall through to web OAuth, which opens
-  // Safari. If the native bridge/plugin is missing, fail closed instead.
+  // On any iOS runtime, never allow callers to fall through to web OAuth,
+  // because that is the path that opens Safari.
   if (!isIosRuntime()) return { handled: false };
 
-  console.info('[googleSignIn] iOS native-only path selected', googleNativeDiagnostics());
-
-  if (!hasNativeGoogleSignInPlugin()) {
-    return {
-      handled: true,
-      error: new Error('Native Google sign-in is missing from this iOS build. Run npm install, npm run build, npx cap sync ios, then archive a fresh TestFlight build.'),
-      cancelled: false,
-    };
-  }
-
-  try {
-    console.info('[googleSignIn] Initializing dedicated native GoogleSignIn provider');
-    await ensureInit();
-    console.info('[googleSignIn] Launching dedicated native Google SDK flow');
-    const res = await GoogleSignIn.signIn();
-    const idToken = res?.idToken ?? null;
-    if (!idToken) {
-      return {
-        handled: true,
-        error: new Error('Google did not return an identity token.'),
-        cancelled: false,
-      };
-    }
-
-    const { error } = await supabase.auth.signInWithIdToken({
-      provider: 'google',
-      token: idToken,
-    });
-
-    if (error) {
-      console.error('[googleSignIn] signInWithIdToken error:', error);
-      return { handled: true, error, cancelled: false };
-    }
-    console.info('[googleSignIn] Native Google sign-in completed');
-    return { handled: true, error: null };
-  } catch (err: any) {
-    const message = String(err?.message ?? err ?? '');
-    const cancelled =
-      /cancel/i.test(message) ||
-      err?.code === 'USER_CANCELLED' ||
-      err?.code === 'SIGN_IN_CANCELED' ||
-      err?.code === '12501' ||
-      err?.code === 12501 ||
-      err?.code === '-5';
-    return {
-      handled: true,
-      error: err instanceof Error ? err : new Error(message || 'Google sign-in failed'),
-      cancelled,
-    };
-  }
+  console.info('[googleSignIn] iOS Google sign-in blocked before browser-capable auth starts', googleIosBlockDiagnostics());
+  return {
+    handled: true,
+    error: new Error('Google sign-in cannot stay fully inside the iPhone app. Use Apple or email sign-in on iOS.'),
+    cancelled: false,
+  };
 }
