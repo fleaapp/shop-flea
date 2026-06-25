@@ -258,6 +258,11 @@ const Auth = () => {
       // fails closed if the native plugin/config is missing.
       if (isGoogleIosRuntime()) {
         const nativeResult = await nativeGoogleSignIn();
+        if (!nativeResult.handled) {
+          localStorage.removeItem('flea_oauth_signup');
+          toast.error('Google sign-in is not available in this iOS build. Please update the app and try again.');
+          return;
+        }
         if (nativeResult.error) {
           localStorage.removeItem('flea_oauth_signup');
           if (!nativeResult.cancelled) {
