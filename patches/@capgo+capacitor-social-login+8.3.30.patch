@@ -1,8 +1,103 @@
+diff --git a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
+index 9169503..de4c4c6 100644
+--- a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
++++ b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
+@@ -1,4 +1,5 @@
+ import Foundation
++import UIKit
+ 
+ #if canImport(GoogleSignIn)
+ import GoogleSignIn
+@@ -18,6 +19,32 @@ class GoogleProvider {
+     var mode = GoogleProviderLoginType.ONLINE
+     private let offlineRefreshNotSupportedMessage = "Google refresh() is not available when using offline mode. Offline mode only returns serverAuthCode for backend token exchange. Send serverAuthCode to your backend and refresh tokens there, or switch google.mode to 'online' for client-side refresh."
+ 
++    private func topViewController(from rootViewController: UIViewController?) -> UIViewController? {
++        if let navigationController = rootViewController as? UINavigationController {
++            return topViewController(from: navigationController.visibleViewController)
++        }
++
++        if let tabBarController = rootViewController as? UITabBarController {
++            return topViewController(from: tabBarController.selectedViewController)
++        }
++
++        if let presentedViewController = rootViewController?.presentedViewController {
++            return topViewController(from: presentedViewController)
++        }
++
++        return rootViewController
++    }
++
++    private func currentPresentingViewController() -> UIViewController? {
++        let rootViewController = UIApplication.shared.connectedScenes
++            .compactMap { $0 as? UIWindowScene }
++            .flatMap { $0.windows }
++            .first { $0.isKeyWindow }?
++            .rootViewController ?? UIApplication.shared.windows.first?.rootViewController
++
++        return topViewController(from: rootViewController)
++    }
++
+     func initialize(clientId: String, mode: GoogleProviderLoginType, serverClientId: String? = nil, hostedDomain: String? = nil) {
+         configuration = GIDConfiguration(clientID: clientId, serverClientID: serverClientId, hostedDomain: hostedDomain, openIDRealm: nil)
+         self.mode = mode
+@@ -38,11 +65,13 @@ class GoogleProvider {
+             }
+ 
+             func login() {
+-                guard let presentingVc = UIApplication.shared.windows.first?.rootViewController else {
++                guard let presentingVc = self.currentPresentingViewController() else {
+                     completion(.failure(NSError(domain: "GoogleProvider", code: 0, userInfo: [NSLocalizedDescriptionKey: "No presenting view controller found"])))
+                     return
+                 }
+ 
++                print("[GoogleProvider] Starting native Google Sign-In with presenting view controller: \(type(of: presentingVc))")
++
+                 let shouldGrantOfflineAccess = payload["grantOfflineAccess"] as? Bool ?? false
+                 var scopes = payload["scopes"] as? [String] ?? self.defaultGrantedScopes
+                 if shouldGrantOfflineAccess {
+@@ -55,10 +84,11 @@ class GoogleProvider {
+                 GIDSignIn.sharedInstance.signIn(
+                     withPresenting: presentingVc,
+                     hint: nil,
+-                    additionalScopes: payload["scopes"] as? [String] ?? self.defaultGrantedScopes,
++                    additionalScopes: scopes,
+                     nonce: nonce
+                 ) { result, error in
+                     if let error = error {
++                        print("[GoogleProvider] Native Google Sign-In failed: \(error.localizedDescription)")
+                         completion(.failure(error))
+                         return
+                     }
+@@ -66,6 +96,7 @@ class GoogleProvider {
+                         completion(.failure(NSError(domain: "GoogleProvider", code: 0, userInfo: [NSLocalizedDescriptionKey: "No result returned"])))
+                         return
+                     }
++                    print("[GoogleProvider] Native Google Sign-In returned a result")
+                     if self.mode == .OFFLINE {
+                         guard let serverAuthCode = result.serverAuthCode else {
+                             completion(.failure(NSError(domain: "GoogleProvider", code: 0, userInfo: [NSLocalizedDescriptionKey: "Cannot find serverAuthCode, make sure to set iOSServerClientId in the configuration"])))
+@@ -131,6 +162,7 @@ class GoogleProvider {
+             if GIDSignIn.sharedInstance.hasPreviousSignIn() {
+                 GIDSignIn.sharedInstance.restorePreviousSignIn { user, error in
+                     if let error = error {
++                        print("[GoogleProvider] Native Google Sign-In failed: \(error.localizedDescription)")
+                         completion(.failure(error))
+                         return
+                     }
+@@ -166,6 +198,7 @@ class GoogleProvider {
+             if GIDSignIn.sharedInstance.hasPreviousSignIn() {
+                 GIDSignIn.sharedInstance.restorePreviousSignIn { user, error in
+                     if let error = error {
++                        print("[GoogleProvider] Native Google Sign-In failed: \(error.localizedDescription)")
+                         completion(.failure(error))
+                         return
+                     }
 diff --git a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift
-index 1111111..2222222 100644
+index b67befe..6b63f8d 100644
 --- a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift
 +++ b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/SocialLoginPlugin.swift
-@@ -66,6 +66,19 @@
+@@ -66,6 +66,19 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
      private let oauth2 = OAuth2Provider()
      private var openSecureWindowCall: CAPPluginCall?
  
@@ -22,7 +117,7 @@ index 1111111..2222222 100644
      // Helper to get Facebook provider (returns nil if unavailable)
      private var facebookProvider: FacebookProvider? {
          #if canImport(FBSDKLoginKit)
-@@ -173,7 +186,9 @@
+@@ -173,7 +186,9 @@ public class SocialLoginPlugin: CAPPlugin, CAPBridgedPlugin {
          }
  
          if let googleSettings = call.getObject("google") {
@@ -32,24 +127,4 @@ index 1111111..2222222 100644
 +            let iOSClientId = configuredIOSClientId ?? plistIOSClientId
              let iOSServerClientId = googleSettings["iOSServerClientId"] as? String
              let hostedDomain = googleSettings["hostedDomain"] as? String
- 
-diff --git a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
-index 3333333..4444444 100644
---- a/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
-+++ b/node_modules/@capgo/capacitor-social-login/ios/Sources/SocialLoginPlugin/GoogleProvider.swift
-@@ -38,8 +38,14 @@
-             }
- 
-             func login() {
--                guard let presentingVc = UIApplication.shared.windows.first?.rootViewController else {
-+                let presentingVc = UIApplication.shared.connectedScenes
-+                    .compactMap { $0 as? UIWindowScene }
-+                    .flatMap { $0.windows }
-+                    .first { $0.isKeyWindow }?
-+                    .rootViewController ?? UIApplication.shared.windows.first?.rootViewController
-+
-+                guard let presentingVc = presentingVc else {
-                     completion(.failure(NSError(domain: "GoogleProvider", code: 0, userInfo: [NSLocalizedDescriptionKey: "No presenting view controller found"])))
-                     return
-                 }
  
