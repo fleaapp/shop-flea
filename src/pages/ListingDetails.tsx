@@ -373,6 +373,7 @@ const ListingDetails = () => {
   const sellerLocation = getLocationDisplay(seller?.country_code, seller?.location);
 
   const handleWishlistClick = async () => {
+    if (!requireAuth()) return;
     if (isFavorite(listing.id)) {
       setShowRemoveFromWishlistDialog(true);
       return;
@@ -419,6 +420,7 @@ const ListingDetails = () => {
   };
 
   const handleCartClick = () => {
+    if (!requireAuth()) return;
     if (isInCart(listing.id)) {
       setShowRemoveFromCartDialog(true);
       return;
