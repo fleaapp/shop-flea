@@ -19,6 +19,7 @@ import { useCart } from '@/context/CartContext';
 import { useOnboarding } from '@/context/OnboardingContext';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import { useGuestMode } from '@/context/GuestModeContext';
 import { Listing } from '@/types/listing';
 import { supabase } from '@/lib/supabase';
 import { formatSizeKeyLabel } from '@/utils/sizeKeys';
@@ -52,6 +53,7 @@ const Index = () => {
   const { addDiscarded, removeDiscarded, discardedIds } = useDiscardedListings();
   const { checkAndTriggerOnboarding, openCarousel } = useOnboarding();
   const { user, profile, loading: authLoading, refreshProfile } = useAuth();
+  const { isGuest, requireAuth } = useGuestMode();
 
   // Check if user needs to set up their profile.
   // Triggers when: profile is missing entirely, username is missing/blank,
@@ -346,10 +348,13 @@ const Index = () => {
   const handleSwipeUp = useCallback(async (listing: DbListing) => {
     if (pendingExitId) return;
 
+    // Add to cart is an account-based action — guests must sign in.
+    if (!requireAuth()) return;
+
     setPendingExitId(listing.id);
     await addToCart(toDisplayListing(listing));
     setLastAction({ listingId: listing.id, type: 'cart' });
-  }, [addToCart, pendingExitId]);
+  }, [addToCart, pendingExitId, requireAuth]);
 
   const handleSwipeDown = useCallback(async (listingId: string) => {
     if (pendingExitId) return;
