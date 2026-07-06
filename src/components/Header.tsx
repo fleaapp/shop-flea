@@ -16,7 +16,7 @@ const Header = ({
   canUndo = false
 }: HeaderProps) => {
   return <header className="flex items-center justify-between px-6 max-[375px]:px-4 py-4 max-[375px]:py-3">
-      <img src={fleaLogo} alt="FLEA" className="h-8 max-[375px]:h-6 w-auto" fetchPriority="high" decoding="async" />
+      <img src={fleaLogo} alt="FLEA" className="h-8 max-[375px]:h-6 w-auto" decoding="async" />
       
       <div className="flex items-center gap-[4px] max-[375px]:gap-1">
         <Button 
