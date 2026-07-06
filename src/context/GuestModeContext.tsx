@@ -95,7 +95,7 @@ export const GuestModeProvider = ({ children }: { children: ReactNode }) => {
           <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
             <AlertDialogAction
               onClick={() => goToAuth('login')}
-              className="w-full h-10 rounded-full text-sm bg-[#2b303b] text-white hover:bg-[#2b303b]/90"
+              className="w-full h-10 rounded-full text-sm bg-charcoal-light text-cream hover:bg-charcoal-light/90"
             >
               Log In
             </AlertDialogAction>

@@ -24,7 +24,7 @@ const GuestGate = () => {
         <div className="flex flex-col gap-3 w-full max-w-[260px]">
           <Button
             onClick={() => go('login')}
-            className="h-11 rounded-full bg-[#2b303b] text-white font-bold text-sm hover:bg-[#2b303b]/90"
+            className="h-11 rounded-full bg-charcoal-light text-cream font-bold text-sm hover:bg-charcoal-light/90"
           >
             Log In
           </Button>
