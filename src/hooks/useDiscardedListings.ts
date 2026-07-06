@@ -31,7 +31,11 @@ export const useDiscardedListings = () => {
   };
 
   const addDiscarded = useCallback(async (listingId: string) => {
-    if (!user) return false;
+    if (!user) {
+      // Guest/anonymous browsing: track locally for the session, no DB write.
+      setDiscardedIds(prev => new Set([...prev, listingId]));
+      return true;
+    }
 
     // Optimistic update — unblock UI immediately
     setDiscardedIds(prev => new Set([...prev, listingId]));
@@ -42,7 +46,6 @@ export const useDiscardedListings = () => {
       .then(({ error }) => {
         if (error && error.code !== '23505') {
           console.error('Failed to discard listing:', error);
-          // Rollback on failure
           setDiscardedIds(prev => {
             const next = new Set(prev);
             next.delete(listingId);
@@ -55,7 +58,14 @@ export const useDiscardedListings = () => {
   }, [user]);
 
   const removeDiscarded = useCallback(async (listingId: string) => {
-    if (!user) return false;
+    if (!user) {
+      setDiscardedIds(prev => {
+        const next = new Set(prev);
+        next.delete(listingId);
+        return next;
+      });
+      return true;
+    }
 
     const { error } = await supabase
       .from('discarded_listings')
