@@ -169,7 +169,7 @@ const AppContent = () => {
 
   const routes = (
     <Routes>
-          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+          <Route path="/" element={<ProtectedRoute mode="public"><Index /></ProtectedRoute>} />
           <Route path="/about" element={<Navigate to="/" replace />} />
           <Route path="/install" element={<Install />} />
           <Route path="/auth" element={<Auth />} />
@@ -177,22 +177,22 @@ const AppContent = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/listing/:id" element={<ProtectedRoute><ListingDetails /></ProtectedRoute>} />
+          <Route path="/listing/:id" element={<ProtectedRoute mode="public"><ListingDetails /></ProtectedRoute>} />
           <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
-          <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+          <Route path="/cart" element={<ProtectedRoute mode="guest-gate"><Cart /></ProtectedRoute>} />
           <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
           <Route path="/checkout/success" element={<CheckoutSuccess />} />
-          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute mode="guest-gate"><Profile /></ProtectedRoute>} />
           <Route path="/create" element={<ProtectedRoute><CreateListing /></ProtectedRoute>} />
           <Route path="/listing/:id/edit" element={<ProtectedRoute><EditListing /></ProtectedRoute>} />
-          <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/notifications" element={<ProtectedRoute mode="guest-gate"><Notifications /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute mode="guest-gate"><Settings /></ProtectedRoute>} />
           <Route path="/settings/profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
           <Route path="/suggestion-box" element={<ProtectedRoute><SuggestionBox /></ProtectedRoute>} />
-          <Route path="/faq" element={<ProtectedRoute><FAQ /></ProtectedRoute>} />
+          <Route path="/faq" element={<ProtectedRoute mode="public"><FAQ /></ProtectedRoute>} />
           <Route path="/contact-support" element={<ProtectedRoute><ContactSupport /></ProtectedRoute>} />
           <Route path="/contact-support/:threadId" element={<ProtectedRoute><ChatConversation /></ProtectedRoute>} />
-          <Route path="/seller/:sellerId" element={<ProtectedRoute><SellerProfile /></ProtectedRoute>} />
+          <Route path="/seller/:sellerId" element={<ProtectedRoute mode="public"><SellerProfile /></ProtectedRoute>} />
           <Route path="/sales" element={<ProtectedRoute><Sales /></ProtectedRoute>} />
           <Route path="/order-chat/:orderId" element={<ProtectedRoute><OrderChat /></ProtectedRoute>} />
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
