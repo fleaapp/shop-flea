@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { useGuestMode } from '@/context/GuestModeContext';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { getAvatarUrl } from '@/utils/optimizedImage';
 import { Button } from '@/components/ui/button';
