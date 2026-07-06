@@ -33,6 +33,7 @@ import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 import { useReporting } from '@/hooks/useReporting';
 import ReportDialog from '@/components/ReportDialog';
 import { useAuth } from '@/context/AuthContext';
+import { useGuestMode } from '@/context/GuestModeContext';
 import { useOrders, OrderGroup } from '@/hooks/useOrders';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
 import OrderSuccessDialog from '@/components/OrderSuccessDialog';
@@ -95,6 +96,7 @@ const ListingDetails = () => {
   const { addFavorite, removeFavorite, isFavorite } = useFavorites();
   const { addToCart, removeFromCart, isInCart } = useCart();
   const { addDiscarded } = useDiscardedListings();
+  const { requireAuth } = useGuestMode();
 
   // Confirmation dialog states
   const [showRemoveFromCartDialog, setShowRemoveFromCartDialog] = useState(false);
@@ -371,6 +373,7 @@ const ListingDetails = () => {
   const sellerLocation = getLocationDisplay(seller?.country_code, seller?.location);
 
   const handleWishlistClick = async () => {
+    if (!requireAuth()) return;
     if (isFavorite(listing.id)) {
       setShowRemoveFromWishlistDialog(true);
       return;
@@ -417,6 +420,7 @@ const ListingDetails = () => {
   };
 
   const handleCartClick = () => {
+    if (!requireAuth()) return;
     if (isInCart(listing.id)) {
       setShowRemoveFromCartDialog(true);
       return;

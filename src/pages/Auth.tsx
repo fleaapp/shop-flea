@@ -52,7 +52,8 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, signIn, signUp, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+  const routeState = (location.state as { initialTab?: 'login' | 'signup' } | null) ?? null;
+  const [activeTab, setActiveTab] = useState<'login' | 'signup'>(routeState?.initialTab ?? 'login');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -611,7 +612,22 @@ const Auth = () => {
               </button>
               */}
 
+
             </div>
+          </div>
+
+          {/* Guest browse — Apple compliance: allow browsing without account */}
+          <div className="mt-6 flex justify-center">
+            <button
+              type="button"
+              onClick={() => {
+                try { sessionStorage.setItem('flea_guest_mode', '1'); } catch {}
+                navigate('/');
+              }}
+              className="text-sm text-foreground/70 underline hover:text-foreground"
+            >
+              Browse as Guest
+            </button>
           </div>
         </div>
       </div>

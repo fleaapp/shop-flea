@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { useGuestMode } from '@/context/GuestModeContext';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { getAvatarUrl } from '@/utils/optimizedImage';
 import { Button } from '@/components/ui/button';
@@ -58,6 +59,7 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
   const { user, profile } = useAuth();
+  const { requireAuth } = useGuestMode();
   const queryClient = useQueryClient();
   const { openReport, submitPendingReport, closeReport, pendingReport, isReporting } = useReporting();
   const { checkCommentContent, isChecking } = useContentModeration();
@@ -350,10 +352,8 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
 
   const handleSubmit = () => {
     if (!newComment.trim()) return;
-    if (!user) {
-      toast.error('🔒 Please log in to comment');
-      return;
-    }
+    if (!requireAuth()) return;
+    if (!user) return;
     if (isBlocked) {
       toast.error('Your account is restricted. You cannot post comments.');
       return;
@@ -371,10 +371,7 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
   };
 
   const handleReply = (comment: Comment) => {
-    if (!user) {
-      toast.error('Please log in to reply');
-      return;
-    }
+    if (!requireAuth()) return;
     setReplyingTo({ id: comment.id, username: comment.profile?.username || '@user' });
   };
 

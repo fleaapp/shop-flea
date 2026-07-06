@@ -103,8 +103,10 @@ export const useFavorites = () => {
 
   const addFavorite = useCallback(async (listingId: string, listing?: Listing) => {
     if (!user) {
-      toast.error('Please sign in to save items');
-      return false;
+      // Guest/anonymous browsing: keep the "saved" state in memory only for
+      // this session so the swipe deck can advance. No DB write, no toast.
+      setFavoriteIds(prev => new Set([...prev, listingId]));
+      return true;
     }
 
     // Optimistic update — unblock UI immediately
@@ -135,7 +137,15 @@ export const useFavorites = () => {
   }, [user, persistFavoriteSnapshot]);
 
   const removeFavorite = useCallback(async (listingId: string) => {
-    if (!user) return false;
+    if (!user) {
+      // Guest/anonymous: local-only undo.
+      setFavoriteIds(prev => {
+        const next = new Set(prev);
+        next.delete(listingId);
+        return next;
+      });
+      return true;
+    }
 
     const { error } = await supabase
       .from('favorites')
