@@ -128,13 +128,13 @@ export const GuestModeProvider = ({ children }: { children: ReactNode }) => {
           <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
             <AlertDialogAction
               onClick={() => goToAuth('login')}
-              className="w-full h-10 rounded-full text-sm bg-charcoal-light text-cream hover:bg-charcoal-light/90"
+              className="w-full h-10 rounded-full text-sm bg-muted-foreground/20 text-muted-foreground hover:bg-muted-foreground/30"
             >
               Log In
             </AlertDialogAction>
             <AlertDialogAction
               onClick={() => goToAuth('signup')}
-              className="w-full h-10 rounded-full text-sm bg-primary text-primary-foreground hover:bg-primary/90"
+              className="w-full h-10 rounded-full text-sm bg-muted-foreground/20 text-muted-foreground hover:bg-muted-foreground/30"
             >
               Sign Up
             </AlertDialogAction>
