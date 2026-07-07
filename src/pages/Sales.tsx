@@ -154,7 +154,7 @@ const Sales = () => {
             <p className="text-sm text-muted-foreground max-w-[280px] mb-6 leading-relaxed">
               Log in or sign up to start selling on Flea.
             </p>
-            <div className="flex flex-col gap-3 w-full max-w-[260px]">
+            <div className="flex flex-col gap-3 w-full max-w-[220px]">
               <Button
                 onClick={() => goToAuth('login')}
                 className="h-11 rounded-full bg-muted-foreground/20 text-muted-foreground font-bold text-sm hover:bg-muted-foreground/30"

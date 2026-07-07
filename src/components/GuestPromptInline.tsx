@@ -22,7 +22,7 @@ const GuestPromptInline = ({ className = '' }: Props) => {
         <br />
         buy, sell &amp; save on Flea.
       </p>
-      <div className="flex flex-col gap-3 w-full max-w-[260px]">
+      <div className="flex flex-col gap-3 w-full max-w-[220px]">
         <Button
           onClick={() => go('login')}
           className="h-11 rounded-full bg-muted-foreground/20 text-muted-foreground font-bold text-sm hover:bg-muted-foreground/30"
