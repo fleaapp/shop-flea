@@ -45,7 +45,11 @@ const getOrderStatusBadge = (status: Order['status']) => {
 const Cart = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
+  const { isGuest } = useGuestMode();
+  const isUnauthed = !user;
   const routeState = location.state as { initialTab?: 'cart' | 'orders' } | null;
+
   const { cartItems, removeFromCart } = useCart();
   const { addFavorite } = useFavorites();
   const { removeDiscarded } = useDiscardedListings();
