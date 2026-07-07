@@ -50,7 +50,8 @@ serve(async (req) => {
   }
 
   try {
-    // Manual JWT parsing – more reliable in cross-project environments
+    // Cryptographically verify JWT via Supabase auth (prevents forged tokens
+    // from overwriting other users' Stripe account IDs).
     const authHeader = req.headers.get('Authorization') ?? '';
     const token = authHeader.replace('Bearer ', '');
     if (!token) {
@@ -60,14 +61,19 @@ serve(async (req) => {
       });
     }
 
+    const EXTERNAL_URL = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '';
+    const EXTERNAL_ANON_KEY = Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY') ?? '';
+
     let userId: string;
     try {
-      const payloadB64 = token.split('.')[1];
-      const payload = JSON.parse(atob(payloadB64));
-      if (!payload.sub || (payload.exp && payload.exp * 1000 < Date.now())) {
-        throw new Error('Invalid or expired token');
+      const verifier = createClient(EXTERNAL_URL, EXTERNAL_ANON_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const { data, error } = await verifier.auth.getUser(token);
+      if (error || !data?.user?.id) {
+        throw new Error('Invalid token');
       }
-      userId = payload.sub;
+      userId = data.user.id;
     } catch {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
