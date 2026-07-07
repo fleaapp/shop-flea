@@ -295,22 +295,23 @@ const Index = () => {
     return { newListings: newOnes, maybeListings: maybes, passedListings: passes, allRevisitListings: combined };
   }, [dbListings, discardedIds, favoriteIds, isInCart, pendingExitId, maybeIds, passedIds]);
 
+  // MAYBE queue auto-transition disabled — kept for future re-enable.
   // When the new-listings queue runs out, automatically transition into the Maybe queue
   // (if any) with a brief toast. Passed listings are NOT included here — they're only
   // refreshable via Settings → Refresh Passed Listings.
-  useEffect(() => {
-    if (loading) return;
-    if (viewMode !== 'new') return;
-    if (newListings.length > 0) return;
-    if (maybeIds.size === 0) return;
-    toast('You\'ve seen all new listings. Now showing your Maybes 🤔.');
-    setViewMode('maybe');
-  }, [loading, viewMode, newListings.length, maybeIds.size]);
+  // useEffect(() => {
+  //   if (loading) return;
+  //   if (viewMode !== 'new') return;
+  //   if (newListings.length > 0) return;
+  //   if (maybeIds.size === 0) return;
+  //   toast('You\'ve seen all new listings. Now showing your Maybes 🤔.');
+  //   setViewMode('maybe');
+  // }, [loading, viewMode, newListings.length, maybeIds.size]);
 
-  // When the Maybe revisit queue empties, flip back to 'new'.
-  useEffect(() => {
-    if (viewMode === 'maybe' && maybeListings.length === 0) setViewMode('new');
-  }, [viewMode, maybeListings.length]);
+  // // When the Maybe revisit queue empties, flip back to 'new'.
+  // useEffect(() => {
+  //   if (viewMode === 'maybe' && maybeListings.length === 0) setViewMode('new');
+  // }, [viewMode, maybeListings.length]);
 
   const availableListings =
     viewMode === 'maybe' ? maybeListings
