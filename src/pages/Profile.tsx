@@ -22,7 +22,7 @@ import ProfileGridCard from '@/components/ProfileGridCard';
 import { Button } from '@/components/ui/button';
 import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
 import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
-import { useGuestWishlist } from '@/utils/guestWishlist';
+
 
 
 const Profile = () => {
