@@ -81,9 +81,10 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     setIsNewUser(false);
   }, []);
 
-  // Called when user clicks "Take Tour" - starts the actual tour
+  // Called when user clicks "Take Tour" - opens the walkthrough carousel
   const startTour = useCallback(() => {
-    setCurrentStep('swipe-navigation');
+    setCurrentStep(null);
+    setShowCarousel(true);
   }, []);
 
   // Called from Index page to check if we should start onboarding
