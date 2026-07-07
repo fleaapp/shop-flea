@@ -544,7 +544,7 @@ const ListingDetails = () => {
                   )}
                   <DropdownMenuItem 
                     onClick={async () => {
-                      const shareUrl = `${window.location.origin}/listing/${listing.id}`;
+                      const shareUrl = buildListingShareUrl(listing.id);
                       if (navigator.share) {
                         try {
                           await navigator.share({
