@@ -128,7 +128,7 @@ const Settings = () => {
   const helpCentreItems = [{
     icon: <span className="text-base">💬</span>,
     label: 'Contact Support',
-    action: () => navigate('/contact-support'),
+    action: isGuest ? promptGuest : () => navigate('/contact-support'),
     badge: supportUnread || undefined
   }, {
     icon: <span className="text-base">❓</span>,
@@ -137,7 +137,7 @@ const Settings = () => {
   }, {
     icon: <span className="text-base">📮</span>,
     label: 'Suggestion Box',
-    action: () => navigate('/suggestion-box')
+    action: isGuest ? promptGuest : () => navigate('/suggestion-box')
   }, {
     icon: <span className="text-base">📄</span>,
     label: 'Terms & Conditions',
