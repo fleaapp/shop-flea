@@ -382,10 +382,6 @@ const Index = () => {
   //   setLastAction({ listingId, type: 'maybe' });
   // }, [pendingExitId, discardedIds, removeDiscarded]);
 
-  const handleSwipeDown = useCallback(() => {
-    // Swipe down is currently disabled; maybe functionality saved for future re-enable.
-  }, []);
-
   const handleUndo = useCallback(async () => {
     if (!lastAction) return;
 
