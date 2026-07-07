@@ -403,13 +403,13 @@ const Index = () => {
       await removeFavorite(listingId);
     } else if (type === 'cart') {
       await removeFromCart(listingId);
-    } else if (type === 'maybe') {
-      setMaybeIds((prev) => {
-        const next = new Set(prev);
-        next.delete(listingId);
-        return next;
-      });
-    }
+    // } else if (type === 'maybe') {
+    //   setMaybeIds((prev) => {
+    //     const next = new Set(prev);
+    //     next.delete(listingId);
+    //     return next;
+    //   });
+    // }
     
     setLastAction(null);
     toast.success('Action undone!');
