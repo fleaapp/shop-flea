@@ -410,12 +410,12 @@ const GuestProfile = () => {
 
   return (
     <div className="fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col">
-      {/* Top-right sales button (original guest profile icon) */}
+      {/* Top-right sales button (guests see it and tap through to Sales screen) */}
       <div className="absolute top-6 right-4 z-10">
         <Button
           variant="outline"
           size="icon"
-          onClick={() => promptGuestSell()}
+          onClick={() => navigate('/sales')}
           className="h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-xl border-2 border-border bg-card hover:bg-secondary text-lg max-[375px]:text-base"
           aria-label="Sales"
         >
