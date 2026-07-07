@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronUp, Send, MoreHorizontal, Trash2, Flag, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useGuestMode } from '@/context/GuestModeContext';
@@ -59,7 +59,8 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
   const { user, profile } = useAuth();
-  const { requireAuth } = useGuestMode();
+  const navigate = useNavigate();
+  const { requireAuth, exitGuestMode } = useGuestMode();
   const queryClient = useQueryClient();
   const { openReport, submitPendingReport, closeReport, pendingReport, isReporting } = useReporting();
   const { checkCommentContent, isChecking } = useContentModeration();
@@ -541,7 +542,26 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
             </div>
           ) : (
             <p className="py-2 text-center text-sm text-muted-foreground">
-              Log in to leave a comment
+              <button
+                onClick={() => {
+                  exitGuestMode();
+                  navigate('/auth', { state: { initialTab: 'login' } });
+                }}
+                className="font-semibold underline underline-offset-4 decoration-1 text-foreground"
+              >
+                Log In
+              </button>{' '}
+              <span className="font-normal">or</span>{' '}
+              <button
+                onClick={() => {
+                  exitGuestMode();
+                  navigate('/auth', { state: { initialTab: 'signup' } });
+                }}
+                className="font-semibold underline underline-offset-4 decoration-1 text-foreground"
+              >
+                Sign Up
+              </button>{' '}
+              to comment.
             </p>
           )}
 
