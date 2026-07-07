@@ -55,6 +55,8 @@ const UnreadIndicator = () => (
 
 const Notifications = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isUnauthed = !user;
   const { sellerOrderGroups, buyerOrderGroups, markAsShipped } = useOrders();
   const { notifications, isLoading: loadingNotifications, unreadCount, badgeCount, markAsRead, dismissBadge } = useNotifications();
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
