@@ -38,7 +38,8 @@ const SwipeCard = ({
   const likeOpacity = useTransform(x, [0, 100], [0, 1]);
   const nopeOpacity = useTransform(x, [-100, 0], [1, 0]);
   const cartOpacity = useTransform(y, [-100, 0], [1, 0]);
-  const skipOpacity = useTransform(y, [0, 100], [0, 1]);
+  // MAYBE (swipe down) overlay disabled — kept for future re-enable.
+  // const skipOpacity = useTransform(y, [0, 100], [0, 1]);
 
   const stackOffset = index * 4;
   const stackRotation = index * 3;
