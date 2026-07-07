@@ -48,12 +48,13 @@ const BottomNav = () => {
   const profileIcon = (
     <div className="h-5 w-5 rounded-full overflow-hidden bg-background flex items-center justify-center">
       <img
-        src={getAvatarUrl(profile?.avatar_url) || (user?.id ? getDefaultAvatar(user.id) : '')}
+        src={getAvatarUrl(profile?.avatar_url) || getDefaultAvatar(user?.id || 'guest')}
         alt="Profile"
         className="h-full w-full object-cover"
       />
     </div>
   );
+
 
   const navItems: NavItem[] = useMemo(() => [
     { icon: <span className="text-lg">⚙️</span>, label: 'Settings', path: '/settings', badge: supportUnread },

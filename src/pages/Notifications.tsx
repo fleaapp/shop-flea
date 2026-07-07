@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '@/components/BottomNav';
+import GuestPromptInline from '@/components/GuestPromptInline';
+import { useAuth } from '@/context/AuthContext';
 import { useNotifications, getNotificationMessage, getNotificationEmoji, Notification } from '@/hooks/useNotifications';
 import { useOrders } from '@/hooks/useOrders';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
@@ -10,6 +12,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
 import { OrderGroup } from '@/hooks/useOrders';
+
 
 const ProductThumbnail = ({
   image,
@@ -52,6 +55,8 @@ const UnreadIndicator = () => (
 
 const Notifications = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isUnauthed = !user;
   const { sellerOrderGroups, buyerOrderGroups, markAsShipped } = useOrders();
   const { notifications, isLoading: loadingNotifications, unreadCount, badgeCount, markAsRead, dismissBadge } = useNotifications();
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
@@ -262,7 +267,11 @@ const Notifications = () => {
 
       {/* Content */}
       <div className="px-4 space-y-3">
-        {loadingNotifications ? (
+        {isUnauthed ? (
+          <div className="flex justify-center pt-8">
+            <GuestPromptInline />
+          </div>
+        ) : loadingNotifications ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
             <span className="text-5xl mb-4">⏳</span>
           </div>
@@ -278,6 +287,7 @@ const Notifications = () => {
           ))
         )}
       </div>
+
 
       <SalesDetailsSheet
         orders={selectedGroup?.orders ?? null}

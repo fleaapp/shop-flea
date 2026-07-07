@@ -11,14 +11,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { clearGuestFavorites } from '@/utils/guestWishlist';
 
 const GUEST_KEY = 'flea_guest_mode';
+
+type PromptVariant = 'default' | 'sell';
 
 interface GuestModeContextType {
   isGuest: boolean;
   enterGuestMode: () => void;
   exitGuestMode: () => void;
   promptGuest: () => void;
+  promptGuestSell: () => void;
   /** Returns true if signed in. Returns false + opens prompt if guest/anonymous. */
   requireAuth: () => boolean;
 }
@@ -39,6 +43,7 @@ export const GuestModeProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
   const [guestFlag, setGuestFlag] = useState<boolean>(readFlag);
   const [promptOpen, setPromptOpen] = useState(false);
+  const [promptVariant, setPromptVariant] = useState<PromptVariant>('default');
 
   // Any real session cancels guest mode.
   useEffect(() => {
@@ -46,6 +51,7 @@ export const GuestModeProvider = ({ children }: { children: ReactNode }) => {
       try { sessionStorage.removeItem(GUEST_KEY); } catch {}
       setGuestFlag(false);
       setPromptOpen(false);
+      clearGuestFavorites();
     }
   }, [user, guestFlag]);
 
@@ -57,9 +63,16 @@ export const GuestModeProvider = ({ children }: { children: ReactNode }) => {
   const exitGuestMode = useCallback(() => {
     try { sessionStorage.removeItem(GUEST_KEY); } catch {}
     setGuestFlag(false);
+    clearGuestFavorites();
   }, []);
 
   const promptGuest = useCallback(() => {
+    setPromptVariant('default');
+    setPromptOpen(true);
+  }, []);
+
+  const promptGuestSell = useCallback(() => {
+    setPromptVariant('sell');
     setPromptOpen(true);
   }, []);
 
@@ -67,6 +80,7 @@ export const GuestModeProvider = ({ children }: { children: ReactNode }) => {
 
   const requireAuth = useCallback((): boolean => {
     if (user) return true;
+    setPromptVariant('default');
     setPromptOpen(true);
     return false;
   }, [user]);
@@ -77,21 +91,31 @@ export const GuestModeProvider = ({ children }: { children: ReactNode }) => {
     navigate('/auth', { state: { initialTab: tab } });
   };
 
+  const title = promptVariant === 'sell' ? 'Ready to sell?' : "You're browsing as a guest";
+  const body =
+    promptVariant === 'sell' ? (
+      <>Log in or sign up to start selling on Flea.</>
+    ) : (
+      <>
+        Login or sign up to
+        <br />
+        buy, sell &amp; save on Flea.
+      </>
+    );
+
   return (
     <GuestModeContext.Provider
-      value={{ isGuest, enterGuestMode, exitGuestMode, promptGuest, requireAuth }}
+      value={{ isGuest, enterGuestMode, exitGuestMode, promptGuest, promptGuestSell, requireAuth }}
     >
       {children}
       <AlertDialog open={promptOpen} onOpenChange={setPromptOpen}>
         <AlertDialogContent className="max-w-[320px] rounded-2xl p-5">
           <AlertDialogHeader className="space-y-2">
             <AlertDialogTitle className="text-base text-center">
-              You're browsing as a guest
+              {title}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-center">
-              Login or sign up to
-              <br />
-              buy, sell & save on Flea.
+              {body}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
@@ -130,6 +154,7 @@ export const useGuestMode = (): GuestModeContextType => {
         try { sessionStorage.removeItem(GUEST_KEY); } catch {}
       },
       promptGuest: () => {},
+      promptGuestSell: () => {},
       requireAuth: () => true,
     };
   }

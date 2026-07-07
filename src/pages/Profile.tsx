@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useRef, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import BottomNav from '@/components/BottomNav';
+import GuestPromptInline from '@/components/GuestPromptInline';
 import { useAuth } from '@/context/AuthContext';
+import { useGuestMode } from '@/context/GuestModeContext';
 import { useUserListings } from '@/hooks/useListings';
 import { formatTagLabel } from '@/components/ListingTag';
 import { useOrders, Order, OrderGroup } from '@/hooks/useOrders';
@@ -20,6 +22,8 @@ import ProfileGridCard from '@/components/ProfileGridCard';
 import { Button } from '@/components/ui/button';
 import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
 import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
+import { useGuestWishlist } from '@/utils/guestWishlist';
+
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -147,19 +151,9 @@ const Profile = () => {
   }
 
   if (!user) {
-    return (
-      <div className="min-h-screen bg-background pb-24 flex flex-col items-center justify-center px-4">
-        <p className="text-lg font-medium text-foreground mb-4">Sign in to view your profile</p>
-        <button
-          onClick={() => navigate('/auth')}
-          className="rounded-full bg-primary px-6 py-3 text-primary-foreground font-medium"
-        >
-          Sign In
-        </button>
-        <BottomNav />
-      </div>
-    );
+    return <GuestProfile />;
   }
+
 
   return (
     <div className="fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col" style={{ touchAction: 'pan-x', overscrollBehavior: 'none' }}>
@@ -405,4 +399,125 @@ const Profile = () => {
   );
 };
 
+const GuestProfile = () => {
+  const navigate = useNavigate();
+  const { exitGuestMode, promptGuestSell } = useGuestMode();
+  const [activeTab, setActiveTab] = useState<'listings' | 'sold'>('listings');
+  const wishlist = useGuestWishlist();
+
+  const goToAuth = (tab: 'login' | 'signup' = 'login') => {
+    exitGuestMode();
+    navigate('/auth', { state: { initialTab: tab } });
+  };
+
+  return (
+    <div className="min-h-screen bg-background pb-24 overflow-x-hidden flex flex-col">
+      {/* Top-right Settings icon (guest analogue of the sales badge) */}
+      <div className="absolute top-6 right-4 z-10">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => navigate('/settings')}
+          className="h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-xl border-2 border-border bg-card hover:bg-secondary text-lg max-[375px]:text-base"
+          aria-label="Settings"
+        >
+          ⚙️
+        </Button>
+      </div>
+
+      {/* Avatar + login CTA */}
+      <div className="flex flex-col items-center px-4 pt-6">
+        <div className="relative">
+          <div className="h-20 w-20 max-[430px]:h-16 max-[430px]:w-16 max-[375px]:h-14 max-[375px]:w-14 rounded-full p-0.5 bg-gradient-to-br from-muted to-border">
+            <img
+              src={getDefaultAvatar('guest')}
+              alt="Profile"
+              className="h-full w-full rounded-full bg-card object-cover"
+              loading="eager"
+              decoding="async"
+            />
+          </div>
+        </div>
+        <button
+          onClick={() => goToAuth('login')}
+          className="mt-3 text-lg max-[430px]:text-base font-semibold text-foreground underline underline-offset-4 decoration-1"
+        >
+          Log In or Sign Up
+        </button>
+      </div>
+
+      {/* Sell (+) button and Listings/Sold toggle */}
+      <div className="mt-5 max-[430px]:mt-4 max-[393px]:mt-3 max-[375px]:mt-2 flex justify-center items-center gap-2">
+        <button
+          onClick={promptGuestSell}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground"
+          aria-label="Sell"
+        >
+          <Plus className="h-5 w-5" />
+        </button>
+        <div className="flex items-center rounded-full bg-muted p-1 w-[220px]">
+          <button
+            onClick={() => setActiveTab('listings')}
+            className={`flex w-1/2 items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-sm font-medium transition-all ${
+              activeTab === 'listings' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
+            }`}
+          >
+            Listings
+          </button>
+          <button
+            onClick={() => setActiveTab('sold')}
+            className={`flex w-1/2 items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-sm font-medium transition-all ${
+              activeTab === 'sold' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
+            }`}
+          >
+            Sold
+          </button>
+        </div>
+        <div className="h-12 w-12 rounded-xl" aria-hidden />
+      </div>
+
+      {/* Guest prompt beneath the toggle */}
+      <div className="flex justify-center pt-8 pb-4">
+        <GuestPromptInline />
+      </div>
+
+      {/* Session wishlist */}
+      {wishlist.length > 0 && (
+        <div className="px-4 pt-2 pb-6">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
+            <span>💌</span> Your wishlist
+            <span className="text-xs text-muted-foreground font-normal">
+              ({wishlist.length} this session)
+            </span>
+          </h3>
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4">
+            {wishlist.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => navigate(`/listing/${item.id}`)}
+                className="relative flex-shrink-0 w-32 rounded-2xl overflow-hidden bg-card card-shadow"
+              >
+                <div className="aspect-[4/5] w-full overflow-hidden">
+                  <img
+                    src={item.images?.[0] || item.image}
+                    alt={item.title}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="p-2 text-left">
+                  <p className="text-xs font-semibold text-foreground truncate">{item.title}</p>
+                  <p className="text-xs text-muted-foreground">${item.price}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <BottomNav />
+    </div>
+  );
+};
+
 export default Profile;
+

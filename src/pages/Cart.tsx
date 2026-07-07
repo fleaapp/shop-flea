@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
+import GuestPromptInline from '@/components/GuestPromptInline';
+import { useGuestMode } from '@/context/GuestModeContext';
+import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
@@ -17,6 +20,7 @@ import { fetchSellerShippingSettings, SellerShippingInfo } from '@/utils/shippin
 import { getAvatarUrl } from '@/utils/optimizedImage';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
+
 
 const getOrderStatusBadge = (status: Order['status']) => {
   switch (status) {
@@ -41,7 +45,11 @@ const getOrderStatusBadge = (status: Order['status']) => {
 const Cart = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
+  const { isGuest } = useGuestMode();
+  const isUnauthed = !user;
   const routeState = location.state as { initialTab?: 'cart' | 'orders' } | null;
+
   const { cartItems, removeFromCart } = useCart();
   const { addFavorite } = useFavorites();
   const { removeDiscarded } = useDiscardedListings();
@@ -323,7 +331,11 @@ const Cart = () => {
         </div>
       )}
 
-      {activeTab === 'cart' ? (
+      {isUnauthed ? (
+        <div className="flex justify-center pt-8">
+          <GuestPromptInline />
+        </div>
+      ) : activeTab === 'cart' ? (
         <div className="px-4 max-[375px]:px-3 space-y-4 max-[375px]:space-y-3" data-onboarding="cart-items-area">
           {cartItems.length > 0 ? (
             <>
