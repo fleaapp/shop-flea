@@ -437,12 +437,21 @@ const GuestProfile = () => {
             />
           </div>
         </div>
-        <button
-          onClick={() => goToAuth('login')}
-          className="mt-3 text-lg max-[430px]:text-base font-semibold text-foreground underline underline-offset-4 decoration-1"
-        >
-          Log In or Sign Up
-        </button>
+        <div className="mt-3 flex items-center gap-1.5 text-lg max-[430px]:text-base text-foreground">
+          <button
+            onClick={() => goToAuth('login')}
+            className="font-semibold underline underline-offset-4 decoration-1"
+          >
+            Log In
+          </button>
+          <span className="font-normal">or</span>
+          <button
+            onClick={() => goToAuth('signup')}
+            className="font-semibold underline underline-offset-4 decoration-1"
+          >
+            Sign Up
+          </button>
+        </div>
       </div>
 
       {/* Sell (+) button and Listings/Sold toggle */}
