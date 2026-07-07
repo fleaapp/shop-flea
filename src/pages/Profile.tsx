@@ -436,20 +436,8 @@ const GuestProfile = () => {
             />
           </div>
         </div>
-        <div className="mt-3 flex items-center gap-1.5 text-lg max-[430px]:text-base text-foreground">
-          <button
-            onClick={() => goToAuth('login')}
-            className="font-semibold underline underline-offset-4 decoration-1"
-          >
-            Log In
-          </button>
-          <span className="font-normal">or</span>
-          <button
-            onClick={() => goToAuth('signup')}
-            className="font-semibold underline underline-offset-4 decoration-1"
-          >
-            Sign Up
-          </button>
+        <div className="mt-3 text-lg max-[430px]:text-base text-foreground font-semibold">
+          @guest
         </div>
       </div>
 
@@ -483,8 +471,28 @@ const GuestProfile = () => {
         <div className="h-12 w-12 rounded-xl" aria-hidden />
       </div>
 
-      {/* Guest sell prompt now lives on the Sales screen; keep profile area tidy */}
-      <div className="flex-1 min-h-0" />
+      {/* Guest login/signup prompt, centred below the Listings/Sold toggle */}
+      <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-6 text-center">
+        <p className="text-sm text-muted-foreground max-w-[280px] mb-6 leading-relaxed">
+          Log in or sign up to
+          <br />
+          buy, sell &amp; save on Flea.
+        </p>
+        <div className="flex flex-col gap-3 w-full max-w-[260px]">
+          <Button
+            onClick={() => goToAuth('login')}
+            className="h-11 rounded-full bg-charcoal-light text-cream font-bold text-sm hover:bg-charcoal-light/90"
+          >
+            Log In
+          </Button>
+          <Button
+            onClick={() => goToAuth('signup')}
+            className="h-11 rounded-full bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90"
+          >
+            Sign Up
+          </Button>
+        </div>
+      </div>
 
       <BottomNav />
     </div>
