@@ -1,7 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useOnboarding } from '@/context/OnboardingContext';
-import fleaLogo from '@/assets/flea-logo.png';
 
 const OnboardingWelcomeDialog = () => {
   const { currentStep, startTour, skipOnboarding } = useOnboarding();
@@ -27,18 +26,13 @@ const OnboardingWelcomeDialog = () => {
           transition={{ type: 'spring', stiffness: 300, damping: 25 }}
           className="relative bg-card rounded-3xl p-8 mx-6 max-w-sm w-full card-shadow border border-border"
         >
-          {/* Logo */}
-          <div className="flex justify-center mb-6">
-            <img src={fleaLogo} alt="FLEA" className="h-12 w-auto" />
-          </div>
-          
           {/* Welcome Text */}
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-foreground mb-3">
-              Welcome to FLEA! 🎉
+              First time on Flea?
             </h2>
             <p className="text-muted-foreground">
-              Let's take a quick tour to show you how to browse, buy, and sell on FLEA.
+              Take a quick tour to discover how to sell, save & buy your next great find on Flea.
             </p>
           </div>
           
