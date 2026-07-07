@@ -622,15 +622,11 @@ const Auth = () => {
               type="button"
               onClick={() => {
                 try { sessionStorage.setItem('flea_guest_mode', '1'); } catch {}
-                // First-time guests get the standard app walkthrough, matching
-                // the logged-in onboarding experience. Tracked per-device.
+                // Always show the app walkthrough when entering guest mode,
+                // matching the logged-in onboarding experience.
                 try {
-                  const SEEN_KEY = 'flea-guest-walkthrough-seen';
-                  if (localStorage.getItem(SEEN_KEY) !== 'true') {
-                    localStorage.removeItem('flea-onboarding-completed');
-                    localStorage.setItem('flea-new-user-pending-onboarding', 'true');
-                    localStorage.setItem(SEEN_KEY, 'true');
-                  }
+                  localStorage.removeItem('flea-onboarding-completed');
+                  localStorage.setItem('flea-new-user-pending-onboarding', 'true');
                 } catch {}
                 navigate('/');
               }}
