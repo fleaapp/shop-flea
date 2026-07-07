@@ -242,11 +242,11 @@ const Settings = () => {
                         <ChevronRight className="h-5 w-5 text-muted-foreground/70" />
                       </div>
                       <div
-                        className="flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow bg-muted-foreground/20 text-muted-foreground cursor-pointer"
+                        className="flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow bg-primary text-primary-foreground cursor-pointer"
                         onClick={() => navigate('/auth', { state: { initialTab: 'signup' } })}
                       >
                         <span className="text-base max-[375px]:text-sm font-bold">Sign Up</span>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground/70" />
+                        <ChevronRight className="h-5 w-5 text-primary-foreground/70" />
                       </div>
                     </div>
                   )}

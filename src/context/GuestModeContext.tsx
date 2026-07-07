@@ -134,7 +134,7 @@ export const GuestModeProvider = ({ children }: { children: ReactNode }) => {
             </AlertDialogAction>
             <AlertDialogAction
               onClick={() => goToAuth('signup')}
-              className="w-full h-10 rounded-full text-sm bg-muted-foreground/20 text-muted-foreground hover:bg-muted-foreground/30"
+              className="w-full h-10 rounded-full text-sm bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Sign Up
             </AlertDialogAction>

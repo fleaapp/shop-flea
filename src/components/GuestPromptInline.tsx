@@ -31,7 +31,7 @@ const GuestPromptInline = ({ className = '' }: Props) => {
         </Button>
         <Button
           onClick={() => go('signup')}
-          className="h-11 rounded-full bg-muted-foreground/20 text-muted-foreground font-bold text-sm hover:bg-muted-foreground/30"
+          className="h-11 rounded-full bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90"
         >
           Sign Up
         </Button>
