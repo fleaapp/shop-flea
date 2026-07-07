@@ -693,6 +693,11 @@ const ListingDetails = () => {
                 </div>
               </div>
 
+              {/* Install-the-app CTA — visible only on mobile web, hidden inside
+                  the native app / installed PWA. Encourages shared-link viewers
+                  without the app to install it so future links deep-link in. */}
+              <InstallAppBanner />
+
               {/* Comments Section */}
               <ListingComments
                 listingId={listing.id}
