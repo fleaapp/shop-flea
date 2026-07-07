@@ -19,7 +19,9 @@ const GuestGate = () => {
           You're browsing as a guest
         </h1>
         <p className="text-sm text-muted-foreground max-w-[280px] mb-8 leading-relaxed">
-          Log in or sign up to buy, sell and save on Flea.
+          Login or sign up to
+          <br />
+          buy, sell & save on Flea.
         </p>
         <div className="flex flex-col gap-3 w-full max-w-[260px]">
           <Button
