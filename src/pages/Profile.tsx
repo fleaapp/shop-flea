@@ -410,12 +410,12 @@ const GuestProfile = () => {
 
   return (
     <div className="fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col">
-      {/* Top-right sales button (original guest profile icon) */}
+      {/* Top-right sales button (guests see it and tap through to Sales screen) */}
       <div className="absolute top-6 right-4 z-10">
         <Button
           variant="outline"
           size="icon"
-          onClick={() => promptGuestSell()}
+          onClick={() => navigate('/sales')}
           className="h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-xl border-2 border-border bg-card hover:bg-secondary text-lg max-[375px]:text-base"
           aria-label="Sales"
         >
@@ -483,30 +483,8 @@ const GuestProfile = () => {
         <div className="h-12 w-12 rounded-xl" aria-hidden />
       </div>
 
-      {/* Guest sell prompt centered in the remaining space */}
-      <div className="flex-1 min-h-0 flex items-center justify-center px-4">
-        <div className="flex flex-col items-center px-6 text-center">
-          <p className="text-sm text-muted-foreground max-w-[280px] mb-6 leading-relaxed">
-            Ready to sell?
-            <br />
-            Log in or sign up to start selling on Flea.
-          </p>
-          <div className="flex flex-col gap-3 w-full max-w-[260px]">
-            <Button
-              onClick={() => goToAuth('login')}
-              className="h-11 rounded-full bg-charcoal-light text-cream font-bold text-sm hover:bg-charcoal-light/90"
-            >
-              Log In
-            </Button>
-            <Button
-              onClick={() => goToAuth('signup')}
-              className="h-11 rounded-full bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90"
-            >
-              Sign Up
-            </Button>
-          </div>
-        </div>
-      </div>
+      {/* Guest sell prompt now lives on the Sales screen; keep profile area tidy */}
+      <div className="flex-1 min-h-0" />
 
       <BottomNav />
     </div>

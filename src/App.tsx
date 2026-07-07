@@ -194,7 +194,7 @@ const AppContent = () => {
           <Route path="/contact-support" element={<ProtectedRoute><ContactSupport /></ProtectedRoute>} />
           <Route path="/contact-support/:threadId" element={<ProtectedRoute><ChatConversation /></ProtectedRoute>} />
           <Route path="/seller/:sellerId" element={<ProtectedRoute mode="public"><SellerProfile /></ProtectedRoute>} />
-          <Route path="/sales" element={<ProtectedRoute><Sales /></ProtectedRoute>} />
+          <Route path="/sales" element={<ProtectedRoute mode="public"><Sales /></ProtectedRoute>} />
           <Route path="/order-chat/:orderId" element={<ProtectedRoute><OrderChat /></ProtectedRoute>} />
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/transactions" element={<AdminRoute><AdminTransactions /></AdminRoute>} />
