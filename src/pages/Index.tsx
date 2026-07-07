@@ -345,14 +345,16 @@ const Index = () => {
     setLastAction({ listingId: listing.id, type: 'favorite' });
   }, [addFavorite, pendingExitId]);
 
-  const handleSwipeUp = useCallback(async (listing: DbListing) => {
-    if (pendingExitId) return;
+  const handleSwipeUp = useCallback((listing: DbListing): boolean | void => {
+    if (pendingExitId) return false;
 
     // Add to cart is an account-based action — guests must sign in.
-    if (!requireAuth()) return;
+    // Return false so the SwipeCard snaps back and the item stays on top
+    // of the stack if the user picks "Continue Browsing".
+    if (!requireAuth()) return false;
 
     setPendingExitId(listing.id);
-    await addToCart(toDisplayListing(listing));
+    addToCart(toDisplayListing(listing));
     setLastAction({ listingId: listing.id, type: 'cart' });
   }, [addToCart, pendingExitId, requireAuth]);
 

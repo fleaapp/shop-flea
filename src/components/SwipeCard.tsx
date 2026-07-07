@@ -8,7 +8,7 @@ interface SwipeCardProps {
   listing: Listing;
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
-  onSwipeUp: () => void;
+  onSwipeUp: () => boolean | void;
   onSwipeDown?: () => void;
   onExitComplete?: () => void;
   onClick: () => void;
@@ -97,13 +97,24 @@ const SwipeCard = ({
     });
   }, [x, y, onExitComplete]);
 
+  const snapBack = useCallback(() => {
+    animate(x, 0, { duration: 0.25, ease: 'easeOut' });
+    animate(y, 0, { duration: 0.25, ease: 'easeOut' });
+  }, [x, y]);
+
   const handleDragEnd = useCallback((_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (gone) return;
     const threshold = 100;
-    
+
     if (info.offset.y < -threshold && Math.abs(info.offset.y) > Math.abs(info.offset.x)) {
-      onSwipeUp();
-      animateExit('up');
+      // onSwipeUp may veto the swipe (e.g. guest hitting the auth gate).
+      // Returning false snaps the card back so the listing stays on top of the stack.
+      const result = onSwipeUp();
+      if (result === false) {
+        snapBack();
+      } else {
+        animateExit('up');
+      }
     } else if (info.offset.y > threshold && Math.abs(info.offset.y) > Math.abs(info.offset.x)) {
       onSwipeDown?.();
       animateExit('down');
@@ -114,7 +125,7 @@ const SwipeCard = ({
       onSwipeLeft();
       animateExit('left');
     }
-  }, [gone, onSwipeUp, onSwipeDown, onSwipeRight, onSwipeLeft, animateExit]);
+  }, [gone, onSwipeUp, onSwipeDown, onSwipeRight, onSwipeLeft, animateExit, snapBack]);
 
   return (
     <motion.div
