@@ -10,7 +10,8 @@ const getRouteTopColor = () => {
   const isAuthLike = /^\/(auth|forgot-password|reset-password|verify-email)(\/|$)/.test(pathname);
   if (isAuthLike) return AUTH_TOP_COLOR;
   // On native cold boot the WebView opens at '/' before React redirects to /auth.
-  // If no Supabase auth token is present, paint lime to avoid a cream flash.
+  // If no Supabase auth token is present AND the user is not browsing as a guest,
+  // paint lime to avoid a cream flash before the /auth redirect.
   try {
     const cap = (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
     const isNative = !!cap?.isNativePlatform?.() || window.location.protocol === 'capacitor:';
@@ -20,7 +21,9 @@ const getRouteTopColor = () => {
         const k = localStorage.key(i);
         if (k && k.startsWith('sb-') && k.includes('-auth-token')) { hasAuthToken = true; break; }
       }
-      if (!hasAuthToken) return AUTH_TOP_COLOR;
+      let isGuest = false;
+      try { isGuest = sessionStorage.getItem('flea_guest_mode') === '1'; } catch {}
+      if (!hasAuthToken && !isGuest) return AUTH_TOP_COLOR;
     }
   } catch {}
   return APP_TOP_COLOR;
