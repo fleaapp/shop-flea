@@ -403,7 +403,6 @@ const GuestProfile = () => {
   const navigate = useNavigate();
   const { exitGuestMode, promptGuestSell } = useGuestMode();
   const [activeTab, setActiveTab] = useState<'listings' | 'sold'>('listings');
-  const wishlist = useGuestWishlist();
 
   const goToAuth = (tab: 'login' | 'signup' = 'login') => {
     exitGuestMode();
@@ -411,7 +410,7 @@ const GuestProfile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24 overflow-x-hidden flex flex-col">
+    <div className="fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col">
       {/* Top-right Settings icon (guest analogue of the sales badge) */}
       <div className="absolute top-6 right-4 z-10">
         <Button
@@ -476,48 +475,16 @@ const GuestProfile = () => {
         <div className="h-12 w-12 rounded-xl" aria-hidden />
       </div>
 
-      {/* Guest prompt beneath the toggle */}
-      <div className="flex justify-center pt-8 pb-4">
+      {/* Guest prompt vertically centered in the remaining space */}
+      <div className="flex-1 min-h-0 flex items-center justify-center px-4">
         <GuestPromptInline />
       </div>
-
-      {/* Session wishlist */}
-      {wishlist.length > 0 && (
-        <div className="px-4 pt-2 pb-6">
-          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
-            <span>💌</span> Your wishlist
-            <span className="text-xs text-muted-foreground font-normal">
-              ({wishlist.length} this session)
-            </span>
-          </h3>
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4">
-            {wishlist.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => navigate(`/listing/${item.id}`)}
-                className="relative flex-shrink-0 w-32 rounded-2xl overflow-hidden bg-card card-shadow"
-              >
-                <div className="aspect-[4/5] w-full overflow-hidden">
-                  <img
-                    src={item.images?.[0] || item.image}
-                    alt={item.title}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <div className="p-2 text-left">
-                  <p className="text-xs font-semibold text-foreground truncate">{item.title}</p>
-                  <p className="text-xs text-muted-foreground">${item.price}</p>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       <BottomNav />
     </div>
   );
 };
+
 
 export default Profile;
 
