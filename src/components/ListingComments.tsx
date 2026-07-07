@@ -541,7 +541,26 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
             </div>
           ) : (
             <p className="py-2 text-center text-sm text-muted-foreground">
-              Log in to leave a comment
+              <button
+                onClick={() => {
+                  requireAuth();
+                  navigate('/auth', { state: { initialTab: 'login' } });
+                }}
+                className="font-semibold underline underline-offset-4 decoration-1 text-foreground"
+              >
+                Log In
+              </button>{' '}
+              <span className="font-normal">or</span>{' '}
+              <button
+                onClick={() => {
+                  requireAuth();
+                  navigate('/auth', { state: { initialTab: 'signup' } });
+                }}
+                className="font-semibold underline underline-offset-4 decoration-1 text-foreground"
+              >
+                Sign Up
+              </button>{' '}
+              to comment.
             </p>
           )}
 
