@@ -8,6 +8,8 @@ import {
   createSavedListingSnapshotFromListing,
   saveSavedListingSnapshots,
 } from '@/utils/savedListingSnapshots';
+import { addGuestFavorite, removeGuestFavorite } from '@/utils/guestWishlist';
+
 
 const conditionValues: Listing['condition'][] = ['new', 'like-new', 'good', 'fair'];
 
