@@ -500,13 +500,25 @@ const ListingDetails = () => {
               </Carousel>
 
               {/* 3-dot menu */}
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
-                  <button className="absolute top-3 right-3 h-8 w-8 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center hover:bg-background/90 transition-colors">
+                  <button
+                    data-vaul-no-drag
+                    onPointerDown={(e) => e.stopPropagation()}
+                    className="absolute top-3 right-3 h-8 w-8 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center hover:bg-background/90 transition-colors"
+                  >
                     <MoreVertical className="h-4 w-4 text-foreground" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44 bg-background border border-border rounded-xl shadow-lg z-50">
+                <DropdownMenuContent
+                  align="end"
+                  onPointerDownOutside={(e) => {
+                    // Prevent vaul drawer from stealing the pointer and closing the menu instantly
+                    const target = e.target as HTMLElement | null;
+                    if (target?.closest('[data-vaul-drawer]')) e.preventDefault();
+                  }}
+                  className="w-44 bg-background border border-border rounded-xl shadow-lg z-[60]"
+                >
                   {!isOwner && (
                     <>
                       <DropdownMenuItem 
