@@ -25,6 +25,8 @@ const Settings = () => {
     user,
     refreshProfile
   } = useAuth();
+  const { promptGuest } = useGuestMode();
+  const isGuest = !user;
   const {
     clearDiscarded
   } = useDiscardedListings();
