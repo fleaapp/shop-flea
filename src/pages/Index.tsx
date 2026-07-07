@@ -403,6 +403,8 @@ const Index = () => {
       await removeFavorite(listingId);
     } else if (type === 'cart') {
       await removeFromCart(listingId);
+    }
+    // MAYBE undo branch disabled — kept for future re-enable.
     // } else if (type === 'maybe') {
     //   setMaybeIds((prev) => {
     //     const next = new Set(prev);
