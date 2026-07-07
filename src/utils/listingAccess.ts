@@ -1,3 +1,4 @@
+import { supabase } from '@/lib/supabase';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 
 type CleanupValidationResponse = {
@@ -19,6 +20,13 @@ const toInvalidListingSet = (data: CleanupValidationResponse): Set<string> => {
 
 export const getInvalidListingIds = async (listingIds: string[]): Promise<Set<string>> => {
   if (listingIds.length === 0) {
+    return new Set<string>();
+  }
+
+  // Guest mode has no saved listings to validate, and the edge function
+  // requires authentication. Treat all listings as valid for guests.
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) {
     return new Set<string>();
   }
 
