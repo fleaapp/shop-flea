@@ -160,6 +160,7 @@ const Index = () => {
   const [searchSheetOpen, setSearchSheetOpen] = useState(false);
   
   // Maybe stack: listings the user marked "Maybe" (swipe down). Soft-saved for revisit at end of stack.
+  // DISABLED for now — kept for future re-enable.
   const [maybeIds, setMaybeIds] = useState<Set<string>>(new Set());
   // Passed stack: session-tracked IDs that were passed (swipe left). Discarded is persistent; this lets us revisit them this session.
   const [passedIds, setPassedIds] = useState<Set<string>>(new Set());
