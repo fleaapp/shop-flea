@@ -108,8 +108,10 @@ export const useFavorites = () => {
       // Guest/anonymous browsing: keep the "saved" state in memory only for
       // this session so the swipe deck can advance. No DB write, no toast.
       setFavoriteIds(prev => new Set([...prev, listingId]));
+      if (listing) addGuestFavorite(listing);
       return true;
     }
+
 
     // Optimistic update — unblock UI immediately
     setFavoriteIds(prev => new Set([...prev, listingId]));
