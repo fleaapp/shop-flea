@@ -16,7 +16,7 @@ const GuestPromptInline = ({ className = '' }: Props) => {
   };
 
   return (
-    <div className={`flex flex-col items-center px-6 text-center ${className}`}>
+    <div className={`flex flex-col items-center w-full px-6 text-center ${className}`}>
       <p className="text-sm text-muted-foreground max-w-[280px] mb-6 leading-relaxed">
         Login or sign up to
         <br />
@@ -25,13 +25,13 @@ const GuestPromptInline = ({ className = '' }: Props) => {
       <div className="flex flex-col gap-3 w-full max-w-[220px]">
         <Button
           onClick={() => go('login')}
-          className="h-11 rounded-full bg-muted-foreground/20 text-muted-foreground font-bold text-sm hover:bg-muted-foreground/30"
+          className="h-11 w-full rounded-full bg-muted-foreground/20 text-muted-foreground font-bold text-sm hover:bg-muted-foreground/30"
         >
           Log In
         </Button>
         <Button
           onClick={() => go('signup')}
-          className="h-11 rounded-full bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90"
+          className="h-11 w-full rounded-full bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90"
         >
           Sign Up
         </Button>
