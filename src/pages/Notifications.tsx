@@ -267,7 +267,11 @@ const Notifications = () => {
 
       {/* Content */}
       <div className="px-4 space-y-3">
-        {loadingNotifications ? (
+        {isUnauthed ? (
+          <div className="flex justify-center pt-8">
+            <GuestPromptInline />
+          </div>
+        ) : loadingNotifications ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
             <span className="text-5xl mb-4">⏳</span>
           </div>
@@ -283,6 +287,7 @@ const Notifications = () => {
           ))
         )}
       </div>
+
 
       <SalesDetailsSheet
         orders={selectedGroup?.orders ?? null}
