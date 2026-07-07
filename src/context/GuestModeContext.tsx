@@ -11,8 +11,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { clearGuestFavorites } from '@/utils/guestWishlist';
-import { clearGuestDiscards } from '@/utils/guestDiscards';
 import { mergeGuestSessionToAccount } from '@/utils/mergeGuestSession';
 
 const GUEST_KEY = 'flea_guest_mode';
