@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useRef, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import BottomNav from '@/components/BottomNav';
-import GuestPromptInline from '@/components/GuestPromptInline';
 import { useAuth } from '@/context/AuthContext';
 import { useGuestMode } from '@/context/GuestModeContext';
 import { useUserListings } from '@/hooks/useListings';
@@ -411,16 +410,16 @@ const GuestProfile = () => {
 
   return (
     <div className="fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col">
-      {/* Top-right Settings icon (guest analogue of the sales badge) */}
+      {/* Top-right sales button (original guest profile icon) */}
       <div className="absolute top-6 right-4 z-10">
         <Button
           variant="outline"
           size="icon"
-          onClick={() => navigate('/settings')}
+          onClick={() => promptGuestSell()}
           className="h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-xl border-2 border-border bg-card hover:bg-secondary text-lg max-[375px]:text-base"
-          aria-label="Settings"
+          aria-label="Sales"
         >
-          ⚙️
+          💸
         </Button>
       </div>
 
@@ -457,7 +456,7 @@ const GuestProfile = () => {
       {/* Sell (+) button and Listings/Sold toggle */}
       <div className="mt-5 max-[430px]:mt-4 max-[393px]:mt-3 max-[375px]:mt-2 flex justify-center items-center gap-2">
         <button
-          onClick={promptGuestSell}
+          onClick={() => promptGuestSell()}
           className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground"
           aria-label="Sell"
         >
@@ -484,9 +483,29 @@ const GuestProfile = () => {
         <div className="h-12 w-12 rounded-xl" aria-hidden />
       </div>
 
-      {/* Guest prompt vertically centered in the remaining space */}
+      {/* Guest sell prompt centered in the remaining space */}
       <div className="flex-1 min-h-0 flex items-center justify-center px-4">
-        <GuestPromptInline />
+        <div className="flex flex-col items-center px-6 text-center">
+          <p className="text-sm text-muted-foreground max-w-[280px] mb-6 leading-relaxed">
+            Ready to sell?
+            <br />
+            Log in or sign up to start selling on Flea.
+          </p>
+          <div className="flex flex-col gap-3 w-full max-w-[260px]">
+            <Button
+              onClick={() => goToAuth('login')}
+              className="h-11 rounded-full bg-charcoal-light text-cream font-bold text-sm hover:bg-charcoal-light/90"
+            >
+              Log In
+            </Button>
+            <Button
+              onClick={() => goToAuth('signup')}
+              className="h-11 rounded-full bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90"
+            >
+              Sign Up
+            </Button>
+          </div>
+        </div>
       </div>
 
       <BottomNav />
