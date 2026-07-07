@@ -151,58 +151,71 @@ const Settings = () => {
     label: 'App Walkthrough',
     action: () => openCarousel()
   }];
-  const settingsGroups = [{
-    title: 'Account',
-    items: [{
+  const accountItems: any[] = [];
+  if (!isGuest) {
+    accountItems.push({
       icon: <ProfileAvatar />,
       label: 'Edit Profile'
-    }, {
-      icon: <span className="text-base">🔁</span>,
-      label: 'Refresh Passed Listings',
-      action: handleRefreshDiscarded
-    }, {
-      icon: <span className="text-base">📏</span>,
-      label: 'Filter Preferences',
-      action: () => setPreferencesOpen(true)
-    }, {
-      icon: <span className="text-base">📦</span>,
-      label: 'Shipping Settings',
-      action: () => setShippingOpen(true)
-    }, {
-      icon: <span className="text-base">⏸️</span>,
-      label: 'Pause Selling',
-      toggle: true,
-      checked: pauseSelling,
-      onToggle: handleTogglePauseSelling
-    }, {
-      icon: <span className="text-base">🔔</span>,
-      label: 'Notifications',
-      toggle: true,
-      checked: notificationsEnabled,
-      onToggle: handleToggleNotifications
-    }]
+    });
+  }
+  accountItems.push({
+    icon: <span className="text-base">🔁</span>,
+    label: 'Refresh Passed Listings',
+    action: handleRefreshDiscarded
   }, {
-    title: 'Support',
-    items: [{
-      icon: <span className="text-base">🛠️</span>,
-      label: 'Help Centre',
-      expandable: true,
-      onExpand: () => setHelpCentreExpanded(!helpCentreExpanded),
-      isExpanded: helpCentreExpanded,
-      badge: supportUnread || undefined
-    },
-    ...(isAdmin ? [{
+    icon: <span className="text-base">📏</span>,
+    label: 'Filter Preferences',
+    action: isGuest ? promptGuest : () => setPreferencesOpen(true)
+  }, {
+    icon: <span className="text-base">📦</span>,
+    label: 'Shipping Settings',
+    action: isGuest ? promptGuest : () => setShippingOpen(true)
+  }, isGuest ? {
+    icon: <span className="text-base">⏸️</span>,
+    label: 'Pause Selling',
+    action: promptGuest
+  } : {
+    icon: <span className="text-base">⏸️</span>,
+    label: 'Pause Selling',
+    toggle: true,
+    checked: pauseSelling,
+    onToggle: handleTogglePauseSelling
+  }, {
+    icon: <span className="text-base">🔔</span>,
+    label: 'Notifications',
+    toggle: true,
+    checked: notificationsEnabled,
+    onToggle: handleToggleNotifications
+  });
+
+  const supportItems: any[] = [{
+    icon: <span className="text-base">🛠️</span>,
+    label: 'Help Centre',
+    expandable: true,
+    onExpand: () => setHelpCentreExpanded(!helpCentreExpanded),
+    isExpanded: helpCentreExpanded,
+    badge: supportUnread || undefined
+  }];
+  if (!isGuest && isAdmin) {
+    supportItems.push({
       icon: <span className="text-base">🛡️</span>,
       label: 'Admin Dashboard',
       action: () => navigate('/admin')
-    }] : []),
-    {
+    });
+  }
+  if (!isGuest) {
+    supportItems.push({
       icon: <span className="text-base">🚪</span>,
       label: 'Logout',
       action: handleLogout,
       isLogout: true
-    }]
-  }];
+    });
+  }
+
+  const settingsGroups = [
+    { title: 'Account', items: accountItems },
+    { title: 'Support', items: supportItems }
+  ];
   return <div className="min-h-screen bg-background pb-24 max-[375px]:pb-20">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background px-4 max-[375px]:px-3 py-4 max-[375px]:py-3">
