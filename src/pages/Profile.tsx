@@ -481,13 +481,13 @@ const GuestProfile = () => {
         <div className="flex flex-col gap-3 w-full max-w-[260px]">
           <Button
             onClick={() => goToAuth('login')}
-            className="h-11 rounded-full bg-charcoal-light text-cream font-bold text-sm hover:bg-charcoal-light/90"
+            className="h-11 rounded-full bg-muted-foreground/20 text-muted-foreground font-bold text-sm hover:bg-muted-foreground/30"
           >
             Log In
           </Button>
           <Button
             onClick={() => goToAuth('signup')}
-            className="h-11 rounded-full bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90"
+            className="h-11 rounded-full bg-muted-foreground/20 text-muted-foreground font-bold text-sm hover:bg-muted-foreground/30"
           >
             Sign Up
           </Button>
