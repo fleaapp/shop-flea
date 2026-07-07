@@ -569,7 +569,8 @@ const Index = () => {
                   onSwipeLeft={() => handleSwipeLeft(dbListing.id)}
                   onSwipeRight={() => handleSwipeRight(dbListing)}
                   onSwipeUp={() => handleSwipeUp(dbListing)}
-                  onSwipeDown={() => handleSwipeDown(dbListing.id)}
+                  // MAYBE (swipe down) disabled — kept for future re-enable.
+                  // onSwipeDown={() => handleSwipeDown(dbListing.id)}
                   onExitComplete={index === 0 ? handleTopExitComplete : undefined}
                   onClick={() => handleCardClick(dbListing)}
                   isTop={index === 0}
