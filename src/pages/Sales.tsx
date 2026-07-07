@@ -146,7 +146,29 @@ const Sales = () => {
 
       {/* Content */}
       <div className="px-4 space-y-3">
-        {loadingSellerOrders ? (
+        {!user ? (
+          <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
+            <p className="text-sm text-muted-foreground max-w-[280px] mb-6 leading-relaxed">
+              Ready to sell?
+              <br />
+              Log in or sign up to start selling on Flea.
+            </p>
+            <div className="flex flex-col gap-3 w-full max-w-[260px]">
+              <Button
+                onClick={() => goToAuth('login')}
+                className="h-11 rounded-full bg-charcoal-light text-cream font-bold text-sm hover:bg-charcoal-light/90"
+              >
+                Log In
+              </Button>
+              <Button
+                onClick={() => goToAuth('signup')}
+                className="h-11 rounded-full bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90"
+              >
+                Sign Up
+              </Button>
+            </div>
+          </div>
+        ) : loadingSellerOrders ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
             <span className="text-5xl mb-4">⏳</span>
           </div>
