@@ -117,8 +117,10 @@ const SwipeCard = ({
         animateExit('up');
       }
     } else if (info.offset.y > threshold && Math.abs(info.offset.y) > Math.abs(info.offset.x)) {
-      onSwipeDown?.();
-      animateExit('down');
+      // MAYBE (swipe down) disabled — kept for future re-enable.
+      // onSwipeDown?.();
+      // animateExit('down');
+      snapBack();
     } else if (info.offset.x > threshold) {
       onSwipeRight();
       animateExit('right');
