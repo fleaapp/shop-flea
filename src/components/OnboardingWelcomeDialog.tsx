@@ -28,6 +28,7 @@ const OnboardingWelcomeDialog = () => {
         >
           {/* Welcome Text */}
           <div className="text-center mb-8">
+            <p className="text-4xl mb-3">👉👟👗🧢</p>
             <h2 className="text-2xl font-bold text-foreground mb-3">
               First time on Flea?
             </h2>
