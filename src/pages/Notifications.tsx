@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '@/components/BottomNav';
+import GuestPromptInline from '@/components/GuestPromptInline';
+import { useAuth } from '@/context/AuthContext';
 import { useNotifications, getNotificationMessage, getNotificationEmoji, Notification } from '@/hooks/useNotifications';
 import { useOrders } from '@/hooks/useOrders';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
@@ -10,6 +12,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
 import { OrderGroup } from '@/hooks/useOrders';
+
 
 const ProductThumbnail = ({
   image,
