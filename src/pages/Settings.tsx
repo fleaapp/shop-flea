@@ -232,6 +232,24 @@ const Settings = () => {
                   <h2 className="mb-3 max-[375px]:mb-2 text-sm max-[375px]:text-xs font-medium text-muted-foreground uppercase tracking-wide">
                     {group.title}
                   </h2>
+                  {isGuest && (
+                    <div className="mb-2 max-[375px]:mb-1.5 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => navigate('/auth', { state: { initialTab: 'login' } })}
+                        className="flex-1 h-12 rounded-2xl bg-charcoal-light text-cream font-bold text-sm card-shadow hover:bg-charcoal-light/90"
+                      >
+                        Log In
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigate('/auth', { state: { initialTab: 'signup' } })}
+                        className="flex-1 h-12 rounded-2xl bg-primary text-primary-foreground font-bold text-sm card-shadow hover:bg-primary/90"
+                      >
+                        Sign Up
+                      </button>
+                    </div>
+                  )}
                   <div className="space-y-2 max-[375px]:space-y-1.5">
                     {group.items.map(item => <div key={item.label}>
                         <div className={`flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow ${(item as any).isLogout ? 'bg-[#e0e0dc]' : 'bg-card'} ${item.toggle ? '' : 'cursor-pointer'}`} onClick={async () => {
@@ -263,7 +281,25 @@ const Settings = () => {
                       </div>)}
                   </div>
                 </div>
-                <PaymentMethodsSection />
+                {isGuest ? (
+                  <div>
+                    <h2 className="mb-3 max-[375px]:mb-2 text-sm max-[375px]:text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Payments
+                    </h2>
+                    <div
+                      className="flex items-center justify-between rounded-2xl bg-card p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow cursor-pointer"
+                      onClick={() => promptGuest()}
+                    >
+                      <div className="flex items-center gap-3 max-[375px]:gap-2">
+                        <span className="text-base">💳</span>
+                        <span className="text-base max-[375px]:text-sm font-medium text-foreground">Payment Details</span>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  </div>
+                ) : (
+                  <PaymentMethodsSection />
+                )}
               </React.Fragment>
             );
           }
