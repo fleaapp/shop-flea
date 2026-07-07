@@ -151,19 +151,9 @@ const Profile = () => {
   }
 
   if (!user) {
-    return (
-      <div className="min-h-screen bg-background pb-24 flex flex-col items-center justify-center px-4">
-        <p className="text-lg font-medium text-foreground mb-4">Sign in to view your profile</p>
-        <button
-          onClick={() => navigate('/auth')}
-          className="rounded-full bg-primary px-6 py-3 text-primary-foreground font-medium"
-        >
-          Sign In
-        </button>
-        <BottomNav />
-      </div>
-    );
+    return <GuestProfile />;
   }
+
 
   return (
     <div className="fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col" style={{ touchAction: 'pan-x', overscrollBehavior: 'none' }}>
