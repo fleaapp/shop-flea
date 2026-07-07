@@ -169,7 +169,7 @@ const AppContent = () => {
 
   const routes = (
     <Routes>
-          <Route path="/" element={<ProtectedRoute mode="public"><Index /></ProtectedRoute>} />
+          <Route path="/" element={<ProtectedRoute mode="guest-or-auth"><Index /></ProtectedRoute>} />
           <Route path="/about" element={<Navigate to="/" replace />} />
           <Route path="/install" element={<Install />} />
           <Route path="/auth" element={<Auth />} />
