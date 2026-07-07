@@ -290,5 +290,14 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
     fetchFavoriteListings();
   }, [fetchFavoriteListings]);
 
+  // Guests: refresh when the session wishlist changes.
+  useEffect(() => {
+    if (user) return;
+    const handler = () => fetchFavoriteListings();
+    window.addEventListener('flea-guest-wishlist-change', handler);
+    return () => window.removeEventListener('flea-guest-wishlist-change', handler);
+  }, [user, fetchFavoriteListings]);
+
   return { listings, loading, refetch: fetchFavoriteListings };
 };
+
