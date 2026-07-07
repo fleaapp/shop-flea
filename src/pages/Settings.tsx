@@ -233,21 +233,21 @@ const Settings = () => {
                     {group.title}
                   </h2>
                   {isGuest && (
-                    <div className="mb-2 max-[375px]:mb-1.5 flex gap-2">
-                      <button
-                        type="button"
+                    <div className="mb-2 max-[375px]:mb-1.5 space-y-2 max-[375px]:space-y-1.5">
+                      <div
+                        className="flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow bg-charcoal-light text-cream cursor-pointer"
                         onClick={() => navigate('/auth', { state: { initialTab: 'login' } })}
-                        className="flex-1 h-12 rounded-2xl bg-charcoal-light text-cream font-bold text-sm card-shadow hover:bg-charcoal-light/90"
                       >
-                        Log In
-                      </button>
-                      <button
-                        type="button"
+                        <span className="text-base max-[375px]:text-sm font-bold">Log In</span>
+                        <ChevronRight className="h-5 w-5 text-cream/70" />
+                      </div>
+                      <div
+                        className="flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow bg-primary text-primary-foreground cursor-pointer"
                         onClick={() => navigate('/auth', { state: { initialTab: 'signup' } })}
-                        className="flex-1 h-12 rounded-2xl bg-primary text-primary-foreground font-bold text-sm card-shadow hover:bg-primary/90"
                       >
-                        Sign Up
-                      </button>
+                        <span className="text-base max-[375px]:text-sm font-bold">Sign Up</span>
+                        <ChevronRight className="h-5 w-5 text-primary-foreground/70" />
+                      </div>
                     </div>
                   )}
                   <div className="space-y-2 max-[375px]:space-y-1.5">
