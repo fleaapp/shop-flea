@@ -478,16 +478,16 @@ const GuestProfile = () => {
           <br />
           buy, sell &amp; save on Flea.
         </p>
-        <div className="flex flex-row gap-3 w-full max-w-[320px]">
+        <div className="flex flex-col gap-3 w-full max-w-[260px]">
           <Button
             onClick={() => goToAuth('login')}
-            className="flex-1 h-11 rounded-full bg-muted-foreground/20 text-muted-foreground font-bold text-sm hover:bg-muted-foreground/30"
+            className="h-11 rounded-full bg-muted-foreground/20 text-muted-foreground font-bold text-sm hover:bg-muted-foreground/30"
           >
             Log In
           </Button>
           <Button
             onClick={() => goToAuth('signup')}
-            className="flex-1 h-11 rounded-full bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90"
+            className="h-11 rounded-full bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90"
           >
             Sign Up
           </Button>
