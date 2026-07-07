@@ -60,11 +60,12 @@ const slides: Slide[] = [
     text: ['Swipe Up 👆', 'Add to Cart 🛒'],
     alt: 'Swipe up to add to cart',
   },
-  {
-    gesture: 'down',
-    text: ['Swipe Down 👇', 'Maybe 🤔'],
-    alt: 'Swipe down for maybe',
-  },
+  // NOTE: Maybe (swipe down) slide removed for now — saved below for easy re-enable.
+  // {
+  //   gesture: 'down',
+  //   text: ['Swipe Down 👇', 'Maybe 🤔'],
+  //   alt: 'Swipe down for maybe',
+  // },
   {
     gesture: 'right',
     text: ['Swipe Right 👉', 'Add to Wishlist 💌'],
