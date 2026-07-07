@@ -160,6 +160,7 @@ const Index = () => {
   const [searchSheetOpen, setSearchSheetOpen] = useState(false);
   
   // Maybe stack: listings the user marked "Maybe" (swipe down). Soft-saved for revisit at end of stack.
+  // DISABLED for now — kept for future re-enable.
   const [maybeIds, setMaybeIds] = useState<Set<string>>(new Set());
   // Passed stack: session-tracked IDs that were passed (swipe left). Discarded is persistent; this lets us revisit them this session.
   const [passedIds, setPassedIds] = useState<Set<string>>(new Set());
@@ -294,22 +295,23 @@ const Index = () => {
     return { newListings: newOnes, maybeListings: maybes, passedListings: passes, allRevisitListings: combined };
   }, [dbListings, discardedIds, favoriteIds, isInCart, pendingExitId, maybeIds, passedIds]);
 
+  // MAYBE queue auto-transition disabled — kept for future re-enable.
   // When the new-listings queue runs out, automatically transition into the Maybe queue
   // (if any) with a brief toast. Passed listings are NOT included here — they're only
   // refreshable via Settings → Refresh Passed Listings.
-  useEffect(() => {
-    if (loading) return;
-    if (viewMode !== 'new') return;
-    if (newListings.length > 0) return;
-    if (maybeIds.size === 0) return;
-    toast('You\'ve seen all new listings. Now showing your Maybes 🤔.');
-    setViewMode('maybe');
-  }, [loading, viewMode, newListings.length, maybeIds.size]);
+  // useEffect(() => {
+  //   if (loading) return;
+  //   if (viewMode !== 'new') return;
+  //   if (newListings.length > 0) return;
+  //   if (maybeIds.size === 0) return;
+  //   toast('You\'ve seen all new listings. Now showing your Maybes 🤔.');
+  //   setViewMode('maybe');
+  // }, [loading, viewMode, newListings.length, maybeIds.size]);
 
-  // When the Maybe revisit queue empties, flip back to 'new'.
-  useEffect(() => {
-    if (viewMode === 'maybe' && maybeListings.length === 0) setViewMode('new');
-  }, [viewMode, maybeListings.length]);
+  // // When the Maybe revisit queue empties, flip back to 'new'.
+  // useEffect(() => {
+  //   if (viewMode === 'maybe' && maybeListings.length === 0) setViewMode('new');
+  // }, [viewMode, maybeListings.length]);
 
   const availableListings =
     viewMode === 'maybe' ? maybeListings
@@ -358,26 +360,27 @@ const Index = () => {
     setLastAction({ listingId: listing.id, type: 'cart' });
   }, [addToCart, pendingExitId, requireAuth]);
 
-  const handleSwipeDown = useCallback(async (listingId: string) => {
-    if (pendingExitId) return;
-    setPendingExitId(listingId);
-    setMaybeIds((prev) => {
-      const next = new Set(prev);
-      next.add(listingId);
-      return next;
-    });
-    // If the listing was previously passed/discarded, un-pass it so it lives in Maybe only.
-    setPassedIds((prev) => {
-      if (!prev.has(listingId)) return prev;
-      const next = new Set(prev);
-      next.delete(listingId);
-      return next;
-    });
-    if (discardedIds.has(listingId)) {
-      await removeDiscarded(listingId);
-    }
-    setLastAction({ listingId, type: 'maybe' });
-  }, [pendingExitId, discardedIds, removeDiscarded]);
+  // MAYBE (swipe down) handler disabled — kept for future re-enable.
+  // const handleSwipeDown = useCallback(async (listingId: string) => {
+  //   if (pendingExitId) return;
+  //   setPendingExitId(listingId);
+  //   setMaybeIds((prev) => {
+  //     const next = new Set(prev);
+  //     next.add(listingId);
+  //     return next;
+  //   });
+  //   // If the listing was previously passed/discarded, un-pass it so it lives in Maybe only.
+  //   setPassedIds((prev) => {
+  //     if (!prev.has(listingId)) return prev;
+  //     const next = new Set(prev);
+  //     next.delete(listingId);
+  //     return next;
+  //   });
+  //   if (discardedIds.has(listingId)) {
+  //     await removeDiscarded(listingId);
+  //   }
+  //   setLastAction({ listingId, type: 'maybe' });
+  // }, [pendingExitId, discardedIds, removeDiscarded]);
 
   const handleUndo = useCallback(async () => {
     if (!lastAction) return;
@@ -396,13 +399,15 @@ const Index = () => {
       await removeFavorite(listingId);
     } else if (type === 'cart') {
       await removeFromCart(listingId);
-    } else if (type === 'maybe') {
-      setMaybeIds((prev) => {
-        const next = new Set(prev);
-        next.delete(listingId);
-        return next;
-      });
     }
+    // MAYBE undo branch disabled — kept for future re-enable.
+    // } else if (type === 'maybe') {
+    //   setMaybeIds((prev) => {
+    //     const next = new Set(prev);
+    //     next.delete(listingId);
+    //     return next;
+    //   });
+    // }
     
     setLastAction(null);
     toast.success('Action undone!');
@@ -564,7 +569,8 @@ const Index = () => {
                   onSwipeLeft={() => handleSwipeLeft(dbListing.id)}
                   onSwipeRight={() => handleSwipeRight(dbListing)}
                   onSwipeUp={() => handleSwipeUp(dbListing)}
-                  onSwipeDown={() => handleSwipeDown(dbListing.id)}
+                  // MAYBE (swipe down) disabled — kept for future re-enable.
+                  // onSwipeDown={() => handleSwipeDown(dbListing.id)}
                   onExitComplete={index === 0 ? handleTopExitComplete : undefined}
                   onClick={() => handleCardClick(dbListing)}
                   isTop={index === 0}

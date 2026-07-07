@@ -38,7 +38,8 @@ const SwipeCard = ({
   const likeOpacity = useTransform(x, [0, 100], [0, 1]);
   const nopeOpacity = useTransform(x, [-100, 0], [1, 0]);
   const cartOpacity = useTransform(y, [-100, 0], [1, 0]);
-  const skipOpacity = useTransform(y, [0, 100], [0, 1]);
+  // MAYBE (swipe down) overlay disabled — kept for future re-enable.
+  // const skipOpacity = useTransform(y, [0, 100], [0, 1]);
 
   const stackOffset = index * 4;
   const stackRotation = index * 3;
@@ -116,8 +117,10 @@ const SwipeCard = ({
         animateExit('up');
       }
     } else if (info.offset.y > threshold && Math.abs(info.offset.y) > Math.abs(info.offset.x)) {
-      onSwipeDown?.();
-      animateExit('down');
+      // MAYBE (swipe down) disabled — kept for future re-enable.
+      // onSwipeDown?.();
+      // animateExit('down');
+      snapBack();
     } else if (info.offset.x > threshold) {
       onSwipeRight();
       animateExit('right');
@@ -161,9 +164,11 @@ const SwipeCard = ({
               <motion.div style={{ opacity: cartOpacity }} className="absolute inset-0 flex items-center justify-center">
                 <span className="text-7xl">🛒</span>
               </motion.div>
+              {/* MAYBE (swipe down) overlay disabled — kept for future re-enable.
               <motion.div style={{ opacity: skipOpacity }} className="absolute inset-0 flex items-center justify-center">
                 <span className="text-7xl">🤔</span>
               </motion.div>
+              */}
             </>
           )}
         </div>
