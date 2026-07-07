@@ -148,8 +148,10 @@ export const useFavorites = () => {
         next.delete(listingId);
         return next;
       });
+      removeGuestFavorite(listingId);
       return true;
     }
+
 
     const { error } = await supabase
       .from('favorites')
