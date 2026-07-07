@@ -8,21 +8,25 @@ import {
   createSavedListingSnapshotFromListing,
   saveSavedListingSnapshots,
 } from '@/utils/savedListingSnapshots';
-import { addGuestFavorite, removeGuestFavorite } from '@/utils/guestWishlist';
+import { addGuestFavorite, removeGuestFavorite, getGuestFavorites } from '@/utils/guestWishlist';
 
 
 const conditionValues: Listing['condition'][] = ['new', 'like-new', 'good', 'fair'];
 
 export const useFavorites = () => {
   const { user } = useAuth();
-  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(
+    () => new Set(getGuestFavorites().map((l) => l.id)),
+  );
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchFavorites();
     } else {
-      setFavoriteIds(new Set());
+      // Guest: rehydrate from sessionStorage so swipe-right state survives
+      // navigation away and back to Home.
+      setFavoriteIds(new Set(getGuestFavorites().map((l) => l.id)));
     }
   }, [user]);
 
