@@ -89,7 +89,9 @@ export const GuestModeProvider = ({ children }: { children: ReactNode }) => {
               You're browsing as a guest
             </AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-center">
-              Log in or sign up to buy, sell and save on Flea.
+              Login or sign up to
+              <br />
+              buy, sell & save on Flea.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
