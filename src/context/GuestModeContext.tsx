@@ -125,21 +125,19 @@ export const GuestModeProvider = ({ children }: { children: ReactNode }) => {
               {body}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col gap-2">
-            <div className="flex flex-row gap-2 w-full">
-              <AlertDialogAction
-                onClick={() => goToAuth('login')}
-                className="flex-1 h-10 rounded-full text-sm bg-muted-foreground/20 text-muted-foreground hover:bg-muted-foreground/30"
-              >
-                Log In
-              </AlertDialogAction>
-              <AlertDialogAction
-                onClick={() => goToAuth('signup')}
-                className="flex-1 h-10 rounded-full text-sm bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                Sign Up
-              </AlertDialogAction>
-            </div>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
+            <AlertDialogAction
+              onClick={() => goToAuth('login')}
+              className="w-full h-10 rounded-full text-sm bg-muted-foreground/20 text-muted-foreground hover:bg-muted-foreground/30"
+            >
+              Log In
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={() => goToAuth('signup')}
+              className="w-full h-10 rounded-full text-sm bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              Sign Up
+            </AlertDialogAction>
             <AlertDialogCancel className="w-full mt-0 h-10 rounded-full text-sm">
               Continue Browsing
             </AlertDialogCancel>
