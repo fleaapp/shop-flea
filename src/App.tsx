@@ -179,13 +179,14 @@ const AppContent = () => {
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/listing/:id" element={<ProtectedRoute mode="public"><ListingDetails /></ProtectedRoute>} />
           <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
-          <Route path="/cart" element={<ProtectedRoute mode="guest-gate"><Cart /></ProtectedRoute>} />
+          <Route path="/cart" element={<ProtectedRoute mode="public"><Cart /></ProtectedRoute>} />
           <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
           <Route path="/checkout/success" element={<CheckoutSuccess />} />
-          <Route path="/profile" element={<ProtectedRoute mode="guest-gate"><Profile /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute mode="public"><Profile /></ProtectedRoute>} />
           <Route path="/create" element={<ProtectedRoute><CreateListing /></ProtectedRoute>} />
           <Route path="/listing/:id/edit" element={<ProtectedRoute><EditListing /></ProtectedRoute>} />
-          <Route path="/notifications" element={<ProtectedRoute mode="guest-gate"><Notifications /></ProtectedRoute>} />
+          <Route path="/notifications" element={<ProtectedRoute mode="public"><Notifications /></ProtectedRoute>} />
+
           <Route path="/settings" element={<ProtectedRoute mode="guest-gate"><Settings /></ProtectedRoute>} />
           <Route path="/settings/profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
           <Route path="/suggestion-box" element={<ProtectedRoute><SuggestionBox /></ProtectedRoute>} />
