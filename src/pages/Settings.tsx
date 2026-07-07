@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { useGuestMode } from '@/context/GuestModeContext';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
@@ -24,6 +25,8 @@ const Settings = () => {
     user,
     refreshProfile
   } = useAuth();
+  const { promptGuest } = useGuestMode();
+  const isGuest = !user;
   const {
     clearDiscarded
   } = useDiscardedListings();
@@ -148,58 +151,71 @@ const Settings = () => {
     label: 'App Walkthrough',
     action: () => openCarousel()
   }];
-  const settingsGroups = [{
-    title: 'Account',
-    items: [{
+  const accountItems: any[] = [];
+  if (!isGuest) {
+    accountItems.push({
       icon: <ProfileAvatar />,
       label: 'Edit Profile'
-    }, {
-      icon: <span className="text-base">🔁</span>,
-      label: 'Refresh Passed Listings',
-      action: handleRefreshDiscarded
-    }, {
-      icon: <span className="text-base">📏</span>,
-      label: 'Filter Preferences',
-      action: () => setPreferencesOpen(true)
-    }, {
-      icon: <span className="text-base">📦</span>,
-      label: 'Shipping Settings',
-      action: () => setShippingOpen(true)
-    }, {
-      icon: <span className="text-base">⏸️</span>,
-      label: 'Pause Selling',
-      toggle: true,
-      checked: pauseSelling,
-      onToggle: handleTogglePauseSelling
-    }, {
-      icon: <span className="text-base">🔔</span>,
-      label: 'Notifications',
-      toggle: true,
-      checked: notificationsEnabled,
-      onToggle: handleToggleNotifications
-    }]
+    });
+  }
+  accountItems.push({
+    icon: <span className="text-base">🔁</span>,
+    label: 'Refresh Passed Listings',
+    action: handleRefreshDiscarded
   }, {
-    title: 'Support',
-    items: [{
-      icon: <span className="text-base">🛠️</span>,
-      label: 'Help Centre',
-      expandable: true,
-      onExpand: () => setHelpCentreExpanded(!helpCentreExpanded),
-      isExpanded: helpCentreExpanded,
-      badge: supportUnread || undefined
-    },
-    ...(isAdmin ? [{
+    icon: <span className="text-base">📏</span>,
+    label: 'Filter Preferences',
+    action: isGuest ? promptGuest : () => setPreferencesOpen(true)
+  }, {
+    icon: <span className="text-base">📦</span>,
+    label: 'Shipping Settings',
+    action: isGuest ? promptGuest : () => setShippingOpen(true)
+  }, isGuest ? {
+    icon: <span className="text-base">⏸️</span>,
+    label: 'Pause Selling',
+    action: promptGuest
+  } : {
+    icon: <span className="text-base">⏸️</span>,
+    label: 'Pause Selling',
+    toggle: true,
+    checked: pauseSelling,
+    onToggle: handleTogglePauseSelling
+  }, {
+    icon: <span className="text-base">🔔</span>,
+    label: 'Notifications',
+    toggle: true,
+    checked: notificationsEnabled,
+    onToggle: handleToggleNotifications
+  });
+
+  const supportItems: any[] = [{
+    icon: <span className="text-base">🛠️</span>,
+    label: 'Help Centre',
+    expandable: true,
+    onExpand: () => setHelpCentreExpanded(!helpCentreExpanded),
+    isExpanded: helpCentreExpanded,
+    badge: supportUnread || undefined
+  }];
+  if (!isGuest && isAdmin) {
+    supportItems.push({
       icon: <span className="text-base">🛡️</span>,
       label: 'Admin Dashboard',
       action: () => navigate('/admin')
-    }] : []),
-    {
+    });
+  }
+  if (!isGuest) {
+    supportItems.push({
       icon: <span className="text-base">🚪</span>,
       label: 'Logout',
       action: handleLogout,
       isLogout: true
-    }]
-  }];
+    });
+  }
+
+  const settingsGroups = [
+    { title: 'Account', items: accountItems },
+    { title: 'Support', items: supportItems }
+  ];
   return <div className="min-h-screen bg-background pb-24 max-[375px]:pb-20">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background px-4 max-[375px]:px-3 py-4 max-[375px]:py-3">
@@ -216,6 +232,24 @@ const Settings = () => {
                   <h2 className="mb-3 max-[375px]:mb-2 text-sm max-[375px]:text-xs font-medium text-muted-foreground uppercase tracking-wide">
                     {group.title}
                   </h2>
+                  {isGuest && (
+                    <div className="mb-2 max-[375px]:mb-1.5 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => navigate('/auth', { state: { initialTab: 'login' } })}
+                        className="flex-1 h-12 rounded-2xl bg-charcoal-light text-cream font-bold text-sm card-shadow hover:bg-charcoal-light/90"
+                      >
+                        Log In
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigate('/auth', { state: { initialTab: 'signup' } })}
+                        className="flex-1 h-12 rounded-2xl bg-primary text-primary-foreground font-bold text-sm card-shadow hover:bg-primary/90"
+                      >
+                        Sign Up
+                      </button>
+                    </div>
+                  )}
                   <div className="space-y-2 max-[375px]:space-y-1.5">
                     {group.items.map(item => <div key={item.label}>
                         <div className={`flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow ${(item as any).isLogout ? 'bg-[#e0e0dc]' : 'bg-card'} ${item.toggle ? '' : 'cursor-pointer'}`} onClick={async () => {
@@ -247,7 +281,25 @@ const Settings = () => {
                       </div>)}
                   </div>
                 </div>
-                <PaymentMethodsSection />
+                {isGuest ? (
+                  <div>
+                    <h2 className="mb-3 max-[375px]:mb-2 text-sm max-[375px]:text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Payments
+                    </h2>
+                    <div
+                      className="flex items-center justify-between rounded-2xl bg-card p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow cursor-pointer"
+                      onClick={() => promptGuest()}
+                    >
+                      <div className="flex items-center gap-3 max-[375px]:gap-2">
+                        <span className="text-base">💳</span>
+                        <span className="text-base max-[375px]:text-sm font-medium text-foreground">Payment Details</span>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  </div>
+                ) : (
+                  <PaymentMethodsSection />
+                )}
               </React.Fragment>
             );
           }

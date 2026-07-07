@@ -187,7 +187,7 @@ const AppContent = () => {
           <Route path="/listing/:id/edit" element={<ProtectedRoute><EditListing /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute mode="public"><Notifications /></ProtectedRoute>} />
 
-          <Route path="/settings" element={<ProtectedRoute mode="guest-gate"><Settings /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute mode="public"><Settings /></ProtectedRoute>} />
           <Route path="/settings/profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
           <Route path="/suggestion-box" element={<ProtectedRoute><SuggestionBox /></ProtectedRoute>} />
           <Route path="/faq" element={<ProtectedRoute mode="public"><FAQ /></ProtectedRoute>} />
