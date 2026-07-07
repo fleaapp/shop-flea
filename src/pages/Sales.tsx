@@ -148,9 +148,10 @@ const Sales = () => {
       <div className="px-4 space-y-3">
         {!user ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
-            <p className="text-sm text-muted-foreground max-w-[280px] mb-6 leading-relaxed">
+            <p className="text-base font-bold text-foreground max-w-[280px] mb-2 leading-relaxed">
               Ready to sell?
-              <br />
+            </p>
+            <p className="text-sm text-muted-foreground max-w-[280px] mb-6 leading-relaxed">
               Log in or sign up to start selling on Flea.
             </p>
             <div className="flex flex-col gap-3 w-full max-w-[260px]">
