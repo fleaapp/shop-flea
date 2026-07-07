@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
+import GuestPromptInline from '@/components/GuestPromptInline';
+import { useGuestMode } from '@/context/GuestModeContext';
+import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
@@ -17,6 +20,7 @@ import { fetchSellerShippingSettings, SellerShippingInfo } from '@/utils/shippin
 import { getAvatarUrl } from '@/utils/optimizedImage';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
+
 
 const getOrderStatusBadge = (status: Order['status']) => {
   switch (status) {
