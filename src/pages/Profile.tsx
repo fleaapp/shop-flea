@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useRef, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import BottomNav from '@/components/BottomNav';
-import GuestPromptInline from '@/components/GuestPromptInline';
 import { useAuth } from '@/context/AuthContext';
 import { useGuestMode } from '@/context/GuestModeContext';
 import { useUserListings } from '@/hooks/useListings';
