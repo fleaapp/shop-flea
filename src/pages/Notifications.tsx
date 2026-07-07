@@ -268,7 +268,7 @@ const Notifications = () => {
       {/* Content */}
       <div className="px-4 space-y-3">
         {isUnauthed ? (
-          <div className="flex justify-center pt-8">
+          <div className="flex items-center justify-center min-h-[60vh] px-4">
             <GuestPromptInline />
           </div>
         ) : loadingNotifications ? (
