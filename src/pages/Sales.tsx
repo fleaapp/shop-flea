@@ -27,11 +27,18 @@ const getStatusBadge = (status: Order['status']) => {
 
 const Sales = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { exitGuestMode } = useGuestMode();
   const [salesStatusFilter, setSalesStatusFilter] = useState<'awaiting' | 'shipped' | 'delivered'>('awaiting');
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
   const { sellerOrderGroups, loadingSellerOrders, markAsShipped } = useOrders();
   const { getGroupUnread } = useUnreadOrderMessages();
+
+  const goToAuth = (tab: 'login' | 'signup') => {
+    exitGuestMode();
+    navigate('/auth', { state: { initialTab: tab } });
+  };
 
   const handleSaleClick = (group: OrderGroup) => {
     setSelectedGroup(group);
