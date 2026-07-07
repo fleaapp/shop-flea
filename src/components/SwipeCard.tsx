@@ -164,9 +164,11 @@ const SwipeCard = ({
               <motion.div style={{ opacity: cartOpacity }} className="absolute inset-0 flex items-center justify-center">
                 <span className="text-7xl">🛒</span>
               </motion.div>
+              {/* MAYBE (swipe down) overlay disabled — kept for future re-enable.
               <motion.div style={{ opacity: skipOpacity }} className="absolute inset-0 flex items-center justify-center">
                 <span className="text-7xl">🤔</span>
               </motion.div>
+              */}
             </>
           )}
         </div>
