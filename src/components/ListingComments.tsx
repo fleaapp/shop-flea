@@ -544,7 +544,7 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
             <p className="py-2 text-center text-sm text-muted-foreground">
               <button
                 onClick={() => {
-                  requireAuth();
+                  exitGuestMode();
                   navigate('/auth', { state: { initialTab: 'login' } });
                 }}
                 className="font-semibold underline underline-offset-4 decoration-1 text-foreground"
@@ -554,7 +554,7 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
               <span className="font-normal">or</span>{' '}
               <button
                 onClick={() => {
-                  requireAuth();
+                  exitGuestMode();
                   navigate('/auth', { state: { initialTab: 'signup' } });
                 }}
                 className="font-semibold underline underline-offset-4 decoration-1 text-foreground"
