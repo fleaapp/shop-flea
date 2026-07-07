@@ -331,7 +331,11 @@ const Cart = () => {
         </div>
       )}
 
-      {activeTab === 'cart' ? (
+      {isUnauthed ? (
+        <div className="flex justify-center pt-8">
+          <GuestPromptInline />
+        </div>
+      ) : activeTab === 'cart' ? (
         <div className="px-4 max-[375px]:px-3 space-y-4 max-[375px]:space-y-3" data-onboarding="cart-items-area">
           {cartItems.length > 0 ? (
             <>
