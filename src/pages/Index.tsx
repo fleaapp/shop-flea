@@ -358,26 +358,31 @@ const Index = () => {
     setLastAction({ listingId: listing.id, type: 'cart' });
   }, [addToCart, pendingExitId, requireAuth]);
 
-  const handleSwipeDown = useCallback(async (listingId: string) => {
-    if (pendingExitId) return;
-    setPendingExitId(listingId);
-    setMaybeIds((prev) => {
-      const next = new Set(prev);
-      next.add(listingId);
-      return next;
-    });
-    // If the listing was previously passed/discarded, un-pass it so it lives in Maybe only.
-    setPassedIds((prev) => {
-      if (!prev.has(listingId)) return prev;
-      const next = new Set(prev);
-      next.delete(listingId);
-      return next;
-    });
-    if (discardedIds.has(listingId)) {
-      await removeDiscarded(listingId);
-    }
-    setLastAction({ listingId, type: 'maybe' });
-  }, [pendingExitId, discardedIds, removeDiscarded]);
+  // MAYBE (swipe down) handler disabled — kept for future re-enable.
+  // const handleSwipeDown = useCallback(async (listingId: string) => {
+  //   if (pendingExitId) return;
+  //   setPendingExitId(listingId);
+  //   setMaybeIds((prev) => {
+  //     const next = new Set(prev);
+  //     next.add(listingId);
+  //     return next;
+  //   });
+  //   // If the listing was previously passed/discarded, un-pass it so it lives in Maybe only.
+  //   setPassedIds((prev) => {
+  //     if (!prev.has(listingId)) return prev;
+  //     const next = new Set(prev);
+  //     next.delete(listingId);
+  //     return next;
+  //   });
+  //   if (discardedIds.has(listingId)) {
+  //     await removeDiscarded(listingId);
+  //   }
+  //   setLastAction({ listingId, type: 'maybe' });
+  // }, [pendingExitId, discardedIds, removeDiscarded]);
+
+  const handleSwipeDown = useCallback(() => {
+    // Swipe down is currently disabled; maybe functionality saved for future re-enable.
+  }, []);
 
   const handleUndo = useCallback(async () => {
     if (!lastAction) return;
