@@ -40,6 +40,8 @@ import OrderSuccessDialog from '@/components/OrderSuccessDialog';
 import OrderReceiptDialog from '@/components/OrderReceiptDialog';
 import { canOpenListing } from '@/utils/listingAccess';
 import { loadSavedListingSnapshot } from '@/utils/savedListingSnapshots';
+import { buildListingShareUrl } from '@/utils/shareLink';
+import InstallAppBanner from '@/components/InstallAppBanner';
 import type { Listing } from '@/types/listing';
 
 interface DbListing {
@@ -542,7 +544,7 @@ const ListingDetails = () => {
                   )}
                   <DropdownMenuItem 
                     onClick={async () => {
-                      const shareUrl = `${window.location.origin}/listing/${listing.id}`;
+                      const shareUrl = buildListingShareUrl(listing.id);
                       if (navigator.share) {
                         try {
                           await navigator.share({
@@ -690,6 +692,11 @@ const ListingDetails = () => {
                   <p className="text-xs text-muted-foreground">+${listing.shipping_price || 0} shipping</p>
                 </div>
               </div>
+
+              {/* Install-the-app CTA — visible only on mobile web, hidden inside
+                  the native app / installed PWA. Encourages shared-link viewers
+                  without the app to install it so future links deep-link in. */}
+              <InstallAppBanner />
 
               {/* Comments Section */}
               <ListingComments
