@@ -1,17 +1,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import {
+  addGuestDiscard,
+  removeGuestDiscard,
+  getGuestDiscards,
+} from '@/utils/guestDiscards';
 
 export const useDiscardedListings = () => {
   const { user } = useAuth();
-  const [discardedIds, setDiscardedIds] = useState<Set<string>>(new Set());
+  const [discardedIds, setDiscardedIds] = useState<Set<string>>(() => new Set(getGuestDiscards()));
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchDiscarded();
     } else {
-      setDiscardedIds(new Set());
+      setDiscardedIds(new Set(getGuestDiscards()));
     }
   }, [user]);
 
@@ -32,7 +37,9 @@ export const useDiscardedListings = () => {
 
   const addDiscarded = useCallback(async (listingId: string) => {
     if (!user) {
-      // Guest/anonymous browsing: track locally for the session, no DB write.
+      // Guest/anonymous browsing: persist to sessionStorage so it survives
+      // the transition into a real account (merged in on sign-in).
+      addGuestDiscard(listingId);
       setDiscardedIds(prev => new Set([...prev, listingId]));
       return true;
     }
@@ -59,6 +66,7 @@ export const useDiscardedListings = () => {
 
   const removeDiscarded = useCallback(async (listingId: string) => {
     if (!user) {
+      removeGuestDiscard(listingId);
       setDiscardedIds(prev => {
         const next = new Set(prev);
         next.delete(listingId);

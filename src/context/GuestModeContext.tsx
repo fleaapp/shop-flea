@@ -11,7 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { clearGuestFavorites } from '@/utils/guestWishlist';
+import { mergeGuestSessionToAccount } from '@/utils/mergeGuestSession';
 
 const GUEST_KEY = 'flea_guest_mode';
 
@@ -45,13 +45,18 @@ export const GuestModeProvider = ({ children }: { children: ReactNode }) => {
   const [promptOpen, setPromptOpen] = useState(false);
   const [promptVariant, setPromptVariant] = useState<PromptVariant>('default');
 
-  // Any real session cancels guest mode.
+  // Any real session cancels guest mode. Before clearing, transfer the
+  // guest's wishlist + passed items over to the newly authenticated account.
   useEffect(() => {
-    if (user && guestFlag) {
-      try { sessionStorage.removeItem(GUEST_KEY); } catch {}
-      setGuestFlag(false);
-      setPromptOpen(false);
-      clearGuestFavorites();
+    if (user) {
+      // Fire-and-forget: merge runs whether or not the guest flag is set,
+      // so anything stored in the guest session survives sign-in/sign-up.
+      mergeGuestSessionToAccount(user.id);
+      if (guestFlag) {
+        try { sessionStorage.removeItem(GUEST_KEY); } catch {}
+        setGuestFlag(false);
+        setPromptOpen(false);
+      }
     }
   }, [user, guestFlag]);
 
@@ -61,9 +66,11 @@ export const GuestModeProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const exitGuestMode = useCallback(() => {
+    // Keep guest wishlist + discards in sessionStorage so they can be merged
+    // into the user's account after successful sign-in/sign-up. Only the
+    // guest-mode flag is cleared here.
     try { sessionStorage.removeItem(GUEST_KEY); } catch {}
     setGuestFlag(false);
-    clearGuestFavorites();
   }, []);
 
   const promptGuest = useCallback(() => {
