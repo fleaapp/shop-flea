@@ -178,7 +178,7 @@ const AppContent = () => {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/listing/:id" element={<ProtectedRoute mode="public"><ListingDetails /></ProtectedRoute>} />
-          <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
+          <Route path="/favorites" element={<ProtectedRoute mode="public"><Favorites /></ProtectedRoute>} />
           <Route path="/cart" element={<ProtectedRoute mode="public"><Cart /></ProtectedRoute>} />
           <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
           <Route path="/checkout/success" element={<CheckoutSuccess />} />

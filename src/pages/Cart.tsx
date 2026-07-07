@@ -332,7 +332,7 @@ const Cart = () => {
       )}
 
       {isUnauthed ? (
-        <div className="flex justify-center pt-8">
+        <div className="flex items-center justify-center min-h-[60vh] px-4">
           <GuestPromptInline />
         </div>
       ) : activeTab === 'cart' ? (

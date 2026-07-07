@@ -6,6 +6,8 @@ import { getQuerySizesFromKeys, listingSizeKey, normalizeSizeKeys } from '@/util
 import { preloadImages } from '@/utils/preloadAssets';
 import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
 import { loadSavedListingSnapshots, saveSavedListingSnapshots, type SavedListingSnapshot } from '@/utils/savedListingSnapshots';
+import { getGuestFavorites } from '@/utils/guestWishlist';
+
 // Extended DbListing to include pause_selling from profiles
 export interface DbListingWithPause extends DbListing {
   profiles?: {
@@ -26,10 +28,45 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
 
   const fetchFavoriteListings = useCallback(async () => {
     if (!user) {
-      setListings([]);
+      // Guest mode: hydrate from session-scoped wishlist snapshots.
+      const guestItems = getGuestFavorites();
+      const mapped: DbListingWithPause[] = guestItems.map((l) => ({
+        id: l.id,
+        title: l.title,
+        brand: l.brand || '',
+        size: l.size || '',
+        price: Number(l.price || 0),
+        shipping_price: Number((l as any).shippingPrice ?? (l as any).shipping_price ?? 0),
+        images: l.images || (l.image ? [l.image] : []),
+        tags: l.tags || [],
+        condition: (l.condition as string) || 'good',
+        category: l.category || '',
+        description: l.description || '',
+        user_id: l.sellerId || 'unknown',
+        status: 'active',
+        created_at: (l.createdAt instanceof Date ? l.createdAt.toISOString() : new Date().toISOString()),
+        updated_at: new Date().toISOString(),
+        report_count: 0,
+        colour: null,
+        style: null,
+        gender: null,
+        country_code: null,
+        region_id: null,
+        profiles: {
+          username: l.sellerName || 'Unknown',
+          avatar_url: l.sellerAvatar || null,
+          location: l.location || null,
+          rating: 0,
+          pause_selling: false,
+          last_sign_in_at: null,
+          status: null,
+        },
+      } as unknown as DbListingWithPause));
+      setListings(mapped);
       setLoading(false);
       return;
     }
+
 
     setLoading(true);
 
@@ -253,5 +290,14 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
     fetchFavoriteListings();
   }, [fetchFavoriteListings]);
 
+  // Guests: refresh when the session wishlist changes.
+  useEffect(() => {
+    if (user) return;
+    const handler = () => fetchFavoriteListings();
+    window.addEventListener('flea-guest-wishlist-change', handler);
+    return () => window.removeEventListener('flea-guest-wishlist-change', handler);
+  }, [user, fetchFavoriteListings]);
+
   return { listings, loading, refetch: fetchFavoriteListings };
 };
+
