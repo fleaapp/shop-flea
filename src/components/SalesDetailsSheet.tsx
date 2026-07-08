@@ -212,11 +212,7 @@ const SalesDetailsSheet = ({
                   })}
                 </div>
 
-                {/* Fee line */}
-                <div className="flex justify-between text-sm px-4 py-3 border-t border-border">
-                  <span className="text-muted-foreground">Platform fee (7%)</span>
-                  <span className="text-muted-foreground">- ${platformFee.toFixed(2)}</span>
-                </div>
+                {/* No selling fees */}
 
                 {/* Total */}
                 <div className="flex items-center justify-center bg-charcoal text-white py-3 px-4">
