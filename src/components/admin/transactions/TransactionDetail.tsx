@@ -134,11 +134,11 @@ export function TransactionDetail({ order, onBack }: Props) {
             <Separator className="my-2" />
             <Row label="Order Total" value={`$${total.toFixed(2)}`} className="font-bold" />
             <Separator className="my-2" />
-            <Row label="Processing Fee (est.)" value={`-$${proc.toFixed(2)}`} className="text-muted-foreground" />
-            <Row label="Platform Fee (7%)" value={`-$${pf.toFixed(2)}`} className="text-muted-foreground" />
+            <Row label="Secure Checkout Fee (4% + $0.70)" value={`+$${pf.toFixed(2)}`} className="text-muted-foreground" />
+            <Row label="Stripe cost (est.)" value={`-$${proc.toFixed(2)}`} className="text-muted-foreground" />
             <Separator className="my-2" />
-            <Row label="Net to Seller" value={`$${netSeller.toFixed(2)}`} className="font-bold text-emerald-600" />
-            <Row label="Net to Platform" value={`$${pf.toFixed(2)}`} className="font-bold text-blue-600" />
+            <Row label="Net to Seller" value={`$${total.toFixed(2)}`} className="font-bold text-emerald-600" />
+            <Row label="Flea revenue (est.)" value={`$${Math.max(0, pf - proc).toFixed(2)}`} className="font-bold text-blue-600" />
           </div>
         </Section>
 
