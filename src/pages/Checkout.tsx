@@ -21,6 +21,7 @@ import { fetchSellerShippingSettings, calculateTotalShipping, SellerShippingInfo
 import { calculateFees } from '@/utils/feeCalculator';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import { useBuyerAddress } from '@/hooks/useBuyerAddress';
+import SecureCheckoutInfoPopover from '@/components/SecureCheckoutInfoPopover';
 
 // Apple App Review demo account — bypasses the seller-Stripe-connected check
 // so the reviewer can complete a purchase against demo listings.
