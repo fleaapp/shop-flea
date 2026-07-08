@@ -4,9 +4,9 @@ import { supabase } from '@/lib/supabase';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { toast } from 'sonner';
 import { ChevronRight } from 'lucide-react';
-import stripeLogo from '@/assets/logo-stripe.png';
 import { clearStripeConnectionState, getStripeConnectedStorageKey } from '@/utils/stripeConnectionState';
 import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
+import { openInAppUrl } from '@/lib/openInAppUrl';
 
 const PaymentMethodsSection = () => {
   const { user, profile, refreshProfile } = useAuth();
@@ -52,7 +52,7 @@ const PaymentMethodsSection = () => {
 
   const handleConnectStripe = () => {
     if (!user || !user.email) {
-      toast.error('You must be logged in to connect Stripe');
+      toast.error('You must be logged in to become a seller');
       return;
     }
     setShowStripeOnboarding(true);
@@ -85,7 +85,7 @@ const PaymentMethodsSection = () => {
           console.error('Failed to persist Stripe status to DB:', updateError);
         }
         await refreshProfile();
-        if (!silent) toast.success('Stripe account connected successfully!');
+        if (!silent) toast.success('Your seller account is ready!');
       } else if (data?.chargesEnabled && !data?.payoutsEnabled && data?.accountId) {
         // Charges enabled but payouts paused - action required
         setStripeChargesEnabled(true);
@@ -98,7 +98,7 @@ const PaymentMethodsSection = () => {
           .update({ stripe_account_id: data.accountId, stripe_onboarding_complete: false } as any)
           .eq('user_id', user.id);
         await refreshProfile();
-        if (!silent) toast('Your Stripe account needs attention - payouts are paused. Visit Stripe to complete verification.');
+        if (!silent) toast('Your seller account needs attention - payouts are paused. Open your seller dashboard to complete verification.');
 
         // Send a notification if one hasn't been sent recently
         const { data: existing } = await supabase
@@ -113,15 +113,15 @@ const PaymentMethodsSection = () => {
           await supabase.from('notifications').insert({
             user_id: user.id,
             type: 'payment_action_required',
-            title: 'Stripe Action Required',
-            message: '⚠️ Your Stripe payouts are paused. Tap here to visit Stripe and complete verification.',
+            title: 'Seller account needs attention',
+            message: '⚠️ Your payouts are paused. Tap here to open your seller dashboard and complete verification.',
           });
           // Fire push notification explicitly
           const { sendPushNotification } = await import('@/utils/pushNotify');
           sendPushNotification(user.id, {
             type: 'payment_action_required',
             title: 'Payment Action Required',
-            message: '⚠️ Your Stripe payouts are paused. Tap here to visit Stripe and complete verification.',
+            message: '⚠️ Your payouts are paused. Tap here to open your seller dashboard and complete verification.',
           });
         }
       } else if (data?.detailsSubmitted && data?.accountId) {
@@ -136,20 +136,20 @@ const PaymentMethodsSection = () => {
           .update({ stripe_account_id: data.accountId } as any)
           .eq('user_id', user.id);
         await refreshProfile();
-        if (!silent) toast('Your Stripe account is under review. We\'ll update you when it\'s verified.');
+        if (!silent) toast('Your seller account is under review. We\'ll update you when it\'s verified.');
       } else if (data?.accountId) {
         setLocalConnected(false);
         setLocalAccountId(data.accountId);
         localStorage.removeItem(getStripeConnectedStorageKey(user.id));
-        if (!silent) toast('Stripe onboarding incomplete. Please finish setup.');
+        if (!silent) toast('Seller setup incomplete. Please finish setup.');
       } else {
         clearLocalStripeState();
         await refreshProfile();
-        if (!silent) toast('No Stripe account found. Please connect Stripe first.');
+        if (!silent) toast('No seller account found. Please become a seller first.');
       }
     } catch (error) {
       console.error('Status check error:', error);
-      if (!silent) toast.error('Failed to check Stripe status.');
+      if (!silent) toast.error('Failed to check seller status.');
     } finally {
       setIsChecking(false);
     }
@@ -177,16 +177,24 @@ const PaymentMethodsSection = () => {
     handleCheckStatus(true);
   }, [user?.email, stripeFullyConnected, profile?.stripe_account_id, handleCheckStatus]);
 
+  const openSellerDashboard = async () => {
+    // In-app browser on native (SFSafariViewController / Chrome Custom Tabs)
+    // keeps the user inside Flea. Re-check status when the sheet is dismissed.
+    await openInAppUrl('https://dashboard.stripe.com', {
+      newTabOnWeb: true,
+      onFinished: () => handleCheckStatus(true),
+    });
+  };
+
   const handleStripeRowClick = () => {
     if (stripeFullyConnected || stripeDetailsSubmitted || stripeActionRequired) {
-      // Open Stripe dashboard for connected/pending/action-required users
-      window.open('https://dashboard.stripe.com', '_blank');
+      openSellerDashboard();
     } else {
       handleConnectStripe();
     }
   };
 
-  // Determine stripe status label and color
+  // Determine seller status label and color
   const getStripeStatus = () => {
     if (stripeFullyConnected) return { label: '✅ Connected', color: 'text-green-600' };
     if (stripePending || isChecking) return { label: '⏳ Verifying...', color: 'text-amber-600' };
@@ -214,16 +222,18 @@ const PaymentMethodsSection = () => {
         Payment Methods
       </h2>
       <div className="space-y-2 max-[375px]:space-y-1.5">
-        {/* Stripe */}
+        {/* Seller account */}
         <div
           className="flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow bg-card cursor-pointer"
           onClick={handleStripeRowClick}
         >
           <div className="flex items-center gap-3 max-[375px]:gap-2">
-            <img src={stripeLogo} alt="Stripe" className="h-7 w-7 object-contain" />
+            <span aria-hidden className="text-2xl leading-none w-7 h-7 flex items-center justify-center">
+              {stripeFullyConnected || stripeDetailsSubmitted || stripeActionRequired ? '📈' : '💸'}
+            </span>
             <div>
               <span className="text-base max-[375px]:text-sm font-medium text-foreground">
-                Stripe
+                {stripeFullyConnected || stripeDetailsSubmitted || stripeActionRequired ? 'Seller Dashboard' : 'Become a Seller'}
               </span>
               <p className={`text-xs mt-0.5 ${stripeStatus.color}`}>
                 {stripeStatus.label}

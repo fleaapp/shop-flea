@@ -286,8 +286,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     username: string,
     countryCode?: string,
     regionId?: string
-  ) => {
-    const { error } = await supabase.auth.signUp({
+  ): Promise<{ error: Error | null }> => {
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -299,6 +299,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       },
     });
+    // Supabase returns success with an empty identities array when the email
+    // is already registered (to prevent user enumeration). Surface this as an
+    // "already registered" error so the UI can send the user to log in.
+    if (!error && data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      return { error: new Error('User already registered') };
+    }
     return { error };
   };
 

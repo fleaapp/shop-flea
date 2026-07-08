@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
+import { openInAppUrl } from '@/lib/openInAppUrl';
 import {
   Select,
   SelectContent,
@@ -147,7 +148,10 @@ const SellerOnboardingSheet = ({
       return;
     }
     if (stripeActionRequired) {
-      window.open('https://dashboard.stripe.com', '_blank');
+      await openInAppUrl('https://dashboard.stripe.com', {
+        newTabOnWeb: true,
+        onFinished: () => onComplete?.(),
+      });
       return;
     }
 
@@ -184,11 +188,12 @@ const SellerOnboardingSheet = ({
         onComplete?.();
       });
       forceRestoreRouteAppChrome();
-      // In installed PWAs, Stripe's blank popup/new-window handoff leaves iOS
-      // showing its dark transient status bar after the popup closes. Keep this
-      // as a normal top-level redirect, matching Stripe's hosted-onboarding
-      // guidance and avoiding the one-off popup chrome bug entirely.
-      window.location.assign(data.url);
+      // Open onboarding inside the app: SFSafariViewController on iOS,
+      // Chrome Custom Tabs on Android. On dismiss, refresh seller status.
+      await openInAppUrl(data.url, {
+        newTabOnWeb: false,
+        onFinished: () => onComplete?.(),
+      });
     } catch (err: any) {
       console.error('Seller onboarding error:', err);
       toast.error(err?.message || 'Failed to start setup. Please try again.');
