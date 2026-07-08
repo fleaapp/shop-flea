@@ -92,7 +92,7 @@ export function useAdminTransactions() {
     return {
       totalOrders: r.length,
       totalRevenue: r.reduce((s, o) => s + o.price + o.shipping_price, 0),
-      platformEarnings: r.reduce((s, o) => s + calcPlatformFee(o.price), 0),
+      platformEarnings: r.reduce((s, o) => s + calcPlatformFee(o.price + o.shipping_price), 0),
       refundTotal: r.filter((o) => o.status === 'refunded').reduce((s, o) => s + o.price, 0),
       ordersInProgress: r.filter((o) => o.status === 'awaiting' || o.status === 'shipped').length,
       overdueShipments: r.filter((o) => getDaysOverdue(o) !== null).length,

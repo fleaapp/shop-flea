@@ -78,8 +78,8 @@ const SalesDetailsSheet = ({
   if (!orders || orders.length === 0) return null;
 
   const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
-  const platformFee = subtotal * 0.07;
-  const youReceived = subtotal - platformFee;
+  // Sellers pay no selling fees — you keep the full items + shipping.
+  const youReceived = subtotal;
   const statusBadge = getStatusBadge(primaryOrder.status);
   const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
 
@@ -212,11 +212,7 @@ const SalesDetailsSheet = ({
                   })}
                 </div>
 
-                {/* Fee line */}
-                <div className="flex justify-between text-sm px-4 py-3 border-t border-border">
-                  <span className="text-muted-foreground">Platform fee (7%)</span>
-                  <span className="text-muted-foreground">- ${platformFee.toFixed(2)}</span>
-                </div>
+                {/* No selling fees */}
 
                 {/* Total */}
                 <div className="flex items-center justify-center bg-charcoal text-white py-3 px-4">

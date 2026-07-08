@@ -21,6 +21,7 @@ import { fetchSellerShippingSettings, calculateTotalShipping, SellerShippingInfo
 import { calculateFees } from '@/utils/feeCalculator';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import { useBuyerAddress } from '@/hooks/useBuyerAddress';
+import SecureCheckoutInfoPopover from '@/components/SecureCheckoutInfoPopover';
 
 // Apple App Review demo account — bypasses the seller-Stripe-connected check
 // so the reviewer can complete a purchase against demo listings.
@@ -322,7 +323,10 @@ const Checkout = () => {
               
               {/* Fee line */}
               <div className="flex justify-between text-sm px-4 py-3 border-t border-border">
-                <span className="text-muted-foreground">Payment processing fee ({fees.rateLabel})</span>
+                <span className="text-muted-foreground inline-flex items-center gap-1.5">
+                  Secure Checkout Fee ({fees.rateLabel})
+                  <SecureCheckoutInfoPopover />
+                </span>
                 <span className="text-muted-foreground">+ ${processingFee.toFixed(2)}</span>
               </div>
               

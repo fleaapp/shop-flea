@@ -106,18 +106,18 @@ const Terms = () => {
           <section className={SECTION}>
             <h2 className="text-base font-bold mb-2">7. Buying</h2>
             <p>
-              When you place an order through Flea checkout you agree to pay the listed price, the seller's shipping price and any applicable buyer service fee. Once payment is captured, a binding contract of sale is formed between you and the seller. Orders cannot be cancelled by buyers once placed, except where Flea or the seller agrees in writing or where required by law.
+              When you place an order through Flea checkout you agree to pay the listed price, the seller's shipping price and the Secure Checkout Fee shown at checkout. Once payment is captured, a binding contract of sale is formed between you and the seller. Orders cannot be cancelled by buyers once placed, except where Flea or the seller agrees in writing or where required by law.
             </p>
             <p>
-              Goods are sold "as described" by the seller. Because items are secondhand, minor wear consistent with the stated condition is to be expected. Your statutory rights under the Australian Consumer Law are not excluded.
+              Goods are sold "as described" by the seller. Because items are secondhand, minor wear consistent with the stated condition is to be expected. Flea operates as a consumer-to-consumer (C2C) marketplace and most sellers are private individuals, not businesses acting in trade or commerce. The consumer guarantees under the Australian Consumer Law apply only to sellers acting in trade or commerce; where they apply, they are not excluded by these Terms.
             </p>
           </section>
 
           <section className={SECTION}>
             <h2 className="text-base font-bold mb-2">8. Fees and payments</h2>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li><strong>Platform fee:</strong> Sellers pay a 7% platform fee on the item price (excluding shipping) per completed sale.</li>
-              <li><strong>Buyer service fee:</strong> Buyers pay a 2% service fee on each order paid by card via our card processor, added at checkout.</li>
+              <li><strong>Secure Checkout Fee:</strong> Buyers pay a flat 4% + $0.70 Secure Checkout Fee on each order, added at checkout. It covers secure card processing, fraud protection and marketplace support.</li>
+              <li><strong>No selling fees:</strong> Sellers pay no selling or listing fees and receive the full item price plus shipping on each completed sale.</li>
               <li><strong>Instant payout:</strong> Sellers who choose an instant payout to their bank account pay an additional 1.5% instant payout fee charged by our payment processor.</li>
               <li><strong>Listing items:</strong> Listing items is free.</li>
             </ul>
@@ -139,7 +139,10 @@ const Terms = () => {
           <section className={SECTION}>
             <h2 className="text-base font-bold mb-2">10. Refunds, returns and disputes</h2>
             <p>
-              Buyers may request a refund through the order chat within <strong>10 days of delivery</strong> if the item is significantly not as described, damaged in transit, or never arrived. Sellers should respond promptly. Where a seller and buyer cannot resolve a dispute, Flea may, at its sole discretion, mediate and issue a refund (in whole or in part) from the seller's payout, but is not obliged to do so except where the Australian Consumer Law requires it.
+              Buyers may request a refund through the order chat within <strong>10 days of delivery</strong> if the item is significantly not as described, damaged in transit, or never arrived. Sellers should respond promptly. Where a seller and buyer cannot resolve a dispute, Flea may, at its sole discretion, assist and issue a refund (in whole or in part) from the seller's payout, but is not obliged to do so except where the Australian Consumer Law requires it.
+            </p>
+            <p>
+              If you believe the seller was acting in trade or commerce and you have a claim under the Australian Consumer Law that falls outside the 10-day in-app window, contact Flea support and we will assist you to enforce those rights.
             </p>
             <p>
               Nothing in these Terms excludes, restricts or modifies any consumer guarantee, right or remedy that cannot lawfully be excluded under the Australian Consumer Law.

@@ -72,7 +72,7 @@ export function TransactionTable({ orders, loading, onSelectOrder, sortField, so
             const ss = getShippingStatus(order);
             const overdue = getDaysOverdue(order);
             const total = order.price + order.shipping_price;
-            const pf = calcPlatformFee(order.price);
+            const pf = calcPlatformFee(order.price + order.shipping_price);
             return (
               <TableRow key={order.id} className="cursor-pointer" onClick={() => onSelectOrder(order)}>
                 <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{format(new Date(order.created_at), 'dd MMM yy')}</TableCell>

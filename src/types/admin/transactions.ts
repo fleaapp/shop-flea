@@ -43,15 +43,20 @@ export interface TransactionFilters {
 export type TransactionSortField = 'created_at' | 'price' | 'status' | 'buyer' | 'seller';
 export type SortDirection = 'asc' | 'desc';
 
-export const PLATFORM_FEE_PERCENT = 0.07;
-export const PROCESSING_FEE_PERCENT = 0.029;
-export const PROCESSING_FEE_FIXED = 0.30;
+// Flea revenue = Secure Checkout Fee = 4% + $0.70 of items + shipping.
+// (Stripe's actual processing cost is deducted from this by Stripe.)
+export const SECURE_CHECKOUT_RATE = 0.04;
+export const SECURE_CHECKOUT_FIXED = 0.70;
+// Kept for legacy display code that reads a percent constant.
+export const PLATFORM_FEE_PERCENT = SECURE_CHECKOUT_RATE;
 
-export function calcPlatformFee(price: number): number {
-  return Math.round(price * PLATFORM_FEE_PERCENT * 100) / 100;
+/** Flea's gross revenue on a sale (Secure Checkout Fee). Pass items + shipping. */
+export function calcPlatformFee(subtotal: number): number {
+  return Math.round((subtotal * SECURE_CHECKOUT_RATE + SECURE_CHECKOUT_FIXED) * 100) / 100;
 }
+/** Est. Stripe processing cost on a charge total (buyer-facing). */
 export function calcProcessingFee(total: number): number {
-  return Math.round((total * PROCESSING_FEE_PERCENT + PROCESSING_FEE_FIXED) * 100) / 100;
+  return Math.round((total * 0.0175 + 0.30) * 100) / 100;
 }
 export function getShippingStatus(o: TransactionOrder): 'pending' | 'shipped' | 'delivered' {
   if (o.delivered_at) return 'delivered';

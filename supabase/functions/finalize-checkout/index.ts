@@ -254,18 +254,16 @@ serve(async (req) => {
     if (authoritativeItems.length === 0) throw new Error("Purchased items could not be found.");
 
     // Compute expected paid amount from DB-authoritative prices (items +
-    // shipping + buyer-paid processing fee). This is what we passed the
+    // shipping + buyer-paid Secure Checkout Fee). This is what we passed the
     // provider when creating the checkout, so the provider's recorded
     // amount must match within rounding tolerance.
     const shippingMap = new Map<string, number>(Array.isArray(shippingBySeller) ? shippingBySeller : []);
     const dbItemsTotal = authoritativeItems.reduce((s, i) => s + Number(i.price), 0);
     const dbShippingTotal = Array.from(shippingMap.values()).reduce((s, v) => s + Number(v || 0), 0);
     const subtotalForFee = dbItemsTotal + dbShippingTotal;
-    const STRIPE_RATE = 0.0175, STRIPE_FIXED = 0.30;
-    const processingFee = Math.round(
-      ((subtotalForFee + STRIPE_FIXED) / (1 - STRIPE_RATE) - subtotalForFee) * 100,
-    ) / 100;
-    const expectedAmountAud = Math.round((subtotalForFee + processingFee) * 100) / 100;
+    const SECURE_CHECKOUT_RATE = 0.04, SECURE_CHECKOUT_FIXED = 0.70;
+    const secureCheckoutFee = Math.round((subtotalForFee * SECURE_CHECKOUT_RATE + SECURE_CHECKOUT_FIXED) * 100) / 100;
+    const expectedAmountAud = Math.round((subtotalForFee + secureCheckoutFee) * 100) / 100;
 
     // VERIFY PAYMENT WITH STRIPE — fail closed. Enforces both that payment
     // succeeded AND that the amount paid matches what we should have charged

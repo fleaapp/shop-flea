@@ -155,18 +155,17 @@ serve(async (req) => {
     const shippingAmount = shipping || 0;
     const subtotal = itemsTotal + shippingAmount;
 
-    // Stripe AU domestic card pricing — buyer covers this in full.
-    const STRIPE_RATE = 0.0175;
-    const STRIPE_FIXED = 0.30;
-    const processingFee = Math.round(
-      ((subtotal + STRIPE_FIXED) / (1 - STRIPE_RATE) - subtotal) * 100,
-    ) / 100;
-    const buyerTotalDollars = subtotal + processingFee;
+    // Secure Checkout Fee — flat 4% + $0.70 of items + shipping, paid by buyer.
+    // This is Flea's revenue line; Stripe's actual processing cost is deducted
+    // from it (funded out of application_fee_amount).
+    const SECURE_CHECKOUT_RATE = 0.04;
+    const SECURE_CHECKOUT_FIXED = 0.70;
+    const secureCheckoutFee = Math.round((subtotal * SECURE_CHECKOUT_RATE + SECURE_CHECKOUT_FIXED) * 100) / 100;
+    const buyerTotalDollars = subtotal + secureCheckoutFee;
 
-    // Flea platform fee — flat 7% of items + shipping.
-    const platformFeeDollars = subtotal * 0.07;
-
-    const applicationFeeAmount = Math.round((platformFeeDollars + processingFee) * 100);
+    // No seller-side platform fee. Flea's take = the full Secure Checkout Fee
+    // (Stripe deducts its actual ~1.75% + $0.30 from this via on_behalf_of).
+    const applicationFeeAmount = Math.round(secureCheckoutFee * 100);
 
     // Build line items from DB-authoritative items.
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = authoritativeItems.map(
@@ -195,12 +194,12 @@ serve(async (req) => {
       });
     }
 
-    // Add buyer-paid processing fee as a line item
+    // Add buyer-paid Secure Checkout Fee as a line item
     lineItems.push({
       price_data: {
         currency: "aud",
-        product_data: { name: `Payment processing fee (${(STRIPE_RATE * 100).toFixed(2)}% + $${STRIPE_FIXED.toFixed(2)})` },
-        unit_amount: Math.round(processingFee * 100),
+        product_data: { name: `Secure Checkout Fee (${(SECURE_CHECKOUT_RATE * 100).toFixed(0)}% + $${SECURE_CHECKOUT_FIXED.toFixed(2)})` },
+        unit_amount: Math.round(secureCheckoutFee * 100),
       },
       quantity: 1,
     });
@@ -284,8 +283,7 @@ serve(async (req) => {
       },
       metadata: {
         item_ids: items.map((i: { id: string }) => i.id).join(","),
-        platform_fee_aud: platformFeeDollars.toFixed(2),
-        processing_fee_aud: processingFee.toFixed(2),
+        secure_checkout_fee_aud: secureCheckoutFee.toFixed(2),
         buyer_total_aud: buyerTotalDollars.toFixed(2),
         flea_buyer_id: user.id,
       },
