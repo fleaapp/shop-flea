@@ -2,35 +2,33 @@
  * Single source of truth for Flea's fee model.
  *
  * Money flow per sale:
- *  Buyer pays:    items + shipping + processing fee (covers Stripe's actual cost)
+ *  Buyer pays:    items + shipping + Secure Checkout Fee (4% + $0.70)
  *  Stripe takes:  ~1.75% + $0.30 of total charge — deducted from SELLER (on_behalf_of=seller)
- *  Flea takes:    7% of (items + shipping) — application_fee_amount
- *  Seller gets:   (items + shipping) − 7% Flea fee  (Stripe fees absorbed by buyer-paid line)
- *
- * The processing fee shown to the buyer is "grossed up" so Stripe's actual
- * deduction is fully covered. Formula:
- *   processingFee = (subtotal + 0.30) / (1 − 0.0175) − subtotal
+ *  Flea takes:    application_fee_amount = full Secure Checkout Fee
+ *                 (Flea's net revenue = Secure Checkout Fee − Stripe's actual cost)
+ *  Seller gets:   items + shipping in full — no selling fees
  */
 
-// Buyer-paid processing fee (Stripe AU domestic card)
-export const STRIPE_PROCESSING_RATE = 0.0175;
-export const STRIPE_PROCESSING_FIXED = 0.30;
+// Buyer-paid Secure Checkout Fee (flat)
+export const SECURE_CHECKOUT_RATE = 0.04;
+export const SECURE_CHECKOUT_FIXED = 0.70;
 
-// Flea platform fee — what the seller pays out of the sale
-export const PLATFORM_FEE_RATE = 0.07;
+// No seller-side platform fee — sellers keep the full item + shipping price.
+export const PLATFORM_FEE_RATE = 0;
 
 export type PaymentMethod = 'stripe';
 
 export interface FeeBreakdown {
-  itemsTotal: number;       // sum of item prices
-  shipping: number;         // total shipping
-  subtotal: number;         // items + shipping
-  processingFee: number;    // buyer-paid, grossed up
-  buyerTotal: number;       // what buyer actually pays
-  platformFee: number;      // 7% Flea fee
-  sellerReceives: number;   // payout to seller (after Stripe + Flea fee)
+  itemsTotal: number;         // sum of item prices
+  shipping: number;           // total shipping
+  subtotal: number;           // items + shipping
+  secureCheckoutFee: number;  // buyer-paid Secure Checkout Fee
+  processingFee: number;      // alias of secureCheckoutFee for backwards compat
+  buyerTotal: number;         // what buyer actually pays
+  platformFee: number;        // always 0 under current model
+  sellerReceives: number;     // payout to seller (full subtotal)
   paymentMethod: PaymentMethod;
-  rateLabel: string;        // human label e.g. "1.75% + $0.30"
+  rateLabel: string;          // human label e.g. "4% + $0.70"
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -42,21 +40,19 @@ export function calculateFees(
 ): FeeBreakdown {
   const subtotal = itemsTotal + shipping;
 
-  // Gross-up so Stripe's deduction (rate × buyerTotal + fixed) is fully covered.
-  let processingFee = (subtotal + STRIPE_PROCESSING_FIXED) / (1 - STRIPE_PROCESSING_RATE) - subtotal;
-  const rateLabel = `${(STRIPE_PROCESSING_RATE * 100).toFixed(2)}% + $${STRIPE_PROCESSING_FIXED.toFixed(2)}`;
+  const secureCheckoutFee = r2(subtotal * SECURE_CHECKOUT_RATE + SECURE_CHECKOUT_FIXED);
+  const rateLabel = `${(SECURE_CHECKOUT_RATE * 100).toFixed(0)}% + $${SECURE_CHECKOUT_FIXED.toFixed(2)}`;
 
-  processingFee = r2(processingFee);
-  const buyerTotal = r2(subtotal + processingFee);
-  const platformFee = r2(subtotal * PLATFORM_FEE_RATE);
-  // For display only — actual seller payout is computed by Stripe after fees.
-  const sellerReceives = r2(subtotal - platformFee);
+  const buyerTotal = r2(subtotal + secureCheckoutFee);
+  const platformFee = 0;
+  const sellerReceives = r2(subtotal);
 
   return {
     itemsTotal,
     shipping,
     subtotal,
-    processingFee,
+    secureCheckoutFee,
+    processingFee: secureCheckoutFee,
     buyerTotal,
     platformFee,
     sellerReceives,
@@ -65,7 +61,7 @@ export function calculateFees(
   };
 }
 
-/** Quick helper for listing previews — what seller keeps after Flea's 7%. */
+/** Quick helper for listing previews — sellers now keep the full price + shipping. */
 export function sellerEarningsPreview(price: number, shipping = 0): number {
-  return r2((price + shipping) * (1 - PLATFORM_FEE_RATE));
+  return r2(price + shipping);
 }
