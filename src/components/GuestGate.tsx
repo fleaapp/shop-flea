@@ -7,9 +7,9 @@ const GuestGate = () => {
   const navigate = useNavigate();
   const { exitGuestMode } = useGuestMode();
 
-  const go = (tab: 'login' | 'signup') => {
+  const go = () => {
     exitGuestMode();
-    navigate('/auth', { state: { initialTab: tab } });
+    navigate('/auth', { state: { initialTab: 'login' } });
   };
 
   return (
@@ -25,16 +25,10 @@ const GuestGate = () => {
         </p>
         <div className="flex flex-col gap-3 w-full max-w-[260px]">
           <Button
-            onClick={() => go('login')}
+            onClick={go}
             className="h-11 rounded-full bg-muted-foreground/20 text-muted-foreground font-bold text-sm hover:bg-muted-foreground/30"
           >
-            Log In
-          </Button>
-          <Button
-            onClick={() => go('signup')}
-            className="h-11 rounded-full bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90"
-          >
-            Sign Up
+            Log In / Sign Up
           </Button>
         </div>
       </div>
