@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { getPasswordResetRedirectUrl } from '@/lib/authRedirects';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ const ForgotPassword = () => {
     setIsLoading(true);
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: getPasswordResetRedirectUrl(),
     });
 
     setIsLoading(false);

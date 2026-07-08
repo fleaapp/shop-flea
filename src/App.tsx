@@ -3,12 +3,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
 import PageSkeleton from "./components/PageSkeleton";
 import { restoreRouteAppChrome } from "@/lib/appChrome";
+import { getRouteFromNativeAuthUrl } from "@/lib/authRedirects";
 
 // Critical path – auth is loaded eagerly; app/feed routes are lazy so /auth paints first.
 import Auth from "./pages/Auth";
@@ -37,6 +38,7 @@ const loadSuggestionBox = () => import("./pages/SuggestionBox");
 const loadForgotPassword = () => import("./pages/ForgotPassword");
 const loadResetPassword = () => import("./pages/ResetPassword");
 const loadVerifyEmail = () => import("./pages/VerifyEmail");
+const loadAuthCallback = () => import("./pages/AuthCallback");
 const loadNotFound = () => import("./pages/NotFound");
 const loadTerms = () => import("./pages/Terms");
 const loadPrivacyPolicy = () => import("./pages/PrivacyPolicy");
@@ -71,6 +73,7 @@ const SuggestionBox = lazy(loadSuggestionBox);
 const ForgotPassword = lazy(loadForgotPassword);
 const ResetPassword = lazy(loadResetPassword);
 const VerifyEmail = lazy(loadVerifyEmail);
+const AuthCallback = lazy(loadAuthCallback);
 const NotFound = lazy(loadNotFound);
 const Terms = lazy(loadTerms);
 const PrivacyPolicy = lazy(loadPrivacyPolicy);
@@ -103,6 +106,41 @@ const queryClient = new QueryClient({
 const PageLoader = () => <PageSkeleton />;
 
 const AuthRouteFallback = () => <div className="fixed inset-0 bg-primary" />;
+
+const NativeDeepLinkHandler = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const cap = (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+    if (!cap?.isNativePlatform?.()) return;
+
+    let removeListener: (() => void) | undefined;
+    let cancelled = false;
+
+    void import('@capacitor/app')
+      .then(({ App }) =>
+        App.addListener('appUrlOpen', ({ url }) => {
+          const route = getRouteFromNativeAuthUrl(url);
+          if (route) navigate(route, { replace: false });
+        }),
+      )
+      .then((handle) => {
+        if (cancelled) {
+          void handle.remove();
+          return;
+        }
+        removeListener = () => void handle.remove();
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+      removeListener?.();
+    };
+  }, [navigate]);
+
+  return null;
+};
 
 const AppContent = () => {
   const location = useLocation();
@@ -177,6 +215,7 @@ const AppContent = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/listing/:id" element={<ProtectedRoute mode="public"><ListingDetails /></ProtectedRoute>} />
           <Route path="/favorites" element={<ProtectedRoute mode="public"><Favorites /></ProtectedRoute>} />
           <Route path="/cart" element={<ProtectedRoute mode="public"><Cart /></ProtectedRoute>} />
@@ -226,6 +265,7 @@ const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <NativeDeepLinkHandler />
         <AuthProvider>
           <TooltipProvider>
             <AppContent />
