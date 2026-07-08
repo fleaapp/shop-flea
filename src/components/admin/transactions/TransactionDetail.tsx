@@ -58,8 +58,8 @@ export function TransactionDetail({ order, onBack }: Props) {
   const ss = getShippingStatus(order);
   const overdue = getDaysOverdue(order);
   const total = order.price + order.shipping_price;
-  const pf = calcPlatformFee(order.price);
-  const proc = calcProcessingFee(total);
+  const pf = calcPlatformFee(order.price + order.shipping_price);
+  const proc = calcProcessingFee(total + pf);
   const netSeller = order.price - pf;
 
   const timeline = [
