@@ -139,7 +139,10 @@ const Terms = () => {
           <section className={SECTION}>
             <h2 className="text-base font-bold mb-2">10. Refunds, returns and disputes</h2>
             <p>
-              Buyers may request a refund through the order chat within <strong>10 days of delivery</strong> if the item is significantly not as described, damaged in transit, or never arrived. Sellers should respond promptly. Where a seller and buyer cannot resolve a dispute, Flea may, at its sole discretion, mediate and issue a refund (in whole or in part) from the seller's payout, but is not obliged to do so except where the Australian Consumer Law requires it.
+              Buyers may request a refund through the order chat within <strong>10 days of delivery</strong> if the item is significantly not as described, damaged in transit, or never arrived. Sellers should respond promptly. Where a seller and buyer cannot resolve a dispute, Flea may, at its sole discretion, assist and issue a refund (in whole or in part) from the seller's payout, but is not obliged to do so except where the Australian Consumer Law requires it.
+            </p>
+            <p>
+              If you believe the seller was acting in trade or commerce and you have a claim under the Australian Consumer Law that falls outside the 10-day in-app window, contact Flea support and we will assist you to enforce those rights.
             </p>
             <p>
               Nothing in these Terms excludes, restricts or modifies any consumer guarantee, right or remedy that cannot lawfully be excluded under the Australian Consumer Law.
