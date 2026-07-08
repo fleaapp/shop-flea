@@ -141,8 +141,8 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
                 {viewAs === 'buyer' ? (
                   <>
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">Processing fee (1.75% + $0.30)</span>
-                      <span className="text-gray-900">+${processingFee.toFixed(2)}</span>
+                      <span className="text-gray-500">Secure Checkout Fee (4% + $0.70)</span>
+                      <span className="text-gray-900">+${secureCheckoutFee.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-xs font-bold pt-1">
                       <span className="text-gray-900">Total paid</span>
@@ -151,10 +151,6 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
                   </>
                 ) : (
                   <>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">Platform fee (7%)</span>
-                      <span className="text-gray-900">-${platformFee.toFixed(2)}</span>
-                    </div>
                     <div className="flex justify-between text-xs font-bold pt-1">
                       <span className="text-gray-900">You received</span>
                       <span className="text-gray-900">${sellerReceives.toFixed(2)}</span>
