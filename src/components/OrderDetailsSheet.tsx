@@ -105,9 +105,9 @@ const OrderDetailsSheet = ({
   if (!orders || orders.length === 0) return null;
 
   const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
-  const processingFee = Math.round(((subtotal + 0.30) / (1 - 0.0175) - subtotal) * 100) / 100;
+  // Buyer pays a flat Secure Checkout Fee of 4% + $0.70. Sellers pay no selling fees.
+  const processingFee = Math.round((subtotal * 0.04 + 0.70) * 100) / 100;
   const total = subtotal + processingFee;
-  // Buyer pays 1.75% + $0.30 processing fee that fully covers Stripe; seller pays only the 7% Flea fee.
   const statusBadge = getStatusBadge(primaryOrder.status);
   const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
 
