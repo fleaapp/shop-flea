@@ -1,136 +1,115 @@
-# Guest Browse Mode
+## On the 10-day refund window (C2C context)
 
-Comply with App Store Guideline 5.1.1(v) by letting anyone browse Flea without an account, and only gating account-based actions behind login.
+You're right that in a genuine C2C marketplace, ACL consumer guarantees don't automatically apply to private sellers — they only bind sellers acting "in trade or commerce". Stripe forcing users to sign up as a business is a **KYC/tax classification**, not a legal declaration that they're a trader for ACL purposes. So most of your sellers are still legally C2C.
 
-## 1. Guest session state
+**Recommendation: keep the 10-day window as-is, but tighten the language and add an escalation path.**
 
-Add a lightweight guest flag on top of `AuthContext` (no schema changes, no Supabase changes).
+Why:
 
-- New field on `AuthContext`: `isGuest: boolean`, plus `enterGuestMode()` and `exitGuestMode()`.
-- Backed by `sessionStorage` key `flea_guest_mode` so it lasts the session but clears on relaunch — matches Apple's expectation that guest mode is transient.
-- `isGuest` is only true when `user === null` AND the flag is set. Signing in automatically clears it (seamless transition to authenticated experience).
-- New helper hook `useRequireAuth()` returning `{ requireAuth: (action?: string) => boolean }`. If guest, it opens the Guest Prompt modal and returns `false`; otherwise returns `true`.
+- 10 days post-delivery is already **more generous than eBay's 3-day "item not as described" default** and matches Depop / Vinted's window. It's an industry-normal C2C standard.
+- Removing it would expose casual sellers to open-ended return risk, which kills the C2C proposition.
+- The residual legal risk (a repeat/business-scale seller being caught by ACL) is handled by a **support escalation channel**, not by extending the app window for everyone.
 
-## 2. Auth screen: "Browse as Guest" link
+Specifically I'd:
 
-In `src/pages/Auth.tsx`, under the existing Login / Sign Up block, add a small underlined text button:
+1. Keep the 10-day self-service window in the app.
+2. In Terms cl. 10, add a sentence: *"If you believe the seller was acting in trade or commerce and you have a claim under the Australian Consumer Law that falls outside the 10-day window, contact support and we will assist."*
+3. Add a "Contact support" link on the closed-refund-window state in OrderChat.
+4. Add one line to Terms cl. 8 clarifying most Flea sellers are private individuals and ACL guarantees may not apply to private sales — this is transparent and legally accurate.
 
-```
-Browse as Guest
-```
+No code change needed to the 10-day logic itself.
 
-- Subtle styling: `text-sm underline text-muted-foreground`, centered, ~16px below the primary CTAs.
-- On tap: `enterGuestMode()` then `navigate('/')`.
+---
 
-Everything else on the Auth screen stays exactly as-is.
+## Fee restructure
 
-## 3. Route gating changes
+**New model:**
 
-`src/components/ProtectedRoute.tsx` becomes route-type aware. Two wrappers:
 
-- `PublicRoute` (new): allows both authenticated users and guests. Used for browse-related routes.
-- `AccountRoute` (renamed behavior of current `ProtectedRoute`): redirects to `/auth` if not signed in. Used for account-only pages.
+| Before                                                     | After                                              |
+| ---------------------------------------------------------- | -------------------------------------------------- |
+| Buyer: 1.75% + $0.30 "Payment processing fee" (grossed up) | Buyer: **4% + $0.70 "Secure Checkout Fee"** (flat) |
+| Seller: 7% platform fee                                    | Seller: **$0 — no selling fees**                   |
 
-Route map in `src/App.tsx`:
 
-| Route | Wrapper |
-|---|---|
-| `/` (Index / swipe feed) | PublicRoute |
-| `/listing/:id` | PublicRoute |
-| `/seller/:sellerId` | PublicRoute |
-| `/cart` | Guest sees Guest Prompt screen (see §5) |
-| `/favorites` | PublicRoute — but writes hit local session only for guests |
-| `/checkout`, `/checkout/success` | AccountRoute |
-| `/profile` | Guest sees Guest Prompt screen (see §5) |
-| `/notifications` | Guest sees Guest Prompt screen |
-| `/settings`, `/settings/profile` | Guest sees Guest Prompt screen |
-| `/create`, `/listing/:id/edit` | AccountRoute |
-| `/sales`, `/order-chat/*`, `/contact-support*`, `/suggestion-box` | AccountRoute |
-| `/faq`, `/terms`, `/privacy`, `/install` | Public (unchanged) |
+Money flow per sale:
 
-## 4. Guest Prompt modal
+- Buyer pays: `items + shipping + (subtotal × 4% + $0.70)`
+- Stripe still deducts its real ~1.75% + $0.30 from the charge (via `on_behalf_of=seller`)
+- Flea's `application_fee_amount` = the full Secure Checkout Fee (Flea earns whatever's left after Stripe's cost)
+- Seller receives: `items + shipping` in full (Stripe cost absorbed by the buyer-paid fee)
 
-New component `src/components/GuestPromptDialog.tsx` (using existing `AlertDialog` styling for consistency):
+Worked example on a $50 item + $10 shipping:
 
-- Header: **You're browsing as a guest**
-- Body: *Log in or sign up to buy, sell and save on Flea.*
-- Buttons: **Log In**, **Sign Up**, **Continue Browsing**
-- Log In → `navigate('/auth')` with `activeTab=login`.
-- Sign Up → `navigate('/auth')` with `activeTab=signup`.
-- Continue Browsing → close modal.
+- Before: buyer $61.37, seller nets ~$55.80, Flea ~$4.20
+- After: buyer $63.10, seller $60.00 (full), Flea ~$1.55 after Stripe cost
 
-Global mount inside `AuthenticatedProviders` (renamed conceptually to "AppProviders" — still wraps guests too). Exposed via a small `GuestPromptContext` so any component can call `promptGuest()`.
+Note: **Flea earns less per transaction under this model** — that's your business call, flagging it so you're aware.
 
-Wire `useRequireAuth()` to `promptGuest()`.
+## Files to change
 
-## 5. Guest-specific tab landing screens
+**Core math** — `src/utils/feeCalculator.ts`
 
-For `/profile`, `/cart`, `/notifications`, `/settings`, when `isGuest`, render a full-screen welcome view instead of the normal page:
+- Replace `STRIPE_PROCESSING_RATE/FIXED` + `PLATFORM_FEE_RATE` with `SECURE_CHECKOUT_RATE = 0.04`, `SECURE_CHECKOUT_FIXED = 0.70`, `PLATFORM_FEE_RATE = 0`.
+- `processingFee` → renamed to `secureCheckoutFee`; formula = `subtotal * 0.04 + 0.70`.
+- `sellerReceives` = `subtotal` (no deduction).
+- `rateLabel` = `"4% + $0.70"`.
+- `sellerEarningsPreview(price, shipping)` → returns `price + shipping` (no fee subtracted).
 
-- Header: **You're browsing as a guest**
-- Body: *Log in or sign up to buy, sell and save on Flea.*
-- Buttons: **Log In**, **Sign Up**
-- Bottom nav stays visible so they can return to Home.
+**Server-side** — `supabase/functions/stripe-connect-checkout/index.ts`
 
-Implemented as a shared `<GuestGate />` component the page renders when `isGuest`.
+- Remove the 7% platform-fee-dollars calculation.
+- Compute `secureCheckoutFee = subtotal * 0.04 + 0.70`.
+- `application_fee_amount` = `secureCheckoutFee` in cents.
+- Update metadata: replace `platform_fee_aud` with `secure_checkout_fee_aud`.
 
-## 6. Gated actions inside browsable pages
+**Checkout UX** — `src/pages/Checkout.tsx`
 
-Wrap these handlers with `requireAuth()`; if it returns false, the modal opens and the action aborts:
+- Change the fee line label from "Payment processing fee (1.75% + $0.30)" to **"Secure Checkout Fee (4% + $0.70)"**.
+- Add a small `ⓘ` icon button next to the label opening a Popover:
+  > *"*A small fee that helps us provide secure transactions, fraud prevention & marketplace support so you can shop with confidence. No hidden extras - Flea sellers pay no selling fees.*"*
+- Uses the existing shadcn `Popover` for consistency with `ConditionInfoPopover`.
 
-- Listing card / details:
-  - Add to cart (`WishlistGridCard`, `ListingDetails`, swipe-right save on Home stays local only)
-  - Favorite / wishlist save (guest → in-memory session array only, no DB write)
-  - Message seller
-  - Post a comment (`ListingComments`)
-  - Report listing / user
-- Home swipe deck:
-  - Swipe left dismiss → **allowed** for guests (session only)
-  - Swipe right save → **allowed** for guests (session only, kept in `sessionStorage`)
-  - Undo → **allowed**
-  - Any button that opens Cart/Profile/Alerts routes triggers the modal via §3
-- Header/search/filter — **allowed** for guests
-- Checkout button → modal
-- Create listing button → modal
+**Buyer-facing receipts** — `src/components/OrderReceiptDialog.tsx`, `src/components/OrderDetailsSheet.tsx`
 
-Guest "saved" items are stored in `sessionStorage` under `flea_guest_saved` so §Session Behaviour is satisfied without touching Supabase. They're discarded on logout of guest mode / relaunch.
+- Rename "Processing fee (1.75% + $0.30)" → "Secure Checkout Fee (4% + $0.70)".
+- Remove the "Platform fee (7%)" line from `OrderReceiptDialog` (it was showing a seller-side deduction to the buyer, which no longer exists).
 
-## 7. Session behaviour & seamless upgrade
+**Seller-facing** — `src/components/SalesDetailsSheet.tsx`
 
-- If a guest signs up or logs in during the session, `AuthContext` detects `SIGNED_IN`, calls `exitGuestMode()`, and the app naturally transitions to the authenticated experience (existing profile/onboarding flow runs).
-- Optional carry-over: on successful sign-in, migrate `flea_guest_saved` IDs into the real wishlist via `favorites.upsert`. Small, best-effort; failures are silent.
+- Remove the "Platform fee (7%)" line and the deduction.
+- Show `You received: items + shipping` in full.
 
-## 8. Data-layer safety
+**Listing earnings preview** — wherever `sellerEarningsPreview` is called (edit/create listing, listing details)
 
-Guests currently can't reach data hooks because everything is behind ProtectedRoute. After this change, hooks that fetch listings (`useHomeFeed`, `useListings`, listing detail queries) will run for guests. They already use the anon key and only read public data via RLS. Audit:
+- Since the helper now returns full `price + shipping`, copy that reads "You'll receive $X after fees" should be simplified to "You'll receive $X" — I'll grep and adjust.
 
-- Confirm RLS on `listings` allows `SELECT` for `anon` (should already — public catalog).
-- Confirm `profiles_public` view is readable by `anon` (already used for seller info).
-- Hooks that call `.eq('user_id', user.id)` (favorites, cart, notifications) must early-return when `!user` instead of throwing.
+**FAQ** — `src/components/FAQSection.tsx`
 
-No migrations required — this plan is guarded to be a **frontend-only** change unless the RLS audit reveals a missing anon SELECT policy on `listings`/`profiles_public`, in which case a single migration will add it.
+- Update "What fees do I pay as a buyer?" → describe the new 4% + $0.70 Secure Checkout Fee and what it covers.
+- Update "What fees do I pay as a seller?" → **"Flea charges no selling fees. You receive the full item price plus shipping. Payment processing is covered by the buyer's Secure Checkout Fee."**
 
-## Technical notes
+**Terms** — `src/pages/Terms.tsx`
 
-- Files created:
-  - `src/context/GuestContext.tsx` (or fold into `AuthContext`) — `isGuest`, `enterGuestMode`, `exitGuestMode`.
-  - `src/hooks/useRequireAuth.ts`
-  - `src/components/GuestPromptDialog.tsx`
-  - `src/components/GuestGate.tsx`
-- Files edited:
-  - `src/App.tsx` — split `ProtectedRoute` into `PublicRoute` / `AccountRoute` and re-map routes above.
-  - `src/components/ProtectedRoute.tsx` — becomes `AccountRoute`, plus new `PublicRoute`.
-  - `src/context/AuthContext.tsx` — expose guest flag and auto-clear on sign in.
-  - `src/pages/Auth.tsx` — add "Browse as Guest" underlined link.
-  - `src/components/AuthenticatedProviders.tsx` — mount `GuestPromptProvider`; keep providers for guests too (Cart/Onboarding can no-op when `!user`).
-  - `src/context/CartContext.tsx` — no-op cart writes when `!user` (guest cart is not persisted; add-to-cart goes through `requireAuth`).
-  - `src/pages/Index.tsx` — allow guest usage; route side-effects (favorite / add to cart / message) through `requireAuth`.
-  - `src/pages/ListingDetails.tsx`, `src/components/ListingComments.tsx`, `src/components/WishlistGridCard.tsx`, `src/components/CartItemRow.tsx` — same wrapper on gated actions.
-  - `src/pages/Profile.tsx`, `src/pages/Cart.tsx`, `src/pages/Notifications.tsx`, `src/pages/Settings.tsx` — render `<GuestGate />` when `isGuest`.
-- No changes to iOS Google/Apple sign-in code, no Capacitor changes, no backend changes.
+- Clause 7 (Fees): remove the 7% platform-fee bullet, add a Secure Checkout Fee line.
+- Clause 8: add C2C clarification about ACL/trade-or-commerce.
+- Clause 10: add the support-escalation sentence for out-of-window ACL claims.
 
-## Out of scope
+**Admin transaction display** — `src/components/admin/transactions/TransactionTable.tsx`, `TransactionDetail.tsx`
 
-- Persisting guest activity across app relaunches (Apple only requires guest access, not durable state).
-- Server-side "guest cart" — not required and would create garbage data.
-- Redesigning the Auth screen.
+- Update column headers/labels from "Platform fee" to "Flea revenue" (or keep as `platform_fee` internally, just relabel — the value will now equal the Secure Checkout Fee minus Stripe's cost).
+
+**Refund handling** — `supabase/functions/stripe-connect-refund/index.ts`
+
+- Comment update only: `refund_application_fee: true` still correctly unwinds Flea's fee (now the Secure Checkout Fee rather than the 7%). No logic change.
+
+## What I'll not change
+
+- The 10-day refund window logic in `stripe-connect-refund` (still enforced).
+- The auto-refund at 6 days overdue.
+- Stripe Connect account structure — sellers still onboard as businesses per Stripe's KYC requirement; that's separate from the ACL trade/commerce question.
+- Existing orders' historical fee data — the change is prospective only.
+
+## Open question
+
+Do you want the **new fee applied retroactively to already-created but unpaid checkout sessions**, or only to sessions created from the moment we deploy? (Recommend: only new sessions — no code needed, just deploy.)
