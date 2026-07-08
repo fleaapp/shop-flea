@@ -116,8 +116,8 @@ const Terms = () => {
           <section className={SECTION}>
             <h2 className="text-base font-bold mb-2">8. Fees and payments</h2>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li><strong>Platform fee:</strong> Sellers pay a 7% platform fee on the item price (excluding shipping) per completed sale.</li>
-              <li><strong>Buyer service fee:</strong> Buyers pay a 2% service fee on each order paid by card via our card processor, added at checkout.</li>
+              <li><strong>Secure Checkout Fee:</strong> Buyers pay a flat 4% + $0.70 Secure Checkout Fee on each order, added at checkout. It covers secure card processing, fraud protection and marketplace support.</li>
+              <li><strong>No selling fees:</strong> Sellers pay no selling or listing fees and receive the full item price plus shipping on each completed sale.</li>
               <li><strong>Instant payout:</strong> Sellers who choose an instant payout to their bank account pay an additional 1.5% instant payout fee charged by our payment processor.</li>
               <li><strong>Listing items:</strong> Listing items is free.</li>
             </ul>
