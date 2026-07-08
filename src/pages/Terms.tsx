@@ -106,10 +106,10 @@ const Terms = () => {
           <section className={SECTION}>
             <h2 className="text-base font-bold mb-2">7. Buying</h2>
             <p>
-              When you place an order through Flea checkout you agree to pay the listed price, the seller's shipping price and any applicable buyer service fee. Once payment is captured, a binding contract of sale is formed between you and the seller. Orders cannot be cancelled by buyers once placed, except where Flea or the seller agrees in writing or where required by law.
+              When you place an order through Flea checkout you agree to pay the listed price, the seller's shipping price and the Secure Checkout Fee shown at checkout. Once payment is captured, a binding contract of sale is formed between you and the seller. Orders cannot be cancelled by buyers once placed, except where Flea or the seller agrees in writing or where required by law.
             </p>
             <p>
-              Goods are sold "as described" by the seller. Because items are secondhand, minor wear consistent with the stated condition is to be expected. Your statutory rights under the Australian Consumer Law are not excluded.
+              Goods are sold "as described" by the seller. Because items are secondhand, minor wear consistent with the stated condition is to be expected. Flea operates as a consumer-to-consumer (C2C) marketplace and most sellers are private individuals, not businesses acting in trade or commerce. The consumer guarantees under the Australian Consumer Law apply only to sellers acting in trade or commerce; where they apply, they are not excluded by these Terms.
             </p>
           </section>
 
