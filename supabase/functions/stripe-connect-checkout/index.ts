@@ -283,8 +283,7 @@ serve(async (req) => {
       },
       metadata: {
         item_ids: items.map((i: { id: string }) => i.id).join(","),
-        platform_fee_aud: platformFeeDollars.toFixed(2),
-        processing_fee_aud: processingFee.toFixed(2),
+        secure_checkout_fee_aud: secureCheckoutFee.toFixed(2),
         buyer_total_aud: buyerTotalDollars.toFixed(2),
         flea_buyer_id: user.id,
       },
