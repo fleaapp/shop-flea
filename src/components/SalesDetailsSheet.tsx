@@ -78,8 +78,8 @@ const SalesDetailsSheet = ({
   if (!orders || orders.length === 0) return null;
 
   const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
-  const platformFee = subtotal * 0.07;
-  const youReceived = subtotal - platformFee;
+  // Sellers pay no selling fees — you keep the full items + shipping.
+  const youReceived = subtotal;
   const statusBadge = getStatusBadge(primaryOrder.status);
   const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
 
