@@ -212,7 +212,10 @@ const OrderDetailsSheet = ({
 
                 {/* Fee line */}
                 <div className="flex justify-between text-sm px-4 py-3 border-t border-border">
-                  <span className="text-muted-foreground">Payment processing fee (1.75% + $0.30)</span>
+                  <span className="text-muted-foreground inline-flex items-center gap-1.5">
+                    Secure Checkout Fee (4% + $0.70)
+                    <SecureCheckoutInfoPopover />
+                  </span>
                   <span className="text-muted-foreground">+ ${processingFee.toFixed(2)}</span>
                 </div>
 
