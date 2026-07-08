@@ -27,7 +27,7 @@ const faqItems = [
       },
       {
         q: 'What fees do I pay as a buyer?',
-        a: 'A small payment processing fee is added at checkout - 1.75% + $0.30 when paying by card. Shipping costs are set by the seller. There are no hidden fees.',
+        a: 'A single flat Secure Checkout Fee of 4% + $0.70 is added at checkout. It covers secure card processing, fraud protection and marketplace support. Shipping costs are set by the seller. There are no hidden fees.',
       },
       {
         q: 'Can I get a refund?',
