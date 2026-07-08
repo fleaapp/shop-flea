@@ -194,12 +194,12 @@ serve(async (req) => {
       });
     }
 
-    // Add buyer-paid processing fee as a line item
+    // Add buyer-paid Secure Checkout Fee as a line item
     lineItems.push({
       price_data: {
         currency: "aud",
-        product_data: { name: `Payment processing fee (${(STRIPE_RATE * 100).toFixed(2)}% + $${STRIPE_FIXED.toFixed(2)})` },
-        unit_amount: Math.round(processingFee * 100),
+        product_data: { name: `Secure Checkout Fee (${(SECURE_CHECKOUT_RATE * 100).toFixed(0)}% + $${SECURE_CHECKOUT_FIXED.toFixed(2)})` },
+        unit_amount: Math.round(secureCheckoutFee * 100),
       },
       quantity: 1,
     });
