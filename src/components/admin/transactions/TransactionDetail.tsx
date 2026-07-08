@@ -60,7 +60,7 @@ export function TransactionDetail({ order, onBack }: Props) {
   const total = order.price + order.shipping_price;
   const pf = calcPlatformFee(order.price + order.shipping_price);
   const proc = calcProcessingFee(total + pf);
-  const netSeller = order.price - pf;
+  
 
   const timeline = [
     { label: 'Purchased', time: order.created_at, icon: DollarSign },
