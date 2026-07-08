@@ -72,10 +72,11 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
   const itemsSubtotal = orders.reduce((sum, o) => sum + o.price, 0);
   const shippingTotal = orders.reduce((sum, o) => sum + o.shipping_price, 0);
   const subtotal = itemsSubtotal + shippingTotal;
-  const processingFee = Math.round(((subtotal + 0.30) / (1 - 0.0175) - subtotal) * 100) / 100;
-  const platformFee = subtotal * 0.07;
-  const buyerTotal = subtotal + processingFee;
-  const sellerReceives = subtotal - platformFee;
+  // Secure Checkout Fee: 4% + $0.70 of items + shipping, paid by buyer.
+  const secureCheckoutFee = Math.round((subtotal * 0.04 + 0.70) * 100) / 100;
+  const buyerTotal = subtotal + secureCheckoutFee;
+  // Sellers keep the full items + shipping — no platform fee.
+  const sellerReceives = subtotal;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
