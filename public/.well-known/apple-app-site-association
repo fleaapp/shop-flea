@@ -1,0 +1,16 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.com.finditonflea.app",
+        "paths": [
+          "/auth/callback",
+          "/auth/callback/*",
+          "/reset-password",
+          "/reset-password/*"
+        ]
+      }
+    ]
+  }
+}

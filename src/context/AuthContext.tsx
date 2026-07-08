@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { clearStripeConnectionState, getStripeConnectedStorageKey } from '@/utils/stripeConnectionState';
+import { getSignupRedirectUrl } from '@/lib/authRedirects';
 
 interface Profile {
   id: string;
@@ -290,7 +291,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: getSignupRedirectUrl(),
         data: {
           username: `@${username.replace(/^@/, '')}`,
           country_code: countryCode,

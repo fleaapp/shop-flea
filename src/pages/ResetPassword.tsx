@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { completeAuthSessionFromUrl } from '@/lib/authRedirects';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -31,6 +32,10 @@ const ResetPassword = () => {
 
     const checkSession = async () => {
       try {
+        if (window.location.hash || window.location.search.includes('code=')) {
+          await completeAuthSessionFromUrl();
+        }
+
         const { data: { session } } = await supabase.auth.getSession();
         if (settled) return;
         settled = true;
