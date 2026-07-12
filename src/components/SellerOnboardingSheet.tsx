@@ -313,7 +313,17 @@ const SellerOnboardingSheet = ({
               <div className="w-full text-left space-y-3 mt-1">
                 <div className="space-y-1">
                   <Label htmlFor="addr" className="text-xs">Street address</Label>
-                  <Input id="addr" value={line1} onChange={(e) => setLine1(e.target.value)} autoComplete="address-line1" />
+                  <AddressAutocomplete
+                    value={line1}
+                    onChange={setLine1}
+                    onSelect={(addr) => {
+                      if (addr.street) setLine1(addr.street);
+                      if (addr.suburb || addr.city) setSuburb(addr.suburb || addr.city);
+                      if (addr.state) setState(addr.state);
+                      if (addr.postcode) setPostcode(addr.postcode);
+                    }}
+                    placeholder="Start typing your address..."
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
@@ -323,8 +333,10 @@ const SellerOnboardingSheet = ({
                   <div className="space-y-1">
                     <Label htmlFor="state" className="text-xs">State</Label>
                     <Select value={state} onValueChange={setState}>
-                      <SelectTrigger id="state"><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>
+                      <SelectTrigger id="state" className="h-11 rounded-xl bg-background border-border">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border-border z-[100]" position="popper">
                         {AU_STATES.map((s) => (
                           <SelectItem key={s} value={s}>{s}</SelectItem>
                         ))}
