@@ -121,7 +121,15 @@ const NativeDeepLinkHandler = () => {
       .then(({ App }) =>
         App.addListener('appUrlOpen', ({ url }) => {
           const route = getRouteFromNativeAuthUrl(url);
-          if (route) navigate(route, { replace: false });
+          if (route) {
+            // Close the in-app browser sheet (SFSafariViewController) that was
+            // opened for Google/Stripe/etc. so we return to the app UI before
+            // navigating to the callback route.
+            void import('@capacitor/browser')
+              .then(({ Browser }) => Browser.close())
+              .catch(() => undefined);
+            navigate(route, { replace: false });
+          }
         }),
       )
       .then((handle) => {
