@@ -1,31 +1,90 @@
-## Goal
-Make the product listing popup top area match the seller dashboard popup: the original screen remains visible behind a dim overlay, and the popup itself is not covered by a solid black status-bar strip.
+# FAQ Refresh Plan (Revised)
 
-## What I found
-- Product listing details use the shared `Drawer` component.
-- The seller dashboard uses the shared `Sheet` component plus a specific overlay class.
-- The current shared overlay/status-bar logic paints the native safe-area/status area solid black for overlays, which is why the top of the listing popup looks wrong.
-- Other `Drawer`-based bottom popups are likely to show the same issue.
+Update `src/components/FAQSection.tsx` to reflect the current product state. Use "payment provider" as the default term, only naming Stripe where it directly explains an in-app screen or link. Add the new payout timing guidance the user requested.
 
-## Plan
-1. **Fix the shared overlay chrome logic**
-   - Update the native overlay/status-bar styling so overlays dim the visible app behind them instead of adding an opaque black bar over the top safe area.
-   - Keep the seller dashboard look as the reference: dimmed background, visible underlying app, no solid black top covering the popup.
+## Verified facts from the codebase
 
-2. **Align product listing popup with seller dashboard behavior**
-   - Update the listing detail drawer to use the same overlay appearance/logic as the seller dashboard sheet.
-   - Adjust the listing drawer top spacing/height only as needed so the rounded top sits cleanly below the safe area and the dimmed background remains visible above it.
+- Buyer fee: **4% + $0.70 Secure Checkout Fee** (`feeCalculator.ts`).
+- Seller fees: **0%** — sellers keep full item + shipping.
+- Payout schedule: daily with minimum delay (`stripe-connect-onboard` sets `interval: "daily"`, `delay_days: "minimum"`).
+- Instant payout: **1.5% fee**, only after the seller's payment account is fully verified (`SalesDetailsSheet.tsx`).
+- Refund window: **10 days after delivery**, or **30 days after order** if never delivered (`stripe-connect-refund`).
+- Shipping reminders: **day-3 reminder**, **day-6 urgent reminder** (`shipping-reminders` edge function).
+- Overdue flag: orders not shipped within **4 days** show as overdue in Sales.
+- Guest mode: browse without an account; prompted to log in / sign up when trying to buy, sell, wishlist, etc.
+- Auth: email/password plus Google sign-in via in-app browser; verification links open back in the app via universal links.
+- Notifications: push + in-app alerts for sales, messages, shipping updates, reviews, refunds.
 
-3. **Apply the same fix to similar top-of-screen popups**
-   - Audit shared `Drawer`, `Sheet`, `Dialog`, and `AlertDialog` overlays.
-   - Fix the shared component(s), not only `ListingDetails`, so other bottom popups such as order details, sales details, checkout drawer, filters/search, shipping/settings drawers, and review drawers don’t keep the same black-top issue.
+## Proposed payout wording (new)
 
-4. **Verify visually on mobile viewport**
-   - Open listing details and confirm the top matches the seller dashboard reference.
-   - Check representative drawers/sheets to make sure the dim overlay reaches the top without a hard black strip or covering the popup.
+Add to the "How do I get paid?" answer:
 
-## Files expected to change
-- `src/lib/appChrome.ts`
-- `src/index.css`
-- `src/components/ui/drawer.tsx`
-- Possibly `src/components/ui/sheet.tsx`, `src/components/ui/dialog.tsx`, and `src/components/ui/alert-dialog.tsx` if the shared overlay behavior needs normalising across all popup types.
+> Your first payout may take up to 7 days while your payment provider verifies your identity and bank details. This helps protect everyone from fraud. After that, payouts usually land within 24 hours. If you need funds faster, you can opt in to Instant Payout for a 1.5% fee once your account is fully verified.
+
+## Proposed FAQ structure
+
+Keep the existing categories. Revise entries and add new ones.
+
+```text
+🛍️ Buying
+  - How do I buy an item?
+  - Where do I find my Wishlist?
+  - How do I remove an item from my Cart?
+  - How do I pay for my order?                  (revise: card, Apple Pay, Google Pay via connected payment provider)
+  - What fees do I pay as a buyer?              (keep: 4% + $0.70 Secure Checkout Fee)
+  - Can I get a refund?                         (revise: 10-day window from delivery, request in order chat)
+  - How do I confirm I've received an order?    (NEW: Mark as Delivered)
+  - How do I message a seller?                  (NEW: order chat thread)
+
+👕 Selling
+  - How do I list an item for sale?             (revise: connect payment provider first)
+  - What fees do I pay as a seller?             (keep: none)
+  - How do I get paid?                          (revise: new 7-day / 24-hour / instant payout wording)
+  - What does "Pause Selling" do?               (keep)
+  - How long do I have to ship an order?        (revise: day-3 reminder, day-6 urgent, 4-day overdue flag)
+  - How do reviews work?                        (NEW)
+  - What does the ⏸️ on my listing mean?        (NEW: paused)
+  - Can I mark an item as sold elsewhere?       (NEW)
+
+🔍 Browsing & Filters
+  - How do I filter listings?                   (keep)
+  - What if I want an item I passed on?         (keep)
+  - Can I search for specific items?            (keep)
+
+📦 Shipping
+  - How does shipping work?                     (keep)
+  - How does tiered / combined shipping work?   (revise)
+  - How is tracking handled?                    (NEW: AU carriers, auto status updates)
+
+💳 Payments
+  - How do I connect a payment method to sell?  (revise: in-app onboarding with our payment provider)
+  - My account status says "Verifying" - what does that mean?   (revise)
+  - What do "Pending review (🔍)" and "Action required (⚠️)" mean?  (NEW)
+  - Where do I see my payouts and history?      (NEW: Seller Dashboard in Settings, opens provider dashboard in-app)
+
+👤 Account & Privacy
+  - How do I sign in?                           (NEW: email/password or Google, all in-app)
+  - What is Guest Mode?                         (NEW)
+  - I didn't get my verification email          (NEW: check spam, link opens back in app)
+  - How do I change my email or password?       (keep)
+  - Can I delete my account?                    (keep)
+  - What happens to my listings if I delete my account?   (revise: auto-archived, removed in real time)
+  - How do I report a user or listing?            (keep)
+
+🔔 Notifications & Alerts   (NEW category)
+  - What notifications will I get?                  (sales, messages, reviews, refunds, shipping updates)
+  - How do I turn push notifications on/off?      (device settings + in-app toggle)
+  - Why is there a green dot on Alerts?           (unread activity indicator)
+```
+
+## Style rules
+
+- Inter, sentence case, **mandatory trailing full stop** on every answer.
+- Short dashes (`-`), no em dashes.
+- Use "payment provider" / "provider dashboard" by default. Mention Stripe only where it matches an existing UI label (e.g. "View order on Stripe" button, Stripe dashboard link).
+
+## Files touched
+
+- `src/components/FAQSection.tsx` — replace the `faqItems` array.
+
+No schema, edge function, or other file changes.
