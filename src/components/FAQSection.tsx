@@ -10,13 +10,18 @@ const faqItems = [
     category: '🛍️ Buying',
     questions: [
       {
+        q: 'How does swiping work?',
+        a: 'On the home screen you browse a stack of listings. Swipe right ❤️ to add an item to your Wishlist, swipe left ⛔ to pass, or swipe up 🛒 to add it straight to your Cart. Tap a card at any time to view the full listing details.',
+      },
+      {
         q: 'How do I buy an item?',
-        a: 'Browse listings by swiping - swipe right to add to your Wishlist, or swipe up to add straight to your Cart. You can also tap a listing to view details and add to cart from there.',
+        a: 'Swipe up on a listing to add it to your Cart, or tap the card to view details and add to cart from there. When you\'re ready, open your Cart from the top right of the home screen and tap Checkout.',
       },
       {
         q: 'Where do I find my Wishlist?',
-        a: 'Tap the heart icon in the bottom navigation bar to view your Wishlist. This is where all the items you\'ve swiped right on are saved.',
+        a: 'Your Wishlist lives inside your Cart. Tap the Cart icon in the top right of the home screen, then switch to the Wishlist tab. Every item you\'ve swiped right on is saved there.',
       },
+
       {
         q: 'How do I remove an item from my Cart?',
         a: 'Swipe left on an item to remove it completely - it\'ll go back into the card stack for browsing. Swipe right to move it to your Wishlist instead.',
@@ -95,12 +100,9 @@ const faqItems = [
         q: 'Can I search for specific items?',
         a: 'Yes! Tap the search icon to search by keyword, brand, or item name. You\'ll also see trending searches from other users.',
       },
-      {
-        q: 'Why do I only see Australian listings?',
-        a: 'Flea is currently available in Australia only. We use your location to show local listings and hide everything else, so you always see items that can be shipped to you.',
-      },
     ],
   },
+
   {
     category: '📦 Shipping',
     questions: [
