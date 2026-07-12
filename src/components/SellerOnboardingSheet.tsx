@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import fleaLogo from '@/assets/flea-logo.png';
+import AddressAutocomplete from '@/components/AddressAutocomplete';
 
 interface SellerOnboardingSheetProps {
   open: boolean;
