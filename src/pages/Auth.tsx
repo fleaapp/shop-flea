@@ -9,7 +9,8 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { nativeAppleSignIn, isIosNative as isAppleIosNative } from '@/lib/appleSignIn';
-import { isIosRuntime as isGoogleIosRuntime } from '@/lib/googleSignIn';
+import { openInAppUrl } from '@/lib/openInAppUrl';
+import { getSignupRedirectUrl } from '@/lib/authRedirects';
 import ProviderConflictDialog, { type ConflictProvider } from '@/components/ProviderConflictDialog';
 
 const CHECK_EMAIL_PROVIDER_URL =
