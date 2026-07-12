@@ -299,6 +299,16 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
     return () => window.removeEventListener('flea-guest-wishlist-change', handler);
   }, [user, fetchFavoriteListings]);
 
+  // Realtime removal: drop hard-deleted / removed / blocked listings from the
+  // wishlist immediately. Sold items are left alone so the ✅ Sold badge stays.
+  useEffect(() => {
+    return subscribeListingInvalidated(({ id, reason }) => {
+      if (!shouldPurgeSnapshot(reason)) return;
+      setListings((prev) => prev.filter((l) => l.id !== id));
+    });
+  }, []);
+
   return { listings, loading, refetch: fetchFavoriteListings };
 };
+
 
