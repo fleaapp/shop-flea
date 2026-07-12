@@ -6,6 +6,7 @@ import { getQuerySizesFromKeys, listingSizeKey, normalizeSizeKeys } from '@/util
 import { filterBySearch } from '@/utils/searchUtils';
 import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
 import { getInvalidListingIds } from '@/utils/listingAccess';
+import { subscribeListingInvalidated } from '@/utils/listingInvalidation';
 
 export interface DbListing {
   id: string;
@@ -254,6 +255,14 @@ export const useListings = (filters?: ListingFilters, options?: { enabled?: bool
     fetchListings('reset');
   }, [fetchListings]);
 
+  // Global realtime: drop a listing from view the moment it's deleted or its
+  // status leaves the visible set. Keeps every open client in sync.
+  useEffect(() => {
+    return subscribeListingInvalidated(({ id }) => {
+      setListings((prev) => prev.filter((l) => l.id !== id));
+    });
+  }, []);
+
   const loadMore = useCallback(() => {
     if (loading || loadingMore || !hasMore || !cursor) return;
     fetchListings('append', cursor);
@@ -360,6 +369,15 @@ export const useUserListings = (status?: 'active' | 'sold' | 'archived') => {
 
     fetchUserListings();
   }, [user, status]);
+
+  // Drop invalidated listings from the current user's grid instantly.
+  useEffect(() => {
+    return subscribeListingInvalidated(({ id }) => {
+      setListings((prev) =>
+        prev.filter((l) => l.id !== id && (l as { source_listing_id?: string }).source_listing_id !== id),
+      );
+    });
+  }, []);
 
   return { listings, loading };
 };

@@ -1,44 +1,36 @@
+## Goal
+Ensure that when a listing is deleted (or status changes to `removed`/`archived`/`sold`), every user's app removes it from view within seconds — without needing a manual refresh or reopen.
+
+## Why it happened this time
+The demo listings persisted in the app because:
+1. Home feed, wishlist, cart and profile queries are fetched once on mount and cached in React Query.
+2. There is no Supabase Realtime subscription on the `listings` table, so clients never learn about deletes.
+3. Locally-cached snapshots (wishlist/cart) keep showing the item with a "removed" overlay indefinitely.
+
 ## Plan
 
-I’ll fix the signup/reset email redirect so native app signups no longer rely on `window.location.origin`, which can become `capacitor://localhost` inside the iOS app and cause the auth backend to reject or skip the verification email.
+### 1. Enable Realtime on `listings`
+- Add `listings` to the `supabase_realtime` publication so INSERT/UPDATE/DELETE events broadcast to subscribed clients.
+- Set `REPLICA IDENTITY FULL` so DELETE payloads include the row id (needed to remove from caches).
 
-## Changes
+### 2. Global listings realtime hook
+- Create `src/hooks/useListingsRealtime.ts` mounted once at the app root (inside `App.tsx` under the auth provider).
+- Subscribes to `postgres_changes` on `public.listings` and, on each event:
+  - **DELETE** or **UPDATE where new.status ∈ ('removed','archived','sold','blocked')**: invalidate the React Query keys that surface listings (`['home-feed']`, `['wishlist']`, `['cart']`, `['profile-listings', userId]`, `['listing', id]`, `['search', ...]`).
+  - Also surgically remove the affected `id` from any active infinite-query cache pages so the item disappears instantly without a full refetch flicker.
 
-1. **Use a fixed HTTPS callback for auth emails**
-   - Signup verification will redirect to:
-     ```text
-     https://app.finditonflea.com/auth/callback
-     ```
-   - Password reset will continue to route to the reset screen, but using the same native-safe domain instead of the Capacitor origin.
+### 3. Client-side snapshot cleanup
+- The localStorage "removed items" snapshot (wishlist/cart ⛔️ overlay) currently keeps sold/deleted items visible forever.
+- On the same realtime event, purge that snapshot entry when the listing is hard-deleted (as opposed to sold), so demo/moderation deletions vanish rather than leaving a tombstone.
 
-2. **Add an auth callback screen**
-   - Add `/auth/callback` to finish email verification and send the user into the app.
+### 4. Refetch on app focus / resume
+- Add `refetchOnWindowFocus: true` and a Capacitor `App.addListener('appStateChange', ...)` handler that calls `queryClient.invalidateQueries()` for listing keys when the native app returns to foreground. This is the safety net for users who were offline when the realtime event fired.
 
-3. **Handle native app links**
-   - Add Capacitor deep-link handling so when iOS opens `https://app.finditonflea.com/auth/callback`, the native app routes internally instead of leaving the user in Safari.
+### 5. Verify
+- After deploy: delete a test listing from the DB, confirm it disappears within ~2s on a second logged-in device without any manual refresh.
+- Confirm the same for `status → removed` via the moderation trigger path.
 
-4. **Add Universal Links support file**
-   - Add the Apple association file at:
-     ```text
-     public/.well-known/apple-app-site-association
-     ```
-   - This enables `app.finditonflea.com` links to open the installed iOS app.
-
-## What you’ll still need to do outside Lovable
-
-1. Add this redirect URL to the external auth backend allowlist:
-   ```text
-   https://app.finditonflea.com/auth/callback
-   ```
-2. In Xcode, add Associated Domains:
-   ```text
-   applinks:app.finditonflea.com
-   ```
-3. Replace the Apple Team ID placeholder in the association file with your real Apple Developer Team ID.
-4. Pull the project locally, then run:
-   ```text
-   npx cap sync ios
-   ```
-5. Rebuild/reinstall the native app.
-
-This should restore verification emails for native signup and make the email link open back into the app.
+## Technical notes
+- Realtime subscription must be created after the Supabase auth session is available and torn down on unmount to avoid duplicate channels.
+- Use a single shared channel (`listings-global`) rather than per-component subscriptions to stay well under Supabase's channel limits.
+- No schema changes to `listings` itself — only publication + replica identity.

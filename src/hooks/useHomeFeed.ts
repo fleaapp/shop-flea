@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { preloadImages } from '@/utils/preloadAssets';
 import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
 import { getInvalidListingIds } from '@/utils/listingAccess';
+import { subscribeListingInvalidated } from '@/utils/listingInvalidation';
 import type { DbListing } from '@/hooks/useListings';
 
 const PAGE_SIZE = 50;
@@ -137,6 +138,15 @@ export const useHomeFeed = () => {
     setHasMore(true);
     fetchPage('reset');
   }, [user, fetchPage]);
+
+  // Drop any listing that the global realtime channel reports as deleted /
+  // removed / archived / blocked / sold so the swipe stack updates instantly
+  // across every open client.
+  useEffect(() => {
+    return subscribeListingInvalidated(({ id }) => {
+      setListings((prev) => prev.filter((l) => l.id !== id));
+    });
+  }, []);
 
   const loadMore = useCallback(() => {
     if (loading || loadingMore || !hasMore) return;

@@ -7,6 +7,7 @@ import OnboardingOverlay from "@/components/OnboardingOverlay";
 import OnboardingCarousel from "@/components/OnboardingCarousel";
 import RealtimeAlerts from "@/components/RealtimeAlerts";
 import { PushNotificationSubscriber } from "@/components/PushNotificationSubscriber";
+import useListingsRealtime from "@/hooks/useListingsRealtime";
 
 const OnboardingChrome = ({ enabled }: { enabled: boolean }) => {
   const { showCarousel, closeCarousel } = useOnboarding();
@@ -30,15 +31,18 @@ const OnboardingChrome = ({ enabled }: { enabled: boolean }) => {
   );
 };
 
-const AuthenticatedProviders = ({ children, enabled }: { children: ReactNode; enabled: boolean }) => (
-  <GuestModeProvider>
-    <CartProvider>
-      <OnboardingProvider>
-        <OnboardingChrome enabled={enabled} />
-        {children}
-      </OnboardingProvider>
-    </CartProvider>
-  </GuestModeProvider>
-);
+const AuthenticatedProviders = ({ children, enabled }: { children: ReactNode; enabled: boolean }) => {
+  useListingsRealtime();
+  return (
+    <GuestModeProvider>
+      <CartProvider>
+        <OnboardingProvider>
+          <OnboardingChrome enabled={enabled} />
+          {children}
+        </OnboardingProvider>
+      </CartProvider>
+    </GuestModeProvider>
+  );
+};
 
 export default AuthenticatedProviders;

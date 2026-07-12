@@ -12,6 +12,7 @@ import {
   saveSavedListingSnapshots,
   type SavedListingSnapshot,
 } from '@/utils/savedListingSnapshots';
+import { subscribeListingInvalidated } from '@/utils/listingInvalidation';
 // Extended Listing type to include pause/inactive/removed status
 interface CartListing extends Listing {
   isPaused?: boolean;
@@ -251,6 +252,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     fetchCart();
   }, [fetchCart]);
+
+  // Refetch cart when a listing is invalidated so the ⛔️ overlay updates or
+  // (for hard deletes) the item disappears — even if we didn't have the row
+  // fetched with a fresh status locally.
+  useEffect(() => {
+    return subscribeListingInvalidated(() => {
+      void fetchCart();
+    });
+  }, [fetchCart]);
+
 
   const addToCart = useCallback(async (listing: Listing): Promise<boolean> => {
     if (!user) return false;
