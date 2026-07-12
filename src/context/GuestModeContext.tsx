@@ -116,7 +116,7 @@ export const GuestModeProvider = ({ children }: { children: ReactNode }) => {
     >
       {children}
       <AlertDialog open={promptOpen} onOpenChange={setPromptOpen}>
-        <AlertDialogContent className="max-w-[320px] rounded-2xl p-5">
+        <AlertDialogContent className="max-w-[320px] rounded-2xl p-5 bg-card">
           <AlertDialogHeader className="space-y-2">
             <AlertDialogTitle className="text-base text-center">
               {title}
