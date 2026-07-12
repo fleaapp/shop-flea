@@ -16,19 +16,6 @@ import ProviderConflictDialog, { type ConflictProvider } from '@/components/Prov
 const CHECK_EMAIL_PROVIDER_URL =
   `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/check-email-provider`;
 
-function isIosLikeRuntime(): boolean {
-  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
-  const cap = (window as any).Capacitor;
-  return (
-    isGoogleIosRuntime() ||
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1) ||
-    window.location.protocol === 'capacitor:' ||
-    cap?.getPlatform?.() === 'ios' ||
-    !!cap?.isNativePlatform?.() ||
-    !!(window as any).webkit?.messageHandlers?.bridge
-  );
-}
 
 async function checkEmailProvider(email: string): Promise<ConflictProvider | null> {
   try {
