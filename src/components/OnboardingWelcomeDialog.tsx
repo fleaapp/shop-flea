@@ -1,9 +1,16 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useOnboarding } from '@/context/OnboardingContext';
+import { pushOverlayAppChrome } from '@/lib/appChrome';
+import { useEffect } from 'react';
 
 const OnboardingWelcomeDialog = () => {
   const { currentStep, startTour, skipOnboarding } = useOnboarding();
+
+  useEffect(() => {
+    if (currentStep !== 'welcome') return;
+    return pushOverlayAppChrome();
+  }, [currentStep]);
 
   if (currentStep !== 'welcome') return null;
 
@@ -16,7 +23,7 @@ const OnboardingWelcomeDialog = () => {
         className="fixed inset-0 z-[100] flex items-center justify-center"
       >
         {/* Backdrop */}
-        <div className="absolute inset-0 bg-charcoal/80 backdrop-blur-sm" />
+        <div className="absolute inset-0 bg-foreground/50" />
         
         {/* Dialog */}
         <motion.div
