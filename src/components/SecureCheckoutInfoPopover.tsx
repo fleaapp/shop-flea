@@ -13,7 +13,7 @@ const SecureCheckoutInfoPopover = () => (
         <Info className="h-3.5 w-3.5 text-muted-foreground" />
       </button>
     </PopoverTrigger>
-    <PopoverContent className="w-72 p-4 rounded-2xl" side="top" align="center">
+    <PopoverContent className="w-72 p-4 rounded-2xl z-[100]" side="top" align="center" onOpenAutoFocus={(e) => e.preventDefault()}>
       <p className="text-sm font-semibold mb-2">Secure Checkout Fee</p>
       <p className="text-xs text-muted-foreground leading-relaxed">
         A small fee that helps us provide secure transactions, fraud prevention and marketplace support so you can shop with confidence. No hidden extras — Flea sellers pay no selling fees.
