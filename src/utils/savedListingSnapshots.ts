@@ -274,6 +274,23 @@ export const saveSavedListingSnapshots = (
   upsertSnapshotsIntoStore(globalStorageKey(), snapshots);
 };
 
+/**
+ * Remove a listing snapshot from every localStorage bucket. Called when the
+ * global realtime subscription reports that the listing was hard-deleted or
+ * removed by moderation, so the ⛔️ tombstone doesn't persist forever.
+ */
+export const removeSavedListingSnapshot = (listingId: string): void => {
+  if (!listingId || !canUseStorage()) return;
+
+  for (const key of listSnapshotKeys()) {
+    const snapshots = parseSnapshots(localStorage.getItem(key));
+    if (snapshots[listingId]) {
+      delete snapshots[listingId];
+      writeSnapshots(key, snapshots);
+    }
+  }
+};
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
