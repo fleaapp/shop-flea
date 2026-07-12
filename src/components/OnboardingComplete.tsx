@@ -1,9 +1,16 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useOnboarding } from '@/context/OnboardingContext';
+import { pushOverlayAppChrome } from '@/lib/appChrome';
+import { useEffect } from 'react';
 
 const OnboardingComplete = () => {
   const { currentStep, skipOnboarding } = useOnboarding();
+
+  useEffect(() => {
+    if (currentStep !== 'complete') return;
+    return pushOverlayAppChrome();
+  }, [currentStep]);
 
   if (currentStep !== 'complete') return null;
 
@@ -17,7 +24,7 @@ const OnboardingComplete = () => {
         onClick={skipOnboarding}
       >
         {/* Backdrop */}
-        <div className="absolute inset-0 bg-charcoal/80 backdrop-blur-sm" />
+        <div className="absolute inset-0 bg-foreground/50" />
         
         {/* Dialog */}
         <motion.div

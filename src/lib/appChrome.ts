@@ -126,10 +126,9 @@ export const forceRestoreRouteAppChrome = () => {
   applyRouteAppChrome();
 };
 
-// While an overlay (Dialog/Sheet/Drawer/AlertDialog) is mounted, paint the
-// status-bar / theme-color black so the dim backdrop visually extends all the
-// way to the top of the screen on iOS PWA + Android. Cleanup restores the
-// route's normal cream/auth-green chrome when the last overlay closes.
+// While an overlay (Dialog/Sheet/Drawer/AlertDialog) is mounted, make the
+// native status bar transparent and keep the route chrome visible underneath
+// so the dim backdrop matches the in-app browser sheet look.
 export const pushOverlayAppChrome = () => {
   activeOverlayCount += 1;
   applyOverlayAppChrome();
