@@ -7,6 +7,7 @@ import OnboardingOverlay from "@/components/OnboardingOverlay";
 import OnboardingCarousel from "@/components/OnboardingCarousel";
 import RealtimeAlerts from "@/components/RealtimeAlerts";
 import { PushNotificationSubscriber } from "@/components/PushNotificationSubscriber";
+import useListingsRealtime from "@/hooks/useListingsRealtime";
 
 const OnboardingChrome = ({ enabled }: { enabled: boolean }) => {
   const { showCarousel, closeCarousel } = useOnboarding();
