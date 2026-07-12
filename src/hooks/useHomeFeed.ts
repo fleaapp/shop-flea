@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { preloadImages } from '@/utils/preloadAssets';
 import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
 import { getInvalidListingIds } from '@/utils/listingAccess';
+import { subscribeListingInvalidated } from '@/utils/listingInvalidation';
 import type { DbListing } from '@/hooks/useListings';
 
 const PAGE_SIZE = 50;
