@@ -370,5 +370,14 @@ export const useUserListings = (status?: 'active' | 'sold' | 'archived') => {
     fetchUserListings();
   }, [user, status]);
 
+  // Drop invalidated listings from the current user's grid instantly.
+  useEffect(() => {
+    return subscribeListingInvalidated(({ id }) => {
+      setListings((prev) =>
+        prev.filter((l) => l.id !== id && (l as { source_listing_id?: string }).source_listing_id !== id),
+      );
+    });
+  }, []);
+
   return { listings, loading };
 };
