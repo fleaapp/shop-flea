@@ -99,12 +99,8 @@ const faqItems = [
       {
         q: 'Can I search for specific items?',
         a: 'Yes! Tap the search icon to search by keyword, brand, or item name. You\'ll also see trending searches from other users.',
-      },
-      {
-        q: 'Why do I only see Australian listings?',
-        a: 'Flea is currently available in Australia only. We use your location to show local listings and hide everything else, so you always see items that can be shipped to you.',
-      },
     ],
+
   },
   {
     category: '📦 Shipping',
