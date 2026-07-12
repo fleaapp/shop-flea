@@ -139,6 +139,15 @@ export const useHomeFeed = () => {
     fetchPage('reset');
   }, [user, fetchPage]);
 
+  // Drop any listing that the global realtime channel reports as deleted /
+  // removed / archived / blocked / sold so the swipe stack updates instantly
+  // across every open client.
+  useEffect(() => {
+    return subscribeListingInvalidated(({ id }) => {
+      setListings((prev) => prev.filter((l) => l.id !== id));
+    });
+  }, []);
+
   const loadMore = useCallback(() => {
     if (loading || loadingMore || !hasMore) return;
     fetchPage('append', offset);
