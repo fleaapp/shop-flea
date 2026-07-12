@@ -72,20 +72,9 @@ const Auth = () => {
     return () => window.removeEventListener('flea-auth-conflict', handler);
   }, []);
 
-  useEffect(() => {
-    const handler = () => {
-      localStorage.removeItem('flea_oauth_signup');
-      toast.error('Google sign-in cannot stay fully inside the iPhone app. Please use Apple or email sign-in.');
-    };
-
-    window.addEventListener('flea-ios-google-web-oauth-blocked', handler);
-    return () => window.removeEventListener('flea-ios-google-web-oauth-blocked', handler);
-  }, []);
-
-
   const redirectParam = new URLSearchParams(location.search).get('redirect');
   const redirectTo = redirectParam?.startsWith('/') && !redirectParam.startsWith('//') ? redirectParam : '/';
-  const hideGoogleOnIos = isIosLikeRuntime();
+
   
   // Redirect if already logged in
   // Redirect if already logged in
