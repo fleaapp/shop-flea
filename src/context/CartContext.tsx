@@ -253,6 +253,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     fetchCart();
   }, [fetchCart]);
 
+  // Refetch cart when a listing is invalidated so the ⛔️ overlay updates or
+  // (for hard deletes) the item disappears — even if we didn't have the row
+  // fetched with a fresh status locally.
+  useEffect(() => {
+    return subscribeListingInvalidated(() => {
+      void fetchCart();
+    });
+  }, [fetchCart]);
+
+
   const addToCart = useCallback(async (listing: Listing): Promise<boolean> => {
     if (!user) return false;
 
