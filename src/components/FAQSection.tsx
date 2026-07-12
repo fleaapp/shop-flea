@@ -99,9 +99,10 @@ const faqItems = [
       {
         q: 'Can I search for specific items?',
         a: 'Yes! Tap the search icon to search by keyword, brand, or item name. You\'ll also see trending searches from other users.',
+      },
     ],
-
   },
+
   {
     category: '📦 Shipping',
     questions: [
