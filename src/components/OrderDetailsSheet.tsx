@@ -256,11 +256,30 @@ const OrderDetailsSheet = ({
                 </div>
                 <div>
                   <p className="font-semibold text-foreground mb-1.5">Tracking number:</p>
-                  <Input
-                    value={primaryOrder.status === 'awaiting' ? 'Awaiting shipping' : (primaryOrder.tracking_number || 'N/A')}
-                    disabled
-                    className="bg-background disabled:opacity-70"
-                  />
+                  <div className="relative">
+                    <Input
+                      value={primaryOrder.status === 'awaiting' ? 'Awaiting shipping' : (primaryOrder.tracking_number || 'N/A')}
+                      disabled
+                      className="bg-background disabled:opacity-70 pr-12"
+                    />
+                    {primaryOrder.status !== 'awaiting' && primaryOrder.tracking_number && (
+                      <button
+                        type="button"
+                        aria-label="Copy tracking number"
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(primaryOrder.tracking_number!);
+                            toast.success('Tracking number copied.');
+                          } catch {
+                            toast.error('Could not copy.');
+                          }
+                        }}
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-8 px-3 rounded-md text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                      >
+                        Copy
+                      </button>
+                    )}
+                  </div>
                 </div>
                 {primaryOrder.status !== 'awaiting' && primaryOrder.tracking_number && (
                   <Button
