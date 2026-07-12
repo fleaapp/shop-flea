@@ -6,6 +6,7 @@ import { getQuerySizesFromKeys, listingSizeKey, normalizeSizeKeys } from '@/util
 import { filterBySearch } from '@/utils/searchUtils';
 import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
 import { getInvalidListingIds } from '@/utils/listingAccess';
+import { subscribeListingInvalidated } from '@/utils/listingInvalidation';
 
 export interface DbListing {
   id: string;
