@@ -12,6 +12,7 @@ import {
   saveSavedListingSnapshots,
   type SavedListingSnapshot,
 } from '@/utils/savedListingSnapshots';
+import { subscribeListingInvalidated } from '@/utils/listingInvalidation';
 // Extended Listing type to include pause/inactive/removed status
 interface CartListing extends Listing {
   isPaused?: boolean;
