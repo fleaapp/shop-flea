@@ -255,6 +255,14 @@ export const useListings = (filters?: ListingFilters, options?: { enabled?: bool
     fetchListings('reset');
   }, [fetchListings]);
 
+  // Global realtime: drop a listing from view the moment it's deleted or its
+  // status leaves the visible set. Keeps every open client in sync.
+  useEffect(() => {
+    return subscribeListingInvalidated(({ id }) => {
+      setListings((prev) => prev.filter((l) => l.id !== id));
+    });
+  }, []);
+
   const loadMore = useCallback(() => {
     if (loading || loadingMore || !hasMore || !cursor) return;
     fetchListings('append', cursor);
