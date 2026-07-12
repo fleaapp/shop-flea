@@ -1,50 +1,31 @@
 ## Goal
-Re-enable Google sign-in / signup on iOS (and everywhere else) without ever kicking the user out to Safari. The OAuth handshake runs inside an in-app browser sheet (SFSafariViewController / Chrome Custom Tab), just like the Stripe dashboard bridge, then returns to the app via the existing universal link.
+Make the product listing popup top area match the seller dashboard popup: the original screen remains visible behind a dim overlay, and the popup itself is not covered by a solid black status-bar strip.
 
-## How it will work
+## What I found
+- Product listing details use the shared `Drawer` component.
+- The seller dashboard uses the shared `Sheet` component plus a specific overlay class.
+- The current shared overlay/status-bar logic paints the native safe-area/status area solid black for overlays, which is why the top of the listing popup looks wrong.
+- Other `Drawer`-based bottom popups are likely to show the same issue.
 
-```text
-[Auth screen]
-   ↓ tap Google
-supabase.auth.signInWithOAuth({ provider:'google', skipBrowserRedirect:true,
-                                redirectTo: https://app.finditonflea.com/auth/callback })
-   ↓ returns { url }
-openInAppUrl(url)  →  SFSafariViewController opens in-app
-   ↓ user picks Google account, consents
-Google → https://app.finditonflea.com/auth/callback?code=...
-   ↓ Universal Link (AASA already published, Team ID MAYU87849K)
-NativeDeepLinkHandler in App.tsx
-   ↓ Browser.close() + navigate to /auth/callback
-AuthCallback.tsx calls completeAuthSessionFromUrl() → session set → routed home
-```
+## Plan
+1. **Fix the shared overlay chrome logic**
+   - Update the native overlay/status-bar styling so overlays dim the visible app behind them instead of adding an opaque black bar over the top safe area.
+   - Keep the seller dashboard look as the reference: dimmed background, visible underlying app, no solid black top covering the popup.
 
-No Safari, no external browser. The same code path also works on web (the sheet just becomes a same-tab navigation, which is the existing Stripe pattern).
+2. **Align product listing popup with seller dashboard behavior**
+   - Update the listing detail drawer to use the same overlay appearance/logic as the seller dashboard sheet.
+   - Adjust the listing drawer top spacing/height only as needed so the rounded top sits cleanly below the safe area and the dimmed background remains visible above it.
 
-## Changes
+3. **Apply the same fix to similar top-of-screen popups**
+   - Audit shared `Drawer`, `Sheet`, `Dialog`, and `AlertDialog` overlays.
+   - Fix the shared component(s), not only `ListingDetails`, so other bottom popups such as order details, sales details, checkout drawer, filters/search, shipping/settings drawers, and review drawers don’t keep the same black-top issue.
 
-1. `src/lib/googleSignIn.ts`
-   - Remove the hard iOS block. Keep the file (still used to detect runtime) but drop the "fail closed on iOS" behavior — the in-app browser is now the sanctioned path.
+4. **Verify visually on mobile viewport**
+   - Open listing details and confirm the top matches the seller dashboard reference.
+   - Check representative drawers/sheets to make sure the dim overlay reaches the top without a hard black strip or covering the popup.
 
-2. `src/pages/Auth.tsx`
-   - Delete the iOS-hide logic (`hideGoogleOnIos`, the `flea-ios-google-web-oauth-blocked` listener, and the two "cannot stay inside the iPhone app" toasts).
-   - Replace `handleGoogleSignIn` with:
-     - Call `supabase.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: getSignupRedirectUrl(), skipBrowserRedirect:true, queryParams:{ prompt:'select_account' } } })`.
-     - Pass the returned `data.url` to `openInAppUrl(url)` so native platforms open SFSafariViewController and web falls back to same-tab (unchanged behavior for web).
-     - Toast on error only; no platform gating.
-   - The Google button is always rendered.
-
-3. `src/App.tsx` / `NativeDeepLinkHandler`
-   - Verify (no change expected) that when the universal link fires, it calls `Browser.close()` before navigating to `/auth/callback`. If missing, add the `Browser.close()` call so the SFSafariViewController dismisses automatically after Google redirects back.
-
-4. `src/pages/AuthCallback.tsx`
-   - No functional change required; already handles `code=` exchange via `completeAuthSessionFromUrl`.
-
-## Out of scope
-- No changes to Apple sign-in, email flow, AASA file, Team ID, or entitlements.
-- No new secrets. Google OAuth continues to use the Lovable Cloud managed credentials.
-- No changes to `openInAppUrl.ts` — its existing native/web split is exactly what's needed.
-
-## Verification
-- iOS (native): tapping Google opens an in-app Safari sheet, user picks account, sheet closes automatically, user lands signed in on the home feed.
-- Web: unchanged — same-tab redirect to Google and back.
-- Existing account with different provider still triggers the `ProviderConflictDialog` (that logic lives in `AuthContext` and isn't touched).
+## Files expected to change
+- `src/lib/appChrome.ts`
+- `src/index.css`
+- `src/components/ui/drawer.tsx`
+- Possibly `src/components/ui/sheet.tsx`, `src/components/ui/dialog.tsx`, and `src/components/ui/alert-dialog.tsx` if the shared overlay behavior needs normalising across all popup types.

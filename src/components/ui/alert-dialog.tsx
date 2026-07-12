@@ -22,7 +22,7 @@ const AlertDialogOverlay = React.forwardRef<
   return (
     <AlertDialogPrimitive.Overlay
       className={cn(
-        "fixed inset-x-0 bottom-0 top-[calc(-1*env(safe-area-inset-top,0px))] z-[60] bg-black/80 data-[state=open]:animate-in data-[state=open]:fade-in-0",
+        "fixed inset-x-0 bottom-0 top-[calc(-1*env(safe-area-inset-top,0px))] z-[60] bg-foreground/50 data-[state=open]:animate-in data-[state=open]:fade-in-0",
         className,
       )}
       {...props}
