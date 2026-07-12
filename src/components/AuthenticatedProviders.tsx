@@ -31,15 +31,18 @@ const OnboardingChrome = ({ enabled }: { enabled: boolean }) => {
   );
 };
 
-const AuthenticatedProviders = ({ children, enabled }: { children: ReactNode; enabled: boolean }) => (
-  <GuestModeProvider>
-    <CartProvider>
-      <OnboardingProvider>
-        <OnboardingChrome enabled={enabled} />
-        {children}
-      </OnboardingProvider>
-    </CartProvider>
-  </GuestModeProvider>
-);
+const AuthenticatedProviders = ({ children, enabled }: { children: ReactNode; enabled: boolean }) => {
+  useListingsRealtime();
+  return (
+    <GuestModeProvider>
+      <CartProvider>
+        <OnboardingProvider>
+          <OnboardingChrome enabled={enabled} />
+          {children}
+        </OnboardingProvider>
+      </CartProvider>
+    </GuestModeProvider>
+  );
+};
 
 export default AuthenticatedProviders;
