@@ -1,7 +1,9 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useGuestMode } from '@/context/GuestModeContext';
 import GuestGate from '@/components/GuestGate';
+
 
 type ProtectedMode = 'account' | 'public' | 'guest-gate' | 'guest-or-auth';
 
