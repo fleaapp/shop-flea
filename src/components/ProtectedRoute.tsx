@@ -21,26 +21,55 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children, mode = 'account' }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
   const { isGuest } = useGuestMode();
+  const location = useLocation();
 
   if (mode === 'public') {
     return <>{children}</>;
   }
 
+  const authRedirectTo = () => {
+    const path = `${location.pathname}${location.search}${location.hash}`;
+    // Only preserve non-root paths; avoid redirect=/ noise.
+    if (!path || path === '/' ) return '/auth';
+    return `/auth?redirect=${encodeURIComponent(path)}`;
+  };
+
   if (mode === 'guest-gate') {
+    if (loading) {
+      return (
+        <div className="flex min-h-screen items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
+    }
     if (user) return <>{children}</>;
     if (isGuest) return <GuestGate />;
-    return <Navigate to="/auth" replace />;
+    return <Navigate to={authRedirectTo()} replace />;
   }
 
   if (mode === 'guest-or-auth') {
+    if (loading) {
+      return (
+        <div className="flex min-h-screen items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
+    }
     if (user || isGuest) return <>{children}</>;
-    return <Navigate to="/auth" replace />;
+    return <Navigate to={authRedirectTo()} replace />;
   }
 
   // account mode
-  if (loading) return <Navigate to="/auth" replace />;
-  if (!user) return <Navigate to="/auth" replace />;
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  if (!user) return <Navigate to={authRedirectTo()} replace />;
   return <>{children}</>;
 };
+
 
 export default ProtectedRoute;
