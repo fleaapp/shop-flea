@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { flushSync } from 'react-dom';
+
 import { useAuth } from '@/context/AuthContext';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { supabase } from '@/lib/supabase';
@@ -14,8 +14,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
-import { openInAppUrl } from '@/lib/openInAppUrl';
+
+
 import EmbeddedOnboarding from '@/components/stripe/EmbeddedOnboarding';
 import {
   Select,
