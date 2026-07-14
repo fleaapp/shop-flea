@@ -71,6 +71,30 @@ serve(async (req) => {
       });
     }
 
+    // Rate limit: max 5 ID upload attempts per user per hour.
+    // Prevents brute-force document submission (fake ID iteration) and abuse
+    // of Stripe's Files API quota. Uses the shared public.rate_limits table.
+    try {
+      const rlClient = createClient(
+        Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "",
+        Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "",
+        { auth: { persistSession: false, autoRefreshToken: false } },
+      );
+      const { data: allowed, error: rlErr } = await rlClient.rpc('check_and_record_rate_limit', {
+        _key: `stripe-upload-id:${user.id}`,
+        _max: 5,
+        _window_seconds: 3600,
+      });
+      if (!rlErr && allowed === false) {
+        return new Response(
+          JSON.stringify({ error: 'Too many ID upload attempts. Please try again in an hour.' }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 429 },
+        );
+      }
+    } catch (e) {
+      console.warn('[stripe-connect-upload-id] rate limit check failed:', e);
+    }
+
     const body = await req.json();
     const { accountId, frontBase64, backBase64 } = body as {
       accountId?: string;
