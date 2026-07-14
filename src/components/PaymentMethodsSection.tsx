@@ -16,6 +16,7 @@ const PaymentMethodsSection = () => {
   const [localAccountId, setLocalAccountId] = useState<string | null>(null);
   const [showStripeOnboarding, setShowStripeOnboarding] = useState(false);
   const [needsIdDocument, setNeedsIdDocument] = useState(false);
+  const [verificationError, setVerificationError] = useState<{ code: string | null; reason: string | null; nameMismatch: boolean } | null>(null);
 
   const clearLocalStripeState = useCallback(() => {
     clearStripeConnectionState(user?.id);
@@ -72,6 +73,7 @@ const PaymentMethodsSection = () => {
       if (error) throw error;
 
       setNeedsIdDocument(!!(data as any)?.needsIdDocument);
+      setVerificationError((data as any)?.verificationError ?? null);
 
       if (data?.chargesEnabled && data?.payoutsEnabled && data?.accountId) {
         // Fully verified - charges and payouts enabled
@@ -216,6 +218,7 @@ const PaymentMethodsSection = () => {
       }}
       stripeActionRequired={stripeActionRequired}
       needsIdVerification={stripeActionRequired && needsIdDocument}
+      verificationError={verificationError}
       returnUrl={typeof window !== 'undefined' ? window.location.origin + '/settings' : undefined}
       onComplete={() => {
         setShowStripeOnboarding(false);
