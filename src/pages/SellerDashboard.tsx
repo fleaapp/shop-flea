@@ -256,18 +256,11 @@ const SellerDashboard = () => {
                   <>Instant payout <span className="ml-1 text-[13px] font-normal">(1.5% fee)</span></>
                 )}
               </Button>
-              <div className="space-y-1 mt-1 px-4 text-center">
-                {!canPayout && (
-                  <p className="text-[11px] text-muted-foreground">
-                    Payout to bank unlocks after your first completed sale.
-                  </p>
-                )}
-                {!canInstant && (
-                  <p className="text-[11px] text-muted-foreground">
-                    Instant payout unlocks once your account passes the instant payout risk check.
-                  </p>
-                )}
-              </div>
+              {!canInstant && (
+                <p className="mt-2 px-6 text-center text-[11px] text-muted-foreground">
+                  Instant payout unlocks once your account passes the instant payout risk check.
+                </p>
+              )}
             </div>
 
             {/* Pending row */}
