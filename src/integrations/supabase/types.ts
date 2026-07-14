@@ -231,6 +231,80 @@ export type Database = {
           },
         ]
       }
+      coupon_redemptions: {
+        Row: {
+          checkout_reference: string | null
+          coupon_id: string
+          created_at: string
+          id: string
+          order_group_id: string | null
+          user_id: string
+        }
+        Insert: {
+          checkout_reference?: string | null
+          coupon_id: string
+          created_at?: string
+          id?: string
+          order_group_id?: string | null
+          user_id: string
+        }
+        Update: {
+          checkout_reference?: string | null
+          coupon_id?: string
+          created_at?: string
+          id?: string
+          order_group_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          max_redemptions: number | null
+          redemption_count: number
+          starts_at: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          max_redemptions?: number | null
+          redemption_count?: number
+          starts_at?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          max_redemptions?: number | null
+          redemption_count?: number
+          starts_at?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       discarded_listings: {
         Row: {
           created_at: string
@@ -742,6 +816,7 @@ export type Database = {
           status: string
           stripe_account_id: string | null
           stripe_onboarding_complete: boolean
+          stripe_onboarding_step: string | null
           tiered_shipping_enabled: boolean | null
           total_reviews: number | null
           updated_at: string
@@ -779,6 +854,7 @@ export type Database = {
           status?: string
           stripe_account_id?: string | null
           stripe_onboarding_complete?: boolean
+          stripe_onboarding_step?: string | null
           tiered_shipping_enabled?: boolean | null
           total_reviews?: number | null
           updated_at?: string
@@ -816,6 +892,7 @@ export type Database = {
           status?: string
           stripe_account_id?: string | null
           stripe_onboarding_complete?: boolean
+          stripe_onboarding_step?: string | null
           tiered_shipping_enabled?: boolean | null
           total_reviews?: number | null
           updated_at?: string
