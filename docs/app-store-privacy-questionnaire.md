@@ -33,7 +33,8 @@ Yes.
 - Product Interaction (taps, scrolls, swipes, screen visits)
 - Other Usage Data (passed listings, saved searches, onboarding state)
 
-### Diagnostics
+### Sensitive Info
+- Government ID (passport or driver's licence photo, only when the payment processor requires additional identity verification for a seller). Captured live in-app, uploaded directly to Stripe via a Lovable Cloud edge function, and never stored on Flea's servers.
 - Crash Data
 - Performance Data
 - Other Diagnostic Data
