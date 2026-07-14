@@ -1,19 +1,47 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Camera as CapCamera, CameraSource, CameraResultType } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
-import { Loader2, Camera, ShieldCheck, X } from 'lucide-react';
+import { Loader2, Camera, ShieldCheck, AlertTriangle, HelpCircle, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAuth } from '@/context/AuthContext';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
+import { track } from '@/lib/analytics';
 
 interface IdVerificationStepProps {
   onBack?: () => void;
   onDone: () => void;
+  /** Called when the user says the ID name doesn't match the entered name. */
+  onEditName?: () => void;
+  /** Structured error from Stripe requirements — used to explain why the last upload failed. */
+  verificationError?: { code: string | null; reason: string | null; nameMismatch: boolean } | null;
 }
 
 type DocType = 'passport' | 'licence';
+
+/**
+ * Turns a Stripe verification error code/reason into human copy. We prefer the
+ * code so the message is stable across Stripe wording changes.
+ */
+function readableRejectReason(err: { code: string | null; reason: string | null } | null | undefined): string | null {
+  if (!err) return null;
+  const code = (err.code || '').toLowerCase();
+  if (!code && !err.reason) return null;
+  if (code.includes('not_readable') || code.includes('not_uploaded') || code.includes('failed_copy'))
+    return 'Your last photo was too blurry or had glare. Retake it in bright, even light with the whole document in frame.';
+  if (code.includes('expired'))
+    return 'The ID you uploaded has expired. Please use a current passport or driver\'s licence.';
+  if (code.includes('type_not_supported') || code.includes('unsupported'))
+    return 'That document type isn\'t accepted. Use an Australian passport or a full (not learner) driver\'s licence.';
+  if (code.includes('name') || code.includes('keyed'))
+    return 'The name on your ID didn\'t match the name you entered. Update your name or upload an ID that matches.';
+  if (code.includes('dob'))
+    return 'The date of birth on your ID didn\'t match what you entered. Please check and try again.';
+  if (code.includes('photo_mismatch'))
+    return 'The photo on your ID couldn\'t be verified. Retake it with better lighting and a clean background.';
+  return err.reason || 'Your last upload couldn\'t be verified. Please try again with a clearer photo.';
+}
 
 /**
  * Live-camera-only ID capture. We never allow photo library or file picker —
@@ -22,17 +50,28 @@ type DocType = 'passport' | 'licence';
  * a hidden `<input capture="environment">` which triggers the OS camera on
  * mobile browsers.
  */
-const IdVerificationStep = ({ onBack, onDone }: IdVerificationStepProps) => {
+const IdVerificationStep = ({ onBack, onDone, onEditName, verificationError }: IdVerificationStepProps) => {
   const { profile } = useAuth() as any;
   const [docType, setDocType] = useState<DocType | null>(null);
   const [front, setFront] = useState<string | null>(null);
   const [back, setBack] = useState<string | null>(null);
   const [capturing, setCapturing] = useState<'front' | 'back' | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showWhy, setShowWhy] = useState(false);
   const webInputRef = useRef<HTMLInputElement | null>(null);
   const webTargetRef = useRef<'front' | 'back'>('front');
 
   const isNative = Capacitor.isNativePlatform();
+  const rejectMessage = readableRejectReason(verificationError);
+  const isNameMismatch = !!verificationError?.nameMismatch;
+
+  useEffect(() => {
+    track('id_verification_started', {
+      hadPreviousReject: !!verificationError,
+      rejectCode: verificationError?.code ?? null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const captureNative = async (side: 'front' | 'back') => {
     setCapturing(side);
@@ -50,6 +89,7 @@ const IdVerificationStep = ({ onBack, onDone }: IdVerificationStepProps) => {
       const dataUrl = `data:image/${photo.format || 'jpeg'};base64,${b64}`;
       if (side === 'front') setFront(dataUrl);
       else setBack(dataUrl);
+      track('id_verification_captured', { side, docType });
     } catch (err: any) {
       const msg = err?.message || '';
       if (!/cancel/i.test(msg)) toast.error(msg || 'Camera unavailable.');
@@ -119,6 +159,7 @@ const IdVerificationStep = ({ onBack, onDone }: IdVerificationStepProps) => {
     }
     if (!front) return;
     setSubmitting(true);
+    track('id_verification_uploaded', { docType });
     try {
       const frontCompressed = await compressDataUrl(front);
       const backCompressed = docType === 'licence' && back ? await compressDataUrl(back) : undefined;
@@ -129,10 +170,12 @@ const IdVerificationStep = ({ onBack, onDone }: IdVerificationStepProps) => {
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
+      track('id_verification_submitted', { docType });
       toast.success('ID submitted for verification.');
       onDone();
     } catch (err: any) {
       console.error('upload-id error:', err);
+      track('id_verification_stripe_rejected', { message: err?.message ?? null });
       toast.error(err?.message || 'Could not submit ID. Please try again.');
     } finally {
       setSubmitting(false);
@@ -149,12 +192,59 @@ const IdVerificationStep = ({ onBack, onDone }: IdVerificationStepProps) => {
         <p className="text-sm text-muted-foreground text-pretty leading-relaxed max-w-[320px] mx-auto">
           Our payment provider needs one more document to finish verifying your identity. The details you gave earlier weren't enough on their own, so a clear photo of your government ID is required before your payouts can be unlocked.
         </p>
+
+        {rejectMessage && (
+          <div className="w-full max-w-[340px] mx-auto flex items-start gap-3 rounded-2xl border border-orange-300/60 bg-orange-50 dark:bg-orange-950/30 px-4 py-3 text-left">
+            <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5 text-orange-600" />
+            <p className="text-xs text-foreground/90 leading-relaxed">
+              {rejectMessage}
+            </p>
+          </div>
+        )}
+
+        {isNameMismatch && onEditName && (
+          <button
+            type="button"
+            onClick={() => {
+              track('id_verification_edit_name_opened');
+              onEditName();
+            }}
+            className="w-full max-w-[340px] mx-auto flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 text-left active:bg-muted/60"
+          >
+            <div>
+              <div className="text-[14px] font-semibold text-foreground">My name doesn't match my ID</div>
+              <div className="text-[11px] text-muted-foreground mt-0.5">Edit your legal name, then upload again.</div>
+            </div>
+            <span aria-hidden className="text-lg">✏️</span>
+          </button>
+        )}
+
         <div className="w-full max-w-[340px] mx-auto flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/40 px-4 py-3 text-left">
           <ShieldCheck className="h-5 w-5 shrink-0 mt-0.5 text-foreground" />
           <p className="text-xs text-foreground/80 leading-relaxed">
             You must take a live photo. Uploads from your photo library are not accepted, to protect against fraud and fake IDs.
           </p>
         </div>
+
+        {/* Apple review-friendly: explain up front why we ask for ID. */}
+        <button
+          type="button"
+          onClick={() => setShowWhy((v) => !v)}
+          className="w-full max-w-[340px] mx-auto flex items-center justify-between rounded-2xl border border-border/60 bg-muted/30 px-4 py-3 text-left"
+          aria-expanded={showWhy}
+        >
+          <div className="flex items-center gap-2">
+            <HelpCircle className="h-4 w-4 text-foreground" />
+            <span className="text-[13px] font-medium text-foreground">Why do we need this?</span>
+          </div>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${showWhy ? 'rotate-180' : ''}`} />
+        </button>
+        {showWhy && (
+          <p className="w-full max-w-[340px] mx-auto text-xs text-muted-foreground leading-relaxed text-left -mt-2">
+            Australian law requires our payment provider to verify the identity of anyone receiving payouts. This protects buyers from fraud and keeps the marketplace safe. Your ID is sent encrypted, straight to the payment provider, and Flea never stores a copy. If you'd rather not, you can close this screen — you just won't be able to sell until it's completed.
+          </p>
+        )}
+
         <div className="w-full max-w-[300px] mx-auto space-y-2 mt-2">
           <button
             onClick={() => setDocType('passport')}
@@ -212,15 +302,27 @@ const IdVerificationStep = ({ onBack, onDone }: IdVerificationStepProps) => {
         {img ? (
           <img src={img} alt={label} className="w-full h-full object-cover" />
         ) : (
-          <div className="flex flex-col items-center gap-1.5 text-muted-foreground">
-            {capturing === side ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
-            ) : (
-              <Camera className="h-6 w-6" />
-            )}
-            <span className="text-[13px] font-medium">{label}</span>
-            <span className="text-[11px]">{hint}</span>
-          </div>
+          <>
+            {/* Frame guide + hold-steady hint. Corner brackets show the user
+                roughly where the ID should sit so first-try captures land
+                inside Stripe's readable area. */}
+            <div className="pointer-events-none absolute inset-3 rounded-xl">
+              <span className="absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2 border-foreground/70 rounded-tl-md" />
+              <span className="absolute top-0 right-0 w-5 h-5 border-t-2 border-r-2 border-foreground/70 rounded-tr-md" />
+              <span className="absolute bottom-0 left-0 w-5 h-5 border-b-2 border-l-2 border-foreground/70 rounded-bl-md" />
+              <span className="absolute bottom-0 right-0 w-5 h-5 border-b-2 border-r-2 border-foreground/70 rounded-br-md" />
+            </div>
+            <div className="flex flex-col items-center gap-1.5 text-muted-foreground relative z-10">
+              {capturing === side ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                <Camera className="h-6 w-6" />
+              )}
+              <span className="text-[13px] font-medium">{label}</span>
+              <span className="text-[11px]">{hint}</span>
+              <span className="text-[10px] text-muted-foreground/80">Hold steady inside the frame.</span>
+            </div>
+          </>
         )}
         {img && (
           <span className="absolute top-2 right-2 rounded-full bg-background/90 text-foreground text-[11px] font-medium px-2 py-1">

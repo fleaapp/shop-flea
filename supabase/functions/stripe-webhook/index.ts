@@ -208,6 +208,45 @@ serve(async (req) => {
         break;
       }
 
+      case "account.updated": {
+        // Sync stripe_onboarding_complete + notify seller when verification state flips.
+        const acct = event.data.object as Stripe.Account;
+        try {
+          const { data: profile } = await serviceClient
+            .from("profiles")
+            .select("user_id, stripe_onboarding_complete")
+            .eq("stripe_account_id", acct.id)
+            .maybeSingle();
+          if (profile?.user_id) {
+            const fullyVerified = !!(acct.charges_enabled && acct.payouts_enabled);
+            const wasVerified = !!profile.stripe_onboarding_complete;
+            await serviceClient
+              .from("profiles")
+              .update({ stripe_onboarding_complete: fullyVerified })
+              .eq("user_id", profile.user_id);
+            if (fullyVerified && !wasVerified) {
+              await notify(
+                profile.user_id,
+                "seller_verified",
+                "You're verified.",
+                "✅ Your seller account is fully verified. You can now receive payouts.",
+              );
+            } else if (!fullyVerified && acct.requirements?.disabled_reason) {
+              await notify(
+                profile.user_id,
+                "payment_action_required",
+                "Seller account needs attention.",
+                "⚠️ Your payouts are paused. Open your seller dashboard to complete verification.",
+              );
+            }
+          }
+        } catch (e) {
+          console.error("[stripe-webhook] account.updated handler failed", e);
+        }
+        await logEvent(event, {});
+        break;
+      }
+
       default:
         // Log everything for audit, but don't act
         await logEvent(event, {});

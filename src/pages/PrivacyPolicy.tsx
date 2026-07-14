@@ -60,8 +60,18 @@ const PrivacyPolicy = () => {
               <li>Identifiers issued by our payment partner (e.g. Stripe Connect account ID), payout status and onboarding status.</li>
               <li>Limited transaction metadata (amount, currency, timestamp, payment method, refund status).</li>
               <li>Webhook event data sent by payment partners (e.g. payment failures, disputes, refunds).</li>
-              <li>We do <strong>not</strong> see or store your full card number, CVV or bank account number — those are collected directly by our payment partners.</li>
+              <li>We do <strong>not</strong> see or store your full card number, CVV or bank account number, those are collected directly by our payment partners.</li>
             </ul>
+            <p className="font-semibold mt-3">Seller identity verification (KYC)</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Your legal name, date of birth, residential address and Australian bank account details, provided when you set up as a seller.</li>
+              <li>Where our payment processor requires additional verification, a photo of your Australian passport or full driver's licence (front and back). This is captured live in-app and transmitted encrypted directly to the payment processor. Flea does not store the ID photo.</li>
+              <li>Verification status and any specific reason codes returned by the payment processor (e.g. document unreadable, name mismatch) so we can guide you to fix the issue.</li>
+            </ul>
+            <p className="text-xs text-muted-foreground">
+              We collect this information to satisfy our payment processor's obligations under the <em>Anti-Money Laundering and Counter-Terrorism Financing Act 2006</em> (Cth) and card scheme rules. You must be at least 18 to sell on Flea.
+            </p>
+
             <p className="font-semibold mt-3">Device & usage</p>
             <ul className="list-disc pl-5 space-y-1">
               <li>Device type, operating system, app version, browser, IP address, approximate location (for region detection) and language.</li>

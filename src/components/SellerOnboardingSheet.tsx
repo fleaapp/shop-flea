@@ -34,6 +34,8 @@ interface SellerOnboardingSheetProps {
   stripeActionRequired?: boolean;
   /** When true, opens directly on the live-camera ID verification step. */
   needsIdVerification?: boolean;
+  /** Structured verification error from Stripe requirements.errors[0]. */
+  verificationError?: { code: string | null; reason: string | null; nameMismatch: boolean } | null;
   /** Where Stripe should redirect back to. Defaults to current page. */
   returnUrl?: string;
   onComplete?: () => void;
@@ -48,6 +50,7 @@ const SellerOnboardingSheet = ({
   onOpenChange,
   stripeActionRequired = false,
   needsIdVerification = false,
+  verificationError = null,
   returnUrl,
   onComplete,
 }: SellerOnboardingSheetProps) => {
@@ -215,6 +218,12 @@ const SellerOnboardingSheet = ({
         <div className="px-5 pt-7 pb-8 flex flex-col items-center text-center gap-5 overflow-x-hidden overflow-y-auto">
           {needsIdVerification ? (
             <IdVerificationStep
+              verificationError={verificationError}
+              onEditName={() => {
+                // Route user back to the "Your details" step so they can
+                // correct their legal name before re-uploading their ID.
+                setStep(2);
+              }}
               onDone={() => {
                 onComplete?.();
                 onOpenChange(false);

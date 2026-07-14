@@ -216,11 +216,24 @@ serve(async (req) => {
 
     const currentlyDue = account.requirements?.currently_due ?? [];
     const pastDue = account.requirements?.past_due ?? [];
+    const errors = (account.requirements?.errors ?? []) as Array<{
+      code?: string;
+      reason?: string;
+      requirement?: string;
+    }>;
     const needsIdDocument =
       [...currentlyDue, ...pastDue].some((r) =>
         r?.startsWith('individual.verification.document') ||
         r?.startsWith('individual.verification.additional_document')
       );
+
+    // Surface the specific verification failure so the client can explain why
+    // and route to the right fix (re-upload vs edit name).
+    const docError = errors.find((e) =>
+      (e.requirement || '').startsWith('individual.verification') ||
+      (e.code || '').startsWith('verification_document_')
+    ) || errors[0] || null;
+    const nameMismatch = !!docError && /name/i.test(docError.code || '');
 
     return new Response(
       JSON.stringify({
@@ -233,6 +246,14 @@ serve(async (req) => {
         currentlyDue,
         pastDue,
         needsIdDocument,
+        verificationError: docError
+          ? {
+              code: docError.code || null,
+              reason: docError.reason || null,
+              requirement: docError.requirement || null,
+              nameMismatch,
+            }
+          : null,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
