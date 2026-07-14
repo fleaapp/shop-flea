@@ -208,18 +208,12 @@ const PaymentMethodsSection = () => {
   return (
     <>
     <SellerOnboardingSheet
-      open={showStripeOnboarding || previewVerifyId}
+      open={showStripeOnboarding}
       onOpenChange={(o) => {
         setShowStripeOnboarding(o);
-        if (!o && previewVerifyId) {
-          // Clear preview flag from URL when user closes the sheet.
-          const url = new URL(window.location.href);
-          url.searchParams.delete('verifyId');
-          window.history.replaceState({}, '', url.toString());
-        }
       }}
       stripeActionRequired={stripeActionRequired}
-      needsIdVerification={(stripeActionRequired && needsIdDocument) || previewVerifyId}
+      needsIdVerification={stripeActionRequired && needsIdDocument}
       returnUrl={typeof window !== 'undefined' ? window.location.origin + '/settings' : undefined}
       onComplete={() => {
         setShowStripeOnboarding(false);
