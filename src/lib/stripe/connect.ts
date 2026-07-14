@@ -1,17 +1,8 @@
 import { loadConnectAndInitialize } from '@stripe/connect-js';
+import type { StripeConnectInstance } from '@stripe/connect-js';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 
-// Publishable key comes from env (public, safe in codebase).
-// Falls back to reading from `import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY`.
-const PUBLISHABLE_KEY =
-  (import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY ||
-  (import.meta as any).env?.VITE_STRIPE_PUBLIC_KEY ||
-  '';
-
-/**
- * Flea appearance for embedded Stripe Connect surfaces.
- * Mirrors the app's lime/charcoal palette + Inter typography.
- */
+/** Flea appearance for embedded Stripe Connect surfaces. */
 const appearance = {
   variables: {
     fontFamily:
@@ -35,34 +26,44 @@ const appearance = {
   },
 } as const;
 
-/**
- * Fetch a fresh AccountSession client secret from the edge function.
- * Called by the Connect SDK on init AND for silent refresh.
- */
-async function fetchClientSecret(): Promise<string> {
+let pkCache: string | null = null;
+
+async function fetchSession(): Promise<{ clientSecret: string; publishableKey: string }> {
   const { data, error } = await invokeCloudFunction('stripe-connect-account-session', {});
   if (error) throw new Error(error.message || 'Failed to create account session');
   if (!data?.clientSecret) throw new Error('No clientSecret returned');
-  return data.clientSecret as string;
+  if (!data?.publishableKey) throw new Error('No publishableKey returned');
+  return { clientSecret: data.clientSecret, publishableKey: data.publishableKey };
 }
 
 /**
- * Returns a lazily-initialised StripeConnectInstance for the signed-in seller.
- * The Provider component in `FleaConnectProvider.tsx` will hold onto it.
+ * Creates a Connect instance for the signed-in seller.
+ * Bootstraps the publishable key from the first session response.
  */
-export function createFleaConnectInstance() {
-  if (!PUBLISHABLE_KEY) {
-    throw new Error(
-      'Missing Stripe publishable key. Set VITE_STRIPE_PUBLISHABLE_KEY.'
-    );
-  }
+export async function createFleaConnectInstance(): Promise<StripeConnectInstance> {
+  const first = await fetchSession();
+  pkCache = first.publishableKey;
+
+  const fetchClientSecret = async (): Promise<string> => {
+    // Use the first secret on init, then fetch fresh ones on refresh.
+    if (first.clientSecret) {
+      const cs = first.clientSecret;
+      // consume once
+      (first as { clientSecret?: string }).clientSecret = undefined;
+      return cs;
+    }
+    const next = await fetchSession();
+    return next.clientSecret;
+  };
+
   return loadConnectAndInitialize({
-    publishableKey: PUBLISHABLE_KEY,
+    publishableKey: pkCache,
     fetchClientSecret,
     appearance,
     fonts: [
       {
-        cssSrc: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap',
+        cssSrc:
+          'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap',
       },
     ],
   });

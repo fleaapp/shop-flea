@@ -18,12 +18,14 @@ const FleaConnectProvider = ({ children }: Props) => {
 
   useEffect(() => {
     let cancelled = false;
-    try {
-      const inst = createFleaConnectInstance();
-      if (!cancelled) setInstance(inst);
-    } catch (e: any) {
-      if (!cancelled) setError(e?.message || 'Failed to initialize Stripe Connect');
-    }
+    (async () => {
+      try {
+        const inst = await createFleaConnectInstance();
+        if (!cancelled) setInstance(inst);
+      } catch (e: any) {
+        if (!cancelled) setError(e?.message || 'Failed to initialize Stripe Connect');
+      }
+    })();
     return () => {
       cancelled = true;
     };

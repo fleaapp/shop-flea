@@ -119,7 +119,15 @@ serve(async (req) => {
       const country = (userProfile?.country_code || 'AU').toUpperCase();
 
       const createParams: Record<string, unknown> = {
-        type: "express",
+        // Application-controlled Express account — no Stripe-hosted dashboard,
+        // no hosted onboarding, Flea owns fees and losses. Renders inside the
+        // app via Connect embedded components.
+        controller: {
+          stripe_dashboard: { type: "none" },
+          fees: { payer: "application" },
+          losses: { payments: "application" },
+          requirement_collection: "application",
+        },
         email: user.email,
         country,
         default_currency: country === 'AU' ? 'aud' : undefined,
@@ -133,15 +141,14 @@ serve(async (req) => {
         },
         settings: {
           payouts: {
-            schedule: {
-              interval: "daily",
-              delay_days: "minimum",
-            },
+            // Manual cadence — sellers tap the Instant Payout CTA inside the
+            // embedded dashboard when they want their balance.
+            schedule: { interval: "manual" },
           },
         },
       };
 
-      // Pre-fill individual details. `prefill` (from the in-app form) takes top priority,
+      // Pre-fill individual details from the in-app form (top priority),
       // then `prefillName`, then values stored on the profile.
       const individual: Record<string, unknown> = {};
       let prefillFirst: string | undefined;
@@ -157,7 +164,6 @@ serve(async (req) => {
       if (lastName) individual.last_name = lastName;
       if (user.email) individual.email = user.email;
 
-      // DOB from in-app form
       if (prefill?.dob?.year && prefill?.dob?.month && prefill?.dob?.day) {
         individual.dob = {
           year: Number(prefill.dob.year),
@@ -166,13 +172,11 @@ serve(async (req) => {
         };
       }
 
-      // Phone from in-app form — Stripe requires E.164 (e.g. +61423122882)
       if (prefill?.phone) {
         const raw = String(prefill.phone).replace(/[^\d+]/g, '');
         let e164 = raw;
         if (!raw.startsWith('+')) {
           if (country === 'AU') {
-            // AU mobile/landline: strip leading 0, prepend +61
             e164 = '+61' + raw.replace(/^0+/, '');
           } else {
             e164 = '+' + raw.replace(/^0+/, '');
@@ -185,7 +189,6 @@ serve(async (req) => {
         }
       }
 
-      // Personal address — prefer in-app form, fall back to saved buyer address
       if (prefill?.address?.line1) {
         const addr: Record<string, string> = {
           line1: String(prefill.address.line1),
@@ -210,59 +213,38 @@ serve(async (req) => {
         createParams.individual = individual;
       }
 
-      // Pre-fill business profile.
-      // Setting business_profile.name = "Flea" so receipts and the Express
-      // dashboard show "Flea" as the platform/brand rather than the seller's
-      // legal name.
       createParams.business_profile = {
         name: "Flea Marketplace Seller",
-        product_description: "Selling pre-loved fashion on Flea — a peer-to-peer marketplace. Pick 'Clothing and accessories' for industry.",
+        product_description: "Selling pre-loved fashion on Flea — a peer-to-peer marketplace.",
         url: "https://finditonflea.com",
         support_url: "https://finditonflea.com",
-        mcc: "5699", // Miscellaneous Apparel and Accessory Shops
+        mcc: "5699",
       };
-
-      // NOTE: Statement descriptors are set per-charge on the Checkout Session
-      // (statement_descriptor_suffix: "FLEA") so that buyers' bank statements
-      // show FLEA rather than the seller's personal name.
 
       const account = await stripe.accounts.create(createParams as any);
       accountId = account.id;
-      console.log(`[stripe-connect-onboard] Created new Express account: ${accountId}`);
+      console.log(`[stripe-connect-onboard] Created application-controlled Express account: ${accountId}`);
     }
 
     // Persist stripe_account_id to DB immediately
     await persistStripeAccount(userId, accountId);
 
-    // Ensure existing accounts also get daily payouts + Flea branding.
+    // Ensure existing accounts also default to manual payouts + Flea branding.
     try {
       await stripe.accounts.update(accountId, {
         business_profile: { name: "Flea Marketplace Seller" },
         settings: {
-          payouts: { schedule: { interval: "daily", delay_days: "minimum" } },
+          payouts: { schedule: { interval: "manual" } },
         },
       } as any);
     } catch (e) {
       console.warn(`[stripe-connect-onboard] Account update failed for ${accountId}:`, (e as Error)?.message);
     }
 
-    // Create an account link — Stripe handles the entire onboarding/login flow
-    const accountLink = await stripe.accountLinks.create({
-      account: accountId,
-      refresh_url: `${returnUrl}?stripe_refresh=true`,
-      return_url: `${returnUrl}?stripe_success=true`,
-      type: "account_onboarding",
-      collection_options: {
-        fields: "currently_due",
-        future_requirements: "omit",
-      },
-    });
-
+    // Application-controlled Express: onboarding is rendered inside the app
+    // via Connect embedded components (no hosted account link URL).
     return new Response(
-      JSON.stringify({
-        url: accountLink.url,
-        accountId: accountId,
-      }),
+      JSON.stringify({ accountId }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,

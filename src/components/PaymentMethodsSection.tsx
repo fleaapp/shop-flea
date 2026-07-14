@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
@@ -6,9 +7,9 @@ import { toast } from 'sonner';
 import { ChevronRight } from 'lucide-react';
 import { clearStripeConnectionState, getStripeConnectedStorageKey } from '@/utils/stripeConnectionState';
 import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
-import { openInAppUrl } from '@/lib/openInAppUrl';
 
 const PaymentMethodsSection = () => {
+  const navigate = useNavigate();
   const { user, profile, refreshProfile } = useAuth();
   const [isChecking, setIsChecking] = useState(false);
   const [localConnected, setLocalConnected] = useState(false);
@@ -177,13 +178,9 @@ const PaymentMethodsSection = () => {
     handleCheckStatus(true);
   }, [user?.email, stripeFullyConnected, profile?.stripe_account_id, handleCheckStatus]);
 
-  const openSellerDashboard = async () => {
-    // In-app browser on native (SFSafariViewController / Chrome Custom Tabs)
-    // keeps the user inside Flea. Re-check status when the sheet is dismissed.
-    await openInAppUrl('https://dashboard.stripe.com', {
-      newTabOnWeb: true,
-      onFinished: () => handleCheckStatus(true),
-    });
+  const openSellerDashboard = () => {
+    // Embedded dashboard route — no Stripe branding, no external redirect.
+    navigate('/seller-dashboard');
   };
 
   const handleStripeRowClick = () => {
