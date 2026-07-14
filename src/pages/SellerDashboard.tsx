@@ -102,11 +102,8 @@ const SellerDashboard = () => {
     return count || undefined;
   }, [sellerOrderGroups, perOrder]);
 
-  // Number of completed (paid) sales. Used to gate instant payout, which
-  // Stripe only unlocks once the account has enough processing history.
-  const completedSalesCount = useMemo(() => {
-    return sellerOrderGroups.reduce((sum, g) => sum + g.orders.length, 0);
-  }, [sellerOrderGroups]);
+  // Instant payout eligibility is determined by the payment provider's risk
+  // check, not by a fixed number of sales. We surface Stripe's signal directly.
 
   const notOnboarded =
     !(profile as any)?.stripe_account_id ||
