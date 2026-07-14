@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
 import { openInAppUrl } from '@/lib/openInAppUrl';
+import EmbeddedOnboarding from '@/components/stripe/EmbeddedOnboarding';
 import {
   Select,
   SelectContent,
@@ -35,7 +36,7 @@ interface SellerOnboardingSheetProps {
   onComplete?: () => void;
 }
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA'];
 const secondaryActionClass = "w-auto h-10 px-4 rounded-full bg-transparent text-muted-foreground hover:bg-transparent hover:text-muted-foreground focus:bg-transparent focus:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:bg-transparent active:bg-muted/60 active:text-foreground";
 
@@ -47,7 +48,7 @@ const SellerOnboardingSheet = ({
   onComplete,
 }: SellerOnboardingSheetProps) => {
   const { user, profile } = useAuth();
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [firstName, setFirstName] = useState('');
@@ -148,25 +149,15 @@ const SellerOnboardingSheet = ({
       toast.error('You must be logged in to continue.');
       return;
     }
-    if (stripeActionRequired) {
-      await openInAppUrl('https://dashboard.stripe.com', {
-        newTabOnWeb: true,
-        onFinished: () => onComplete?.(),
-      });
-      return;
-    }
 
     setIsSubmitting(true);
     try {
-      const onboardingComplete = (profile as any)?.stripe_onboarding_complete === true;
-      const existingAccountId = onboardingComplete ? (profile as any)?.stripe_account_id : undefined;
-
+      const existingAccountId = (profile as any)?.stripe_account_id || undefined;
       const [yStr, mStr, dStr] = dob.split('-');
 
       const { data, error } = await invokeCloudFunction('stripe-connect-onboard', {
-        returnUrl: returnUrl || window.location.href.split('?')[0],
         stripeAccountId: existingAccountId,
-        forceNew: !onboardingComplete,
+        forceNew: !existingAccountId,
         prefill: {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
@@ -183,18 +174,10 @@ const SellerOnboardingSheet = ({
       });
 
       if (error) throw error;
-      if (!data?.url) throw new Error('No onboarding URL returned');
+      if (!data?.accountId) throw new Error('No account created');
 
-      flushSync(() => {
-        onComplete?.();
-      });
-      forceRestoreRouteAppChrome();
-      // Open onboarding inside the app: SFSafariViewController on iOS,
-      // Chrome Custom Tabs on Android. On dismiss, refresh seller status.
-      await openInAppUrl(data.url, {
-        newTabOnWeb: false,
-        onFinished: () => onComplete?.(),
-      });
+      // Move to the embedded onboarding step — no redirects, no Stripe branding.
+      setStep(5);
     } catch (err: any) {
       console.error('Seller onboarding error:', err);
       toast.error(err?.message || 'Failed to start setup. Please try again.');
@@ -205,7 +188,7 @@ const SellerOnboardingSheet = ({
 
   const ProgressDots = () => (
     <div className="flex items-center justify-center gap-1.5 mb-1">
-      {[1, 2, 3, 4].map((n) => (
+      {[1, 2, 3, 4, 5].map((n) => (
         <div
           key={n}
           className={`h-1.5 rounded-full transition-all ${
