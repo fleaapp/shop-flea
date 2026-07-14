@@ -102,9 +102,6 @@ const SellerDashboard = () => {
     return count || undefined;
   }, [sellerOrderGroups, perOrder]);
 
-  // Instant payout eligibility is determined by the payment provider's risk
-  // check, not by a fixed number of sales. We surface Stripe's signal directly.
-
   const notOnboarded =
     !(profile as any)?.stripe_account_id ||
     (profile as any)?.stripe_onboarding_complete !== true;
