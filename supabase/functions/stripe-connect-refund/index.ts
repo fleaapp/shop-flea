@@ -4,8 +4,8 @@
 // policy-based escalation). Stripe handles only the financial execution —
 // approval/decision logic happens in the app.
 //
-// Uses reverse_transfer + refund_application_fee so the funds AND Flea's 7%
-// platform fee are unwound cleanly back through the Connect account.
+// Uses reverse_transfer + refund_application_fee so the seller payout AND the
+// buyer's Secure Checkout Fee (4% + $0.70) are unwound cleanly through Connect.
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
