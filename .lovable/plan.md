@@ -1,65 +1,42 @@
-# Seller Dashboard, Payouts, Onboarding & Checkout Coupons
+## Goal
 
-All flows stay inside the Flea UI. No Stripe-hosted redirects or deep links. Controller-based Connect accounts are already in place, so platform-triggered instant payouts and native requirement collection are supported without any account migration.
+Make the native iOS status bar act as a permanent transparent overlay across every screen. The page background (cream, lime, drawer dim, sold-item overlay, etc.) shows through it at all times, matching the dimmed in-app Safari look shown in the reference image. No more solid cream/lime/black bar cutting into drawer content.
 
-## 1. Checkout coupon codes
+Note: this is a native-only change. In the Lovable web preview and mobile Safari, iOS controls the status bar and will still render it solid — the fix is only visible in the Capacitor iOS build after `npx cap sync` and a rebuild in Xcode.
 
-**Backend**
-- New table `public.coupons`: `code` (unique, upper), `type` ('waive_buyer_fee'), `active`, `starts_at`, `expires_at`, `max_redemptions`, `redemption_count`, timestamps. GRANTs + RLS (read for authenticated, write for service_role only). Seed `FREEFLEA`.
-- New table `public.coupon_redemptions` (coupon_id, user_id, order_id) to prevent reuse abuse.
-- New edge function `validate-coupon` — accepts `{ code }`, returns `{ valid, type, message }`.
-- `create-payment-intent` (and PayPal equivalent) accept an optional `couponCode`; when valid + `waive_buyer_fee`, the 4% + $0.70 Secure Checkout Fee is set to 0 and the redemption is recorded on successful payment.
+## Changes
 
-**UI**
-- New `CouponInput` in the checkout screen above the fee summary: text field + Apply button, success/error states, removable chip when applied.
-- Fee row updates live to show `$0.00` with a strikethrough of the original fee when waived.
+### 1. `capacitor.config.ts`
+Flip the StatusBar plugin defaults so the app boots into overlay mode instead of a solid lime bar:
+- `overlaysWebView: true`
+- `style: 'LIGHT'` (dark content on light backgrounds — will be re-set per route at runtime anyway)
+- Remove the `backgroundColor: '#DDFED7'` line (transparent overlay has no background)
 
-## 2. Seller Dashboard changes
+This kills the cold-boot solid bar before JS mounts.
 
-**Header + Sales button**
-- Header stays centre-aligned (already done). Sales button matches the Profile page's Sales button exactly (same variant, size, badge).
+### 2. `src/lib/appChrome.ts`
+Refactor so the native status bar is always in overlay mode; only the CSS "top color band" behind the WebView content changes per route.
 
-**Balance + payout primary button**
-- Replace the "Active / Connected" status pill with the seller's live available balance (from `stripe-connect-status`, returned as `available` + `pending`, formatted AUD).
-- Primary button next to the balance: **"Pay out"** (standard payout, free). Opens a native Flea confirmation sheet, calls a new `stripe-connect-payout` edge function which creates a Stripe payout on the connected account (standard speed, no fee).
-- Secondary button: **"Instant payout (1.5%)"**. Same native sheet with fee preview, calls `stripe-connect-payout` with `method: 'instant'`. Flea charges the 1.5% by reducing the payout amount (application-collected fee since we own `fees.payer`).
-- Both buttons are disabled with a subtle helper line ("Available after your first sale and full verification") until:
-  - `charges_enabled && payouts_enabled` on the connected account, AND
-  - at least one succeeded charge exists (Stripe requires this before instant payouts are eligible on most AU accounts).
-- Instant payout button is additionally hidden if Stripe reports `instant_payouts` capability is not active.
+- `syncNativeStatusBar(...)` always calls:
+  - `StatusBar.setOverlaysWebView({ overlay: true })`
+  - `StatusBar.setBackgroundColor({ color: '#00000000' })`
+  - `StatusBar.setStyle(...)` picking `Light` on dark/dim backgrounds and `Dark` on light backgrounds
+- Remove the `isOverlay` branch that used to toggle overlay on/off — overlay is now permanent.
+- `applyAppChromeColor` still writes `--app-top-bg`, `theme-color`, and the html/body background so the WebView paints the correct color under the transparent status bar. This is what makes the status bar visually "match" cream on app screens, lime on auth, and go dim over drawers/sheets automatically (because the drawer's dim backdrop already sits above the page).
+- `pushOverlayAppChrome()` / `useOverlayChrome` keep existing behavior but no longer need to flip native overlay state (it's always on). They can just tweak the status bar `style` to `Light` while an overlay is mounted so icons stay readable over the dim backdrop, then restore.
+- Keep the existing `activeOverlayCount`, resume listeners, and debounce logic intact.
 
-**Refresh on open**
-- Dashboard already refetches on mount; keep that behaviour and additionally refetch when the tab regains focus so balance updates after a sale.
+### 3. iOS safe-area padding sanity check
+Because the WebView now sits under the status bar full-time, every top-level screen must already be respecting `env(safe-area-inset-top)`. The app's `Header`, auth screens, and drawer headers use `pt-safe` / safe-area utilities today, so no layout changes are expected — but I'll spot-check `src/components/Header.tsx`, `src/pages/Auth.tsx`, and the drawer header in `src/components/ui/drawer.tsx` after the chrome change and add `pt-[env(safe-area-inset-top)]` only where a screen visibly clips.
 
-## 3. Seller onboarding entry point
+### 4. What is NOT changing
+- No changes to `SellerDashboard`, checkout, coupons, payouts, verification, or any business logic.
+- No changes to the web PWA behavior — browsers ignore the Capacitor StatusBar plugin.
+- No changes to splash screen or launch storyboard.
 
-- Rename the entry button so that once the user has any Stripe account: label is **"Seller Dashboard"** (already the case). Remove the "Active/Connected" secondary badge.
-- If `stripe-connect-status` returns `actionRequired` (any `currently_due`, `past_due`, or `disabled_reason`), show an **"Action required"** pill on the Seller Dashboard entry button, and gate listing creation:
-  - `ListItemPage` (or wherever "List item" is triggered) checks `stripe_onboarding_complete && !actionRequired`. If not, show a native sheet: "Finish verification to list items" with a button that opens `SellerOnboardingSheet` at the correct resume step.
+## Verification
 
-## 4. Resume-in-place onboarding
-
-- Add `stripe_onboarding_step` (text, nullable) to `profiles`. Values: `intro | personal | address | dob | bank | id | review`.
-- `SellerOnboardingSheet` writes the current step to the profile on every step change (debounced).
-- On sheet mount, if a step is saved and onboarding isn't complete, resume at that step instead of the intro.
-- Clear the field when onboarding completes or the user explicitly cancels from the intro.
-
-## 5. Post-onboarding native result popup
-
-- When `SellerOnboardingSheet` closes after submitting the final step, open a native Flea `AlertDialog` on top of the dashboard behind it. Two variants driven by a fresh `stripe-connect-status` call:
-  - **Verified** — "You're verified and ready to list. Start selling." CTA → List an item.
-  - **Further verification needed** — "We need a bit more info to verify your identity." CTA → Reopens the sheet at the ID / requirement step. Uses the same reject-reason surfacing already built.
-- Uses the existing confirmation-dialog style (rounded-2xl, standard flea colours).
-
-## 6. Consistency
-
-- All new sheets, buttons, dialogs and pills reuse the existing Flea tokens: lime primary, charcoal palette, Inter, `rounded-2xl`, `h-12` primary button, confirmation-dialog style. No hardcoded colours.
-
-## Technical notes
-
-- **Edge functions**: `validate-coupon`, `stripe-connect-payout` (new); `create-payment-intent` and PayPal checkout updated to accept `couponCode`; `stripe-connect-status` extended to return `balance.available`, `balance.pending`, `instantPayoutEligible`, `hasSucceededCharge`.
-- **Migrations**: `coupons`, `coupon_redemptions` tables (with GRANTs + RLS); `profiles.stripe_onboarding_step` column; seed `FREEFLEA` via insert tool.
-- **Client**: new `CouponInput` component; `SellerDashboard` gets `BalanceHeader` with payout buttons; `SellerOnboardingSheet` resume logic + result dialog; listing-creation gate.
-- **No account migration** — controller-based accounts already handle everything natively.
-- **No deep links, no Stripe-hosted UI** anywhere in the flow.
-- **GST**: separate answer, not part of this plan.
+1. `npx cap sync ios` + rebuild in Xcode.
+2. On device: status bar icons visible over cream home, lime auth, and go dim automatically when any drawer/sheet/dialog opens (because their backdrop paints through the transparent bar).
+3. Confirm drawer headers are no longer clipped at the top.
+4. Confirm cold boot no longer shows a solid lime bar before React mounts.
