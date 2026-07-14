@@ -325,15 +325,27 @@ const Checkout = () => {
                 })()}
               </div>
               
+              {/* Coupon input */}
+              <div className="px-4 py-3 border-t border-border">
+                <CouponInput value={coupon} onChange={setCoupon} />
+              </div>
+
               {/* Fee line */}
               <div className="flex justify-between text-sm px-4 py-3 border-t border-border">
                 <span className="text-muted-foreground inline-flex items-center gap-1.5">
-                  Secure Checkout Fee ({fees.rateLabel})
+                  Secure Checkout Fee ({rawFees.rateLabel})
                   <SecureCheckoutInfoPopover />
                 </span>
-                <span className="text-muted-foreground">+ ${processingFee.toFixed(2)}</span>
+                {feeWaived ? (
+                  <span className="text-charcoal font-medium">
+                    <span className="line-through text-muted-foreground mr-1.5">+ ${originalFee.toFixed(2)}</span>
+                    $0.00
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">+ ${processingFee.toFixed(2)}</span>
+                )}
               </div>
-              
+
               {/* Total */}
               <div className="flex items-center justify-center bg-charcoal text-white py-3 px-4">
                 <span className="font-medium">Total payment: ${total.toFixed(2)}</span>
