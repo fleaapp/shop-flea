@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Loader2, RefreshCw } from 'lucide-react';
+import { ChevronLeft, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 
@@ -104,7 +104,7 @@ const SellerDashboard = () => {
   return (
     <div className="min-h-svh bg-background flex flex-col">
       <header className="sticky top-0 z-20 bg-background">
-        <div className="flex items-center gap-2 px-4 py-3 pt-safe">
+        <div className="relative flex items-center px-4 py-3 pt-safe">
           <button
             onClick={() => navigate('/settings')}
             aria-label="Back"
@@ -112,17 +112,16 @@ const SellerDashboard = () => {
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <h1 className="text-lg font-semibold text-foreground flex-1">Seller Dashboard</h1>
-          {!notOnboarded && (
-            <button
-              onClick={() => load(true)}
-              aria-label="Refresh"
-              disabled={refreshing}
-              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted/60 active:bg-muted disabled:opacity-50"
-            >
-              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            </button>
-          )}
+          <h1 className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold text-foreground">
+            Seller Dashboard
+          </h1>
+          <button
+            onClick={() => navigate('/sales')}
+            aria-label="Sales"
+            className="ml-auto h-9 w-9 flex items-center justify-center rounded-xl border-2 border-border bg-card hover:bg-secondary text-base"
+          >
+            💸
+          </button>
         </div>
       </header>
 
