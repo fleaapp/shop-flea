@@ -218,15 +218,17 @@ serve(async (req) => {
       });
     }
 
-    // Add buyer-paid Secure Checkout Fee as a line item
-    lineItems.push({
-      price_data: {
-        currency: "aud",
-        product_data: { name: `Secure Checkout Fee (${(SECURE_CHECKOUT_RATE * 100).toFixed(0)}% + $${SECURE_CHECKOUT_FIXED.toFixed(2)})` },
-        unit_amount: Math.round(secureCheckoutFee * 100),
-      },
-      quantity: 1,
-    });
+    // Add buyer-paid Secure Checkout Fee as a line item (skip if waived to $0)
+    if (secureCheckoutFee > 0) {
+      lineItems.push({
+        price_data: {
+          currency: "aud",
+          product_data: { name: `Secure Checkout Fee (${(SECURE_CHECKOUT_RATE * 100).toFixed(0)}% + $${SECURE_CHECKOUT_FIXED.toFixed(2)})` },
+          unit_amount: Math.round(secureCheckoutFee * 100),
+        },
+        quantity: 1,
+      });
+    }
 
     // Find or create Stripe customer
     const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
