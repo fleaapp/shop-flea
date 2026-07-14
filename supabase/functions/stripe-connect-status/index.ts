@@ -214,6 +214,14 @@ serve(async (req) => {
       }
     }
 
+    const currentlyDue = account.requirements?.currently_due ?? [];
+    const pastDue = account.requirements?.past_due ?? [];
+    const needsIdDocument =
+      [...currentlyDue, ...pastDue].some((r) =>
+        r?.startsWith('individual.verification.document') ||
+        r?.startsWith('individual.verification.additional_document')
+      );
+
     return new Response(
       JSON.stringify({
         chargesEnabled: account.charges_enabled,
@@ -222,6 +230,9 @@ serve(async (req) => {
         accountId: accountId,
         accountExists: true,
         requirementsDisabledReason: account.requirements?.disabled_reason || null,
+        currentlyDue,
+        pastDue,
+        needsIdDocument,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

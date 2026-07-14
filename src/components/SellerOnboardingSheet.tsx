@@ -26,11 +26,14 @@ import {
 } from '@/components/ui/select';
 import fleaLogo from '@/assets/flea-logo.png';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
+import IdVerificationStep from '@/components/IdVerificationStep';
 
 interface SellerOnboardingSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   stripeActionRequired?: boolean;
+  /** When true, opens directly on the live-camera ID verification step. */
+  needsIdVerification?: boolean;
   /** Where Stripe should redirect back to. Defaults to current page. */
   returnUrl?: string;
   onComplete?: () => void;
@@ -44,6 +47,7 @@ const SellerOnboardingSheet = ({
   open,
   onOpenChange,
   stripeActionRequired = false,
+  needsIdVerification = false,
   returnUrl,
   onComplete,
 }: SellerOnboardingSheetProps) => {
@@ -209,10 +213,21 @@ const SellerOnboardingSheet = ({
         className="rounded-t-3xl border-t-[3px] border-charcoal p-0 flex flex-col max-h-[92svh] bg-background"
       >
         <div className="px-5 pt-7 pb-8 flex flex-col items-center text-center gap-5 overflow-x-hidden overflow-y-auto">
-          <ProgressDots />
-          <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-            Step {step} of {TOTAL_STEPS}
-          </p>
+          {needsIdVerification ? (
+            <IdVerificationStep
+              onDone={() => {
+                onComplete?.();
+                onOpenChange(false);
+              }}
+            />
+          ) : (
+            <>
+              <ProgressDots />
+              <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Step {step} of {TOTAL_STEPS}
+              </p>
+
+
 
           {step === 1 && (
             <>
@@ -406,16 +421,18 @@ const SellerOnboardingSheet = ({
             </>
           )}
 
-          {step === 5 && (
-            <BankDetailsStep
-              firstName={firstName}
-              lastName={lastName}
-              onBack={() => setStep(4)}
-              onDone={() => {
-                onComplete?.();
-                onOpenChange(false);
-              }}
-            />
+              {step === 5 && (
+                <BankDetailsStep
+                  firstName={firstName}
+                  lastName={lastName}
+                  onBack={() => setStep(4)}
+                  onDone={() => {
+                    onComplete?.();
+                    onOpenChange(false);
+                  }}
+                />
+              )}
+            </>
           )}
         </div>
       </SheetContent>

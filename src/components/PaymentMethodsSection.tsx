@@ -15,6 +15,7 @@ const PaymentMethodsSection = () => {
   const [localConnected, setLocalConnected] = useState(false);
   const [localAccountId, setLocalAccountId] = useState<string | null>(null);
   const [showStripeOnboarding, setShowStripeOnboarding] = useState(false);
+  const [needsIdDocument, setNeedsIdDocument] = useState(false);
 
   const clearLocalStripeState = useCallback(() => {
     clearStripeConnectionState(user?.id);
@@ -49,6 +50,7 @@ const PaymentMethodsSection = () => {
   // Only show "verifying" if user just returned from Stripe onboarding (URL param)
   // or if a status check is actively running. Never show it just because an account ID exists.
   const returnedFromStripe = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('stripe_success') === 'true';
+  const previewVerifyId = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('verifyId') === '1';
   const stripePending = !stripeFullyConnected && !stripeDetailsSubmitted && (returnedFromStripe || isChecking);
 
   const handleConnectStripe = () => {
@@ -69,6 +71,8 @@ const PaymentMethodsSection = () => {
       });
 
       if (error) throw error;
+
+      setNeedsIdDocument(!!(data as any)?.needsIdDocument);
 
       if (data?.chargesEnabled && data?.payoutsEnabled && data?.accountId) {
         // Fully verified - charges and payouts enabled
@@ -205,9 +209,18 @@ const PaymentMethodsSection = () => {
   return (
     <>
     <SellerOnboardingSheet
-      open={showStripeOnboarding}
-      onOpenChange={setShowStripeOnboarding}
+      open={showStripeOnboarding || previewVerifyId}
+      onOpenChange={(o) => {
+        setShowStripeOnboarding(o);
+        if (!o && previewVerifyId) {
+          // Clear preview flag from URL when user closes the sheet.
+          const url = new URL(window.location.href);
+          url.searchParams.delete('verifyId');
+          window.history.replaceState({}, '', url.toString());
+        }
+      }}
       stripeActionRequired={stripeActionRequired}
+      needsIdVerification={(stripeActionRequired && needsIdDocument) || previewVerifyId}
       returnUrl={typeof window !== 'undefined' ? window.location.origin + '/settings' : undefined}
       onComplete={() => {
         setShowStripeOnboarding(false);
