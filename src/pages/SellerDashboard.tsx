@@ -227,11 +227,6 @@ const SellerDashboard = () => {
           </div>
         ) : (
           <>
-            {/* Available balance + payout actions */}
-            <section className="rounded-2xl bg-primary/60 p-5 mt-2">
-              <div className="text-xs font-medium text-charcoal/70 uppercase tracking-wide">
-                Available balance
-              </div>
             {/* Available balance */}
             <section className="rounded-2xl bg-primary/60 p-5 mt-2">
               <div className="text-xs font-medium text-charcoal/70 uppercase tracking-wide">
