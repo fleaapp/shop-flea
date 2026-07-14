@@ -16,6 +16,25 @@ function getStripeSecretKey() {
   return key;
 }
 
+function isAppleReviewProfile(profile: any) {
+  const username = String(profile?.username ?? '').toLowerCase();
+  const email = String(profile?.email ?? '').toLowerCase();
+  return username === '@applereview' || email === 'appreview@finditonflea.com';
+}
+
+async function clearStripeStatus(externalUrl: string, serviceKey: string, userId: string) {
+  await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
+    method: 'PATCH',
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal',
+    },
+    body: JSON.stringify({ stripe_account_id: null, stripe_onboarding_complete: false }),
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -49,14 +68,30 @@ serve(async (req) => {
 
     // Look up seller's Stripe account
     const profileRes = await fetch(
-      `${EXTERNAL_URL}/rest/v1/profiles?user_id=eq.${userId}&select=stripe_account_id`,
+      `${EXTERNAL_URL}/rest/v1/profiles?user_id=eq.${userId}&select=stripe_account_id,username,email`,
       { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } }
     );
     const profiles = await profileRes.json();
-    const accountId: string | null = profiles?.[0]?.stripe_account_id ?? null;
+    const profile = profiles?.[0] ?? null;
+    const accountId: string | null = profile?.stripe_account_id ?? null;
 
     if (!accountId) {
       return new Response(JSON.stringify({ error: "No connected account" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
+    if (accountId.startsWith('acct_demo_')) {
+      if (isAppleReviewProfile(profile)) {
+        return new Response(JSON.stringify({ demo: true, accountId }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+
+      await clearStripeStatus(EXTERNAL_URL, SERVICE_KEY, userId);
+      return new Response(JSON.stringify({ error: "Seller setup needs to be completed again" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
