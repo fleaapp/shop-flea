@@ -293,7 +293,7 @@ const OrderChat = () => {
                 }}
                 onRefund={async () => {
                   // Stripe Connect: reverse_transfer + refund_application_fee
-                  // unwinds the seller payout AND Flea's 7% cleanly.
+                  // unwinds the seller payout AND the buyer's Secure Checkout Fee (4% + $0.70) cleanly.
                   setRefundActioning(true);
                   try {
                     const { data, error } = await invokeCloudFunction('stripe-connect-refund', {
