@@ -254,6 +254,7 @@ const Checkout = () => {
           image: item.image,
         })),
         shipping: totalShipping,
+        couponCode: coupon?.code ?? null,
       });
 
       if (error) throw error;
