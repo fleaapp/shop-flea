@@ -421,16 +421,18 @@ const SellerOnboardingSheet = ({
             </>
           )}
 
-          {step === 5 && (
-            <BankDetailsStep
-              firstName={firstName}
-              lastName={lastName}
-              onBack={() => setStep(4)}
-              onDone={() => {
-                onComplete?.();
-                onOpenChange(false);
-              }}
-            />
+              {step === 5 && (
+                <BankDetailsStep
+                  firstName={firstName}
+                  lastName={lastName}
+                  onBack={() => setStep(4)}
+                  onDone={() => {
+                    onComplete?.();
+                    onOpenChange(false);
+                  }}
+                />
+              )}
+            </>
           )}
         </div>
       </SheetContent>
