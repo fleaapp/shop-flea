@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Lock } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 
-import EmbeddedOnboarding from '@/components/stripe/EmbeddedOnboarding';
+
 import {
   Select,
   SelectContent,
@@ -407,32 +407,146 @@ const SellerOnboardingSheet = ({
           )}
 
           {step === 5 && (
-            <>
-              <SheetHeader className="space-y-2">
-                <SheetTitle className="text-lg">Finish verification</SheetTitle>
-                <p className="text-sm text-muted-foreground leading-relaxed max-w-[320px] mx-auto">
-                  Add your bank or debit card details and complete any remaining verification steps.
-                </p>
-              </SheetHeader>
-
-              <div className="w-full">
-                <EmbeddedOnboarding
-                  onExit={() => {
-                    onComplete?.();
-                    onOpenChange(false);
-                  }}
-                />
-              </div>
-
-              <p className="text-[11px] text-muted-foreground/70 max-w-[280px]">
-                Flea never stores your bank details. Our payment provider manages everything securely.
-              </p>
-            </>
+            <BankDetailsStep
+              firstName={firstName}
+              lastName={lastName}
+              onBack={() => setStep(4)}
+              onDone={() => {
+                onComplete?.();
+                onOpenChange(false);
+              }}
+            />
           )}
         </div>
       </SheetContent>
     </Sheet>
   );
 };
+
+interface BankDetailsStepProps {
+  firstName: string;
+  lastName: string;
+  onBack: () => void;
+  onDone: () => void;
+}
+
+const BankDetailsStep = ({ firstName, lastName, onBack, onDone }: BankDetailsStepProps) => {
+  const { profile, refreshProfile } = useAuth() as any;
+  const [bsb, setBsb] = useState('');
+  const [account, setAccount] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const formatBsb = (v: string) => {
+    const d = v.replace(/\D/g, '').slice(0, 6);
+    return d.length > 3 ? `${d.slice(0, 3)}-${d.slice(3)}` : d;
+  };
+
+  const canSubmit = bsb.replace(/\D/g, '').length === 6 && account.replace(/\D/g, '').length >= 5;
+
+  const handleSubmit = async () => {
+    const accountId = (profile as any)?.stripe_account_id;
+    if (!accountId) {
+      toast.error('Payment account not ready. Please go back and try again.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { data, error } = await invokeCloudFunction('stripe-connect-add-bank', {
+        accountId,
+        bsb: bsb.replace(/\D/g, ''),
+        accountNumber: account.replace(/\D/g, ''),
+        accountHolderName: `${firstName} ${lastName}`.trim(),
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success('Bank details saved.');
+      try { await refreshProfile?.(); } catch {}
+      onDone();
+    } catch (err: any) {
+      console.error('add-bank error:', err);
+      toast.error(err?.message || 'Could not save bank details. Please check and try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <>
+      <SheetHeader className="space-y-2">
+        <SheetTitle className="text-lg">Add bank details</SheetTitle>
+      </SheetHeader>
+
+      <div className="w-full max-w-[340px] mx-auto flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/40 px-4 py-3 text-left">
+        <Lock className="h-5 w-5 shrink-0 mt-0.5 text-foreground" />
+        <p className="text-xs text-foreground/80 leading-relaxed">
+          Your bank details are encrypted and stored securely with the highest bank-grade security.
+        </p>
+      </div>
+
+      <div className="w-full max-w-[340px] mx-auto text-left space-y-4 mt-1">
+        <div className="space-y-1.5">
+          <Label htmlFor="bsb" className="text-[13px] font-semibold">BSB code</Label>
+          <Input
+            id="bsb"
+            inputMode="numeric"
+            placeholder="6 digit code"
+            value={bsb}
+            onChange={(e) => setBsb(formatBsb(e.target.value))}
+            className="h-11 text-base"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="acct" className="text-[13px] font-semibold">Account number</Label>
+          <Input
+            id="acct"
+            inputMode="numeric"
+            placeholder="6-10 digit code"
+            value={account}
+            onChange={(e) => setAccount(e.target.value.replace(/\D/g, '').slice(0, 10))}
+            className="h-11 text-base"
+          />
+        </div>
+      </div>
+
+      <div className="w-full max-w-[340px] mx-auto text-left space-y-3 text-[12px] text-muted-foreground leading-relaxed">
+        <p>
+          By providing your bank account details and confirming, you authorise Flea and its payment
+          provider to debit and credit this account for payouts and any related adjustments.
+        </p>
+        <p>
+          You certify that you are either an account holder or an authorised signatory on the
+          account listed above.
+        </p>
+      </div>
+
+      <div className="w-full space-y-2 mt-2 flex flex-col items-center">
+        <Button
+          onClick={handleSubmit}
+          disabled={!canSubmit || submitting}
+          className="w-56 h-12 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-[15px] font-semibold disabled:opacity-60"
+        >
+          {submitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              Saving...
+            </>
+          ) : (
+            'Confirm'
+          )}
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={onBack}
+          disabled={submitting}
+          className="w-auto h-10 px-4 rounded-full bg-transparent text-muted-foreground hover:bg-transparent hover:text-muted-foreground"
+        >
+          Back
+        </Button>
+      </div>
+    </>
+  );
+};
+
+
 
 export default SellerOnboardingSheet;
