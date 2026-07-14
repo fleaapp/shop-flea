@@ -1,19 +1,47 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Camera as CapCamera, CameraSource, CameraResultType } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
-import { Loader2, Camera, ShieldCheck, X } from 'lucide-react';
+import { Loader2, Camera, ShieldCheck, AlertTriangle, HelpCircle, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAuth } from '@/context/AuthContext';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
+import { track } from '@/lib/analytics';
 
 interface IdVerificationStepProps {
   onBack?: () => void;
   onDone: () => void;
+  /** Called when the user says the ID name doesn't match the entered name. */
+  onEditName?: () => void;
+  /** Structured error from Stripe requirements — used to explain why the last upload failed. */
+  verificationError?: { code: string | null; reason: string | null; nameMismatch: boolean } | null;
 }
 
 type DocType = 'passport' | 'licence';
+
+/**
+ * Turns a Stripe verification error code/reason into human copy. We prefer the
+ * code so the message is stable across Stripe wording changes.
+ */
+function readableRejectReason(err: { code: string | null; reason: string | null } | null | undefined): string | null {
+  if (!err) return null;
+  const code = (err.code || '').toLowerCase();
+  if (!code && !err.reason) return null;
+  if (code.includes('not_readable') || code.includes('not_uploaded') || code.includes('failed_copy'))
+    return 'Your last photo was too blurry or had glare. Retake it in bright, even light with the whole document in frame.';
+  if (code.includes('expired'))
+    return 'The ID you uploaded has expired. Please use a current passport or driver\'s licence.';
+  if (code.includes('type_not_supported') || code.includes('unsupported'))
+    return 'That document type isn\'t accepted. Use an Australian passport or a full (not learner) driver\'s licence.';
+  if (code.includes('name') || code.includes('keyed'))
+    return 'The name on your ID didn\'t match the name you entered. Update your name or upload an ID that matches.';
+  if (code.includes('dob'))
+    return 'The date of birth on your ID didn\'t match what you entered. Please check and try again.';
+  if (code.includes('photo_mismatch'))
+    return 'The photo on your ID couldn\'t be verified. Retake it with better lighting and a clean background.';
+  return err.reason || 'Your last upload couldn\'t be verified. Please try again with a clearer photo.';
+}
 
 /**
  * Live-camera-only ID capture. We never allow photo library or file picker —
@@ -22,17 +50,28 @@ type DocType = 'passport' | 'licence';
  * a hidden `<input capture="environment">` which triggers the OS camera on
  * mobile browsers.
  */
-const IdVerificationStep = ({ onBack, onDone }: IdVerificationStepProps) => {
+const IdVerificationStep = ({ onBack, onDone, onEditName, verificationError }: IdVerificationStepProps) => {
   const { profile } = useAuth() as any;
   const [docType, setDocType] = useState<DocType | null>(null);
   const [front, setFront] = useState<string | null>(null);
   const [back, setBack] = useState<string | null>(null);
   const [capturing, setCapturing] = useState<'front' | 'back' | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showWhy, setShowWhy] = useState(false);
   const webInputRef = useRef<HTMLInputElement | null>(null);
   const webTargetRef = useRef<'front' | 'back'>('front');
 
   const isNative = Capacitor.isNativePlatform();
+  const rejectMessage = readableRejectReason(verificationError);
+  const isNameMismatch = !!verificationError?.nameMismatch;
+
+  useEffect(() => {
+    track('id_verification_started', {
+      hadPreviousReject: !!verificationError,
+      rejectCode: verificationError?.code ?? null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const captureNative = async (side: 'front' | 'back') => {
     setCapturing(side);
