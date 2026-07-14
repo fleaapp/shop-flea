@@ -42,8 +42,9 @@ const isNativeBridgeReady = (): boolean => {
 };
 
 const syncNativeStatusBar = (color: string, isOverlay: boolean) => {
-  // Debounce + dedupe to stop the boot-time flood of StatusBar calls that
-  // can race with the Capacitor bridge before window.Capacitor.triggerEvent exists.
+  // Native status bar is ALWAYS in overlay mode so the page background
+  // (cream/lime/drawer dim) shows through it, matching the in-app Safari
+  // look. Only the icon `style` changes based on what's underneath.
   if (color === lastAppliedColor && isOverlay === lastAppliedOverlay) return;
   const requestId = ++nativeChromeRequest;
   if (pendingTimer) clearTimeout(pendingTimer);
@@ -56,15 +57,13 @@ const syncNativeStatusBar = (color: string, isOverlay: boolean) => {
         if (!Capacitor.isNativePlatform()) return;
         lastAppliedColor = color;
         lastAppliedOverlay = isOverlay;
-        if (isOverlay) {
-          void StatusBar.setOverlaysWebView({ overlay: true }).catch(() => undefined);
-          void StatusBar.setStyle({ style: Style.Light }).catch(() => undefined);
-          void StatusBar.setBackgroundColor({ color: '#00000000' }).catch(() => undefined);
-        } else {
-          void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
-          void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
-          void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
-        }
+        // Always transparent overlay
+        void StatusBar.setOverlaysWebView({ overlay: true }).catch(() => undefined);
+        void StatusBar.setBackgroundColor({ color: '#00000000' }).catch(() => undefined);
+        // When an overlay (dialog/sheet/drawer) is open, its dim backdrop
+        // sits above the page, so use Light icons. Otherwise pick icon
+        // color based on the underlying route color (light bg → dark icons).
+        void StatusBar.setStyle({ style: isOverlay ? Style.Light : Style.Dark }).catch(() => undefined);
       })
       .catch(() => undefined);
   }, 60);
