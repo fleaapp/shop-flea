@@ -102,9 +102,6 @@ const SellerDashboard = () => {
     return count || undefined;
   }, [sellerOrderGroups, perOrder]);
 
-  // Instant payout eligibility is determined by the payment provider's risk
-  // check, not by a fixed number of sales. We surface Stripe's signal directly.
-
   const notOnboarded =
     !(profile as any)?.stripe_account_id ||
     (profile as any)?.stripe_onboarding_complete !== true;
@@ -265,7 +262,7 @@ const SellerDashboard = () => {
                 </p>
               ) : !canInstant ? (
                 <p className="text-[11px] text-muted-foreground text-center mt-1 px-4">
-                  Instant payout unlocks once your payment provider's risk check is complete.
+                  Instant payout unlocks once your account passes our payment provider's review.
                 </p>
               ) : null}
             </div>

@@ -105,7 +105,7 @@ serve(async (req) => {
     const payoutsEnabled = !!account.payouts_enabled;
     const hasSucceededCharge = (charges as any).data?.some?.((c: any) => c.status === "succeeded") ?? false;
     const capabilities: any = account.capabilities || {};
-    const instantPayoutEligible = capabilities.instant_payouts === "active" || instantAvailable > 0;
+    const instantPayoutEligible = capabilities.instant_payouts === "active";
 
     return new Response(
       JSON.stringify({
