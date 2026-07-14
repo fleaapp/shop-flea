@@ -120,10 +120,12 @@ const IdVerificationStep = ({ onBack, onDone }: IdVerificationStepProps) => {
     if (!front) return;
     setSubmitting(true);
     try {
+      const frontCompressed = await compressDataUrl(front);
+      const backCompressed = docType === 'licence' && back ? await compressDataUrl(back) : undefined;
       const { data, error } = await invokeCloudFunction('stripe-connect-upload-id', {
         accountId,
-        frontBase64: stripBase64(front),
-        backBase64: docType === 'licence' && back ? stripBase64(back) : undefined,
+        frontBase64: stripBase64(frontCompressed),
+        backBase64: backCompressed ? stripBase64(backCompressed) : undefined,
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
