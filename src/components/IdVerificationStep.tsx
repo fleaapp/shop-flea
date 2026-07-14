@@ -302,15 +302,27 @@ const IdVerificationStep = ({ onBack, onDone, onEditName, verificationError }: I
         {img ? (
           <img src={img} alt={label} className="w-full h-full object-cover" />
         ) : (
-          <div className="flex flex-col items-center gap-1.5 text-muted-foreground">
-            {capturing === side ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
-            ) : (
-              <Camera className="h-6 w-6" />
-            )}
-            <span className="text-[13px] font-medium">{label}</span>
-            <span className="text-[11px]">{hint}</span>
-          </div>
+          <>
+            {/* Frame guide + hold-steady hint. Corner brackets show the user
+                roughly where the ID should sit so first-try captures land
+                inside Stripe's readable area. */}
+            <div className="pointer-events-none absolute inset-3 rounded-xl">
+              <span className="absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2 border-foreground/70 rounded-tl-md" />
+              <span className="absolute top-0 right-0 w-5 h-5 border-t-2 border-r-2 border-foreground/70 rounded-tr-md" />
+              <span className="absolute bottom-0 left-0 w-5 h-5 border-b-2 border-l-2 border-foreground/70 rounded-bl-md" />
+              <span className="absolute bottom-0 right-0 w-5 h-5 border-b-2 border-r-2 border-foreground/70 rounded-br-md" />
+            </div>
+            <div className="flex flex-col items-center gap-1.5 text-muted-foreground relative z-10">
+              {capturing === side ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                <Camera className="h-6 w-6" />
+              )}
+              <span className="text-[13px] font-medium">{label}</span>
+              <span className="text-[11px]">{hint}</span>
+              <span className="text-[10px] text-muted-foreground/80">Hold steady inside the frame.</span>
+            </div>
+          </>
         )}
         {img && (
           <span className="absolute top-2 right-2 rounded-full bg-background/90 text-foreground text-[11px] font-medium px-2 py-1">
