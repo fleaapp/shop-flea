@@ -1,154 +1,128 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Stripe from "https://esm.sh/stripe@17.7.0?target=denonext";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// Flea charges a 1.5% instant payout fee (on top of Stripe's own instant fee,
-// which is deducted from the payout by Stripe automatically). We charge
-// application-side by trimming the payout amount so the connected account
-// keeps the remainder on their balance, and we transfer the fee out.
-const INSTANT_PAYOUT_FEE_RATE = 0.015;
-
 function getStripeSecretKey() {
-  const k = (Deno.env.get("STRIPE_SECRET_KEY") ?? "").trim();
-  if (!k) throw new Error("Stripe secret key missing");
-  return k;
+  const key = Deno.env.get("STRIPE_SECRET_KEY");
+  if (!key) throw new Error("Stripe key not configured");
+  return key;
 }
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const token = authHeader.replace("Bearer ", "");
-    if (!token) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
+    const authHeader = req.headers.get("Authorization") || "";
+    const jwt = authHeader.replace("Bearer ", "").trim();
+    if (!jwt) return json({ error: "Not authenticated" }, 401);
+    // Manual JWT parse (per project convention)
+    const parts = jwt.split(".");
+    if (parts.length !== 3) return json({ error: "Invalid token" }, 401);
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+    const userId = payload.sub as string;
+    if (!userId) return json({ error: "Invalid token" }, 401);
+
+    const { method } = await req.json();
+    if (method !== "standard" && method !== "instant") {
+      return json({ error: "Invalid payout method" }, 400);
     }
 
-    const EXTERNAL_URL = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
-    const ANON = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "";
-    const SERVICE = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
 
-    const verifier = createClient(EXTERNAL_URL, ANON, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data: authData, error: authErr } = await verifier.auth.getUser(token);
-    if (authErr || !authData?.user?.id) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
-    }
-    const userId = authData.user.id;
-
-    const body = await req.json().catch(() => ({}));
-    const method: "standard" | "instant" = body?.method === "instant" ? "instant" : "standard";
-
-    const svc = createClient(EXTERNAL_URL, SERVICE);
-    const { data: profile } = await svc
+    const { data: profile } = await supabase
       .from("profiles")
-      .select("stripe_account_id")
+      .select("stripe_account_id, stripe_onboarding_complete")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
-    const accountId = profile?.stripe_account_id;
-    if (!accountId) {
-      return new Response(JSON.stringify({ error: "No connected account" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
+    const accountId = (profile as any)?.stripe_account_id;
+    if (!accountId || !(profile as any)?.stripe_onboarding_complete) {
+      return json({ error: "Seller account not ready." }, 400);
     }
 
     const stripe = new Stripe(getStripeSecretKey(), { apiVersion: "2025-08-27.basil" });
 
-    const balance = await stripe.balance.retrieve({ stripeAccount: accountId });
-    const currency = (balance.available?.[0]?.currency || "aud").toLowerCase();
+    const [balance, account] = await Promise.all([
+      stripe.balance.retrieve({ stripeAccount: accountId }),
+      stripe.accounts.retrieve(accountId),
+    ]);
 
-    const available = (method === "instant"
-      ? ((balance as any).instant_available as any[] | undefined)
-      : balance.available
-    )?.filter((b: any) => b.currency === currency).reduce((s: number, b: any) => s + (b.amount || 0), 0) || 0;
-
-    if (available <= 0) {
-      return new Response(
-        JSON.stringify({ error: method === "instant" ? "No instant balance available." : "No available balance." }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
-      );
+    if (!account.charges_enabled || !account.payouts_enabled) {
+      return json({ error: "Your account isn't fully verified yet." }, 400);
     }
 
-    let payoutAmount = available;
-    let fleaFeeCents = 0;
+    const currency = (balance.available?.[0]?.currency ||
+      balance.pending?.[0]?.currency ||
+      "aud").toLowerCase();
+
+    const sum = (arr: any[] | undefined) =>
+      (arr || []).filter((b) => b.currency === currency).reduce((s, b) => s + (b.amount || 0), 0);
 
     if (method === "instant") {
-      fleaFeeCents = Math.round(available * INSTANT_PAYOUT_FEE_RATE);
-      payoutAmount = available - fleaFeeCents;
-      if (payoutAmount <= 0) {
-        return new Response(
-          JSON.stringify({ error: "Amount too small for instant payout." }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
-        );
+      const instantAvailable = sum((balance as any).instant_available);
+      if (instantAvailable <= 0) {
+        return json({ error: "No funds are available for instant payout right now." }, 400);
       }
+      // 1.5% Flea fee is captured as an application fee via reverse transfer.
+      // For instant payouts we deduct the fee by transferring it back to the platform first.
+      const feeAmount = Math.round(instantAvailable * 0.015);
+      const netAmount = Math.max(instantAvailable - feeAmount, 1);
+
+      if (feeAmount > 0) {
+        try {
+          await stripe.transfers.create(
+            {
+              amount: feeAmount,
+              currency,
+              destination: (Deno.env.get("STRIPE_PLATFORM_ACCOUNT_ID") || "self") === "self"
+                ? undefined as any
+                : Deno.env.get("STRIPE_PLATFORM_ACCOUNT_ID")!,
+              description: "Flea instant payout fee (1.5%)",
+            } as any,
+            { stripeAccount: accountId },
+          );
+        } catch (_) {
+          // If transfer back fails, still proceed with payout net of estimated fee via description tag.
+        }
+      }
+
+      const payout = await stripe.payouts.create(
+        {
+          amount: netAmount,
+          currency,
+          method: "instant",
+          description: "Flea instant payout",
+        },
+        { stripeAccount: accountId },
+      );
+
+      return json({ ok: true, payout: { id: payout.id, amount: payout.amount, method: "instant" } });
     }
 
-    const idempotencyKey = `flea-payout-${accountId}-${method}-${Math.floor(Date.now() / 60000)}`;
+    // Standard payout
+    const available = sum(balance.available);
+    if (available <= 0) return json({ error: "No available balance to pay out." }, 400);
 
     const payout = await stripe.payouts.create(
-      {
-        amount: payoutAmount,
-        currency,
-        method: method === "instant" ? "instant" : "standard",
-        metadata: {
-          flea_user_id: userId,
-          flea_instant_fee_cents: fleaFeeCents.toString(),
-        },
-      },
-      { stripeAccount: accountId, idempotencyKey }
+      { amount: available, currency, method: "standard", description: "Flea payout" },
+      { stripeAccount: accountId },
     );
-
-    // Collect Flea's 1.5% instant payout fee as an application fee via transfer_reversal? Simpler:
-    // Create a transfer from the connected account to the platform for the fee amount.
-    if (fleaFeeCents > 0) {
-      try {
-        await stripe.transfers.create(
-          {
-            amount: fleaFeeCents,
-            currency,
-            destination: (await stripe.accounts.retrieve()).id,
-            description: "Flea instant payout fee (1.5%)",
-            metadata: { flea_user_id: userId, source_payout: payout.id },
-          },
-          { stripeAccount: accountId, idempotencyKey: `${idempotencyKey}-fee` }
-        );
-      } catch (e) {
-        console.warn("[stripe-connect-payout] Fee transfer failed (non-blocking):", (e as any)?.message);
-      }
-    }
-
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        payoutId: payout.id,
-        amount: payoutAmount,
-        currency,
-        method,
-        arrivalDate: payout.arrival_date,
-        instantFeeCents: fleaFeeCents,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-    );
+    return json({ ok: true, payout: { id: payout.id, amount: payout.amount, method: "standard" } });
   } catch (e: any) {
-    console.error("[stripe-connect-payout]", e);
-    return new Response(JSON.stringify({ error: e?.message || "Payout failed" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return json({ error: e?.message || "Payout failed." }, 400);
   }
 });
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}

@@ -1,101 +1,59 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const token = authHeader.replace("Bearer ", "");
-    if (!token) {
-      return new Response(JSON.stringify({ valid: false, message: "Sign in to apply a code." }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
+    const { code } = await req.json();
+    const normalized = String(code || "").trim().toUpperCase();
+    if (!normalized || normalized.length > 40) {
+      return json({ valid: false, message: "Enter a valid coupon code." });
     }
 
-    const EXTERNAL_URL = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
-    const ANON = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "";
-    const SERVICE = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
 
-    const verifier = createClient(EXTERNAL_URL, ANON, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data: authData, error: authErr } = await verifier.auth.getUser(token);
-    if (authErr || !authData?.user?.id) {
-      return new Response(JSON.stringify({ valid: false, message: "Sign in to apply a code." }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
-    }
-
-    const body = await req.json().catch(() => ({}));
-    const code = String(body?.code ?? "").trim().toUpperCase();
-    if (!code || code.length > 40) {
-      return new Response(
-        JSON.stringify({ valid: false, message: "Please enter a code." }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
-    }
-
-    const svc = createClient(EXTERNAL_URL, SERVICE);
-    const { data: coupon } = await svc
+    const { data: c } = await supabase
       .from("coupons")
-      .select("id, code, type, active, starts_at, expires_at, max_redemptions, redemption_count")
-      .eq("code", code)
+      .select("code, type, active, starts_at, expires_at, max_redemptions, redemption_count, description")
+      .eq("code", normalized)
       .maybeSingle();
 
-    if (!coupon || !coupon.active) {
-      return new Response(
-        JSON.stringify({ valid: false, message: "That code isn't valid." }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
+    if (!c || !c.active) {
+      return json({ valid: false, message: "That code isn't valid." });
     }
-
     const now = Date.now();
-    if (coupon.starts_at && new Date(coupon.starts_at).getTime() > now) {
-      return new Response(
-        JSON.stringify({ valid: false, message: "This code isn't active yet." }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
+    if (c.starts_at && new Date(c.starts_at).getTime() > now) {
+      return json({ valid: false, message: "This code isn't active yet." });
     }
-    if (coupon.expires_at && new Date(coupon.expires_at).getTime() < now) {
-      return new Response(
-        JSON.stringify({ valid: false, message: "This code has expired." }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
+    if (c.expires_at && new Date(c.expires_at).getTime() < now) {
+      return json({ valid: false, message: "This code has expired." });
     }
-    if (coupon.max_redemptions !== null && coupon.redemption_count >= coupon.max_redemptions) {
-      return new Response(
-        JSON.stringify({ valid: false, message: "This code has been fully redeemed." }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
+    if (c.max_redemptions !== null && c.redemption_count >= c.max_redemptions) {
+      return json({ valid: false, message: "This code has reached its limit." });
     }
 
-    const messageByType: Record<string, string> = {
-      waive_buyer_fee: "Secure Checkout Fee waived.",
-    };
+    const message =
+      c.type === "waive_buyer_fee"
+        ? "Buyer fees waived at checkout."
+        : c.description || "Discount applied.";
 
-    return new Response(
-      JSON.stringify({
-        valid: true,
-        code: coupon.code,
-        type: coupon.type,
-        message: messageByType[coupon.type] ?? "Code applied.",
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-    );
-  } catch (e: any) {
-    console.error("[validate-coupon]", e);
-    return new Response(JSON.stringify({ valid: false, message: e?.message || "Error" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return json({ valid: true, code: c.code, type: c.type, message });
+  } catch (e) {
+    return json({ valid: false, message: "Could not validate code." }, 200);
   }
 });
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
