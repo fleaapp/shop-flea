@@ -407,27 +407,15 @@ const SellerOnboardingSheet = ({
           )}
 
           {step === 5 && (
-            <>
-              <SheetHeader className="space-y-2">
-                <SheetTitle className="text-lg">Finish verification</SheetTitle>
-                <p className="text-sm text-muted-foreground leading-relaxed max-w-[320px] mx-auto">
-                  Add your bank or debit card details and complete any remaining verification steps.
-                </p>
-              </SheetHeader>
-
-              <div className="w-full">
-                <EmbeddedOnboarding
-                  onExit={() => {
-                    onComplete?.();
-                    onOpenChange(false);
-                  }}
-                />
-              </div>
-
-              <p className="text-[11px] text-muted-foreground/70 max-w-[280px]">
-                Flea never stores your bank details. Our payment provider manages everything securely.
-              </p>
-            </>
+            <BankDetailsStep
+              firstName={firstName}
+              lastName={lastName}
+              onBack={() => setStep(4)}
+              onDone={() => {
+                onComplete?.();
+                onOpenChange(false);
+              }}
+            />
           )}
         </div>
       </SheetContent>
