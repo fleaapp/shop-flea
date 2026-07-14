@@ -339,7 +339,7 @@ const SalesDetailsSheet = ({
                   </Button>
                   {!stripeFullyVerified && (
                     <p className="text-xs text-center text-muted-foreground max-w-[280px] leading-snug">
-                      🔒 Instant payout unlocks once your account passes our payment provider's review.
+                      🔒 Instant payout unlocks once your account passes the instant payout risk check.
                     </p>
                   )}
                 </div>
