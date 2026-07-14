@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { authStorage } from "@/lib/authStorage";
 
 function isIosRuntime(): boolean {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
@@ -20,9 +21,11 @@ const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 // Export the Supabase client for the rest of the app
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: localStorage,
+    storage: authStorage,
+    storageKey: "sb-dzglehiopfgfjmxtejve-auth-token",
     persistSession: true,
     autoRefreshToken: true,
+    detectSessionInUrl: true,
   },
 });
 
