@@ -50,7 +50,6 @@ const PaymentMethodsSection = () => {
   // Only show "verifying" if user just returned from Stripe onboarding (URL param)
   // or if a status check is actively running. Never show it just because an account ID exists.
   const returnedFromStripe = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('stripe_success') === 'true';
-  const previewVerifyId = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('verifyId') === '1';
   const stripePending = !stripeFullyConnected && !stripeDetailsSubmitted && (returnedFromStripe || isChecking);
 
   const handleConnectStripe = () => {
