@@ -339,7 +339,7 @@ const SalesDetailsSheet = ({
                   </Button>
                   {!stripeFullyVerified && (
                     <p className="text-xs text-center text-muted-foreground max-w-[280px] leading-snug">
-                      🔒 Instant payouts unlock once your Stripe account is fully verified — usually after your first sale.
+                      🔒 Instant payout unlocks once your account passes our payment provider's review.
                     </p>
                   )}
                 </div>
