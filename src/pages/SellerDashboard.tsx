@@ -75,6 +75,17 @@ const SellerDashboard = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { sellerOrderGroups } = useOrders();
+  const { perOrder } = useUnreadOrderMessages();
+  const salesBadge = useMemo(() => {
+    const toShipCount = sellerOrderGroups.filter((g) => g.status === 'awaiting').length;
+    const sellerUnread = sellerOrderGroups.reduce((sum, g) => {
+      return sum + g.orders.reduce((s, o) => s + (perOrder.get(o.id) || 0), 0);
+    }, 0);
+    const count = toShipCount + sellerUnread;
+    return count || undefined;
+  }, [sellerOrderGroups, perOrder]);
+
   const notOnboarded =
     !(profile as any)?.stripe_account_id ||
     (profile as any)?.stripe_onboarding_complete !== true;
