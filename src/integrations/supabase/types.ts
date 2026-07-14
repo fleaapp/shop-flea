@@ -271,6 +271,7 @@ export type Database = {
           active: boolean
           code: string
           created_at: string
+          description: string | null
           expires_at: string | null
           id: string
           max_redemptions: number | null
@@ -283,6 +284,7 @@ export type Database = {
           active?: boolean
           code: string
           created_at?: string
+          description?: string | null
           expires_at?: string | null
           id?: string
           max_redemptions?: number | null
@@ -295,6 +297,7 @@ export type Database = {
           active?: boolean
           code?: string
           created_at?: string
+          description?: string | null
           expires_at?: string | null
           id?: string
           max_redemptions?: number | null
@@ -660,6 +663,8 @@ export type Database = {
         Row: {
           buyer_id: string
           checkout_reference: string | null
+          coupon_code: string | null
+          coupon_id: string | null
           created_at: string
           delivered_at: string | null
           id: string
@@ -686,6 +691,8 @@ export type Database = {
         Insert: {
           buyer_id: string
           checkout_reference?: string | null
+          coupon_code?: string | null
+          coupon_id?: string | null
           created_at?: string
           delivered_at?: string | null
           id?: string
@@ -712,6 +719,8 @@ export type Database = {
         Update: {
           buyer_id?: string
           checkout_reference?: string | null
+          coupon_code?: string | null
+          coupon_id?: string | null
           created_at?: string
           delivered_at?: string | null
           id?: string
@@ -736,6 +745,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_listing_id_fkey"
             columns: ["listing_id"]
@@ -1345,6 +1361,8 @@ export type Database = {
         Returns: {
           buyer_id: string
           checkout_reference: string | null
+          coupon_code: string | null
+          coupon_id: string | null
           created_at: string
           delivered_at: string | null
           id: string
@@ -1385,6 +1403,8 @@ export type Database = {
         Returns: {
           buyer_id: string
           checkout_reference: string | null
+          coupon_code: string | null
+          coupon_id: string | null
           created_at: string
           delivered_at: string | null
           id: string
