@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
+import { useOrders } from '@/hooks/useOrders';
+import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
+import { Button } from '@/components/ui/button';
 
 type PayoutRow = {
   id: string;
@@ -72,6 +75,17 @@ const SellerDashboard = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { sellerOrderGroups } = useOrders();
+  const { perOrder } = useUnreadOrderMessages();
+  const salesBadge = useMemo(() => {
+    const toShipCount = sellerOrderGroups.filter((g) => g.status === 'awaiting').length;
+    const sellerUnread = sellerOrderGroups.reduce((sum, g) => {
+      return sum + g.orders.reduce((s, o) => s + (perOrder.get(o.id) || 0), 0);
+    }, 0);
+    const count = toShipCount + sellerUnread;
+    return count || undefined;
+  }, [sellerOrderGroups, perOrder]);
+
   const notOnboarded =
     !(profile as any)?.stripe_account_id ||
     (profile as any)?.stripe_onboarding_complete !== true;
@@ -115,13 +129,22 @@ const SellerDashboard = () => {
           <h1 className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold text-foreground">
             Seller Dashboard
           </h1>
-          <button
-            onClick={() => navigate('/sales')}
-            aria-label="Sales"
-            className="ml-auto h-9 w-9 flex items-center justify-center rounded-xl border-2 border-border bg-card hover:bg-secondary text-base"
-          >
-            💸
-          </button>
+          <div className="ml-auto relative">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate('/sales')}
+              aria-label="Sales"
+              className="h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-xl border-2 border-border bg-card hover:bg-secondary text-lg max-[375px]:text-base"
+            >
+              💸
+            </Button>
+            {salesBadge && (
+              <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                {salesBadge}
+              </span>
+            )}
+          </div>
         </div>
       </header>
 

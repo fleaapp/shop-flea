@@ -50,7 +50,6 @@ const PaymentMethodsSection = () => {
   // Only show "verifying" if user just returned from Stripe onboarding (URL param)
   // or if a status check is actively running. Never show it just because an account ID exists.
   const returnedFromStripe = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('stripe_success') === 'true';
-  const previewVerifyId = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('verifyId') === '1';
   const stripePending = !stripeFullyConnected && !stripeDetailsSubmitted && (returnedFromStripe || isChecking);
 
   const handleConnectStripe = () => {
@@ -188,7 +187,9 @@ const PaymentMethodsSection = () => {
   };
 
   const handleStripeRowClick = () => {
-    if (stripeFullyConnected || stripeDetailsSubmitted || stripeActionRequired) {
+    if (stripeActionRequired && needsIdDocument) {
+      setShowStripeOnboarding(true);
+    } else if (stripeFullyConnected || stripeDetailsSubmitted || stripeActionRequired) {
       openSellerDashboard();
     } else {
       handleConnectStripe();
@@ -209,18 +210,12 @@ const PaymentMethodsSection = () => {
   return (
     <>
     <SellerOnboardingSheet
-      open={showStripeOnboarding || previewVerifyId}
+      open={showStripeOnboarding}
       onOpenChange={(o) => {
         setShowStripeOnboarding(o);
-        if (!o && previewVerifyId) {
-          // Clear preview flag from URL when user closes the sheet.
-          const url = new URL(window.location.href);
-          url.searchParams.delete('verifyId');
-          window.history.replaceState({}, '', url.toString());
-        }
       }}
       stripeActionRequired={stripeActionRequired}
-      needsIdVerification={(stripeActionRequired && needsIdDocument) || previewVerifyId}
+      needsIdVerification={stripeActionRequired && needsIdDocument}
       returnUrl={typeof window !== 'undefined' ? window.location.origin + '/settings' : undefined}
       onComplete={() => {
         setShowStripeOnboarding(false);
