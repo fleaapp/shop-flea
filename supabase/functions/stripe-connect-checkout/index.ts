@@ -312,8 +312,30 @@ serve(async (req) => {
         secure_checkout_fee_aud: secureCheckoutFee.toFixed(2),
         buyer_total_aud: buyerTotalDollars.toFixed(2),
         flea_buyer_id: user.id,
+        ...(appliedCoupon ? { coupon_code: appliedCoupon.code, coupon_id: appliedCoupon.id } : {}),
       },
     }, { idempotencyKey });
+
+    // Record redemption (best-effort). Unique constraint on (coupon_id, checkout_reference)
+    // prevents double-counting if the same session is retried.
+    if (appliedCoupon) {
+      try {
+        await serviceClient.from("coupon_redemptions").insert({
+          coupon_id: appliedCoupon.id,
+          user_id: user.id,
+          checkout_reference: session.id,
+        });
+        await serviceClient.rpc("increment_coupon_redemption", { p_coupon_id: appliedCoupon.id }).catch(() => {
+          // Fallback: raw update
+          return serviceClient
+            .from("coupons")
+            .update({ redemption_count: (0 as any) })
+            .eq("id", appliedCoupon.id);
+        });
+      } catch (e) {
+        console.warn("[stripe-connect-checkout] coupon redemption record failed:", (e as any)?.message);
+      }
+    }
 
     return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
