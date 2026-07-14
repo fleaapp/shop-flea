@@ -265,7 +265,7 @@ const SellerDashboard = () => {
                 </p>
               ) : !canInstant ? (
                 <p className="text-[11px] text-muted-foreground text-center mt-1 px-4">
-                  Instant payout unlocks once your payment provider's risk check is complete.
+                  Instant payout unlocks once your account passes our payment provider's review.
                 </p>
               ) : null}
             </div>
