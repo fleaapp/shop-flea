@@ -81,6 +81,31 @@ const IdVerificationStep = ({ onBack, onDone }: IdVerificationStepProps) => {
 
   const stripBase64 = (dataUrl: string) => dataUrl.replace(/^data:image\/\w+;base64,/, '');
 
+  // Downscale to max 1600px and re-encode as JPEG q=0.82 to cut upload size
+  // (Stripe rejects docs > 8MB and slow AU mobile networks choke on large base64).
+  const compressDataUrl = (dataUrl: string): Promise<string> =>
+    new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1600;
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          const scale = Math.min(MAX / width, MAX / height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(dataUrl);
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.82));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+
   const canSubmit =
     !!front &&
     (docType === 'passport' || (docType === 'licence' && !!back)) &&
