@@ -68,11 +68,13 @@ const SellerOnboardingSheet = ({
   const [state, setState] = useState('');
   const [postcode, setPostcode] = useState('');
 
-  // Reset on open. Prefill from profile if available.
+  // Reset on open. Prefill from profile if available and resume on saved step.
   useEffect(() => {
     if (!open) return;
-    setStep(1);
     const p: any = profile || {};
+    const savedStep = Number(p.stripe_onboarding_step);
+    const resumeStep = savedStep >= 1 && savedStep <= 5 ? (savedStep as 1 | 2 | 3 | 4 | 5) : 1;
+    setStep(resumeStep);
     setFirstName(p.first_name || '');
     setLastName(p.last_name || '');
     setDob('');
@@ -83,6 +85,20 @@ const SellerOnboardingSheet = ({
     setState('');
     setPostcode('');
   }, [open, profile]);
+
+  // Persist step to profile whenever it changes so the user resumes here if
+  // they leave the app (e.g. to grab their bank card).
+  useEffect(() => {
+    if (!open || !user?.id) return;
+    (async () => {
+      try {
+        await supabase
+          .from('profiles')
+          .update({ stripe_onboarding_step: String(step) } as any)
+          .eq('user_id', user.id);
+      } catch { /* non-blocking */ }
+    })();
+  }, [step, open, user?.id]);
 
   const validatePersonal = () => {
     if (firstName.trim().length < 1 || lastName.trim().length < 1) {
