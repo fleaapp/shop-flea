@@ -200,9 +200,35 @@ const PaymentMethodsSection = () => {
     }
   };
 
-  // Determine seller status label and color
+  // When fully connected, fetch and show live balance beside the button
+  useEffect(() => {
+    let active = true;
+    const fetchBalance = async () => {
+      if (!stripeFullyConnected) { setBalanceLabel(null); return; }
+      try {
+        const { data } = await invokeCloudFunction('stripe-connect-dashboard', {});
+        if (!active || !data) return;
+        const cents = (data as any).available ?? 0;
+        const currency = ((data as any).currency ?? 'aud').toUpperCase();
+        setBalanceLabel(
+          new Intl.NumberFormat('en-AU', {
+            style: 'currency',
+            currency,
+            minimumFractionDigits: 2,
+          }).format(cents / 100)
+        );
+      } catch {
+        if (active) setBalanceLabel(null);
+      }
+    };
+    fetchBalance();
+    return () => { active = false; };
+  }, [stripeFullyConnected]);
+
   const getStripeStatus = () => {
-    if (stripeFullyConnected) return { label: '✅ Connected', color: 'text-green-600' };
+    if (stripeFullyConnected) {
+      return { label: balanceLabel ? `Balance: ${balanceLabel}` : 'Balance loading...', color: 'text-foreground' };
+    }
     if (stripePending || isChecking) return { label: '⏳ Verifying...', color: 'text-amber-600' };
     if (stripeActionRequired) return { label: '⚠️ Action required', color: 'text-orange-600' };
     if (stripeDetailsSubmitted) return { label: '🔍 Pending review', color: 'text-amber-600' };
@@ -215,16 +241,19 @@ const PaymentMethodsSection = () => {
     <>
     <SellerOnboardingSheet
       open={showStripeOnboarding}
-      onOpenChange={(o) => {
-        setShowStripeOnboarding(o);
-      }}
+      onOpenChange={(o) => setShowStripeOnboarding(o)}
       stripeActionRequired={stripeActionRequired}
       needsIdVerification={stripeActionRequired && needsIdDocument}
       verificationError={verificationError}
       returnUrl={typeof window !== 'undefined' ? window.location.origin + '/settings' : undefined}
-      onComplete={() => {
+      onComplete={async () => {
         setShowStripeOnboarding(false);
-        handleCheckStatus(true);
+        await handleCheckStatus(true);
+        setTimeout(() => {
+          if (stripeFullyConnected) setPostOnboardResult('verified');
+          else if (stripeActionRequired) setPostOnboardResult('action_required');
+          else setPostOnboardResult('pending');
+        }, 250);
       }}
     />
     <div>
@@ -232,7 +261,6 @@ const PaymentMethodsSection = () => {
         Payment Methods
       </h2>
       <div className="space-y-2 max-[375px]:space-y-1.5">
-        {/* Seller account */}
         <div
           className="flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow bg-card cursor-pointer"
           onClick={handleStripeRowClick}
@@ -243,33 +271,48 @@ const PaymentMethodsSection = () => {
             </span>
             <div>
               <span className="text-base max-[375px]:text-sm font-medium text-foreground">
-                {stripeFullyConnected || stripeDetailsSubmitted || stripeActionRequired ? 'Seller Dashboard' : 'Become a Seller'}
+                {stripeFullyConnected || stripeDetailsSubmitted || stripeActionRequired ? 'Seller Dashboard' : 'Set up Seller'}
               </span>
               <p className={`text-xs mt-0.5 ${stripeStatus.color}`}>
                 {stripeStatus.label}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {stripeFullyConnected ? (
-              <button
-                onClick={(e) => { e.stopPropagation(); handleCheckStatus(false); }}
-                disabled={isChecking}
-                className="text-xs text-green-600 font-medium hover:text-green-700 disabled:opacity-50"
-              >
-                {isChecking ? 'Syncing...' : 'Active ↻'}
-              </button>
-            ) : stripePending || isChecking ? (
-              <span className="text-xs text-amber-600 font-medium">Verifying</span>
-            ) : (
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            )}
-          </div>
+          <ChevronRight className="h-5 w-5 text-muted-foreground" />
         </div>
-
-        
       </div>
     </div>
+    {postOnboardResult && (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-6" onClick={() => setPostOnboardResult(null)}>
+        <div className="w-full max-w-[320px] rounded-2xl bg-card p-6 text-center" onClick={(e) => e.stopPropagation()}>
+          {postOnboardResult === 'verified' ? (
+            <>
+              <div className="text-3xl mb-2">✅</div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">You're verified.</h3>
+              <p className="text-sm text-muted-foreground">You're ready to list items and get paid.</p>
+            </>
+          ) : postOnboardResult === 'action_required' ? (
+            <>
+              <div className="text-3xl mb-2">⚠️</div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Further verification needed.</h3>
+              <p className="text-sm text-muted-foreground">Our payment processor needs a bit more information before you can start selling.</p>
+            </>
+          ) : (
+            <>
+              <div className="text-3xl mb-2">🔍</div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Under review.</h3>
+              <p className="text-sm text-muted-foreground">We'll let you know as soon as your account is verified.</p>
+            </>
+          )}
+          <button
+            onClick={() => setPostOnboardResult(null)}
+            className="mt-4 h-10 w-full rounded-lg bg-charcoal text-white font-medium hover:bg-charcoal/90"
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    )}
     </>
   );
 };
