@@ -232,40 +232,51 @@ const SellerDashboard = () => {
               <div className="text-xs font-medium text-charcoal/70 uppercase tracking-wide">
                 Available balance
               </div>
+            {/* Available balance */}
+            <section className="rounded-2xl bg-primary/60 p-5 mt-2">
+              <div className="text-xs font-medium text-charcoal/70 uppercase tracking-wide">
+                Available balance
+              </div>
               <div className="text-[34px] font-bold text-charcoal leading-tight mt-1">
                 {fmtMoney(available, currency)}
               </div>
-              <div className="flex flex-col gap-2 mt-4">
-                <Button
-                  onClick={() => setConfirm('standard')}
-                  disabled={!canPayout || payoutLoading !== null}
-                  className="h-12 rounded-xl bg-charcoal text-white hover:bg-charcoal/90 font-semibold disabled:opacity-50"
-                >
-                  {payoutLoading === 'standard' ? (
-                    <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Paying out...</span>
-                  ) : (
-                    'Pay out to bank'
-                  )}
-                </Button>
-                <Button
-                  onClick={() => setConfirm('instant')}
-                  disabled={!canInstant || payoutLoading !== null}
-                  variant="outline"
-                  className="h-11 rounded-xl border-2 border-charcoal bg-transparent text-charcoal hover:bg-charcoal/5 font-semibold disabled:opacity-50"
-                >
-                  {payoutLoading === 'instant' ? (
-                    <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Sending...</span>
-                  ) : (
-                    <>Instant payout <span className="ml-1 text-[13px] font-normal">(1.5% fee)</span></>
-                  )}
-                </Button>
-                {!canPayout && (
-                  <p className="text-[11px] text-charcoal/70 text-center mt-1">
-                    Payouts unlock after your first sale and full verification.
-                  </p>
-                )}
-              </div>
             </section>
+
+            {/* Payout actions (outside the balance box) */}
+            <div className="flex flex-col gap-2 mt-3">
+              <Button
+                onClick={() => setConfirm('standard')}
+                disabled={!canPayout || payoutLoading !== null}
+                className="h-12 rounded-xl bg-charcoal text-white hover:bg-charcoal/90 font-semibold disabled:opacity-50"
+              >
+                {payoutLoading === 'standard' ? (
+                  <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Paying out...</span>
+                ) : (
+                  'Pay out to bank'
+                )}
+              </Button>
+              <Button
+                onClick={() => setConfirm('instant')}
+                disabled={!canInstant || payoutLoading !== null}
+                variant="outline"
+                className="h-11 rounded-xl border-2 border-charcoal bg-transparent text-charcoal hover:bg-charcoal/5 font-semibold disabled:opacity-50"
+              >
+                {payoutLoading === 'instant' ? (
+                  <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Sending...</span>
+                ) : (
+                  <>Instant payout <span className="ml-1 text-[13px] font-normal">(1.5% fee)</span></>
+                )}
+              </Button>
+              {!canPayout ? (
+                <p className="text-[11px] text-muted-foreground text-center mt-1 px-4">
+                  Payouts unlock after your first completed sale.
+                </p>
+              ) : !canInstant ? (
+                <p className="text-[11px] text-muted-foreground text-center mt-1 px-4">
+                  Instant payout unlocks once your payment provider has verified enough sales history, usually after your second sale.
+                </p>
+              ) : null}
+            </div>
 
             {/* Pending row */}
             <section className="rounded-2xl bg-card border border-border mt-3 p-4 flex items-center justify-between">
