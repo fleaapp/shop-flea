@@ -211,8 +211,8 @@ const IdVerificationStep = ({ onBack, onDone }: IdVerificationStepProps) => {
           {docType === 'passport' ? 'Photograph your passport' : 'Photograph your licence'}
         </SheetTitle>
       </SheetHeader>
-      <p className="text-sm text-muted-foreground text-pretty leading-relaxed max-w-[300px] mx-auto">
-        Hold your ID flat, fill the frame, and make sure every corner is visible. No glare.
+      <p className="text-sm text-muted-foreground text-pretty leading-relaxed max-w-[320px] mx-auto">
+        Hold your ID flat, fill the frame, and keep every corner visible. Avoid glare so our payment provider can read the details clearly.
       </p>
 
       <div className="w-full max-w-[340px] mx-auto space-y-3 mt-1">
