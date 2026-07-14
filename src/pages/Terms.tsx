@@ -127,6 +127,17 @@ const Terms = () => {
           </section>
 
           <section className={SECTION}>
+            <h2 className="text-base font-bold mb-2">9. Seller identity verification (KYC)</h2>
+            <p>
+              To receive payouts on Flea, our third-party payment processor is required by Australian law and by card scheme rules to verify each seller's identity. When you set up selling you will be asked to provide your legal name, date of birth, residential address and Australian bank details. In some cases the processor may also ask for a photo of a government-issued ID (Australian passport or full driver's licence) if the information you provided cannot be verified on its own.
+            </p>
+            <p>
+              By setting up as a seller you consent to the collection, use and disclosure of this information for identity verification, anti-fraud and anti-money-laundering purposes under the <em>Anti-Money Laundering and Counter-Terrorism Financing Act 2006</em> (Cth) and the payment processor's own terms. Your ID photo is transmitted encrypted directly to the payment processor. Flea does not store a copy of the ID document itself. Verification is required before you can receive payouts, and payouts may be paused if the processor requires new information at any time.
+            </p>
+          </section>
+
+
+          <section className={SECTION}>
             <h2 className="text-base font-bold mb-2">9. Shipping, tracking and delivery</h2>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>Sellers must dispatch sold items within <strong>3 business days</strong> and add valid Australian carrier tracking. Items not shipped within 6 days are flagged as overdue and may be auto-refunded to the buyer.</li>
