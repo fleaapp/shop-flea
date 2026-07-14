@@ -41,6 +41,8 @@ project_id = "teaicrimlqdayqpmxasc"
     verify_jwt = false
   [functions.stripe-connect-status]
     verify_jwt = false
+  [functions.stripe-connect-dashboard]
+    verify_jwt = false
   [functions.stripe-webhook]
     verify_jwt = false
   [functions.contact-form-submit]
