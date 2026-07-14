@@ -26,11 +26,14 @@ import {
 } from '@/components/ui/select';
 import fleaLogo from '@/assets/flea-logo.png';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
+import IdVerificationStep from '@/components/IdVerificationStep';
 
 interface SellerOnboardingSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   stripeActionRequired?: boolean;
+  /** When true, opens directly on the live-camera ID verification step. */
+  needsIdVerification?: boolean;
   /** Where Stripe should redirect back to. Defaults to current page. */
   returnUrl?: string;
   onComplete?: () => void;
@@ -44,6 +47,7 @@ const SellerOnboardingSheet = ({
   open,
   onOpenChange,
   stripeActionRequired = false,
+  needsIdVerification = false,
   returnUrl,
   onComplete,
 }: SellerOnboardingSheetProps) => {
