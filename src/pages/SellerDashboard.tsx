@@ -148,7 +148,7 @@ const SellerDashboard = () => {
     !!data?.hasSucceededCharge &&
     available > 0;
   const canInstant =
-    canPayout && !!data?.instantPayoutEligible && instantAvailable > 0 && completedSalesCount >= 2;
+    canPayout && !!data?.instantPayoutEligible && instantAvailable > 0;
 
   const instantFee = Math.round(instantAvailable * 0.015);
   const instantNet = Math.max(instantAvailable - instantFee, 0);
