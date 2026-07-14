@@ -187,7 +187,9 @@ const PaymentMethodsSection = () => {
   };
 
   const handleStripeRowClick = () => {
-    if (stripeFullyConnected || stripeDetailsSubmitted || stripeActionRequired) {
+    if (stripeActionRequired && needsIdDocument) {
+      setShowStripeOnboarding(true);
+    } else if (stripeFullyConnected || stripeDetailsSubmitted || stripeActionRequired) {
       openSellerDashboard();
     } else {
       handleConnectStripe();
