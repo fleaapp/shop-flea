@@ -1,146 +1,65 @@
+# Seller Dashboard, Payouts, Onboarding & Checkout Coupons
 
-# Consolidated Stripe Overhaul Plan
+All flows stay inside the Flea UI. No Stripe-hosted redirects or deep links. Controller-based Connect accounts are already in place, so platform-triggered instant payouts and native requirement collection are supported without any account migration.
 
-Everything we've discussed, reconciled and deduped.
+## 1. Checkout coupon codes
 
-## Decisions locked in
+**Backend**
+- New table `public.coupons`: `code` (unique, upper), `type` ('waive_buyer_fee'), `active`, `starts_at`, `expires_at`, `max_redemptions`, `redemption_count`, timestamps. GRANTs + RLS (read for authenticated, write for service_role only). Seed `FREEFLEA`.
+- New table `public.coupon_redemptions` (coupon_id, user_id, order_id) to prevent reuse abuse.
+- New edge function `validate-coupon` — accepts `{ code }`, returns `{ valid, type, message }`.
+- `create-payment-intent` (and PayPal equivalent) accept an optional `couponCode`; when valid + `waive_buyer_fee`, the 4% + $0.70 Secure Checkout Fee is set to 0 and the redemption is recorded on successful payment.
 
-1. **Fee model** — no percentage platform fee. Flea revenue = **Secure Checkout Fee (4% + $0.70)** paid by the buyer. `PLATFORM_FEE_RATE = 0`. Routed to Flea via `application_fee_amount` on the PaymentIntent. Update `mem://infrastructure/payment-model-and-fees` (currently says 7%).
-2. **Connect account type** — migrate to **Stripe Express**.
-3. **Seller dashboard** — build embedded, Depop-style. No Stripe branding, no external redirect. Includes read-only balance, payments and payouts history.
-4. **Payouts** — **manual instant payout button**, gated on verification. Seller taps to withdraw. Stripe's 1.5% instant payout fee is absorbed by the seller (Flea adds nothing on top). Default cadence stays `manual` — nothing moves automatically.
-5. **Existing sellers** — none in production except you; **hard reset** the `stripe_account_id` / `stripe_onboarding_complete` columns and re-onboard through the new flow. No migration notification.
-6. **Design** — keep current `SellerOnboardingSheet` shell (address autocomplete, `z-[100]` state dropdown, `max-w-[310px]` disclaimer, lime CTA, Inter). Body swaps to embedded Stripe components with Flea appearance tokens.
+**UI**
+- New `CouponInput` in the checkout screen above the fee summary: text field + Apply button, success/error states, removable chip when applied.
+- Fee row updates live to show `$0.00` with a strikethrough of the original fee when waived.
 
-## Architecture
+## 2. Seller Dashboard changes
 
-### Connect account (Express, application-controlled)
+**Header + Sales button**
+- Header stays centre-aligned (already done). Sales button matches the Profile page's Sales button exactly (same variant, size, badge).
 
-`stripe.accounts.create`:
-```ts
-controller: {
-  stripe_dashboard: { type: "none" },
-  fees: { payer: "application" },
-  losses: { payments: "application" },
-  requirement_collection: "application",
-},
-capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
-country: "AU",
-default_currency: "aud",
-settings: { payouts: { schedule: { interval: "manual" } } },
-```
+**Balance + payout primary button**
+- Replace the "Active / Connected" status pill with the seller's live available balance (from `stripe-connect-status`, returned as `available` + `pending`, formatted AUD).
+- Primary button next to the balance: **"Pay out"** (standard payout, free). Opens a native Flea confirmation sheet, calls a new `stripe-connect-payout` edge function which creates a Stripe payout on the connected account (standard speed, no fee).
+- Secondary button: **"Instant payout (1.5%)"**. Same native sheet with fee preview, calls `stripe-connect-payout` with `method: 'instant'`. Flea charges the 1.5% by reducing the payout amount (application-collected fee since we own `fees.payer`).
+- Both buttons are disabled with a subtle helper line ("Available after your first sale and full verification") until:
+  - `charges_enabled && payouts_enabled` on the connected account, AND
+  - at least one succeeded charge exists (Stripe requires this before instant payouts are eligible on most AU accounts).
+- Instant payout button is additionally hidden if Stripe reports `instant_payouts` capability is not active.
 
-`stripe_dashboard.type = "none"` means no Stripe-hosted login — sellers only ever see Flea's embedded UI.
+**Refresh on open**
+- Dashboard already refetches on mount; keep that behaviour and additionally refetch when the tab regains focus so balance updates after a sale.
 
-### Embedded Connect surfaces
+## 3. Seller onboarding entry point
 
-New `stripe-connect-account-session` edge function mints an `AccountSession` client secret enabling:
-- `account_onboarding`
-- `account_management`
-- `payments`
-- `payouts` with `features.instant_payouts: true`
-- `balances`
-- `notification_banner`
+- Rename the entry button so that once the user has any Stripe account: label is **"Seller Dashboard"** (already the case). Remove the "Active/Connected" secondary badge.
+- If `stripe-connect-status` returns `actionRequired` (any `currently_due`, `past_due`, or `disabled_reason`), show an **"Action required"** pill on the Seller Dashboard entry button, and gate listing creation:
+  - `ListItemPage` (or wherever "List item" is triggered) checks `stripe_onboarding_complete && !actionRequired`. If not, show a native sheet: "Finish verification to list items" with a button that opens `SellerOnboardingSheet` at the correct resume step.
 
-Frontend uses `@stripe/react-connect-js` + `@stripe/connect-js` with Flea appearance (lime primary, charcoal, Inter).
+## 4. Resume-in-place onboarding
 
-### Seller Dashboard route `/seller-dashboard`
+- Add `stripe_onboarding_step` (text, nullable) to `profiles`. Values: `intro | personal | address | dob | bank | id | review`.
+- `SellerOnboardingSheet` writes the current step to the profile on every step change (debounced).
+- On sheet mount, if a step is saved and onboarding isn't complete, resume at that step instead of the intro.
+- Clear the field when onboarding completes or the user explicitly cancels from the intro.
 
-Tabs (all embedded, styled inside Flea chrome):
-| Tab | Component | Notes |
-|---|---|---|
-| Payouts | `<ConnectPayouts />` | Includes Stripe's native instant payout CTA — this is our button. |
-| Balance | `<ConnectBalances />` | Available + pending. |
-| Payments | `<ConnectPayments />` | Per-order detail, refunds visible. |
+## 5. Post-onboarding native result popup
 
-Plus `<ConnectAccountManagement />` behind an "Update payout details" link (bank/card, personal info). `<ConnectNotificationBanner />` mounted at the top of the dashboard for any Stripe-side "action required" prompts.
+- When `SellerOnboardingSheet` closes after submitting the final step, open a native Flea `AlertDialog` on top of the dashboard behind it. Two variants driven by a fresh `stripe-connect-status` call:
+  - **Verified** — "You're verified and ready to list. Start selling." CTA → List an item.
+  - **Further verification needed** — "We need a bit more info to verify your identity." CTA → Reopens the sheet at the ID / requirement step. Uses the same reject-reason surfacing already built.
+- Uses the existing confirmation-dialog style (rounded-2xl, standard flea colours).
 
-### Manual instant payout
+## 6. Consistency
 
-Sellers tap the instant payout CTA inside `<ConnectPayouts />` (Stripe renders it because we enabled `features.instant_payouts`). We do **not** build a custom button — Stripe's own embedded UI shows balance, arrival time and 1.5% fee, then calls `stripe.payouts.create({ method: "instant" })` on the connected account. No auto-flush cron, no custom edge function for payouts.
+- All new sheets, buttons, dialogs and pills reuse the existing Flea tokens: lime primary, charcoal palette, Inter, `rounded-2xl`, `h-12` primary button, confirmation-dialog style. No hardcoded colours.
 
-Gating: button only appears when `charges_enabled && payouts_enabled` and an instant-eligible debit card is on file. The embedded component handles all of that logic itself.
+## Technical notes
 
-### Onboarding
-
-- Replace `SellerOnboardingSheet` body with `<ConnectAccountOnboarding />`.
-- Keep the shell exactly as-is (drawer style per `mem://style/layout/drawer-style`, address autocomplete unchanged, footer copy).
-- Stripe collects everything: identity, business type, external account (debit card for instant payouts).
-- On completion, we call `stripe-connect-status` to confirm and set `stripe_onboarding_complete = true`.
-
-### Hard reset SQL
-
-```sql
-update public.profiles
-set stripe_account_id = null,
-    stripe_onboarding_complete = false
-where stripe_account_id is not null;
-```
-
-### Fee flow (unchanged from current checkout, documented here)
-
-```
-buyer pays: subtotal + shipping + secureCheckoutFee (4% × subtotal + $0.70)
-PaymentIntent:
-  amount = subtotal + shipping + secureCheckoutFee
-  application_fee_amount = secureCheckoutFee     ← Flea revenue
-  on_behalf_of / transfer_data.destination = seller_acct
-  metadata.order_ids = [...]
-seller balance receives: subtotal + shipping − Stripe processing fees
-seller taps Instant Payout → 1.5% Stripe fee deducted from payout amount
-```
-
-## Files
-
-### New
-- `supabase/functions/stripe-connect-account-session/index.ts` — mints AccountSession per authenticated user.
-- `src/lib/stripe/connect.ts` — singleton `loadConnectAndInitialize` with Flea appearance tokens.
-- `src/components/stripe/FleaConnectProvider.tsx` — wraps children in `<ConnectComponentsProvider>`.
-- `src/components/stripe/EmbeddedOnboarding.tsx`
-- `src/components/stripe/EmbeddedPayouts.tsx`
-- `src/components/stripe/EmbeddedBalances.tsx`
-- `src/components/stripe/EmbeddedPayments.tsx`
-- `src/components/stripe/EmbeddedAccountManagement.tsx`
-- `src/pages/SellerDashboard.tsx` — tabs shell.
-
-### Modified
-- `supabase/functions/stripe-connect-onboard/index.ts` — Express + application controller, `payouts.schedule.interval = "manual"`, returns only `{ accountId }` (no hosted onboarding link).
-- `supabase/functions/stripe-connect-status/index.ts` — read `charges_enabled` / `payouts_enabled` / `requirements` from the new account shape.
-- `supabase/functions/stripe-webhook/index.ts` — handle `account.updated` to flip `stripe_onboarding_complete`, and `payout.paid` / `payout.failed` for notifications.
-- `supabase/config.toml` — register `stripe-connect-account-session` with `verify_jwt = false`.
-- `src/components/SellerOnboardingSheet.tsx` — swap body for `<EmbeddedOnboarding />`; keep shell, address autocomplete, `z-[100]` state dropdown, `max-w-[310px]` disclaimer, lime CTA.
-- `src/pages/Settings.tsx` — "Seller Dashboard" navigates to `/seller-dashboard` (in-app), remove `openInAppUrl('https://dashboard.stripe.com')`.
-- `src/components/PaymentMethodsSection.tsx` — Seller Dashboard row → in-app route; keep existing status pills (✅ Connected / 🔍 Pending review / ⚠️ Action required).
-- `src/components/SalesDetailsSheet.tsx` — remove custom "Instant Payout" button (Stripe's embedded UI provides it inside the dashboard); keep sale detail layout per `mem://style/layout/sale-details-payout-ui`.
-- `src/utils/feeCalculator.ts` — confirm `PLATFORM_FEE_RATE = 0`; Secure Checkout Fee `4% + $0.70` unchanged.
-- `src/components/FAQSection.tsx` — update fee wording to match (no 7%, mention 1.5% instant payout fee absorbed by seller).
-- `src/App.tsx` — add `/seller-dashboard` route inside `ProtectedRoute`.
-- `App.tsx` deep-link handler — no change needed (already handles auth callback).
-
-### Package installs
-- `@stripe/connect-js`
-- `@stripe/react-connect-js`
-
-### Memory updates after ship
-- `mem://infrastructure/payment-model-and-fees` — 4% + $0.70 Secure Checkout Fee, no 7% platform fee, 1.5% instant payout fee absorbed by seller.
-- `mem://infrastructure/stripe-connect-standard-config` → rename to `stripe-connect-express-config` and rewrite.
-- `mem://features/payment-connection-states` — refer to embedded surfaces, no more external Stripe dashboard.
-- `mem://style/layout/settings-page` — remove Stripe references.
-
-## Risks
-
-- **App Store review** — embedded Connect inside Capacitor WebView is standard for marketplace apps; low risk. Ensure no external `dashboard.stripe.com` link remains anywhere user-facing.
-- **`losses.payments = "application"`** — Flea is on the hook for disputes and negative balances. Accepted trade-off for the seamless UX you want.
-- **Instant payout not eligible** — Stripe's embedded UI handles the not-eligible messaging itself (asks seller to add a debit card). No custom copy needed.
-
-## Rollout — single ship
-
-1. Install packages.
-2. Hard-reset migration.
-3. Edge functions (`stripe-connect-account-session` new, `stripe-connect-onboard` / `stripe-connect-status` / `stripe-webhook` modified) + `config.toml`.
-4. Embedded components + `SellerDashboard` page + route.
-5. Swap `SellerOnboardingSheet` body.
-6. Update `Settings` + `PaymentMethodsSection` navigation.
-7. Remove custom instant-payout button from `SalesDetailsSheet`.
-8. FAQ + fee copy fixes.
-9. Re-onboard yourself through the new flow to verify end-to-end (charge, balance, instant payout to card).
+- **Edge functions**: `validate-coupon`, `stripe-connect-payout` (new); `create-payment-intent` and PayPal checkout updated to accept `couponCode`; `stripe-connect-status` extended to return `balance.available`, `balance.pending`, `instantPayoutEligible`, `hasSucceededCharge`.
+- **Migrations**: `coupons`, `coupon_redemptions` tables (with GRANTs + RLS); `profiles.stripe_onboarding_step` column; seed `FREEFLEA` via insert tool.
+- **Client**: new `CouponInput` component; `SellerDashboard` gets `BalanceHeader` with payout buttons; `SellerOnboardingSheet` resume logic + result dialog; listing-creation gate.
+- **No account migration** — controller-based accounts already handle everything natively.
+- **No deep links, no Stripe-hosted UI** anywhere in the flow.
+- **GST**: separate answer, not part of this plan.
