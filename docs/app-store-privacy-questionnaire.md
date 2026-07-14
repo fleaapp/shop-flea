@@ -48,7 +48,7 @@ Yes.
 - **Precise Location** — only coarse / IP-based region detection is used.
 - **Credit Info / Other Financial Info** — not collected.
 - **Health & Fitness** — not applicable.
-- **Sensitive Info** — not collected.
+- **Sensitive Info (general)** — only collected as Government ID above, and only when Stripe explicitly requires it. Never used for advertising, analytics, or tracking.
 - **Contacts** — app does not read the device address book.
 - **Emails or Text Messages** — app does not read user email or SMS.
 - **Audio Data** — not collected.
