@@ -117,15 +117,15 @@ const IdVerificationStep = ({ onBack, onDone }: IdVerificationStepProps) => {
     return (
       <>
         <SheetHeader className="space-y-2">
-          <SheetTitle className="text-lg">Verify your ID</SheetTitle>
+          <SheetTitle className="text-lg">Extra ID needed</SheetTitle>
         </SheetHeader>
-        <p className="text-sm text-muted-foreground text-pretty leading-relaxed max-w-[300px] mx-auto">
-          To keep Flea safe, our payment provider needs a photo of your government ID.
+        <p className="text-sm text-muted-foreground text-pretty leading-relaxed max-w-[320px] mx-auto">
+          Our payment provider needs one more document to finish verifying your identity. The details you gave earlier weren't enough on their own, so a clear photo of your government ID is required before your payouts can be unlocked.
         </p>
         <div className="w-full max-w-[340px] mx-auto flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/40 px-4 py-3 text-left">
           <ShieldCheck className="h-5 w-5 shrink-0 mt-0.5 text-foreground" />
           <p className="text-xs text-foreground/80 leading-relaxed">
-            You must take a live photo — uploads from your photo library are not accepted.
+            You must take a live photo. Uploads from your photo library are not accepted, to protect against fraud and fake IDs.
           </p>
         </div>
         <div className="w-full max-w-[300px] mx-auto space-y-2 mt-2">
@@ -135,7 +135,7 @@ const IdVerificationStep = ({ onBack, onDone }: IdVerificationStepProps) => {
           >
             <div>
               <div className="text-[15px] font-semibold text-foreground">Passport</div>
-              <div className="text-xs text-muted-foreground mt-0.5">1 photo — photo page</div>
+              <div className="text-xs text-muted-foreground mt-0.5">1 photo of the photo page</div>
             </div>
             <span aria-hidden className="text-xl">📘</span>
           </button>
@@ -145,7 +145,7 @@ const IdVerificationStep = ({ onBack, onDone }: IdVerificationStepProps) => {
           >
             <div>
               <div className="text-[15px] font-semibold text-foreground">Driver's licence</div>
-              <div className="text-xs text-muted-foreground mt-0.5">2 photos — front and back</div>
+              <div className="text-xs text-muted-foreground mt-0.5">2 photos, front and back</div>
             </div>
             <span aria-hidden className="text-xl">🪪</span>
           </button>
