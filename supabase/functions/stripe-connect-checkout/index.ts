@@ -325,16 +325,8 @@ serve(async (req) => {
           user_id: user.id,
           checkout_reference: session.id,
         });
-        // Best-effort increment via raw REST to avoid PostgREST cache misses
-        await fetch(`${Deno.env.get("EXTERNAL_SUPABASE_URL")}/rest/v1/rpc/pgrst_bump_coupon`, {
-          method: "POST",
-          headers: {
-            apikey: Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "",
-            Authorization: `Bearer ${Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? ""}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ p_id: appliedCoupon.id }),
-        }).catch(() => {});
+        // redemption_count can be derived from coupon_redemptions if we ever
+        // need caps. Skipped here to avoid schema-cache issues.
       } catch (e) {
         console.warn("[stripe-connect-checkout] coupon redemption record failed:", (e as any)?.message);
       }
