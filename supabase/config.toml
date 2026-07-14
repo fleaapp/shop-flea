@@ -35,6 +35,8 @@ project_id = "teaicrimlqdayqpmxasc"
     verify_jwt = false
   [functions.stripe-connect-onboard]
     verify_jwt = false
+  [functions.stripe-connect-add-bank]
+    verify_jwt = false
   [functions.stripe-connect-refund]
     verify_jwt = false
   [functions.stripe-connect-status]
