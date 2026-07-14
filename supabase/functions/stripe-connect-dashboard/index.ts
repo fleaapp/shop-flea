@@ -84,9 +84,11 @@ serve(async (req) => {
 
     const stripe = new Stripe(getStripeSecretKey(), { apiVersion: "2025-08-27.basil" });
 
-    const [balance, payouts] = await Promise.all([
+    const [balance, payouts, account, charges] = await Promise.all([
       stripe.balance.retrieve({ stripeAccount: accountId }),
       stripe.payouts.list({ limit: 10 }, { stripeAccount: accountId }),
+      stripe.accounts.retrieve(accountId),
+      stripe.charges.list({ limit: 1 }, { stripeAccount: accountId }).catch(() => ({ data: [] as any[] })),
     ]);
 
     const currency = (balance.available?.[0]?.currency || balance.pending?.[0]?.currency || "aud").toLowerCase();
@@ -99,6 +101,12 @@ serve(async (req) => {
 
     const nextPayout = payouts.data.find((p) => p.status === "pending" || p.status === "in_transit") ?? null;
 
+    const chargesEnabled = !!account.charges_enabled;
+    const payoutsEnabled = !!account.payouts_enabled;
+    const hasSucceededCharge = (charges as any).data?.some?.((c: any) => c.status === "succeeded") ?? false;
+    const capabilities: any = account.capabilities || {};
+    const instantPayoutEligible = capabilities.instant_payouts === "active" || instantAvailable > 0;
+
     return new Response(
       JSON.stringify({
         connected: true,
@@ -106,6 +114,10 @@ serve(async (req) => {
         available,
         pending,
         instantAvailable,
+        chargesEnabled,
+        payoutsEnabled,
+        hasSucceededCharge,
+        instantPayoutEligible,
         nextPayout: nextPayout
           ? {
               amount: nextPayout.amount,
