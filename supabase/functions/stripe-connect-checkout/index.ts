@@ -36,7 +36,7 @@ serve(async (req) => {
       });
     }
 
-    const { items, shipping } = await req.json();
+    const { items, shipping, couponCode } = await req.json();
 
     if (!items || !items.length) throw new Error("No items provided");
 
@@ -160,7 +160,31 @@ serve(async (req) => {
     // from it (funded out of application_fee_amount).
     const SECURE_CHECKOUT_RATE = 0.04;
     const SECURE_CHECKOUT_FIXED = 0.70;
-    const secureCheckoutFee = Math.round((subtotal * SECURE_CHECKOUT_RATE + SECURE_CHECKOUT_FIXED) * 100) / 100;
+    let secureCheckoutFee = Math.round((subtotal * SECURE_CHECKOUT_RATE + SECURE_CHECKOUT_FIXED) * 100) / 100;
+
+    // Coupon: waive buyer fee if valid.
+    let appliedCoupon: { id: string; code: string; type: string } | null = null;
+    const normalizedCode = String(couponCode || "").trim().toUpperCase();
+    if (normalizedCode) {
+      const { data: c } = await serviceClient
+        .from("coupons")
+        .select("id, code, type, active, starts_at, expires_at, max_redemptions, redemption_count")
+        .eq("code", normalizedCode)
+        .maybeSingle();
+      const now = Date.now();
+      if (
+        c && c.active &&
+        (!c.starts_at || new Date(c.starts_at).getTime() <= now) &&
+        (!c.expires_at || new Date(c.expires_at).getTime() >= now) &&
+        (c.max_redemptions === null || c.redemption_count < c.max_redemptions)
+      ) {
+        if (c.type === "waive_buyer_fee") {
+          secureCheckoutFee = 0;
+        }
+        appliedCoupon = { id: c.id, code: c.code, type: c.type };
+      }
+    }
+
     const buyerTotalDollars = subtotal + secureCheckoutFee;
 
     // No seller-side platform fee. Flea's take = the full Secure Checkout Fee
@@ -194,15 +218,17 @@ serve(async (req) => {
       });
     }
 
-    // Add buyer-paid Secure Checkout Fee as a line item
-    lineItems.push({
-      price_data: {
-        currency: "aud",
-        product_data: { name: `Secure Checkout Fee (${(SECURE_CHECKOUT_RATE * 100).toFixed(0)}% + $${SECURE_CHECKOUT_FIXED.toFixed(2)})` },
-        unit_amount: Math.round(secureCheckoutFee * 100),
-      },
-      quantity: 1,
-    });
+    // Add buyer-paid Secure Checkout Fee as a line item (skip if waived to $0)
+    if (secureCheckoutFee > 0) {
+      lineItems.push({
+        price_data: {
+          currency: "aud",
+          product_data: { name: `Secure Checkout Fee (${(SECURE_CHECKOUT_RATE * 100).toFixed(0)}% + $${SECURE_CHECKOUT_FIXED.toFixed(2)})` },
+          unit_amount: Math.round(secureCheckoutFee * 100),
+        },
+        quantity: 1,
+      });
+    }
 
     // Find or create Stripe customer
     const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
@@ -286,8 +312,25 @@ serve(async (req) => {
         secure_checkout_fee_aud: secureCheckoutFee.toFixed(2),
         buyer_total_aud: buyerTotalDollars.toFixed(2),
         flea_buyer_id: user.id,
+        ...(appliedCoupon ? { coupon_code: appliedCoupon.code, coupon_id: appliedCoupon.id } : {}),
       },
     }, { idempotencyKey });
+
+    // Record redemption (best-effort). Unique constraint on (coupon_id, checkout_reference)
+    // prevents double-counting if the same session is retried.
+    if (appliedCoupon) {
+      try {
+        await serviceClient.from("coupon_redemptions").insert({
+          coupon_id: appliedCoupon.id,
+          user_id: user.id,
+          checkout_reference: session.id,
+        });
+        // redemption_count can be derived from coupon_redemptions if we ever
+        // need caps. Skipped here to avoid schema-cache issues.
+      } catch (e) {
+        console.warn("[stripe-connect-checkout] coupon redemption record failed:", (e as any)?.message);
+      }
+    }
 
     return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

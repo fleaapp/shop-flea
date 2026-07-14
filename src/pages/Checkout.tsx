@@ -22,6 +22,7 @@ import { calculateFees } from '@/utils/feeCalculator';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import { useBuyerAddress } from '@/hooks/useBuyerAddress';
 import SecureCheckoutInfoPopover from '@/components/SecureCheckoutInfoPopover';
+import CouponInput, { AppliedCoupon } from '@/components/CouponInput';
 
 // Apple App Review demo account — bypasses the seller-Stripe-connected check
 // so the reviewer can complete a purchase against demo listings.
@@ -55,6 +56,7 @@ const Checkout = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [open, setOpen] = useState(true);
   const [sellerSettings, setSellerSettings] = useState<Map<string, SellerShippingInfo>>(new Map());
+  const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
 
   // Shipping details — backed by `buyer_addresses` table (RLS), with
   // localStorage as a fast first-paint cache so the form pre-fills instantly.
@@ -179,11 +181,13 @@ const Checkout = () => {
   // Single source of truth for fees — see src/utils/feeCalculator.ts
   const itemsTotal = validItems.reduce((sum: number, item: any) => sum + item.price, 0);
   const subtotal = itemsTotal + totalShipping;
-  const fees = selectedRail
+  const rawFees = selectedRail
     ? calculateFees(itemsTotal, totalShipping, 'stripe')
     : { processingFee: 0, buyerTotal: subtotal, rateLabel: '' };
-  const processingFee = fees.processingFee;
-  const total = fees.buyerTotal;
+  const feeWaived = coupon?.type === 'waive_buyer_fee';
+  const processingFee = feeWaived ? 0 : rawFees.processingFee;
+  const originalFee = rawFees.processingFee;
+  const total = subtotal + processingFee;
   
   const isShippingComplete = shippingFirstName.trim() && shippingLastName.trim() && shippingAddress.trim() && shippingSuburb.trim() && shippingState.trim() && shippingPostcode.trim();
   
@@ -250,6 +254,7 @@ const Checkout = () => {
           image: item.image,
         })),
         shipping: totalShipping,
+        couponCode: coupon?.code ?? null,
       });
 
       if (error) throw error;
@@ -321,15 +326,27 @@ const Checkout = () => {
                 })()}
               </div>
               
+              {/* Coupon input */}
+              <div className="px-4 py-3 border-t border-border">
+                <CouponInput value={coupon} onChange={setCoupon} />
+              </div>
+
               {/* Fee line */}
               <div className="flex justify-between text-sm px-4 py-3 border-t border-border">
                 <span className="text-muted-foreground inline-flex items-center gap-1.5">
-                  Secure Checkout Fee ({fees.rateLabel})
+                  Secure Checkout Fee ({rawFees.rateLabel})
                   <SecureCheckoutInfoPopover />
                 </span>
-                <span className="text-muted-foreground">+ ${processingFee.toFixed(2)}</span>
+                {feeWaived ? (
+                  <span className="text-charcoal font-medium">
+                    <span className="line-through text-muted-foreground mr-1.5">+ ${originalFee.toFixed(2)}</span>
+                    $0.00
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">+ ${processingFee.toFixed(2)}</span>
+                )}
               </div>
-              
+
               {/* Total */}
               <div className="flex items-center justify-center bg-charcoal text-white py-3 px-4">
                 <span className="font-medium">Total payment: ${total.toFixed(2)}</span>

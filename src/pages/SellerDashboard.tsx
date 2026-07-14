@@ -6,6 +6,17 @@ import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { useOrders } from '@/hooks/useOrders';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 type PayoutRow = {
   id: string;
@@ -23,6 +34,10 @@ type DashboardData = {
   available?: number;
   pending?: number;
   instantAvailable?: number;
+  chargesEnabled?: boolean;
+  payoutsEnabled?: boolean;
+  hasSucceededCharge?: boolean;
+  instantPayoutEligible?: boolean;
   nextPayout?: { amount: number; arrivalDate: number; status: string } | null;
   payouts?: PayoutRow[];
 };
@@ -72,8 +87,9 @@ const SellerDashboard = () => {
   const { profile } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [payoutLoading, setPayoutLoading] = useState<null | 'standard' | 'instant'>(null);
+  const [confirm, setConfirm] = useState<null | 'standard' | 'instant'>(null);
 
   const { sellerOrderGroups } = useOrders();
   const { perOrder } = useUnreadOrderMessages();
@@ -90,9 +106,7 @@ const SellerDashboard = () => {
     !(profile as any)?.stripe_account_id ||
     (profile as any)?.stripe_onboarding_complete !== true;
 
-  const load = async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+  const load = async () => {
     setError(null);
     try {
       const { data: res, error: err } = await invokeCloudFunction(
@@ -105,15 +119,59 @@ const SellerDashboard = () => {
       setError(e?.message || 'Something went wrong.');
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
   useEffect(() => {
     if (!notOnboarded) load();
     else setLoading(false);
+    // Refresh when tab regains focus so balance updates after a sale
+    const onFocus = () => { if (!notOnboarded) load(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notOnboarded]);
+
+  const currency = data?.currency ?? 'aud';
+  const available = data?.available ?? 0;
+  const instantAvailable = data?.instantAvailable ?? 0;
+  const canPayout =
+    !!data?.chargesEnabled &&
+    !!data?.payoutsEnabled &&
+    !!data?.hasSucceededCharge &&
+    available > 0;
+  const canInstant =
+    canPayout && !!data?.instantPayoutEligible && instantAvailable > 0;
+
+  const instantFee = Math.round(instantAvailable * 0.015);
+  const instantNet = Math.max(instantAvailable - instantFee, 0);
+
+  const handlePayout = async (method: 'standard' | 'instant') => {
+    setConfirm(null);
+    setPayoutLoading(method);
+    try {
+      const { data: res, error: err } = await invokeCloudFunction(
+        'stripe-connect-payout',
+        { method }
+      );
+      if (err) throw new Error(err.message || 'Payout failed');
+      if ((res as any)?.error) throw new Error((res as any).error);
+      toast.success(
+        method === 'instant'
+          ? 'Instant payout sent. Funds usually arrive within 30 minutes.'
+          : 'Payout on the way. Funds usually arrive in 1-2 business days.'
+      );
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || 'Payout failed. Please try again.');
+    } finally {
+      setPayoutLoading(null);
+    }
+  };
 
   return (
     <div className="min-h-svh bg-background flex flex-col">
@@ -163,16 +221,43 @@ const SellerDashboard = () => {
           </div>
         ) : (
           <>
-            {/* Available balance card */}
+            {/* Available balance + payout actions */}
             <section className="rounded-2xl bg-primary/60 p-5 mt-2">
               <div className="text-xs font-medium text-charcoal/70 uppercase tracking-wide">
                 Available balance
               </div>
               <div className="text-[34px] font-bold text-charcoal leading-tight mt-1">
-                {fmtMoney(data?.available ?? 0, data?.currency)}
+                {fmtMoney(available, currency)}
               </div>
-              <div className="text-[13px] text-charcoal/70 mt-1">
-                Ready to pay out to your bank.
+              <div className="flex flex-col gap-2 mt-4">
+                <Button
+                  onClick={() => setConfirm('standard')}
+                  disabled={!canPayout || payoutLoading !== null}
+                  className="h-12 rounded-xl bg-charcoal text-white hover:bg-charcoal/90 font-semibold disabled:opacity-50"
+                >
+                  {payoutLoading === 'standard' ? (
+                    <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Paying out...</span>
+                  ) : (
+                    'Pay out to bank'
+                  )}
+                </Button>
+                <Button
+                  onClick={() => setConfirm('instant')}
+                  disabled={!canInstant || payoutLoading !== null}
+                  variant="outline"
+                  className="h-11 rounded-xl border-2 border-charcoal bg-transparent text-charcoal hover:bg-charcoal/5 font-semibold disabled:opacity-50"
+                >
+                  {payoutLoading === 'instant' ? (
+                    <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Sending...</span>
+                  ) : (
+                    <>Instant payout <span className="ml-1 text-[13px] font-normal">(1.5% fee)</span></>
+                  )}
+                </Button>
+                {!canPayout && (
+                  <p className="text-[11px] text-charcoal/70 text-center mt-1">
+                    Payouts unlock after your first sale and full verification.
+                  </p>
+                )}
               </div>
             </section>
 
@@ -185,7 +270,7 @@ const SellerDashboard = () => {
                 </div>
               </div>
               <div className="text-base font-semibold text-foreground">
-                {fmtMoney(data?.pending ?? 0, data?.currency)}
+                {fmtMoney(data?.pending ?? 0, currency)}
               </div>
             </section>
 
@@ -198,7 +283,7 @@ const SellerDashboard = () => {
                     Arriving {fmtDate(data.nextPayout.arrivalDate)}
                   </div>
                   <div className="text-base font-semibold text-foreground">
-                    {fmtMoney(data.nextPayout.amount, data?.currency)}
+                    {fmtMoney(data.nextPayout.amount, currency)}
                   </div>
                 </div>
               </section>
@@ -219,7 +304,7 @@ const SellerDashboard = () => {
                     <li key={p.id} className="flex items-center justify-between px-4 py-3">
                       <div className="min-w-0">
                         <div className="text-[14px] font-medium text-foreground">
-                          {fmtMoney(p.amount, data?.currency)}
+                          {fmtMoney(p.amount, currency)}
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-0.5">
                           {fmtDate(p.arrivalDate || p.created)}
@@ -236,14 +321,43 @@ const SellerDashboard = () => {
                   ))}
                 </ul>
               )}
-              <p className="text-[11px] text-muted-foreground text-center mt-3 px-6">
-                Payouts arrive in your linked bank account. Instant payouts are available from
-                your sale details for a 1.5% fee.
-              </p>
             </section>
           </>
         )}
       </main>
+
+      <AlertDialog open={confirm !== null} onOpenChange={(o) => !o && setConfirm(null)}>
+        <AlertDialogContent className="max-w-[320px] rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirm === 'instant' ? 'Send instant payout?' : 'Pay out to your bank?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-[13px] leading-relaxed">
+              {confirm === 'instant' ? (
+                <>
+                  {fmtMoney(instantAvailable, currency)} available for instant payout.
+                  {' '}A 1.5% Flea fee ({fmtMoney(instantFee, currency)}) will be deducted.
+                  <br />
+                  <span className="font-medium text-foreground">You'll receive {fmtMoney(instantNet, currency)}</span>, usually within 30 minutes.
+                </>
+              ) : (
+                <>
+                  {fmtMoney(available, currency)} will be sent to your linked bank account. No fees. Funds usually arrive in 1-2 business days.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel className="flex-1 h-9 rounded-lg mt-0">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="flex-1 h-9 rounded-lg bg-charcoal text-white hover:bg-charcoal/90"
+              onClick={() => confirm && handlePayout(confirm)}
+            >
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
