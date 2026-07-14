@@ -87,8 +87,14 @@ serve(async (req) => {
       } as any,
     });
 
+    const publishableKey = Deno.env.get("STRIPE_PUBLISHABLE_KEY") ?? "";
+
     return new Response(
-      JSON.stringify({ clientSecret: accountSession.client_secret, accountId }),
+      JSON.stringify({
+        clientSecret: accountSession.client_secret,
+        publishableKey,
+        accountId,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (err) {
