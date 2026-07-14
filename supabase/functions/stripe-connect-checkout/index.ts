@@ -36,7 +36,7 @@ serve(async (req) => {
       });
     }
 
-    const { items, shipping } = await req.json();
+    const { items, shipping, couponCode } = await req.json();
 
     if (!items || !items.length) throw new Error("No items provided");
 
@@ -160,7 +160,31 @@ serve(async (req) => {
     // from it (funded out of application_fee_amount).
     const SECURE_CHECKOUT_RATE = 0.04;
     const SECURE_CHECKOUT_FIXED = 0.70;
-    const secureCheckoutFee = Math.round((subtotal * SECURE_CHECKOUT_RATE + SECURE_CHECKOUT_FIXED) * 100) / 100;
+    let secureCheckoutFee = Math.round((subtotal * SECURE_CHECKOUT_RATE + SECURE_CHECKOUT_FIXED) * 100) / 100;
+
+    // Coupon: waive buyer fee if valid.
+    let appliedCoupon: { id: string; code: string; type: string } | null = null;
+    const normalizedCode = String(couponCode || "").trim().toUpperCase();
+    if (normalizedCode) {
+      const { data: c } = await serviceClient
+        .from("coupons")
+        .select("id, code, type, active, starts_at, expires_at, max_redemptions, redemption_count")
+        .eq("code", normalizedCode)
+        .maybeSingle();
+      const now = Date.now();
+      if (
+        c && c.active &&
+        (!c.starts_at || new Date(c.starts_at).getTime() <= now) &&
+        (!c.expires_at || new Date(c.expires_at).getTime() >= now) &&
+        (c.max_redemptions === null || c.redemption_count < c.max_redemptions)
+      ) {
+        if (c.type === "waive_buyer_fee") {
+          secureCheckoutFee = 0;
+        }
+        appliedCoupon = { id: c.id, code: c.code, type: c.type };
+      }
+    }
+
     const buyerTotalDollars = subtotal + secureCheckoutFee;
 
     // No seller-side platform fee. Flea's take = the full Secure Checkout Fee
