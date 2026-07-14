@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { authStorage } from "@/lib/authStorage";
 
 function isIosRuntime(): boolean {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
