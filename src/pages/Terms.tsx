@@ -138,7 +138,7 @@ const Terms = () => {
 
 
           <section className={SECTION}>
-            <h2 className="text-base font-bold mb-2">9. Shipping, tracking and delivery</h2>
+            <h2 className="text-base font-bold mb-2">10. Shipping, tracking and delivery</h2>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>Sellers must dispatch sold items within <strong>3 business days</strong> and add valid Australian carrier tracking. Items not shipped within 6 days are flagged as overdue and may be auto-refunded to the buyer.</li>
               <li>Tracking is supported only for Australian carriers integrated with the Platform.</li>
@@ -148,7 +148,7 @@ const Terms = () => {
           </section>
 
           <section className={SECTION}>
-            <h2 className="text-base font-bold mb-2">10. Refunds, returns and disputes</h2>
+            <h2 className="text-base font-bold mb-2">11. Refunds, returns and disputes</h2>
             <p>
               Buyers may request a refund through the order chat within <strong>10 days of delivery</strong> if the item is significantly not as described, damaged in transit, or never arrived. Sellers should respond promptly. Where a seller and buyer cannot resolve a dispute, Flea may, at its sole discretion, assist and issue a refund (in whole or in part) from the seller's payout, but is not obliged to do so except where the Australian Consumer Law requires it.
             </p>
@@ -161,7 +161,7 @@ const Terms = () => {
           </section>
 
           <section className={SECTION}>
-            <h2 className="text-base font-bold mb-2">11. Reviews, comments and user content</h2>
+            <h2 className="text-base font-bold mb-2">12. Reviews, comments and user content</h2>
             <p>
               You retain ownership of the photos, videos, descriptions, comments, reviews and messages you post ("<strong>User Content</strong>"). You grant Flea a worldwide, non-exclusive, royalty-free, sublicensable licence to host, store, reproduce, modify (for formatting), display and distribute your User Content for the purpose of operating, promoting and improving the Platform. You warrant that your User Content does not infringe the rights of any third party and is not misleading or deceptive.
             </p>
@@ -171,7 +171,7 @@ const Terms = () => {
           </section>
 
           <section className={SECTION}>
-            <h2 className="text-base font-bold mb-2">12. Notifications and communications</h2>
+            <h2 className="text-base font-bold mb-2">13. Notifications and communications</h2>
             <p>
               By creating an account, you consent to receive transactional communications from us — including order updates, shipping reminders, payment alerts, security notices, refund updates and replies to your support requests — by in-app notification, push notification, email or SMS. These are necessary for the operation of your account and you cannot opt out while you have an active account, although you can disable push notifications via your device settings.
             </p>
@@ -181,7 +181,7 @@ const Terms = () => {
           </section>
 
           <section className={SECTION}>
-            <h2 className="text-base font-bold mb-2">13. Pausing, suspending or terminating your account</h2>
+            <h2 className="text-base font-bold mb-2">14. Pausing, suspending or terminating your account</h2>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>You may pause selling, log out, or request account deletion at any time via <em>Settings</em>.</li>
               <li>Account deletion is only available once you have no outstanding (non-delivered) orders and at least 14 days have passed since your most recent delivery, so that any refund or dispute window has closed.</li>
@@ -191,14 +191,14 @@ const Terms = () => {
           </section>
 
           <section className={SECTION}>
-            <h2 className="text-base font-bold mb-2">14. Intellectual property</h2>
+            <h2 className="text-base font-bold mb-2">15. Intellectual property</h2>
             <p>
               The Platform, including its name, logos, design, software, illustrations and content (other than User Content) is owned by Flea or its licensors and protected by intellectual property laws. We grant you a limited, personal, non-exclusive, non-transferable, revocable licence to use the Platform for its intended purpose. All other rights are reserved.
             </p>
           </section>
 
           <section className={SECTION}>
-            <h2 className="text-base font-bold mb-2">15. Disclaimers and liability</h2>
+            <h2 className="text-base font-bold mb-2">16. Disclaimers and liability</h2>
             <p>
               The Platform is provided "as is" and "as available". To the maximum extent permitted by law, we exclude all warranties not expressly set out in these Terms. We do not guarantee that the Platform will be uninterrupted, error-free, secure against attack, or that listings or other users will meet your expectations.
             </p>
@@ -211,28 +211,28 @@ const Terms = () => {
           </section>
 
           <section className={SECTION}>
-            <h2 className="text-base font-bold mb-2">16. Indemnity</h2>
+            <h2 className="text-base font-bold mb-2">17. Indemnity</h2>
             <p>
               You agree to indemnify and hold Flea, its officers, employees and contractors harmless from any claim, loss, damage, cost or expense (including reasonable legal fees) arising out of or in connection with: (a) your breach of these Terms; (b) your User Content; (c) your sale, purchase or use of any item listed on the Platform; or (d) your breach of any law or third-party right.
             </p>
           </section>
 
           <section className={SECTION}>
-            <h2 className="text-base font-bold mb-2">17. Changes to these Terms</h2>
+            <h2 className="text-base font-bold mb-2">18. Changes to these Terms</h2>
             <p>
               We may update these Terms from time to time. If we make a material change, we will give you reasonable notice (for example, by in-app banner, push or email) before the change takes effect. Your continued use of the Platform after the change takes effect means you accept the updated Terms. If you do not agree, you must stop using the Platform and may delete your account.
             </p>
           </section>
 
           <section className={SECTION}>
-            <h2 className="text-base font-bold mb-2">18. Governing law and disputes</h2>
+            <h2 className="text-base font-bold mb-2">19. Governing law and disputes</h2>
             <p>
               These Terms are governed by the laws of New South Wales, Australia. You and Flea submit to the non-exclusive jurisdiction of the courts of New South Wales and the Commonwealth of Australia. Before commencing any court action, you agree to first contact us at <a href="mailto:hello@finditonflea.com" className="underline">hello@finditonflea.com</a> and attempt in good faith to resolve the dispute.
             </p>
           </section>
 
           <section className={SECTION}>
-            <h2 className="text-base font-bold mb-2">19. Contact</h2>
+            <h2 className="text-base font-bold mb-2">20. Contact</h2>
             <p>
               Questions about these Terms? Contact us at <a href="mailto:hello@finditonflea.com" className="underline">hello@finditonflea.com</a> or via <em>Settings → Help Centre → Contact Support</em>.
             </p>
