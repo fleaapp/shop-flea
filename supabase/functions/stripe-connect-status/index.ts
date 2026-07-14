@@ -44,6 +44,33 @@ async function persistStripeStatus(userId: string, accountId: string) {
   }
 }
 
+async function clearStripeStatus(userId: string) {
+  const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '';
+  const serviceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+  const response = await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
+    method: 'PATCH',
+    headers: {
+      'apikey': serviceKey,
+      'Authorization': `Bearer ${serviceKey}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal',
+    },
+    body: JSON.stringify({ stripe_account_id: null, stripe_onboarding_complete: false }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    console.error(`[stripe-connect-status] Failed to clear stale Stripe status: ${response.status} ${text}`);
+  }
+}
+
+function isAppleReviewProfile(profile: any) {
+  const username = String(profile?.username ?? '').toLowerCase();
+  const email = String(profile?.email ?? '').toLowerCase();
+  return username === '@applereview' || email === 'appreview@finditonflea.com';
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -93,6 +120,7 @@ serve(async (req) => {
 
     let accountId = stripeAccountId;
     let lookupUserId = userId;
+    let lookupProfile: any = null;
 
     // If checking a different seller (e.g. from checkout flow), fetch their profile via service role
     if (sellerUserId && sellerUserId !== userId) {
@@ -100,20 +128,41 @@ serve(async (req) => {
       const serviceClient = createClient(externalUrl, serviceKey);
       const { data: sellerProfile } = await serviceClient
         .from('profiles')
-        .select('stripe_account_id')
+        .select('stripe_account_id, username, email')
         .eq('user_id', sellerUserId)
         .single();
 
       if (!accountId && sellerProfile?.stripe_account_id) {
         accountId = sellerProfile.stripe_account_id;
       }
+      lookupProfile = sellerProfile;
       lookupUserId = sellerUserId;
+    } else {
+      const serviceClient = createClient(externalUrl, serviceKey);
+      const { data: ownProfile } = await serviceClient
+        .from('profiles')
+        .select('stripe_account_id, username, email')
+        .eq('user_id', lookupUserId)
+        .single();
+      lookupProfile = ownProfile;
+      if (!accountId && ownProfile?.stripe_account_id) {
+        accountId = ownProfile.stripe_account_id;
+      }
     }
 
     // -------- DEMO BYPASS (Apple App Review) --------
     // Demo accounts use synthetic IDs like `acct_demo_*`. Never call Stripe
     // for these — return a fully-verified state so the reviewer can list/buy.
     if (accountId && accountId.startsWith('acct_demo_')) {
+      if (!isAppleReviewProfile(lookupProfile)) {
+        console.warn(`[stripe-connect-status] Clearing non-review synthetic account ${accountId} for user ${lookupUserId}`);
+        await clearStripeStatus(lookupUserId);
+        return new Response(
+          JSON.stringify({ chargesEnabled: false, detailsSubmitted: false, payoutsEnabled: false, accountId: null, accountExists: false }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
+
       await persistStripeStatus(lookupUserId, accountId);
       return new Response(
         JSON.stringify({
