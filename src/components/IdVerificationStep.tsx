@@ -89,6 +89,7 @@ const IdVerificationStep = ({ onBack, onDone, onEditName, verificationError }: I
       const dataUrl = `data:image/${photo.format || 'jpeg'};base64,${b64}`;
       if (side === 'front') setFront(dataUrl);
       else setBack(dataUrl);
+      track('id_verification_captured', { side, docType });
     } catch (err: any) {
       const msg = err?.message || '';
       if (!/cancel/i.test(msg)) toast.error(msg || 'Camera unavailable.');
@@ -158,6 +159,7 @@ const IdVerificationStep = ({ onBack, onDone, onEditName, verificationError }: I
     }
     if (!front) return;
     setSubmitting(true);
+    track('id_verification_uploaded', { docType });
     try {
       const frontCompressed = await compressDataUrl(front);
       const backCompressed = docType === 'licence' && back ? await compressDataUrl(back) : undefined;
@@ -168,10 +170,12 @@ const IdVerificationStep = ({ onBack, onDone, onEditName, verificationError }: I
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
+      track('id_verification_submitted', { docType });
       toast.success('ID submitted for verification.');
       onDone();
     } catch (err: any) {
       console.error('upload-id error:', err);
+      track('id_verification_stripe_rejected', { message: err?.message ?? null });
       toast.error(err?.message || 'Could not submit ID. Please try again.');
     } finally {
       setSubmitting(false);
@@ -188,12 +192,59 @@ const IdVerificationStep = ({ onBack, onDone, onEditName, verificationError }: I
         <p className="text-sm text-muted-foreground text-pretty leading-relaxed max-w-[320px] mx-auto">
           Our payment provider needs one more document to finish verifying your identity. The details you gave earlier weren't enough on their own, so a clear photo of your government ID is required before your payouts can be unlocked.
         </p>
+
+        {rejectMessage && (
+          <div className="w-full max-w-[340px] mx-auto flex items-start gap-3 rounded-2xl border border-orange-300/60 bg-orange-50 dark:bg-orange-950/30 px-4 py-3 text-left">
+            <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5 text-orange-600" />
+            <p className="text-xs text-foreground/90 leading-relaxed">
+              {rejectMessage}
+            </p>
+          </div>
+        )}
+
+        {isNameMismatch && onEditName && (
+          <button
+            type="button"
+            onClick={() => {
+              track('id_verification_edit_name_opened');
+              onEditName();
+            }}
+            className="w-full max-w-[340px] mx-auto flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 text-left active:bg-muted/60"
+          >
+            <div>
+              <div className="text-[14px] font-semibold text-foreground">My name doesn't match my ID</div>
+              <div className="text-[11px] text-muted-foreground mt-0.5">Edit your legal name, then upload again.</div>
+            </div>
+            <span aria-hidden className="text-lg">✏️</span>
+          </button>
+        )}
+
         <div className="w-full max-w-[340px] mx-auto flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/40 px-4 py-3 text-left">
           <ShieldCheck className="h-5 w-5 shrink-0 mt-0.5 text-foreground" />
           <p className="text-xs text-foreground/80 leading-relaxed">
             You must take a live photo. Uploads from your photo library are not accepted, to protect against fraud and fake IDs.
           </p>
         </div>
+
+        {/* Apple review-friendly: explain up front why we ask for ID. */}
+        <button
+          type="button"
+          onClick={() => setShowWhy((v) => !v)}
+          className="w-full max-w-[340px] mx-auto flex items-center justify-between rounded-2xl border border-border/60 bg-muted/30 px-4 py-3 text-left"
+          aria-expanded={showWhy}
+        >
+          <div className="flex items-center gap-2">
+            <HelpCircle className="h-4 w-4 text-foreground" />
+            <span className="text-[13px] font-medium text-foreground">Why do we need this?</span>
+          </div>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${showWhy ? 'rotate-180' : ''}`} />
+        </button>
+        {showWhy && (
+          <p className="w-full max-w-[340px] mx-auto text-xs text-muted-foreground leading-relaxed text-left -mt-2">
+            Australian law requires our payment provider to verify the identity of anyone receiving payouts. This protects buyers from fraud and keeps the marketplace safe. Your ID is sent encrypted, straight to the payment provider, and Flea never stores a copy. If you'd rather not, you can close this screen — you just won't be able to sell until it's completed.
+          </p>
+        )}
+
         <div className="w-full max-w-[300px] mx-auto space-y-2 mt-2">
           <button
             onClick={() => setDocType('passport')}
