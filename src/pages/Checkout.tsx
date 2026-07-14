@@ -22,6 +22,7 @@ import { calculateFees } from '@/utils/feeCalculator';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import { useBuyerAddress } from '@/hooks/useBuyerAddress';
 import SecureCheckoutInfoPopover from '@/components/SecureCheckoutInfoPopover';
+import CouponInput, { AppliedCoupon } from '@/components/CouponInput';
 
 // Apple App Review demo account — bypasses the seller-Stripe-connected check
 // so the reviewer can complete a purchase against demo listings.
@@ -55,6 +56,7 @@ const Checkout = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [open, setOpen] = useState(true);
   const [sellerSettings, setSellerSettings] = useState<Map<string, SellerShippingInfo>>(new Map());
+  const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
 
   // Shipping details — backed by `buyer_addresses` table (RLS), with
   // localStorage as a fast first-paint cache so the form pre-fills instantly.
