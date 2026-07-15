@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { toast } from 'sonner';
-import { Pencil } from 'lucide-react';
+import { Pencil, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import applePayLogo from '@/assets/applepay-logo.png';
 import gPayLogo from '@/assets/gpay-logo.png';
@@ -23,6 +23,10 @@ import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import { useBuyerAddress } from '@/hooks/useBuyerAddress';
 import SecureCheckoutInfoPopover from '@/components/SecureCheckoutInfoPopover';
 import CouponInput, { AppliedCoupon } from '@/components/CouponInput';
+import PaymentMethodPicker, { SelectedPaymentMethod } from '@/components/checkout/PaymentMethodPicker';
+import CardDetailsSheet from '@/components/checkout/CardDetailsSheet';
+import WalletPaySheet from '@/components/checkout/WalletPaySheet';
+import { getStripe } from '@/lib/stripe/loadStripe';
 
 // Apple App Review demo account — bypasses the seller-Stripe-connected check
 // so the reviewer can complete a purchase against demo listings.
