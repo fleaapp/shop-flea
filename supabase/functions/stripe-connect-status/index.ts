@@ -33,7 +33,7 @@ async function persistStripeStatus(userId: string, accountId: string) {
       'Content-Type': 'application/json',
       'Prefer': 'return=minimal',
     },
-    body: JSON.stringify({ stripe_account_id: accountId, stripe_onboarding_complete: true }),
+    body: JSON.stringify({ stripe_account_id: accountId, stripe_onboarding_complete: true, stripe_onboarding_step: "complete" }),
   });
 
   if (!response.ok) {
@@ -56,7 +56,7 @@ async function clearStripeStatus(userId: string) {
       'Content-Type': 'application/json',
       'Prefer': 'return=minimal',
     },
-    body: JSON.stringify({ stripe_account_id: null, stripe_onboarding_complete: false }),
+    body: JSON.stringify({ stripe_account_id: null, stripe_onboarding_complete: false, stripe_onboarding_step: null }),
   });
 
   if (!response.ok) {

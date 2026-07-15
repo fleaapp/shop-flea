@@ -11,6 +11,7 @@ Deno.serve(async (req) => {
   try {
     const { username } = await req.json();
     if (!username) return json({ error: "username required" }, 400);
+    const normalizedUsername = String(username).trim().replace(/^@/, "");
 
     const url = Deno.env.get("EXTERNAL_SUPABASE_URL")!;
     const key = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY")!;
@@ -23,7 +24,7 @@ Deno.serve(async (req) => {
 
     // Find profile
     const lookup = await fetch(
-      `${url}/rest/v1/profiles?username=eq.${encodeURIComponent(username)}&select=user_id,username,stripe_account_id,stripe_onboarding_complete`,
+      `${url}/rest/v1/profiles?or=(username.eq.${encodeURIComponent(username)},username.eq.${encodeURIComponent(`@${normalizedUsername}`)},username.eq.${encodeURIComponent(normalizedUsername)})&select=user_id,username,stripe_account_id,stripe_onboarding_complete,stripe_onboarding_step`,
       { headers },
     );
     const rows = await lookup.json();
@@ -38,6 +39,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           stripe_account_id: null,
           stripe_onboarding_complete: false,
+          stripe_onboarding_step: null,
         }),
       },
     );

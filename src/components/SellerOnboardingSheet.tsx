@@ -38,7 +38,7 @@ interface SellerOnboardingSheetProps {
   verificationError?: { code: string | null; reason: string | null; nameMismatch: boolean } | null;
   /** Where Stripe should redirect back to. Defaults to current page. */
   returnUrl?: string;
-  onComplete?: () => void;
+  onComplete?: (result?: { setupCompleted?: boolean }) => void;
 }
 
 const TOTAL_STEPS = 5;
@@ -501,6 +501,10 @@ const BankDetailsStep = ({ firstName, lastName, onBack, onDone }: BankDetailsSte
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
+      await supabase
+        .from('profiles')
+        .update({ stripe_onboarding_step: 'complete' } as any)
+        .eq('user_id', profile.user_id);
       toast.success('Bank details saved.');
       try { await refreshProfile?.(); } catch {}
       onDone();
