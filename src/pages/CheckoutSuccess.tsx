@@ -82,7 +82,7 @@ const CheckoutSuccess = () => {
         const shipping = JSON.parse(shippingJson);
         const shippingBySeller = new Map<string, number>(JSON.parse(shippingBySellerJson || '[]'));
 
-        const checkoutReference = sessionId || localStorage.getItem('checkout_reference');
+        const checkoutReference = reference;
 
         let finalizeData: any = null;
         let finalizeError: any = null;
