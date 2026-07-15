@@ -637,7 +637,11 @@ const Checkout = () => {
 
             {/* Payment method picker (Depop-style) */}
             {sellerHasStripe && (
-              <PaymentMethodPicker value={selectedMethod} onChange={setSelectedMethod} />
+              <PaymentMethodPicker
+                value={selectedMethod}
+                onChange={setSelectedMethod}
+                amountCents={Math.round(total * 100)}
+              />
             )}
 
             {/* Master Pay button */}

@@ -36,14 +36,6 @@ function detectNativeWallet(): WalletKind | null {
   return null;
 }
 
-function detectLikelyWebWallet(): WalletKind | null {
-  if (typeof navigator === 'undefined') return null;
-  const ua = navigator.userAgent || '';
-  if (/iPhone|iPad|iPod|Mac/.test(ua) && /^((?!chrome|android).)*safari/i.test(ua)) return 'apple';
-  if (/Android/.test(ua)) return 'google';
-  return null;
-}
-
 const Radio = ({ selected }: { selected: boolean }) => (
   <div
     className={cn(
