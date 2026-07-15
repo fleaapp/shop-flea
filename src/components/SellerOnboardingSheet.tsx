@@ -164,7 +164,7 @@ const SellerOnboardingSheet = ({
       toast.error(err);
       return;
     }
-    setStep(4);
+    handleContinueToStripe();
   };
 
   const handleContinueToStripe = async () => {
