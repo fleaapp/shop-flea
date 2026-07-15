@@ -54,7 +54,7 @@ const Cart = () => {
   const { addFavorite } = useFavorites();
   const { removeDiscarded } = useDiscardedListings();
   const { buyerOrderGroups, loadingBuyerOrders, markAsDelivered } = useOrders();
-  const { getGroupUnread, total: totalUnreadMessages } = useUnreadOrderMessages();
+  const { getGroupUnread } = useUnreadOrderMessages();
   const [activeTab, setActiveTab] = useState<'cart' | 'orders'>(routeState?.initialTab === 'orders' ? 'orders' : 'cart');
   const [orderStatusFilter, setOrderStatusFilter] = useState<'awaiting' | 'shipped' | 'delivered'>('awaiting');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -191,8 +191,11 @@ const Cart = () => {
   const shippedOrders = buyerOrderGroups.filter((g) => g.status === 'shipped');
   const deliveredOrders = buyerOrderGroups.filter((g) => g.status === 'delivered');
 
-  // Orders badge: awaiting + shipped (not delivered) + unread messages
-  const ordersBadgeCount = awaitingOrders.length + shippedOrders.length + totalUnreadMessages;
+  // Orders badge: unread messages only, not the presence of active orders
+  const ordersBadgeCount = [...awaitingOrders, ...shippedOrders].reduce(
+    (sum, group) => sum + group.orders.reduce((groupSum, order) => groupSum + getGroupUnread(order.id), 0),
+    0
+  );
 
   const formatOrderTime = (dateString: string) => {
     try {
