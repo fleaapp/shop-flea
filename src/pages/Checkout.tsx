@@ -204,82 +204,173 @@ const Checkout = () => {
       </div>;
   }
   
-  const handlePlaceOrder = async () => {
-    if (!user) {
-      toast.error('You must be logged in to place an order');
-      return;
-    }
+  // In-app payment state
+  const [selectedMethod, setSelectedMethod] = useState<SelectedPaymentMethod | null>(null);
+  const [cardSheetOpen, setCardSheetOpen] = useState(false);
+  const [walletSheetOpen, setWalletSheetOpen] = useState(false);
+  const [walletClientSecret, setWalletClientSecret] = useState<string | null>(null);
+  const [walletAmountCents, setWalletAmountCents] = useState(0);
 
-    if (isBlocked) {
-      toast.error('Your account is restricted. You cannot make purchases.');
-      return;
+  /** Persist buyer-side context to localStorage so CheckoutSuccess can finalize orders. */
+  const persistCheckoutContext = useCallback(() => {
+    const shippingDetails = {
+      shippingFirstName: shippingFirstName.trim(),
+      shippingLastName: shippingLastName.trim(),
+      shippingAddress: shippingAddress.trim(),
+      shippingCity: shippingSuburb.trim(),
+      shippingState,
+      shippingPostcode: shippingPostcode.trim(),
+    };
+    localStorage.setItem('checkout_shipping', JSON.stringify(shippingDetails));
+    localStorage.setItem('checkout_items', JSON.stringify(validItems));
+    localStorage.setItem('checkout_seller_settings', JSON.stringify(Array.from(sellerSettings.entries())));
+    localStorage.setItem('checkout_shipping_by_seller', JSON.stringify(Array.from(shippingBySeller.entries())));
+    localStorage.setItem('checkout_payment_method', 'stripe');
+  }, [shippingFirstName, shippingLastName, shippingAddress, shippingSuburb, shippingState, shippingPostcode, validItems, sellerSettings, shippingBySeller]);
+
+  /** Server-authoritative PaymentIntent creation. */
+  const createPaymentIntent = useCallback(async (saveCard: boolean) => {
+    const { data, error } = await invokeCloudFunction('stripe-connect-payment-intent', {
+      items: validItems.map(item => ({ id: item.id, title: item.title, price: item.price, image: item.image })),
+      shipping: totalShipping,
+      couponCode: coupon?.code ?? null,
+      saveCard,
+    });
+    if (error) throw error;
+    if (data?.demo) {
+      // Reviewer bypass — orders inserted server-side; short-circuit to success.
+      localStorage.setItem('checkout_reference', data.checkoutReference);
+      window.location.href = `/checkout/success?demo=1&order_group=${data.orderGroupId}`;
+      return null;
     }
-    
-    if (!isShippingComplete) {
-      toast.error('Please fill in all shipping details');
-      return;
-    }
-    
+    if (!data?.clientSecret || !data?.paymentIntentId) throw new Error('Payment initialization failed');
+    localStorage.setItem('checkout_reference', data.paymentIntentId);
+    return data as {
+      clientSecret: string;
+      paymentIntentId: string;
+      amount: number;
+      publishableKey: string;
+    };
+  }, [validItems, totalShipping, coupon]);
+
+  /** Guards run before ANY in-app payment attempt. */
+  const preflight = () => {
+    if (!user) { toast.error('You must be logged in to place an order'); return false; }
+    if (isBlocked) { toast.error('Your account is restricted. You cannot make purchases.'); return false; }
+    if (!isShippingComplete) { toast.error('Please fill in all shipping details'); return false; }
+    if (!sellerHasStripe) { toast.error('This seller has not connected a payment method yet.'); return false; }
+    return true;
+  };
+
+  /** Handle successful confirmation (any method). */
+  const handlePaymentSuccess = (paymentIntentId: string) => {
+    setCardSheetOpen(false);
+    setWalletSheetOpen(false);
+    localStorage.setItem('checkout_reference', paymentIntentId);
+    navigate(`/checkout/success?payment_intent=${paymentIntentId}`);
+  };
+
+  /** Confirm with a card the user JUST entered in the Vinted-style sheet. */
+  const handleCardConfirm = async ({ paymentMethodId, saveCard }: { paymentMethodId: string; cardholderName: string; saveCard: boolean }) => {
+    if (!preflight()) return;
+    persistCheckoutContext();
     setIsSubmitting(true);
-    
     try {
-      // Save shipping details to sessionStorage for use after Stripe redirect
-        const shippingDetails = {
-        shippingFirstName: shippingFirstName.trim(),
-        shippingLastName: shippingLastName.trim(),
-        shippingAddress: shippingAddress.trim(),
-        shippingCity: shippingSuburb.trim(),
-        shippingState,
-        shippingPostcode: shippingPostcode.trim(),
-      };
-      localStorage.setItem('checkout_shipping', JSON.stringify(shippingDetails));
-      localStorage.setItem('checkout_items', JSON.stringify(validItems));
-      localStorage.setItem('checkout_seller_settings', JSON.stringify(Array.from(sellerSettings.entries())));
-      localStorage.setItem('checkout_shipping_by_seller', JSON.stringify(Array.from(shippingBySeller.entries())));
-
-      // Seller's Stripe account is fetched server-side by the checkout edge function.
-      const sellerId = validItems[0]?.sellerId;
-      const sellerHasStripeAccount = sellerId ? sellerStripeAccounts.has(sellerId) : false;
-
-      if (!sellerHasStripeAccount && !isReviewer) {
-        toast.error('This seller has not connected a payment method yet.');
-        setIsSubmitting(false);
+      const pi = await createPaymentIntent(saveCard);
+      if (!pi) return;
+      const stripe = await getStripe();
+      if (!stripe) throw new Error('Stripe failed to load');
+      const { error, paymentIntent } = await stripe.confirmCardPayment(pi.clientSecret, {
+        payment_method: paymentMethodId,
+      });
+      if (error) {
+        toast.error(error.message || 'Card was declined. Please try another card.');
         return;
       }
-
-
-      localStorage.setItem('checkout_payment_method', 'stripe');
-
-      const { data, error } = await invokeCloudFunction('stripe-connect-checkout', {
-        items: validItems.map(item => ({
-          id: item.id,
-          title: item.title,
-          price: item.price,
-          image: item.image,
-        })),
-        shipping: totalShipping,
-        couponCode: coupon?.code ?? null,
-      });
-
-      if (error) throw error;
-      if (!data?.url) throw new Error('No checkout URL returned');
-      if (data?.sessionId) {
-        localStorage.setItem('checkout_reference', data.sessionId);
+      if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
+        handlePaymentSuccess(paymentIntent.id);
+      } else {
+        toast.error('Payment did not complete. Please try again.');
       }
-      window.location.href = data.url;
-    } catch (error) {
-      console.error('Error creating checkout session:', error);
-      toast.error('Failed to start checkout. Please try again.');
+    } catch (e: any) {
+      console.error('card confirm error:', e);
+      toast.error(e?.message || 'Failed to process card. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Mock saved cards
-  const savedCards = [{
-    id: 'saved-1',
-    lastFour: '9876'
-  }];
+  /** Confirm with a saved card the user picked from the list. */
+  const handleSavedCardConfirm = async (paymentMethodId: string) => {
+    if (!preflight()) return;
+    persistCheckoutContext();
+    setIsSubmitting(true);
+    try {
+      const pi = await createPaymentIntent(false);
+      if (!pi) return;
+      const stripe = await getStripe();
+      if (!stripe) throw new Error('Stripe failed to load');
+      const { error, paymentIntent } = await stripe.confirmCardPayment(pi.clientSecret, {
+        payment_method: paymentMethodId,
+      });
+      if (error) {
+        toast.error(error.message || 'Payment failed. Please try another method.');
+        return;
+      }
+      if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
+        handlePaymentSuccess(paymentIntent.id);
+      } else {
+        toast.error('Payment did not complete. Please try again.');
+      }
+    } catch (e: any) {
+      console.error('saved card confirm error:', e);
+      toast.error(e?.message || 'Failed to process payment. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  /** Open wallet sheet (Apple/Google Pay) — PI is created first so the sheet has a clientSecret. */
+  const handleWalletTap = async () => {
+    if (!preflight()) return;
+    persistCheckoutContext();
+    setIsSubmitting(true);
+    try {
+      const pi = await createPaymentIntent(false);
+      if (!pi) return;
+      setWalletClientSecret(pi.clientSecret);
+      setWalletAmountCents(pi.amount);
+      setWalletSheetOpen(true);
+    } catch (e: any) {
+      console.error('wallet init error:', e);
+      toast.error(e?.message || 'Failed to start payment. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  /** Master Pay button — dispatches by selected method. */
+  const handlePayClick = () => {
+    if (!selectedMethod) { toast.error('Please pick a payment method.'); return; }
+    switch (selectedMethod.kind) {
+      case 'wallet':   handleWalletTap(); break;
+      case 'saved':    handleSavedCardConfirm(selectedMethod.card.id); break;
+      case 'new_card': setCardSheetOpen(true); break;
+    }
+  };
+
+  const payButtonLabel = () => {
+    if (isSubmitting) return 'Processing...';
+    if (!selectedMethod) return 'Confirm order';
+    switch (selectedMethod.kind) {
+      case 'wallet':
+        return typeof navigator !== 'undefined' && /Android/.test(navigator.userAgent)
+          ? 'Buy with Google Pay' : 'Buy with Apple Pay';
+      case 'saved': return `Pay $${total.toFixed(2)}`;
+      case 'new_card': return 'Continue to card details';
+    }
+  };
+
   return <div className="min-h-screen bg-background">
       <Drawer open={open} onOpenChange={isOpen => !isOpen && handleClose()} shouldScaleBackground={false}>
         <DrawerContent className="bg-background">
