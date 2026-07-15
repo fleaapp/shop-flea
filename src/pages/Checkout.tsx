@@ -30,6 +30,7 @@ import { getStripe } from '@/lib/stripe/loadStripe';
 import visaLogo from '@/assets/cards/visa.svg';
 import mastercardLogo from '@/assets/cards/mastercard.svg';
 import amexLogo from '@/assets/cards/amex.svg';
+import applePayLogo from '@/assets/cards/apple-pay.svg';
 
 // Apple App Review demo account — bypasses the seller-Stripe-connected check
 // so the reviewer can complete a purchase against demo listings.
@@ -746,10 +747,11 @@ const Checkout = () => {
               >
                 {payButtonLabel()}
               </Button>
-              <p className="text-[11px] text-muted-foreground/70 text-center mt-3 flex items-center justify-center gap-1">
+              <p className="text-[11px] text-muted-foreground/70 text-center mt-5 flex items-center justify-center gap-1">
                 <Lock size={11} /> Payments are encrypted and are processed by Stripe.
               </p>
-              <div className="flex items-center justify-center gap-2 mt-2">
+              <div className="flex items-center justify-center gap-2 mt-4">
+                <img src={applePayLogo} alt="Apple Pay" className="h-6 w-auto rounded-[3px]" />
                 <img src={visaLogo} alt="Visa" className="h-6 w-auto rounded-[3px]" />
                 <img src={mastercardLogo} alt="Mastercard" className="h-6 w-auto rounded-[3px]" />
                 <img src={amexLogo} alt="American Express" className="h-6 w-auto rounded-[3px]" />
