@@ -98,7 +98,7 @@ serve(async (req) => {
       }
     }
 
-    // Create a new Standard account if needed
+    // Create a new application-controlled Express account if needed
     if (!accountId) {
       // Fetch user profile + saved address for pre-filling
       const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '';
