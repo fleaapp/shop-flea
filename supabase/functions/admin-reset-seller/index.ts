@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
       },
     );
     let after = await patch.json();
-    if (!patch.ok && after?.code === "42703") {
+    if (!patch.ok && (after?.code === "42703" || after?.code === "PGRST204" || String(after?.message ?? "").includes("stripe_onboarding_step"))) {
       patch = await fetch(`${url}/rest/v1/profiles?user_id=eq.${before.user_id}`, {
         method: "PATCH",
         headers,

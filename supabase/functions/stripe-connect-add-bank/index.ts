@@ -33,7 +33,8 @@ async function markOnboardingComplete(userId: string, accountId: string) {
       stripe_onboarding_step: "complete",
     }),
   });
-  if (!response.ok && (await response.clone().json().catch(() => null))?.code === "42703") {
+  const responseError = !response.ok ? await response.clone().json().catch(() => null) : null;
+  if (!response.ok && (responseError?.code === "42703" || responseError?.code === "PGRST204" || String(responseError?.message ?? "").includes("stripe_onboarding_step"))) {
     await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
       method: "PATCH",
       headers: {
@@ -67,7 +68,8 @@ async function markOnboardingSubmitted(userId: string, accountId: string) {
       stripe_onboarding_step: "complete",
     }),
   });
-  if (!response.ok && (await response.clone().json().catch(() => null))?.code === "42703") {
+  const responseError = !response.ok ? await response.clone().json().catch(() => null) : null;
+  if (!response.ok && (responseError?.code === "42703" || responseError?.code === "PGRST204" || String(responseError?.message ?? "").includes("stripe_onboarding_step"))) {
     await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
       method: "PATCH",
       headers: {
