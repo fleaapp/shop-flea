@@ -73,6 +73,10 @@ const WalletInner = ({
             const available = !!e.availablePaymentMethods;
             setHasWallet(available);
             setReady(true);
+            if (!available) {
+              toast.error('Wallet payment is not available here. Please choose Add new card.');
+              onClose();
+            }
           }}
           onConfirm={handleConfirm}
           options={{

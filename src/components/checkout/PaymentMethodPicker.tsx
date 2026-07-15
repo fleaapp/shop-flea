@@ -130,6 +130,15 @@ const PaymentMethodPicker = ({ value, onChange, amountCents }: Props) => {
     }
   }, [loading, walletLoading, value, savedCards, wallet, onChange]);
 
+  useEffect(() => {
+    if (walletLoading || value?.kind !== 'wallet' || wallet) return;
+    if (savedCards.length > 0) {
+      onChange({ kind: 'saved', card: savedCards[0] });
+    } else {
+      onChange({ kind: 'new_card' });
+    }
+  }, [walletLoading, value, wallet, savedCards, onChange]);
+
   const isWalletSelected = value?.kind === 'wallet';
   const isNewCardSelected = value?.kind === 'new_card';
 
