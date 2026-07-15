@@ -38,7 +38,6 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           stripe_account_id: null,
           stripe_onboarding_complete: false,
-          stripe_onboarding_step: null,
         }),
       },
     );
