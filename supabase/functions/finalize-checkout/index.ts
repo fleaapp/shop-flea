@@ -164,6 +164,26 @@ async function verifyPayment(opts: {
   expectedAmountAud?: number;
 }): Promise<{ verifiedEmail?: string; paidAmountAud?: number }> {
   const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
+
+  // In-app PaymentSheet / Payment Element path returns a PaymentIntent id (pi_...).
+  // Hosted Checkout Session path returns a Session id (cs_...). Handle both.
+  if (opts.reference.startsWith("pi_")) {
+    const pi = await stripe.paymentIntents.retrieve(opts.reference);
+    const paid = pi.status === "succeeded" || pi.status === "requires_capture";
+    if (!paid) {
+      throw new Error(`Stripe PaymentIntent not paid (status=${pi.status})`);
+    }
+    const amountTotal = typeof pi.amount_received === "number" && pi.amount_received > 0
+      ? pi.amount_received / 100
+      : pi.amount / 100;
+    if (opts.expectedAmountAud != null) {
+      if (Math.abs(amountTotal - opts.expectedAmountAud) > 0.05) {
+        throw new Error(`Stripe paid amount mismatch: paid ${amountTotal} expected ${opts.expectedAmountAud}`);
+      }
+    }
+    return { paidAmountAud: amountTotal };
+  }
+
   const session = await stripe.checkout.sessions.retrieve(opts.reference, { expand: ["payment_intent"] });
   const piStatus = typeof session.payment_intent === "object" && session.payment_intent
     ? (session.payment_intent as Stripe.PaymentIntent).status
