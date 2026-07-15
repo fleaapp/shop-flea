@@ -307,6 +307,12 @@ const PaymentMethodsSection = () => {
               <h3 className="text-lg font-semibold text-foreground mb-1">Further verification needed.</h3>
               <p className="text-sm text-muted-foreground">Our payment processor needs a bit more information before you can start selling.</p>
             </>
+          ) : postOnboardResult === 'incomplete' ? (
+            <>
+              <div className="text-3xl mb-2">✏️</div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Set up unfinished.</h3>
+              <p className="text-sm text-muted-foreground">Continue seller set up to finish your payment account.</p>
+            </>
           ) : (
             <>
               <div className="text-3xl mb-2">🔍</div>
