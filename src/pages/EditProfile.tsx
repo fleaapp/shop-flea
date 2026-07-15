@@ -15,6 +15,7 @@ import ChangeEmailSheet from '@/components/ChangeEmailSheet';
 import ChangePasswordSheet from '@/components/ChangePasswordSheet';
 import { Switch } from '@/components/ui/switch';
 import { safeNavigateBack } from '@/utils/safeBack';
+import SavedCardsSection from '@/components/SavedCardsSection';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -411,7 +412,11 @@ const EditProfile = () => {
               />
             </div>
           </div>
+
+          <SavedCardsSection />
         </div>
+
+
 
         {/* Buttons - shorter width */}
         <div className="flex flex-col items-center gap-3 pt-4">

@@ -15,7 +15,7 @@ import FilterPreferencesSheet from '@/components/FilterPreferencesSheet';
 import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
 import { useOnboarding } from '@/context/OnboardingContext';
 import PaymentMethodsSection from '@/components/PaymentMethodsSection';
-import SavedCardsSection from '@/components/SavedCardsSection';
+
 import { useUnreadSupport } from '@/hooks/useUnreadSupport';
 import { useAdminRole } from '@/hooks/useAdminRole';
 const Settings = () => {
@@ -292,10 +292,7 @@ const Settings = () => {
                     </div>
                   </div>
                 ) : (
-                  <>
-                    <PaymentMethodsSection />
-                    <SavedCardsSection />
-                  </>
+                  <PaymentMethodsSection />
                 )}
               </React.Fragment>
             );
