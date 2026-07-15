@@ -554,46 +554,42 @@ const Checkout = () => {
               </div>
             </div>
 
-            {/* Payment Methods Info */}
+            {/* Payment method picker (Depop-style) */}
             {sellerHasStripe && (
-              <div className="rounded-xl bg-card overflow-hidden">
-                <div className="bg-muted-foreground/20 px-4 py-2 text-sm font-medium text-muted-foreground">
-                  Payment
-                </div>
-                <div className="p-4 space-y-3">
-                  <p className="text-sm text-muted-foreground">Pay securely with:</p>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <div className={cn("flex items-center justify-center w-20 h-10 rounded-lg bg-[#F4F2EB] border-2 border-charcoal")}>
-                      <img src={applePayLogo} alt="Apple Pay" className="h-6" />
-                    </div>
-                    <div className={cn("flex items-center justify-center w-20 h-10 rounded-lg bg-[#F4F2EB] border-2 border-charcoal")}>
-                      <img src={gPayLogo} alt="Google Pay" className="h-[18px]" />
-                    </div>
-                    <div className={cn("flex items-center justify-center w-20 h-10 rounded-lg bg-[#F4F2EB] text-sm font-medium border-2 border-charcoal")}>
-                      💳 Card
-                    </div>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground/70">
-                    Payments are processed securely. Receipts show Flea alongside the seller's name so you always know who you're buying from.
-                  </p>
-                </div>
-              </div>
+              <PaymentMethodPicker value={selectedMethod} onChange={setSelectedMethod} />
             )}
 
-            {/* Confirm Button */}
+            {/* Master Pay button */}
             <div className="mt-6">
               <Button
-                onClick={handlePlaceOrder}
-                disabled={isSubmitting || !isShippingComplete || !selectedRail}
+                onClick={handlePayClick}
+                disabled={isSubmitting || !isShippingComplete || !sellerHasStripe || !selectedMethod}
                 className="w-full h-12 rounded-full bg-charcoal text-white hover:bg-charcoal-light font-medium disabled:opacity-50"
               >
-                {isSubmitting ? 'Redirecting to payment...' : 'Pay with Card'}
+                {payButtonLabel()}
               </Button>
-              <p className="text-xs text-muted-foreground text-center mt-3">
-                You'll be redirected to our card processor to complete payment securely.
+              <p className="text-[11px] text-muted-foreground/70 text-center mt-3 flex items-center justify-center gap-1">
+                <Lock size={11} /> Payments are encrypted end to end and stay inside the Flea app.
               </p>
             </div>
           </div>
+
+          {/* Vinted-style card details drawer */}
+          <CardDetailsSheet
+            open={cardSheetOpen}
+            onClose={() => setCardSheetOpen(false)}
+            onConfirm={handleCardConfirm}
+          />
+          {/* Wallet drawer (Apple/Google Pay) */}
+          {walletClientSecret && (
+            <WalletPaySheet
+              open={walletSheetOpen}
+              onClose={() => setWalletSheetOpen(false)}
+              clientSecret={walletClientSecret}
+              amountCents={walletAmountCents}
+              onSuccess={handlePaymentSuccess}
+            />
+          )}
         </DrawerContent>
       </Drawer>
     </div>;
