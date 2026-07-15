@@ -275,11 +275,11 @@ const PaymentMethodsSection = () => {
         >
           <div className="flex items-center gap-3 max-[375px]:gap-2">
             <span aria-hidden className="text-2xl leading-none w-7 h-7 flex items-center justify-center">
-              {stripeFullyConnected || stripeDetailsSubmitted || stripeActionRequired ? '📈' : '💸'}
+              {stripeFullyConnected ? '📈' : '💸'}
             </span>
             <div>
               <span className="text-base max-[375px]:text-sm font-medium text-foreground">
-                {stripeFullyConnected || stripeDetailsSubmitted || stripeActionRequired ? 'Seller Dashboard' : 'Set up Seller'}
+                {stripeFullyConnected ? 'Seller Dashboard' : 'Set up Seller'}
               </span>
               <p className={`text-xs mt-0.5 ${stripeStatus.color}`}>
                 {stripeStatus.label}
