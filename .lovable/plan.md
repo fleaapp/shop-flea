@@ -1,19 +1,35 @@
-## Changes
+## Goal
+Align the Payment Methods "seller" row button text and its status label so users with unfinished onboarding see the correct wording (not "Pending review").
 
-### 1. `src/components/InstallAppBanner.tsx`
-- Replace the current logo `src="/src/assets/flea-logo-transparent.png"` with the auth-screen logo: `import fleaLogoAuth from '@/assets/flea-logo-auth.jpeg'` and use it as the `<img src>`. This is the green-background Flea mark used on the auth screen.
-- Keep existing spacing, centering, lime background, and copy as-is.
+## Changes — `src/components/PaymentMethodsSection.tsx` only
 
-### 2. `src/hooks/useIsWebSharedPreview.ts`
-- Add an auth check so the hook only returns `true` when the visitor is:
-  - Not in Capacitor native
-  - Not in a standalone/installed PWA
-  - AND not signed in
-- Implementation: subscribe to `supabase.auth.getSession()` + `onAuthStateChange`. Return `true` only when there is no active session (in addition to the existing web/non-PWA checks).
+Text-only edits. No behaviour, no routing, no data logic changes.
 
-### 3. `src/pages/ListingDetails.tsx` (no behavior change beyond what the hook returns)
-- Already uses `useIsWebSharedPreview()` to gate banner + hide sticky Buy/Message footer, so once the hook is updated, logged-in users on web will no longer see the banner and will see the normal action buttons. Logged-out mobile web visitors will see the banner and no action buttons, nudging them to download rather than log in on the web.
+### 1. Button label (line 282)
+Restore the original wording. Change:
+- `Set up Seller` → `💸 Become a Seller`
 
-## Result
-- Banner uses the same green Flea logo as the auth screen.
-- Banner appears only for logged-out visitors viewing a listing on mobile web (shared link previews); it never appears for signed-in users, native app, or installed PWA.
+(`Seller Dashboard` stays as-is for fully verified sellers.)
+
+### 2. Status label priority (lines 237–246)
+
+Currently `stripeDetailsSubmitted` is checked before the "saved onboarding step" branch, so a user who exited midway can be shown "🔍 Pending review" even though they still have a saved step to resume.
+
+Reorder + rename so unfinished onboarding always wins over the "Pending review" label:
+
+```
+if (stripeFullyConnected)                       -> Balance: …
+if (stripeActionRequired)                       -> ⚠️ Action required
+if (hasSavedOnboardingStep && !stripeDetailsSubmitted)
+                                                -> ✏️ Setup unfinished — tap to continue
+if (stripeDetailsSubmitted)                     -> 🔍 Pending review
+if (stripePending)                              -> ⏳ Verifying…
+if (stripeAccountId)                            -> ✏️ Setup unfinished — tap to continue
+default                                         -> Not connected
+```
+
+This guarantees a user mid-flow (saved step, Stripe hasn't received a submitted onboarding yet) sees the "unfinished / continue" copy instead of "Pending review".
+
+## Out of scope
+- No changes to `SellerOnboardingSheet`, routing, resume logic, or any edge functions.
+- No changes elsewhere in the app.
