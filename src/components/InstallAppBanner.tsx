@@ -1,6 +1,6 @@
 import { APP_STORE_URL, PLAY_STORE_URL } from '@/utils/shareLink';
 import { useIsWebSharedPreview } from '@/hooks/useIsWebSharedPreview';
-import fleaLogoAuth from '@/assets/flea-logo-auth.jpeg';
+import fleaLogoWelcome from '@/assets/flea-logo-welcome.png';
 
 /**
  * Prominent Download-the-App CTA shown on shared listing previews when the
@@ -14,11 +14,13 @@ const InstallAppBanner = () => {
 
   return (
     <div className="mx-4 my-5 rounded-2xl bg-primary text-primary-foreground p-5 flex flex-col items-center gap-4 shadow-sm">
-      <img
-        src={fleaLogoAuth}
-        alt="Flea logo"
-        className="h-10 w-auto rounded-lg"
-      />
+      <div className="h-11 w-24 rounded-lg bg-background/95 px-3 py-2 flex items-center justify-center overflow-visible">
+        <img
+          src={fleaLogoWelcome}
+          alt="Flea logo"
+          className="max-h-full max-w-full object-contain"
+        />
+      </div>
       <p className="text-sm font-semibold text-center max-w-[260px] leading-snug">
         Download Flea to sell & shop secondhand with a swipe.
       </p>
