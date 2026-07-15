@@ -232,15 +232,19 @@ const PaymentMethodsSection = () => {
     return () => { active = false; };
   }, [stripeFullyConnected]);
 
+  const hasSavedOnboardingStep = Number((profile as any)?.stripe_onboarding_step) > 1;
+
   const getStripeStatus = () => {
     if (stripeFullyConnected) {
       return { label: balanceLabel ? `Balance: ${balanceLabel}` : 'Balance loading...', color: 'text-foreground' };
     }
-    if (stripePending || isChecking) return { label: '⏳ Verifying...', color: 'text-amber-600' };
     if (stripeActionRequired) return { label: '⚠️ Action required', color: 'text-orange-600' };
     if (stripeDetailsSubmitted) return { label: '🔍 Pending review', color: 'text-amber-600' };
+    if (stripePending) return { label: '⏳ Verifying...', color: 'text-amber-600' };
+    if (stripeAccountId || hasSavedOnboardingStep) return { label: 'Continue setup', color: 'text-orange-600' };
     return { label: 'Not connected', color: 'text-muted-foreground' };
   };
+
 
   const stripeStatus = getStripeStatus();
 
