@@ -254,14 +254,11 @@ const PaymentMethodsSection = () => {
       returnUrl={typeof window !== 'undefined' ? window.location.origin + '/settings' : undefined}
       onComplete={async () => {
         setShowStripeOnboarding(false);
-        await handleCheckStatus(true);
-        setTimeout(() => {
-          if (stripeFullyConnected) setPostOnboardResult('verified');
-          else if (stripeActionRequired) setPostOnboardResult('action_required');
-          else setPostOnboardResult('pending');
-        }, 250);
+        const result = await handleCheckStatus(true);
+        setPostOnboardResult(result ?? 'pending');
       }}
     />
+
     <div>
       <h2 className="mb-3 max-[375px]:mb-2 text-sm max-[375px]:text-xs font-medium text-muted-foreground uppercase tracking-wide">
         Payment Methods
