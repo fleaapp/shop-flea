@@ -273,7 +273,6 @@ const Checkout = () => {
   /** Handle successful confirmation (any method). */
   const handlePaymentSuccess = (paymentIntentId: string) => {
     setCardSheetOpen(false);
-    setWalletSheetOpen(false);
     localStorage.setItem('checkout_reference', paymentIntentId);
     navigate(`/checkout/success?payment_intent=${paymentIntentId}`);
   };
@@ -502,16 +501,19 @@ const Checkout = () => {
     }
   };
 
-  /** Open wallet sheet (Apple/Google Pay) — PI is created first so the sheet has a clientSecret. */
+  /** Start Apple/Google Pay directly. Native uses the Capacitor sheet, web uses the browser wallet sheet. */
   const handleWalletTap = async () => {
     if (!preflight()) return;
     persistCheckoutContext();
     setIsSubmitting(true);
     try {
-      const pi = await createPaymentIntent(false);
-      if (!pi) return;
-      const handledNativeWallet = await handleNativeWalletConfirm(pi);
-      if (handledNativeWallet) return;
+      if (getNativeWalletPlatform()) {
+        const pi = await createPaymentIntent(false);
+        if (!pi) return;
+        await handleNativeWalletConfirm(pi);
+        return;
+      }
+
       await handleWebWalletConfirm();
     } catch (e: any) {
       console.error('wallet init error:', e);
