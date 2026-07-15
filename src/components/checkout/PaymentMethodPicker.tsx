@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import applePayLogo from '@/assets/applepay-logo.png';
 import gPayLogo from '@/assets/gpay-logo.png';
 import { CreditCard } from 'lucide-react';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { cn } from '@/lib/utils';
+import { getStripe } from '@/lib/stripe/loadStripe';
 
 export type SavedCard = {
   id: string;
@@ -21,16 +23,25 @@ export type SelectedPaymentMethod =
 interface Props {
   value: SelectedPaymentMethod | null;
   onChange: (v: SelectedPaymentMethod) => void;
+  amountCents: number;
 }
 
-// Very simple platform sniff so we can show Apple Pay to iOS users and
-// Google Pay to Android users, mirroring native Depop behaviour.
-function detectWallet(): 'apple' | 'google' | null {
+type WalletKind = 'apple' | 'google';
+
+function detectNativeWallet(): WalletKind | null {
+  if (!Capacitor.isNativePlatform()) return null;
+  const platform = Capacitor.getPlatform();
+  if (platform === 'ios') return 'apple';
+  if (platform === 'android') return 'google';
+  return null;
+}
+
+function detectLikelyWebWallet(): WalletKind | null {
   if (typeof navigator === 'undefined') return null;
   const ua = navigator.userAgent || '';
-  if (/iPhone|iPad|iPod|Mac/.test(ua)) return 'apple';
+  if (/iPhone|iPad|iPod|Mac/.test(ua) && /^((?!chrome|android).)*safari/i.test(ua)) return 'apple';
   if (/Android/.test(ua)) return 'google';
-  return 'apple'; // desktop fallback: show Apple Pay if available
+  return null;
 }
 
 const Radio = ({ selected }: { selected: boolean }) => (
@@ -52,10 +63,53 @@ const brandLabel = (brand: string) => {
   return map[brand] || brand.charAt(0).toUpperCase() + brand.slice(1);
 };
 
-const PaymentMethodPicker = ({ value, onChange }: Props) => {
+const PaymentMethodPicker = ({ value, onChange, amountCents }: Props) => {
   const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
   const [loading, setLoading] = useState(true);
-  const wallet = detectWallet();
+  const [wallet, setWallet] = useState<WalletKind | null>(() => detectNativeWallet());
+  const [walletLoading, setWalletLoading] = useState(!Capacitor.isNativePlatform());
+
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      setWallet(detectNativeWallet());
+      setWalletLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        if (amountCents <= 0) {
+          setWallet(null);
+          return;
+        }
+
+        const stripe = await getStripe();
+        if (!stripe || cancelled) return;
+
+        const paymentRequest = stripe.paymentRequest({
+          country: 'AU',
+          currency: 'aud',
+          total: { label: 'Flea', amount: amountCents },
+        });
+        const result = await paymentRequest.canMakePayment();
+        if (cancelled) return;
+
+        if (result?.applePay) setWallet('apple');
+        else if (result?.googlePay) setWallet('google');
+        else setWallet(null);
+      } catch (e) {
+        if (!cancelled) {
+          console.warn('wallet availability:', e);
+          setWallet(null);
+        }
+      } finally {
+        if (!cancelled) setWalletLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [amountCents]);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,7 +128,7 @@ const PaymentMethodPicker = ({ value, onChange }: Props) => {
 
   // Auto-select the first available method the first time we render
   useEffect(() => {
-    if (loading || value) return;
+    if (loading || walletLoading || value) return;
     if (savedCards.length > 0) {
       onChange({ kind: 'saved', card: savedCards[0] });
     } else if (wallet) {
@@ -82,7 +136,7 @@ const PaymentMethodPicker = ({ value, onChange }: Props) => {
     } else {
       onChange({ kind: 'new_card' });
     }
-  }, [loading, value, savedCards, wallet, onChange]);
+  }, [loading, walletLoading, value, savedCards, wallet, onChange]);
 
   const isWalletSelected = value?.kind === 'wallet';
   const isNewCardSelected = value?.kind === 'new_card';
@@ -94,6 +148,12 @@ const PaymentMethodPicker = ({ value, onChange }: Props) => {
       </div>
 
       <div className="divide-y divide-border/60">
+        {!wallet && walletLoading && !savedCards.length && (
+          <div className="px-4 py-3">
+            <div className="h-12 rounded-lg bg-muted animate-pulse" />
+          </div>
+        )}
+
         {/* Saved cards */}
         {savedCards.map((card) => {
           const selected = value?.kind === 'saved' && value.card.id === card.id;
