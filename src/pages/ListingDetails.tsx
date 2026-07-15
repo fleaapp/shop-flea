@@ -708,8 +708,8 @@ const ListingDetails = () => {
             </div>
           </div>
 
-          {/* Sticky Footer Actions */}
-          {!isTextInputFocused && (
+          {/* Sticky Footer Actions — hidden in shared-link web preview mode */}
+          {!isTextInputFocused && !isWebSharedPreview && (
           <div data-listing-footer className="left-0 right-0 z-10 flex shrink-0 justify-center gap-3 border-t border-border bg-background px-4 pt-4 pb-4 transition-all duration-200">
             {isRemoved && !isOwner ? (
               // Removed listing footer
