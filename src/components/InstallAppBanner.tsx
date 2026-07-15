@@ -13,11 +13,11 @@ const InstallAppBanner = () => {
   if (!visible) return null;
 
   return (
-    <div className="mx-4 my-5 rounded-2xl bg-primary text-primary-foreground p-5 flex flex-col items-center gap-4 shadow-sm">
+    <div className="mx-4 my-5 bg-primary text-primary-foreground p-5 flex flex-col items-center gap-4 shadow-sm">
       <img
         src={fleaLogoAuth}
         alt="Flea logo"
-        className="h-10 w-auto rounded-lg"
+        className="h-10 w-auto"
       />
       <p className="text-sm font-semibold text-center max-w-[260px] leading-snug">
         Download Flea to sell & shop secondhand with a swipe.
