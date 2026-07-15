@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { ApplePayEventsEnum, GooglePayEventsEnum, Stripe } from '@capacitor-community/stripe';
+import type { CanMakePaymentResult, PaymentRequestPaymentMethodEvent } from '@stripe/stripe-js';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,7 +28,6 @@ import SecureCheckoutInfoPopover from '@/components/SecureCheckoutInfoPopover';
 import CouponInput, { AppliedCoupon } from '@/components/CouponInput';
 import PaymentMethodPicker, { SelectedPaymentMethod } from '@/components/checkout/PaymentMethodPicker';
 import CardDetailsSheet from '@/components/checkout/CardDetailsSheet';
-import WalletPaySheet from '@/components/checkout/WalletPaySheet';
 import { getStripe } from '@/lib/stripe/loadStripe';
 
 // Apple App Review demo account — bypasses the seller-Stripe-connected check
@@ -217,9 +217,6 @@ const Checkout = () => {
   // In-app payment state
   const [selectedMethod, setSelectedMethod] = useState<SelectedPaymentMethod | null>(null);
   const [cardSheetOpen, setCardSheetOpen] = useState(false);
-  const [walletSheetOpen, setWalletSheetOpen] = useState(false);
-  const [walletClientSecret, setWalletClientSecret] = useState<string | null>(null);
-  const [walletAmountCents, setWalletAmountCents] = useState(0);
 
   /** Persist buyer-side context to localStorage so CheckoutSuccess can finalize orders. */
   const persistCheckoutContext = useCallback(() => {
@@ -276,7 +273,6 @@ const Checkout = () => {
   /** Handle successful confirmation (any method). */
   const handlePaymentSuccess = (paymentIntentId: string) => {
     setCardSheetOpen(false);
-    setWalletSheetOpen(false);
     localStorage.setItem('checkout_reference', paymentIntentId);
     navigate(`/checkout/success?payment_intent=${paymentIntentId}`);
   };
@@ -349,6 +345,102 @@ const Checkout = () => {
     return true;
   };
 
+  const walletIsAvailable = (result: CanMakePaymentResult | null, wallet: 'apple' | 'google') => {
+    if (!result) return false;
+    return wallet === 'apple' ? Boolean(result.applePay) : Boolean(result.googlePay);
+  };
+
+  const handleWebWalletConfirm = async () => {
+    if (selectedMethod?.kind !== 'wallet') return false;
+    const stripe = await getStripe();
+    if (!stripe) throw new Error('Payment provider failed to load');
+
+    const amountCents = Math.round(total * 100);
+    const paymentRequest = stripe.paymentRequest({
+      country: 'AU',
+      currency: 'aud',
+      total: { label: 'Flea', amount: amountCents },
+      displayItems: [
+        { label: 'Items', amount: Math.round(itemsTotal * 100) },
+        ...(totalShipping > 0 ? [{ label: 'Shipping', amount: Math.round(totalShipping * 100) }] : []),
+        ...(processingFee > 0 ? [{ label: 'Secure Checkout Fee', amount: Math.round(processingFee * 100) }] : []),
+      ],
+      requestPayerName: true,
+      requestPayerEmail: true,
+    });
+
+    const canPay = await paymentRequest.canMakePayment();
+    if (!walletIsAvailable(canPay, selectedMethod.wallet)) {
+      toast.error(`${selectedMethod.wallet === 'apple' ? 'Apple Pay' : 'Google Pay'} is not available here. Please choose Add new card.`);
+      return true;
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      let paymentStarted = false;
+
+      paymentRequest.on('paymentmethod', async (event: PaymentRequestPaymentMethodEvent) => {
+        paymentStarted = true;
+        try {
+          const pi = await createPaymentIntent(false);
+          if (!pi) {
+            event.complete('fail');
+            resolve();
+            return;
+          }
+
+          const { error, paymentIntent } = await stripe.confirmCardPayment(
+            pi.clientSecret,
+            { payment_method: event.paymentMethod.id },
+            { handleActions: false }
+          );
+
+          if (error) {
+            event.complete('fail');
+            reject(error);
+            return;
+          }
+
+          event.complete('success');
+
+          if (paymentIntent?.status === 'requires_action') {
+            const actionResult = await stripe.confirmCardPayment(pi.clientSecret);
+            if (actionResult.error) {
+              reject(actionResult.error);
+              return;
+            }
+            if (actionResult.paymentIntent?.status === 'succeeded' || actionResult.paymentIntent?.status === 'requires_capture') {
+              handlePaymentSuccess(actionResult.paymentIntent.id);
+              resolve();
+              return;
+            }
+          }
+
+          if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
+            handlePaymentSuccess(paymentIntent.id);
+            resolve();
+          } else {
+            reject(new Error('Payment did not complete. Please try again.'));
+          }
+        } catch (error) {
+          event.complete('fail');
+          reject(error);
+        }
+      });
+
+      paymentRequest.on('cancel', () => {
+        if (!paymentStarted) resolve();
+      });
+
+      try {
+        paymentRequest.show();
+      } catch (error) {
+        reject(error);
+      }
+    });
+
+    return true;
+  };
+
   /** Confirm with a card the user JUST entered in the Vinted-style sheet. */
   const handleCardConfirm = async ({ paymentMethodId, saveCard }: { paymentMethodId: string; cardholderName: string; saveCard: boolean }) => {
     if (!preflight()) return;
@@ -409,19 +501,20 @@ const Checkout = () => {
     }
   };
 
-  /** Open wallet sheet (Apple/Google Pay) — PI is created first so the sheet has a clientSecret. */
+  /** Start Apple/Google Pay directly. Native uses the Capacitor sheet, web uses the browser wallet sheet. */
   const handleWalletTap = async () => {
     if (!preflight()) return;
     persistCheckoutContext();
     setIsSubmitting(true);
     try {
-      const pi = await createPaymentIntent(false);
-      if (!pi) return;
-      const handledNativeWallet = await handleNativeWalletConfirm(pi);
-      if (handledNativeWallet) return;
-      setWalletClientSecret(pi.clientSecret);
-      setWalletAmountCents(pi.amount);
-      setWalletSheetOpen(true);
+      if (getNativeWalletPlatform()) {
+        const pi = await createPaymentIntent(false);
+        if (!pi) return;
+        await handleNativeWalletConfirm(pi);
+        return;
+      }
+
+      await handleWebWalletConfirm();
     } catch (e: any) {
       console.error('wallet init error:', e);
       toast.error(e?.message || 'Failed to start payment. Please try again.');
@@ -445,8 +538,7 @@ const Checkout = () => {
     if (!selectedMethod) return 'Confirm order';
     switch (selectedMethod.kind) {
       case 'wallet':
-        return typeof navigator !== 'undefined' && /Android/.test(navigator.userAgent)
-          ? 'Buy with Google Pay' : 'Buy with Apple Pay';
+        return selectedMethod.wallet === 'google' ? 'Buy with Google Pay' : 'Buy with Apple Pay';
       case 'saved': return `Pay $${total.toFixed(2)}`;
       case 'new_card': return 'Continue to card details';
     }
@@ -665,16 +757,6 @@ const Checkout = () => {
             onClose={() => setCardSheetOpen(false)}
             onConfirm={handleCardConfirm}
           />
-          {/* Wallet drawer (Apple/Google Pay) */}
-          {walletClientSecret && (
-            <WalletPaySheet
-              open={walletSheetOpen}
-              onClose={() => setWalletSheetOpen(false)}
-              clientSecret={walletClientSecret}
-              amountCents={walletAmountCents}
-              onSuccess={handlePaymentSuccess}
-            />
-          )}
         </DrawerContent>
       </Drawer>
     </div>;

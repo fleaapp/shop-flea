@@ -16,7 +16,7 @@ export type SavedCard = {
 };
 
 export type SelectedPaymentMethod =
-  | { kind: 'wallet' }
+  | { kind: 'wallet'; wallet: WalletKind }
   | { kind: 'saved'; card: SavedCard }
   | { kind: 'new_card' };
 
@@ -124,7 +124,7 @@ const PaymentMethodPicker = ({ value, onChange, amountCents }: Props) => {
     if (savedCards.length > 0) {
       onChange({ kind: 'saved', card: savedCards[0] });
     } else if (wallet) {
-      onChange({ kind: 'wallet' });
+      onChange({ kind: 'wallet', wallet });
     } else {
       onChange({ kind: 'new_card' });
     }
@@ -139,7 +139,7 @@ const PaymentMethodPicker = ({ value, onChange, amountCents }: Props) => {
     }
   }, [walletLoading, value, wallet, savedCards, onChange]);
 
-  const isWalletSelected = value?.kind === 'wallet';
+  const isWalletSelected = value?.kind === 'wallet' && value.wallet === wallet;
   const isNewCardSelected = value?.kind === 'new_card';
 
   return (
@@ -187,7 +187,7 @@ const PaymentMethodPicker = ({ value, onChange, amountCents }: Props) => {
         {wallet && (
           <button
             type="button"
-            onClick={() => onChange({ kind: 'wallet' })}
+            onClick={() => onChange({ kind: 'wallet', wallet })}
             className="w-full flex items-center gap-3 px-4 py-3 text-left"
           >
             <Radio selected={isWalletSelected} />
