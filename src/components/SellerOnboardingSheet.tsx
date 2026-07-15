@@ -73,7 +73,7 @@ const SellerOnboardingSheet = ({
     if (!open) return;
     const p: any = profile || {};
     const savedStep = Number(p.stripe_onboarding_step);
-    const resumeStep = savedStep >= 1 && savedStep <= 5 ? (savedStep as 1 | 2 | 3 | 4 | 5) : 1;
+    const resumeStep = savedStep >= 1 && savedStep <= 4 ? (savedStep as 1 | 2 | 3 | 4) : 1;
     setStep(resumeStep);
     setFirstName(p.first_name || '');
     setLastName(p.last_name || '');
