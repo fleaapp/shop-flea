@@ -50,10 +50,10 @@ const PaymentMethodsSection = () => {
   const stripeAccountId = profile?.stripe_account_id || localAccountId;
   const stripeDetailsSubmitted = !!stripeAccountId && !stripeFullyConnected && !stripeActionRequired;
 
-  // Only show "verifying" if user just returned from Stripe onboarding (URL param)
-  // or if a status check is actively running. Never show it just because an account ID exists.
+  // Only show "verifying" if user just returned from Stripe onboarding (URL param).
+  // Background status checks must not flip the row into a Verifying state.
   const returnedFromStripe = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('stripe_success') === 'true';
-  const stripePending = !stripeFullyConnected && !stripeDetailsSubmitted && (returnedFromStripe || isChecking);
+  const stripePending = !stripeFullyConnected && !stripeDetailsSubmitted && returnedFromStripe;
 
   const handleConnectStripe = () => {
     if (!user || !user.email) {
@@ -196,10 +196,11 @@ const PaymentMethodsSection = () => {
     navigate('/seller-dashboard');
   };
 
+  // Only fully verified sellers get the Seller Dashboard. Anyone else (no account,
+  // partial onboarding, action required, or pending review) gets sent back into
+  // the onboarding sheet, which resumes from their saved step.
   const handleStripeRowClick = () => {
-    if (stripeActionRequired && needsIdDocument) {
-      setShowStripeOnboarding(true);
-    } else if (stripeFullyConnected || stripeDetailsSubmitted || stripeActionRequired) {
+    if (stripeFullyConnected) {
       openSellerDashboard();
     } else {
       handleConnectStripe();
@@ -231,15 +232,19 @@ const PaymentMethodsSection = () => {
     return () => { active = false; };
   }, [stripeFullyConnected]);
 
+  const hasSavedOnboardingStep = Number((profile as any)?.stripe_onboarding_step) > 1;
+
   const getStripeStatus = () => {
     if (stripeFullyConnected) {
       return { label: balanceLabel ? `Balance: ${balanceLabel}` : 'Balance loading...', color: 'text-foreground' };
     }
-    if (stripePending || isChecking) return { label: '⏳ Verifying...', color: 'text-amber-600' };
     if (stripeActionRequired) return { label: '⚠️ Action required', color: 'text-orange-600' };
     if (stripeDetailsSubmitted) return { label: '🔍 Pending review', color: 'text-amber-600' };
+    if (stripePending) return { label: '⏳ Verifying...', color: 'text-amber-600' };
+    if (stripeAccountId || hasSavedOnboardingStep) return { label: 'Continue setup', color: 'text-orange-600' };
     return { label: 'Not connected', color: 'text-muted-foreground' };
   };
+
 
   const stripeStatus = getStripeStatus();
 
@@ -270,11 +275,11 @@ const PaymentMethodsSection = () => {
         >
           <div className="flex items-center gap-3 max-[375px]:gap-2">
             <span aria-hidden className="text-2xl leading-none w-7 h-7 flex items-center justify-center">
-              {stripeFullyConnected || stripeDetailsSubmitted || stripeActionRequired ? '📈' : '💸'}
+              {stripeFullyConnected ? '📈' : '💸'}
             </span>
             <div>
               <span className="text-base max-[375px]:text-sm font-medium text-foreground">
-                {stripeFullyConnected || stripeDetailsSubmitted || stripeActionRequired ? 'Seller Dashboard' : 'Set up Seller'}
+                {stripeFullyConnected ? 'Seller Dashboard' : 'Set up Seller'}
               </span>
               <p className={`text-xs mt-0.5 ${stripeStatus.color}`}>
                 {stripeStatus.label}
