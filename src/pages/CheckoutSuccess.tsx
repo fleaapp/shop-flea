@@ -22,11 +22,15 @@ const CheckoutSuccess = () => {
 
   useEffect(() => {
     const processOrder = async () => {
+      // Accept either the hosted Checkout Session id (legacy) or the
+      // in-app PaymentIntent id (new PaymentSheet / Payment Element flow).
       const sessionId = searchParams.get('session_id');
+      const paymentIntentId = searchParams.get('payment_intent');
+      const reference = sessionId || paymentIntentId || localStorage.getItem('checkout_reference');
       const isDemo = searchParams.get('demo') === '1';
       const demoOrderGroup = searchParams.get('order_group');
 
-      if (!sessionId && !isDemo) {
+      if (!reference && !isDemo) {
         navigate('/');
         return;
       }
@@ -78,7 +82,7 @@ const CheckoutSuccess = () => {
         const shipping = JSON.parse(shippingJson);
         const shippingBySeller = new Map<string, number>(JSON.parse(shippingBySellerJson || '[]'));
 
-        const checkoutReference = sessionId || localStorage.getItem('checkout_reference');
+        const checkoutReference = reference;
 
         let finalizeData: any = null;
         let finalizeError: any = null;
