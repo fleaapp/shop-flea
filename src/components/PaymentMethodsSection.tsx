@@ -239,9 +239,10 @@ const PaymentMethodsSection = () => {
       return { label: balanceLabel ? `Balance: ${balanceLabel}` : 'Balance loading...', color: 'text-foreground' };
     }
     if (stripeActionRequired) return { label: '⚠️ Action required', color: 'text-orange-600' };
+    if (hasSavedOnboardingStep && !stripeDetailsSubmitted) return { label: '✏️ Setup unfinished — tap to continue', color: 'text-orange-600' };
     if (stripeDetailsSubmitted) return { label: '🔍 Pending review', color: 'text-amber-600' };
     if (stripePending) return { label: '⏳ Verifying...', color: 'text-amber-600' };
-    if (stripeAccountId || hasSavedOnboardingStep) return { label: 'Continue setup', color: 'text-orange-600' };
+    if (stripeAccountId) return { label: '✏️ Setup unfinished — tap to continue', color: 'text-orange-600' };
     return { label: 'Not connected', color: 'text-muted-foreground' };
   };
 
@@ -279,7 +280,7 @@ const PaymentMethodsSection = () => {
             </span>
             <div>
               <span className="text-base max-[375px]:text-sm font-medium text-foreground">
-                {stripeFullyConnected ? 'Seller Dashboard' : 'Set up Seller'}
+                {stripeFullyConnected ? 'Seller Dashboard' : '💸 Become a Seller'}
               </span>
               <p className={`text-xs mt-0.5 ${stripeStatus.color}`}>
                 {stripeStatus.label}
