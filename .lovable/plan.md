@@ -1,25 +1,19 @@
-## Listing details: shared-link web preview mode
+## Changes
 
-Rule: when someone opens a listing URL in a mobile web browser (i.e. not the native app, not an installed PWA), we treat that view as a "shared link preview":
+### 1. `src/components/InstallAppBanner.tsx`
+- Replace the current logo `src="/src/assets/flea-logo-transparent.png"` with the auth-screen logo: `import fleaLogoAuth from '@/assets/flea-logo-auth.jpeg'` and use it as the `<img src>`. This is the green-background Flea mark used on the auth screen.
+- Keep existing spacing, centering, lime background, and copy as-is.
 
-- Show the `InstallAppBanner`.
-- Hide the sticky footer action buttons (Buy / Add to cart / Message seller, etc.).
-- Everything else on the details page stays as-is.
+### 2. `src/hooks/useIsWebSharedPreview.ts`
+- Add an auth check so the hook only returns `true` when the visitor is:
+  - Not in Capacitor native
+  - Not in a standalone/installed PWA
+  - AND not signed in
+- Implementation: subscribe to `supabase.auth.getSession()` + `onAuthStateChange`. Return `true` only when there is no active session (in addition to the existing web/non-PWA checks).
 
-When the same URL opens inside the native app or installed PWA (universal link / app link), it renders the normal listing details with the footer actions and no download banner. `InstallAppBanner` already gates itself on `Capacitor.isNativePlatform` + `display-mode: standalone`, so that half is done.
+### 3. `src/pages/ListingDetails.tsx` (no behavior change beyond what the hook returns)
+- Already uses `useIsWebSharedPreview()` to gate banner + hide sticky Buy/Message footer, so once the hook is updated, logged-in users on web will no longer see the banner and will see the normal action buttons. Logged-out mobile web visitors will see the banner and no action buttons, nudging them to download rather than log in on the web.
 
-### Changes
-
-1. `src/pages/ListingDetails.tsx`
-   - Add a small helper (or reuse a hook) that returns `isSharedWebPreview = !native && !standalone`.
-   - Wrap the sticky footer (currently around line 712, `<div data-listing-footer ...>` and its `isRemoved / isOwner / normal` branches) so it does not render when `isSharedWebPreview` is true.
-   - Keep the existing `<InstallAppBanner />` render at line 699 as-is (it self-hides in-app).
-
-2. Official store badges
-   - Replace the hand-drawn Apple + Google SVGs in `src/components/InstallAppBanner.tsx` with the official "Download on the App Store" and "Get it on Google Play" badges used on the landing page project so they no longer look skewed. I'll copy the exact SVG/asset markup from the landing page.
-
-### Technical notes
-
-- Native + PWA detection lives in `InstallAppBanner.tsx` already; I'll extract it into a tiny `useIsWebSharedPreview()` hook in `src/hooks/` so both the banner and `ListingDetails` share one source of truth.
-- No route changes, no changes to how deep links open in the app. Universal Links / App Links continue to hand off to the native app when installed; when they do, `Capacitor.isNativePlatform()` is true, so both the banner and the footer suppression turn off automatically.
-- No backend or schema changes.
+## Result
+- Banner uses the same green Flea logo as the auth screen.
+- Banner appears only for logged-out visitors viewing a listing on mobile web (shared link previews); it never appears for signed-in users, native app, or installed PWA.

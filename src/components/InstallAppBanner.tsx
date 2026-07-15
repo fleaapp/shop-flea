@@ -1,11 +1,12 @@
 import { APP_STORE_URL, PLAY_STORE_URL } from '@/utils/shareLink';
 import { useIsWebSharedPreview } from '@/hooks/useIsWebSharedPreview';
+import fleaLogoAuth from '@/assets/flea-logo-auth.jpeg';
 
 /**
  * Prominent Download-the-App CTA shown on shared listing previews when the
  * viewer is on the mobile web (not inside the native Capacitor app and not
- * running as an installed PWA). Uses the official Apple and Google store
- * badges so proportions and branding are correct.
+ * running as an installed PWA) AND is not signed in. Uses the official Apple
+ * and Google store badges so proportions and branding are correct.
  */
 const InstallAppBanner = () => {
   const visible = useIsWebSharedPreview();
@@ -14,9 +15,9 @@ const InstallAppBanner = () => {
   return (
     <div className="mx-4 my-5 rounded-2xl bg-primary text-primary-foreground p-5 flex flex-col items-center gap-4 shadow-sm">
       <img
-        src="/src/assets/flea-logo-transparent.png"
+        src={fleaLogoAuth}
         alt="Flea logo"
-        className="h-10 w-auto"
+        className="h-14 w-auto rounded-xl"
       />
       <p className="text-sm font-semibold text-center max-w-[260px] leading-snug">
         Download Flea to sell & shop secondhand with a swipe.
