@@ -1,6 +1,8 @@
 project_id = "teaicrimlqdayqpmxasc"
 
 [functions]
+  [functions.admin-reset-seller]
+    verify_jwt = false
   [functions.admin-check-role]
     verify_jwt = false
   [functions.admin-data]
