@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import applePayLogo from '@/assets/applepay-logo.png';
 import gPayLogo from '@/assets/gpay-logo.png';
-import { CreditCard } from 'lucide-react';
+import { CreditCard, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { cn } from '@/lib/utils';
 import { getStripe } from '@/lib/stripe/loadStripe';
@@ -158,12 +159,24 @@ const PaymentMethodPicker = ({ value, onChange, amountCents }: Props) => {
         {/* Saved cards */}
         {savedCards.map((card) => {
           const selected = value?.kind === 'saved' && value.card.id === card.id;
+          const handleDelete = async (e: React.MouseEvent) => {
+            e.stopPropagation();
+            if (!confirm(`Remove ${brandLabel(card.brand)} •••• ${card.last4}?`)) return;
+            try {
+              await invokeCloudFunction('stripe-detach-card', { paymentMethodId: card.id });
+              setSavedCards((prev) => prev.filter((c) => c.id !== card.id));
+              if (selected) onChange({ kind: 'new_card' });
+              toast.success('Card removed');
+            } catch (err) {
+              console.error(err);
+              toast.error('Could not remove card');
+            }
+          };
           return (
-            <button
+            <div
               key={card.id}
-              type="button"
+              className="w-full flex items-center gap-3 px-4 py-3 cursor-pointer"
               onClick={() => onChange({ kind: 'saved', card })}
-              className="w-full flex items-center gap-3 px-4 py-3 text-left"
             >
               <Radio selected={selected} />
               <div className="flex items-center justify-center w-11 h-7 rounded-md border border-border">
@@ -179,7 +192,15 @@ const PaymentMethodPicker = ({ value, onChange, amountCents }: Props) => {
                   </p>
                 )}
               </div>
-            </button>
+              <button
+                type="button"
+                aria-label="Remove card"
+                onClick={handleDelete}
+                className="p-2 -mr-2 text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
           );
         })}
 
