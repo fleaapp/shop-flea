@@ -42,6 +42,7 @@ import { canOpenListing } from '@/utils/listingAccess';
 import { loadSavedListingSnapshot } from '@/utils/savedListingSnapshots';
 import { buildListingShareUrl } from '@/utils/shareLink';
 import InstallAppBanner from '@/components/InstallAppBanner';
+import { useIsWebSharedPreview } from '@/hooks/useIsWebSharedPreview';
 import type { Listing } from '@/types/listing';
 
 interface DbListing {
