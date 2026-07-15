@@ -12,9 +12,9 @@ const InstallAppBanner = () => {
   if (!visible) return null;
 
   return (
-    <div className="mx-4 my-3 rounded-2xl bg-charcoal text-white p-4 flex flex-col items-center gap-3 shadow-sm">
-      <p className="text-sm font-semibold text-center">
-        Get the Flea app to sell, save & buy your next great find.
+    <div className="mx-4 my-5 rounded-2xl bg-primary text-primary-foreground p-5 flex flex-col items-center gap-4 shadow-sm">
+      <p className="text-sm font-semibold text-center max-w-[260px] leading-snug">
+        Download Flea to sell & shop secondhand with a swipe.
       </p>
       <div className="flex items-center gap-3 w-full justify-center flex-wrap">
         <a
