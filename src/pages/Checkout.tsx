@@ -744,8 +744,13 @@ const Checkout = () => {
                 {payButtonLabel()}
               </Button>
               <p className="text-[11px] text-muted-foreground/70 text-center mt-3 flex items-center justify-center gap-1">
-                <Lock size={11} /> Payments are encrypted end to end and stay inside the Flea app.
+                <Lock size={11} /> Payments are encrypted and are processed by Stripe.
               </p>
+              <div className="flex items-center justify-center gap-2 mt-2">
+                <img src={visaLogo} alt="Visa" className="h-6 w-auto rounded-[3px]" />
+                <img src={mastercardLogo} alt="Mastercard" className="h-6 w-auto rounded-[3px]" />
+                <img src={amexLogo} alt="American Express" className="h-6 w-auto rounded-[3px]" />
+              </div>
             </div>
           </div>
 
