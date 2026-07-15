@@ -59,6 +59,15 @@ Deno.serve(async (req) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
+    // Check for existing brand first (case-insensitive)
+    const { data: existing } = await admin
+      .from("brands")
+      .select("id, brand_name, display_name, usage_count")
+      .ilike("brand_name", brandName)
+      .maybeSingle();
+
+    if (existing) return json({ brand: existing });
+
     const { data, error } = await admin
       .from("brands")
       .insert({ brand_name: brandName, display_name: trimmed })
@@ -66,14 +75,14 @@ Deno.serve(async (req) => {
       .single();
 
     if (error) {
-      const { data: existing, error: existingError } = await admin
+      // Unique-index race: re-fetch existing
+      const { data: raced } = await admin
         .from("brands")
         .select("id, brand_name, display_name, usage_count")
-        .eq("brand_name", brandName)
+        .ilike("brand_name", brandName)
         .maybeSingle();
-
-      if (existing) return json({ brand: existing });
-      console.error("add-brand failed", error, existingError);
+      if (raced) return json({ brand: raced });
+      console.error("add-brand failed", error);
       return json({ error: "Could not add brand." }, 500);
     }
 
