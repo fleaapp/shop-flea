@@ -1,0 +1,1 @@
+UPDATE public.profiles SET stripe_account_id = NULL, stripe_onboarding_complete = false, stripe_onboarding_step = NULL WHERE username ILIKE 'jcsbh';
