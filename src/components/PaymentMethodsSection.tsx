@@ -94,6 +94,7 @@ const PaymentMethodsSection = () => {
         }
         await refreshProfile();
         if (!silent) toast.success('Your seller account is ready!');
+        return 'verified' as const;
       } else if (data?.chargesEnabled && !data?.payoutsEnabled && data?.accountId) {
         // Charges enabled but payouts paused - action required
         setStripeChargesEnabled(true);
@@ -132,6 +133,7 @@ const PaymentMethodsSection = () => {
             message: '⚠️ Your payouts are paused. Tap here to open your seller dashboard and complete verification.',
           });
         }
+        return 'action_required' as const;
       } else if (data?.detailsSubmitted && data?.accountId) {
         // Details submitted but under review - NOT fully connected yet
         setStripeChargesEnabled(false);
@@ -145,19 +147,23 @@ const PaymentMethodsSection = () => {
           .eq('user_id', user.id);
         await refreshProfile();
         if (!silent) toast('Your seller account is under review. We\'ll update you when it\'s verified.');
+        return 'pending' as const;
       } else if (data?.accountId) {
         setLocalConnected(false);
         setLocalAccountId(data.accountId);
         localStorage.removeItem(getStripeConnectedStorageKey(user.id));
         if (!silent) toast('Seller setup incomplete. Please finish setup.');
+        return 'pending' as const;
       } else {
         clearLocalStripeState();
         await refreshProfile();
         if (!silent) toast('No seller account found. Please become a seller first.');
+        return 'pending' as const;
       }
     } catch (error) {
       console.error('Status check error:', error);
       if (!silent) toast.error('Failed to check seller status.');
+      return 'pending' as const;
     } finally {
       setIsChecking(false);
     }
