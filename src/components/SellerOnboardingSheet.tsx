@@ -510,7 +510,11 @@ const BankDetailsStep = ({ firstName, lastName, onBack, onDone }: BankDetailsSte
       <div className="w-full max-w-[340px] mx-auto text-left space-y-3 text-[12px] text-muted-foreground leading-relaxed">
         <p>
           By providing your bank account details and confirming, you authorise Flea and its payment
-          provider to debit and credit this account for payouts and any related adjustments.
+          provider to send payouts from your sales to this account.
+        </p>
+        <p>
+          Refunds, disputes, and any adjustments are settled from your Flea balance, not debited
+          from your bank account.
         </p>
         <p>
           You certify that you are either an account holder or an authorised signatory on the
