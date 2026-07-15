@@ -13,7 +13,7 @@ const InstallAppBanner = () => {
   if (!visible) return null;
 
   return (
-    <div className="mx-4 my-5 bg-primary text-primary-foreground p-5 flex flex-col items-center gap-4 shadow-sm">
+    <div className="mx-4 my-5 bg-primary text-primary-foreground p-5 flex flex-col items-center gap-4 shadow-sm rounded-2xl">
       <img
         src={fleaLogoAuth}
         alt="Flea logo"
