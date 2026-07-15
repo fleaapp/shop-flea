@@ -17,8 +17,6 @@ import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { toast } from 'sonner';
 import { Pencil, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import applePayLogo from '@/assets/applepay-logo.png';
-import gPayLogo from '@/assets/gpay-logo.png';
 import BlockedUserBanner from '@/components/BlockedUserBanner';
 import { fetchSellerShippingSettings, calculateTotalShipping, SellerShippingInfo } from '@/utils/shippingCalculator';
 import { calculateFees } from '@/utils/feeCalculator';
