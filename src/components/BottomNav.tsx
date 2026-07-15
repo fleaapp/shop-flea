@@ -20,11 +20,11 @@ const BottomNav = () => {
   const { user, profile } = useAuth();
   const badges = useNavBadges();
 
-  // Orders badge: unread buyer-side order messages only
+  // Orders badge: visible awaiting/shipped buyer orders + buyer-side unread messages
   const ordersBadge = useMemo(() => {
-    const count = badges.unread_buyer_msgs;
+    const count = badges.buyer_orders + badges.unread_buyer_msgs;
     return count || undefined;
-  }, [badges.unread_buyer_msgs]);
+  }, [badges.buyer_orders, badges.unread_buyer_msgs]);
 
   // Alerts badge: activity notifications only
   const alertsBadge = useMemo(() => {

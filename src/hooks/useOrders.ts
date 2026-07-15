@@ -24,6 +24,8 @@ export interface Order {
   updated_at: string;
   shipped_at: string | null;
   delivered_at: string | null;
+  payment_method?: string | null;
+  checkout_reference?: string | null;
   // Shipping address fields
   shipping_first_name: string | null;
   shipping_last_name: string | null;
@@ -96,6 +98,8 @@ const ORDER_OPTIONAL_COLUMNS = [
   'updated_at',
   'shipped_at',
   'delivered_at',
+  'payment_method',
+  'checkout_reference',
   'shipping_first_name',
   'shipping_last_name',
   'shipping_address',
@@ -131,6 +135,8 @@ const normalizeOrderRows = (rows: unknown[]): RawOrderRow[] => {
       updated_at: typedRow.updated_at ?? typedRow.created_at ?? new Date(0).toISOString(),
       shipped_at: typedRow.shipped_at ?? null,
       delivered_at: typedRow.delivered_at ?? null,
+      payment_method: typedRow.payment_method ?? null,
+      checkout_reference: typedRow.checkout_reference ?? null,
       shipping_first_name: typedRow.shipping_first_name ?? null,
       shipping_last_name: typedRow.shipping_last_name ?? null,
       shipping_address: typedRow.shipping_address ?? null,
@@ -140,6 +146,10 @@ const normalizeOrderRows = (rows: unknown[]): RawOrderRow[] => {
     };
   });
 };
+
+const isDemoOrder = (order: Partial<RawOrderRow>) =>
+  order.payment_method === 'demo' ||
+  (typeof order.checkout_reference === 'string' && order.checkout_reference.startsWith('demo-'));
 
 const ORDER_SELECT_FIELDS = buildOrderSelectFields();
 
@@ -218,7 +228,7 @@ const fetchOrdersForUser = async (column: 'buyer_id' | 'seller_id', userId: stri
     }
 
     if (error) throw error;
-    return normalizeOrderRows((data ?? []) as unknown[]);
+    return normalizeOrderRows((data ?? []) as unknown[]).filter((order) => !isDemoOrder(order));
   }
 };
 
