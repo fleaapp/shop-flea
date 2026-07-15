@@ -196,10 +196,11 @@ const PaymentMethodsSection = () => {
     navigate('/seller-dashboard');
   };
 
+  // Only fully verified sellers get the Seller Dashboard. Anyone else (no account,
+  // partial onboarding, action required, or pending review) gets sent back into
+  // the onboarding sheet, which resumes from their saved step.
   const handleStripeRowClick = () => {
-    if (stripeActionRequired && needsIdDocument) {
-      setShowStripeOnboarding(true);
-    } else if (stripeFullyConnected || stripeDetailsSubmitted || stripeActionRequired) {
+    if (stripeFullyConnected) {
       openSellerDashboard();
     } else {
       handleConnectStripe();
