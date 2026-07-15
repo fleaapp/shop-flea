@@ -15,6 +15,7 @@ const brandLabel = (brand: string) => {
 const SavedCardsSection = () => {
   const [cards, setCards] = useState<SavedCard[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -24,6 +25,7 @@ const SavedCardsSection = () => {
         if (!cancelled && data?.cards) setCards(data.cards);
       } catch (e) {
         console.error('load saved cards:', e);
+        if (!cancelled) setLoadFailed(true);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -36,14 +38,12 @@ const SavedCardsSection = () => {
     try {
       await invokeCloudFunction('stripe-detach-card', { paymentMethodId: card.id });
       setCards((prev) => prev.filter((c) => c.id !== card.id));
-      toast.success('Card removed');
+      toast.success('Card removed.');
     } catch (err) {
       console.error(err);
-      toast.error('Could not remove card');
+      toast.error('Could not remove card.');
     }
   };
-
-  if (loading || cards.length === 0) return null;
 
   return (
     <div>
@@ -51,7 +51,19 @@ const SavedCardsSection = () => {
         Saved Cards
       </h2>
       <div className="space-y-2 max-[375px]:space-y-1.5">
-        {cards.map((card) => (
+        {loading ? (
+          <div className="rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow bg-card">
+            <p className="text-sm text-muted-foreground">Loading saved cards...</p>
+          </div>
+        ) : loadFailed ? (
+          <div className="rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow bg-card">
+            <p className="text-sm text-muted-foreground">Saved cards could not be loaded.</p>
+          </div>
+        ) : cards.length === 0 ? (
+          <div className="rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow bg-card">
+            <p className="text-sm text-muted-foreground">No saved cards yet.</p>
+          </div>
+        ) : cards.map((card) => (
           <div
             key={card.id}
             className="flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow bg-card"
