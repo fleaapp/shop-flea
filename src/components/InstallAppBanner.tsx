@@ -16,10 +16,8 @@ const InstallAppBanner = () => {
     <div className="mx-4 my-5 rounded-2xl bg-primary text-primary-foreground p-5 flex flex-col items-center gap-4 shadow-sm">
       <img
         src={fleaLogoAuth}
-        alt="FLEA"
-        width={232}
-        height={84}
-        className="h-12 object-contain"
+        alt="Flea logo"
+        className="h-10 w-auto rounded-lg"
       />
       <p className="text-sm font-semibold text-center max-w-[260px] leading-snug">
         Download Flea to sell & shop secondhand with a swipe.
