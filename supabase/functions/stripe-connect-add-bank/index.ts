@@ -19,7 +19,7 @@ function getStripeSecretKey() {
 async function markOnboardingComplete(userId: string, accountId: string) {
   const externalUrl = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
   const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
+  const response = await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
     method: "PATCH",
     headers: {
       apikey: serviceKey,
@@ -33,12 +33,27 @@ async function markOnboardingComplete(userId: string, accountId: string) {
       stripe_onboarding_step: "complete",
     }),
   });
+  if (!response.ok && (await response.clone().json().catch(() => null))?.code === "42703") {
+    await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
+      method: "PATCH",
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        stripe_account_id: accountId,
+        stripe_onboarding_complete: true,
+      }),
+    });
+  }
 }
 
 async function markOnboardingSubmitted(userId: string, accountId: string) {
   const externalUrl = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
   const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
+  const response = await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
     method: "PATCH",
     headers: {
       apikey: serviceKey,
@@ -52,6 +67,21 @@ async function markOnboardingSubmitted(userId: string, accountId: string) {
       stripe_onboarding_step: "complete",
     }),
   });
+  if (!response.ok && (await response.clone().json().catch(() => null))?.code === "42703") {
+    await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
+      method: "PATCH",
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        stripe_account_id: accountId,
+        stripe_onboarding_complete: false,
+      }),
+    });
+  }
 }
 
 serve(async (req) => {

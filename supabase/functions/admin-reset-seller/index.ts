@@ -24,14 +24,14 @@ Deno.serve(async (req) => {
 
     // Find profile
     const lookup = await fetch(
-      `${url}/rest/v1/profiles?or=(username.eq.${encodeURIComponent(username)},username.eq.${encodeURIComponent(`@${normalizedUsername}`)},username.eq.${encodeURIComponent(normalizedUsername)})&select=user_id,username,stripe_account_id,stripe_onboarding_complete,stripe_onboarding_step`,
+      `${url}/rest/v1/profiles?or=(username.eq.${encodeURIComponent(username)},username.eq.${encodeURIComponent(`@${normalizedUsername}`)},username.eq.${encodeURIComponent(normalizedUsername)})&select=user_id,username,stripe_account_id,stripe_onboarding_complete`,
       { headers },
     );
     const rows = await lookup.json();
     if (!Array.isArray(rows) || rows.length === 0) return json({ error: "not found", rows }, 404);
     const before = rows[0];
 
-    const patch = await fetch(
+    let patch = await fetch(
       `${url}/rest/v1/profiles?user_id=eq.${before.user_id}`,
       {
         method: "PATCH",
@@ -43,7 +43,18 @@ Deno.serve(async (req) => {
         }),
       },
     );
-    const after = await patch.json();
+    let after = await patch.json();
+    if (!patch.ok && after?.code === "42703") {
+      patch = await fetch(`${url}/rest/v1/profiles?user_id=eq.${before.user_id}`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({
+          stripe_account_id: null,
+          stripe_onboarding_complete: false,
+        }),
+      });
+      after = await patch.json();
+    }
     if (!patch.ok) return json({ error: "patch failed", status: patch.status, after }, 500);
 
     return json({ ok: true, before, after: after?.[0] ?? after });

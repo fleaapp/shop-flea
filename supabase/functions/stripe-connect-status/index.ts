@@ -39,6 +39,18 @@ async function persistStripeStatus(userId: string, accountId: string) {
   if (!response.ok) {
     const text = await response.text();
     console.error(`[stripe-connect-status] Failed to persist Stripe status: ${response.status} ${text}`);
+    if (text.includes('stripe_onboarding_step')) {
+      await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': serviceKey,
+          'Authorization': `Bearer ${serviceKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify({ stripe_account_id: accountId, stripe_onboarding_complete: true }),
+      });
+    }
   } else {
     console.log(`[stripe-connect-status] Persisted stripe_account_id=${accountId}, stripe_onboarding_complete=true for user ${userId}`);
   }
@@ -62,6 +74,18 @@ async function clearStripeStatus(userId: string) {
   if (!response.ok) {
     const text = await response.text();
     console.error(`[stripe-connect-status] Failed to clear stale Stripe status: ${response.status} ${text}`);
+    if (text.includes('stripe_onboarding_step')) {
+      await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': serviceKey,
+          'Authorization': `Bearer ${serviceKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify({ stripe_account_id: null, stripe_onboarding_complete: false }),
+      });
+    }
   }
 }
 
