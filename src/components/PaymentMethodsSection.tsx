@@ -280,7 +280,7 @@ const PaymentMethodsSection = () => {
             </span>
             <div>
               <span className="text-base max-[375px]:text-sm font-medium text-foreground">
-                {stripeFullyConnected ? 'Seller Dashboard' : 'Set up Seller'}
+                {stripeFullyConnected ? 'Seller Dashboard' : '💸 Become a Seller'}
               </span>
               <p className={`text-xs mt-0.5 ${stripeStatus.color}`}>
                 {stripeStatus.label}
