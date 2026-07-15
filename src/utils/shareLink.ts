@@ -16,6 +16,6 @@ export const buildListingShareUrl = (listingId: string): string =>
   `${CANONICAL_SITE_URL}/listing/${listingId}`;
 
 export const APP_STORE_URL =
-  'https://apps.apple.com/app/flea-buy-sell-fashion/id0000000000';
+  'https://apps.apple.com/au/app/flea-swipe-shop-sell/id6780890730';
 export const PLAY_STORE_URL =
   'https://play.google.com/store/apps/details?id=com.finditonflea.app';
