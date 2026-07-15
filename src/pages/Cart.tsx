@@ -54,7 +54,7 @@ const Cart = () => {
   const { addFavorite } = useFavorites();
   const { removeDiscarded } = useDiscardedListings();
   const { buyerOrderGroups, loadingBuyerOrders, markAsDelivered } = useOrders();
-  const { getGroupUnread, total: totalUnreadMessages } = useUnreadOrderMessages();
+  const { getGroupUnread } = useUnreadOrderMessages();
   const [activeTab, setActiveTab] = useState<'cart' | 'orders'>(routeState?.initialTab === 'orders' ? 'orders' : 'cart');
   const [orderStatusFilter, setOrderStatusFilter] = useState<'awaiting' | 'shipped' | 'delivered'>('awaiting');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
