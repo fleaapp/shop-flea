@@ -30,6 +30,7 @@ import { getStripe } from '@/lib/stripe/loadStripe';
 import visaLogo from '@/assets/cards/visa.svg';
 import mastercardLogo from '@/assets/cards/mastercard.svg';
 import amexLogo from '@/assets/cards/amex.svg';
+import applePayLogo from '@/assets/cards/apple-pay.svg';
 
 // Apple App Review demo account — bypasses the seller-Stripe-connected check
 // so the reviewer can complete a purchase against demo listings.
