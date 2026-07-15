@@ -18,7 +18,7 @@ const PaymentMethodsSection = () => {
   const [needsIdDocument, setNeedsIdDocument] = useState(false);
   const [verificationError, setVerificationError] = useState<{ code: string | null; reason: string | null; nameMismatch: boolean } | null>(null);
   const [balanceLabel, setBalanceLabel] = useState<string | null>(null);
-  const [postOnboardResult, setPostOnboardResult] = useState<null | 'verified' | 'action_required' | 'pending'>(null);
+  const [postOnboardResult, setPostOnboardResult] = useState<null | 'verified' | 'action_required' | 'pending' | 'incomplete'>(null);
 
   const clearLocalStripeState = useCallback(() => {
     clearStripeConnectionState(user?.id);
