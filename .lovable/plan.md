@@ -1,42 +1,25 @@
-## Goal
+## Listing details: shared-link web preview mode
 
-Make the native iOS status bar act as a permanent transparent overlay across every screen. The page background (cream, lime, drawer dim, sold-item overlay, etc.) shows through it at all times, matching the dimmed in-app Safari look shown in the reference image. No more solid cream/lime/black bar cutting into drawer content.
+Rule: when someone opens a listing URL in a mobile web browser (i.e. not the native app, not an installed PWA), we treat that view as a "shared link preview":
 
-Note: this is a native-only change. In the Lovable web preview and mobile Safari, iOS controls the status bar and will still render it solid — the fix is only visible in the Capacitor iOS build after `npx cap sync` and a rebuild in Xcode.
+- Show the `InstallAppBanner`.
+- Hide the sticky footer action buttons (Buy / Add to cart / Message seller, etc.).
+- Everything else on the details page stays as-is.
 
-## Changes
+When the same URL opens inside the native app or installed PWA (universal link / app link), it renders the normal listing details with the footer actions and no download banner. `InstallAppBanner` already gates itself on `Capacitor.isNativePlatform` + `display-mode: standalone`, so that half is done.
 
-### 1. `capacitor.config.ts`
-Flip the StatusBar plugin defaults so the app boots into overlay mode instead of a solid lime bar:
-- `overlaysWebView: true`
-- `style: 'LIGHT'` (dark content on light backgrounds — will be re-set per route at runtime anyway)
-- Remove the `backgroundColor: '#DDFED7'` line (transparent overlay has no background)
+### Changes
 
-This kills the cold-boot solid bar before JS mounts.
+1. `src/pages/ListingDetails.tsx`
+   - Add a small helper (or reuse a hook) that returns `isSharedWebPreview = !native && !standalone`.
+   - Wrap the sticky footer (currently around line 712, `<div data-listing-footer ...>` and its `isRemoved / isOwner / normal` branches) so it does not render when `isSharedWebPreview` is true.
+   - Keep the existing `<InstallAppBanner />` render at line 699 as-is (it self-hides in-app).
 
-### 2. `src/lib/appChrome.ts`
-Refactor so the native status bar is always in overlay mode; only the CSS "top color band" behind the WebView content changes per route.
+2. Official store badges
+   - Replace the hand-drawn Apple + Google SVGs in `src/components/InstallAppBanner.tsx` with the official "Download on the App Store" and "Get it on Google Play" badges used on the landing page project so they no longer look skewed. I'll copy the exact SVG/asset markup from the landing page.
 
-- `syncNativeStatusBar(...)` always calls:
-  - `StatusBar.setOverlaysWebView({ overlay: true })`
-  - `StatusBar.setBackgroundColor({ color: '#00000000' })`
-  - `StatusBar.setStyle(...)` picking `Light` on dark/dim backgrounds and `Dark` on light backgrounds
-- Remove the `isOverlay` branch that used to toggle overlay on/off — overlay is now permanent.
-- `applyAppChromeColor` still writes `--app-top-bg`, `theme-color`, and the html/body background so the WebView paints the correct color under the transparent status bar. This is what makes the status bar visually "match" cream on app screens, lime on auth, and go dim over drawers/sheets automatically (because the drawer's dim backdrop already sits above the page).
-- `pushOverlayAppChrome()` / `useOverlayChrome` keep existing behavior but no longer need to flip native overlay state (it's always on). They can just tweak the status bar `style` to `Light` while an overlay is mounted so icons stay readable over the dim backdrop, then restore.
-- Keep the existing `activeOverlayCount`, resume listeners, and debounce logic intact.
+### Technical notes
 
-### 3. iOS safe-area padding sanity check
-Because the WebView now sits under the status bar full-time, every top-level screen must already be respecting `env(safe-area-inset-top)`. The app's `Header`, auth screens, and drawer headers use `pt-safe` / safe-area utilities today, so no layout changes are expected — but I'll spot-check `src/components/Header.tsx`, `src/pages/Auth.tsx`, and the drawer header in `src/components/ui/drawer.tsx` after the chrome change and add `pt-[env(safe-area-inset-top)]` only where a screen visibly clips.
-
-### 4. What is NOT changing
-- No changes to `SellerDashboard`, checkout, coupons, payouts, verification, or any business logic.
-- No changes to the web PWA behavior — browsers ignore the Capacitor StatusBar plugin.
-- No changes to splash screen or launch storyboard.
-
-## Verification
-
-1. `npx cap sync ios` + rebuild in Xcode.
-2. On device: status bar icons visible over cream home, lime auth, and go dim automatically when any drawer/sheet/dialog opens (because their backdrop paints through the transparent bar).
-3. Confirm drawer headers are no longer clipped at the top.
-4. Confirm cold boot no longer shows a solid lime bar before React mounts.
+- Native + PWA detection lives in `InstallAppBanner.tsx` already; I'll extract it into a tiny `useIsWebSharedPreview()` hook in `src/hooks/` so both the banner and `ListingDetails` share one source of truth.
+- No route changes, no changes to how deep links open in the app. Universal Links / App Links continue to hand off to the native app when installed; when they do, `Capacitor.isNativePlatform()` is true, so both the banner and the footer suppression turn off automatically.
+- No backend or schema changes.

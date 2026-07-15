@@ -42,6 +42,7 @@ import { canOpenListing } from '@/utils/listingAccess';
 import { loadSavedListingSnapshot } from '@/utils/savedListingSnapshots';
 import { buildListingShareUrl } from '@/utils/shareLink';
 import InstallAppBanner from '@/components/InstallAppBanner';
+import { useIsWebSharedPreview } from '@/hooks/useIsWebSharedPreview';
 import type { Listing } from '@/types/listing';
 
 interface DbListing {
@@ -110,6 +111,7 @@ const ListingDetails = () => {
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [isTextInputFocused, setIsTextInputFocused] = useState(false);
+  const isWebSharedPreview = useIsWebSharedPreview();
 
   const isOwner = user?.id === listing?.user_id;
 
@@ -708,8 +710,8 @@ const ListingDetails = () => {
             </div>
           </div>
 
-          {/* Sticky Footer Actions */}
-          {!isTextInputFocused && (
+          {/* Sticky Footer Actions — hidden in shared-link web preview mode */}
+          {!isTextInputFocused && !isWebSharedPreview && (
           <div data-listing-footer className="left-0 right-0 z-10 flex shrink-0 justify-center gap-3 border-t border-border bg-background px-4 pt-4 pb-4 transition-all duration-200">
             {isRemoved && !isOwner ? (
               // Removed listing footer
