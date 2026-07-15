@@ -111,6 +111,7 @@ const ListingDetails = () => {
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [isTextInputFocused, setIsTextInputFocused] = useState(false);
+  const isWebSharedPreview = useIsWebSharedPreview();
 
   const isOwner = user?.id === listing?.user_id;
 
