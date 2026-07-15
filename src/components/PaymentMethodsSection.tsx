@@ -50,10 +50,10 @@ const PaymentMethodsSection = () => {
   const stripeAccountId = profile?.stripe_account_id || localAccountId;
   const stripeDetailsSubmitted = !!stripeAccountId && !stripeFullyConnected && !stripeActionRequired;
 
-  // Only show "verifying" if user just returned from Stripe onboarding (URL param)
-  // or if a status check is actively running. Never show it just because an account ID exists.
+  // Only show "verifying" if user just returned from Stripe onboarding (URL param).
+  // Background status checks must not flip the row into a Verifying state.
   const returnedFromStripe = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('stripe_success') === 'true';
-  const stripePending = !stripeFullyConnected && !stripeDetailsSubmitted && (returnedFromStripe || isChecking);
+  const stripePending = !stripeFullyConnected && !stripeDetailsSubmitted && returnedFromStripe;
 
   const handleConnectStripe = () => {
     if (!user || !user.email) {
