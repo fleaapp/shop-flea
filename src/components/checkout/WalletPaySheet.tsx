@@ -1,8 +1,14 @@
-// Small drawer that mounts Stripe's ExpressCheckoutElement to trigger the
-// native Apple Pay / Google Pay sheet using the already-created PaymentIntent.
+// Drawer that mounts Stripe's ExpressCheckoutElement to trigger the native
+// Apple Pay / Google Pay sheet using an already-created PaymentIntent.
 import { useEffect, useState } from 'react';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
-import { Elements, ExpressCheckoutElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import {
+  Elements,
+  ExpressCheckoutElement,
+  useStripe,
+  useElements,
+} from '@stripe/react-stripe-js';
+import type { StripeExpressCheckoutElementConfirmEvent } from '@stripe/stripe-js';
 import { getStripe } from '@/lib/stripe/loadStripe';
 import { fleaAppearance } from '@/lib/stripe/appearance';
 import { toast } from 'sonner';
@@ -15,14 +21,18 @@ interface Props {
   onSuccess: (paymentIntentId: string) => void;
 }
 
-const WalletInner = ({ clientSecret, onSuccess, onClose }: Omit<Props, 'open' | 'amountCents'>) => {
+const WalletInner = ({
+  clientSecret,
+  onSuccess,
+  onClose,
+}: Omit<Props, 'open' | 'amountCents'>) => {
   const stripe = useStripe();
   const elements = useElements();
-  const [confirming, setConfirming] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [hasWallet, setHasWallet] = useState<boolean | null>(null);
 
-  const handleConfirm = async () => {
-    if (!stripe || !elements || confirming) return;
-    setConfirming(true);
+  const handleConfirm = async (_event: StripeExpressCheckoutElementConfirmEvent) => {
+    if (!stripe || !elements) return;
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       clientSecret,
@@ -31,24 +41,48 @@ const WalletInner = ({ clientSecret, onSuccess, onClose }: Omit<Props, 'open' | 
     });
     if (error) {
       toast.error(error.message || 'Payment was not completed.');
-      setConfirming(false);
       return;
     }
-    if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
+    if (
+      paymentIntent?.status === 'succeeded' ||
+      paymentIntent?.status === 'requires_capture'
+    ) {
       onSuccess(paymentIntent.id);
     } else {
       toast.error('Payment did not complete. Please try again.');
     }
-    setConfirming(false);
   };
 
   return (
-    <div className="px-4 pt-2 pb-8 space-y-4">
+    <div className="px-4 pt-2 pb-8 space-y-4 min-h-[220px]">
       <h2 className="text-xl font-bold text-foreground">Confirm payment</h2>
-      <ExpressCheckoutElement
-        onConfirm={handleConfirm}
-        options={{ buttonHeight: 50, buttonTheme: { applePay: 'black', googlePay: 'black' } }}
-      />
+
+      {hasWallet === false && (
+        <p className="text-sm text-muted-foreground">
+          Apple Pay or Google Pay isn't available on this device or browser. Please go back and choose another payment method.
+        </p>
+      )}
+
+      {!ready && hasWallet !== false && (
+        <div className="h-[50px] rounded-lg bg-muted animate-pulse" />
+      )}
+
+      <div className={ready ? 'block' : 'invisible h-0 overflow-hidden'}>
+        <ExpressCheckoutElement
+          onReady={(e) => {
+            const available = !!e.availablePaymentMethods;
+            setHasWallet(available);
+            setReady(true);
+          }}
+          onConfirm={handleConfirm}
+          options={{
+            buttonHeight: 50,
+            buttonTheme: { applePay: 'black', googlePay: 'black' },
+            paymentMethods: { applePay: 'always', googlePay: 'always' },
+          }}
+        />
+      </div>
+
       <button
         onClick={onClose}
         className="w-full text-center text-sm text-muted-foreground py-2"
@@ -60,9 +94,10 @@ const WalletInner = ({ clientSecret, onSuccess, onClose }: Omit<Props, 'open' | 
 };
 
 const WalletPaySheet = ({ open, onClose, clientSecret, amountCents, onSuccess }: Props) => {
-  const [ready, setReady] = useState(false);
-  useEffect(() => { if (open) setReady(true); }, [open]);
-  if (!ready) return null;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { if (open) setMounted(true); }, [open]);
+  if (!mounted || !clientSecret) return null;
+
   return (
     <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
       <DrawerContent className="bg-background">
@@ -74,14 +109,16 @@ const WalletPaySheet = ({ open, onClose, clientSecret, amountCents, onSuccess }:
         <Elements
           stripe={getStripe()}
           options={{
-            mode: 'payment',
-            amount: amountCents,
-            currency: 'aud',
+            clientSecret,
             appearance: fleaAppearance,
-            paymentMethodCreation: 'manual',
+            locale: 'en',
           }}
         >
-          <WalletInner clientSecret={clientSecret} onSuccess={onSuccess} onClose={onClose} />
+          <WalletInner
+            clientSecret={clientSecret}
+            onSuccess={onSuccess}
+            onClose={onClose}
+          />
         </Elements>
       </DrawerContent>
     </Drawer>
