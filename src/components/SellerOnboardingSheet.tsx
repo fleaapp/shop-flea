@@ -375,13 +375,22 @@ const SellerOnboardingSheet = ({
               <div className="w-full space-y-3 mt-3 flex flex-col items-center">
                 <Button
                   onClick={handleAddressNext}
-                  className="w-52 h-12 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-[15px] font-semibold"
+                  disabled={isSubmitting}
+                  className="w-56 h-12 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-[15px] font-semibold"
                 >
-                  Continue
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Connecting...
+                    </>
+                  ) : (
+                    'Continue to secure setup'
+                  )}
                 </Button>
                 <Button
                   variant="ghost"
                   onClick={() => setStep(2)}
+                  disabled={isSubmitting}
                   className={secondaryAction()}
                 >
                   Back
