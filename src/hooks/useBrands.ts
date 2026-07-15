@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
 
 export interface Brand {
   id: string;
@@ -38,11 +39,9 @@ export const useBrands = () => {
     const existing = brands.find(b => b.brand_name === normalized);
     if (existing) return existing;
 
-    const { data, error } = await supabase
-      .from('brands')
-      .insert({ brand_name: normalized, display_name: trimmed })
-      .select()
-      .single();
+    const { data, error } = await invokeCloudFunction('add-brand', {
+      displayName: trimmed,
+    });
 
     if (error) {
       // Might be a unique constraint violation - try to fetch existing
@@ -63,7 +62,8 @@ export const useBrands = () => {
       return null;
     }
 
-    const newBrand = data as Brand;
+    const newBrand = (data as { brand?: Brand } | null)?.brand ?? (data as Brand);
+    if (!newBrand?.id) return null;
     setBrands(prev =>
       [...prev, newBrand].sort((a, b) =>
         a.display_name.localeCompare(b.display_name, undefined, { sensitivity: 'base' })
