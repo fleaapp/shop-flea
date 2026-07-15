@@ -191,8 +191,8 @@ const Cart = () => {
   const shippedOrders = buyerOrderGroups.filter((g) => g.status === 'shipped');
   const deliveredOrders = buyerOrderGroups.filter((g) => g.status === 'delivered');
 
-  // Orders badge: unread messages only, not the presence of active orders
-  const ordersBadgeCount = [...awaitingOrders, ...shippedOrders].reduce(
+  // Orders badge: awaiting + shipped visible buyer orders + unread messages
+  const ordersBadgeCount = awaitingOrders.length + shippedOrders.length + [...awaitingOrders, ...shippedOrders].reduce(
     (sum, group) => sum + group.orders.reduce((groupSum, order) => groupSum + getGroupUnread(order.id), 0),
     0
   );
