@@ -211,7 +211,7 @@ const SellerOnboardingSheet = ({
 
   const ProgressDots = () => (
     <div className="flex items-center justify-center gap-1.5 mb-1">
-      {[1, 2, 3, 4, 5].map((n) => (
+      {[1, 2, 3, 4].map((n) => (
         <div
           key={n}
           className={`h-1.5 rounded-full transition-all ${
