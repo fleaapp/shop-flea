@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
 
     // Find profile
     const lookup = await fetch(
-      `${url}/rest/v1/profiles?username=eq.${encodeURIComponent(username)}&select=user_id,username,stripe_account_id,stripe_onboarding_complete,stripe_onboarding_step`,
+      `${url}/rest/v1/profiles?username=eq.${encodeURIComponent(username)}&select=user_id,username,stripe_account_id,stripe_onboarding_complete`,
       { headers },
     );
     const rows = await lookup.json();
