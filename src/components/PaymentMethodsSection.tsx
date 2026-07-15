@@ -18,7 +18,7 @@ const PaymentMethodsSection = () => {
   const [needsIdDocument, setNeedsIdDocument] = useState(false);
   const [verificationError, setVerificationError] = useState<{ code: string | null; reason: string | null; nameMismatch: boolean } | null>(null);
   const [balanceLabel, setBalanceLabel] = useState<string | null>(null);
-  const [postOnboardResult, setPostOnboardResult] = useState<null | 'verified' | 'action_required' | 'pending'>(null);
+  const [postOnboardResult, setPostOnboardResult] = useState<null | 'verified' | 'action_required' | 'pending' | 'incomplete'>(null);
 
   const clearLocalStripeState = useCallback(() => {
     clearStripeConnectionState(user?.id);
@@ -45,10 +45,14 @@ const PaymentMethodsSection = () => {
   // "Connected" = charges + payouts enabled. "Action required" = charges enabled but payouts paused.
   const [stripeChargesEnabled, setStripeChargesEnabled] = useState(false);
   const [stripePayoutsEnabled, setStripePayoutsEnabled] = useState(false);
+  const onboardingStep = String((profile as any)?.stripe_onboarding_step ?? '');
+  const onboardingSetupComplete = profile?.stripe_onboarding_complete === true || onboardingStep === 'complete';
+  const hasSavedOnboardingStep = Number(onboardingStep) > 1;
   const stripeFullyConnected = (stripeChargesEnabled && stripePayoutsEnabled) || (profile?.stripe_onboarding_complete === true && localConnected);
   const stripeActionRequired = stripeChargesEnabled && !stripePayoutsEnabled && !stripeFullyConnected;
   const stripeAccountId = profile?.stripe_account_id || localAccountId;
-  const stripeDetailsSubmitted = !!stripeAccountId && !stripeFullyConnected && !stripeActionRequired;
+  const stripeSetupUnfinished = !stripeFullyConnected && !stripeActionRequired && !onboardingSetupComplete && (!!stripeAccountId || hasSavedOnboardingStep);
+  const stripeDetailsSubmitted = !!stripeAccountId && onboardingSetupComplete && !stripeFullyConnected && !stripeActionRequired;
 
   // Only show "verifying" if user just returned from Stripe onboarding (URL param).
   // Background status checks must not flip the row into a Verifying state.
@@ -134,7 +138,7 @@ const PaymentMethodsSection = () => {
           });
         }
         return 'action_required' as const;
-      } else if (data?.detailsSubmitted && data?.accountId) {
+      } else if (data?.detailsSubmitted && data?.accountId && onboardingSetupComplete) {
         // Details submitted but under review - NOT fully connected yet
         setStripeChargesEnabled(false);
         setLocalConnected(false);
@@ -153,7 +157,7 @@ const PaymentMethodsSection = () => {
         setLocalAccountId(data.accountId);
         localStorage.removeItem(getStripeConnectedStorageKey(user.id));
         if (!silent) toast('Seller setup incomplete. Please finish setup.');
-        return 'pending' as const;
+        return 'incomplete' as const;
       } else {
         clearLocalStripeState();
         await refreshProfile();
@@ -167,7 +171,7 @@ const PaymentMethodsSection = () => {
     } finally {
       setIsChecking(false);
     }
-  }, [clearLocalStripeState, refreshProfile, stripeAccountId, user]);
+  }, [clearLocalStripeState, onboardingSetupComplete, refreshProfile, stripeAccountId, user]);
 
   // Auto-verify on return from Stripe (detected via URL param)
   useEffect(() => {
@@ -232,17 +236,14 @@ const PaymentMethodsSection = () => {
     return () => { active = false; };
   }, [stripeFullyConnected]);
 
-  const hasSavedOnboardingStep = Number((profile as any)?.stripe_onboarding_step) > 1;
-
   const getStripeStatus = () => {
     if (stripeFullyConnected) {
       return { label: balanceLabel ? `Balance: ${balanceLabel}` : 'Balance loading...', color: 'text-foreground' };
     }
     if (stripeActionRequired) return { label: '⚠️ Action required', color: 'text-orange-600' };
-    if (hasSavedOnboardingStep && !stripeDetailsSubmitted) return { label: '✏️ Setup unfinished — tap to continue', color: 'text-orange-600' };
+    if (stripeSetupUnfinished) return { label: '✏️ Continue set up', color: 'text-orange-600' };
     if (stripeDetailsSubmitted) return { label: '🔍 Pending review', color: 'text-amber-600' };
     if (stripePending) return { label: '⏳ Verifying...', color: 'text-amber-600' };
-    if (stripeAccountId) return { label: '✏️ Setup unfinished — tap to continue', color: 'text-orange-600' };
     return { label: 'Not connected', color: 'text-muted-foreground' };
   };
 
@@ -280,7 +281,7 @@ const PaymentMethodsSection = () => {
             </span>
             <div>
               <span className="text-base max-[375px]:text-sm font-medium text-foreground">
-                {stripeFullyConnected ? 'Seller Dashboard' : '💸 Become a Seller'}
+                {stripeFullyConnected ? 'Seller Dashboard' : 'Become a Seller'}
               </span>
               <p className={`text-xs mt-0.5 ${stripeStatus.color}`}>
                 {stripeStatus.label}
@@ -305,6 +306,12 @@ const PaymentMethodsSection = () => {
               <div className="text-3xl mb-2">⚠️</div>
               <h3 className="text-lg font-semibold text-foreground mb-1">Further verification needed.</h3>
               <p className="text-sm text-muted-foreground">Our payment processor needs a bit more information before you can start selling.</p>
+            </>
+          ) : postOnboardResult === 'incomplete' ? (
+            <>
+              <div className="text-3xl mb-2">✏️</div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Set up unfinished.</h3>
+              <p className="text-sm text-muted-foreground">Continue seller set up to finish your payment account.</p>
             </>
           ) : (
             <>
