@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
+import { ApplePayEventsEnum, GooglePayEventsEnum, Stripe } from '@capacitor-community/stripe';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +33,14 @@ import { getStripe } from '@/lib/stripe/loadStripe';
 // Apple App Review demo account — bypasses the seller-Stripe-connected check
 // so the reviewer can complete a purchase against demo listings.
 const REVIEWER_USER_ID = '5883f33c-07f3-4f6a-9a2d-a7e0ea864142';
+const APPLE_PAY_MERCHANT_ID = import.meta.env.VITE_APPLE_PAY_MERCHANT_ID || 'merchant.com.finditonflea.app';
+
+const getNativeWalletPlatform = (): 'ios' | 'android' | null => {
+  if (!Capacitor.isNativePlatform()) return null;
+  const platform = Capacitor.getPlatform();
+  if (platform === 'ios' || platform === 'android') return platform;
+  return null;
+};
 
 
 
@@ -250,6 +260,7 @@ const Checkout = () => {
       paymentIntentId: string;
       amount: number;
       publishableKey: string;
+      merchantDisplayName?: string;
     };
   }, [validItems, totalShipping, coupon]);
 
@@ -268,6 +279,74 @@ const Checkout = () => {
     setWalletSheetOpen(false);
     localStorage.setItem('checkout_reference', paymentIntentId);
     navigate(`/checkout/success?payment_intent=${paymentIntentId}`);
+  };
+
+  const handleNativeWalletConfirm = async (pi: {
+    clientSecret: string;
+    paymentIntentId: string;
+    amount: number;
+    publishableKey: string;
+    merchantDisplayName?: string;
+  }) => {
+    const platform = getNativeWalletPlatform();
+    if (!platform) return false;
+
+    await Stripe.initialize({ publishableKey: pi.publishableKey });
+
+    if (platform === 'ios') {
+      try {
+        await Stripe.isApplePayAvailable();
+      } catch {
+        toast.error('Apple Pay is not available on this device. Please choose Add new card.');
+        return true;
+      }
+
+      await Stripe.createApplePay({
+        paymentIntentClientSecret: pi.clientSecret,
+        merchantIdentifier: APPLE_PAY_MERCHANT_ID,
+        countryCode: 'AU',
+        currency: 'AUD',
+        paymentSummaryItems: [
+          {
+            label: pi.merchantDisplayName || 'Flea',
+            amount: Number((pi.amount / 100).toFixed(2)),
+          },
+        ],
+        allowedCountries: ['au'],
+        allowedCountriesErrorDescription: 'Flea is currently available in Australia only.',
+      });
+
+      const { paymentResult } = await Stripe.presentApplePay();
+      if (paymentResult === ApplePayEventsEnum.Completed) {
+        handlePaymentSuccess(pi.paymentIntentId);
+      } else if (paymentResult === ApplePayEventsEnum.Canceled) {
+        toast.message('Payment was cancelled.');
+      } else {
+        toast.error('Payment did not complete. Please try again.');
+      }
+      return true;
+    }
+
+    try {
+      await Stripe.isGooglePayAvailable();
+    } catch {
+      toast.error('Google Pay is not available on this device. Please choose Add new card.');
+      return true;
+    }
+
+    await Stripe.createGooglePay({
+      paymentIntentClientSecret: pi.clientSecret,
+    });
+
+    const { paymentResult } = await Stripe.presentGooglePay();
+    if (paymentResult === GooglePayEventsEnum.Completed) {
+      handlePaymentSuccess(pi.paymentIntentId);
+    } else if (paymentResult === GooglePayEventsEnum.Canceled) {
+      toast.message('Payment was cancelled.');
+    } else {
+      toast.error('Payment did not complete. Please try again.');
+    }
+    return true;
   };
 
   /** Confirm with a card the user JUST entered in the Vinted-style sheet. */
@@ -338,6 +417,8 @@ const Checkout = () => {
     try {
       const pi = await createPaymentIntent(false);
       if (!pi) return;
+      const handledNativeWallet = await handleNativeWalletConfirm(pi);
+      if (handledNativeWallet) return;
       setWalletClientSecret(pi.clientSecret);
       setWalletAmountCents(pi.amount);
       setWalletSheetOpen(true);
