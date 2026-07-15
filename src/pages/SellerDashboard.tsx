@@ -257,9 +257,15 @@ const SellerDashboard = () => {
                 )}
               </Button>
               {!canInstant && (
-                <p className="mt-2 px-6 text-center text-[11px] text-muted-foreground">
-                  Instant payout unlocks once your account passes the instant payout risk check.
-                </p>
+                <div className="mt-3 bg-muted/60 rounded-xl px-4 py-3 text-left w-full space-y-2">
+                  <p className="text-xs font-semibold text-foreground">⏱️ Please note</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Due to security checks and verification, your <span className="font-medium text-foreground">first payout may take around 7 days</span>.
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    After that, payouts usually arrive in <span className="font-medium text-foreground">1–2 business days</span>, or via <span className="font-medium text-foreground">Instant Payout (≈30 mins)</span> for a 1.5% fee.
+                  </p>
+                </div>
               )}
             </div>
 

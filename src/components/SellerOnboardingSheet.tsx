@@ -41,7 +41,7 @@ interface SellerOnboardingSheetProps {
   onComplete?: (result?: { setupCompleted?: boolean }) => void;
 }
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 4;
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA'];
 const secondaryActionClass = "w-auto h-10 px-4 rounded-full bg-transparent text-muted-foreground hover:bg-transparent hover:text-muted-foreground focus:bg-transparent focus:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:bg-transparent active:bg-muted/60 active:text-foreground";
 
@@ -55,7 +55,7 @@ const SellerOnboardingSheet = ({
   onComplete,
 }: SellerOnboardingSheetProps) => {
   const { user, profile } = useAuth();
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [firstName, setFirstName] = useState('');
@@ -73,7 +73,7 @@ const SellerOnboardingSheet = ({
     if (!open) return;
     const p: any = profile || {};
     const savedStep = Number(p.stripe_onboarding_step);
-    const resumeStep = savedStep >= 1 && savedStep <= 5 ? (savedStep as 1 | 2 | 3 | 4 | 5) : 1;
+    const resumeStep = savedStep >= 1 && savedStep <= 4 ? (savedStep as 1 | 2 | 3 | 4) : 1;
     setStep(resumeStep);
     setFirstName(p.first_name || '');
     setLastName(p.last_name || '');
@@ -164,7 +164,7 @@ const SellerOnboardingSheet = ({
       toast.error(err);
       return;
     }
-    setStep(4);
+    handleContinueToStripe();
   };
 
   const handleContinueToStripe = async () => {
@@ -200,7 +200,7 @@ const SellerOnboardingSheet = ({
       if (!data?.accountId) throw new Error('No account created');
 
       // Move to the embedded onboarding step — no redirects, no Stripe branding.
-      setStep(5);
+      setStep(4);
     } catch (err: any) {
       console.error('Seller onboarding error:', err);
       toast.error(err?.message || 'Failed to start setup. Please try again.');
@@ -211,7 +211,7 @@ const SellerOnboardingSheet = ({
 
   const ProgressDots = () => (
     <div className="flex items-center justify-center gap-1.5 mb-1">
-      {[1, 2, 3, 4, 5].map((n) => (
+      {[1, 2, 3, 4].map((n) => (
         <div
           key={n}
           className={`h-1.5 rounded-full transition-all ${
@@ -375,51 +375,8 @@ const SellerOnboardingSheet = ({
               <div className="w-full space-y-3 mt-3 flex flex-col items-center">
                 <Button
                   onClick={handleAddressNext}
-                  className="w-52 h-12 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-[15px] font-semibold"
-                >
-                  Continue
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => setStep(2)}
-                  className={secondaryAction()}
-                >
-                  Back
-                </Button>
-              </div>
-            </>
-          )}
-
-          {step === 4 && (
-            <>
-              <SheetHeader className="space-y-2">
-                <SheetTitle className="text-lg">Secure payment setup</SheetTitle>
-                <p className="text-sm text-muted-foreground text-pretty leading-relaxed max-w-[340px] mx-auto">
-                  We'll pass these details securely to our payment provider. Follow the prompts to finish your bank details and any required verification.
-                </p>
-              </SheetHeader>
-
-              <div className="bg-muted/60 rounded-xl px-4 py-3 text-left max-w-[340px] w-full space-y-2">
-                <p className="text-xs font-semibold text-foreground">⏱️ Please note</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Due to security checks and verification, your <span className="font-medium text-foreground">first payout may take around 7 days</span>.
-                </p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  After that, payouts usually arrive in <span className="font-medium text-foreground">1–2 business days</span>, or via <span className="font-medium text-foreground">Instant Payout (≈30 mins)</span> for a 1.5% fee.
-                </p>
-              </div>
-
-              <div className="bg-muted/60 rounded-xl px-4 py-2.5 text-center max-w-[340px] w-full">
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  If asked for a business type, select <span className="font-medium text-foreground">Individual / Sole trader</span>. You don't need a registered business to sell on Flea.
-                </p>
-              </div>
-
-              <div className="w-full space-y-2 mt-1 flex flex-col items-center">
-                <Button
-                  onClick={handleContinueToStripe}
                   disabled={isSubmitting}
-                  className="w-56 h-12 rounded-full bg-charcoal text-white hover:bg-charcoal/90 text-[15px] font-medium"
+                  className="w-56 h-12 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-[15px] font-semibold"
                 >
                   {isSubmitting ? (
                     <>
@@ -432,25 +389,21 @@ const SellerOnboardingSheet = ({
                 </Button>
                 <Button
                   variant="ghost"
-                  onClick={() => setStep(3)}
+                  onClick={() => setStep(2)}
                   disabled={isSubmitting}
-                  className={secondaryAction('h-9')}
+                  className={secondaryAction()}
                 >
                   Back
                 </Button>
               </div>
-
-              <p className="text-[11px] text-muted-foreground/70 max-w-[280px]">
-                Flea never stores your bank details. Our payment provider manages everything securely.
-              </p>
             </>
           )}
 
-              {step === 5 && (
+              {step === 4 && (
                 <BankDetailsStep
                   firstName={firstName}
                   lastName={lastName}
-                  onBack={() => setStep(4)}
+                  onBack={() => setStep(3)}
                   onDone={() => {
                     onComplete?.();
                     onOpenChange(false);
