@@ -1376,6 +1376,16 @@ Deno.serve(async (req) => {
         const rows = await safeSelect("contact_submissions", { order: "created_at.desc", limit: 5000 });
         return response({ submissions: rows });
       }
+      case "getBadges":
+        return response(await getBadges());
+      case "listBrands":
+        return response(await listBrands(payload));
+      case "updateBrand":
+        return response(await updateBrand(payload));
+      case "deleteBrand":
+        return response(await deleteBrand(payload));
+      case "listRefunds":
+        return response(await listRefunds(payload));
       default:
         return response({ error: "Unknown admin action" }, 400);
     }
