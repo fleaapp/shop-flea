@@ -326,7 +326,9 @@ export function useOrders() {
       })) as Order[];
     },
     enabled: !!user?.id,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 
 
