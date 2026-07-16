@@ -258,11 +258,12 @@ export default function AdminUsers() {
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone?: 'risk' | 'ok' }) {
+function Stat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: 'risk' | 'ok' }) {
   return (
-    <div className={`rounded-md border p-2 ${tone === 'risk' ? 'border-destructive/30 bg-destructive/5' : 'border-border bg-muted/30'}`}>
+    <div className={`rounded-2xl border p-2.5 ${tone === 'risk' ? 'border-destructive/30 bg-destructive/5' : 'border-border bg-card'}`}>
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="text-sm font-semibold text-foreground">{value}</p>
+      {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
     </div>
   );
 }
