@@ -291,8 +291,7 @@ const SellerOnboardingSheet = ({
                 setStep(2);
               }}
               onDone={() => {
-                onComplete?.();
-                onOpenChange(false);
+                handleVerifiedSuccess();
               }}
             />
           ) : (
