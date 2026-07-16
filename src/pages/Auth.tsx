@@ -74,15 +74,16 @@ const Auth = () => {
 
   const redirectParam = new URLSearchParams(location.search).get('redirect');
   const redirectTo = redirectParam?.startsWith('/') && !redirectParam.startsWith('//') ? redirectParam : '/';
+  const { isAdmin, loading: adminLoading } = useAdminRole();
 
-  
-  // Redirect if already logged in
-  // Redirect if already logged in
+  // Redirect if already logged in. Admins land on the admin dashboard by default,
+  // unless a specific ?redirect= was requested.
   useEffect(() => {
-    if (user && !authLoading) {
-      navigate(redirectTo, { replace: true });
+    if (user && !authLoading && !adminLoading) {
+      const target = !redirectParam && isAdmin ? '/admin' : redirectTo;
+      navigate(target, { replace: true });
     }
-  }, [user, authLoading, navigate, redirectTo]);
+  }, [user, authLoading, adminLoading, isAdmin, navigate, redirectTo, redirectParam]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
