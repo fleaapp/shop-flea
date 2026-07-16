@@ -115,7 +115,7 @@ export default function AdminUsers() {
                 </Avatar>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <p className="truncate text-sm font-semibold text-foreground">@{u.username}</p>
+                    <p className="truncate text-sm font-semibold text-foreground">{u.username}</p>
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-1.5">
                     <AdminBadge tone={toneForStatus(u.status)}>{statusLabel(u.status)}</AdminBadge>

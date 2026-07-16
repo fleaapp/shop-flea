@@ -60,11 +60,11 @@ export default function AdminRefunds() {
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Avatar className="h-4 w-4"><AvatarImage src={o.buyer_profile?.avatar_url ?? undefined} /><AvatarFallback className="text-[8px]">{initials(o.buyer_profile?.username)}</AvatarFallback></Avatar>
-                        <span className="truncate">Buyer @{o.buyer_profile?.username ?? '—'}</span>
+                        <span className="truncate">Buyer {o.buyer_profile?.username ?? '—'}</span>
                       </span>
                       <span className="flex items-center gap-1">
                         <Avatar className="h-4 w-4"><AvatarImage src={o.seller_profile?.avatar_url ?? undefined} /><AvatarFallback className="text-[8px]">{initials(o.seller_profile?.username)}</AvatarFallback></Avatar>
-                        <span className="truncate">Seller @{o.seller_profile?.username ?? '—'}</span>
+                        <span className="truncate">Seller {o.seller_profile?.username ?? '—'}</span>
                       </span>
                     </div>
                     {o.refund_reason && (
