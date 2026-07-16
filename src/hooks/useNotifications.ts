@@ -329,7 +329,7 @@ export const getNotificationMessage = (type: string, username?: string, listingT
   }
 
   // For message-type notifications, use the pre-built message from the trigger
-  if ((type === 'order_message_seller' || type === 'order_message_buyer' || type === 'support_message' || type === 'order_shipped' || type === 'order_delivered') && rawMessage) {
+  if ((type === 'order_message_seller' || type === 'order_message_buyer' || type === 'support_message' || type === 'order_shipped' || type === 'order_delivered' || type === 'refund_initiated' || type === 'order_auto_refunded' || type === 'sale_auto_refunded') && rawMessage) {
     return rawMessage;
   }
   
