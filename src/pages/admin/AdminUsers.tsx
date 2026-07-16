@@ -145,7 +145,7 @@ export default function AdminUsers() {
                     <AvatarFallback>{initials(selected.username)}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="flex items-center gap-2">{selected.username}<Badge className={statusBadge(selected.status)} variant="outline">{selected.status}</Badge></div>
+                    <div className="flex items-center gap-2">{selected.username}<AdminBadge tone={toneForStatus(selected.status)}>{statusLabel(selected.status)}</AdminBadge></div>
                     <p className="text-xs font-normal text-muted-foreground">{selected.email}</p>
                   </div>
                 </DialogTitle>
