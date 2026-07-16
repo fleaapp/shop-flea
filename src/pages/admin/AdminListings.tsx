@@ -16,6 +16,7 @@ const statusColor: Record<string, string> = {
   sold: 'bg-blue-500/10 text-blue-700 border-blue-300',
   hidden: 'bg-yellow-500/10 text-yellow-700 border-yellow-300',
   removed: 'bg-destructive/10 text-destructive border-destructive/30',
+  refunded: 'bg-orange-500/10 text-orange-700 border-orange-300',
   archived: 'bg-muted text-muted-foreground border-border',
   featured: 'bg-purple-500/10 text-purple-700 border-purple-300',
 };
