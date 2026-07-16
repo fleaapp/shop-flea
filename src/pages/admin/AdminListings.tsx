@@ -62,6 +62,7 @@ export default function AdminListings() {
             <SelectItem value="all">All statuses</SelectItem>
             <SelectItem value="active">Active</SelectItem>
             <SelectItem value="sold">Sold</SelectItem>
+            <SelectItem value="refunded">Refunded</SelectItem>
             <SelectItem value="hidden">Hidden</SelectItem>
             <SelectItem value="removed">Removed</SelectItem>
             <SelectItem value="archived">Archived</SelectItem>
