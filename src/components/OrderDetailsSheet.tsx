@@ -46,6 +46,8 @@ const getStatusBadge = (status: OrderStatus) => {
       return { label: 'Shipped', variant: 'secondary' as const };
     case 'delivered':
       return { label: 'Delivered', variant: 'secondary' as const };
+    case 'refunded':
+      return { label: 'Refunded', variant: 'secondary' as const };
   }
 };
 
@@ -109,7 +111,9 @@ const OrderDetailsSheet = ({
   // Buyer pays a flat Secure Checkout Fee of 4% + $0.70. Sellers pay no selling fees.
   const processingFee = Math.round((subtotal * 0.04 + 0.70) * 100) / 100;
   const total = subtotal + processingFee;
-  const statusBadge = getStatusBadge(primaryOrder.status);
+  const isRefunded = !!primaryOrder.refunded_at;
+  const effectiveStatus: OrderStatus = isRefunded ? 'refunded' : primaryOrder.status;
+  const statusBadge = getStatusBadge(effectiveStatus);
   const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
 
   const rawUsername = primaryOrder.seller_profile?.username || 'Unknown';
@@ -249,7 +253,7 @@ const OrderDetailsSheet = ({
                 <div>
                   <p className="font-semibold text-foreground mb-1.5">Service Provider:</p>
                   <Input
-                    value={primaryOrder.status === 'awaiting' ? 'Awaiting shipping' : (primaryOrder.tracking_provider || 'N/A')}
+                    value={isRefunded ? 'Refunded' : (primaryOrder.status === 'awaiting' ? 'Awaiting shipping' : (primaryOrder.tracking_provider || 'N/A'))}
                     disabled
                     className="bg-background disabled:opacity-70"
                   />
@@ -258,7 +262,7 @@ const OrderDetailsSheet = ({
                   <p className="font-semibold text-foreground mb-1.5">Tracking number:</p>
                   <div className="relative">
                     <Input
-                      value={primaryOrder.status === 'awaiting' ? 'Awaiting shipping' : (primaryOrder.tracking_number || 'N/A')}
+                      value={isRefunded ? 'Refunded' : (primaryOrder.status === 'awaiting' ? 'Awaiting shipping' : (primaryOrder.tracking_number || 'N/A'))}
                       disabled
                       className="bg-background disabled:opacity-70 pr-12"
                     />
@@ -294,15 +298,17 @@ const OrderDetailsSheet = ({
             </div>
 
             {/* Shipping Status Tracker */}
-            <ShippingStatusTracker
-              createdAt={primaryOrder.created_at}
-              shippedAt={primaryOrder.shipped_at}
-              deliveredAt={primaryOrder.delivered_at}
-              status={primaryOrder.status}
-            />
+            {!isRefunded && (
+              <ShippingStatusTracker
+                createdAt={primaryOrder.created_at}
+                shippedAt={primaryOrder.shipped_at}
+                deliveredAt={primaryOrder.delivered_at}
+                status={primaryOrder.status as 'awaiting' | 'shipped' | 'delivered'}
+              />
+            )}
             <div className="flex flex-col items-center space-y-3 pt-4">
               <div className="flex items-center gap-3 w-full px-4">
-                {(primaryOrder.status === 'awaiting' || primaryOrder.status === 'shipped') && (
+                {!isRefunded && (primaryOrder.status === 'awaiting' || primaryOrder.status === 'shipped') && (
                   <Button
                     onClick={() => {
                       if (primaryOrder.status === 'awaiting') {
@@ -316,7 +322,7 @@ const OrderDetailsSheet = ({
                     Mark as delivered
                   </Button>
                 )}
-                {primaryOrder.status === 'delivered' && !existingReview && (
+                {!isRefunded && primaryOrder.status === 'delivered' && !existingReview && (
                   <Button
                     onClick={() => setReviewDrawerOpen(true)}
                     className="flex-1 rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12"
@@ -324,7 +330,7 @@ const OrderDetailsSheet = ({
                     Review Seller
                   </Button>
                 )}
-                {canShowRefundButton && (
+                {!isRefunded && canShowRefundButton && (
                   <Button
                     onClick={() => {
                       if (refundStatus?.hasPending || refundStatus?.hasAnyRequest) {

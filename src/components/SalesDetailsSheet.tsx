@@ -45,6 +45,8 @@ const getStatusBadge = (status: OrderStatus) => {
       return { label: 'Shipped', variant: 'secondary' as const };
     case 'delivered':
       return { label: 'Delivered', variant: 'secondary' as const };
+    case 'refunded':
+      return { label: 'Refunded', variant: 'secondary' as const };
   }
 };
 
@@ -123,12 +125,15 @@ const SalesDetailsSheet = ({
   const buyerUsername = rawBuyerUsername.startsWith('@') ? rawBuyerUsername.slice(1) : rawBuyerUsername;
   const buyerAvatar = primaryOrder.buyer_profile?.avatar_url || getDefaultAvatar(primaryOrder.buyer_id);
 
+  const isRefunded = !!primaryOrder.refunded_at;
   const providers = Array.from(new Set(orders.map((o) => o.tracking_provider).filter(Boolean) as string[]));
   const numbers = Array.from(new Set(orders.map((o) => o.tracking_number).filter(Boolean) as string[]));
-  const trackingProviderDisplay =
-    primaryOrder.status === 'awaiting' ? 'Awaiting shipping' : (providers.length === 1 ? providers[0] : 'Multiple');
-  const trackingNumberDisplay =
-    primaryOrder.status === 'awaiting' ? 'Awaiting shipping' : (numbers.length === 1 ? numbers[0] : 'Multiple');
+  const trackingProviderDisplay = isRefunded
+    ? 'Refunded'
+    : (primaryOrder.status === 'awaiting' ? 'Awaiting shipping' : (providers.length === 1 ? providers[0] : 'Multiple'));
+  const trackingNumberDisplay = isRefunded
+    ? 'Refunded'
+    : (primaryOrder.status === 'awaiting' ? 'Awaiting shipping' : (numbers.length === 1 ? numbers[0] : 'Multiple'));
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -247,7 +252,7 @@ const SalesDetailsSheet = ({
             <div className="rounded-xl bg-card overflow-hidden">
               <SectionHeader>Tracking Details</SectionHeader>
               <div className="p-4 space-y-3">
-                {primaryOrder.status === 'awaiting' ? (
+                {primaryOrder.status === 'awaiting' && !isRefunded ? (
                   <>
                     <div>
                       <p className="font-semibold text-foreground mb-1.5">Service Provider:</p>
@@ -308,8 +313,8 @@ const SalesDetailsSheet = ({
               </div>
             </div>
 
-            {/* Shipping Status Tracker - visible once shipped */}
-            {(primaryOrder.status === 'shipped' || primaryOrder.status === 'delivered') && (
+            {/* Shipping Status Tracker - visible once shipped, hidden if refunded */}
+            {!isRefunded && (primaryOrder.status === 'shipped' || primaryOrder.status === 'delivered') && (
               <ShippingStatusTracker
                 createdAt={primaryOrder.created_at}
                 shippedAt={primaryOrder.shipped_at}
@@ -317,7 +322,7 @@ const SalesDetailsSheet = ({
                 status={primaryOrder.status}
               />
             )}
-            {primaryOrder.status === 'awaiting' && (
+            {!isRefunded && primaryOrder.status === 'awaiting' && (
               <div className="flex justify-center">
                 <Button
                   onClick={handleMarkShipped}

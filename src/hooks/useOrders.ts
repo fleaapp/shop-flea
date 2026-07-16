@@ -6,7 +6,11 @@ import { preloadImages } from '@/utils/preloadAssets';
 import { toast } from 'sonner';
 import { sendPushNotification } from '@/utils/pushNotify';
 
-export type OrderStatus = 'awaiting' | 'shipped' | 'delivered';
+export type OrderStatus = 'awaiting' | 'shipped' | 'delivered' | 'refunded';
+
+export const isOrderRefunded = (order: Pick<Order, 'refunded_at'>) => !!order.refunded_at;
+export const isGroupRefunded = (group: { orders: Order[] }) =>
+  group.orders.length > 0 && group.orders.every((o) => !!o.refunded_at);
 
 export interface Order {
   id: string;
@@ -160,8 +164,9 @@ const isDemoOrder = (order: Partial<RawOrderRow>) =>
 const ORDER_SELECT_FIELDS = buildOrderSelectFields();
 
 const getGroupStatus = (orders: Order[]): OrderStatus => {
-  if (orders.some((o) => o.status === 'awaiting')) return 'awaiting';
-  if (orders.some((o) => o.status === 'shipped')) return 'shipped';
+  if (orders.length > 0 && orders.every((o) => !!o.refunded_at)) return 'refunded';
+  if (orders.some((o) => o.status === 'awaiting' && !o.refunded_at)) return 'awaiting';
+  if (orders.some((o) => o.status === 'shipped' && !o.refunded_at)) return 'shipped';
   return 'delivered';
 };
 

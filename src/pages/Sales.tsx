@@ -14,7 +14,7 @@ import { safeNavigateBack } from '@/utils/safeBack';
 import { useAuth } from '@/context/AuthContext';
 import { useGuestMode } from '@/context/GuestModeContext';
 
-const getStatusBadge = (status: Order['status']) => {
+const getStatusBadge = (status: OrderGroup['status']) => {
   switch (status) {
     case 'awaiting':
       return { label: 'Awaiting shipping', className: 'bg-accent text-accent-foreground' };
@@ -22,6 +22,8 @@ const getStatusBadge = (status: Order['status']) => {
       return { label: 'Shipped', className: 'bg-muted text-muted-foreground' };
     case 'delivered':
       return { label: 'Delivered', className: 'bg-muted text-muted-foreground' };
+    case 'refunded':
+      return { label: 'Refunded', className: 'bg-muted text-muted-foreground' };
   }
 };
 
@@ -29,7 +31,7 @@ const Sales = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { exitGuestMode } = useGuestMode();
-  const [salesStatusFilter, setSalesStatusFilter] = useState<'awaiting' | 'shipped' | 'delivered'>('awaiting');
+  const [salesStatusFilter, setSalesStatusFilter] = useState<'awaiting' | 'shipped' | 'delivered' | 'refunded'>('awaiting');
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
   const { sellerOrderGroups, loadingSellerOrders, markAsShipped } = useOrders();
@@ -129,12 +131,13 @@ const Sales = () => {
             { key: 'awaiting' as const, label: 'To Ship' },
             { key: 'shipped' as const, label: 'Shipped' },
             { key: 'delivered' as const, label: 'Delivered' },
+            { key: 'refunded' as const, label: 'Refunded' },
           ]).map(({ key, label }) => (
             <button
               key={key}
               onClick={() => setSalesStatusFilter(key)}
               className={cn(
-                'rounded-full w-24 py-2 text-sm font-medium transition-all',
+                'rounded-full w-20 py-2 text-sm font-medium transition-all',
                 salesStatusFilter === key ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
               )}
             >
