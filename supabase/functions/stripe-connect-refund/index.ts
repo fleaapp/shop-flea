@@ -456,7 +456,7 @@ serve(async (req) => {
     if (isDemoOrder(order)) {
       await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
       const demoListingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
-      await markListingsRemoved(externalUrl, serviceKey, demoListingIds);
+      await markListingsRefunded(externalUrl, serviceKey, demoListingIds);
       return jsonResponse({ success: true, demo: true });
     }
 
@@ -505,7 +505,7 @@ serve(async (req) => {
 
     await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
     const relatedListingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
-    await markListingsRemoved(externalUrl, serviceKey, relatedListingIds);
+    await markListingsRefunded(externalUrl, serviceKey, relatedListingIds);
     await insertRefundNotifications(externalUrl, serviceKey, order);
 
     return jsonResponse({ success: true, refundId: refund.id, status: refund.status });
