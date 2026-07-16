@@ -201,6 +201,11 @@ const Checkout = () => {
     }
     if (!data?.clientSecret || !data?.paymentIntentId) throw new Error('Payment initialization failed');
     localStorage.setItem('checkout_reference', data.paymentIntentId);
+    if (coupon?.code) {
+      localStorage.setItem('checkout_coupon_code', coupon.code);
+    } else {
+      localStorage.removeItem('checkout_coupon_code');
+    }
     return data as {
       clientSecret: string;
       paymentIntentId: string;
