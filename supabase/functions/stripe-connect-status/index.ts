@@ -221,6 +221,7 @@ serve(async (req) => {
     let balanceAvailableCents = 0;
     let balancePendingCents = 0;
     let negativeBalanceCents = 0;
+    let unshippedCents = 0;
     try {
       const balance = await stripe.balance.retrieve({ stripeAccount: accountId });
       const sumAud = (arr?: Array<{ amount: number; currency: string }>) =>
@@ -229,6 +230,24 @@ serve(async (req) => {
       balancePendingCents = sumAud(balance.pending);
       const total = balanceAvailableCents + balancePendingCents;
       negativeBalanceCents = total < 0 ? Math.abs(total) : 0;
+
+      // Sum of sales awaiting shipment — these funds are ring-fenced.
+      try {
+        const svc = createClient(externalUrl, serviceKey);
+        const { data: unshipped } = await svc
+          .from("orders")
+          .select("price, shipping_price")
+          .eq("seller_id", lookupUserId)
+          .eq("status", "awaiting")
+          .is("refunded_at", null);
+        unshippedCents = (unshipped || []).reduce((s: number, o: any) => {
+          const t = (Number(o.price) || 0) + (Number(o.shipping_price) || 0);
+          return s + Math.round(t * 100);
+        }, 0);
+      } catch (e) {
+        console.warn("[stripe-connect-status] unshipped calc failed", e);
+      }
+
 
       // Mirror to profile so hot paths (checkout, listing) can gate without a Stripe call.
       await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${lookupUserId}`, {
@@ -346,6 +365,8 @@ serve(async (req) => {
         balanceAvailableCents,
         balancePendingCents,
         negativeBalanceCents,
+        unshippedCents,
+        availableToWithdrawCents: Math.max(balanceAvailableCents - unshippedCents, 0),
         isNegative: negativeBalanceCents > 0,
         verificationError: docError
           ? {

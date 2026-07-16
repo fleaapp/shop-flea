@@ -101,6 +101,28 @@ serve(async (req) => {
     const total = available + pending;
     const negativeBalanceCents = total < 0 ? Math.abs(total) : 0;
 
+    // Compute unshipped (sales awaiting shipment) — ring-fenced funds.
+    let unshippedCents = 0;
+    try {
+      const svc = createClient(EXTERNAL_URL, SERVICE);
+      const { data: unshipped } = await svc
+        .from("orders")
+        .select("price, shipping_price")
+        .eq("seller_id", userId)
+        .eq("status", "awaiting")
+        .is("refunded_at", null);
+      unshippedCents = (unshipped || []).reduce((s: number, o: any) => {
+        const t = (Number(o.price) || 0) + (Number(o.shipping_price) || 0);
+        return s + Math.round(t * 100);
+      }, 0);
+    } catch (e) {
+      console.warn("[stripe-connect-dashboard] unshipped calc failed", e);
+    }
+
+    const availableToWithdraw = Math.max(available - unshippedCents, 0);
+    const instantAvailableToWithdraw = Math.max(instantAvailable - unshippedCents, 0);
+
+
     // Mirror to profile so hot paths can gate on it without another Stripe call.
     try {
       await fetch(`${EXTERNAL_URL}/rest/v1/profiles?user_id=eq.${userId}`, {
@@ -135,6 +157,9 @@ serve(async (req) => {
         available,
         pending,
         instantAvailable,
+        unshippedCents,
+        availableToWithdraw,
+        instantAvailableToWithdraw,
         negativeBalanceCents,
         isNegative: negativeBalanceCents > 0,
         chargesEnabled,

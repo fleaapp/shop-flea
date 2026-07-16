@@ -700,6 +700,7 @@ export type Database = {
           order_number: string | null
           payment_method: string
           price: number
+          refund_reason: string | null
           refunded_at: string | null
           seller_id: string
           shipped_at: string | null
@@ -728,6 +729,7 @@ export type Database = {
           order_number?: string | null
           payment_method?: string
           price: number
+          refund_reason?: string | null
           refunded_at?: string | null
           seller_id: string
           shipped_at?: string | null
@@ -756,6 +758,7 @@ export type Database = {
           order_number?: string | null
           payment_method?: string
           price?: number
+          refund_reason?: string | null
           refunded_at?: string | null
           seller_id?: string
           shipped_at?: string | null
@@ -1407,6 +1410,7 @@ export type Database = {
           order_number: string | null
           payment_method: string
           price: number
+          refund_reason: string | null
           refunded_at: string | null
           seller_id: string
           shipped_at: string | null
@@ -1449,6 +1453,7 @@ export type Database = {
           order_number: string | null
           payment_method: string
           price: number
+          refund_reason: string | null
           refunded_at: string | null
           seller_id: string
           shipped_at: string | null

@@ -35,6 +35,9 @@ type DashboardData = {
   available?: number;
   pending?: number;
   instantAvailable?: number;
+  unshippedCents?: number;
+  availableToWithdraw?: number;
+  instantAvailableToWithdraw?: number;
   negativeBalanceCents?: number;
   isNegative?: boolean;
   chargesEnabled?: boolean;
@@ -143,6 +146,9 @@ const SellerDashboard = () => {
   const currency = data?.currency ?? 'aud';
   const available = data?.available ?? 0;
   const instantAvailable = data?.instantAvailable ?? 0;
+  const unshippedCents = data?.unshippedCents ?? 0;
+  const availableToWithdraw = data?.availableToWithdraw ?? Math.max(available - unshippedCents, 0);
+  const instantAvailableToWithdraw = data?.instantAvailableToWithdraw ?? Math.max(instantAvailable - unshippedCents, 0);
   const negativeCents = data?.negativeBalanceCents ?? 0;
   const isNegative = negativeCents > 0;
   const canPayout =
@@ -150,12 +156,12 @@ const SellerDashboard = () => {
     !!data?.chargesEnabled &&
     !!data?.payoutsEnabled &&
     !!data?.hasSucceededCharge &&
-    available > 0;
+    availableToWithdraw > 0;
   const canInstant =
-    canPayout && !!data?.instantPayoutEligible && instantAvailable > 0;
+    canPayout && !!data?.instantPayoutEligible && instantAvailableToWithdraw > 0;
 
-  const instantFee = Math.round(instantAvailable * 0.015);
-  const instantNet = Math.max(instantAvailable - instantFee, 0);
+  const instantFee = Math.round(instantAvailableToWithdraw * 0.015);
+  const instantNet = Math.max(instantAvailableToWithdraw - instantFee, 0);
 
   const handlePayout = async (method: 'standard' | 'instant') => {
     setConfirm(null);
@@ -250,11 +256,16 @@ const SellerDashboard = () => {
             ) : (
               <section className="rounded-2xl bg-primary/60 p-5 mt-2">
                 <div className="text-xs font-medium text-charcoal/70 uppercase tracking-wide">
-                  Available balance
+                  Available to withdraw
                 </div>
                 <div className="text-[34px] font-bold text-charcoal leading-tight mt-1">
-                  {fmtMoney(available, currency)}
+                  {fmtMoney(availableToWithdraw, currency)}
                 </div>
+                {unshippedCents > 0 && (
+                  <div className="mt-2 text-[12px] text-charcoal/70 leading-relaxed">
+                    {fmtMoney(unshippedCents, currency)} is held from sales awaiting shipment. Ship those orders with tracking to release these funds.
+                  </div>
+                )}
               </section>
             )}
 
@@ -370,14 +381,14 @@ const SellerDashboard = () => {
             <AlertDialogDescription className="text-[13px] leading-relaxed">
               {confirm === 'instant' ? (
                 <>
-                  {fmtMoney(instantAvailable, currency)} available for instant payout.
+                  {fmtMoney(instantAvailableToWithdraw, currency)} available for instant payout.
                   {' '}A 1.5% Flea fee ({fmtMoney(instantFee, currency)}) will be deducted.
                   <br />
                   <span className="font-medium text-foreground">You'll receive {fmtMoney(instantNet, currency)}</span>, usually within 30 minutes.
                 </>
               ) : (
                 <>
-                  {fmtMoney(available, currency)} will be sent to your linked bank account. No fees. Funds usually arrive in 1-2 business days.
+                  {fmtMoney(availableToWithdraw, currency)} will be sent to your linked bank account. No fees. Funds usually arrive in 1-2 business days.
                 </>
               )}
             </AlertDialogDescription>

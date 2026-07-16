@@ -65,10 +65,35 @@ Deno.serve(async (req) => {
     const sum = (arr: any[] | undefined) =>
       (arr || []).filter((b) => b.currency === currency).reduce((s, b) => s + (b.amount || 0), 0);
 
+    // ── Awaiting-shipment guard ─────────────────────────────────────────────
+    // Sellers cannot withdraw funds that correspond to orders they haven't
+    // shipped yet with eligible tracking. This protects buyers and gives us
+    // headroom to auto-refund at day 9 without pulling debits from a bank.
+    const { data: unshippedRows } = await supabase
+      .from("orders")
+      .select("price, shipping_price")
+      .eq("seller_id", userId)
+      .eq("status", "awaiting")
+      .is("refunded_at", null);
+
+    const unshippedCents = (unshippedRows || []).reduce((s: number, o: any) => {
+      const total = (Number(o.price) || 0) + (Number(o.shipping_price) || 0);
+      return s + Math.round(total * 100);
+    }, 0);
+
+
     if (method === "instant") {
-      const instantAvailable = sum((balance as any).instant_available);
-      if (instantAvailable <= 0) {
+      const instantAvailableRaw = sum((balance as any).instant_available);
+      const instantAvailable = Math.max(instantAvailableRaw - unshippedCents, 0);
+      if (instantAvailableRaw <= 0) {
         return json({ error: "No funds are available for instant payout right now." }, 400);
+      }
+      if (instantAvailable <= 0) {
+        return json({
+          error: `You have $${(unshippedCents / 100).toFixed(2)} in sales awaiting shipment. Ship those orders with tracking before you can withdraw.`,
+          reason: "awaiting_shipment",
+          unshippedCents,
+        }, 409);
       }
       // 1.5% Flea fee is captured as an application fee via reverse transfer.
       // For instant payouts we deduct the fee by transferring it back to the platform first.
@@ -106,9 +131,17 @@ Deno.serve(async (req) => {
       return json({ ok: true, payout: { id: payout.id, amount: payout.amount, method: "instant" } });
     }
 
-    // Standard payout
-    const available = sum(balance.available);
-    if (available <= 0) return json({ error: "No available balance to pay out." }, 400);
+    // Standard payout — cap at available minus unshipped.
+    const availableRaw = sum(balance.available);
+    const available = Math.max(availableRaw - unshippedCents, 0);
+    if (availableRaw <= 0) return json({ error: "No available balance to pay out." }, 400);
+    if (available <= 0) {
+      return json({
+        error: `You have $${(unshippedCents / 100).toFixed(2)} in sales awaiting shipment. Ship those orders with tracking before you can withdraw.`,
+        reason: "awaiting_shipment",
+        unshippedCents,
+      }, 409);
+    }
 
     const payout = await stripe.payouts.create(
       { amount: available, currency, method: "standard", description: "Flea payout" },

@@ -139,10 +139,57 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── 8-day FINAL WARNING (auto-refund at day 9) ─────────────────────────
+    const { data: orders8d, error: err8d } = await supabaseAdmin
+      .from('orders')
+      .select('id, seller_id, buyer_id, listing_id, created_at')
+      .eq('status', 'awaiting')
+      .is('refunded_at', null)
+      .lte('created_at', new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000).toISOString());
+
+    if (err8d) throw err8d;
+
+    let sent8d = 0;
+    for (const order of (orders8d ?? [])) {
+      const { data: existing } = await supabaseAdmin
+        .from('notifications')
+        .select('id')
+        .eq('user_id', order.seller_id)
+        .eq('type', 'shipping_final_warning')
+        .eq('related_listing_id', order.listing_id)
+        .maybeSingle();
+
+      if (existing) continue;
+
+      const { error: insertErr } = await supabaseAdmin
+        .from('notifications')
+        .insert({
+          user_id: order.seller_id,
+          type: 'shipping_final_warning',
+          title: 'Final warning',
+          message: '⚠️ Ship in the next 24 hours or this order will be automatically refunded to the buyer.',
+          related_listing_id: order.listing_id,
+          related_user_id: order.buyer_id,
+        });
+
+      if (insertErr) {
+        console.error(`[8d] Failed for order ${order.id}:`, insertErr);
+      } else {
+        sent8d++;
+        await firePushNotification(order.seller_id, {
+          type: 'shipping_final_warning',
+          title: 'Final warning',
+          message: 'Ship in the next 24 hours or this order will be automatically refunded to the buyer.',
+          related_listing_id: order.listing_id,
+        });
+      }
+    }
+
     const result = {
       ok: true,
       sent3d,
       sent6d,
+      sent8d,
       timestamp: now.toISOString(),
     };
 
