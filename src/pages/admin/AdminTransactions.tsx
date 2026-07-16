@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAdminTransactions } from '@/hooks/admin/useAdminTransactions';
 import { TransactionOrder, getOrderCode } from '@/types/admin/transactions';
 import { TransactionSummaryBar } from '@/components/admin/transactions/TransactionSummaryBar';
@@ -7,13 +6,11 @@ import { TransactionFiltersBar } from '@/components/admin/transactions/Transacti
 import { TransactionTable } from '@/components/admin/transactions/TransactionTable';
 import { TransactionDetail } from '@/components/admin/transactions/TransactionDetail';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, BarChart3 } from 'lucide-react';
+import { AdminHeader } from '@/components/admin/shell/AdminHeader';
 
 export default function AdminTransactions() {
   const [selected, setSelected] = useState<TransactionOrder | null>(null);
   const isMobile = useIsMobile();
-  const navigate = useNavigate();
 
   const { orders, loading, summary, filters, updateFilter, resetFilters, sortField, sortDir, toggleSort } = useAdminTransactions();
 
@@ -42,21 +39,8 @@ export default function AdminTransactions() {
   const showDetail = !isMobile || !!selected;
 
   return (
-    <div className="admin-scope flex h-screen flex-col bg-background">
-      <header className="border-b border-border bg-card px-4 py-3 sm:px-6 sm:py-4">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary sm:h-10 sm:w-10">
-            <BarChart3 className="h-4 w-4 text-primary-foreground sm:h-5 sm:w-5" />
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-foreground sm:text-xl">Transaction Dashboard</h1>
-            <p className="hidden text-sm text-muted-foreground sm:block">Monitor all orders, financials, and shipping</p>
-          </div>
-        </div>
-      </header>
+    <div className="admin-scope flex min-h-[100svh] flex-col bg-background">
+      <AdminHeader title="Transactions" emoji="📊" />
 
       <div className="flex flex-1 overflow-hidden">
         {showList && (

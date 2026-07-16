@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Pencil, Trash2, Search } from 'lucide-react';
+import { Pencil, Trash2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useAdminBrands, type AdminBrand } from '@/hooks/admin/useAdminBrands';
+import { AdminHeader } from '@/components/admin/shell/AdminHeader';
+import { AdminBadge } from '@/components/admin/shell/AdminBadge';
+import { AdminEmptyState } from '@/components/admin/shell/AdminEmptyState';
 
 const LAST_SEEN_KEY = 'admin_brands_last_seen';
 
 export default function AdminBrands() {
-  const navigate = useNavigate();
   const { brands, loading, search, setSearch, rename, remove } = useAdminBrands();
   const [editing, setEditing] = useState<AdminBrand | null>(null);
   const [value, setValue] = useState('');
@@ -41,43 +41,52 @@ export default function AdminBrands() {
 
   const openEdit = (b: AdminBrand) => { setEditing(b); setValue(b.display_name); };
 
-  return (
-    <div className="admin-scope flex min-h-screen flex-col bg-background pb-20">
-      <header className="sticky top-0 z-40 flex items-center gap-2 border-b border-border bg-background px-4 py-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}><ArrowLeft className="h-4 w-4" /></Button>
-        <h1 className="flex-1 text-center text-lg font-bold">🏷️ Brands</h1>
-        <div className="w-8" />
-      </header>
+  const newCount = sortedBrands.filter(isNew).length;
 
-      <div className="border-b border-border bg-card px-4 py-3">
+  return (
+    <div className="admin-scope flex min-h-[100svh] flex-col bg-background pb-24">
+      <AdminHeader title="Brands" emoji="🏷️" />
+
+      <div className="px-4 pb-2">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search brands…" className="pl-8" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search brands…"
+            className="h-10 rounded-full border-border bg-card pl-9"
+          />
+        </div>
+        <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+          <span>{brands.length} total</span>
+          {newCount > 0 && <AdminBadge tone="success">✨ {newCount} new</AdminBadge>}
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto px-4 py-3">
+      <div className="flex-1 px-4 pt-2">
         {loading ? (
-          <div className="space-y-2">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}</div>
+          <div className="space-y-2">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-2xl" />)}</div>
         ) : brands.length === 0 ? (
-          <p className="py-12 text-center text-muted-foreground">No brands.</p>
+          <AdminEmptyState emoji="🏷️" title="No brands yet" />
         ) : (
           <div className="space-y-2">
             {sortedBrands.map((b) => {
               const fresh = isNew(b);
               return (
-                <div key={b.id} className={`flex items-center justify-between rounded-xl p-3 card-shadow ${fresh ? 'bg-primary/10 ring-1 ring-primary/40' : 'bg-card'}`}>
+                <div
+                  key={b.id}
+                  className={`flex items-center justify-between rounded-2xl p-3 card-shadow ${fresh ? 'bg-primary/10 ring-1 ring-primary/40' : 'bg-card'}`}
+                >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="truncate font-medium">{b.display_name}</p>
-                      {fresh && <Badge className="bg-primary text-primary-foreground">New</Badge>}
+                      <p className="truncate text-sm font-semibold">{b.display_name}</p>
+                      {fresh && <AdminBadge tone="success">✨ New</AdminBadge>}
                     </div>
-                    <p className="truncate text-xs text-muted-foreground">{b.brand_name}</p>
+                    <p className="truncate text-xs text-muted-foreground">{b.brand_name} · {b.usage_count ?? 0} uses</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{b.usage_count ?? 0} uses</Badge>
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(b)}><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => { if (confirm(`Delete brand "${b.display_name}"?`)) remove(b.id); }}>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(b)} className="h-8 w-8"><Pencil className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => { if (confirm(`Delete brand "${b.display_name}"?`)) remove(b.id); }} className="h-8 w-8">
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>

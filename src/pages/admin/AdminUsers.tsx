@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAdminUsers, fetchUserDetail, type AdminUser } from '@/hooks/admin/useAdminUsers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,29 +9,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { ArrowLeft, Search, Users, ShieldAlert, ShieldCheck, ShieldBan, KeyRound, Trash2, RotateCcw, AlertTriangle, ExternalLink, Package, CreditCard } from 'lucide-react';
+import { Search, ShieldAlert, ShieldCheck, ShieldBan, KeyRound, Trash2, RotateCcw, AlertTriangle, ExternalLink, Package, CreditCard, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
+import { AdminHeader } from '@/components/admin/shell/AdminHeader';
+import { AdminBadge, toneForStatus, statusLabel } from '@/components/admin/shell/AdminBadge';
+import { AdminChipFilter } from '@/components/admin/shell/AdminChipFilter';
+import { AdminEmptyState } from '@/components/admin/shell/AdminEmptyState';
 
 const fmtCurrency = (n: number) => `$${n.toFixed(2)}`;
 const initials = (s?: string | null) => (s ?? '?').replace('@', '').slice(0, 2).toUpperCase();
 
-function statusBadge(status: string) {
-  const map: Record<string, string> = {
-    active: 'bg-emerald-500/10 text-emerald-700 border-emerald-300',
-    suspended: 'bg-yellow-500/10 text-yellow-700 border-yellow-300',
-    blocked: 'bg-destructive/10 text-destructive border-destructive/30',
-  };
-  return map[status] ?? 'bg-muted text-muted-foreground border-border';
-}
-
-function riskBadge(score: number) {
-  if (score >= 70) return 'bg-destructive/10 text-destructive border-destructive/30';
-  if (score >= 40) return 'bg-yellow-500/10 text-yellow-700 border-yellow-300';
-  return 'bg-emerald-500/10 text-emerald-700 border-emerald-300';
+function riskTone(score: number): 'success' | 'warning' | 'danger' {
+  if (score >= 70) return 'danger';
+  if (score >= 40) return 'warning';
+  return 'success';
 }
 
 export default function AdminUsers() {
-  const navigate = useNavigate();
   const { users, loading, search, setSearch, status, setStatus, sort, setSort, dir, setDir, performAction, stats } = useAdminUsers();
   const [selected, setSelected] = useState<AdminUser | null>(null);
   const [detail, setDetail] = useState<any>(null);
@@ -51,87 +44,90 @@ export default function AdminUsers() {
     }
   };
 
-  return (
-    <div className="admin-scope flex h-screen flex-col bg-background">
-      <header className="border-b border-border bg-card px-4 py-3 sm:px-6 sm:py-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-              <Users className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-base font-bold text-foreground sm:text-xl">User Management</h1>
-              <p className="hidden text-sm text-muted-foreground sm:block">{stats.total} users · {stats.risky} flagged risky</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge className={statusBadge('active')}>Active {stats.active}</Badge>
-            <Badge className={statusBadge('suspended')}>Suspended {stats.suspended}</Badge>
-            <Badge className={statusBadge('blocked')}>Blocked {stats.blocked}</Badge>
-          </div>
-        </div>
-      </header>
+  const statusOptions = [
+    { key: 'all', label: 'All', count: stats.total },
+    { key: 'active', label: 'Active', emoji: '✅', count: stats.active },
+    { key: 'suspended', label: 'Suspended', emoji: '⚠️', count: stats.suspended },
+    { key: 'blocked', label: 'Blocked', emoji: '🚫', count: stats.blocked },
+  ] as const;
 
-      <div className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-4 py-3">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search username, email, name…" className="pl-8" />
+  return (
+    <div className="admin-scope flex min-h-[100svh] flex-col bg-background pb-24">
+      <AdminHeader title="Users" emoji="👥" />
+
+      <div className="px-4 pb-2">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search username, email, name…"
+            className="h-10 rounded-full border-border bg-card pl-9"
+          />
         </div>
-        <Select value={status} onValueChange={(v) => setStatus(v as any)}>
-          <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="suspended">Suspended</SelectItem>
-            <SelectItem value="blocked">Blocked</SelectItem>
-          </SelectContent>
-        </Select>
+      </div>
+
+      <AdminChipFilter
+        options={statusOptions as any}
+        value={status}
+        onChange={(v) => setStatus(v as any)}
+      />
+
+      <div className="flex items-center gap-2 px-4 pb-2">
         <Select value={sort} onValueChange={(v) => setSort(v as any)}>
-          <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-9 w-[170px] rounded-full border-border bg-card text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="created_at">Sort: Signup date</SelectItem>
-            <SelectItem value="last_sign_in_at">Sort: Last active</SelectItem>
-            <SelectItem value="username">Sort: Username</SelectItem>
+            <SelectItem value="created_at">Signup date</SelectItem>
+            <SelectItem value="last_sign_in_at">Last active</SelectItem>
+            <SelectItem value="username">Username</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline" size="sm" onClick={() => setDir(dir === 'asc' ? 'desc' : 'asc')}>{dir === 'asc' ? 'Asc' : 'Desc'}</Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setDir(dir === 'asc' ? 'desc' : 'asc')}
+          className="h-9 rounded-full text-xs"
+        >
+          <ArrowUpDown className="mr-1 h-3.5 w-3.5" />
+          {dir === 'asc' ? 'Asc' : 'Desc'}
+        </Button>
+        {stats.risky > 0 && (
+          <span className="ml-auto text-xs text-muted-foreground">⚠️ {stats.risky} flagged risky</span>
+        )}
       </div>
 
       <div className="flex-1 overflow-auto">
         {loading ? (
-          <div className="space-y-2 p-4">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+          <div className="space-y-2 p-4">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-2xl" />)}</div>
         ) : users.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-            <p className="text-lg font-medium">No users match these filters</p>
-          </div>
+          <AdminEmptyState emoji="🔍" title="No users match these filters" />
         ) : (
-          <div className="divide-y divide-border">
+          <div className="space-y-2 px-4">
             {users.map((u) => (
-              <button key={u.user_id} onClick={() => openDetail(u)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-accent/40">
-                <Avatar className="h-10 w-10">
+              <button
+                key={u.user_id}
+                onClick={() => openDetail(u)}
+                className="flex w-full items-center gap-3 rounded-2xl bg-card p-3 text-left card-shadow transition-transform active:scale-[0.99]"
+              >
+                <Avatar className="h-11 w-11">
                   <AvatarImage src={u.avatar_url ?? undefined} />
                   <AvatarFallback>{initials(u.username)}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="truncate font-medium text-foreground">{u.username}</p>
-                    <Badge className={statusBadge(u.status)} variant="outline">{u.status}</Badge>
-                    {u.report_strike_count > 0 && (
-                      <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive">
-                        {u.report_strike_count} strike{u.report_strike_count > 1 ? 's' : ''}
-                      </Badge>
-                    )}
+                  <div className="flex items-center gap-1.5">
+                    <p className="truncate text-sm font-semibold text-foreground">@{u.username}</p>
                   </div>
-                  <p className="truncate text-xs text-muted-foreground">{u.email ?? '—'} · joined {format(new Date(u.created_at), 'MMM d, yyyy')}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    <AdminBadge tone={toneForStatus(u.status)}>{statusLabel(u.status)}</AdminBadge>
+                    {u.report_strike_count > 0 && (
+                      <AdminBadge tone="danger">{u.report_strike_count} strike{u.report_strike_count > 1 ? 's' : ''}</AdminBadge>
+                    )}
+                    <AdminBadge tone={riskTone(u.risk_score)}>Risk {u.risk_score}</AdminBadge>
+                  </div>
+                  <p className="mt-1 truncate text-[11px] text-muted-foreground">
+                    {u.listings_total} listings · {u.orders_as_seller} sales · {fmtCurrency(u.seller_volume + u.buyer_volume)}
+                  </p>
                 </div>
-                <div className="hidden text-right text-xs text-muted-foreground sm:block">
-                  <p>{u.listings_total} listings · {u.orders_as_seller} sales</p>
-                  <p>{fmtCurrency(u.seller_volume + u.buyer_volume)} volume · {u.refunds_count} refunds</p>
-                </div>
-                <Badge className={riskBadge(u.risk_score)} variant="outline">Risk {u.risk_score}</Badge>
               </button>
             ))}
           </div>
@@ -149,7 +145,7 @@ export default function AdminUsers() {
                     <AvatarFallback>{initials(selected.username)}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="flex items-center gap-2">{selected.username}<Badge className={statusBadge(selected.status)} variant="outline">{selected.status}</Badge></div>
+                    <div className="flex items-center gap-2">{selected.username}<AdminBadge tone={toneForStatus(selected.status)}>{statusLabel(selected.status)}</AdminBadge></div>
                     <p className="text-xs font-normal text-muted-foreground">{selected.email}</p>
                   </div>
                 </DialogTitle>
