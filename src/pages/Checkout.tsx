@@ -114,37 +114,9 @@ const Checkout = () => {
     loadSellerSettings();
   }, [items]);
 
-  // Fetch seller Stripe accounts — live status is the authority.
-  // A seller is payable when chargesEnabled === true. payoutsEnabled is NOT
-  // required: brand new AU sellers often have payouts paused during Stripe's
-  // fraud-hold window, but they can still legitimately accept charges.
-  const [sellerStripeAccounts, setSellerStripeAccounts] = useState<Map<string, boolean>>(new Map());
-  const [sellerStripeLoading, setSellerStripeLoading] = useState(true);
-  useEffect(() => {
-    const loadSellerPayments = async () => {
-      if (items.length === 0) { setSellerStripeLoading(false); return; }
-      setSellerStripeLoading(true);
-      const sellerIds = [...new Set(items.map(item => item.sellerId))];
-
-      const stripeAccounts = new Map<string, boolean>();
-      for (const sellerId of sellerIds) {
-        try {
-          const { data: statusData, error } = await invokeCloudFunction('stripe-connect-status', {
-            sellerUserId: sellerId,
-          });
-          if (!error && statusData && (statusData as any).chargesEnabled === true && (statusData as any).accountId) {
-            stripeAccounts.set(sellerId, true);
-          }
-        } catch (e) {
-          console.error('Seller Stripe verify failed:', e);
-        }
-      }
-
-      setSellerStripeAccounts(stripeAccounts);
-      setSellerStripeLoading(false);
-    };
-    loadSellerPayments();
-  }, [items]);
+  // Seller payment status is enforced at listing time and again server-side
+  // by the payment-intent function. Checkout does not re-check it, so the
+  // payment method picker always renders immediately.
 
   const handleClose = () => {
     setOpen(false);
