@@ -30,6 +30,18 @@ type PayoutRow = {
   method: string;
 };
 
+type ActivityRow = {
+  id: string;
+  type: string;
+  amount: number;
+  net: number;
+  fee: number;
+  status: string;
+  created: number;
+  available_on?: number;
+  description?: string | null;
+};
+
 type DashboardData = {
   connected: boolean;
   demo?: boolean;
@@ -48,6 +60,7 @@ type DashboardData = {
   instantPayoutEligible?: boolean;
   nextPayout?: { amount: number; arrivalDate: number; status: string } | null;
   payouts?: PayoutRow[];
+  activity?: ActivityRow[];
 };
 
 const fmtMoney = (cents: number, currency = 'aud') =>
