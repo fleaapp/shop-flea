@@ -28,7 +28,7 @@ import { openTrackingUrl } from '@/lib/tracking';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronRight } from 'lucide-react';
 
 interface SalesDetailsSheetProps {
   orders: Order[] | null;
