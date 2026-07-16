@@ -6,7 +6,11 @@ import { preloadImages } from '@/utils/preloadAssets';
 import { toast } from 'sonner';
 import { sendPushNotification } from '@/utils/pushNotify';
 
-export type OrderStatus = 'awaiting' | 'shipped' | 'delivered';
+export type OrderStatus = 'awaiting' | 'shipped' | 'delivered' | 'refunded';
+
+export const isOrderRefunded = (order: Pick<Order, 'refunded_at'>) => !!order.refunded_at;
+export const isGroupRefunded = (group: { orders: Order[] }) =>
+  group.orders.length > 0 && group.orders.every((o) => !!o.refunded_at);
 
 export interface Order {
   id: string;
