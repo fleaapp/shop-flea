@@ -258,11 +258,31 @@ const SellerOnboardingSheet = ({
           {step === 1 && (
             <>
               <img src={fleaLogo} alt="FLEA" className="h-11 w-auto" />
-              <SheetHeader className="space-y-2">
+              <SheetHeader className="space-y-3">
                 <SheetTitle className="text-xl">Start selling on Flea</SheetTitle>
-                <p className="text-sm text-muted-foreground leading-relaxed max-w-[300px] mx-auto">
-                  We'll collect a few quick details - your name, date of birth, phone and address - so the secure payment setup at the end is fast.
-                </p>
+                <div className="text-sm text-muted-foreground leading-relaxed max-w-[300px] mx-auto space-y-3">
+                  <p>
+                    Set up your seller account in just a few minutes. We'll ask for a few details to verify your identity and enable payouts. Make sure the information you provide matches your government-issued ID.
+                  </p>
+                  <p className="font-semibold text-foreground">
+                    Listing on Flea is free.
+                  </p>
+                  <p>
+                    By continuing you agree to our{' '}
+                    <Link
+                      to="/terms"
+                      className="underline underline-offset-2 text-foreground hover:text-foreground/80"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        onOpenChange(false);
+                        window.location.href = '/terms';
+                      }}
+                    >
+                      terms & conditions
+                    </Link>
+                    .
+                  </p>
+                </div>
               </SheetHeader>
               <div className="w-full space-y-3 mt-4 flex flex-col items-center">
                 <Button
