@@ -38,11 +38,23 @@ const OPTIONAL_ORDER_COLUMNS = [
 ] as const;
 
 const ORDER_UPDATE_FALLBACK_COLUMNS = [
-  "refunded_at",
   "updated_at",
-  "status",
   "refund_reason",
 ] as const;
+
+async function reloadExternalSchemaCache() {
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    if (!supabaseUrl || !serviceKey) return;
+    await fetch(`${supabaseUrl}/functions/v1/reload-schema`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+    });
+  } catch (error) {
+    console.error("[stripe-connect-refund] Schema reload trigger failed:", error);
+  }
+}
 
 function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -129,6 +141,7 @@ async function patchOrdersWithFallback(
   body: Record<string, unknown>,
 ) {
   const stripped = new Set<string>();
+  let schemaReloaded = false;
 
   while (true) {
     const res = await fetch(`${externalUrl}/rest/v1/orders?${filter}`, {
@@ -145,6 +158,17 @@ async function patchOrdersWithFallback(
     if (res.ok) return;
 
     const missing = missingColumnFrom(responseBody, ORDER_UPDATE_FALLBACK_COLUMNS, stripped);
+    if (isMissingColumnError(responseBody, "refunded_at") && !schemaReloaded) {
+      console.warn("[stripe-connect-refund] orders.refunded_at missing from API schema cache, reloading and retrying");
+      schemaReloaded = true;
+      await reloadExternalSchemaCache();
+      continue;
+    }
+
+    if (isMissingColumnError(responseBody, "refunded_at")) {
+      throw new Error("Refund was processed but the order could not be marked refunded. Please contact support.");
+    }
+
     if (missing) {
       console.warn(`[stripe-connect-refund] orders.${missing} update column missing, retrying without it`);
       stripped.add(missing);
