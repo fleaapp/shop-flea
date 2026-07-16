@@ -507,6 +507,38 @@ async function listTransactions() {
 
 // ----------------- Users -----------------
 
+async function fetchLiveAuthUserIds(): Promise<Set<string>> {
+  const ids = new Set<string>();
+  const admin = createClient(EXTERNAL_URL, EXTERNAL_SERVICE_ROLE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  let page = 1;
+  const perPage = 1000;
+  // Cap at 20 pages (20k users) as a safety.
+  while (page <= 20) {
+    const { data, error } = await (admin.auth.admin as any).listUsers({ page, perPage });
+    if (error) throw error;
+    const users = data?.users ?? [];
+    for (const u of users) ids.add(u.id);
+    if (users.length < perPage) break;
+    page += 1;
+  }
+  return ids;
+}
+
+async function deleteOrphanProfiles(orphanIds: string[]) {
+  if (orphanIds.length === 0) return;
+  // Chunk into groups of 100 for URL length safety.
+  for (let i = 0; i < orphanIds.length; i += 100) {
+    const chunk = orphanIds.slice(i, i + 100);
+    try {
+      await rest(`profiles?user_id=in.(${chunk.join(",")})`, { method: "DELETE", prefer: "return=minimal" });
+    } catch (e) {
+      console.warn("[admin-data] orphan profile cleanup failed:", (e as Error).message);
+    }
+  }
+}
+
 async function listUsers(payload: any = {}) {
   const search = (payload.search ?? "").trim().toLowerCase();
   const status = payload.status ?? "all"; // all | active | blocked | suspended
@@ -516,6 +548,19 @@ async function listUsers(payload: any = {}) {
   const params: Record<string, string> = { order: `${sort}.${dir}.nullslast`, limit: "500" };
   if (status !== "all") params.status = `eq.${status}`;
   let users = await safeSelect("profiles", params);
+
+  // Reconcile with auth.users so profiles orphaned by admin deletion disappear immediately.
+  try {
+    const liveIds = await fetchLiveAuthUserIds();
+    const orphans = users.filter((u: any) => !liveIds.has(u.user_id)).map((u: any) => u.user_id);
+    if (orphans.length > 0) {
+      // Fire-and-forget cleanup; do not block the response.
+      deleteOrphanProfiles(orphans);
+    }
+    users = users.filter((u: any) => liveIds.has(u.user_id));
+  } catch (e) {
+    console.warn("[admin-data] auth reconciliation failed, returning raw profiles:", (e as Error).message);
+  }
 
   if (search) {
     users = users.filter((u: any) =>

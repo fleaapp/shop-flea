@@ -1,39 +1,35 @@
-# Fix: user-side support chat shows no messages
+## Problem
 
-## Diagnosis
+The admin User Management list reads from the external `profiles` table. When you delete a user in Supabase's auth dashboard, `auth.users` is removed but the `public.profiles` row is left behind (no `ON DELETE CASCADE`), so those ghost users keep appearing in the admin dashboard. There's also no realtime subscription, so even legitimate profile deletes don't update the list until a manual refetch.
 
-Admin sees user messages (they're being written), and support replies are being inserted (function works), but the user's `ChatConversation` view shows nothing. `ChatConversation.tsx` fetches with a plain `.select('*')` from the external Supabase, so if RLS blocks the read, both the user's own messages and support replies disappear from that view — exactly the symptom described.
+## Fix
 
-The likely gaps on the **external** Supabase (source of truth):
+### 1. Reconcile the profiles table with auth.users (external DB)
 
-1. `chat_messages` SELECT policy does not allow the thread owner to read rows where `sender_type = 'support'` (or the policy is missing entirely on external, unlike the Cloud proxy).
-2. `chat_threads` SELECT policy may not let the user read their own thread row, so the header state also falls back.
-3. Realtime replication may not be enabled for `chat_messages` / `chat_threads` on external, so even after fixing RLS, new support replies won't stream in.
+- Add `ON DELETE CASCADE` to `public.profiles.user_id → auth.users.id` so future auth deletions clear the profile automatically.
+- Run a one-time cleanup deleting any `profiles` rows whose `user_id` no longer exists in `auth.users`.
 
-## Changes
+### 2. Filter ghost users at read time (defense in depth)
 
-### 1. External Supabase RLS (via migration against external DB)
-- Drop and recreate `chat_messages` SELECT policy so any authenticated user can read every row in a thread they own:
-  ```sql
-  create policy "Users read all messages in their threads"
-  on public.chat_messages for select to authenticated
-  using (exists (select 1 from public.chat_threads t
-                 where t.id = chat_messages.thread_id
-                   and t.user_id = auth.uid()));
-  ```
-- Ensure a matching SELECT policy exists on `chat_threads` for `auth.uid() = user_id`.
-- Confirm `GRANT SELECT ON public.chat_messages, public.chat_threads TO authenticated` is in place.
+Update `supabase/functions/admin-data/index.ts` → `listUsers`:
+- After loading `profiles`, call `supabase.auth.admin.listUsers` (paginated) and build a Set of live auth ids.
+- Drop any profile whose `user_id` is not in that Set before enriching / returning.
 
-### 2. Realtime
-- Add both tables to `supabase_realtime` publication on external if not already:
-  ```sql
-  alter publication supabase_realtime add table public.chat_messages;
-  alter publication supabase_realtime add table public.chat_threads;
-  ```
+This ensures deletions done directly in the Supabase auth UI immediately disappear from the admin view even if the cascade hasn't fired.
 
-### 3. Verification
-- Reload PostgREST schema cache via existing `reload-schema` function.
-- Manually open a thread as the affected user and confirm both prior user messages and support replies render, and that new support replies appear live without reload.
+### 3. Live updates in the admin UI
 
-## Out of scope
-No UI changes; `ChatConversation.tsx` and `NewChatForm.tsx` logic is correct once RLS allows the reads.
+Update `src/hooks/admin/useAdminUsers.ts`:
+- Subscribe (via the external Supabase client) to `postgres_changes` on `public.profiles` for `INSERT`, `UPDATE`, `DELETE` and call `load()` on any event (debounced ~500 ms).
+- Enable Realtime replication for `public.profiles` on the external DB (`ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles`) if not already on.
+
+### 4. Verify
+
+- Delete a test user in the Supabase auth dashboard, confirm it disappears from Admin → Users within a second without a manual refresh.
+- Confirm counts (`stats.total`, etc.) update live.
+
+### Technical notes
+
+- Realtime subscription must be created inside `useEffect` and torn down on unmount to avoid the reconnection-loop billing issue.
+- The `auth.admin.listUsers` reconciliation caps at ~1000 users per page; paginate until exhausted, cache the id Set for the request lifetime.
+- No client-side type changes needed; `AdminUser` shape stays the same.
