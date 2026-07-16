@@ -262,7 +262,7 @@ async function fetchRelatedListingIds(externalUrl: string, serviceKey: string, o
   return Array.from(new Set((Array.isArray(body) ? body : []).map((row: any) => row.listing_id).filter(Boolean)));
 }
 
-async function reactivateListings(externalUrl: string, serviceKey: string, listingIds: string[]) {
+async function markListingsRemoved(externalUrl: string, serviceKey: string, listingIds: string[]) {
   if (!listingIds.length) return;
   const quotedIds = listingIds.map((id) => `"${String(id).replace(/"/g, "")}"`).join(",");
   await fetch(`${externalUrl}/rest/v1/listings?id=in.(${quotedIds})`, {
@@ -273,7 +273,7 @@ async function reactivateListings(externalUrl: string, serviceKey: string, listi
       "Content-Type": "application/json",
       Prefer: "return=minimal",
     },
-    body: JSON.stringify({ status: "active", updated_at: new Date().toISOString() }),
+    body: JSON.stringify({ status: "removed", updated_at: new Date().toISOString() }),
   });
 }
 
@@ -281,9 +281,6 @@ function isDemoOrder(order: any) {
   return order.payment_method === "demo" || (typeof order.checkout_reference === "string" && order.checkout_reference.startsWith("demo-"));
 }
 
-function shouldReactivateListings(order: any) {
-  return order.status === "awaiting" && !order.shipped_at && !order.delivered_at;
-}
 
 async function resolvePaymentIntentId(stripe: Stripe, order: any) {
   const reference = typeof order.checkout_reference === "string" ? order.checkout_reference.trim() : "";
@@ -458,6 +455,8 @@ serve(async (req) => {
     // just mark refunded directly so reviewers can exercise the refund flow.
     if (isDemoOrder(order)) {
       await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
+      const demoListingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
+      await markListingsRemoved(externalUrl, serviceKey, demoListingIds);
       return jsonResponse({ success: true, demo: true });
     }
 
@@ -505,6 +504,8 @@ serve(async (req) => {
     }, { idempotencyKey: `flea-refund-${orderId}` });
 
     await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
+    const relatedListingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
+    await markListingsRemoved(externalUrl, serviceKey, relatedListingIds);
     await insertRefundNotifications(externalUrl, serviceKey, order);
 
     return jsonResponse({ success: true, refundId: refund.id, status: refund.status });
