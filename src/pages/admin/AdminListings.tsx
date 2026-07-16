@@ -8,19 +8,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, Search, Package, Eye, EyeOff, Star, Trash2, RotateCcw, AlertTriangle, ExternalLink, Heart, MessageCircle, ShoppingBag, Flag } from 'lucide-react';
+import { Search, Eye, EyeOff, Star, Trash2, RotateCcw, AlertTriangle, ExternalLink, Heart, MessageCircle, ShoppingBag, Flag, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
+import { AdminHeader } from '@/components/admin/shell/AdminHeader';
+import { AdminBadge, toneForStatus, statusLabel } from '@/components/admin/shell/AdminBadge';
+import { AdminChipFilter } from '@/components/admin/shell/AdminChipFilter';
+import { AdminEmptyState } from '@/components/admin/shell/AdminEmptyState';
 
-const statusColor: Record<string, string> = {
-  active: 'bg-emerald-500/10 text-emerald-700 border-emerald-300',
-  sold: 'bg-blue-500/10 text-blue-700 border-blue-300',
-  hidden: 'bg-yellow-500/10 text-yellow-700 border-yellow-300',
-  removed: 'bg-destructive/10 text-destructive border-destructive/30',
-  refunded: 'bg-orange-500/10 text-orange-700 border-orange-300',
-  archived: 'bg-muted text-muted-foreground border-border',
-  featured: 'bg-purple-500/10 text-purple-700 border-purple-300',
-};
-const statusLabel = (status: string) => status === 'removed' ? 'Deleted' : status.charAt(0).toUpperCase() + status.slice(1);
 const initials = (s?: string | null) => (s ?? '?').replace('@', '').slice(0, 2).toUpperCase();
 
 export default function AdminListings() {
@@ -28,60 +22,55 @@ export default function AdminListings() {
   const { listings, loading, search, setSearch, status, setStatus, sort, setSort, dir, setDir, minReports, setMinReports, performAction, stats } = useAdminListings();
   const [selected, setSelected] = useState<AdminListing | null>(null);
 
-  return (
-    <div className="admin-scope flex h-screen flex-col bg-background">
-      <header className="border-b border-border bg-card px-4 py-3 sm:px-6 sm:py-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-              <Package className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-base font-bold text-foreground sm:text-xl">Listings Management</h1>
-              <p className="hidden text-sm text-muted-foreground sm:block">{stats.total} shown · {stats.flagged} flagged</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge className={statusColor.active}>Active {stats.active}</Badge>
-            <Badge className={statusColor.sold}>Sold {stats.sold}</Badge>
-            <Badge className={statusColor.refunded}>Refunded {stats.refunded}</Badge>
-            <Badge className={statusColor.removed}>Deleted {stats.deleted}</Badge>
-          </div>
-        </div>
-      </header>
+  const statusOptions = [
+    { key: 'all', label: 'All', count: stats.total },
+    { key: 'active', label: 'Active', emoji: '🟢', count: stats.active },
+    { key: 'sold', label: 'Sold', emoji: '💰', count: stats.sold },
+    { key: 'refunded', label: 'Refunded', emoji: '↩️', count: stats.refunded },
+    { key: 'hidden', label: 'Hidden', emoji: '🙈' },
+    { key: 'removed', label: 'Deleted', emoji: '🗑️', count: stats.deleted },
+    { key: 'archived', label: 'Archived', emoji: '📦' },
+    { key: 'featured', label: 'Featured', emoji: '⭐️' },
+  ] as const;
 
-      <div className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-4 py-3">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search title, brand, ID…" className="pl-8" />
+  return (
+    <div className="admin-scope flex min-h-[100svh] flex-col bg-background pb-24">
+      <AdminHeader title="Listings" emoji="📦" />
+
+      <div className="px-4 pb-2">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search title, brand, ID…"
+            className="h-10 rounded-full border-border bg-card pl-9"
+          />
         </div>
-        <Select value={status} onValueChange={(v) => setStatus(v as any)}>
-          <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="sold">Sold</SelectItem>
-            <SelectItem value="refunded">Refunded</SelectItem>
-            <SelectItem value="hidden">Hidden</SelectItem>
-            <SelectItem value="removed">Deleted</SelectItem>
-            <SelectItem value="archived">Archived</SelectItem>
-            <SelectItem value="featured">Featured</SelectItem>
-          </SelectContent>
-        </Select>
+      </div>
+
+      <AdminChipFilter options={statusOptions as any} value={status} onChange={(v) => setStatus(v as any)} />
+
+      <div className="flex items-center gap-2 px-4 pb-2">
         <Select value={sort} onValueChange={(v) => setSort(v as any)}>
-          <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-9 w-[140px] rounded-full border-border bg-card text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="created_at">Sort: Newest</SelectItem>
-            <SelectItem value="price">Sort: Price</SelectItem>
-            <SelectItem value="report_count">Sort: Reports</SelectItem>
+            <SelectItem value="created_at">Newest</SelectItem>
+            <SelectItem value="price">Price</SelectItem>
+            <SelectItem value="report_count">Reports</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline" size="sm" onClick={() => setDir(dir === 'asc' ? 'desc' : 'asc')}>{dir === 'asc' ? 'Asc' : 'Desc'}</Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setDir(dir === 'asc' ? 'desc' : 'asc')}
+          className="h-9 rounded-full text-xs"
+        >
+          <ArrowUpDown className="mr-1 h-3.5 w-3.5" />
+          {dir === 'asc' ? 'Asc' : 'Desc'}
+        </Button>
         <Select value={String(minReports)} onValueChange={(v) => setMinReports(Number(v))}>
-          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-9 w-[130px] rounded-full border-border bg-card text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="0">Any reports</SelectItem>
             <SelectItem value="1">≥ 1 report</SelectItem>
@@ -89,6 +78,9 @@ export default function AdminListings() {
             <SelectItem value="3">≥ 3 reports</SelectItem>
           </SelectContent>
         </Select>
+        {stats.flagged > 0 && (
+          <span className="ml-auto text-xs text-muted-foreground">🚩 {stats.flagged}</span>
+        )}
       </div>
 
       <div className="flex-1 overflow-auto">
