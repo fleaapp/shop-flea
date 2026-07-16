@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Pencil, Trash2, Search } from 'lucide-react';
+import { Pencil, Trash2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useAdminBrands, type AdminBrand } from '@/hooks/admin/useAdminBrands';
+import { AdminHeader } from '@/components/admin/shell/AdminHeader';
+import { AdminBadge } from '@/components/admin/shell/AdminBadge';
+import { AdminEmptyState } from '@/components/admin/shell/AdminEmptyState';
 
 const LAST_SEEN_KEY = 'admin_brands_last_seen';
 
