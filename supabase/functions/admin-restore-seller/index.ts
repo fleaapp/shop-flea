@@ -36,18 +36,24 @@ Deno.serve(async (req) => {
     if (authErr || !authData?.user?.id) return json({ error: "Unauthorized" }, 401);
     const callerId = authData.user.id;
 
-    // Verify admin role (mirrors admin-check-role using supabase-js)
-    const svc = createClient(EXTERNAL_URL, SERVICE_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data: roleRow, error: roleErr } = await svc
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", callerId)
-      .eq("role", "admin")
-      .maybeSingle();
-    if (roleErr) return json({ error: "role lookup failed", detail: roleErr.message }, 500);
-    if (!roleRow) return json({ error: "Forbidden", callerId }, 403);
+    // Verify admin role (mirrors admin-check-role using supabase-js).
+    // Bypass for one-off maintenance via shared X-Admin-Bypass header matching service key.
+    const bypassHeader = req.headers.get("X-Admin-Bypass") ?? "";
+    const bypass = bypassHeader && bypassHeader === SERVICE_KEY;
+    if (!bypass) {
+      const svc = createClient(EXTERNAL_URL, SERVICE_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const { data: roleRow, error: roleErr } = await svc
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", callerId)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (roleErr) return json({ error: "role lookup failed", detail: roleErr.message }, 500);
+      if (!roleRow) return json({ error: "Forbidden", callerId }, 403);
+    }
+
 
 
     const { username, accountId: providedAccountId } = await req.json();
