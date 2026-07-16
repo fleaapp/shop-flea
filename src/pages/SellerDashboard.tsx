@@ -103,6 +103,30 @@ const statusClass = (s: string) => {
   return 'bg-muted text-charcoal';
 };
 
+const activityMeta = (type: string): { emoji: string; label: string } => {
+  switch (type) {
+    case 'charge':
+    case 'payment':
+      return { emoji: '💰', label: 'Sale' };
+    case 'refund':
+    case 'payment_refund':
+      return { emoji: '↩️', label: 'Refund' };
+    case 'application_fee':
+    case 'application_fee_refund':
+      return { emoji: '🧾', label: 'Platform fee' };
+    case 'stripe_fee':
+      return { emoji: '🧾', label: 'Processing fee' };
+    case 'adjustment':
+      return { emoji: '⚖️', label: 'Adjustment' };
+    case 'transfer':
+      return { emoji: '🔁', label: 'Transfer' };
+    case 'topup':
+      return { emoji: '⬆️', label: 'Top up' };
+    default:
+      return { emoji: '•', label: type.replace(/_/g, ' ') };
+  }
+};
+
 const SellerDashboard = () => {
   const navigate = useNavigate();
   const { profile, refreshProfile } = useAuth() as any;
