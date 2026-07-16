@@ -458,6 +458,8 @@ serve(async (req) => {
     // just mark refunded directly so reviewers can exercise the refund flow.
     if (isDemoOrder(order)) {
       await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
+      const demoListingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
+      await markListingsRemoved(externalUrl, serviceKey, demoListingIds);
       return jsonResponse({ success: true, demo: true });
     }
 
