@@ -866,7 +866,8 @@ async function listingAction(payload: any) {
       await safePatch("listings", { id: `eq.${listingId}` }, { status: "archived" });
       return { ok: true };
     case "delete":
-      await rest(query("listings", { id: `eq.${listingId}` }), { method: "DELETE", prefer: "return=minimal" });
+      // Soft delete: preserve row so refund/dispute history and admin audit trail stay intact.
+      await safePatch("listings", { id: `eq.${listingId}` }, { status: "removed" });
       return { ok: true };
     default:
       throw new Error(`Unknown listing action: ${type}`);
