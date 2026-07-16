@@ -90,7 +90,9 @@ const Profile = () => {
     const group = orderId ? orderGroupByOrderId.get(orderId) : orderGroupByListingId.get(listingId);
     if (!order || !group) return null;
 
-    if (order.status === 'awaiting') {
+    const isRefunded = order.status === 'refunded' || !!order.refunded_at;
+
+    if (!isRefunded && order.status === 'awaiting') {
       return (
         <button
           onClick={(e) => {
@@ -105,7 +107,11 @@ const Profile = () => {
       );
     }
 
-    const statusLabel = order.status === 'shipped' ? '✈️ Shipped' : '🚚 Delivered';
+    const statusLabel = isRefunded
+      ? '↩️ Refunded'
+      : order.status === 'shipped'
+        ? '✈️ Shipped'
+        : '🚚 Delivered';
     return (
       <button
         onClick={(e) => {
