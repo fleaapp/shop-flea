@@ -224,12 +224,13 @@ serve(async (req) => {
       });
     }
 
-    const { items, shipping, shippingBySeller, checkoutReference } = await req.json() as {
+    const { items, shipping, shippingBySeller, checkoutReference, couponCode } = await req.json() as {
       items?: CheckoutItem[];
       shipping?: ShippingDetails;
       shippingBySeller?: Array<[string, number]>;
       paymentMethod?: string;
       checkoutReference?: string;
+      couponCode?: string | null;
     };
 
     if (!Array.isArray(items) || items.length === 0) throw new Error("No items provided.");
@@ -282,7 +283,21 @@ serve(async (req) => {
     const dbShippingTotal = Array.from(shippingMap.values()).reduce((s, v) => s + Number(v || 0), 0);
     const subtotalForFee = dbItemsTotal + dbShippingTotal;
     const SECURE_CHECKOUT_RATE = 0.04, SECURE_CHECKOUT_FIXED = 0.70;
-    const secureCheckoutFee = Math.round((subtotalForFee * SECURE_CHECKOUT_RATE + SECURE_CHECKOUT_FIXED) * 100) / 100;
+    let secureCheckoutFee = Math.round((subtotalForFee * SECURE_CHECKOUT_RATE + SECURE_CHECKOUT_FIXED) * 100) / 100;
+
+    // Re-validate coupon server-side (same logic as stripe-connect-payment-intent).
+    const normalizedCode = String(couponCode || "").trim().toUpperCase();
+    if (normalizedCode) {
+      const { data: c } = await serviceClient
+        .from("coupons")
+        .select("id, code, type, active")
+        .eq("code", normalizedCode)
+        .eq("active", true)
+        .maybeSingle();
+      if (c && c.type === "waive_buyer_fee") {
+        secureCheckoutFee = 0;
+      }
+    }
     const expectedAmountAud = Math.round((subtotalForFee + secureCheckoutFee) * 100) / 100;
 
     // VERIFY PAYMENT WITH STRIPE — fail closed. Enforces both that payment

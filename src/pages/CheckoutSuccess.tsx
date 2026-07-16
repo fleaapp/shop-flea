@@ -55,7 +55,7 @@ const CheckoutSuccess = () => {
           }
           await refetchCart();
           await queryClient.invalidateQueries({ queryKey: ['orders'] });
-          ['checkout_items','checkout_shipping','checkout_seller_settings','checkout_shipping_by_seller','checkout_payment_method','checkout_reference']
+          ['checkout_items','checkout_shipping','checkout_seller_settings','checkout_shipping_by_seller','checkout_payment_method','checkout_reference','checkout_coupon_code']
             .forEach(k => localStorage.removeItem(k));
         } catch (e) { console.error('Demo cleanup failed:', e); }
         setShowSuccess(true);
@@ -83,6 +83,7 @@ const CheckoutSuccess = () => {
         const shippingBySeller = new Map<string, number>(JSON.parse(shippingBySellerJson || '[]'));
 
         const checkoutReference = reference;
+        const couponCode = localStorage.getItem('checkout_coupon_code');
 
         let finalizeData: any = null;
         let finalizeError: any = null;
@@ -94,6 +95,7 @@ const CheckoutSuccess = () => {
             shippingBySeller: Array.from(shippingBySeller.entries()),
             paymentMethod: 'stripe',
             checkoutReference,
+            couponCode,
           });
 
           finalizeData = data;
@@ -168,6 +170,7 @@ const CheckoutSuccess = () => {
         localStorage.removeItem('checkout_shipping_by_seller');
         localStorage.removeItem('checkout_payment_method');
         localStorage.removeItem('checkout_reference');
+        localStorage.removeItem('checkout_coupon_code');
 
         setShowSuccess(true);
       } catch (error) {
