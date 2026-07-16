@@ -114,6 +114,17 @@ const EditProfile = () => {
         setCanDeleteAccount(false);
         setDeleteBlockReason('Complete all orders first');
       }
+
+      // Highest priority: negative balance must be settled before deletion.
+      // Enforced server-side in delete-account, mirrored here so the UI is
+      // honest instead of failing after tap.
+      const owed = Number((profileData as any)?.negative_balance_cents ?? 0);
+      if (owed > 0) {
+        setCanDeleteAccount(false);
+        setDeleteBlockReason(
+          `Settle $${(owed / 100).toFixed(2)} owed from refunds or disputes in Seller Dashboard first.`,
+        );
+      }
     };
     
     loadProfile();
