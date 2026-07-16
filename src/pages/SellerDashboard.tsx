@@ -256,11 +256,16 @@ const SellerDashboard = () => {
             ) : (
               <section className="rounded-2xl bg-primary/60 p-5 mt-2">
                 <div className="text-xs font-medium text-charcoal/70 uppercase tracking-wide">
-                  Available balance
+                  Available to withdraw
                 </div>
                 <div className="text-[34px] font-bold text-charcoal leading-tight mt-1">
-                  {fmtMoney(available, currency)}
+                  {fmtMoney(availableToWithdraw, currency)}
                 </div>
+                {unshippedCents > 0 && (
+                  <div className="mt-2 text-[12px] text-charcoal/70 leading-relaxed">
+                    {fmtMoney(unshippedCents, currency)} is held from sales awaiting shipment. Ship those orders with tracking to release these funds.
+                  </div>
+                )}
               </section>
             )}
 
