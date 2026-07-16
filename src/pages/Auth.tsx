@@ -197,6 +197,36 @@ const Auth = () => {
     }
     setIsLoading(true);
 
+    // Device eligibility check: block re-registration on devices with unsettled balances.
+    try {
+      const { getStableDeviceId } = await import('@/lib/deviceId');
+      const deviceId = await getStableDeviceId();
+      if (deviceId) {
+        const resp = await fetch(
+          `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/check-device-eligibility`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+            body: JSON.stringify({ deviceId }),
+          },
+        );
+        if (resp.ok) {
+          const eligibility = await resp.json();
+          if (eligibility?.blocked) {
+            toast.error(
+              eligibility?.reason ||
+                'This device has an unsettled balance from a previous account. Settle the balance before creating a new account.',
+              { duration: 6000 },
+            );
+            setIsLoading(false);
+            return;
+          }
+        }
+      }
+    } catch {
+      // Non-fatal: if the check errors, continue with signup. The server-side gate is the source of truth.
+    }
+
     // Pre-check: is this email already registered with any provider?
     const existingProvider = await checkEmailProvider(signupEmail.trim());
 
