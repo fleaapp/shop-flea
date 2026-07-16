@@ -202,20 +202,59 @@ serve(async (req) => {
       );
     }
 
+    // Self-heal: profile has no stripe_account_id but Stripe may still have a
+    // verified account tagged with metadata.flea_user_id === lookupUserId.
+    // This recovers from cases where the profile row was wiped (e.g. onboarding
+    // reset) but the seller is genuinely connected on Stripe's side.
     if (!accountId) {
-      console.log(`[stripe-connect-status] No stored Stripe account for user ${lookupUserId}; skipping email lookup.`);
-      return new Response(
-        JSON.stringify({ chargesEnabled: false, detailsSubmitted: false, accountId: null, accountExists: false }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
+      const stripeInit = new Stripe(getStripeSecretKey(), { apiVersion: "2025-08-27.basil" });
+      let recovered: string | null = null;
+      try {
+        let starting_after: string | undefined = undefined;
+        for (let i = 0; i < 5 && !recovered; i++) {
+          const page: Stripe.ApiList<Stripe.Account> = await stripeInit.accounts.list({
+            limit: 100,
+            ...(starting_after ? { starting_after } : {}),
+          });
+          const match = page.data.find((a) => a.metadata?.flea_user_id === lookupUserId);
+          if (match) recovered = match.id;
+          if (!page.has_more) break;
+          starting_after = page.data[page.data.length - 1]?.id;
         }
-      );
+      } catch (e) {
+        console.warn(`[stripe-connect-status] recovery scan failed: ${(e as Error).message}`);
+      }
+
+      if (recovered) {
+        console.log(`[stripe-connect-status] Recovered stripe_account_id=${recovered} for user ${lookupUserId}`);
+        accountId = recovered;
+        // Persist immediately; the block further down will still gate onboarding_complete on charges_enabled + payouts_enabled.
+        await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${lookupUserId}`, {
+          method: "PATCH",
+          headers: {
+            apikey: serviceKey,
+            Authorization: `Bearer ${serviceKey}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({ stripe_account_id: recovered }),
+        });
+      } else {
+        console.log(`[stripe-connect-status] No stored Stripe account and no recovery match for user ${lookupUserId}.`);
+        return new Response(
+          JSON.stringify({ chargesEnabled: false, detailsSubmitted: false, accountId: null, accountExists: false }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          }
+        );
+      }
     }
 
     const account = await stripe.accounts.retrieve(accountId);
 
     console.log(`[stripe-connect-status] Account ${accountId} state: charges_enabled=${account.charges_enabled}, details_submitted=${account.details_submitted}, payouts_enabled=${account.payouts_enabled}`);
+
 
     // Retrieve balance so we can surface negative-balance state and gate flows.
     let balanceAvailableCents = 0;
