@@ -127,6 +127,25 @@ async function resolvePaymentIntentId(stripe: Stripe, order: any) {
   const match = recent.data.find(matchesOrder);
   if (match) return match.id;
 
+  try {
+    const sessions = await stripe.checkout.sessions.list({ created: { gte: earliestCreated }, limit: 100 });
+    const sessionMatch = sessions.data.find((session) => {
+      const metadata = session.metadata ?? {};
+      const itemIds = String(metadata.item_ids ?? "").split(",").map((id) => id.trim()).filter(Boolean);
+      return metadata.flea_buyer_id === order.buyer_id
+        && (!order.listing_id || itemIds.includes(order.listing_id))
+        && session.created >= earliestCreated
+        && session.created <= latestCreated
+        && ["paid", "no_payment_required"].includes(session.payment_status);
+    });
+    const paymentIntentId = typeof sessionMatch?.payment_intent === "string"
+      ? sessionMatch.payment_intent
+      : sessionMatch?.payment_intent?.id;
+    if (paymentIntentId) return paymentIntentId;
+  } catch (error) {
+    console.warn("[auto-refund-unshipped] Checkout Session lookup failed", error);
+  }
+
   throw new Error("payment reference not found");
 }
 
