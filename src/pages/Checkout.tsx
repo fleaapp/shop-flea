@@ -560,6 +560,22 @@ const Checkout = () => {
           
           <div className="overflow-y-auto px-4 pb-8 space-y-4">
 
+            {buyerOwesCents > 0 && (
+              <div className="rounded-2xl border-2 border-destructive/40 bg-destructive/10 p-4">
+                <p className="text-[13px] font-semibold text-destructive mb-1">Outstanding seller balance</p>
+                <p className="text-[12px] text-charcoal/80 leading-relaxed">
+                  You owe ${(buyerOwesCents / 100).toFixed(2)} from refunds or disputes on your sales. Settle it in your Seller Dashboard before making new purchases.
+                </p>
+                <Button
+                  onClick={() => navigate('/seller-dashboard')}
+                  className="mt-3 h-10 rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 text-[13px] font-semibold"
+                >
+                  Go to Seller Dashboard
+                </Button>
+              </div>
+            )}
+
+
             {/* Order Summary Card */}
             <div className="rounded-xl bg-card overflow-hidden">
               <div className="bg-muted-foreground/20 px-4 py-2 text-sm font-medium text-muted-foreground">
