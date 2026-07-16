@@ -329,7 +329,7 @@ export const getNotificationMessage = (type: string, username?: string, listingT
   }
 
   // For message-type notifications, use the pre-built message from the trigger
-  if ((type === 'order_message_seller' || type === 'order_message_buyer' || type === 'support_message' || type === 'order_shipped' || type === 'order_delivered') && rawMessage) {
+  if ((type === 'order_message_seller' || type === 'order_message_buyer' || type === 'support_message' || type === 'order_shipped' || type === 'order_delivered' || type === 'refund_initiated' || type === 'order_auto_refunded' || type === 'sale_auto_refunded') && rawMessage) {
     return rawMessage;
   }
   
@@ -378,6 +378,10 @@ export const getNotificationMessage = (type: string, username?: string, listingT
       return rawMessage || 'Your refund request was rejected.';
     case 'refund_initiated':
       return rawMessage || 'A refund has been initiated.';
+    case 'order_auto_refunded':
+      return rawMessage || '💸 Your order was automatically refunded.';
+    case 'sale_auto_refunded':
+      return rawMessage || '⚠️ Your sale was auto-refunded.';
     case 'payment_action_required':
       return rawMessage || '⚠️ Your payment account needs attention. Tap to fix.';
     default:
@@ -424,7 +428,11 @@ export const getNotificationEmoji = (type: string): string => {
     case 'refund_rejected':
       return '❌';
     case 'refund_initiated':
-      return '✅';
+      return '↩️';
+    case 'order_auto_refunded':
+      return '💸';
+    case 'sale_auto_refunded':
+      return '⚠️';
     case 'payment_action_required':
       return '⚠️';
     default:

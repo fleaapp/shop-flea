@@ -376,6 +376,55 @@ async function checkRateLimit(key: string, max: number, windowSeconds: number): 
   } catch { return true; }
 }
 
+async function insertRefundNotifications(externalUrl: string, serviceKey: string, order: any) {
+  try {
+    let listingTitle = 'your order';
+    if (order.listing_id) {
+      const res = await fetch(`${externalUrl}/rest/v1/listings?id=eq.${order.listing_id}&select=title`, {
+        headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+      });
+      if (res.ok) {
+        const rows = await res.json();
+        if (Array.isArray(rows) && rows[0]?.title) listingTitle = rows[0].title;
+      }
+    }
+
+    const rows = [
+      {
+        user_id: order.buyer_id,
+        type: 'refund_initiated',
+        title: 'Refund issued',
+        message: `↩️ Your refund for ${listingTitle} has been processed. Funds will return to your original payment method within a few business days.`,
+        related_listing_id: order.listing_id ?? null,
+        related_user_id: order.seller_id ?? null,
+        related_order_id: order.id ?? null,
+      },
+      {
+        user_id: order.seller_id,
+        type: 'refund_initiated',
+        title: 'Refund issued',
+        message: `↩️ You refunded the buyer for ${listingTitle}. The sale has been reversed.`,
+        related_listing_id: order.listing_id ?? null,
+        related_user_id: order.buyer_id ?? null,
+        related_order_id: order.id ?? null,
+      },
+    ];
+
+    await fetch(`${externalUrl}/rest/v1/notifications`, {
+      method: 'POST',
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify(rows),
+    });
+  } catch (error) {
+    console.error('[stripe-connect-refund] notification insert failed:', error);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -456,6 +505,7 @@ serve(async (req) => {
     }, { idempotencyKey: `flea-refund-${orderId}` });
 
     await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
+    await insertRefundNotifications(externalUrl, serviceKey, order);
 
     return jsonResponse({ success: true, refundId: refund.id, status: refund.status });
   } catch (error: any) {

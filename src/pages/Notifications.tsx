@@ -106,7 +106,8 @@ const Notifications = () => {
 
     // Order message / refund notifications → navigate to order chat using related_order_id
     if (notification.type === 'order_message_seller' || notification.type === 'order_message_buyer' ||
-        notification.type === 'refund_request' || notification.type === 'refund_rejected' || notification.type === 'refund_initiated') {
+        notification.type === 'refund_request' || notification.type === 'refund_rejected' || notification.type === 'refund_initiated' ||
+        notification.type === 'order_auto_refunded' || notification.type === 'sale_auto_refunded') {
       const threadId = notification.related_order_id;
       if (threadId) {
         navigate(`/order-chat/${threadId}`);
@@ -197,7 +198,7 @@ const Notifications = () => {
     const isSoldOrLegacy = ['cart_item_sold', 'wishlist_item_sold', 'cart_wishlist_item_sold', 'listing_sold'].includes(notification.type);
     const isCommentType = ['new_comment', 'comment_reply'].includes(notification.type);
     const isShippingReminder = ['shipping_reminder_3d', 'shipping_reminder_6d'].includes(notification.type);
-    const isMessageType = ['order_message_seller', 'order_message_buyer', 'support_message', 'order_shipped', 'order_delivered', 'refund_request', 'refund_rejected', 'refund_initiated'].includes(notification.type);
+    const isMessageType = ['order_message_seller', 'order_message_buyer', 'support_message', 'order_shipped', 'order_delivered', 'refund_request', 'refund_rejected', 'refund_initiated', 'order_auto_refunded', 'sale_auto_refunded'].includes(notification.type);
     const messageArg = isSoldOrLegacy ? itemName : isCommentType ? notification.message : isShippingReminder ? null : itemName;
     const message = getNotificationMessage(notification.type as any, username, messageArg, isMessageType ? notification.message : null);
 

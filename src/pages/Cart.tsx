@@ -39,6 +39,11 @@ const getOrderStatusBadge = (status: Order['status']) => {
         label: 'Delivered',
         className: 'bg-muted text-muted-foreground',
       };
+    case 'refunded':
+      return {
+        label: 'Refunded',
+        className: 'bg-muted text-muted-foreground',
+      };
   }
 };
 
@@ -56,7 +61,7 @@ const Cart = () => {
   const { buyerOrderGroups, loadingBuyerOrders, markAsDelivered } = useOrders();
   const { getGroupUnread } = useUnreadOrderMessages();
   const [activeTab, setActiveTab] = useState<'cart' | 'orders'>(routeState?.initialTab === 'orders' ? 'orders' : 'cart');
-  const [orderStatusFilter, setOrderStatusFilter] = useState<'awaiting' | 'shipped' | 'delivered'>('awaiting');
+  const [orderStatusFilter, setOrderStatusFilter] = useState<'awaiting' | 'shipped' | 'delivered' | 'refunded'>('awaiting');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [sellerSettings, setSellerSettings] = useState<Map<string, SellerShippingInfo>>(new Map());
@@ -316,12 +321,13 @@ const Cart = () => {
               { key: 'awaiting' as const, label: 'Ordered' },
               { key: 'shipped' as const, label: 'Shipped' },
               { key: 'delivered' as const, label: 'Delivered' },
+              { key: 'refunded' as const, label: 'Refunded' },
             ]).map(({ key, label }) => (
               <button
                 key={key}
                 onClick={() => setOrderStatusFilter(key)}
                 className={cn(
-                  'rounded-full w-24 py-2 text-sm font-medium transition-all',
+                  'rounded-full w-20 py-2 text-xs font-medium transition-all',
                   orderStatusFilter === key
                     ? 'bg-card text-foreground shadow-sm'
                     : 'text-muted-foreground'
@@ -461,7 +467,7 @@ const Cart = () => {
                 <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
                   <span className="text-6xl opacity-50 mb-4">🧾</span>
                   <p className="text-lg font-medium text-muted-foreground">
-                    {orderStatusFilter === 'shipped' ? 'No shipped orders.' : orderStatusFilter === 'delivered' ? 'No delivered orders.' : 'No orders yet.'}
+                    {orderStatusFilter === 'shipped' ? 'No shipped orders.' : orderStatusFilter === 'delivered' ? 'No delivered orders.' : orderStatusFilter === 'refunded' ? 'No refunded orders.' : 'No orders yet.'}
                   </p>
                 </div>
               );
