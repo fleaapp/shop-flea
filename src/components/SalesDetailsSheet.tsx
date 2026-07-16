@@ -252,7 +252,7 @@ const SalesDetailsSheet = ({
             <div className="rounded-xl bg-card overflow-hidden">
               <SectionHeader>Tracking Details</SectionHeader>
               <div className="p-4 space-y-3">
-                {primaryOrder.status === 'awaiting' ? (
+                {primaryOrder.status === 'awaiting' && !isRefunded ? (
                   <>
                     <div>
                       <p className="font-semibold text-foreground mb-1.5">Service Provider:</p>
