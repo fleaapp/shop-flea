@@ -42,14 +42,18 @@ const PaymentMethodsSection = () => {
     }
   }, [clearLocalStripeState, profile?.stripe_account_id, profile?.stripe_onboarding_complete, user]);
 
-  // "Connected" = charges + payouts enabled. "Action required" = charges enabled but payouts paused.
+  // "Connected" = chargesEnabled (seller can accept money). payoutsEnabled is
+  // NOT required here — brand new sellers commonly have payouts paused during
+  // Stripe's fraud-hold window while still being able to sell. The Withdraw
+  // button on the Seller Dashboard handles the payouts gate separately.
+  // "Action required" = onboarding submitted but charges never enabled.
   const [stripeChargesEnabled, setStripeChargesEnabled] = useState(false);
   const [stripePayoutsEnabled, setStripePayoutsEnabled] = useState(false);
   const onboardingStep = String((profile as any)?.stripe_onboarding_step ?? '');
   const onboardingSetupComplete = profile?.stripe_onboarding_complete === true || onboardingStep === 'complete';
   const hasSavedOnboardingStep = Number(onboardingStep) > 1;
-  const stripeFullyConnected = (stripeChargesEnabled && stripePayoutsEnabled) || (profile?.stripe_onboarding_complete === true && localConnected);
-  const stripeActionRequired = stripeChargesEnabled && !stripePayoutsEnabled && !stripeFullyConnected;
+  const stripeFullyConnected = stripeChargesEnabled || (profile?.stripe_onboarding_complete === true && localConnected);
+  const stripeActionRequired = !stripeChargesEnabled && onboardingSetupComplete && !!(profile?.stripe_account_id || localAccountId);
   const stripeAccountId = profile?.stripe_account_id || localAccountId;
   const stripeSetupUnfinished = !stripeFullyConnected && !stripeActionRequired && !onboardingSetupComplete && (!!stripeAccountId || hasSavedOnboardingStep);
   const stripeDetailsSubmitted = !!stripeAccountId && onboardingSetupComplete && !stripeFullyConnected && !stripeActionRequired;
@@ -81,10 +85,12 @@ const PaymentMethodsSection = () => {
       setNeedsIdDocument(!!(data as any)?.needsIdDocument);
       setVerificationError((data as any)?.verificationError ?? null);
 
-      if (data?.chargesEnabled && data?.payoutsEnabled && data?.accountId) {
-        // Fully verified - charges and payouts enabled
+      if (data?.chargesEnabled && data?.accountId) {
+        // Charges enabled = fully connected for selling purposes.
+        // payoutsEnabled may still be false during Stripe's fraud-hold window;
+        // that only affects the Withdraw button on the Seller Dashboard.
         setStripeChargesEnabled(true);
-        setStripePayoutsEnabled(true);
+        setStripePayoutsEnabled(!!data.payoutsEnabled);
         setLocalConnected(true);
         setLocalAccountId(data.accountId);
         localStorage.setItem(getStripeConnectedStorageKey(user.id), 'true');
@@ -99,49 +105,6 @@ const PaymentMethodsSection = () => {
         await refreshProfile();
         if (!silent) toast.success('Your seller account is ready!');
         return 'verified' as const;
-      } else if (data?.chargesEnabled && !data?.payoutsEnabled && data?.accountId) {
-        // Charges enabled but payouts paused - action required.
-        // IMPORTANT: do NOT demote stripe_onboarding_complete. The account was
-        // completed once; Stripe has simply reopened requirements. Demoting the
-        // flag would hide the dashboard and block re-verification.
-        setStripeChargesEnabled(true);
-        setStripePayoutsEnabled(false);
-        setLocalConnected(false);
-        setLocalAccountId(data.accountId);
-        localStorage.removeItem(getStripeConnectedStorageKey(user.id));
-        await supabase
-          .from('profiles')
-          .update({ stripe_account_id: data.accountId } as any)
-          .eq('user_id', user.id);
-        await refreshProfile();
-        if (!silent) toast('Your seller account needs attention. Open your seller dashboard to complete verification.');
-
-
-        // Send a notification if one hasn't been sent recently
-        const { data: existing } = await supabase
-          .from('notifications')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('type', 'payment_action_required')
-          .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-          .limit(1);
-
-        if (!existing?.length) {
-          await supabase.from('notifications').insert({
-            user_id: user.id,
-            type: 'payment_action_required',
-            title: 'Seller account needs attention',
-            message: '⚠️ Your payouts are paused. Tap here to open your seller dashboard and complete verification.',
-          });
-          // Fire push notification explicitly
-          const { sendPushNotification } = await import('@/utils/pushNotify');
-          sendPushNotification(user.id, {
-            type: 'payment_action_required',
-            title: 'Payment Action Required',
-            message: '⚠️ Your payouts are paused. Tap here to open your seller dashboard and complete verification.',
-          });
-        }
-        return 'action_required' as const;
       } else if (data?.detailsSubmitted && data?.accountId && onboardingSetupComplete) {
         // Details submitted but under review - NOT fully connected yet
         setStripeChargesEnabled(false);
