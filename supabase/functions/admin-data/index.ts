@@ -60,6 +60,15 @@ function missingColumnName(error: unknown) {
   return raw.match(/column\s+(?:\w+\.)?(\w+)\s+does not exist/i)?.[1] ?? null;
 }
 
+function normalizeBrandName(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w\s&+'-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 async function rest(path: string, options: RestOptions = {}) {
   const res = await fetch(`${EXTERNAL_URL}/rest/v1/${path}`, {
     method: options.method ?? "GET",
@@ -1412,33 +1421,42 @@ async function getBadges() {
 // ----------------- Brands -----------------
 async function listBrands(payload: any = {}) {
   const search = (payload?.search ?? "").trim().toLowerCase();
-  const rows = await safeSelect("brands", { order: "usage_count.desc.nullslast", limit: "1000" });
+  const rows = await safeSelect("brands", { order: "created_at.desc", limit: "5000" });
   const filtered = search
     ? rows.filter((b: any) =>
         (b.brand_name ?? "").toLowerCase().includes(search) ||
         (b.display_name ?? "").toLowerCase().includes(search))
     : rows;
-  return { brands: filtered };
+  return {
+    brands: filtered.sort((a: any, b: any) =>
+      String(a.display_name ?? a.brand_name ?? "").localeCompare(String(b.display_name ?? b.brand_name ?? ""), undefined, { sensitivity: "base" })
+    ),
+  };
 }
 
 async function updateBrand(payload: any = {}) {
   const { id, display_name } = payload ?? {};
   if (!id || !display_name) throw new Error("id and display_name required");
   const trimmed = String(display_name).trim();
-  if (!trimmed) throw new Error("display_name required");
-  const brand_name = trimmed
-    .toLowerCase()
-    .replace(/[^\w\s&+'-]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-  await safePatch("brands", { id: `eq.${id}` }, { display_name: trimmed, brand_name });
+  const brand_name = normalizeBrandName(trimmed);
+  if (!trimmed || !brand_name || trimmed.length > 100 || brand_name.length > 100) {
+    throw new Error("Enter a valid brand name.");
+  }
+
+  const duplicates = await safeSelect("brands", { brand_name: `eq.${brand_name}`, select: "id", limit: 1 });
+  if (duplicates.some((brand: any) => brand.id !== id)) {
+    throw new Error("That brand already exists.");
+  }
+
+  const updated = await safePatch("brands", { id: `eq.${id}` }, { display_name: trimmed, brand_name });
+  if (Array.isArray(updated) && updated.length === 0) throw new Error("Brand not found.");
   return { ok: true };
 }
 
 async function deleteBrand(payload: any = {}) {
   const { id } = payload ?? {};
   if (!id) throw new Error("id required");
-  await rest(query("brands", { id: `eq.${id}` }), { method: "DELETE", prefer: "return=minimal" });
+  await rest(query("brands", { id: `eq.${id}` }), { method: "DELETE", prefer: "return=representation" });
   return { ok: true };
 }
 
