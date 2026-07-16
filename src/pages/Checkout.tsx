@@ -267,6 +267,10 @@ const Checkout = () => {
   const preflight = () => {
     if (!user) { toast.error('You must be logged in to place an order'); return false; }
     if (isBlocked) { toast.error('Your account is restricted. You cannot make purchases.'); return false; }
+    if (buyerOwesCents > 0) {
+      toast.error(`Settle your seller balance ($${(buyerOwesCents / 100).toFixed(2)}) in Seller Dashboard before making new purchases.`);
+      return false;
+    }
     if (!isShippingComplete) { toast.error('Please fill in all shipping details'); return false; }
     if (!sellerHasStripe) { toast.error('This seller has not connected a payment method yet.'); return false; }
     return true;
