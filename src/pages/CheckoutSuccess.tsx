@@ -170,6 +170,7 @@ const CheckoutSuccess = () => {
         localStorage.removeItem('checkout_shipping_by_seller');
         localStorage.removeItem('checkout_payment_method');
         localStorage.removeItem('checkout_reference');
+        localStorage.removeItem('checkout_coupon_code');
 
         setShowSuccess(true);
       } catch (error) {
