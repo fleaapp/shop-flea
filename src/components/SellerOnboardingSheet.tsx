@@ -28,6 +28,8 @@ import {
 import fleaLogo from '@/assets/flea-logo.png';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import IdVerificationStep from '@/components/IdVerificationStep';
+import PushPermissionSheet from '@/components/PushPermissionSheet';
+import { shouldShowPushPrompt } from '@/lib/pushPrompt';
 
 interface SellerOnboardingSheetProps {
   open: boolean;
