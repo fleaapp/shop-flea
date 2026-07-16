@@ -26,13 +26,18 @@ export function useNativePushNotifications() {
 
     (async () => {
       try {
-        const perm = await PushNotifications.checkPermissions();
-        // Only auto-register the APNs token if the user has already granted
-        // permission. The initial permission prompt is triggered from our
-        // branded PushPermissionSheet after buyer/seller onboarding so the
-        // request has proper context.
+        let perm = await PushNotifications.checkPermissions();
+
+        // On iOS, trigger the native system prompt on first open so Apple
+        // still asks the user directly. Our branded PushPermissionSheet is
+        // used as a re-prompt later for users who dismissed or denied.
+        if (perm.receive === 'prompt' || perm.receive === 'prompt-with-rationale') {
+          console.log('[NativePush] Requesting iOS permission on first open');
+          perm = await PushNotifications.requestPermissions();
+        }
+
         if (perm.receive !== 'granted') {
-          console.log('[NativePush] Permission not granted yet; waiting for user opt-in');
+          console.log('[NativePush] Permission not granted; waiting for user opt-in');
           return;
         }
 
