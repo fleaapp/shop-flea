@@ -393,6 +393,13 @@ const SellerDashboard = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <SettleBalanceSheet
+        open={settleOpen}
+        onOpenChange={setSettleOpen}
+        amountCents={negativeCents}
+        onSettled={() => load()}
+      />
     </div>
   );
 };
