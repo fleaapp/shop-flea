@@ -16,6 +16,7 @@ const statusColor: Record<string, string> = {
   sold: 'bg-blue-500/10 text-blue-700 border-blue-300',
   hidden: 'bg-yellow-500/10 text-yellow-700 border-yellow-300',
   removed: 'bg-destructive/10 text-destructive border-destructive/30',
+  refunded: 'bg-orange-500/10 text-orange-700 border-orange-300',
   archived: 'bg-muted text-muted-foreground border-border',
   featured: 'bg-purple-500/10 text-purple-700 border-purple-300',
 };
@@ -61,6 +62,7 @@ export default function AdminListings() {
             <SelectItem value="all">All statuses</SelectItem>
             <SelectItem value="active">Active</SelectItem>
             <SelectItem value="sold">Sold</SelectItem>
+            <SelectItem value="refunded">Refunded</SelectItem>
             <SelectItem value="hidden">Hidden</SelectItem>
             <SelectItem value="removed">Removed</SelectItem>
             <SelectItem value="archived">Archived</SelectItem>
@@ -186,7 +188,7 @@ export default function AdminListings() {
                 <Button size="sm" variant="outline" onClick={() => { performAction(selected.id, 'hide'); setSelected(null); }}><EyeOff className="mr-1 h-4 w-4" /> Hide</Button>
                 <Button size="sm" variant="outline" onClick={() => { performAction(selected.id, 'feature'); setSelected(null); }}><Star className="mr-1 h-4 w-4" /> Feature</Button>
                 <Button size="sm" variant="outline" onClick={() => { performAction(selected.id, 'restore'); setSelected(null); }}><RotateCcw className="mr-1 h-4 w-4" /> Restore</Button>
-                <Button size="sm" variant="destructive" onClick={() => { if (confirm('Remove this listing? It stays in Removed so refund and admin history are preserved.')) { performAction(selected.id, 'soft_delete'); setSelected(null); } }}><Trash2 className="mr-1 h-4 w-4" /> Remove listing</Button>
+                <Button size="sm" variant="destructive" onClick={() => { if (confirm('Remove this listing? It stays under Removed so admin history is preserved.')) { performAction(selected.id, 'soft_delete'); setSelected(null); } }}><Trash2 className="mr-1 h-4 w-4" /> Remove listing</Button>
                 <Button size="sm" variant="ghost" onClick={() => navigate(`/listing/${selected.id}`)}><Eye className="mr-1 h-4 w-4" /> View on site</Button>
               </div>
             </>

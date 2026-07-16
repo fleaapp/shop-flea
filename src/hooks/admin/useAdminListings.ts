@@ -27,7 +27,7 @@ export type AdminListing = {
   spam_signal: boolean;
 };
 
-export type ListingStatusFilter = 'all' | 'active' | 'sold' | 'removed' | 'hidden' | 'archived' | 'featured';
+export type ListingStatusFilter = 'all' | 'active' | 'sold' | 'refunded' | 'removed' | 'hidden' | 'archived' | 'featured';
 export type ListingSortField = 'created_at' | 'price' | 'report_count';
 
 export function useAdminListings() {

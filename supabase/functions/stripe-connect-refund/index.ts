@@ -262,7 +262,7 @@ async function fetchRelatedListingIds(externalUrl: string, serviceKey: string, o
   return Array.from(new Set((Array.isArray(body) ? body : []).map((row: any) => row.listing_id).filter(Boolean)));
 }
 
-async function markListingsRemoved(externalUrl: string, serviceKey: string, listingIds: string[]) {
+async function markListingsRefunded(externalUrl: string, serviceKey: string, listingIds: string[]) {
   if (!listingIds.length) return;
   const quotedIds = listingIds.map((id) => `"${String(id).replace(/"/g, "")}"`).join(",");
   await fetch(`${externalUrl}/rest/v1/listings?id=in.(${quotedIds})`, {
@@ -273,7 +273,7 @@ async function markListingsRemoved(externalUrl: string, serviceKey: string, list
       "Content-Type": "application/json",
       Prefer: "return=minimal",
     },
-    body: JSON.stringify({ status: "removed", updated_at: new Date().toISOString() }),
+    body: JSON.stringify({ status: "refunded", updated_at: new Date().toISOString() }),
   });
 }
 
@@ -456,7 +456,7 @@ serve(async (req) => {
     if (isDemoOrder(order)) {
       await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
       const demoListingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
-      await markListingsRemoved(externalUrl, serviceKey, demoListingIds);
+      await markListingsRefunded(externalUrl, serviceKey, demoListingIds);
       return jsonResponse({ success: true, demo: true });
     }
 
@@ -505,7 +505,7 @@ serve(async (req) => {
 
     await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
     const relatedListingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
-    await markListingsRemoved(externalUrl, serviceKey, relatedListingIds);
+    await markListingsRefunded(externalUrl, serviceKey, relatedListingIds);
     await insertRefundNotifications(externalUrl, serviceKey, order);
 
     return jsonResponse({ success: true, refundId: refund.id, status: refund.status });
