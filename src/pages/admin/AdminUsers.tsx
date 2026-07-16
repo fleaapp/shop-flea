@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerTitle } from '@/components/ui/drawer';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Search, ShieldAlert, ShieldCheck, ShieldBan, KeyRound, Trash2, RotateCcw, AlertTriangle, ExternalLink, Package, CreditCard, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
@@ -134,30 +134,28 @@ export default function AdminUsers() {
         )}
       </div>
 
-      <Dialog open={!!selected} onOpenChange={(open) => { if (!open) { setSelected(null); setDetail(null); } }}>
-        <DialogContent className="max-w-3xl max-h-[88vh] overflow-y-auto rounded-3xl border-border bg-background p-0">
+      <Drawer open={!!selected} onOpenChange={(open) => { if (!open) { setSelected(null); setDetail(null); } }}>
+        <DrawerContent>
           {selected && (
-            <div className="flex flex-col">
-              <div className="rounded-t-3xl bg-gradient-to-br from-primary/15 via-primary/5 to-background px-5 pb-4 pt-6">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-3">
+            <>
+              <DrawerBody>
+                <div className="px-5 pb-4 pt-1">
+                  <div className="flex items-center gap-3">
                     <Avatar className="h-14 w-14 ring-2 ring-primary/30">
                       <AvatarImage src={selected.avatar_url ?? undefined} />
                       <AvatarFallback>{initials(selected.username)}</AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1 text-left">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="truncate text-base font-bold">{selected.username}</span>
-                        <AdminBadge tone={toneForStatus(selected.status)}>{statusLabel(selected.status)}</AdminBadge>
-                        {selected.report_strike_count > 0 && (
-                          <AdminBadge tone="danger">{selected.report_strike_count} strike{selected.report_strike_count > 1 ? 's' : ''}</AdminBadge>
-                        )}
-                      </div>
+                      <DrawerTitle className="truncate text-base font-bold">{selected.username}</DrawerTitle>
                       <p className="mt-0.5 truncate text-xs font-normal text-muted-foreground">{selected.email}</p>
                     </div>
-                  </DialogTitle>
-                </DialogHeader>
-                <div className="mt-3 flex flex-wrap gap-1.5">
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    <AdminBadge tone={toneForStatus(selected.status)}>{statusLabel(selected.status)}</AdminBadge>
+                    {selected.report_strike_count > 0 && (
+                      <AdminBadge tone="danger">{selected.report_strike_count} strike{selected.report_strike_count > 1 ? 's' : ''}</AdminBadge>
+                    )}
                   <AdminBadge tone={selected.stripe_onboarding_complete ? 'success' : 'neutral'}>
                     <CreditCard className="h-3 w-3" /> {selected.stripe_onboarding_complete ? 'Payments live' : 'No payouts'}
                   </AdminBadge>
@@ -167,7 +165,7 @@ export default function AdminUsers() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 px-5 py-4 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2 px-5 pb-4 sm:grid-cols-4">
                 <Stat label="Listings" value={`${selected.listings_total}`} sub={`${selected.listings_active} active`} />
                 <Stat label="Sales" value={String(selected.orders_as_seller)} />
                 <Stat label="Volume" value={fmtCurrency(selected.seller_volume + selected.buyer_volume)} />
@@ -178,27 +176,9 @@ export default function AdminUsers() {
                 <Stat label="Joined" value={format(new Date(selected.created_at), 'MMM yyyy')} />
               </div>
 
-              <div className="flex flex-wrap gap-2 border-t border-border/60 bg-muted/30 px-5 py-3">
-                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => setConfirm({ user: selected, type: 'suspend', label: 'Suspend user' })} disabled={selected.status === 'suspended'}>
-                  <ShieldAlert className="mr-1 h-3.5 w-3.5" /> Suspend
-                </Button>
-                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => setConfirm({ user: selected, type: 'ban', label: 'Ban user' })} disabled={selected.status === 'blocked'}>
-                  <ShieldBan className="mr-1 h-3.5 w-3.5" /> Ban
-                </Button>
-                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => setConfirm({ user: selected, type: 'activate', label: 'Reactivate user' })} disabled={selected.status === 'active'}>
-                  <ShieldCheck className="mr-1 h-3.5 w-3.5" /> Reactivate
-                </Button>
-                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => performAction(selected.user_id, 'reset_password')}>
-                  <KeyRound className="mr-1 h-3.5 w-3.5" /> Reset password
-                </Button>
-                <Button size="sm" variant="destructive" className="h-8 rounded-full text-xs" onClick={() => setConfirm({ user: selected, type: 'delete', label: 'Permanently delete user' })}>
-                  <Trash2 className="mr-1 h-3.5 w-3.5" /> Delete
-                </Button>
-              </div>
-
-              <div className="px-5 py-4">
+              <div className="px-5 pb-4">
                 <Tabs defaultValue="listings">
-                  <TabsList className="h-9 rounded-full bg-muted p-1">
+                  <TabsList className="h-9 w-full justify-start overflow-x-auto rounded-full bg-muted p-1">
                     <TabsTrigger value="listings" className="h-7 rounded-full text-xs data-[state=active]:bg-background">Listings</TabsTrigger>
                     <TabsTrigger value="orders" className="h-7 rounded-full text-xs data-[state=active]:bg-background">Orders</TabsTrigger>
                     <TabsTrigger value="reports" className="h-7 rounded-full text-xs data-[state=active]:bg-background">Reports</TabsTrigger>
@@ -233,10 +213,29 @@ export default function AdminUsers() {
                   )}
                 </Tabs>
               </div>
-            </div>
+              </DrawerBody>
+
+              <DrawerFooter className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => setConfirm({ user: selected, type: 'suspend', label: 'Suspend user' })} disabled={selected.status === 'suspended'}>
+                  <ShieldAlert className="mr-1 h-3.5 w-3.5" /> Suspend
+                </Button>
+                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => setConfirm({ user: selected, type: 'ban', label: 'Ban user' })} disabled={selected.status === 'blocked'}>
+                  <ShieldBan className="mr-1 h-3.5 w-3.5" /> Ban
+                </Button>
+                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => setConfirm({ user: selected, type: 'activate', label: 'Reactivate user' })} disabled={selected.status === 'active'}>
+                  <ShieldCheck className="mr-1 h-3.5 w-3.5" /> Reactivate
+                </Button>
+                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => performAction(selected.user_id, 'reset_password')}>
+                  <KeyRound className="mr-1 h-3.5 w-3.5" /> Reset password
+                </Button>
+                <Button size="sm" variant="destructive" className="h-8 rounded-full text-xs" onClick={() => setConfirm({ user: selected, type: 'delete', label: 'Permanently delete user' })}>
+                  <Trash2 className="mr-1 h-3.5 w-3.5" /> Delete
+                </Button>
+              </DrawerFooter>
+            </>
           )}
-        </DialogContent>
-      </Dialog>
+        </DrawerContent>
+      </Drawer>
 
       <AlertDialog open={!!confirm} onOpenChange={(open) => !open && setConfirm(null)}>
         <AlertDialogContent>
