@@ -31,7 +31,12 @@ type AdminAction =
   | "listSystemIssues"
   | "runSystemFix"
   | "listWaitlist"
-  | "listContactSubmissions";
+  | "listContactSubmissions"
+  | "getBadges"
+  | "listBrands"
+  | "updateBrand"
+  | "deleteBrand"
+  | "listRefunds";
 
 type RestOptions = {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
