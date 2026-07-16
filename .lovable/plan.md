@@ -1,25 +1,28 @@
 Plan:
 
-1. Point all brand reads and writes at the same source of truth
-- Update the user-facing brand hook so autocomplete, filters, and listing creation read brands from the external app database, not the separate Cloud-generated client.
-- Update the add-brand function so user-created brands are inserted into that same brand table that admin management uses.
+1. Fix admin listing terminology
+- Rename the `removed` status everywhere in Listings Management UI to `Deleted`.
+- Keep the database value as `removed` unless a schema change is truly needed, so existing data and actions remain compatible.
+- Update the delete/remove confirmation copy to say deleted listings are preserved for admin history.
 
-2. Fix admin brand editing and deletion
-- Keep Admin Brand Management using the admin backend function, but harden update/delete so it reliably edits the external brands table with admin privileges.
-- Patch the brand update guard on the real app database if it is still blocking admin renames.
-- Make delete remove the brand from autocomplete/admin lists without relisting or changing old listing records.
+2. Keep refunded and deleted as separate states
+- Refunded listings will use status `refunded` and appear under the `Refunded` filter.
+- Seller or admin deleted listings will use status `removed` but be displayed as `Deleted` and appear under the `Deleted` filter.
+- Update listing header counts to show Active, Sold, Refunded, and Deleted separately.
 
-3. Improve admin brand management UX only where needed
-- Show user-added brands in the admin list immediately after refresh.
-- Keep search, rename, delete, usage count, and loading/error states consistent with the existing simple settings-style admin UI.
-- Use clear errors if a brand cannot be renamed because of a duplicate or invalid name.
+3. Restore refund/dispute visibility for previously deleted refunded listings
+- Update the admin refund/dispute backend so refund rows still show listing details even when a listing was previously deleted or missing from the normal listings query.
+- If a refunded order references an existing listing, ensure that listing is marked `refunded`, not `removed`.
+- For any previously affected deleted refunded listing rows that still exist with the wrong status, update them from `removed` to `refunded`.
 
-4. Validate the flow
-- Test adding a new brand as a user.
-- Confirm it appears in Brand Management.
-- Confirm admin rename updates what users see in autocomplete/filter lists.
-- Confirm admin delete removes it from selectable brands.
+4. Fix the admin data source behavior
+- Make `listRefunds` fetch listing details for refunded orders regardless of listing status.
+- Add a fallback display for missing listing records so Refunds & disputes does not lose the order, buyer, seller, price, refund date, or reason if the listing row cannot be recovered.
 
-Technical notes:
-- The likely issue is split data paths: user brand code is using the Cloud client/table, while admin brand management is using the external app database via admin-data.
-- The fix will consolidate brand operations to the external app database and keep admin operations server-side.
+5. Deploy and verify
+- Deploy the updated admin/refund functions.
+- Verify that:
+  - Refunds & disputes shows refunded sales and their listing details.
+  - Listings Management has a Refunded filter for refunded sales.
+  - Listings Management has a Deleted filter for admin/seller deleted items.
+  - Deleted does not contain refunded listings unless they were actually deleted and not tied to a refund.
