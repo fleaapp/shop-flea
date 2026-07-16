@@ -333,7 +333,7 @@ const SalesDetailsSheet = ({
               className="flex items-center justify-between w-full rounded-2xl bg-muted-foreground/20 p-4 pl-6 card-shadow cursor-pointer"
             >
               <div className="flex flex-col items-start">
-                <span className="text-base font-semibold text-foreground">Seller dashboard</span>
+                <span className="text-base font-semibold text-foreground">📈 Seller dashboard</span>
                 <span className="text-xs text-muted-foreground mt-0.5">View payouts</span>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -341,12 +341,12 @@ const SalesDetailsSheet = ({
 
             {/* Actions */}
             <div className="flex flex-col items-center space-y-3 pt-4">
-              <div className="flex items-center gap-3 w-full px-4">
+              <div className="flex items-center justify-center gap-3 w-full px-4">
                 {(primaryOrder.status as string) !== 'refunded' && (
                   <Button
                     onClick={() => setRefundConfirmOpen(true)}
                     variant="outline"
-                    className="rounded-full h-12 px-8 bg-muted-foreground/60 text-white hover:bg-muted-foreground/70 border-none"
+                    className="rounded-full h-12 px-12 bg-muted-foreground/60 text-white hover:bg-muted-foreground/70 border-none"
                   >
                     Refund sale
                   </Button>
