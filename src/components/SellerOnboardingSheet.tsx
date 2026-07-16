@@ -61,6 +61,15 @@ const SellerOnboardingSheet = ({
   const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPushSheet, setShowPushSheet] = useState(false);
+
+  const handleVerifiedSuccess = (result?: { setupCompleted?: boolean }) => {
+    onOpenChange(false);
+    if (shouldShowPushPrompt(user?.id, 'seller_verified')) {
+      setTimeout(() => setShowPushSheet(true), 300);
+    }
+    onComplete?.(result);
+  };
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
