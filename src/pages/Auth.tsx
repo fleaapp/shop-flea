@@ -199,8 +199,8 @@ const Auth = () => {
 
     // Device eligibility check: block re-registration on devices with unsettled balances.
     try {
-      const { getStableDeviceId } = await import('@/lib/deviceId');
-      const deviceId = await getStableDeviceId();
+      const { getDeviceId } = await import('@/lib/deviceId');
+      const deviceId = await getDeviceId();
       if (deviceId) {
         const resp = await fetch(
           `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/check-device-eligibility`,
