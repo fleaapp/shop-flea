@@ -83,6 +83,7 @@ const CheckoutSuccess = () => {
         const shippingBySeller = new Map<string, number>(JSON.parse(shippingBySellerJson || '[]'));
 
         const checkoutReference = reference;
+        const couponCode = localStorage.getItem('checkout_coupon_code');
 
         let finalizeData: any = null;
         let finalizeError: any = null;
@@ -94,6 +95,7 @@ const CheckoutSuccess = () => {
             shippingBySeller: Array.from(shippingBySeller.entries()),
             paymentMethod: 'stripe',
             checkoutReference,
+            couponCode,
           });
 
           finalizeData = data;
