@@ -99,6 +99,15 @@ const SellerDashboard = () => {
   const [payoutLoading, setPayoutLoading] = useState<null | 'standard' | 'instant'>(null);
   const [confirm, setConfirm] = useState<null | 'standard' | 'instant'>(null);
   const [settleOpen, setSettleOpen] = useState(false);
+  const [actionRequiredOpen, setActionRequiredOpen] = useState(false);
+  const [verificationError, setVerificationError] = useState<any>(null);
+  const [needsIdDocument, setNeedsIdDocument] = useState(false);
+  const [stripeStatus, setStripeStatus] = useState<{
+    chargesEnabled: boolean;
+    payoutsEnabled: boolean;
+    detailsSubmitted: boolean;
+    accountId: string | null;
+  } | null>(null);
 
   const { sellerOrderGroups } = useOrders();
   const { perOrder } = useUnreadOrderMessages();
@@ -111,9 +120,15 @@ const SellerDashboard = () => {
     return count || undefined;
   }, [sellerOrderGroups, perOrder]);
 
-  const notOnboarded =
-    !(profile as any)?.stripe_account_id ||
-    (profile as any)?.stripe_onboarding_complete !== true;
+  const hasAccountId = !!(profile as any)?.stripe_account_id;
+  const dbOnboardingComplete = (profile as any)?.stripe_onboarding_complete === true;
+  // Never gate the dashboard purely on the DB flag — Stripe can reopen
+  // requirements after verification. Show the dashboard as soon as an account
+  // exists and surface an action-required banner if live status regresses.
+  const notOnboarded = !hasAccountId && !dbOnboardingComplete;
+  const liveActionRequired =
+    hasAccountId && stripeStatus != null &&
+    (!stripeStatus.chargesEnabled || !stripeStatus.payoutsEnabled);
 
   const load = async () => {
     setError(null);
@@ -131,11 +146,40 @@ const SellerDashboard = () => {
     }
   };
 
+  const probeStatus = async () => {
+    if (!hasAccountId) return;
+    try {
+      const { data } = await invokeCloudFunction('stripe-connect-status', {
+        stripeAccountId: (profile as any).stripe_account_id,
+      });
+      if (!data) return;
+      setStripeStatus({
+        chargesEnabled: !!(data as any).chargesEnabled,
+        payoutsEnabled: !!(data as any).payoutsEnabled,
+        detailsSubmitted: !!(data as any).detailsSubmitted,
+        accountId: (data as any).accountId || null,
+      });
+      setNeedsIdDocument(!!(data as any).needsIdDocument);
+      setVerificationError((data as any).verificationError ?? null);
+    } catch {
+      // Non-blocking. Banner stays hidden if we can't reach Stripe.
+    }
+  };
+
   useEffect(() => {
-    if (!notOnboarded) load();
-    else setLoading(false);
-    // Refresh when tab regains focus so balance updates after a sale
-    const onFocus = () => { if (!notOnboarded) load(); };
+    if (!notOnboarded) {
+      load();
+      probeStatus();
+    } else {
+      setLoading(false);
+    }
+    // Refresh when tab regains focus so balance and status update after a sale.
+    const onFocus = () => {
+      if (!notOnboarded) {
+        load();
+        probeStatus();
+      }
+    };
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onFocus);
     return () => {
@@ -143,7 +187,8 @@ const SellerDashboard = () => {
       document.removeEventListener('visibilitychange', onFocus);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notOnboarded]);
+  }, [notOnboarded, hasAccountId]);
+
 
   const currency = data?.currency ?? 'aud';
   const available = data?.available ?? 0;
