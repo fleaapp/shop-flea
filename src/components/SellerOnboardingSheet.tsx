@@ -276,7 +276,7 @@ const SellerOnboardingSheet = ({
                       onClick={(e) => {
                         e.preventDefault();
                         onOpenChange(false);
-                        window.location.href = '/terms';
+                        navigate('/terms');
                       }}
                     >
                       terms & conditions
