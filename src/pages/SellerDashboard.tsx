@@ -335,7 +335,20 @@ const SellerDashboard = () => {
               </section>
             )}
 
-            {/* Payout actions (outside the balance box) */}
+            {/* Pending row — sits directly under Available */}
+            <section className="rounded-2xl bg-card border border-border mt-3 p-4 flex items-center justify-between">
+              <div>
+                <div className="text-[13px] text-muted-foreground">Pending</div>
+                <div className="text-[11px] text-muted-foreground/80 mt-0.5">
+                  Clearing from recent sales.
+                </div>
+              </div>
+              <div className="text-base font-semibold text-foreground">
+                {fmtMoney(data?.pending ?? 0, currency)}
+              </div>
+            </section>
+
+            {/* Payout actions */}
             <div className="flex flex-col gap-2 mt-3">
               <Button
                 onClick={() => setConfirm('standard')}
@@ -372,19 +385,6 @@ const SellerDashboard = () => {
                 </div>
               )}
             </div>
-
-            {/* Pending row */}
-            <section className="rounded-2xl bg-card border border-border mt-3 p-4 flex items-center justify-between">
-              <div>
-                <div className="text-[13px] text-muted-foreground">Pending</div>
-                <div className="text-[11px] text-muted-foreground/80 mt-0.5">
-                  Clearing from recent sales.
-                </div>
-              </div>
-              <div className="text-base font-semibold text-foreground">
-                {fmtMoney(data?.pending ?? 0, currency)}
-              </div>
-            </section>
 
             {/* Next payout */}
             {data?.nextPayout && (

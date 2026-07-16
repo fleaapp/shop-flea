@@ -3,6 +3,16 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Order, OrderStatus } from '@/hooks/useOrders';
@@ -15,6 +25,10 @@ import { useAuth } from '@/context/AuthContext';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import ShippingStatusTracker from '@/components/ShippingStatusTracker';
 import { openTrackingUrl } from '@/lib/tracking';
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 interface SalesDetailsSheetProps {
   orders: Order[] | null;
@@ -48,12 +62,15 @@ const SalesDetailsSheet = ({
 }: SalesDetailsSheetProps) => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
+  const queryClient = useQueryClient();
   const stripeFullyVerified = profile?.stripe_onboarding_complete === true;
   const [serviceProvider, setServiceProvider] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [validationError, setValidationError] = useState('');
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
+  const [refundConfirmOpen, setRefundConfirmOpen] = useState(false);
+  const [refunding, setRefunding] = useState(false);
   const { getGroupUnread } = useUnreadOrderMessages();
   
   const primaryOrder = orders?.[0];
@@ -306,58 +323,31 @@ const SalesDetailsSheet = ({
               </div>
             )}
 
-            {/* Payment & Payout Section */}
-            <div className="rounded-xl bg-card overflow-hidden">
-              <SectionHeader>Payment & Payout</SectionHeader>
-              <div className="p-4 space-y-4">
-              <div className="flex justify-center">
-                  <button
-                    className="text-sm text-foreground underline"
-                    onClick={() => {
-                      window.open('https://dashboard.stripe.com/payments', '_blank');
-                    }}
-                  >
-                    View order on Stripe →
-                  </button>
-                </div>
-                <div className="border-t border-border -mx-4" />
-                <div className="flex flex-col items-center space-y-3 py-2">
-                  <p className="text-sm text-center">
-                    <span className="font-semibold text-foreground">Need your funds faster?</span>
-                    <br />
-                    <span className="text-muted-foreground">Request an instant payout for a 1.5% fee.</span>
-                  </p>
-                  <Button
-                    disabled={!stripeFullyVerified}
-                    className="rounded-full h-10 px-6 text-sm bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none"
-                    onClick={() => {
-                      if (!stripeFullyVerified) return;
-                      window.open('https://dashboard.stripe.com/payouts', '_blank');
-                    }}
-                  >
-                    Instant payout (1.5% fee)
-                  </Button>
-                  {!stripeFullyVerified && (
-                    <p className="text-xs text-center text-muted-foreground max-w-[280px] leading-snug">
-                      🔒 Instant payout unlocks once your account passes the instant payout risk check.
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
+            {/* Seller Dashboard entry (replaces payment & payout / Stripe links) */}
+            <button
+              type="button"
+              onClick={() => {
+                onOpenChange(false);
+                setTimeout(() => navigate('/seller-dashboard'), 250);
+              }}
+              className="w-full rounded-2xl bg-charcoal text-white hover:bg-charcoal-light transition-colors px-5 py-4 flex flex-col items-start"
+            >
+              <span className="text-base font-semibold">Seller dashboard</span>
+              <span className="text-xs text-white/70 mt-0.5">View payouts</span>
+            </button>
 
             {/* Actions */}
             <div className="flex flex-col items-center space-y-3 pt-4">
               <div className="flex items-center gap-3 w-full px-4">
-                <Button
-                  onClick={() => {
-                    window.open('https://dashboard.stripe.com/payments', '_blank');
-                  }}
-                  variant="outline"
-                  className="flex-1 rounded-full h-12 bg-muted-foreground/60 text-white hover:bg-muted-foreground/70 border-none"
-                >
-                  Refund sale
-                </Button>
+                {(primaryOrder.status as string) !== 'refunded' && (
+                  <Button
+                    onClick={() => setRefundConfirmOpen(true)}
+                    variant="outline"
+                    className="flex-1 rounded-full h-12 bg-muted-foreground/60 text-white hover:bg-muted-foreground/70 border-none"
+                  >
+                    Refund sale
+                  </Button>
+                )}
                 {primaryOrder.status === 'delivered' && !existingReview && (
                   <Button
                     onClick={() => setReviewDrawerOpen(true)}
@@ -396,6 +386,49 @@ const SalesDetailsSheet = ({
         onOpenChange={setReceiptOpen}
         viewAs="seller"
       />
+
+      <AlertDialog open={refundConfirmOpen} onOpenChange={(o) => !refunding && setRefundConfirmOpen(o)}>
+        <AlertDialogContent className="max-w-[320px] rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Refund this sale?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The full amount will be returned to the buyer and taken out of your Flea balance. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel disabled={refunding} className="flex-1 h-9 rounded-lg mt-0">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={refunding}
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!primaryOrder) return;
+                setRefunding(true);
+                try {
+                  const res: any = await invokeCloudFunction(
+                    'stripe-connect-refund',
+                    { orderId: primaryOrder.id, reason: 'requested_by_customer' }
+                  );
+                  if (res?.error) throw new Error(res.error);
+                  toast.success('Refund issued. Buyer has been notified.');
+                  await queryClient.invalidateQueries({ queryKey: ['orders'] });
+                  await queryClient.invalidateQueries({ queryKey: ['seller-balance'] });
+                  setRefundConfirmOpen(false);
+                  onOpenChange(false);
+                } catch (err: any) {
+                  toast.error(err?.message || 'Could not process refund. Please try again.');
+                } finally {
+                  setRefunding(false);
+                }
+              }}
+              className="flex-1 h-9 rounded-lg bg-charcoal text-white hover:bg-charcoal-light"
+            >
+              {refunding ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Refund'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Drawer>
   );
 };
