@@ -473,16 +473,19 @@ const SellerOnboardingSheet = ({
                   firstName={firstName}
                   lastName={lastName}
                   onBack={() => setStep(3)}
-                  onDone={() => {
-                    onComplete?.();
-                    onOpenChange(false);
-                  }}
+                  onDone={() => handleVerifiedSuccess({ setupCompleted: true })}
                 />
               )}
             </>
           )}
         </div>
       </SheetContent>
+
+      <PushPermissionSheet
+        open={showPushSheet}
+        onOpenChange={setShowPushSheet}
+        source="seller_verified"
+      />
     </Sheet>
   );
 };
