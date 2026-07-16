@@ -11,6 +11,7 @@ import { canOpenListing } from '@/utils/listingAccess';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
+import EnablePushBanner from '@/components/EnablePushBanner';
 import { OrderGroup } from '@/hooks/useOrders';
 
 
@@ -268,6 +269,7 @@ const Notifications = () => {
 
       {/* Content */}
       <div className="px-4 space-y-3">
+        {!isUnauthed && <EnablePushBanner />}
         {isUnauthed ? (
           <div className="flex items-center justify-center min-h-[60vh] px-4">
             <GuestPromptInline />
