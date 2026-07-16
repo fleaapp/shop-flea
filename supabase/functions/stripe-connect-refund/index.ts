@@ -159,7 +159,6 @@ async function markRelatedOrdersRefunded(externalUrl: string, serviceKey: string
   const body = {
     refunded_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    status: "refunded",
     refund_reason: "seller_refund",
   };
 

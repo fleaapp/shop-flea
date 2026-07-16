@@ -24,6 +24,8 @@ export interface Order {
   updated_at: string;
   shipped_at: string | null;
   delivered_at: string | null;
+  refunded_at?: string | null;
+  refund_reason?: string | null;
   payment_method?: string | null;
   checkout_reference?: string | null;
   // Shipping address fields
@@ -98,6 +100,8 @@ const ORDER_OPTIONAL_COLUMNS = [
   'updated_at',
   'shipped_at',
   'delivered_at',
+  'refunded_at',
+  'refund_reason',
   'payment_method',
   'checkout_reference',
   'shipping_first_name',
@@ -135,6 +139,8 @@ const normalizeOrderRows = (rows: unknown[]): RawOrderRow[] => {
       updated_at: typedRow.updated_at ?? typedRow.created_at ?? new Date(0).toISOString(),
       shipped_at: typedRow.shipped_at ?? null,
       delivered_at: typedRow.delivered_at ?? null,
+      refunded_at: typedRow.refunded_at ?? null,
+      refund_reason: typedRow.refund_reason ?? null,
       payment_method: typedRow.payment_method ?? null,
       checkout_reference: typedRow.checkout_reference ?? null,
       shipping_first_name: typedRow.shipping_first_name ?? null,

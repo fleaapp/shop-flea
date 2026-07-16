@@ -527,8 +527,8 @@ async function listUsers(payload: any = {}) {
   const inList = `in.(${userIds.join(",")})`;
   const [listings, ordersAsBuyer, ordersAsSeller, reportsAgainst] = await Promise.all([
     safeSelect("listings", { user_id: inList, select: "user_id,status" }),
-    safeSelect("orders", { buyer_id: inList, select: "buyer_id,price,shipping_price,status" }),
-    safeSelect("orders", { seller_id: inList, select: "seller_id,price,shipping_price,status" }),
+    safeSelect("orders", { buyer_id: inList, select: "buyer_id,price,shipping_price,status,refunded_at" }),
+    safeSelect("orders", { seller_id: inList, select: "seller_id,price,shipping_price,status,refunded_at" }),
     safeSelect("reports", { reported_user_id: inList, select: "reported_user_id" }),
   ]);
 
@@ -545,7 +545,7 @@ async function listUsers(payload: any = {}) {
     const t = buyerStats.get(o.buyer_id) ?? { count: 0, volume: 0, refunds: 0 };
     t.count += 1;
     t.volume += Number(o.price ?? 0) + Number(o.shipping_price ?? 0);
-    if (o.status === "refunded") t.refunds += 1;
+    if (o.refunded_at) t.refunds += 1;
     buyerStats.set(o.buyer_id, t);
   }
   const sellerStats = new Map<string, { count: number; volume: number; refunds: number }>();
@@ -553,7 +553,7 @@ async function listUsers(payload: any = {}) {
     const t = sellerStats.get(o.seller_id) ?? { count: 0, volume: 0, refunds: 0 };
     t.count += 1;
     t.volume += Number(o.price ?? 0) + Number(o.shipping_price ?? 0);
-    if (o.status === "refunded") t.refunds += 1;
+    if (o.refunded_at) t.refunds += 1;
     sellerStats.set(o.seller_id, t);
   }
   const reportCounts = new Map<string, number>();
@@ -822,7 +822,7 @@ async function listSystemIssues() {
     safeSelect("profiles", { select: "user_id,username,status,report_strike_count,stripe_account_id,stripe_onboarding_complete,pause_selling" }),
     safeSelect("orders", { status: "eq.awaiting", select: "id,buyer_id,seller_id,listing_id,price,created_at,checkout_reference" }),
     safeSelect("orders", { status: "eq.shipped", select: "id,buyer_id,seller_id,listing_id,shipped_at,tracking_number,tracking_provider,delivered_at" }),
-    safeSelect("orders", { status: "eq.refunded", select: "id,refunded_at,updated_at,buyer_id,seller_id" }),
+    safeSelect("orders", { refunded_at: "not.is.null", select: "id,refunded_at,updated_at,buyer_id,seller_id" }),
     safeSelect("reports", { status: "eq.pending", order: "created_at.asc", select: "id,created_at,report_type,reported_user_id,reported_entity_id" }),
     safeSelect("listings", { select: "id,user_id,title,status,report_count" }),
     safeSelect("listings", { select: "id,user_id,title,brand,status" }),
@@ -1248,17 +1248,7 @@ async function runSystemFix(fixId: string) {
     }
 
     case "fix_backfill_refund_timestamps": {
-      const targets = await safeSelect("orders", {
-        status: "eq.refunded",
-        refunded_at: "is.null",
-        select: "id,updated_at",
-      });
-      let fixed = 0;
-      for (const o of targets as any[]) {
-        await safePatch("orders", { id: `eq.${o.id}` }, { refunded_at: o.updated_at ?? new Date().toISOString() });
-        fixed++;
-      }
-      return { ok: true, fixed, message: `Backfilled refund timestamps on ${fixed} order(s).` };
+      return { ok: true, fixed: 0, message: "Refunds are tracked by refund timestamp. No backfill needed." };
     }
 
     case "fix_restore_orphan_sold": {

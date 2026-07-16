@@ -10,6 +10,7 @@ import {
   calcPlatformFee,
   getShippingStatus,
   getDaysOverdue,
+  getTransactionStatus,
 } from '@/types/admin/transactions';
 
 const DEFAULT_FILTERS: TransactionFilters = {
@@ -60,7 +61,7 @@ export function useAdminTransactions() {
       to.setHours(23, 59, 59);
       result = result.filter((o) => new Date(o.created_at) <= to);
     }
-    if (filters.status) result = result.filter((o) => o.status === filters.status);
+    if (filters.status) result = result.filter((o) => getTransactionStatus(o) === filters.status);
     if (filters.shippingStatus) result = result.filter((o) => getShippingStatus(o) === filters.shippingStatus);
     if (filters.overdue) result = result.filter((o) => getDaysOverdue(o) !== null);
     if (filters.flagged) result = result.filter((o) => o.has_flags);
@@ -78,7 +79,7 @@ export function useAdminTransactions() {
       switch (sortField) {
         case 'created_at': cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime(); break;
         case 'price': cmp = (a.price + a.shipping_price) - (b.price + b.shipping_price); break;
-        case 'status': cmp = a.status.localeCompare(b.status); break;
+        case 'status': cmp = getTransactionStatus(a).localeCompare(getTransactionStatus(b)); break;
         case 'buyer': cmp = (a.buyer_profile?.username || '').localeCompare(b.buyer_profile?.username || ''); break;
         case 'seller': cmp = (a.seller_profile?.username || '').localeCompare(b.seller_profile?.username || ''); break;
       }
@@ -93,10 +94,10 @@ export function useAdminTransactions() {
       totalOrders: r.length,
       totalRevenue: r.reduce((s, o) => s + o.price + o.shipping_price, 0),
       platformEarnings: r.reduce((s, o) => s + calcPlatformFee(o.price + o.shipping_price), 0),
-      refundTotal: r.filter((o) => o.status === 'refunded').reduce((s, o) => s + o.price, 0),
+      refundTotal: r.filter((o) => o.refunded_at).reduce((s, o) => s + o.price, 0),
       ordersInProgress: r.filter((o) => o.status === 'awaiting' || o.status === 'shipped').length,
       overdueShipments: r.filter((o) => getDaysOverdue(o) !== null).length,
-      disputedOrders: r.filter((o) => o.status === 'disputed').length,
+      disputedOrders: r.filter((o) => getTransactionStatus(o) === 'disputed').length,
     };
   }, [filteredOrders]);
 
