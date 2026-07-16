@@ -152,7 +152,7 @@ serve(async (req) => {
       const serviceClient = createClient(externalUrl, serviceKey);
       const { data: sellerProfile } = await serviceClient
         .from('profiles')
-        .select('stripe_account_id, username, email')
+        .select('stripe_account_id, username, email, negative_balance_cents')
         .eq('user_id', sellerUserId)
         .single();
 
@@ -165,7 +165,7 @@ serve(async (req) => {
       const serviceClient = createClient(externalUrl, serviceKey);
       const { data: ownProfile } = await serviceClient
         .from('profiles')
-        .select('stripe_account_id, username, email')
+        .select('stripe_account_id, username, email, negative_balance_cents')
         .eq('user_id', lookupUserId)
         .single();
       lookupProfile = ownProfile;
