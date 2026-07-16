@@ -330,10 +330,13 @@ const SalesDetailsSheet = ({
                 onOpenChange(false);
                 setTimeout(() => navigate('/seller-dashboard'), 250);
               }}
-              className="w-full rounded-2xl bg-charcoal text-white hover:bg-charcoal-light transition-colors px-5 py-4 flex flex-col items-start"
+              className="flex items-center justify-between w-full rounded-2xl bg-muted-foreground/20 p-4 pl-6 card-shadow cursor-pointer"
             >
-              <span className="text-base font-semibold">Seller dashboard</span>
-              <span className="text-xs text-white/70 mt-0.5">View payouts</span>
+              <div className="flex flex-col items-start">
+                <span className="text-base font-semibold text-foreground">Seller dashboard</span>
+                <span className="text-xs text-muted-foreground mt-0.5">View payouts</span>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </button>
 
             {/* Actions */}
@@ -343,7 +346,7 @@ const SalesDetailsSheet = ({
                   <Button
                     onClick={() => setRefundConfirmOpen(true)}
                     variant="outline"
-                    className="flex-1 rounded-full h-12 bg-muted-foreground/60 text-white hover:bg-muted-foreground/70 border-none"
+                    className="rounded-full h-12 px-8 bg-muted-foreground/60 text-white hover:bg-muted-foreground/70 border-none"
                   >
                     Refund sale
                   </Button>
@@ -358,7 +361,7 @@ const SalesDetailsSheet = ({
                 )}
               </div>
               <button
-                className="text-center text-sm text-foreground underline"
+                className="text-center text-sm text-foreground underline mt-4"
                 onClick={() => {
                   onOpenChange(false);
                   setTimeout(() => navigate('/contact-support'), 300);
