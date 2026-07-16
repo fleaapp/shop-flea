@@ -12,6 +12,7 @@ import { nativeAppleSignIn, isIosNative as isAppleIosNative } from '@/lib/appleS
 import { openInAppUrl } from '@/lib/openInAppUrl';
 import { getSignupRedirectUrl } from '@/lib/authRedirects';
 import ProviderConflictDialog, { type ConflictProvider } from '@/components/ProviderConflictDialog';
+import { useAdminRole } from '@/hooks/useAdminRole';
 
 const CHECK_EMAIL_PROVIDER_URL =
   `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/check-email-provider`;
