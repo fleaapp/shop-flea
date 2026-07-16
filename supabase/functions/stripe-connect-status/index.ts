@@ -245,6 +245,11 @@ serve(async (req) => {
         }),
       });
 
+      // If newly negative (was 0/positive, now > 0), notify the seller so they
+      // learn about it immediately rather than the next time they open the app.
+      const previousNegative = Number(lookupProfile?.negative_balance_cents ?? 0);
+      const becameNegative = negativeBalanceCents > 0 && previousNegative === 0;
+
       // If negative and we have device ids, add them all to blocked_devices.
       if (negativeBalanceCents > 0) {
         try {
@@ -266,6 +271,16 @@ serve(async (req) => {
               })),
               { onConflict: "device_id" },
             );
+          }
+
+          if (becameNegative) {
+            const amountStr = `$${(negativeBalanceCents / 100).toFixed(2)}`;
+            await svc.from("notifications").insert({
+              user_id: lookupUserId,
+              type: "payment_action_required",
+              title: "Balance owed",
+              message: `⚠️ A refund or dispute left your Flea balance at -${amountStr}. Settle it in your Seller Dashboard to keep buying, listing, and receiving payouts.`,
+            });
           }
         } catch (e) {
           console.warn("[stripe-connect-status] blocked_devices upsert failed", e);
