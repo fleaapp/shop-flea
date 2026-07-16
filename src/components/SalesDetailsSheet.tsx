@@ -51,7 +51,7 @@ const getStatusBadge = (status: OrderStatus) => {
 };
 
 const getDisplayStatusBadge = (order: Order) => {
-  if (order.refunded_at) return { label: 'Refunded', variant: 'secondary' as const };
+  if (order.status === 'refunded' || order.refunded_at) return { label: 'Refunded', variant: 'secondary' as const };
   return getStatusBadge(order.status);
 };
 
@@ -125,15 +125,16 @@ const SalesDetailsSheet = ({
   const buyerUsername = rawBuyerUsername.startsWith('@') ? rawBuyerUsername.slice(1) : rawBuyerUsername;
   const buyerAvatar = primaryOrder.buyer_profile?.avatar_url || getDefaultAvatar(primaryOrder.buyer_id);
 
-  const isRefunded = !!primaryOrder.refunded_at;
+  const isRefunded = primaryOrder.status === 'refunded' || !!primaryOrder.refunded_at;
+  const effectiveStatus: OrderStatus = isRefunded ? 'refunded' : primaryOrder.status;
   const providers = Array.from(new Set(orders.map((o) => o.tracking_provider).filter(Boolean) as string[]));
   const numbers = Array.from(new Set(orders.map((o) => o.tracking_number).filter(Boolean) as string[]));
   const trackingProviderDisplay = isRefunded
     ? 'Refunded'
-    : (primaryOrder.status === 'awaiting' ? 'Awaiting shipping' : (providers.length === 1 ? providers[0] : 'Multiple'));
+    : (effectiveStatus === 'awaiting' ? 'Awaiting shipping' : (providers.length === 1 ? providers[0] : 'Multiple'));
   const trackingNumberDisplay = isRefunded
     ? 'Refunded'
-    : (primaryOrder.status === 'awaiting' ? 'Awaiting shipping' : (numbers.length === 1 ? numbers[0] : 'Multiple'));
+    : (effectiveStatus === 'awaiting' ? 'Awaiting shipping' : (numbers.length === 1 ? numbers[0] : 'Multiple'));
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -252,7 +253,7 @@ const SalesDetailsSheet = ({
             <div className="rounded-xl bg-card overflow-hidden">
               <SectionHeader>Tracking Details</SectionHeader>
               <div className="p-4 space-y-3">
-                {primaryOrder.status === 'awaiting' && !isRefunded ? (
+                {effectiveStatus === 'awaiting' && !isRefunded ? (
                   <>
                     <div>
                       <p className="font-semibold text-foreground mb-1.5">Service Provider:</p>
@@ -294,7 +295,7 @@ const SalesDetailsSheet = ({
                         className="bg-background disabled:opacity-70"
                       />
                     </div>
-                    {trackingNumberDisplay && trackingNumberDisplay !== 'Multiple' && (
+                    {!isRefunded && trackingNumberDisplay && trackingNumberDisplay !== 'Multiple' && (
                       <Button
                         type="button"
                         onClick={() =>
@@ -314,15 +315,15 @@ const SalesDetailsSheet = ({
             </div>
 
             {/* Shipping Status Tracker - visible once shipped, hidden if refunded */}
-            {!isRefunded && (primaryOrder.status === 'shipped' || primaryOrder.status === 'delivered') && (
+            {!isRefunded && (effectiveStatus === 'shipped' || effectiveStatus === 'delivered') && (
               <ShippingStatusTracker
                 createdAt={primaryOrder.created_at}
                 shippedAt={primaryOrder.shipped_at}
                 deliveredAt={primaryOrder.delivered_at}
-                status={primaryOrder.status}
+                status={effectiveStatus}
               />
             )}
-            {!isRefunded && primaryOrder.status === 'awaiting' && (
+            {!isRefunded && effectiveStatus === 'awaiting' && (
               <div className="flex justify-center">
                 <Button
                   onClick={handleMarkShipped}
@@ -352,7 +353,7 @@ const SalesDetailsSheet = ({
             {/* Actions */}
             <div className="flex flex-col items-center space-y-3 pt-4">
               <div className="flex items-center justify-center gap-3 w-full px-4">
-                {!primaryOrder.refunded_at && (
+                {!isRefunded && (
                   <Button
                     onClick={() => setRefundConfirmOpen(true)}
                     variant="outline"
@@ -361,7 +362,7 @@ const SalesDetailsSheet = ({
                     Refund sale
                   </Button>
                 )}
-                {primaryOrder.status === 'delivered' && !existingReview && (
+                {!isRefunded && effectiveStatus === 'delivered' && !existingReview && (
                   <Button
                     onClick={() => setReviewDrawerOpen(true)}
                     className="flex-1 rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12"

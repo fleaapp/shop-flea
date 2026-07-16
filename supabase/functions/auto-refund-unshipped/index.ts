@@ -118,6 +118,7 @@ async function markOrderRefunded(orderId: string, refundReason: string) {
     const rows = await sql`
       UPDATE public.orders
       SET refunded_at = ${refundedAt},
+          status = 'refunded',
           refund_reason = ${refundReason},
           updated_at = ${refundedAt}
       WHERE id = ${orderId}
