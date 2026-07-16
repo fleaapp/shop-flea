@@ -89,11 +89,54 @@ serve(async (req) => {
       },
     );
 
+    // Fetch the recent refunds/disputes that pushed the balance negative so we
+    // can show the seller a breakdown of what they owe on.
+    const breakdown: Array<{ id: string; type: string; amountCents: number; createdAt: string; description: string | null }> = [];
+    try {
+      const { data: events } = await svc
+        .from("payment_events")
+        .select("event_id, event_type, amount, created_at, order_id")
+        .eq("seller_id", userId)
+        .in("event_type", [
+          "charge.refunded",
+          "refund.created",
+          "charge.dispute.created",
+          "charge.dispute.funds_withdrawn",
+        ])
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      const orderIds = (events ?? []).map((e: any) => e.order_id).filter(Boolean);
+      const orderMap = new Map<string, string>();
+      if (orderIds.length > 0) {
+        const { data: orders } = await svc
+          .from("orders")
+          .select("id, order_number")
+          .in("id", orderIds);
+        for (const o of orders ?? []) orderMap.set(o.id, o.order_number);
+      }
+
+      for (const e of events ?? []) {
+        const label = e.event_type.includes("dispute") ? "Dispute" : "Refund";
+        const ordRef = e.order_id ? orderMap.get(e.order_id) : null;
+        breakdown.push({
+          id: e.event_id,
+          type: label,
+          amountCents: Math.round(Number(e.amount ?? 0) * 100),
+          createdAt: e.created_at,
+          description: ordRef ? `${label} on ${ordRef}` : label,
+        });
+      }
+    } catch (e) {
+      console.warn("[stripe-connect-topup] breakdown fetch failed", e);
+    }
+
     return new Response(
       JSON.stringify({
         clientSecret: intent.client_secret,
         paymentIntentId: intent.id,
         connectedAccountId: accountId,
+        breakdown,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
