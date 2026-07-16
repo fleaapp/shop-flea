@@ -386,6 +386,49 @@ const SalesDetailsSheet = ({
         onOpenChange={setReceiptOpen}
         viewAs="seller"
       />
+
+      <AlertDialog open={refundConfirmOpen} onOpenChange={(o) => !refunding && setRefundConfirmOpen(o)}>
+        <AlertDialogContent className="max-w-[320px] rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Refund this sale?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The full amount will be returned to the buyer and taken out of your Flea balance. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel disabled={refunding} className="flex-1 h-9 rounded-lg mt-0">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={refunding}
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!primaryOrder) return;
+                setRefunding(true);
+                try {
+                  const res = await invokeCloudFunction<{ ok?: boolean; error?: string }>(
+                    'stripe-connect-refund',
+                    { orderId: primaryOrder.id, reason: 'requested_by_customer' }
+                  );
+                  if (res?.error) throw new Error(res.error);
+                  toast.success('Refund issued. Buyer has been notified.');
+                  await queryClient.invalidateQueries({ queryKey: ['orders'] });
+                  await queryClient.invalidateQueries({ queryKey: ['seller-balance'] });
+                  setRefundConfirmOpen(false);
+                  onOpenChange(false);
+                } catch (err: any) {
+                  toast.error(err?.message || 'Could not process refund. Please try again.');
+                } finally {
+                  setRefunding(false);
+                }
+              }}
+              className="flex-1 h-9 rounded-lg bg-charcoal text-white hover:bg-charcoal-light"
+            >
+              {refunding ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Refund'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Drawer>
   );
 };
