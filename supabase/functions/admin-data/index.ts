@@ -1436,7 +1436,10 @@ async function countCloudRows(table: string, params: Record<string, string> = {}
   return Number.isFinite(total) ? total : 0;
 }
 
-async function getBadges() {
+async function getBadges(payload: any = {}) {
+  const brandsSince = typeof payload?.brandsSince === "string" && payload.brandsSince
+    ? payload.brandsSince
+    : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const [supportUnread, reportsPending, bansActive, suggestionsUnread, waitlist, contact, awaitingOrders, refundedOrders, listingsActive, users, brands] = await Promise.all([
     countRows("chat_messages", { sender_type: "eq.user", read: "eq.false" }),
     countRows("reports", { status: "eq.pending" }),
@@ -1448,7 +1451,7 @@ async function getBadges() {
     countRows("orders", { refunded_at: "not.is.null" }),
     countRows("listings", { status: "eq.active" }),
     countRows("profiles", { created_at: `gte.${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()}` }),
-    countCloudRows("brands", {}).catch(() => 0),
+    countCloudRows("brands", { created_at: `gte.${brandsSince}` }).catch(() => 0),
   ]);
   return {
     support: supportUnread,
