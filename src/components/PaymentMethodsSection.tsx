@@ -100,7 +100,10 @@ const PaymentMethodsSection = () => {
         if (!silent) toast.success('Your seller account is ready!');
         return 'verified' as const;
       } else if (data?.chargesEnabled && !data?.payoutsEnabled && data?.accountId) {
-        // Charges enabled but payouts paused - action required
+        // Charges enabled but payouts paused - action required.
+        // IMPORTANT: do NOT demote stripe_onboarding_complete. The account was
+        // completed once; Stripe has simply reopened requirements. Demoting the
+        // flag would hide the dashboard and block re-verification.
         setStripeChargesEnabled(true);
         setStripePayoutsEnabled(false);
         setLocalConnected(false);
@@ -108,10 +111,11 @@ const PaymentMethodsSection = () => {
         localStorage.removeItem(getStripeConnectedStorageKey(user.id));
         await supabase
           .from('profiles')
-          .update({ stripe_account_id: data.accountId, stripe_onboarding_complete: false } as any)
+          .update({ stripe_account_id: data.accountId } as any)
           .eq('user_id', user.id);
         await refreshProfile();
-        if (!silent) toast('Your seller account needs attention - payouts are paused. Open your seller dashboard to complete verification.');
+        if (!silent) toast('Your seller account needs attention. Open your seller dashboard to complete verification.');
+
 
         // Send a notification if one hasn't been sent recently
         const { data: existing } = await supabase
