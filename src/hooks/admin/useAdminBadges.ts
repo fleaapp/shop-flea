@@ -27,7 +27,8 @@ export function useAdminBadges() {
 
   const refresh = useCallback(async () => {
     try {
-      const data = await callAdminData<AdminBadges>('getBadges');
+      const brandsSince = typeof window !== 'undefined' ? window.localStorage.getItem('admin_brands_last_seen') : null;
+      const data = await callAdminData<AdminBadges>('getBadges', brandsSince ? { brandsSince } : {});
       setBadges({ ...EMPTY, ...data });
     } catch (e) {
       console.error('badges fetch failed', e);
