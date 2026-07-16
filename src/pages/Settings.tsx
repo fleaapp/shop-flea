@@ -18,6 +18,20 @@ import PaymentMethodsSection from '@/components/PaymentMethodsSection';
 
 import { useUnreadSupport } from '@/hooks/useUnreadSupport';
 import { useAdminRole } from '@/hooks/useAdminRole';
+import { useAdminBadges } from '@/hooks/admin/useAdminBadges';
+
+const AdminBadgeCount = ({ onCount }: { onCount: (n: number) => void }) => {
+  const { badges } = useAdminBadges();
+  const total =
+    (badges.support || 0) +
+    (badges.contact || 0) +
+    (badges.refunds || 0) +
+    (badges.reports || 0) +
+    (badges.suggestions || 0) +
+    (badges.waitlist || 0);
+  useEffect(() => { onCount(total); }, [total, onCount]);
+  return null;
+};
 const Settings = () => {
   const navigate = useNavigate();
   const {
@@ -39,6 +53,7 @@ const Settings = () => {
   } = useUnreadSupport();
   const { triggerSubscribe } = usePushNotifications();
   const { isAdmin } = useAdminRole();
+  const [adminBadgeTotal, setAdminBadgeTotal] = useState(0);
 
   // Notifications toggle state
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
@@ -201,7 +216,8 @@ const Settings = () => {
     supportItems.push({
       icon: <span className="text-base">🛡️</span>,
       label: 'Admin Dashboard',
-      action: () => navigate('/admin')
+      action: () => navigate('/admin'),
+      badge: adminBadgeTotal || undefined,
     });
   }
   if (!isGuest) {
@@ -218,6 +234,7 @@ const Settings = () => {
     { title: 'Support', items: supportItems }
   ];
   return <div className="min-h-screen bg-background pb-24 max-[375px]:pb-20">
+      {!isGuest && isAdmin && <AdminBadgeCount onCount={setAdminBadgeTotal} />}
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background px-4 max-[375px]:px-3 py-4 max-[375px]:py-3">
         <h1 className="text-xl max-[375px]:text-lg font-bold text-foreground text-center">⚙️ Settings</h1>
