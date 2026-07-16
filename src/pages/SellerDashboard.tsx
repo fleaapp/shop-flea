@@ -30,6 +30,18 @@ type PayoutRow = {
   method: string;
 };
 
+type ActivityRow = {
+  id: string;
+  type: string;
+  amount: number;
+  net: number;
+  fee: number;
+  status: string;
+  created: number;
+  available_on?: number;
+  description?: string | null;
+};
+
 type DashboardData = {
   connected: boolean;
   demo?: boolean;
@@ -48,6 +60,7 @@ type DashboardData = {
   instantPayoutEligible?: boolean;
   nextPayout?: { amount: number; arrivalDate: number; status: string } | null;
   payouts?: PayoutRow[];
+  activity?: ActivityRow[];
 };
 
 const fmtMoney = (cents: number, currency = 'aud') =>
@@ -88,6 +101,30 @@ const statusClass = (s: string) => {
   if (s === 'in_transit' || s === 'pending') return 'bg-muted text-charcoal';
   if (s === 'failed' || s === 'canceled') return 'bg-destructive/15 text-destructive';
   return 'bg-muted text-charcoal';
+};
+
+const activityMeta = (type: string): { emoji: string; label: string } => {
+  switch (type) {
+    case 'charge':
+    case 'payment':
+      return { emoji: '💰', label: 'Sale' };
+    case 'refund':
+    case 'payment_refund':
+      return { emoji: '↩️', label: 'Refund' };
+    case 'application_fee':
+    case 'application_fee_refund':
+      return { emoji: '🧾', label: 'Platform fee' };
+    case 'stripe_fee':
+      return { emoji: '🧾', label: 'Processing fee' };
+    case 'adjustment':
+      return { emoji: '⚖️', label: 'Adjustment' };
+    case 'transfer':
+      return { emoji: '🔁', label: 'Transfer' };
+    case 'topup':
+      return { emoji: '⬆️', label: 'Top up' };
+    default:
+      return { emoji: '•', label: type.replace(/_/g, ' ') };
+  }
 };
 
 const SellerDashboard = () => {
@@ -437,6 +474,39 @@ const SellerDashboard = () => {
                 </ul>
               )}
             </section>
+
+            {/* Recent activity — sales, refunds, fees, adjustments */}
+            {data?.activity && data.activity.length > 0 && (
+              <section className="mt-6">
+                <h2 className="text-[13px] font-semibold text-foreground px-1 mb-2">
+                  Recent activity
+                </h2>
+                <ul className="rounded-2xl bg-card border border-border overflow-hidden divide-y divide-border">
+                  {data.activity.map((a) => {
+                    const isOut = a.amount < 0;
+                    const meta = activityMeta(a.type);
+                    return (
+                      <li key={a.id} className="flex items-center justify-between px-4 py-3">
+                        <div className="min-w-0 flex-1 pr-3">
+                          <div className="text-[13px] font-medium text-foreground flex items-center gap-1.5">
+                            <span>{meta.emoji}</span>
+                            <span className="truncate">{meta.label}</span>
+                          </div>
+                          <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                            {fmtDate(a.created)}
+                            {a.status === 'pending' && a.available_on ? ` · Available ${fmtDate(a.available_on)}` : ''}
+                            {a.fee ? ` · Fee ${fmtMoney(a.fee, currency)}` : ''}
+                          </div>
+                        </div>
+                        <div className={`text-[14px] font-semibold ${isOut ? 'text-destructive' : 'text-foreground'}`}>
+                          {isOut ? '−' : '+'}{fmtMoney(Math.abs(a.amount), currency)}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            )}
           </>
         )}
       </main>

@@ -84,11 +84,14 @@ serve(async (req) => {
 
     const stripe = new Stripe(getStripeSecretKey(), { apiVersion: "2025-08-27.basil" });
 
-    const [balance, payouts, account, charges] = await Promise.all([
+    const [balance, payouts, account, charges, balanceTx] = await Promise.all([
       stripe.balance.retrieve({ stripeAccount: accountId }),
       stripe.payouts.list({ limit: 10 }, { stripeAccount: accountId }),
       stripe.accounts.retrieve(accountId),
       stripe.charges.list({ limit: 1 }, { stripeAccount: accountId }).catch(() => ({ data: [] as any[] })),
+      stripe.balanceTransactions
+        .list({ limit: 30 }, { stripeAccount: accountId })
+        .catch(() => ({ data: [] as any[] })),
     ]);
 
     const currency = (balance.available?.[0]?.currency || balance.pending?.[0]?.currency || "aud").toLowerCase();
@@ -181,6 +184,20 @@ serve(async (req) => {
           created: p.created,
           method: p.method,
         })),
+        activity: ((balanceTx as any).data || [])
+          .filter((t: any) => t.type !== 'payout')
+          .slice(0, 25)
+          .map((t: any) => ({
+            id: t.id,
+            type: t.type, // charge, refund, adjustment, stripe_fee, application_fee, application_fee_refund, transfer, payment_refund, etc.
+            amount: t.amount, // signed, in cents (negative = out)
+            net: t.net,
+            fee: t.fee,
+            status: t.status, // available | pending
+            created: t.created,
+            available_on: t.available_on,
+            description: t.description,
+          })),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
