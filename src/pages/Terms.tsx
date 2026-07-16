@@ -155,7 +155,7 @@ const Terms = () => {
           <section className={SECTION}>
             <h2 className="text-base font-bold mb-2">10. Shipping, tracking and delivery</h2>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li>Sellers must dispatch sold items within <strong>3 business days</strong> and add valid Australian carrier tracking. Items not shipped within 6 days are flagged as overdue and may be auto-refunded to the buyer.</li>
+              <li>Sellers must dispatch sold items within <strong>3 business days</strong> and add valid Australian carrier tracking. Orders that have not been marked as shipped with valid tracking within <strong>9 days</strong> of purchase are automatically refunded to the buyer, the sale is cancelled, and any payout for that order is withheld from the seller's balance.</li>
               <li>Tracking is supported only for Australian carriers integrated with the Platform.</li>
               <li>Buyers can mark items as delivered. If tracking shows delivery, the order is treated as delivered for refund and review purposes.</li>
               <li>Risk in the goods passes to the buyer on delivery to the address provided at checkout.</li>
