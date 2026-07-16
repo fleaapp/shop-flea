@@ -705,22 +705,11 @@ const Checkout = () => {
             </div>
 
             {/* Payment method picker (Depop-style) */}
-            {sellerStripeLoading ? (
-              <div className="rounded-xl bg-card p-4 text-center text-sm text-muted-foreground">
-                Checking seller payment status...
-              </div>
-            ) : sellerHasStripe ? (
-              <PaymentMethodPicker
-                value={selectedMethod}
-                onChange={setSelectedMethod}
-                amountCents={Math.round(total * 100)}
-              />
-            ) : (
-              <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-center">
-                <p className="text-sm font-semibold text-destructive">This seller can't accept payments right now.</p>
-                <p className="mt-1 text-xs text-charcoal/70">Their payment account isn't fully set up yet. Please try again later or reach out to Flea support.</p>
-              </div>
-            )}
+            <PaymentMethodPicker
+              value={selectedMethod}
+              onChange={setSelectedMethod}
+              amountCents={Math.round(total * 100)}
+            />
 
             {/* Master Pay button */}
             <div className="mt-6">
