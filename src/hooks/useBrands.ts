@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 
 export interface Brand {
@@ -14,15 +13,16 @@ export const useBrands = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchBrands = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('brands')
-      .select('*')
-      .order('display_name', { ascending: true });
+    setLoading(true);
+    try {
+      const { data, error } = await invokeCloudFunction('add-brand', { method: 'GET' });
 
-    if (!error && data) {
-      setBrands(data as Brand[]);
+      if (!error) {
+        setBrands(((data as { brands?: Brand[] } | null)?.brands ?? []) as Brand[]);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -45,30 +45,33 @@ export const useBrands = () => {
 
     if (error) {
       // Might be a unique constraint violation - try to fetch existing
-      const { data: existingData } = await supabase
-        .from('brands')
-        .select('*')
-        .eq('brand_name', normalized)
-        .single();
-      if (existingData) {
+      const { data: existingData } = await invokeCloudFunction('add-brand', {
+        method: 'GET',
+        query: { search: normalized },
+      });
+      const existingBrand = (existingData as { brands?: Brand[] } | null)?.brands?.find(
+        brand => brand.brand_name === normalized
+      );
+      if (existingBrand) {
         setBrands(prev => {
-          if (prev.find(b => b.id === existingData.id)) return prev;
-          return [...prev, existingData as Brand].sort((a, b) =>
+          if (prev.find(b => b.id === existingBrand.id)) return prev;
+          return [...prev, existingBrand].sort((a, b) =>
             a.display_name.localeCompare(b.display_name, undefined, { sensitivity: 'base' })
           );
         });
-        return existingData as Brand;
+        return existingBrand;
       }
       return null;
     }
 
     const newBrand = (data as { brand?: Brand } | null)?.brand ?? (data as Brand);
     if (!newBrand?.id) return null;
-    setBrands(prev =>
-      [...prev, newBrand].sort((a, b) =>
+    setBrands(prev => {
+      const next = prev.some(brand => brand.id === newBrand.id) ? [...prev] : [...prev, newBrand];
+      return next.sort((a, b) =>
         a.display_name.localeCompare(b.display_name, undefined, { sensitivity: 'base' })
-      )
-    );
+      );
+    });
     return newBrand;
   }, [brands]);
 

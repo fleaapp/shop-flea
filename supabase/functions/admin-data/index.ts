@@ -9,6 +9,8 @@ const corsHeaders = {
 const EXTERNAL_URL = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "https://dzglehiopfgfjmxtejve.supabase.co";
 const EXTERNAL_ANON_KEY = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "";
 const EXTERNAL_SERVICE_ROLE_KEY = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const CLOUD_URL = Deno.env.get("SUPABASE_URL") ?? "";
+const CLOUD_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
 type AdminAction =
   | "listThreads"
@@ -60,12 +62,49 @@ function missingColumnName(error: unknown) {
   return raw.match(/column\s+(?:\w+\.)?(\w+)\s+does not exist/i)?.[1] ?? null;
 }
 
+function normalizeBrandName(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w\s&+'-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 async function rest(path: string, options: RestOptions = {}) {
   const res = await fetch(`${EXTERNAL_URL}/rest/v1/${path}`, {
     method: options.method ?? "GET",
     headers: {
       apikey: EXTERNAL_SERVICE_ROLE_KEY,
       Authorization: `Bearer ${EXTERNAL_SERVICE_ROLE_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: options.prefer ?? "return=representation",
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+
+  const text = await res.text();
+  const json = text ? JSON.parse(text) : null;
+
+  if (!res.ok) {
+    const error = new Error(text || res.statusText) as Error & { status?: number; body?: unknown; missingSchema?: boolean };
+    error.status = res.status;
+    error.body = json;
+    error.missingSchema = isMissingSchemaError(res.status, text);
+    throw error;
+  }
+
+  return json;
+}
+
+async function cloudRest(path: string, options: RestOptions = {}) {
+  if (!CLOUD_URL || !CLOUD_SERVICE_ROLE_KEY) throw new Error("Brand service is not configured.");
+
+  const res = await fetch(`${CLOUD_URL}/rest/v1/${path}`, {
+    method: options.method ?? "GET",
+    headers: {
+      apikey: CLOUD_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${CLOUD_SERVICE_ROLE_KEY}`,
       "Content-Type": "application/json",
       Prefer: options.prefer ?? "return=representation",
     },
@@ -1380,6 +1419,23 @@ async function countRows(table: string, params: Record<string, string> = {}) {
   return Number.isFinite(total) ? total : 0;
 }
 
+async function countCloudRows(table: string, params: Record<string, string> = {}) {
+  if (!CLOUD_URL || !CLOUD_SERVICE_ROLE_KEY) return 0;
+
+  const search = new URLSearchParams({ select: "id", ...params, limit: "1" });
+  const res = await fetch(`${CLOUD_URL}/rest/v1/${table}?${search.toString()}`, {
+    headers: {
+      apikey: CLOUD_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${CLOUD_SERVICE_ROLE_KEY}`,
+      Prefer: "count=exact",
+      Range: "0-0",
+    },
+  });
+  const range = res.headers.get("content-range") ?? "";
+  const total = Number(range.split("/")[1] ?? 0);
+  return Number.isFinite(total) ? total : 0;
+}
+
 async function getBadges() {
   const [supportUnread, reportsPending, bansActive, suggestionsUnread, waitlist, contact, awaitingOrders, refundedOrders, listingsActive, users, brands] = await Promise.all([
     countRows("chat_messages", { sender_type: "eq.user", read: "eq.false" }),
@@ -1392,7 +1448,7 @@ async function getBadges() {
     countRows("orders", { refunded_at: "not.is.null" }),
     countRows("listings", { status: "eq.active" }),
     countRows("profiles", { created_at: `gte.${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()}` }),
-    countRows("brands", {}).catch(() => 0),
+    countCloudRows("brands", {}).catch(() => 0),
   ]);
   return {
     support: supportUnread,
@@ -1412,33 +1468,47 @@ async function getBadges() {
 // ----------------- Brands -----------------
 async function listBrands(payload: any = {}) {
   const search = (payload?.search ?? "").trim().toLowerCase();
-  const rows = await safeSelect("brands", { order: "usage_count.desc.nullslast", limit: "1000" });
+  const params = new URLSearchParams({ select: "id,brand_name,display_name,usage_count,created_at", order: "display_name.asc", limit: "5000" });
+  const rows = await cloudRest(`brands?${params.toString()}`) as any[];
   const filtered = search
     ? rows.filter((b: any) =>
         (b.brand_name ?? "").toLowerCase().includes(search) ||
         (b.display_name ?? "").toLowerCase().includes(search))
     : rows;
-  return { brands: filtered };
+  return {
+    brands: filtered.sort((a: any, b: any) =>
+      String(a.display_name ?? a.brand_name ?? "").localeCompare(String(b.display_name ?? b.brand_name ?? ""), undefined, { sensitivity: "base" })
+    ),
+  };
 }
 
 async function updateBrand(payload: any = {}) {
   const { id, display_name } = payload ?? {};
   if (!id || !display_name) throw new Error("id and display_name required");
   const trimmed = String(display_name).trim();
-  if (!trimmed) throw new Error("display_name required");
-  const brand_name = trimmed
-    .toLowerCase()
-    .replace(/[^\w\s&+'-]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-  await safePatch("brands", { id: `eq.${id}` }, { display_name: trimmed, brand_name });
+  const brand_name = normalizeBrandName(trimmed);
+  if (!trimmed || !brand_name || trimmed.length > 100 || brand_name.length > 100) {
+    throw new Error("Enter a valid brand name.");
+  }
+
+  const duplicateParams = new URLSearchParams({ brand_name: `eq.${brand_name}`, select: "id", limit: "1" });
+  const duplicates = await cloudRest(`brands?${duplicateParams.toString()}`) as any[];
+  if (duplicates.some((brand: any) => brand.id !== id)) {
+    throw new Error("That brand already exists.");
+  }
+
+  const updated = await cloudRest(query("brands", { id: `eq.${id}`, select: "id" }), {
+    method: "PATCH",
+    body: { display_name: trimmed, brand_name },
+  }) as any[];
+  if (Array.isArray(updated) && updated.length === 0) throw new Error("Brand not found.");
   return { ok: true };
 }
 
 async function deleteBrand(payload: any = {}) {
   const { id } = payload ?? {};
   if (!id) throw new Error("id required");
-  await rest(query("brands", { id: `eq.${id}` }), { method: "DELETE", prefer: "return=minimal" });
+  await cloudRest(query("brands", { id: `eq.${id}` }), { method: "DELETE", prefer: "return=representation" });
   return { ok: true };
 }
 
