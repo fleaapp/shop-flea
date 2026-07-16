@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      blocked_devices: {
+        Row: {
+          amount_cents: number
+          associated_user_id: string | null
+          created_at: string
+          device_id: string
+          reason: string
+          updated_at: string
+        }
+        Insert: {
+          amount_cents?: number
+          associated_user_id?: string | null
+          created_at?: string
+          device_id: string
+          reason: string
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          associated_user_id?: string | null
+          created_at?: string
+          device_id?: string
+          reason?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       brands: {
         Row: {
           brand_name: string
@@ -806,6 +833,7 @@ export type Database = {
           avatar_url: string | null
           country_code: string | null
           created_at: string
+          device_ids: string[]
           email: string | null
           first_name: string | null
           gst_alert_60k_sent_at: string | null
@@ -816,6 +844,8 @@ export type Database = {
           legal_name: string | null
           location: string | null
           marketing_opt_in: boolean
+          negative_balance_cents: number
+          negative_balance_updated_at: string | null
           password_set: boolean
           pause_selling: boolean
           paypal_merchant_id: string | null
@@ -844,6 +874,7 @@ export type Database = {
           avatar_url?: string | null
           country_code?: string | null
           created_at?: string
+          device_ids?: string[]
           email?: string | null
           first_name?: string | null
           gst_alert_60k_sent_at?: string | null
@@ -854,6 +885,8 @@ export type Database = {
           legal_name?: string | null
           location?: string | null
           marketing_opt_in?: boolean
+          negative_balance_cents?: number
+          negative_balance_updated_at?: string | null
           password_set?: boolean
           pause_selling?: boolean
           paypal_merchant_id?: string | null
@@ -882,6 +915,7 @@ export type Database = {
           avatar_url?: string | null
           country_code?: string | null
           created_at?: string
+          device_ids?: string[]
           email?: string | null
           first_name?: string | null
           gst_alert_60k_sent_at?: string | null
@@ -892,6 +926,8 @@ export type Database = {
           legal_name?: string | null
           location?: string | null
           marketing_opt_in?: boolean
+          negative_balance_cents?: number
+          negative_balance_updated_at?: string | null
           password_set?: boolean
           pause_selling?: boolean
           paypal_merchant_id?: string | null
