@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TransactionOrder, getOrderCode, getShippingStatus, getDaysOverdue, calcPlatformFee, calcProcessingFee } from '@/types/admin/transactions';
+import { TransactionOrder, getOrderCode, getShippingStatus, getDaysOverdue, calcPlatformFee, calcProcessingFee, getTransactionStatus } from '@/types/admin/transactions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -60,6 +60,7 @@ export function TransactionDetail({ order, onBack }: Props) {
   const total = order.price + order.shipping_price;
   const pf = calcPlatformFee(order.price + order.shipping_price);
   const proc = calcProcessingFee(total + pf);
+  const displayStatus = getTransactionStatus(order);
   
 
   const timeline = [
@@ -75,7 +76,7 @@ export function TransactionDetail({ order, onBack }: Props) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h2 className="font-mono text-sm font-bold">{getOrderCode(order.id)}</h2>
-            <Badge variant="outline" className={`text-[11px] ${statusColors[order.status] || ''}`}>{order.status}</Badge>
+            <Badge variant="outline" className={`text-[11px] ${statusColors[displayStatus] || ''}`}>{displayStatus}</Badge>
           </div>
           <p className="text-xs text-muted-foreground">{format(new Date(order.created_at), 'PPpp')}</p>
         </div>

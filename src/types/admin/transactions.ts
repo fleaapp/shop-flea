@@ -11,6 +11,8 @@ export interface TransactionOrder {
   tracking_provider: string | null;
   shipped_at: string | null;
   delivered_at: string | null;
+  refunded_at?: string | null;
+  refund_reason?: string | null;
   created_at: string;
   updated_at: string;
   listing?: { title: string; images: string[]; brand: string; category: string };
@@ -65,12 +67,16 @@ export function getShippingStatus(o: TransactionOrder): 'pending' | 'shipped' | 
 }
 export function getDaysOverdue(o: TransactionOrder, deadlineDays = 5): number | null {
   if (o.shipped_at || o.delivered_at) return null;
-  if (o.status === 'cancelled' || o.status === 'refunded') return null;
+  if (o.status === 'cancelled' || o.refunded_at) return null;
   const created = new Date(o.created_at);
   const deadline = new Date(created.getTime() + deadlineDays * 86400000);
   const now = new Date();
   if (now <= deadline) return null;
   return Math.floor((now.getTime() - deadline.getTime()) / 86400000);
+}
+
+export function getTransactionStatus(o: TransactionOrder): string {
+  return o.refunded_at ? 'refunded' : o.status;
 }
 export function getOrderCode(orderId: string): string {
   return `FLA-${orderId.substring(0, 8).toUpperCase()}`;

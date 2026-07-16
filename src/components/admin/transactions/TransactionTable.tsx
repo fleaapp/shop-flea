@@ -1,4 +1,4 @@
-import { TransactionOrder, getOrderCode, getShippingStatus, getDaysOverdue, calcPlatformFee, TransactionSortField, SortDirection } from '@/types/admin/transactions';
+import { TransactionOrder, getOrderCode, getShippingStatus, getDaysOverdue, calcPlatformFee, TransactionSortField, SortDirection, getTransactionStatus } from '@/types/admin/transactions';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -73,6 +73,7 @@ export function TransactionTable({ orders, loading, onSelectOrder, sortField, so
             const overdue = getDaysOverdue(order);
             const total = order.price + order.shipping_price;
             const pf = calcPlatformFee(order.price + order.shipping_price);
+            const displayStatus = getTransactionStatus(order);
             return (
               <TableRow key={order.id} className="cursor-pointer" onClick={() => onSelectOrder(order)}>
                 <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{format(new Date(order.created_at), 'dd MMM yy')}</TableCell>
@@ -97,7 +98,7 @@ export function TransactionTable({ orders, loading, onSelectOrder, sortField, so
                 </TableCell>
                 <TableCell className="text-right text-sm font-medium">${total.toFixed(2)}</TableCell>
                 <TableCell className="text-right text-sm text-muted-foreground">${pf.toFixed(2)}</TableCell>
-                <TableCell><Badge variant="outline" className={`text-[11px] ${statusColors[order.status] || ''}`}>{order.status}</Badge></TableCell>
+                <TableCell><Badge variant="outline" className={`text-[11px] ${statusColors[displayStatus] || ''}`}>{displayStatus}</Badge></TableCell>
                 <TableCell><Badge variant="outline" className={`text-[11px] ${shippingColors[ss] || ''}`}>{ss}</Badge></TableCell>
                 <TableCell className="text-center">
                   {order.message_count ? (

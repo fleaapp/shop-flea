@@ -48,6 +48,11 @@ const getStatusBadge = (status: OrderStatus) => {
   }
 };
 
+const getDisplayStatusBadge = (order: Order) => {
+  if (order.refunded_at) return { label: 'Refunded', variant: 'secondary' as const };
+  return getStatusBadge(order.status);
+};
+
 const SectionHeader = ({ children }: { children: React.ReactNode }) => (
   <div className="bg-muted-foreground/20 px-4 py-2 text-sm font-medium text-muted-foreground">
     {children}
@@ -97,7 +102,7 @@ const SalesDetailsSheet = ({
   const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
   // Sellers pay no selling fees — you keep the full items + shipping.
   const youReceived = subtotal;
-  const statusBadge = getStatusBadge(primaryOrder.status);
+  const statusBadge = getDisplayStatusBadge(primaryOrder);
   const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
 
   const handleMarkShipped = () => {
@@ -342,7 +347,7 @@ const SalesDetailsSheet = ({
             {/* Actions */}
             <div className="flex flex-col items-center space-y-3 pt-4">
               <div className="flex items-center justify-center gap-3 w-full px-4">
-                {(primaryOrder.status as string) !== 'refunded' && (
+                {!primaryOrder.refunded_at && (
                   <Button
                     onClick={() => setRefundConfirmOpen(true)}
                     variant="outline"
