@@ -35,9 +35,11 @@ const isDemoOrder = (order: { payment_method?: string | null; checkout_reference
  */
 export const useNavBadges = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const queryKey = ['nav-badges', user?.id];
 
   const { data } = useQuery<NavBadgesData>({
-    queryKey: ['nav-badges', user?.id],
+    queryKey,
     queryFn: async () => {
       if (!user?.id) return EMPTY;
       const { data } = await (supabase as any).rpc('get_nav_badges', { _user_id: user.id });
@@ -115,11 +117,40 @@ export const useNavBadges = () => {
       };
     },
     enabled: !!user?.id,
-    staleTime: 30_000,
-    refetchInterval: 60_000,
-    refetchOnWindowFocus: false,
+    staleTime: 0,
+    refetchInterval: 20_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
     retry: false,
   });
+
+  // Live updates via realtime + focus/visibility events.
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const invalidate = () => queryClient.invalidateQueries({ queryKey });
+
+    const channel = supabase
+      .channel(`nav-badges-${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, invalidate)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `buyer_id=eq.${user.id}` }, invalidate)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `seller_id=eq.${user.id}` }, invalidate)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_messages' }, invalidate)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages' }, invalidate)
+      .subscribe();
+
+    const onFocus = () => invalidate();
+    const onVisibility = () => { if (document.visibilityState === 'visible') invalidate(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   return data || EMPTY;
 };
