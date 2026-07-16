@@ -19,19 +19,10 @@ import { AdminEmptyState } from '@/components/admin/shell/AdminEmptyState';
 const fmtCurrency = (n: number) => `$${n.toFixed(2)}`;
 const initials = (s?: string | null) => (s ?? '?').replace('@', '').slice(0, 2).toUpperCase();
 
-function statusBadge(status: string) {
-  const map: Record<string, string> = {
-    active: 'bg-emerald-500/10 text-emerald-700 border-emerald-300',
-    suspended: 'bg-yellow-500/10 text-yellow-700 border-yellow-300',
-    blocked: 'bg-destructive/10 text-destructive border-destructive/30',
-  };
-  return map[status] ?? 'bg-muted text-muted-foreground border-border';
-}
-
-function riskBadge(score: number) {
-  if (score >= 70) return 'bg-destructive/10 text-destructive border-destructive/30';
-  if (score >= 40) return 'bg-yellow-500/10 text-yellow-700 border-yellow-300';
-  return 'bg-emerald-500/10 text-emerald-700 border-emerald-300';
+function riskTone(score: number): 'success' | 'warning' | 'danger' {
+  if (score >= 70) return 'danger';
+  if (score >= 40) return 'warning';
+  return 'success';
 }
 
 export default function AdminUsers() {
