@@ -239,7 +239,7 @@ async function resolvePaymentIntentId(stripe: Stripe, order: any) {
   }
 
   const createdAt = order.created_at ? Math.floor(new Date(order.created_at).getTime() / 1000) : null;
-  const earliestCreated = Math.max(0, (createdAt ?? Math.floor(Date.now() / 1000)) - 2 * 24 * 60 * 60);
+  const earliestCreated = Math.max(0, (createdAt ?? Math.floor(Date.now() / 1000)) - 30 * 24 * 60 * 60);
   const latestCreated = (createdAt ?? Math.floor(Date.now() / 1000)) + 2 * 24 * 60 * 60;
 
   const matchesOrder = (pi: Stripe.PaymentIntent) => {
