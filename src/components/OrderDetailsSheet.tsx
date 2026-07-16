@@ -111,7 +111,9 @@ const OrderDetailsSheet = ({
   // Buyer pays a flat Secure Checkout Fee of 4% + $0.70. Sellers pay no selling fees.
   const processingFee = Math.round((subtotal * 0.04 + 0.70) * 100) / 100;
   const total = subtotal + processingFee;
-  const statusBadge = getStatusBadge(primaryOrder.status);
+  const isRefunded = !!primaryOrder.refunded_at;
+  const effectiveStatus: OrderStatus = isRefunded ? 'refunded' : primaryOrder.status;
+  const statusBadge = getStatusBadge(effectiveStatus);
   const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
 
   const rawUsername = primaryOrder.seller_profile?.username || 'Unknown';
