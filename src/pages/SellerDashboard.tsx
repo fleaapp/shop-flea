@@ -381,14 +381,14 @@ const SellerDashboard = () => {
             <AlertDialogDescription className="text-[13px] leading-relaxed">
               {confirm === 'instant' ? (
                 <>
-                  {fmtMoney(instantAvailable, currency)} available for instant payout.
+                  {fmtMoney(instantAvailableToWithdraw, currency)} available for instant payout.
                   {' '}A 1.5% Flea fee ({fmtMoney(instantFee, currency)}) will be deducted.
                   <br />
                   <span className="font-medium text-foreground">You'll receive {fmtMoney(instantNet, currency)}</span>, usually within 30 minutes.
                 </>
               ) : (
                 <>
-                  {fmtMoney(available, currency)} will be sent to your linked bank account. No fees. Funds usually arrive in 1-2 business days.
+                  {fmtMoney(availableToWithdraw, currency)} will be sent to your linked bank account. No fees. Funds usually arrive in 1-2 business days.
                 </>
               )}
             </AlertDialogDescription>
