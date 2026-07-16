@@ -308,7 +308,7 @@ const SellerOnboardingSheet = ({
               <SheetHeader className="space-y-2 w-full max-w-[280px] mx-auto items-center text-center">
                 <SheetTitle className="text-lg text-center">Your details</SheetTitle>
                 <p className="text-sm text-muted-foreground leading-relaxed text-center">
-                  This must match your bank account and ID for payout verification.
+                  Used to verify your identity and enable payouts. Your details must match your bank account and government-issued ID. Never shown publicly on your profile.
                 </p>
               </SheetHeader>
               <div className="w-[230px] max-w-[calc(100vw-96px)] mx-auto text-left space-y-3 mt-1">
@@ -352,7 +352,7 @@ const SellerOnboardingSheet = ({
               <SheetHeader className="space-y-2">
                 <SheetTitle className="text-lg">Your address</SheetTitle>
                 <p className="text-sm text-muted-foreground leading-relaxed max-w-[320px] mx-auto">
-                  Used to verify your identity for payouts. Australian addresses only.
+                  Used to verify your identity and enable payouts. Your details must match your bank account and government-issued ID. Australian addresses only. Never shown publicly on your profile.
                 </p>
               </SheetHeader>
               <div className="w-full text-left space-y-3 mt-1">
