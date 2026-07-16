@@ -118,7 +118,7 @@ const EditProfile = () => {
       // Highest priority: negative balance must be settled before deletion.
       // Enforced server-side in delete-account, mirrored here so the UI is
       // honest instead of failing after tap.
-      const owed = Number((profileData as any)?.negative_balance_cents ?? 0);
+      const owed = Number((data as any)?.negative_balance_cents ?? 0);
       if (owed > 0) {
         setCanDeleteAccount(false);
         setDeleteBlockReason(
