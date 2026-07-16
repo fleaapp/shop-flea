@@ -1,30 +1,20 @@
-## Fix coupon UX so invalid codes fail visibly
+## Fix FREEFLEA coupon (Step 1 only)
 
-Only one behaviour change: when the buyer enters a code that doesn't match a live coupon, tell them immediately instead of silently doing nothing at checkout. Keep the code strict as `FREEFLEA` only.
-
-### Root cause
-
-`validate-coupon` and the checkout functions already return a `valid: false` payload for unknown codes, but `CouponInput.tsx` doesn't show that message strongly enough, so the buyer thinks the code applied. On top of that, the server accepts submission without a coupon and quietly charges the full fee.
+**Root cause**: `validate-coupon` reads from the Lovable-managed database, but `stripe-connect-payment-intent` and `stripe-connect-checkout` read from the External database. FREEFLEA exists in one, not the other, so the coupon validates on the frontend but the payment functions never see it and charge the full fee anyway.
 
 ### Changes
 
-- `src/components/CouponInput.tsx`
-  - When `validate-coupon` returns `valid: false`, show a clear inline error ("Invalid or expired code") in the input's error slot and never call `onChange` with a fake applied coupon.
-  - Clear the error the moment the buyer edits the field again.
-- `supabase/functions/validate-coupon/index.ts`
-  - Make the lookup case-insensitive and trim whitespace, so `freeflea`, ` FREEFLEA `, etc. still match `FREEFLEA`. Genuine typos like `FLEAFREE` still fail.
-  - Return a consistent `{ valid: false, message: "Invalid or expired code." }` for anything not found / not active / expired / fully redeemed.
-- `supabase/functions/stripe-connect-payment-intent/index.ts` and `supabase/functions/stripe-connect-checkout/index.ts`
-  - Same trim + case-insensitive match on the server so the applied-in-UI state and the charge always agree.
-  - Add a debug log line (`[coupon] code=... matched=... fee=...`) so if this happens again we can confirm from function logs exactly what the server received.
+1. **Seed `FREEFLEA` into the External `coupons` table** (via raw REST insert using `EXTERNAL_SUPABASE_SERVICE_ROLE_KEY`, per the project's persistence rule):
+   - `code = 'FREEFLEA'`
+   - `type = 'waive_buyer_fee'`
+   - `active = true`
+   - `expires_at = null`, `max_redemptions = null`
 
-### Not doing
+2. **Point `validate-coupon` at the External database** so validation and charging always read the same source of truth. Swap `SUPABASE_URL` / `SUPABASE_ANON_KEY` for `EXTERNAL_SUPABASE_URL` / `EXTERNAL_SUPABASE_SERVICE_ROLE_KEY` inside `supabase/functions/validate-coupon/index.ts`, then redeploy.
 
-- No alias for `FLEAFREE` (per your answer).
-- No change to who pays the fee refund — behaviour is already correct: Stripe returns Flea's application fee to the buyer, seller's transfer is reversed, Stripe returns its own processing fee.
+3. **Verify** by calling `validate-coupon` with `"FREEFLEA"` and confirming it returns `{ type: 'waive_buyer_fee' }`, then confirming the row is readable in External.
 
-### Verification
-
-- Try `FLEAFREE` at checkout → inline "Invalid or expired code", no fake applied state, full fee still charged (expected).
-- Try `FREEFLEA` (and `freeflea`) at checkout → applied, buyer fee = $0, Stripe payment intent created with `application_fee_amount: 0`.
-- Check the payment-intent function logs to see the new `[coupon]` line reflect the actual matched coupon.
+### Not doing this turn
+- Bank descriptor change (you'll fix in Stripe Dashboard directly).
+- MoR change (staying as seller-is-MoR).
+- Refunding the $0.74 fee on your last test order (say the word and I'll do it after).

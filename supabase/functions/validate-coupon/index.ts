@@ -15,9 +15,12 @@ Deno.serve(async (req) => {
       return json({ valid: false, message: "Enter a valid coupon code." });
     }
 
+    // Read from External Supabase — same source of truth used by
+    // stripe-connect-payment-intent and stripe-connect-checkout, so a coupon
+    // that validates here is guaranteed to apply at charge time.
     const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      Deno.env.get("EXTERNAL_SUPABASE_URL")!,
+      Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
     const { data: c } = await supabase
