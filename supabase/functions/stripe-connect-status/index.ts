@@ -328,6 +328,10 @@ serve(async (req) => {
         currentlyDue,
         pastDue,
         needsIdDocument,
+        balanceAvailableCents,
+        balancePendingCents,
+        negativeBalanceCents,
+        isNegative: negativeBalanceCents > 0,
         verificationError: docError
           ? {
               code: docError.code || null,
