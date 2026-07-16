@@ -62,12 +62,15 @@ const SalesDetailsSheet = ({
 }: SalesDetailsSheetProps) => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
+  const queryClient = useQueryClient();
   const stripeFullyVerified = profile?.stripe_onboarding_complete === true;
   const [serviceProvider, setServiceProvider] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [validationError, setValidationError] = useState('');
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
+  const [refundConfirmOpen, setRefundConfirmOpen] = useState(false);
+  const [refunding, setRefunding] = useState(false);
   const { getGroupUnread } = useUnreadOrderMessages();
   
   const primaryOrder = orders?.[0];
