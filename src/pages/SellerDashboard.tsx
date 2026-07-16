@@ -281,6 +281,23 @@ const SellerDashboard = () => {
           </div>
         ) : (
           <>
+            {liveActionRequired && (
+              <section className="rounded-2xl bg-orange-50 border-2 border-orange-300 p-4 mt-2">
+                <div className="flex items-center gap-2 text-[11px] font-semibold text-orange-700 uppercase tracking-wide">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Action required
+                </div>
+                <p className="text-[13px] text-charcoal mt-1.5 leading-relaxed">
+                  Our payment processor needs a few more details to keep your payouts running. This can happen when extra verification is needed after your first sales. Complete it in the app to keep listing and getting paid.
+                </p>
+                <Button
+                  onClick={() => setActionRequiredOpen(true)}
+                  className="w-full mt-3 h-11 rounded-xl bg-orange-600 text-white hover:bg-orange-700 font-semibold"
+                >
+                  Complete verification
+                </Button>
+              </section>
+            )}
+
             {/* Available balance or Balance owed */}
             {isNegative ? (
               <section className="rounded-2xl bg-destructive/10 border-2 border-destructive/40 p-5 mt-2">
