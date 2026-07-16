@@ -281,9 +281,6 @@ function isDemoOrder(order: any) {
   return order.payment_method === "demo" || (typeof order.checkout_reference === "string" && order.checkout_reference.startsWith("demo-"));
 }
 
-function shouldReactivateListings(order: any) {
-  return order.status === "awaiting" && !order.shipped_at && !order.delivered_at;
-}
 
 async function resolvePaymentIntentId(stripe: Stripe, order: any) {
   const reference = typeof order.checkout_reference === "string" ? order.checkout_reference.trim() : "";
