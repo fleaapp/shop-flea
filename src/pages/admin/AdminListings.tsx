@@ -137,7 +137,7 @@ export default function AdminListings() {
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <AdminBadge tone={toneForStatus(selected.status)}>{statusLabel(selected.status)}</AdminBadge>
                     {selected.admin_refunded && selected.status !== 'refunded' && <AdminBadge tone="warning">Refunded</AdminBadge>}
-                    {selected.deleted_from_orders && <AdminBadge tone="neutral">Deleted row</AdminBadge>}
+                    {selected.deleted_from_orders && <AdminBadge tone="neutral">Deleted listing</AdminBadge>}
                     {selected.report_count > 0 && (
                       <AdminBadge tone="danger"><Flag className="h-3 w-3" />{selected.report_count}</AdminBadge>
                     )}
@@ -189,6 +189,12 @@ export default function AdminListings() {
                   <Stat icon={<Flag className="h-4 w-4" />} label="Reports" value={selected.report_count} tone={selected.report_count > 0 ? 'risk' : undefined} />
                 </div>
 
+                {selected.deleted_from_orders && (
+                  <div className="rounded-2xl border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+                    Original listing row was deleted, so this is restored from the refunded order record for admin history.
+                  </div>
+                )}
+
                 {(selected.spam_signal || selected.is_duplicate) && (
                   <div className="flex items-start gap-2 rounded-2xl border border-yellow-300/60 bg-yellow-500/10 p-3 text-sm text-yellow-900 dark:text-yellow-200">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -202,12 +208,16 @@ export default function AdminListings() {
               </DrawerBody>
 
               <DrawerFooter className="flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => { performAction(selected.id, 'approve'); setSelected(null); }}>Approve</Button>
-                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => { performAction(selected.id, 'hide'); setSelected(null); }}><EyeOff className="mr-1 h-3.5 w-3.5" /> Hide</Button>
-                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => { performAction(selected.id, 'feature'); setSelected(null); }}><Star className="mr-1 h-3.5 w-3.5" /> Feature</Button>
-                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => { performAction(selected.id, 'restore'); setSelected(null); }}><RotateCcw className="mr-1 h-3.5 w-3.5" /> Restore</Button>
-                <Button size="sm" variant="ghost" className="h-8 rounded-full text-xs" onClick={() => navigate(`/listing/${selected.id}`)}><Eye className="mr-1 h-3.5 w-3.5" /> View</Button>
-                <Button size="sm" variant="destructive" className="ml-auto h-8 rounded-full text-xs" onClick={() => { if (confirm('Delete this listing? It stays under Deleted so admin history is preserved.')) { performAction(selected.id, 'soft_delete'); setSelected(null); } }}><Trash2 className="mr-1 h-3.5 w-3.5" /> Delete</Button>
+                {!selected.deleted_from_orders && (
+                  <>
+                    <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => { performAction(selected.id, 'approve'); setSelected(null); }}>Approve</Button>
+                    <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => { performAction(selected.id, 'hide'); setSelected(null); }}><EyeOff className="mr-1 h-3.5 w-3.5" /> Hide</Button>
+                    <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => { performAction(selected.id, 'feature'); setSelected(null); }}><Star className="mr-1 h-3.5 w-3.5" /> Feature</Button>
+                    <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => { performAction(selected.id, 'restore'); setSelected(null); }}><RotateCcw className="mr-1 h-3.5 w-3.5" /> Restore</Button>
+                    <Button size="sm" variant="ghost" className="h-8 rounded-full text-xs" onClick={() => navigate(`/listing/${selected.id}`)}><Eye className="mr-1 h-3.5 w-3.5" /> View</Button>
+                    <Button size="sm" variant="destructive" className="ml-auto h-8 rounded-full text-xs" onClick={() => { if (confirm('Delete this listing? It stays under Deleted so admin history is preserved.')) { performAction(selected.id, 'soft_delete'); setSelected(null); } }}><Trash2 className="mr-1 h-3.5 w-3.5" /> Delete</Button>
+                  </>
+                )}
               </DrawerFooter>
             </>
           )}
