@@ -61,12 +61,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check for outstanding (non-delivered) orders
+    // Check for outstanding orders (anything not delivered or refunded counts as active)
     const { count: outstandingCount } = await supabaseUser
       .from('orders')
       .select('*', { count: 'exact', head: true })
       .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
-      .not('status', 'eq', 'delivered');
+      .not('status', 'in', '(delivered,refunded)');
 
     if ((outstandingCount ?? 0) > 0) {
       return new Response(JSON.stringify({ error: 'Complete all orders before deleting your account.' }), {
