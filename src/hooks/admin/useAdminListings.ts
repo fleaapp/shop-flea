@@ -67,7 +67,8 @@ export function useAdminListings() {
     total: listings.length,
     active: listings.filter(l => l.status === 'active').length,
     sold: listings.filter(l => l.status === 'sold').length,
-    removed: listings.filter(l => l.status === 'removed').length,
+    refunded: listings.filter(l => l.status === 'refunded').length,
+    deleted: listings.filter(l => l.status === 'removed').length,
     flagged: listings.filter(l => l.report_count > 0 || l.spam_signal).length,
   }), [listings]);
 
