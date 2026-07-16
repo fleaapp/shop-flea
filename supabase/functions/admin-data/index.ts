@@ -553,15 +553,17 @@ async function listUsers(payload: any = {}) {
   if (status !== "all") params.status = `eq.${status}`;
   let users = await safeSelect("profiles", params);
 
-  // Reconcile with auth.users so profiles orphaned by admin deletion disappear immediately.
+  // Reconcile with auth.users so profiles orphaned by admin deletion disappear immediately,
+  // and enrich with authoritative emails from auth.users.
+  let authMap = new Map<string, { email: string | null; created_at: string | null }>();
   try {
-    const liveIds = await fetchLiveAuthUserIds();
-    const orphans = users.filter((u: any) => !liveIds.has(u.user_id)).map((u: any) => u.user_id);
+    authMap = await fetchLiveAuthUsers();
+    const orphans = users.filter((u: any) => !authMap.has(u.user_id)).map((u: any) => u.user_id);
     if (orphans.length > 0) {
-      // Fire-and-forget cleanup; do not block the response.
       deleteOrphanProfiles(orphans);
     }
-    users = users.filter((u: any) => liveIds.has(u.user_id));
+    users = users.filter((u: any) => authMap.has(u.user_id));
+    users = users.map((u: any) => ({ ...u, email: u.email ?? authMap.get(u.user_id)?.email ?? null }));
   } catch (e) {
     console.warn("[admin-data] auth reconciliation failed, returning raw profiles:", (e as Error).message);
   }
