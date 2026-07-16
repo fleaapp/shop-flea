@@ -21,7 +21,7 @@ Yes.
 - Coarse Location (IP/region detection to confirm Australia)
 
 ### Identifiers
-- User ID (account ID, username, push notification token stored per user)
+- User ID (account ID, username, push notification token stored per user, and a stable device identifier linked to the user's account for fraud prevention and negative-balance enforcement — not an advertising identifier and not used for tracking)
 
 ### Purchases
 - Purchases (order history, cart, wishlist)

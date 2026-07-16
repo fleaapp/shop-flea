@@ -24,7 +24,7 @@ const Terms = () => {
 
       <main className="px-5 max-[375px]:px-4 pt-2 pb-8 max-w-2xl mx-auto">
         <p className="text-xs text-muted-foreground mb-6">
-          Last updated: 4 May 2026 · Version 1.0 · Governed by the laws of Australia
+          Last updated: 16 July 2026 · Version 1.1 · Governed by the laws of Australia
         </p>
 
         <article className="prose prose-sm max-w-none text-foreground space-y-6 leading-relaxed text-[15px]">
@@ -46,6 +46,7 @@ const Terms = () => {
               <li>You must provide accurate, current and complete information when registering and keep it up to date.</li>
               <li>You may only hold one personal account unless we expressly approve otherwise.</li>
               <li>If your account has been previously suspended or terminated by us, you may not register a new account without our written consent.</li>
+              <li>If a previous account on your device has an unsettled negative balance owing to Flea (see clause 8), you cannot create a new account on that device until the balance is settled. We record a stable device identifier for this purpose.</li>
             </ul>
           </section>
 
@@ -120,9 +121,23 @@ const Terms = () => {
               <li><strong>No selling fees:</strong> Sellers pay no selling or listing fees and receive the full item price plus shipping on each completed sale.</li>
               <li><strong>Instant payout:</strong> Sellers who choose an instant payout to their bank account pay an additional 1.5% instant payout fee charged by our payment processor.</li>
               <li><strong>Listing items:</strong> Listing items is free.</li>
+              <li><strong>Promotional codes:</strong> From time to time we may issue promotional codes (for example, a code that waives the Secure Checkout Fee). Unless stated otherwise, codes are single-use per account, non-transferable, have no cash value, cannot be combined with other offers, and may be withdrawn, changed or revoked by Flea at any time, including where we reasonably suspect abuse or fraud.</li>
             </ul>
             <p>
               All amounts are shown in AUD. Payments are processed by our third-party card processor under its own terms. Flea does not store your full card or bank details. Payouts to sellers are made to the connected payment account in the seller's name; sellers are responsible for ensuring those details are accurate. Sellers are responsible for their own tax obligations including any GST and income tax. Fees may change on 30 days' notice via in-app notice or email.
+            </p>
+            <p className="font-semibold mt-3">Negative balances and settlement</p>
+            <p>
+              Refunds, chargebacks, disputes, reversals and processor adjustments can leave your Flea balance negative. A negative balance is a debt owing by you to Flea. While an unsettled negative balance exists on your account:
+            </p>
+            <ul className="list-disc pl-5 space-y-1.5">
+              <li>You cannot place new orders as a buyer.</li>
+              <li>You cannot publish new listings or sell as a seller.</li>
+              <li>You cannot delete your account.</li>
+              <li>You cannot create a new account on the same device (see clause 2).</li>
+            </ul>
+            <p>
+              You can settle the outstanding amount at any time in-app via <em>Seller Dashboard → Settle Balance</em>, which charges your saved payment method. We may also recover the amount from your future sales on Flea, from funds held by our payment processor, or (where permitted) by any other lawful means. Unsettled balances may be referred for collection.
             </p>
           </section>
 
@@ -184,7 +199,7 @@ const Terms = () => {
             <h2 className="text-base font-bold mb-2">14. Pausing, suspending or terminating your account</h2>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>You may pause selling, log out, or request account deletion at any time via <em>Settings</em>.</li>
-              <li>Account deletion is only available once you have no outstanding (non-delivered) orders and at least 14 days have passed since your most recent delivery, so that any refund or dispute window has closed.</li>
+              <li>Account deletion is only available once you have no outstanding (non-delivered) orders, no unsettled negative balance owing to Flea, and at least 14 days have passed since your most recent delivery, so that any refund or dispute window has closed.</li>
               <li>We may suspend or terminate your account immediately, with or without notice, if you breach these Terms, if we suspect fraud or unlawful activity, if a payment processor reverses or disputes a charge, if you remain inactive for an extended period, or if required by law.</li>
               <li>On termination, your live listings will be archived, your payouts (if any are due) will be processed in line with our payment processor's rules, and the licences you grant in clause 11 will continue for any User Content already shared with other users (for example, in past order chats and reviews).</li>
             </ul>
