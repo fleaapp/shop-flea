@@ -66,6 +66,14 @@ export function useAdminUsers() {
     };
   }, [load]);
 
+  // Poll every 20s while tab is visible so auth-dashboard deletions surface without manual refresh.
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') load();
+    }, 20000);
+    return () => window.clearInterval(interval);
+  }, [load]);
+
   const performAction = useCallback(async (userId: string, type: string, reason?: string) => {
     try {
       const result = await callAdminData<{ ok: boolean; action_link?: string }>('userAction', { userId, type, reason });
