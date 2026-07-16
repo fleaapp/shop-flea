@@ -378,6 +378,10 @@ export const getNotificationMessage = (type: string, username?: string, listingT
       return rawMessage || 'Your refund request was rejected.';
     case 'refund_initiated':
       return rawMessage || 'A refund has been initiated.';
+    case 'order_auto_refunded':
+      return rawMessage || '💸 Your order was automatically refunded.';
+    case 'sale_auto_refunded':
+      return rawMessage || '⚠️ Your sale was auto-refunded.';
     case 'payment_action_required':
       return rawMessage || '⚠️ Your payment account needs attention. Tap to fix.';
     default:
