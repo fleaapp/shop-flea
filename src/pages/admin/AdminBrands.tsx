@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Pencil, Trash2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,11 +8,36 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useAdminBrands, type AdminBrand } from '@/hooks/admin/useAdminBrands';
 
+const LAST_SEEN_KEY = 'admin_brands_last_seen';
+
 export default function AdminBrands() {
   const navigate = useNavigate();
   const { brands, loading, search, setSearch, rename, remove } = useAdminBrands();
   const [editing, setEditing] = useState<AdminBrand | null>(null);
   const [value, setValue] = useState('');
+  const [previousLastSeen] = useState<string | null>(() =>
+    typeof window !== 'undefined' ? window.localStorage.getItem(LAST_SEEN_KEY) : null
+  );
+
+  useEffect(() => {
+    if (!loading) {
+      window.localStorage.setItem(LAST_SEEN_KEY, new Date().toISOString());
+    }
+  }, [loading]);
+
+  const isNew = useMemo(() => {
+    const sinceMs = previousLastSeen ? Date.parse(previousLastSeen) : Date.now() - 30 * 24 * 60 * 60 * 1000;
+    return (b: AdminBrand) => !!b.created_at && Date.parse(b.created_at) > sinceMs;
+  }, [previousLastSeen]);
+
+  const sortedBrands = useMemo(() => {
+    return [...brands].sort((a, b) => {
+      const an = isNew(a) ? 0 : 1;
+      const bn = isNew(b) ? 0 : 1;
+      if (an !== bn) return an - bn;
+      return (a.display_name || '').localeCompare(b.display_name || '', undefined, { sensitivity: 'base' });
+    });
+  }, [brands, isNew]);
 
   const openEdit = (b: AdminBrand) => { setEditing(b); setValue(b.display_name); };
 
