@@ -14,64 +14,32 @@ import { format } from 'date-fns';
 import { AdminHeader } from '@/components/admin/shell/AdminHeader';
 import { AdminBadge, type AdminBadgeTone } from '@/components/admin/shell/AdminBadge';
 
-const sevStyles: Record<Severity, { badge: string; ring: string; label: string }> = {
-  critical: {
-    badge: 'bg-destructive text-destructive-foreground border-destructive',
-    ring: 'border-l-destructive',
-    label: 'Critical',
-  },
-  high: {
-    badge: 'bg-orange-500/15 text-orange-700 border-orange-300',
-    ring: 'border-l-orange-500',
-    label: 'High',
-  },
-  medium: {
-    badge: 'bg-yellow-500/15 text-yellow-700 border-yellow-300',
-    ring: 'border-l-yellow-500',
-    label: 'Medium',
-  },
-  low: {
-    badge: 'bg-muted text-muted-foreground border-border',
-    ring: 'border-l-muted-foreground/40',
-    label: 'Low',
-  },
+const sevMeta: Record<Severity, { tone: AdminBadgeTone; ring: string; label: string; emoji: string }> = {
+  critical: { tone: 'danger', ring: 'border-l-destructive', label: 'Critical', emoji: '🚨' },
+  high: { tone: 'warning', ring: 'border-l-amber-500', label: 'High', emoji: '⚠️' },
+  medium: { tone: 'warning', ring: 'border-l-amber-400', label: 'Medium', emoji: '⚡' },
+  low: { tone: 'neutral', ring: 'border-l-muted-foreground/40', label: 'Low', emoji: '🔹' },
 };
 
 export default function AdminErrors() {
-  const navigate = useNavigate();
   const { issues, summary, loading, fixing, reload, runFix } = useAdminErrors();
 
   return (
-    <div className="admin-scope flex h-screen flex-col bg-background">
-      <header className="border-b border-border bg-card px-4 py-3 sm:px-6 sm:py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/admin')} className="shrink-0">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/10 sm:h-10 sm:w-10">
-              <ShieldAlert className="h-4 w-4 text-destructive sm:h-5 sm:w-5" />
-            </div>
-            <div>
-              <h1 className="text-base font-bold text-foreground sm:text-xl">System Diagnostics</h1>
-              <p className="hidden text-sm text-muted-foreground sm:block">
-                Real-time health of the Flea marketplace
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {summary && (
-              <span className="hidden text-xs text-muted-foreground sm:inline">
-                Last scan {format(new Date(summary.last_scan), 'HH:mm:ss')}
-              </span>
-            )}
-            <Button variant="outline" size="sm" onClick={reload} className="gap-1.5">
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">Refresh</span>
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div className="admin-scope flex min-h-[100svh] flex-col bg-background pb-24">
+      <AdminHeader
+        title="Diagnostics"
+        emoji="🩺"
+        right={
+          <Button variant="ghost" size="icon" onClick={reload} className="h-9 w-9 rounded-full">
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+        }
+      />
+      {summary && (
+        <p className="px-4 pb-2 text-center text-[11px] text-muted-foreground">
+          Last scan {format(new Date(summary.last_scan), 'HH:mm:ss')}
+        </p>
+      )}
 
       <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
         {/* Summary */}
