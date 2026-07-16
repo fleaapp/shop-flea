@@ -135,93 +135,105 @@ export default function AdminUsers() {
       </div>
 
       <Dialog open={!!selected} onOpenChange={(open) => { if (!open) { setSelected(null); setDetail(null); } }}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[88vh] overflow-y-auto rounded-3xl border-border bg-background p-0">
           {selected && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={selected.avatar_url ?? undefined} />
-                    <AvatarFallback>{initials(selected.username)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="flex items-center gap-2">{selected.username}<AdminBadge tone={toneForStatus(selected.status)}>{statusLabel(selected.status)}</AdminBadge></div>
-                    <p className="text-xs font-normal text-muted-foreground">{selected.email}</p>
-                  </div>
-                </DialogTitle>
-              </DialogHeader>
+            <div className="flex flex-col">
+              <div className="rounded-t-3xl bg-gradient-to-br from-primary/15 via-primary/5 to-background px-5 pb-4 pt-6">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-3">
+                    <Avatar className="h-14 w-14 ring-2 ring-primary/30">
+                      <AvatarImage src={selected.avatar_url ?? undefined} />
+                      <AvatarFallback>{initials(selected.username)}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1 text-left">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="truncate text-base font-bold">{selected.username}</span>
+                        <AdminBadge tone={toneForStatus(selected.status)}>{statusLabel(selected.status)}</AdminBadge>
+                        {selected.report_strike_count > 0 && (
+                          <AdminBadge tone="danger">{selected.report_strike_count} strike{selected.report_strike_count > 1 ? 's' : ''}</AdminBadge>
+                        )}
+                      </div>
+                      <p className="mt-0.5 truncate text-xs font-normal text-muted-foreground">{selected.email}</p>
+                    </div>
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  <AdminBadge tone={selected.stripe_onboarding_complete ? 'success' : 'neutral'}>
+                    <CreditCard className="h-3 w-3" /> {selected.stripe_onboarding_complete ? 'Payments live' : 'No payouts'}
+                  </AdminBadge>
+                  {selected.country_code && <AdminBadge tone="neutral">{selected.country_code}</AdminBadge>}
+                  {selected.region_id && <AdminBadge tone="neutral">{selected.region_id}</AdminBadge>}
+                  <AdminBadge tone={riskTone(selected.risk_score)}>Risk {selected.risk_score}</AdminBadge>
+                </div>
+              </div>
 
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <Stat label="Risk score" value={String(selected.risk_score)} tone={selected.risk_score >= 50 ? 'risk' : 'ok'} />
-                <Stat label="Listings" value={`${selected.listings_total} (${selected.listings_active} active)`} />
+              <div className="grid grid-cols-2 gap-2 px-5 py-4 sm:grid-cols-4">
+                <Stat label="Listings" value={`${selected.listings_total}`} sub={`${selected.listings_active} active`} />
                 <Stat label="Sales" value={String(selected.orders_as_seller)} />
                 <Stat label="Volume" value={fmtCurrency(selected.seller_volume + selected.buyer_volume)} />
-                <Stat label="Refunds" value={String(selected.refunds_count)} />
-                <Stat label="Reports against" value={String(selected.reports_against)} />
-                <Stat label="Strikes" value={String(selected.report_strike_count)} />
+                <Stat label="Refunds" value={String(selected.refunds_count)} tone={selected.refunds_count > 0 ? 'risk' : undefined} />
+                <Stat label="Reports" value={String(selected.reports_against)} tone={selected.reports_against > 0 ? 'risk' : undefined} />
+                <Stat label="Strikes" value={String(selected.report_strike_count)} tone={selected.report_strike_count > 0 ? 'risk' : undefined} />
                 <Stat label="Last active" value={selected.last_sign_in_at ? format(new Date(selected.last_sign_in_at), 'MMM d') : '—'} />
+                <Stat label="Joined" value={format(new Date(selected.created_at), 'MMM yyyy')} />
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="outline" className="gap-1"><CreditCard className="h-3 w-3" /> Stripe {selected.stripe_onboarding_complete ? '✓' : '—'}</Badge>
-                {selected.country_code && <Badge variant="outline">{selected.country_code}</Badge>}
-                {selected.region_id && <Badge variant="outline">{selected.region_id}</Badge>}
-              </div>
-
-              <div className="flex flex-wrap gap-2 border-y border-border py-3">
-                <Button size="sm" variant="outline" onClick={() => setConfirm({ user: selected, type: 'suspend', label: 'Suspend user' })} disabled={selected.status === 'suspended'}>
-                  <ShieldAlert className="mr-1 h-4 w-4" /> Suspend
+              <div className="flex flex-wrap gap-2 border-t border-border/60 bg-muted/30 px-5 py-3">
+                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => setConfirm({ user: selected, type: 'suspend', label: 'Suspend user' })} disabled={selected.status === 'suspended'}>
+                  <ShieldAlert className="mr-1 h-3.5 w-3.5" /> Suspend
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => setConfirm({ user: selected, type: 'ban', label: 'Ban user' })} disabled={selected.status === 'blocked'}>
-                  <ShieldBan className="mr-1 h-4 w-4" /> Ban
+                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => setConfirm({ user: selected, type: 'ban', label: 'Ban user' })} disabled={selected.status === 'blocked'}>
+                  <ShieldBan className="mr-1 h-3.5 w-3.5" /> Ban
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => setConfirm({ user: selected, type: 'activate', label: 'Reactivate user' })} disabled={selected.status === 'active'}>
-                  <ShieldCheck className="mr-1 h-4 w-4" /> Reactivate
+                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => setConfirm({ user: selected, type: 'activate', label: 'Reactivate user' })} disabled={selected.status === 'active'}>
+                  <ShieldCheck className="mr-1 h-3.5 w-3.5" /> Reactivate
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => performAction(selected.user_id, 'reset_password')}>
-                  <KeyRound className="mr-1 h-4 w-4" /> Reset password
+                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => performAction(selected.user_id, 'reset_password')}>
+                  <KeyRound className="mr-1 h-3.5 w-3.5" /> Reset password
                 </Button>
-                <Button size="sm" variant="destructive" onClick={() => setConfirm({ user: selected, type: 'delete', label: 'Permanently delete user' })}>
-                  <Trash2 className="mr-1 h-4 w-4" /> Delete
+                <Button size="sm" variant="destructive" className="h-8 rounded-full text-xs" onClick={() => setConfirm({ user: selected, type: 'delete', label: 'Permanently delete user' })}>
+                  <Trash2 className="mr-1 h-3.5 w-3.5" /> Delete
                 </Button>
               </div>
 
-              <Tabs defaultValue="listings">
-                <TabsList>
-                  <TabsTrigger value="listings">Listings</TabsTrigger>
-                  <TabsTrigger value="orders">Orders</TabsTrigger>
-                  <TabsTrigger value="reports">Reports</TabsTrigger>
-                  <TabsTrigger value="reviews">Reviews</TabsTrigger>
-                  <TabsTrigger value="threads">Support</TabsTrigger>
-                </TabsList>
-                {detailLoading && <div className="p-4"><Skeleton className="h-32 w-full" /></div>}
-                {detail && (
-                  <>
-                    <TabsContent value="listings"><ActivityList items={detail.listings} renderTitle={(l: any) => l.title} renderSub={(l: any) => `${l.status} · $${l.price} · ${format(new Date(l.created_at), 'MMM d')}`} /></TabsContent>
-                    <TabsContent value="orders">
-                      <ActivityList items={[...(detail.ordersAsBuyer || []).map((o: any) => ({ ...o, role: 'buyer' })), ...(detail.ordersAsSeller || []).map((o: any) => ({ ...o, role: 'seller' }))]}
-                        renderTitle={(o: any) => `${o.role === 'buyer' ? 'Bought' : 'Sold'} — ${o.order_number ?? o.id.slice(0, 8)}`}
-                        renderSub={(o: any) => `${o.status} · $${o.price} · ${format(new Date(o.created_at), 'MMM d')}`} />
-                    </TabsContent>
-                    <TabsContent value="reports">
-                      <ActivityList items={[...(detail.reportsAgainst || []).map((r: any) => ({ ...r, dir: 'against' })), ...(detail.reportsBy || []).map((r: any) => ({ ...r, dir: 'by' }))]}
-                        renderTitle={(r: any) => `Report ${r.dir} — ${r.report_type}`}
-                        renderSub={(r: any) => `${r.reason ?? '—'} · ${format(new Date(r.created_at), 'MMM d, yyyy')}`} />
-                    </TabsContent>
-                    <TabsContent value="reviews">
-                      <ActivityList items={detail.reviews}
-                        renderTitle={(r: any) => `${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}`}
-                        renderSub={(r: any) => `${r.comment ?? ''} · ${format(new Date(r.created_at), 'MMM d, yyyy')}`} />
-                    </TabsContent>
-                    <TabsContent value="threads">
-                      <ActivityList items={detail.threads}
-                        renderTitle={(t: any) => t.title || 'Untitled thread'}
-                        renderSub={(t: any) => `${t.status} · updated ${format(new Date(t.updated_at), 'MMM d')}`} />
-                    </TabsContent>
-                  </>
-                )}
-              </Tabs>
-            </>
+              <div className="px-5 py-4">
+                <Tabs defaultValue="listings">
+                  <TabsList className="h-9 rounded-full bg-muted p-1">
+                    <TabsTrigger value="listings" className="h-7 rounded-full text-xs data-[state=active]:bg-background">Listings</TabsTrigger>
+                    <TabsTrigger value="orders" className="h-7 rounded-full text-xs data-[state=active]:bg-background">Orders</TabsTrigger>
+                    <TabsTrigger value="reports" className="h-7 rounded-full text-xs data-[state=active]:bg-background">Reports</TabsTrigger>
+                    <TabsTrigger value="reviews" className="h-7 rounded-full text-xs data-[state=active]:bg-background">Reviews</TabsTrigger>
+                    <TabsTrigger value="threads" className="h-7 rounded-full text-xs data-[state=active]:bg-background">Support</TabsTrigger>
+                  </TabsList>
+                  {detailLoading && <div className="p-4"><Skeleton className="h-32 w-full rounded-2xl" /></div>}
+                  {detail && (
+                    <>
+                      <TabsContent value="listings" className="mt-3"><ActivityList items={detail.listings} renderTitle={(l: any) => l.title} renderSub={(l: any) => `${l.status} · $${l.price} · ${format(new Date(l.created_at), 'MMM d')}`} /></TabsContent>
+                      <TabsContent value="orders" className="mt-3">
+                        <ActivityList items={[...(detail.ordersAsBuyer || []).map((o: any) => ({ ...o, role: 'buyer' })), ...(detail.ordersAsSeller || []).map((o: any) => ({ ...o, role: 'seller' }))]}
+                          renderTitle={(o: any) => `${o.role === 'buyer' ? 'Bought' : 'Sold'} · ${o.order_number ?? o.id.slice(0, 8)}`}
+                          renderSub={(o: any) => `${o.status} · $${o.price} · ${format(new Date(o.created_at), 'MMM d')}`} />
+                      </TabsContent>
+                      <TabsContent value="reports" className="mt-3">
+                        <ActivityList items={[...(detail.reportsAgainst || []).map((r: any) => ({ ...r, dir: 'against' })), ...(detail.reportsBy || []).map((r: any) => ({ ...r, dir: 'by' }))]}
+                          renderTitle={(r: any) => `Report ${r.dir} · ${r.report_type}`}
+                          renderSub={(r: any) => `${r.reason ?? '—'} · ${format(new Date(r.created_at), 'MMM d, yyyy')}`} />
+                      </TabsContent>
+                      <TabsContent value="reviews" className="mt-3">
+                        <ActivityList items={detail.reviews}
+                          renderTitle={(r: any) => `${'⭐️'.repeat(r.rating)}`}
+                          renderSub={(r: any) => `${r.comment ?? ''} · ${format(new Date(r.created_at), 'MMM d, yyyy')}`} />
+                      </TabsContent>
+                      <TabsContent value="threads" className="mt-3">
+                        <ActivityList items={detail.threads}
+                          renderTitle={(t: any) => t.title || 'Untitled thread'}
+                          renderSub={(t: any) => `${t.status} · updated ${format(new Date(t.updated_at), 'MMM d')}`} />
+                      </TabsContent>
+                    </>
+                  )}
+                </Tabs>
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>
@@ -246,11 +258,12 @@ export default function AdminUsers() {
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone?: 'risk' | 'ok' }) {
+function Stat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: 'risk' | 'ok' }) {
   return (
-    <div className={`rounded-md border p-2 ${tone === 'risk' ? 'border-destructive/30 bg-destructive/5' : 'border-border bg-muted/30'}`}>
+    <div className={`rounded-2xl border p-2.5 ${tone === 'risk' ? 'border-destructive/30 bg-destructive/5' : 'border-border bg-card'}`}>
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="text-sm font-semibold text-foreground">{value}</p>
+      {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
     </div>
   );
 }

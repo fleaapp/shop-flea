@@ -126,75 +126,90 @@ export default function AdminListings() {
       </div>
 
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[88vh] overflow-y-auto rounded-3xl border-border bg-background p-0">
           {selected && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  {selected.title}
-                  <AdminBadge tone={toneForStatus(selected.status)}>{statusLabel(selected.status)}</AdminBadge>
-                </DialogTitle>
-              </DialogHeader>
-
-              {selected.images?.[0] && (
-                <div className="grid grid-cols-3 gap-2">
-                  {selected.images.slice(0, 6).map((src, i) => (
-                    <img key={i} src={src} alt="" className="aspect-[4/5] w-full rounded object-cover" />
-                  ))}
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
-                <Field label="Price" value={`$${selected.price}`} />
-                <Field label="Shipping" value={`$${selected.shipping_price ?? 0}`} />
-                <Field label="Brand" value={selected.brand} />
-                <Field label="Size" value={selected.size} />
-                <Field label="Category" value={selected.category} />
-                <Field label="Subcategory" value={selected.subcategory ?? '—'} />
-                <Field label="Condition" value={selected.condition} />
-                <Field label="Created" value={format(new Date(selected.created_at), 'MMM d, yyyy')} />
+            <div className="flex flex-col">
+              <div className="rounded-t-3xl bg-gradient-to-br from-primary/15 via-primary/5 to-background px-5 pb-4 pt-6">
+                <DialogHeader>
+                  <DialogTitle className="text-left">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-base font-bold">{selected.title}</span>
+                      <AdminBadge tone={toneForStatus(selected.status)}>{statusLabel(selected.status)}</AdminBadge>
+                      {selected.report_count > 0 && (
+                        <AdminBadge tone="danger"><Flag className="h-3 w-3" />{selected.report_count}</AdminBadge>
+                      )}
+                      {selected.spam_signal && <AdminBadge tone="warning">Spam?</AdminBadge>}
+                      {selected.is_duplicate && <AdminBadge tone="accent">Duplicate</AdminBadge>}
+                    </div>
+                    <p className="mt-1 text-xs font-normal text-muted-foreground">
+                      ${selected.price} · {selected.brand} · {selected.size} · {format(new Date(selected.created_at), 'MMM d, yyyy')}
+                    </p>
+                  </DialogTitle>
+                </DialogHeader>
               </div>
 
-              <div className="rounded border border-border bg-muted/30 p-3">
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
+              <div className="space-y-4 px-5 py-4">
+                {selected.images?.[0] && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {selected.images.slice(0, 6).map((src, i) => (
+                      <img key={i} src={src} alt="" className="aspect-[4/5] w-full rounded-2xl object-cover" />
+                    ))}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <Field label="Price" value={`$${selected.price}`} />
+                  <Field label="Shipping" value={`$${selected.shipping_price ?? 0}`} />
+                  <Field label="Brand" value={selected.brand} />
+                  <Field label="Size" value={selected.size} />
+                  <Field label="Category" value={selected.category} />
+                  <Field label="Subcategory" value={selected.subcategory ?? '—'} />
+                  <Field label="Condition" value={selected.condition} />
+                  <Field label="Created" value={format(new Date(selected.created_at), 'MMM d')} />
+                </div>
+
+                <button
+                  onClick={() => navigate(`/seller/${selected.user_id}`)}
+                  className="flex w-full items-center gap-3 rounded-2xl bg-card p-3 text-left card-shadow transition-transform active:scale-[0.99]"
+                >
+                  <Avatar className="h-10 w-10">
                     <AvatarImage src={selected.seller_profile.avatar_url ?? undefined} />
                     <AvatarFallback>{initials(selected.seller_profile.username)}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{selected.seller_profile.username}</p>
+                    <p className="truncate text-sm font-semibold">{selected.seller_profile.username}</p>
                     <p className="truncate text-xs text-muted-foreground">{selected.seller_profile.email ?? '—'} · {selected.seller_profile.status ?? 'active'}</p>
                   </div>
-                  <Button size="sm" variant="ghost" onClick={() => navigate(`/seller/${selected.user_id}`)}><ExternalLink className="h-4 w-4" /></Button>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                </button>
+
+                <div className="grid grid-cols-4 gap-2">
+                  <Stat icon={<Heart className="h-4 w-4" />} label="Faves" value={selected.favorites_count} />
+                  <Stat icon={<MessageCircle className="h-4 w-4" />} label="Comments" value={selected.comments_count} />
+                  <Stat icon={<ShoppingBag className="h-4 w-4" />} label="Orders" value={selected.orders_count} />
+                  <Stat icon={<Flag className="h-4 w-4" />} label="Reports" value={selected.report_count} tone={selected.report_count > 0 ? 'risk' : undefined} />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-4 gap-2 text-center text-sm">
-                <Stat icon={<Heart className="h-4 w-4" />} label="Faves" value={selected.favorites_count} />
-                <Stat icon={<MessageCircle className="h-4 w-4" />} label="Comments" value={selected.comments_count} />
-                <Stat icon={<ShoppingBag className="h-4 w-4" />} label="Orders" value={selected.orders_count} />
-                <Stat icon={<Flag className="h-4 w-4" />} label="Reports" value={selected.report_count} tone={selected.report_count > 0 ? 'risk' : undefined} />
-              </div>
-
-              {(selected.spam_signal || selected.is_duplicate) && (
-                <div className="flex items-start gap-2 rounded border border-yellow-300 bg-yellow-500/10 p-3 text-sm text-yellow-800">
-                  <AlertTriangle className="mt-0.5 h-4 w-4" />
-                  <div>
-                    {selected.is_duplicate && <p>Possible duplicate of another listing by this seller.</p>}
-                    {selected.spam_signal && <p>Heuristic flag: high reports, short title, or contains links/handles.</p>}
+                {(selected.spam_signal || selected.is_duplicate) && (
+                  <div className="flex items-start gap-2 rounded-2xl border border-yellow-300/60 bg-yellow-500/10 p-3 text-sm text-yellow-900 dark:text-yellow-200">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <div className="space-y-0.5">
+                      {selected.is_duplicate && <p>Possible duplicate of another listing by this seller.</p>}
+                      {selected.spam_signal && <p>Heuristic flag: high reports, short title, or contains links/handles.</p>}
+                    </div>
                   </div>
-                </div>
-              )}
-
-              <div className="flex flex-wrap gap-2 border-t border-border pt-3">
-                <Button size="sm" variant="outline" onClick={() => { performAction(selected.id, 'approve'); setSelected(null); }}>Approve / Activate</Button>
-                <Button size="sm" variant="outline" onClick={() => { performAction(selected.id, 'hide'); setSelected(null); }}><EyeOff className="mr-1 h-4 w-4" /> Hide</Button>
-                <Button size="sm" variant="outline" onClick={() => { performAction(selected.id, 'feature'); setSelected(null); }}><Star className="mr-1 h-4 w-4" /> Feature</Button>
-                <Button size="sm" variant="outline" onClick={() => { performAction(selected.id, 'restore'); setSelected(null); }}><RotateCcw className="mr-1 h-4 w-4" /> Restore</Button>
-                <Button size="sm" variant="destructive" onClick={() => { if (confirm('Delete this listing? It stays under Deleted so admin history is preserved.')) { performAction(selected.id, 'soft_delete'); setSelected(null); } }}><Trash2 className="mr-1 h-4 w-4" /> Delete listing</Button>
-                <Button size="sm" variant="ghost" onClick={() => navigate(`/listing/${selected.id}`)}><Eye className="mr-1 h-4 w-4" /> View on site</Button>
+                )}
               </div>
-            </>
+
+              <div className="flex flex-wrap gap-2 border-t border-border/60 bg-muted/30 px-5 py-3">
+                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => { performAction(selected.id, 'approve'); setSelected(null); }}>Approve</Button>
+                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => { performAction(selected.id, 'hide'); setSelected(null); }}><EyeOff className="mr-1 h-3.5 w-3.5" /> Hide</Button>
+                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => { performAction(selected.id, 'feature'); setSelected(null); }}><Star className="mr-1 h-3.5 w-3.5" /> Feature</Button>
+                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => { performAction(selected.id, 'restore'); setSelected(null); }}><RotateCcw className="mr-1 h-3.5 w-3.5" /> Restore</Button>
+                <Button size="sm" variant="ghost" className="h-8 rounded-full text-xs" onClick={() => navigate(`/listing/${selected.id}`)}><Eye className="mr-1 h-3.5 w-3.5" /> View</Button>
+                <Button size="sm" variant="destructive" className="ml-auto h-8 rounded-full text-xs" onClick={() => { if (confirm('Delete this listing? It stays under Deleted so admin history is preserved.')) { performAction(selected.id, 'soft_delete'); setSelected(null); } }}><Trash2 className="mr-1 h-3.5 w-3.5" /> Delete</Button>
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>
@@ -204,18 +219,18 @@ export default function AdminListings() {
 
 function Field({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded border border-border bg-muted/30 p-2">
+    <div className="rounded-2xl border border-border bg-card p-2.5">
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="truncate text-sm font-medium">{value}</p>
+      <p className="truncate text-sm font-semibold">{value}</p>
     </div>
   );
 }
 
 function Stat({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: number; tone?: 'risk' }) {
   return (
-    <div className={`rounded border p-2 ${tone === 'risk' ? 'border-destructive/30 bg-destructive/5' : 'border-border bg-muted/30'}`}>
-      <div className="flex items-center justify-center gap-1 text-muted-foreground">{icon}<span className="text-[10px] uppercase">{label}</span></div>
-      <p className="text-base font-semibold">{value}</p>
+    <div className={`rounded-2xl border p-2.5 text-center ${tone === 'risk' ? 'border-destructive/30 bg-destructive/5' : 'border-border bg-card'}`}>
+      <div className="flex items-center justify-center gap-1 text-muted-foreground">{icon}<span className="text-[10px] uppercase tracking-wide">{label}</span></div>
+      <p className="mt-0.5 text-base font-bold">{value}</p>
     </div>
   );
 }
