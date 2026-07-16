@@ -365,6 +365,8 @@ serve(async (req) => {
         balanceAvailableCents,
         balancePendingCents,
         negativeBalanceCents,
+        unshippedCents,
+        availableToWithdrawCents: Math.max(balanceAvailableCents - unshippedCents, 0),
         isNegative: negativeBalanceCents > 0,
         verificationError: docError
           ? {
