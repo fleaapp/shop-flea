@@ -183,6 +183,7 @@ serve(async (req) => {
         }
         appliedCoupon = { id: c.id, code: c.code, type: c.type };
       }
+      console.log("[coupon] input=", couponCode, "normalized=", normalizedCode, "matched=", !!appliedCoupon, "fee=", secureCheckoutFee);
     }
 
     const buyerTotalDollars = subtotal + secureCheckoutFee;

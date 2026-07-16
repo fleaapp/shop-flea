@@ -177,6 +177,7 @@ serve(async (req) => {
         if (c.type === "waive_buyer_fee") secureCheckoutFee = 0;
         appliedCoupon = { id: c.id, code: c.code, type: c.type };
       }
+      console.log("[coupon] input=", couponCode, "normalized=", normalizedCode, "matched=", !!appliedCoupon, "fee=", secureCheckoutFee);
     }
 
     const buyerTotalDollars = subtotal + secureCheckoutFee;
