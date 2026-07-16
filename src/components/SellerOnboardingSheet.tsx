@@ -28,6 +28,8 @@ import {
 import fleaLogo from '@/assets/flea-logo.png';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import IdVerificationStep from '@/components/IdVerificationStep';
+import PushPermissionSheet from '@/components/PushPermissionSheet';
+import { shouldShowPushPrompt } from '@/lib/pushPrompt';
 
 interface SellerOnboardingSheetProps {
   open: boolean;
@@ -59,6 +61,15 @@ const SellerOnboardingSheet = ({
   const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPushSheet, setShowPushSheet] = useState(false);
+
+  const handleVerifiedSuccess = (result?: { setupCompleted?: boolean }) => {
+    onOpenChange(false);
+    if (shouldShowPushPrompt(user?.id, 'seller_verified')) {
+      setTimeout(() => setShowPushSheet(true), 300);
+    }
+    onComplete?.(result);
+  };
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -280,8 +291,7 @@ const SellerOnboardingSheet = ({
                 setStep(2);
               }}
               onDone={() => {
-                onComplete?.();
-                onOpenChange(false);
+                handleVerifiedSuccess();
               }}
             />
           ) : (
@@ -463,16 +473,19 @@ const SellerOnboardingSheet = ({
                   firstName={firstName}
                   lastName={lastName}
                   onBack={() => setStep(3)}
-                  onDone={() => {
-                    onComplete?.();
-                    onOpenChange(false);
-                  }}
+                  onDone={() => handleVerifiedSuccess({ setupCompleted: true })}
                 />
               )}
             </>
           )}
         </div>
       </SheetContent>
+
+      <PushPermissionSheet
+        open={showPushSheet}
+        onOpenChange={setShowPushSheet}
+        source="seller_verified"
+      />
     </Sheet>
   );
 };

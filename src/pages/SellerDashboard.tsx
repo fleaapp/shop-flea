@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { SettleBalanceSheet } from '@/components/SettleBalanceSheet';
 import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
+import EnablePushBanner from '@/components/EnablePushBanner';
 
 import {
   AlertDialog,
@@ -306,6 +307,9 @@ const SellerDashboard = () => {
       </header>
 
       <main className="flex-1 px-4 pb-10">
+        <div className="pt-3">
+          <EnablePushBanner />
+        </div>
         {notOnboarded ? (
           <div className="pt-24 text-center text-sm text-muted-foreground max-w-[280px] mx-auto">
             Finish your seller setup to see your balance and payouts here.
