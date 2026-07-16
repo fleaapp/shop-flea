@@ -39,6 +39,11 @@ const getOrderStatusBadge = (status: Order['status']) => {
         label: 'Delivered',
         className: 'bg-muted text-muted-foreground',
       };
+    case 'refunded':
+      return {
+        label: 'Refunded',
+        className: 'bg-muted text-muted-foreground',
+      };
   }
 };
 
