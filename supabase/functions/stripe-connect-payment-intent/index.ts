@@ -128,9 +128,9 @@ serve(async (req) => {
 
     const { data: sellerProfile } = await serviceClient
       .from("profiles")
-      .select("stripe_account_id, stripe_onboarding_complete")
+      .select("stripe_account_id")
       .eq("user_id", sellerId).maybeSingle();
-    if (!sellerProfile?.stripe_account_id || !sellerProfile.stripe_onboarding_complete) {
+    if (!sellerProfile?.stripe_account_id) {
       return new Response(
         JSON.stringify({ error: "Seller is not set up to receive payments.", code: "seller_not_connected" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 },
@@ -138,11 +138,13 @@ serve(async (req) => {
     }
     const sellerStripeAccountId = sellerProfile.stripe_account_id;
 
-    // Verify seller can accept charges
+    // Verify seller can accept charges. payouts_enabled is intentionally NOT
+    // required — brand new AU sellers can have payouts paused during Stripe's
+    // fraud-hold window but are still able to accept charges legitimately.
     const acct = await stripe.accounts.retrieve(sellerStripeAccountId);
-    if (!acct.charges_enabled || !acct.payouts_enabled) {
+    if (!acct.charges_enabled) {
       return new Response(
-        JSON.stringify({ error: "This seller is temporarily unable to accept payments.", code: "seller_payouts_disabled" }),
+        JSON.stringify({ error: "This seller is temporarily unable to accept payments.", code: "seller_charges_disabled" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 },
       );
     }
