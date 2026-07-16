@@ -17,7 +17,7 @@ export type AdminRefundOrder = {
   updated_at: string;
   buyer_profile: { username: string; avatar_url: string | null } | null;
   seller_profile: { username: string; avatar_url: string | null } | null;
-  listing: { title: string; images: string[]; price: number } | null;
+  listing: { title: string; images: string[]; price: number; status?: string | null } | null;
 };
 
 export type RefundFilter = 'all' | 'refunded' | 'requested';
