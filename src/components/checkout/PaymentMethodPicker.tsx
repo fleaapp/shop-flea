@@ -29,6 +29,15 @@ interface Props {
 
 type WalletKind = 'apple' | 'google';
 
+function isApplePayLikelyDevice() {
+  if (typeof window === 'undefined') return false;
+  const ua = window.navigator.userAgent || '';
+  const platform = window.navigator.platform || '';
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  const isTouchMac = platform === 'MacIntel' && window.navigator.maxTouchPoints > 1;
+  return isIOS || isTouchMac || Boolean((window as any).ApplePaySession?.canMakePayments?.());
+}
+
 function detectNativeWallet(): WalletKind | null {
   if (!Capacitor.isNativePlatform()) return null;
   const platform = Capacitor.getPlatform();
@@ -59,7 +68,7 @@ const brandLabel = (brand: string) => {
 const PaymentMethodPicker = ({ value, onChange, amountCents }: Props) => {
   const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
   const [loading, setLoading] = useState(true);
-  const [wallet, setWallet] = useState<WalletKind | null>(() => detectNativeWallet());
+  const [wallet, setWallet] = useState<WalletKind | null>(() => detectNativeWallet() ?? (isApplePayLikelyDevice() ? 'apple' : null));
   const [walletLoading, setWalletLoading] = useState(!Capacitor.isNativePlatform());
 
   useEffect(() => {
@@ -90,11 +99,11 @@ const PaymentMethodPicker = ({ value, onChange, amountCents }: Props) => {
 
         if (result?.applePay) setWallet('apple');
         else if (result?.googlePay) setWallet('google');
-        else setWallet(null);
+        else setWallet(isApplePayLikelyDevice() ? 'apple' : null);
       } catch (e) {
         if (!cancelled) {
           console.warn('wallet availability:', e);
-          setWallet(null);
+          setWallet(isApplePayLikelyDevice() ? 'apple' : null);
         }
       } finally {
         if (!cancelled) setWalletLoading(false);

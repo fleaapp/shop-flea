@@ -10,6 +10,8 @@ const corsHeaders = {
 
 const PAYMENT_DOMAIN_ALLOWLIST = new Set([
   "app.finditonflea.com",
+  "shop-flea.lovable.app",
+  "id-preview--1d934446-72c7-4973-9378-0721cb47807c.lovable.app",
 ]);
 
 const ensurePaymentMethodDomain = async (req: Request) => {
