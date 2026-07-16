@@ -228,15 +228,35 @@ const SellerDashboard = () => {
           </div>
         ) : (
           <>
-            {/* Available balance */}
-            <section className="rounded-2xl bg-primary/60 p-5 mt-2">
-              <div className="text-xs font-medium text-charcoal/70 uppercase tracking-wide">
-                Available balance
-              </div>
-              <div className="text-[34px] font-bold text-charcoal leading-tight mt-1">
-                {fmtMoney(available, currency)}
-              </div>
-            </section>
+            {/* Available balance or Balance owed */}
+            {isNegative ? (
+              <section className="rounded-2xl bg-destructive/10 border-2 border-destructive/40 p-5 mt-2">
+                <div className="flex items-center gap-2 text-xs font-semibold text-destructive uppercase tracking-wide">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Balance owed
+                </div>
+                <div className="text-[34px] font-bold text-destructive leading-tight mt-1">
+                  {fmtMoney(negativeCents, currency)}
+                </div>
+                <p className="text-[12px] text-charcoal/80 mt-2 leading-relaxed">
+                  Refunds or disputes brought your balance below zero. Settle this before you can buy, list, or receive payouts.
+                </p>
+                <Button
+                  onClick={() => setSettleOpen(true)}
+                  className="w-full mt-3 h-11 rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 font-semibold"
+                >
+                  Settle balance
+                </Button>
+              </section>
+            ) : (
+              <section className="rounded-2xl bg-primary/60 p-5 mt-2">
+                <div className="text-xs font-medium text-charcoal/70 uppercase tracking-wide">
+                  Available balance
+                </div>
+                <div className="text-[34px] font-bold text-charcoal leading-tight mt-1">
+                  {fmtMoney(available, currency)}
+                </div>
+              </section>
+            )}
 
             {/* Payout actions (outside the balance box) */}
             <div className="flex flex-col gap-2 mt-3">
