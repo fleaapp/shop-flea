@@ -55,7 +55,7 @@ const CheckoutSuccess = () => {
           }
           await refetchCart();
           await queryClient.invalidateQueries({ queryKey: ['orders'] });
-          ['checkout_items','checkout_shipping','checkout_seller_settings','checkout_shipping_by_seller','checkout_payment_method','checkout_reference']
+          ['checkout_items','checkout_shipping','checkout_seller_settings','checkout_shipping_by_seller','checkout_payment_method','checkout_reference','checkout_coupon_code']
             .forEach(k => localStorage.removeItem(k));
         } catch (e) { console.error('Demo cleanup failed:', e); }
         setShowSuccess(true);
