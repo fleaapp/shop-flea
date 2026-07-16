@@ -85,25 +85,34 @@ export default function AdminListings() {
 
       <div className="flex-1 overflow-auto">
         {loading ? (
-          <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-4">{Array.from({ length: 12 }).map((_, i) => <Skeleton key={i} className="h-44 w-full" />)}</div>
+          <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-4">{Array.from({ length: 12 }).map((_, i) => <Skeleton key={i} className="h-56 w-full rounded-2xl" />)}</div>
         ) : listings.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">No listings match these filters.</div>
+          <AdminEmptyState emoji="🔍" title="No listings match" description="Try clearing filters or searching by ID." />
         ) : (
           <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-4">
             {listings.map((l) => (
-              <button key={l.id} onClick={() => setSelected(l)} className="group overflow-hidden rounded-md border border-border bg-card text-left transition-shadow hover:shadow-md">
+              <button
+                key={l.id}
+                onClick={() => setSelected(l)}
+                className="group overflow-hidden rounded-2xl bg-card text-left card-shadow transition-transform active:scale-[0.98]"
+              >
                 <div className="relative aspect-[4/5] overflow-hidden bg-muted">
                   {l.images?.[0] && <img src={l.images[0]} alt={l.title} className="h-full w-full object-cover" loading="lazy" />}
-                  <div className="absolute left-1 top-1 flex flex-wrap gap-1">
-                    <Badge className={statusColor[l.status] ?? 'bg-muted text-muted-foreground'} variant="outline">{statusLabel(l.status)}</Badge>
-                    {l.report_count > 0 && <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 gap-0.5"><Flag className="h-3 w-3" />{l.report_count}</Badge>}
-                    {l.spam_signal && <Badge variant="outline" className="bg-yellow-500/10 text-yellow-700 border-yellow-300">Spam?</Badge>}
-                    {l.is_duplicate && <Badge variant="outline" className="bg-purple-500/10 text-purple-700 border-purple-300">Dup</Badge>}
+                  <div className="absolute left-1.5 top-1.5 flex flex-wrap gap-1">
+                    <AdminBadge tone={toneForStatus(l.status)}>{statusLabel(l.status)}</AdminBadge>
+                    {l.report_count > 0 && (
+                      <AdminBadge tone="danger">
+                        <Flag className="h-2.5 w-2.5" />
+                        {l.report_count}
+                      </AdminBadge>
+                    )}
+                    {l.spam_signal && <AdminBadge tone="warning">Spam?</AdminBadge>}
+                    {l.is_duplicate && <AdminBadge tone="accent">Dup</AdminBadge>}
                   </div>
                 </div>
-                <div className="p-2">
-                  <p className="truncate text-sm font-medium text-foreground">{l.title}</p>
-                  <p className="text-xs text-muted-foreground">${l.price} · @{l.seller_profile.username}</p>
+                <div className="p-2.5">
+                  <p className="truncate text-sm font-semibold text-foreground">{l.title}</p>
+                  <p className="truncate text-xs text-muted-foreground">${l.price} · @{l.seller_profile.username}</p>
                   <p className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
                     <span className="flex items-center gap-0.5"><Heart className="h-3 w-3" />{l.favorites_count}</span>
                     <span className="flex items-center gap-0.5"><MessageCircle className="h-3 w-3" />{l.comments_count}</span>
