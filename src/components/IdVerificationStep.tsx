@@ -183,6 +183,34 @@ const IdVerificationStep = ({ onBack, onDone, onEditName, verificationError }: I
     }
   };
 
+  // ---------- Submitted / pending review ----------
+  if (submitted) {
+    return (
+      <>
+        <SheetHeader className="space-y-2">
+          <SheetTitle className="text-lg text-center">Under review</SheetTitle>
+        </SheetHeader>
+        <div className="flex flex-col items-center gap-4 pt-2 pb-2">
+          <div className="h-16 w-16 rounded-full bg-primary/15 flex items-center justify-center">
+            <ShieldCheck className="h-8 w-8 text-primary" />
+          </div>
+          <p className="text-sm text-muted-foreground text-pretty leading-relaxed max-w-[320px] mx-auto text-center">
+            Thanks. Your ID has been sent to our payment provider for review. This usually takes 1 to 3 business days. You'll get a notification when it's approved, and we'll message you here if anything else is needed.
+          </p>
+          <div className="w-full max-w-[340px] mx-auto rounded-2xl border border-border/60 bg-muted/40 px-4 py-3 text-left text-[12px] text-foreground/80 leading-relaxed">
+            You can keep using Flea while we review this. Your balance and any pending payouts stay put.
+          </div>
+          <Button
+            onClick={onDone}
+            className="w-full max-w-[340px] h-12 rounded-full bg-charcoal text-white hover:bg-charcoal/90 font-semibold mt-1"
+          >
+            Done
+          </Button>
+        </div>
+      </>
+    );
+  }
+
   // ---------- Doc type picker ----------
   if (!docType) {
     return (
