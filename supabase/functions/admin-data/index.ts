@@ -1607,7 +1607,7 @@ Deno.serve(async (req) => {
         return response({ submissions: rows });
       }
       case "getBadges":
-        return response(await getBadges());
+        return response(await getBadges(payload));
       case "listBrands":
         return response(await listBrands(payload));
       case "updateBrand":
