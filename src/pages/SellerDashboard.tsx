@@ -377,7 +377,10 @@ const SellerDashboard = () => {
                 <div className="mt-3 bg-muted/60 rounded-xl px-4 py-3 text-left w-full space-y-2">
                   <p className="text-xs font-semibold text-foreground">⏱️ Please note</p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Due to security checks and verification, your <span className="font-medium text-foreground">first payout may take around 7 days</span>.
+                    You must add valid tracking for your funds to become available.
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Due to security checks and verification, your <span className="font-medium text-foreground">first payout may take up to 7 days</span>.
                   </p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     After that, payouts usually arrive in <span className="font-medium text-foreground">1–2 business days</span>, or via <span className="font-medium text-foreground">Instant Payout (≈30 mins)</span> for a 1.5% fee.
