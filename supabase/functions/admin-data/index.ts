@@ -1391,7 +1391,7 @@ async function getBadges() {
     countRows("orders", { status: "eq.awaiting" }),
     countRows("orders", { refunded_at: "not.is.null" }),
     countRows("listings", { status: "eq.active" }),
-    countRows("profiles", {}),
+    countRows("profiles", { created_at: `gte.${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()}` }),
     countRows("brands", {}).catch(() => 0),
   ]);
   return {
