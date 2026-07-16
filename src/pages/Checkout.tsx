@@ -207,15 +207,6 @@ const Checkout = () => {
   
   const isShippingComplete = shippingFirstName.trim() && shippingLastName.trim() && shippingAddress.trim() && shippingSuburb.trim() && shippingState.trim() && shippingPostcode.trim();
   
-  if (items.length === 0) {
-    return <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-        <p className="text-muted-foreground">No items to checkout</p>
-        <Button onClick={() => navigate('/cart')} className="mt-4">
-          Back to Cart
-        </Button>
-      </div>;
-  }
-  
   // In-app payment state
   const [selectedMethod, setSelectedMethod] = useState<SelectedPaymentMethod | null>(null);
   const [cardSheetOpen, setCardSheetOpen] = useState(false);
