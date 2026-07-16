@@ -76,8 +76,9 @@ const CouponInput = ({ value, onChange }: CouponInputProps) => {
           value={input}
           onChange={(e) => { setInput(e.target.value.toUpperCase()); setError(null); }}
           placeholder="Coupon code"
-          className={cn('h-10 rounded-lg bg-background border-border uppercase', error && 'border-destructive')}
+          className={cn('h-10 rounded-lg bg-background border-border uppercase', error && 'border-destructive focus-visible:ring-destructive')}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); apply(); } }}
+          aria-invalid={!!error}
         />
         <Button
           type="button"
@@ -88,7 +89,11 @@ const CouponInput = ({ value, onChange }: CouponInputProps) => {
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
         </Button>
       </div>
-      {error && <p className="text-[11px] text-destructive">{error}</p>}
+      {error && (
+        <p className="text-[13px] font-medium text-destructive" role="alert" aria-live="polite">
+          {error}
+        </p>
+      )}
     </div>
   );
 };
