@@ -14,7 +14,7 @@ import { safeNavigateBack } from '@/utils/safeBack';
 import { useAuth } from '@/context/AuthContext';
 import { useGuestMode } from '@/context/GuestModeContext';
 
-const getStatusBadge = (status: Order['status']) => {
+const getStatusBadge = (status: OrderGroup['status']) => {
   switch (status) {
     case 'awaiting':
       return { label: 'Awaiting shipping', className: 'bg-accent text-accent-foreground' };
@@ -22,6 +22,8 @@ const getStatusBadge = (status: Order['status']) => {
       return { label: 'Shipped', className: 'bg-muted text-muted-foreground' };
     case 'delivered':
       return { label: 'Delivered', className: 'bg-muted text-muted-foreground' };
+    case 'refunded':
+      return { label: 'Refunded', className: 'bg-muted text-muted-foreground' };
   }
 };
 
