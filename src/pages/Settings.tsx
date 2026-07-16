@@ -53,6 +53,7 @@ const Settings = () => {
   } = useUnreadSupport();
   const { triggerSubscribe } = usePushNotifications();
   const { isAdmin } = useAdminRole();
+  const [adminBadgeTotal, setAdminBadgeTotal] = useState(0);
 
   // Notifications toggle state
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
