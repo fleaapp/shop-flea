@@ -88,6 +88,43 @@ const SellerOnboardingSheet = ({
     setPostcode('');
   }, [open, profile]);
 
+  // When re-opened for an existing account that Stripe has flagged for more info
+  // (charges/payouts disabled or requirements past-due), probe live status and
+  // route the user straight to the native step that resolves the block. We
+  // never send them off to a Stripe-hosted page.
+  useEffect(() => {
+    if (!open || needsIdVerification) return;
+    const accountId = (profile as any)?.stripe_account_id;
+    if (!stripeActionRequired || !accountId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await invokeCloudFunction('stripe-connect-status', { stripeAccountId: accountId });
+        if (cancelled || !data) return;
+        const due: string[] = [
+          ...((data as any).currentlyDue || []),
+          ...((data as any).pastDue || []),
+        ];
+        // External account (bank) missing or invalid — jump straight to bank step.
+        if (due.some((r) => r.startsWith('external_account'))) {
+          setStep(4);
+          return;
+        }
+        // Address requirement — jump to address step.
+        if (due.some((r) => r.includes('address'))) {
+          setStep(3);
+          return;
+        }
+        // Otherwise assume personal info is what's needed.
+        setStep(2);
+      } catch {
+        // Non-blocking; keep whatever step we resumed on.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [open, stripeActionRequired, needsIdVerification, profile]);
+
+
   // Persist step to profile whenever it changes so the user resumes here if
   // they leave the app (e.g. to grab their bank card).
   useEffect(() => {

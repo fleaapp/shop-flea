@@ -8,6 +8,8 @@ import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { SettleBalanceSheet } from '@/components/SettleBalanceSheet';
+import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -97,6 +99,15 @@ const SellerDashboard = () => {
   const [payoutLoading, setPayoutLoading] = useState<null | 'standard' | 'instant'>(null);
   const [confirm, setConfirm] = useState<null | 'standard' | 'instant'>(null);
   const [settleOpen, setSettleOpen] = useState(false);
+  const [actionRequiredOpen, setActionRequiredOpen] = useState(false);
+  const [verificationError, setVerificationError] = useState<any>(null);
+  const [needsIdDocument, setNeedsIdDocument] = useState(false);
+  const [stripeStatus, setStripeStatus] = useState<{
+    chargesEnabled: boolean;
+    payoutsEnabled: boolean;
+    detailsSubmitted: boolean;
+    accountId: string | null;
+  } | null>(null);
 
   const { sellerOrderGroups } = useOrders();
   const { perOrder } = useUnreadOrderMessages();
@@ -109,9 +120,15 @@ const SellerDashboard = () => {
     return count || undefined;
   }, [sellerOrderGroups, perOrder]);
 
-  const notOnboarded =
-    !(profile as any)?.stripe_account_id ||
-    (profile as any)?.stripe_onboarding_complete !== true;
+  const hasAccountId = !!(profile as any)?.stripe_account_id;
+  const dbOnboardingComplete = (profile as any)?.stripe_onboarding_complete === true;
+  // Never gate the dashboard purely on the DB flag — Stripe can reopen
+  // requirements after verification. Show the dashboard as soon as an account
+  // exists and surface an action-required banner if live status regresses.
+  const notOnboarded = !hasAccountId && !dbOnboardingComplete;
+  const liveActionRequired =
+    hasAccountId && stripeStatus != null &&
+    (!stripeStatus.chargesEnabled || !stripeStatus.payoutsEnabled);
 
   const load = async () => {
     setError(null);
@@ -129,11 +146,40 @@ const SellerDashboard = () => {
     }
   };
 
+  const probeStatus = async () => {
+    if (!hasAccountId) return;
+    try {
+      const { data } = await invokeCloudFunction('stripe-connect-status', {
+        stripeAccountId: (profile as any).stripe_account_id,
+      });
+      if (!data) return;
+      setStripeStatus({
+        chargesEnabled: !!(data as any).chargesEnabled,
+        payoutsEnabled: !!(data as any).payoutsEnabled,
+        detailsSubmitted: !!(data as any).detailsSubmitted,
+        accountId: (data as any).accountId || null,
+      });
+      setNeedsIdDocument(!!(data as any).needsIdDocument);
+      setVerificationError((data as any).verificationError ?? null);
+    } catch {
+      // Non-blocking. Banner stays hidden if we can't reach Stripe.
+    }
+  };
+
   useEffect(() => {
-    if (!notOnboarded) load();
-    else setLoading(false);
-    // Refresh when tab regains focus so balance updates after a sale
-    const onFocus = () => { if (!notOnboarded) load(); };
+    if (!notOnboarded) {
+      load();
+      probeStatus();
+    } else {
+      setLoading(false);
+    }
+    // Refresh when tab regains focus so balance and status update after a sale.
+    const onFocus = () => {
+      if (!notOnboarded) {
+        load();
+        probeStatus();
+      }
+    };
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onFocus);
     return () => {
@@ -141,7 +187,8 @@ const SellerDashboard = () => {
       document.removeEventListener('visibilitychange', onFocus);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notOnboarded]);
+  }, [notOnboarded, hasAccountId]);
+
 
   const currency = data?.currency ?? 'aud';
   const available = data?.available ?? 0;
@@ -234,6 +281,23 @@ const SellerDashboard = () => {
           </div>
         ) : (
           <>
+            {liveActionRequired && (
+              <section className="rounded-2xl bg-orange-50 border-2 border-orange-300 p-4 mt-2">
+                <div className="flex items-center gap-2 text-[11px] font-semibold text-orange-700 uppercase tracking-wide">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Action required
+                </div>
+                <p className="text-[13px] text-charcoal mt-1.5 leading-relaxed">
+                  Our payment processor needs a few more details to keep your payouts running. This can happen when extra verification is needed after your first sales. Complete it in the app to keep listing and getting paid.
+                </p>
+                <Button
+                  onClick={() => setActionRequiredOpen(true)}
+                  className="w-full mt-3 h-11 rounded-xl bg-orange-600 text-white hover:bg-orange-700 font-semibold"
+                >
+                  Complete verification
+                </Button>
+              </section>
+            )}
+
             {/* Available balance or Balance owed */}
             {isNegative ? (
               <section className="rounded-2xl bg-destructive/10 border-2 border-destructive/40 p-5 mt-2">
@@ -415,7 +479,20 @@ const SellerDashboard = () => {
           await Promise.all([load(), refreshProfile?.()]);
         }}
       />
+
+      <SellerOnboardingSheet
+        open={actionRequiredOpen}
+        onOpenChange={setActionRequiredOpen}
+        stripeActionRequired={true}
+        needsIdVerification={needsIdDocument}
+        verificationError={verificationError}
+        onComplete={async () => {
+          setActionRequiredOpen(false);
+          await Promise.all([refreshProfile?.(), probeStatus(), load()]);
+        }}
+      />
     </div>
+
   );
 };
 
