@@ -224,12 +224,13 @@ serve(async (req) => {
       });
     }
 
-    const { items, shipping, shippingBySeller, checkoutReference } = await req.json() as {
+    const { items, shipping, shippingBySeller, checkoutReference, couponCode } = await req.json() as {
       items?: CheckoutItem[];
       shipping?: ShippingDetails;
       shippingBySeller?: Array<[string, number]>;
       paymentMethod?: string;
       checkoutReference?: string;
+      couponCode?: string | null;
     };
 
     if (!Array.isArray(items) || items.length === 0) throw new Error("No items provided.");
