@@ -7,6 +7,7 @@
 
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,6 +44,40 @@ function buildOrderSelect(omitted: Set<string>) {
 }
 
 async function fetchAwaitingRefundOrders(admin: ReturnType<typeof createClient>, cutoff: string) {
+  const dbUrl = Deno.env.get("EXTERNAL_SUPABASE_DB_URL") ?? Deno.env.get("SUPABASE_DB_URL") ?? "";
+  if (dbUrl) {
+    const sql = postgres(dbUrl, { max: 1 });
+    try {
+      const rows = await sql`
+        SELECT id,
+               buyer_id,
+               seller_id,
+               listing_id,
+               price,
+               shipping_price,
+               created_at,
+               status,
+               refunded_at,
+               shipped_at,
+               checkout_reference,
+               payment_method
+        FROM public.orders
+        WHERE status = 'awaiting'
+          AND refunded_at IS NULL
+          AND shipped_at IS NULL
+          AND created_at <= ${cutoff}
+      `;
+
+      return rows.map((order: any) => ({
+        ...order,
+        checkout_reference: order.checkout_reference ?? null,
+        payment_method: order.payment_method ?? "stripe",
+      }));
+    } finally {
+      await sql.end();
+    }
+  }
+
   const omitted = new Set<string>();
 
   while (true) {
@@ -67,6 +102,33 @@ async function fetchAwaitingRefundOrders(admin: ReturnType<typeof createClient>,
       checkout_reference: order.checkout_reference ?? null,
       payment_method: order.payment_method ?? "stripe",
     }));
+  }
+}
+
+async function markOrderRefunded(orderId: string, refundReason: string) {
+  const dbUrl = Deno.env.get("EXTERNAL_SUPABASE_DB_URL") ?? Deno.env.get("SUPABASE_DB_URL") ?? "";
+  const refundedAt = new Date();
+
+  if (!dbUrl) {
+    throw new Error("Database connection is not configured.");
+  }
+
+  const sql = postgres(dbUrl, { max: 1 });
+  try {
+    const rows = await sql`
+      UPDATE public.orders
+      SET refunded_at = ${refundedAt},
+          refund_reason = ${refundReason},
+          updated_at = ${refundedAt}
+      WHERE id = ${orderId}
+      RETURNING id
+    `;
+
+    if (rows.length === 0) {
+      throw new Error("No matching order row was updated.");
+    }
+  } finally {
+    await sql.end();
   }
 }
 
@@ -208,13 +270,7 @@ Deno.serve(async (req) => {
           }, { idempotencyKey: `flea-auto-refund-${order.id}` });
         }
 
-        await admin
-          .from("orders")
-          .update({
-            refunded_at: new Date().toISOString(),
-            refund_reason: "auto_unshipped_9d",
-          })
-          .eq("id", order.id);
+        await markOrderRefunded(order.id, "auto_unshipped_9d");
 
         // Reactivate the listing so it's not stuck as sold.
         await admin

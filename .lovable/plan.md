@@ -1,23 +1,30 @@
+## Issue
+The payment refund is succeeding, but the app cannot mark the order as refunded afterward. The live database does have `orders.refunded_at`, so the current failure is caused by the refund function using the REST schema cache path, which is still returning “column missing” for `refunded_at` even after a reload attempt.
+
 ## Plan
+1. **Replace the fragile order update path**
+   - In `stripe-connect-refund`, stop relying on the cached REST update for `orders.refunded_at`.
+   - Add a small database function that marks an order or order group as refunded using direct database SQL.
+   - Call that database function from the refund edge function after the financial refund succeeds.
 
-1. **Fix the refund backend update**
-   - Stop writing `status: "refunded"` to `orders`, because the live database only allows `awaiting`, `shipped`, or `delivered`.
-   - Mark refunds using the existing refund fields instead: `refunded_at` and `refund_reason`.
-   - Keep the financial refund path unchanged so the payment is still refunded and reversed through the payment processor.
+2. **Keep the refund status model unchanged**
+   - Keep `status` limited to `awaiting`, `shipped`, and `delivered`.
+   - Keep `refunded_at` and `refund_reason` as the refund source of truth.
+   - Do not reintroduce `status = refunded`.
 
-2. **Harden related refund code**
-   - Update the automatic 9-day unshipped refund function to use the same safe refund marker.
-   - Ensure listing reactivation still only happens for unshipped `awaiting` orders.
+3. **Make auto-refunds use the same safe path**
+   - Update the 9-day unshipped refund function to mark refunds through the same database function, so it does not hit the same schema-cache issue later.
 
-3. **Improve error clarity**
-   - If an order refund succeeds financially but the local order update fails, return a clear support message instead of a generic function error.
-   - Keep the in-app refund confirmation and success/error handling native.
+4. **Improve failure handling**
+   - If the financial refund already exists because of retry/idempotency, still retry marking the order refunded instead of failing the whole flow.
+   - Log the exact database marking error internally, but keep the user-facing message clear.
 
-4. **Deploy and verify**
+5. **Deploy and verify**
    - Deploy the updated refund functions.
-   - Re-check logs for the previous `orders_status_check` error.
-   - Confirm the refund endpoint no longer attempts to write an invalid order status.
+   - Confirm the live `orders` table still has `refunded_at` and `refund_reason`.
+   - Check function logs to confirm the refund function no longer attempts to patch `refunded_at` through the stale REST cache.
 
-## Technical note
-
-The failure is not the payment refund itself. The live `orders_status_check` constraint only allows `awaiting`, `shipped`, and `delivered`, while the refund function currently tries to set `status` to `refunded`. The safe fix is to treat refund state as metadata via `refunded_at` rather than adding a new order status in this hot path.
+## Technical details
+- New backend RPC: `mark_order_refunded(p_order_id uuid, p_order_group_id uuid, p_refund_reason text)`.
+- The function will update `refunded_at`, `refund_reason`, and `updated_at` directly on `public.orders`.
+- Access will be service-role only from edge functions, not callable by normal users from the client.

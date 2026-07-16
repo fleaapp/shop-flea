@@ -10,6 +10,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -180,10 +181,52 @@ async function patchOrdersWithFallback(
 }
 
 async function markRelatedOrdersRefunded(externalUrl: string, serviceKey: string, order: any) {
+  const dbUrl = Deno.env.get("EXTERNAL_SUPABASE_DB_URL") ?? Deno.env.get("SUPABASE_DB_URL") ?? "";
+  const refundedAt = new Date();
+  const refundReason = "seller_refund";
+
+  if (dbUrl) {
+    const sql = postgres(dbUrl, { max: 1 });
+    try {
+      if (order.order_group_id) {
+        const groupRows = await sql`
+          UPDATE public.orders
+          SET refunded_at = ${refundedAt},
+              refund_reason = ${refundReason},
+              updated_at = ${refundedAt}
+          WHERE order_group_id = ${order.order_group_id}
+          RETURNING id
+        `;
+
+        if (groupRows.length > 0) return;
+      }
+
+      const orderRows = await sql`
+        UPDATE public.orders
+        SET refunded_at = ${refundedAt},
+            refund_reason = ${refundReason},
+            updated_at = ${refundedAt}
+        WHERE id = ${order.id}
+        RETURNING id
+      `;
+
+      if (orderRows.length === 0) {
+        throw new Error("No matching order row was updated.");
+      }
+
+      return;
+    } catch (error) {
+      console.error("[stripe-connect-refund] direct refund marker failed:", error);
+      throw new Error("Refund was processed but the order could not be marked refunded. Please contact support.");
+    } finally {
+      await sql.end();
+    }
+  }
+
   const body = {
-    refunded_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    refund_reason: "seller_refund",
+    refunded_at: refundedAt.toISOString(),
+    updated_at: refundedAt.toISOString(),
+    refund_reason: refundReason,
   };
 
   if (order.order_group_id) {
