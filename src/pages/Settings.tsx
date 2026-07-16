@@ -234,6 +234,7 @@ const Settings = () => {
     { title: 'Support', items: supportItems }
   ];
   return <div className="min-h-screen bg-background pb-24 max-[375px]:pb-20">
+      {!isGuest && isAdmin && <AdminBadgeCount onCount={setAdminBadgeTotal} />}
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background px-4 max-[375px]:px-3 py-4 max-[375px]:py-3">
         <h1 className="text-xl max-[375px]:text-lg font-bold text-foreground text-center">⚙️ Settings</h1>
