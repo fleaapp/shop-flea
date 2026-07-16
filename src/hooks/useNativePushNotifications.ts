@@ -27,13 +27,12 @@ export function useNativePushNotifications() {
     (async () => {
       try {
         const perm = await PushNotifications.checkPermissions();
-        let granted = perm.receive === 'granted';
-        if (!granted) {
-          const req = await PushNotifications.requestPermissions();
-          granted = req.receive === 'granted';
-        }
-        if (!granted) {
-          console.log('[NativePush] Permission denied');
+        // Only auto-register the APNs token if the user has already granted
+        // permission. The initial permission prompt is triggered from our
+        // branded PushPermissionSheet after buyer/seller onboarding so the
+        // request has proper context.
+        if (perm.receive !== 'granted') {
+          console.log('[NativePush] Permission not granted yet; waiting for user opt-in');
           return;
         }
 

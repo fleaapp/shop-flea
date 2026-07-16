@@ -22,7 +22,7 @@ export function usePushNotifications() {
   const { user } = useAuth();
   const subscribedRef = useRef(false);
 
-  const subscribe = useCallback(async () => {
+  const subscribe = useCallback(async (opts?: { requestPermission?: boolean }) => {
     if (!user?.id || subscribedRef.current) return;
     // Native iOS uses APNs via useNativePushNotifications, not web push.
     if (Capacitor.isNativePlatform()) return;
@@ -30,7 +30,6 @@ export function usePushNotifications() {
       console.log('[Push] Service worker or PushManager not available');
       return;
     }
-
 
     // Don't run in preview/iframe
     const isInIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
@@ -52,20 +51,27 @@ export function usePushNotifications() {
         if (registration.waiting) {
           registration.waiting.postMessage({ type: 'SKIP_WAITING' });
           console.log('[Push] Activated waiting service worker');
-          // Give it a moment to activate
           await new Promise(resolve => setTimeout(resolve, 500));
         }
       } catch (updateErr) {
         console.log('[Push] SW update check:', updateErr);
       }
 
-      // Check permission
-      const permission = await Notification.requestPermission();
+      // Only surface the system prompt when explicitly triggered by a user
+      // gesture (our branded PushPermissionSheet). On silent auto-run we bail
+      // out unless the user has already granted permission.
+      let permission: NotificationPermission = Notification.permission;
+      if (permission === 'default') {
+        if (!opts?.requestPermission) {
+          console.log('[Push] Permission default; skipping silent prompt');
+          return;
+        }
+        permission = await Notification.requestPermission();
+      }
       console.log('[Push] Permission:', permission);
       if (permission !== 'granted') return;
 
       // Always unsubscribe + resubscribe to get a fresh endpoint
-      // iOS rotates push endpoints on PWA refresh, causing stale subscriptions
       const existingSub = await registration.pushManager.getSubscription();
       if (existingSub) {
         console.log('[Push] Unsubscribing old endpoint to force refresh...');
@@ -85,8 +91,6 @@ export function usePushNotifications() {
         return;
       }
 
-      // Delete all old subscriptions for this user, then insert the fresh one
-      // This ensures only the current endpoint is stored
       console.log('[Push] Replacing all subscriptions for user:', user.id);
       await (supabase as any).from('push_subscriptions').delete().eq('user_id', user.id);
 
@@ -111,11 +115,16 @@ export function usePushNotifications() {
     }
   }, [user?.id]);
 
-  // Auto-subscribe on mount
+  // Auto-run only refreshes tokens when permission is already granted.
   useEffect(() => {
-    subscribe();
+    subscribe({ requestPermission: false });
   }, [subscribe]);
 
-  // Expose for manual trigger
-  return { triggerSubscribe: () => { subscribedRef.current = false; subscribe(); } };
+  // Manual trigger from the branded PushPermissionSheet — allowed to prompt.
+  return {
+    triggerSubscribe: async () => {
+      subscribedRef.current = false;
+      await subscribe({ requestPermission: true });
+    },
+  };
 }
