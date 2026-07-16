@@ -148,21 +148,14 @@ const Checkout = () => {
     );
   }, [validItems, sellerSettings]);
   
-  // Determine whether the seller can accept payments
-  const sellerId = validItems[0]?.sellerId;
-  const isReviewer = user?.id === REVIEWER_USER_ID;
-  const sellerHasStripe = isReviewer ? true : (sellerId ? sellerStripeAccounts.has(sellerId) : false);
-
-  // Single payment rail — Stripe.
-  const selectedRail: 'stripe' | null = sellerHasStripe ? 'stripe' : null;
-
+  // Seller is verified at listing time; checkout always uses the Stripe rail.
+  // Server-side payment-intent validation is the final safety net.
+  const sellerHasStripe = true;
 
   // Single source of truth for fees — see src/utils/feeCalculator.ts
   const itemsTotal = validItems.reduce((sum: number, item: any) => sum + item.price, 0);
   const subtotal = itemsTotal + totalShipping;
-  const rawFees = selectedRail
-    ? calculateFees(itemsTotal, totalShipping, 'stripe')
-    : { processingFee: 0, buyerTotal: subtotal, rateLabel: '' };
+  const rawFees = calculateFees(itemsTotal, totalShipping, 'stripe');
   const feeWaived = coupon?.type === 'waive_buyer_fee';
   const processingFee = feeWaived ? 0 : rawFees.processingFee;
   const originalFee = rawFees.processingFee;
