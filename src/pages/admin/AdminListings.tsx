@@ -188,7 +188,7 @@ export default function AdminListings() {
                 <Button size="sm" variant="outline" onClick={() => { performAction(selected.id, 'hide'); setSelected(null); }}><EyeOff className="mr-1 h-4 w-4" /> Hide</Button>
                 <Button size="sm" variant="outline" onClick={() => { performAction(selected.id, 'feature'); setSelected(null); }}><Star className="mr-1 h-4 w-4" /> Feature</Button>
                 <Button size="sm" variant="outline" onClick={() => { performAction(selected.id, 'restore'); setSelected(null); }}><RotateCcw className="mr-1 h-4 w-4" /> Restore</Button>
-                <Button size="sm" variant="destructive" onClick={() => { if (confirm('Remove this listing? It stays in Removed so refund and admin history are preserved.')) { performAction(selected.id, 'soft_delete'); setSelected(null); } }}><Trash2 className="mr-1 h-4 w-4" /> Remove listing</Button>
+                <Button size="sm" variant="destructive" onClick={() => { if (confirm('Remove this listing? It stays under Removed so admin history is preserved.')) { performAction(selected.id, 'soft_delete'); setSelected(null); } }}><Trash2 className="mr-1 h-4 w-4" /> Remove listing</Button>
                 <Button size="sm" variant="ghost" onClick={() => navigate(`/listing/${selected.id}`)}><Eye className="mr-1 h-4 w-4" /> View on site</Button>
               </div>
             </>
