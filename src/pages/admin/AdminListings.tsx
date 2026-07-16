@@ -3,11 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminListings, type AdminListing } from '@/hooks/admin/useAdminListings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerTitle } from '@/components/ui/drawer';
 import { Search, Eye, EyeOff, Star, Trash2, RotateCcw, AlertTriangle, ExternalLink, Heart, MessageCircle, ShoppingBag, Flag, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { AdminHeader } from '@/components/admin/shell/AdminHeader';
@@ -100,6 +99,7 @@ export default function AdminListings() {
                   {l.images?.[0] && <img src={l.images[0]} alt={l.title} className="h-full w-full object-cover" loading="lazy" />}
                   <div className="absolute left-1.5 top-1.5 flex flex-wrap gap-1">
                     <AdminBadge tone={toneForStatus(l.status)}>{statusLabel(l.status)}</AdminBadge>
+                    {l.admin_refunded && l.status !== 'refunded' && <AdminBadge tone="warning">Refunded</AdminBadge>}
                     {l.report_count > 0 && (
                       <AdminBadge tone="danger">
                         <Flag className="h-2.5 w-2.5" />
@@ -125,30 +125,40 @@ export default function AdminListings() {
         )}
       </div>
 
-      <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="max-w-2xl max-h-[88vh] overflow-y-auto rounded-3xl border-border bg-background p-0">
+      <Drawer open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
+        <DrawerContent>
           {selected && (
-            <div className="flex flex-col">
-              <div className="rounded-t-3xl bg-gradient-to-br from-primary/15 via-primary/5 to-background px-5 pb-4 pt-6">
-                <DialogHeader>
-                  <DialogTitle className="text-left">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-base font-bold">{selected.title}</span>
-                      <AdminBadge tone={toneForStatus(selected.status)}>{statusLabel(selected.status)}</AdminBadge>
-                      {selected.report_count > 0 && (
-                        <AdminBadge tone="danger"><Flag className="h-3 w-3" />{selected.report_count}</AdminBadge>
-                      )}
-                      {selected.spam_signal && <AdminBadge tone="warning">Spam?</AdminBadge>}
-                      {selected.is_duplicate && <AdminBadge tone="accent">Duplicate</AdminBadge>}
-                    </div>
-                    <p className="mt-1 text-xs font-normal text-muted-foreground">
-                      ${selected.price} · {selected.brand} · {selected.size} · {format(new Date(selected.created_at), 'MMM d, yyyy')}
-                    </p>
-                  </DialogTitle>
-                </DialogHeader>
-              </div>
+            <>
+              <DrawerBody>
+                <div className="px-5 pb-4 pt-1">
+                  <DrawerTitle className="text-left text-base font-bold leading-snug">
+                    {selected.title}
+                  </DrawerTitle>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <AdminBadge tone={toneForStatus(selected.status)}>{statusLabel(selected.status)}</AdminBadge>
+                    {selected.admin_refunded && selected.status !== 'refunded' && <AdminBadge tone="warning">Refunded</AdminBadge>}
+                    {selected.deleted_from_orders && <AdminBadge tone="neutral">Deleted listing</AdminBadge>}
+                    {selected.report_count > 0 && (
+                      <AdminBadge tone="danger"><Flag className="h-3 w-3" />{selected.report_count}</AdminBadge>
+                    )}
+                    {selected.spam_signal && <AdminBadge tone="warning">Spam?</AdminBadge>}
+                    {selected.is_duplicate && <AdminBadge tone="accent">Duplicate</AdminBadge>}
+                  </div>
 
-              <div className="space-y-4 px-5 py-4">
+                  <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                    <DetailBubble label="Price" value={`$${selected.price}`} />
+                    <DetailBubble label="Shipping" value={`$${selected.shipping_price ?? 0}`} />
+                    <DetailBubble label="Brand" value={selected.brand || 'No brand'} />
+                    <DetailBubble label="Size" value={selected.size || 'No size'} />
+                    <DetailBubble label="Condition" value={selected.condition || 'Not set'} />
+                    <DetailBubble label="Category" value={selected.category || 'Not set'} />
+                    {selected.subcategory && <DetailBubble label="Subcategory" value={selected.subcategory} />}
+                    <DetailBubble label="Created" value={format(new Date(selected.created_at), 'MMM d, yyyy')} />
+                    {selected.refunded_at && <DetailBubble label="Refunded" value={format(new Date(selected.refunded_at), 'MMM d, yyyy')} />}
+                  </div>
+                </div>
+
+                <div className="space-y-4 px-5 pb-4">
                 {selected.images?.[0] && (
                   <div className="grid grid-cols-3 gap-2">
                     {selected.images.slice(0, 6).map((src, i) => (
@@ -156,17 +166,6 @@ export default function AdminListings() {
                     ))}
                   </div>
                 )}
-
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  <Field label="Price" value={`$${selected.price}`} />
-                  <Field label="Shipping" value={`$${selected.shipping_price ?? 0}`} />
-                  <Field label="Brand" value={selected.brand} />
-                  <Field label="Size" value={selected.size} />
-                  <Field label="Category" value={selected.category} />
-                  <Field label="Subcategory" value={selected.subcategory ?? '—'} />
-                  <Field label="Condition" value={selected.condition} />
-                  <Field label="Created" value={format(new Date(selected.created_at), 'MMM d')} />
-                </div>
 
                 <button
                   onClick={() => navigate(`/seller/${selected.user_id}`)}
@@ -190,6 +189,12 @@ export default function AdminListings() {
                   <Stat icon={<Flag className="h-4 w-4" />} label="Reports" value={selected.report_count} tone={selected.report_count > 0 ? 'risk' : undefined} />
                 </div>
 
+                {selected.deleted_from_orders && (
+                  <div className="rounded-2xl border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+                    Original listing row was deleted, so this is restored from the refunded order record for admin history.
+                  </div>
+                )}
+
                 {(selected.spam_signal || selected.is_duplicate) && (
                   <div className="flex items-start gap-2 rounded-2xl border border-yellow-300/60 bg-yellow-500/10 p-3 text-sm text-yellow-900 dark:text-yellow-200">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -199,29 +204,34 @@ export default function AdminListings() {
                     </div>
                   </div>
                 )}
-              </div>
+                </div>
+              </DrawerBody>
 
-              <div className="flex flex-wrap gap-2 border-t border-border/60 bg-muted/30 px-5 py-3">
-                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => { performAction(selected.id, 'approve'); setSelected(null); }}>Approve</Button>
-                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => { performAction(selected.id, 'hide'); setSelected(null); }}><EyeOff className="mr-1 h-3.5 w-3.5" /> Hide</Button>
-                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => { performAction(selected.id, 'feature'); setSelected(null); }}><Star className="mr-1 h-3.5 w-3.5" /> Feature</Button>
-                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => { performAction(selected.id, 'restore'); setSelected(null); }}><RotateCcw className="mr-1 h-3.5 w-3.5" /> Restore</Button>
-                <Button size="sm" variant="ghost" className="h-8 rounded-full text-xs" onClick={() => navigate(`/listing/${selected.id}`)}><Eye className="mr-1 h-3.5 w-3.5" /> View</Button>
-                <Button size="sm" variant="destructive" className="ml-auto h-8 rounded-full text-xs" onClick={() => { if (confirm('Delete this listing? It stays under Deleted so admin history is preserved.')) { performAction(selected.id, 'soft_delete'); setSelected(null); } }}><Trash2 className="mr-1 h-3.5 w-3.5" /> Delete</Button>
-              </div>
-            </div>
+              <DrawerFooter className="flex flex-wrap gap-2">
+                {!selected.deleted_from_orders && (
+                  <>
+                    <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => { performAction(selected.id, 'approve'); setSelected(null); }}>Approve</Button>
+                    <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => { performAction(selected.id, 'hide'); setSelected(null); }}><EyeOff className="mr-1 h-3.5 w-3.5" /> Hide</Button>
+                    <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => { performAction(selected.id, 'feature'); setSelected(null); }}><Star className="mr-1 h-3.5 w-3.5" /> Feature</Button>
+                    <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => { performAction(selected.id, 'restore'); setSelected(null); }}><RotateCcw className="mr-1 h-3.5 w-3.5" /> Restore</Button>
+                    <Button size="sm" variant="ghost" className="h-8 rounded-full text-xs" onClick={() => navigate(`/listing/${selected.id}`)}><Eye className="mr-1 h-3.5 w-3.5" /> View</Button>
+                    <Button size="sm" variant="destructive" className="ml-auto h-8 rounded-full text-xs" onClick={() => { if (confirm('Delete this listing? It stays under Deleted so admin history is preserved.')) { performAction(selected.id, 'soft_delete'); setSelected(null); } }}><Trash2 className="mr-1 h-3.5 w-3.5" /> Delete</Button>
+                  </>
+                )}
+              </DrawerFooter>
+            </>
           )}
-        </DialogContent>
-      </Dialog>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }
 
-function Field({ label, value }: { label: string; value: string | number }) {
+function DetailBubble({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-2.5">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="truncate text-sm font-semibold">{value}</p>
+    <div className="min-w-[112px] shrink-0 rounded-lg bg-muted-foreground/20 px-3 py-2 text-center">
+      <p className="text-[10px] font-medium text-muted-foreground">{label}</p>
+      <p className="truncate text-sm font-semibold text-foreground">{value}</p>
     </div>
   );
 }

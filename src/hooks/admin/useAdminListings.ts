@@ -25,6 +25,10 @@ export type AdminListing = {
   orders_count: number;
   is_duplicate: boolean;
   spam_signal: boolean;
+  admin_refunded?: boolean;
+  deleted_from_orders?: boolean;
+  refunded_at?: string | null;
+  refund_reason?: string | null;
 };
 
 export type ListingStatusFilter = 'all' | 'active' | 'sold' | 'refunded' | 'removed' | 'hidden' | 'archived' | 'featured';
@@ -67,7 +71,7 @@ export function useAdminListings() {
     total: listings.length,
     active: listings.filter(l => l.status === 'active').length,
     sold: listings.filter(l => l.status === 'sold').length,
-    refunded: listings.filter(l => l.status === 'refunded').length,
+    refunded: listings.filter(l => l.status === 'refunded' || l.admin_refunded).length,
     deleted: listings.filter(l => l.status === 'removed').length,
     flagged: listings.filter(l => l.report_count > 0 || l.spam_signal).length,
   }), [listings]);

@@ -216,6 +216,15 @@ function unique(values: Array<string | null | undefined>) {
   return [...new Set(values.filter(Boolean) as string[])];
 }
 
+function mergeUniqueById(rows: any[]) {
+  const seen = new Set<string>();
+  return rows.filter((row: any) => {
+    if (!row?.id || seen.has(row.id)) return false;
+    seen.add(row.id);
+    return true;
+  });
+}
+
 const ORDER_ADMIN_SELECT = "id,listing_id,buyer_id,seller_id,order_group_id,price,shipping_price,status,tracking_number,tracking_provider,shipped_at,delivered_at,created_at,updated_at,order_number,checkout_reference,shipping_city,shipping_state,shipping_postcode,refunded_at,refund_reason";
 
 async function profilesByUserIds(userIds: string[]) {
@@ -782,25 +791,44 @@ async function listListings(payload: any = {}) {
 
   const params: Record<string, string> = { order: `${sort}.${dir}.nullslast`, limit: "500" };
   let listings: any[] = [];
-  if (status === 'refunded') {
-    // Include listings marked status=refunded AND listings referenced by any order with refunded_at set.
-    const [directListings, refundedOrders] = await Promise.all([
-      safeSelect("listings", { ...params, status: 'eq.refunded' }),
-      safeSelect("orders", { refunded_at: 'not.is.null', select: 'listing_id' }),
+  const refundedOrders = await safeSelect("orders", {
+    or: "(refunded_at.not.is.null,status.eq.refunded)",
+    select: ORDER_ADMIN_SELECT,
+    order: "updated_at.desc",
+    limit: "500",
+  });
+  const refundByListingId = new Map<string, any>();
+  for (const order of refundedOrders as any[]) {
+    if (!order?.listing_id || refundByListingId.has(order.listing_id)) continue;
+    refundByListingId.set(order.listing_id, order);
+  }
+  const refundedListingIds = unique((refundedOrders as any[]).map((o) => o.listing_id));
+
+  if (status === "refunded") {
+    // Include listings marked refunded, listings referenced by refunded orders,
+    // and a preserved admin-only row when the original listing was hard-deleted.
+    const [directListings, orderLinkedListings] = await Promise.all([
+      safeSelect("listings", { ...params, status: "eq.refunded" }),
+      refundedListingIds.length
+        ? safeSelect("listings", { id: `in.(${refundedListingIds.join(",")})`, order: `${sort}.${dir}.nullslast` })
+        : Promise.resolve([] as any[]),
     ]);
-    const refundedListingIds = unique((refundedOrders as any[]).map((o) => o.listing_id).filter(Boolean));
-    const extraListings = refundedListingIds.length
-      ? await safeSelect("listings", { id: `in.(${refundedListingIds.join(",")})`, order: `${sort}.${dir}.nullslast` })
-      : [];
-    const seen = new Set<string>();
-    listings = [...directListings, ...extraListings].filter((l: any) => {
-      if (seen.has(l.id)) return false;
-      seen.add(l.id);
-      return true;
-    });
+    listings = mergeUniqueById([...directListings, ...orderLinkedListings]);
+    const existing = new Set(listings.map((l: any) => l.id));
+    const restoredFromOrders = (refundedOrders as any[])
+      .filter((o: any) => o?.listing_id && !existing.has(o.listing_id))
+      .map((o: any) => refundedOrderListingFallback(o));
+    listings = mergeUniqueById([...listings, ...restoredFromOrders]);
   } else {
     if (status !== "all") params.status = `eq.${status}`;
     listings = await safeSelect("listings", params);
+    if (status === "all" || status === "removed") {
+      const existing = new Set(listings.map((l: any) => l.id));
+      const restoredFromOrders = (refundedOrders as any[])
+        .filter((o: any) => o?.listing_id && !existing.has(o.listing_id))
+        .map((o: any) => refundedOrderListingFallback(o, status === "removed" ? "removed" : "refunded"));
+      listings = mergeUniqueById([...listings, ...restoredFromOrders]);
+    }
   }
 
   if (search) {
@@ -846,8 +874,12 @@ async function listListings(payload: any = {}) {
     // simple spam/fraud heuristic
     const titleLen = (l.title ?? "").length;
     const spamSignal = reports >= 2 || titleLen < 4 || /(http|www\.|@)/i.test(l.title ?? "") || isDup;
+    const refundMeta = refundByListingId.get(l.id);
     return {
       ...l,
+      admin_refunded: Boolean(l.admin_refunded || refundMeta),
+      refunded_at: l.refunded_at ?? refundMeta?.refunded_at ?? null,
+      refund_reason: l.refund_reason ?? refundMeta?.refund_reason ?? null,
       seller_profile: profileMap.get(l.user_id) ?? { username: "Unknown", avatar_url: null },
       favorites_count: favCounts.get(l.id) ?? 0,
       comments_count: commentCounts.get(l.id) ?? 0,
@@ -858,6 +890,32 @@ async function listListings(payload: any = {}) {
   });
 
   return { listings: enriched };
+}
+
+function refundedOrderListingFallback(order: any, status = "refunded") {
+  const timestamp = order.refunded_at ?? order.updated_at ?? order.created_at ?? new Date().toISOString();
+  return {
+    id: order.listing_id,
+    title: "Deleted refunded listing",
+    brand: "",
+    price: Number(order.price ?? 0),
+    shipping_price: Number(order.shipping_price ?? 0),
+    images: [],
+    status,
+    category: "",
+    subcategory: null,
+    size: "",
+    condition: "",
+    user_id: order.seller_id,
+    region_id: null,
+    created_at: order.created_at ?? timestamp,
+    updated_at: order.updated_at ?? timestamp,
+    report_count: 0,
+    admin_refunded: true,
+    deleted_from_orders: true,
+    refunded_at: order.refunded_at ?? null,
+    refund_reason: order.refund_reason ?? null,
+  };
 }
 
 async function listingAction(payload: any) {
