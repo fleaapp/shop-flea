@@ -101,35 +101,33 @@ export default function AdminUsers() {
           <div className="space-y-2 p-4">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-2xl" />)}</div>
         ) : users.length === 0 ? (
           <AdminEmptyState emoji="🔍" title="No users match these filters" />
-
-          <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-            <p className="text-lg font-medium">No users match these filters</p>
-          </div>
         ) : (
-          <div className="divide-y divide-border">
+          <div className="space-y-2 px-4">
             {users.map((u) => (
-              <button key={u.user_id} onClick={() => openDetail(u)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-accent/40">
-                <Avatar className="h-10 w-10">
+              <button
+                key={u.user_id}
+                onClick={() => openDetail(u)}
+                className="flex w-full items-center gap-3 rounded-2xl bg-card p-3 text-left card-shadow transition-transform active:scale-[0.99]"
+              >
+                <Avatar className="h-11 w-11">
                   <AvatarImage src={u.avatar_url ?? undefined} />
                   <AvatarFallback>{initials(u.username)}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="truncate font-medium text-foreground">{u.username}</p>
-                    <Badge className={statusBadge(u.status)} variant="outline">{u.status}</Badge>
-                    {u.report_strike_count > 0 && (
-                      <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive">
-                        {u.report_strike_count} strike{u.report_strike_count > 1 ? 's' : ''}
-                      </Badge>
-                    )}
+                  <div className="flex items-center gap-1.5">
+                    <p className="truncate text-sm font-semibold text-foreground">@{u.username}</p>
                   </div>
-                  <p className="truncate text-xs text-muted-foreground">{u.email ?? '—'} · joined {format(new Date(u.created_at), 'MMM d, yyyy')}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    <AdminBadge tone={toneForStatus(u.status)}>{statusLabel(u.status)}</AdminBadge>
+                    {u.report_strike_count > 0 && (
+                      <AdminBadge tone="danger">{u.report_strike_count} strike{u.report_strike_count > 1 ? 's' : ''}</AdminBadge>
+                    )}
+                    <AdminBadge tone={riskTone(u.risk_score)}>Risk {u.risk_score}</AdminBadge>
+                  </div>
+                  <p className="mt-1 truncate text-[11px] text-muted-foreground">
+                    {u.listings_total} listings · {u.orders_as_seller} sales · {fmtCurrency(u.seller_volume + u.buyer_volume)}
+                  </p>
                 </div>
-                <div className="hidden text-right text-xs text-muted-foreground sm:block">
-                  <p>{u.listings_total} listings · {u.orders_as_seller} sales</p>
-                  <p>{fmtCurrency(u.seller_volume + u.buyer_volume)} volume · {u.refunds_count} refunds</p>
-                </div>
-                <Badge className={riskBadge(u.risk_score)} variant="outline">Risk {u.risk_score}</Badge>
               </button>
             ))}
           </div>
