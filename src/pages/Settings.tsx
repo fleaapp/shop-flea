@@ -18,6 +18,20 @@ import PaymentMethodsSection from '@/components/PaymentMethodsSection';
 
 import { useUnreadSupport } from '@/hooks/useUnreadSupport';
 import { useAdminRole } from '@/hooks/useAdminRole';
+import { useAdminBadges } from '@/hooks/admin/useAdminBadges';
+
+const AdminBadgeCount = ({ onCount }: { onCount: (n: number) => void }) => {
+  const { badges } = useAdminBadges();
+  const total =
+    (badges.support || 0) +
+    (badges.contact || 0) +
+    (badges.refunds || 0) +
+    (badges.reports || 0) +
+    (badges.suggestions || 0) +
+    (badges.waitlist || 0);
+  useEffect(() => { onCount(total); }, [total, onCount]);
+  return null;
+};
 const Settings = () => {
   const navigate = useNavigate();
   const {
