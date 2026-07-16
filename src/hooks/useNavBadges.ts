@@ -48,17 +48,29 @@ export const useNavBadges = () => {
         activity_unread: 0,
       };
 
+      const isMissingPaymentMethod = (err: any) =>
+        !!err && (err.code === '42703' || err.code === 'PGRST204') &&
+        typeof err.message === 'string' && err.message.includes('payment_method');
+
+      const fetchActiveOrders = async (column: 'buyer_id' | 'seller_id') => {
+        let res: any = await supabase
+          .from('orders')
+          .select('id, status, payment_method, checkout_reference')
+          .eq(column, user.id)
+          .in('status', [...ACTIVE_ORDER_STATUSES]);
+        if (res.error && isMissingPaymentMethod(res.error)) {
+          res = await supabase
+            .from('orders')
+            .select('id, status, checkout_reference')
+            .eq(column, user.id)
+            .in('status', [...ACTIVE_ORDER_STATUSES]);
+        }
+        return res;
+      };
+
       const [buyerOrdersRes, sellerOrdersRes] = await Promise.all([
-        supabase
-          .from('orders')
-          .select('id, status, payment_method, checkout_reference')
-          .eq('buyer_id', user.id)
-          .in('status', [...ACTIVE_ORDER_STATUSES]),
-        supabase
-          .from('orders')
-          .select('id, status, payment_method, checkout_reference')
-          .eq('seller_id', user.id)
-          .in('status', [...ACTIVE_ORDER_STATUSES]),
+        fetchActiveOrders('buyer_id'),
+        fetchActiveOrders('seller_id'),
       ]);
 
       const buyerOrders = ((buyerOrdersRes.data ?? []) as any[]).filter((order) => !isDemoOrder(order));
