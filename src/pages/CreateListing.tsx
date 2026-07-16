@@ -354,6 +354,14 @@ const CreateListing = () => {
       toast.error('Your account is restricted. You cannot create listings.');
       return;
     }
+
+    // Gate: negative balance owed
+    const owedCents = Number((profile as any)?.negative_balance_cents ?? 0);
+    if (owedCents > 0) {
+      toast.error(`Settle your balance ($${(owedCents / 100).toFixed(2)}) in Seller Dashboard before listing new items.`);
+      navigate('/seller-dashboard');
+      return;
+    }
     
     if (!productName || !fit || !category || !size || !brand || !condition || !itemPrice) {
       toast.error('Please fill in all required fields');

@@ -129,6 +129,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setLoading(true);
           }
 
+          // Register the current device against the profile so we can gate re-registration
+          // on unsettled balances. Fire-and-forget; failure must never block auth.
+          if (event === 'SIGNED_IN') {
+            (async () => {
+              try {
+                const { getDeviceId } = await import('@/lib/deviceId');
+                const deviceId = await getDeviceId();
+                if (!deviceId) return;
+                await fetch(
+                  `https://teaicrimlqdayqpmxasc.supabase.co/functions/v1/register-device`,
+                  {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${session.access_token}`,
+                    },
+                    body: JSON.stringify({ deviceId }),
+                  },
+                );
+              } catch {
+                /* non-fatal */
+              }
+            })();
+          }
+
           // Post-OAuth duplicate-account guard. Only runs when an OAuth flow
           // initiated by the Auth page just completed (flag set pre-redirect).
           if (event === 'SIGNED_IN' && localStorage.getItem('flea_oauth_signup') === '1') {

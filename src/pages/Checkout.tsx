@@ -49,7 +49,8 @@ const getNativeWalletPlatform = (): 'ios' | 'android' | null => {
 const Checkout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const buyerOwesCents = Number((profile as any)?.negative_balance_cents ?? 0);
   const { isBlocked } = useBlockedStatus();
   const {
     removeFromCart
@@ -266,6 +267,10 @@ const Checkout = () => {
   const preflight = () => {
     if (!user) { toast.error('You must be logged in to place an order'); return false; }
     if (isBlocked) { toast.error('Your account is restricted. You cannot make purchases.'); return false; }
+    if (buyerOwesCents > 0) {
+      toast.error(`Settle your seller balance ($${(buyerOwesCents / 100).toFixed(2)}) in Seller Dashboard before making new purchases.`);
+      return false;
+    }
     if (!isShippingComplete) { toast.error('Please fill in all shipping details'); return false; }
     if (!sellerHasStripe) { toast.error('This seller has not connected a payment method yet.'); return false; }
     return true;
@@ -554,6 +559,22 @@ const Checkout = () => {
           </div>
           
           <div className="overflow-y-auto px-4 pb-8 space-y-4">
+
+            {buyerOwesCents > 0 && (
+              <div className="rounded-2xl border-2 border-destructive/40 bg-destructive/10 p-4">
+                <p className="text-[13px] font-semibold text-destructive mb-1">Outstanding seller balance</p>
+                <p className="text-[12px] text-charcoal/80 leading-relaxed">
+                  You owe ${(buyerOwesCents / 100).toFixed(2)} from refunds or disputes on your sales. Settle it in your Seller Dashboard before making new purchases.
+                </p>
+                <Button
+                  onClick={() => navigate('/seller-dashboard')}
+                  className="mt-3 h-10 rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 text-[13px] font-semibold"
+                >
+                  Go to Seller Dashboard
+                </Button>
+              </div>
+            )}
+
 
             {/* Order Summary Card */}
             <div className="rounded-xl bg-card overflow-hidden">

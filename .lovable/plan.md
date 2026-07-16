@@ -1,70 +1,97 @@
-## Goal
-Replace the Stripe-hosted Checkout redirect with an in-app payment sheet. Payment stays inside Flea. Depop-style method picker (Apple Pay / Google Pay / Saved cards / Add new card) with Vinted-style card form. Fees, coupon, shipping, and Connect routing stay identical.
+# Negative Balance Guardrails
 
-## Architecture
+Right now nothing in the app checks the seller's Stripe Connect balance. Stripe will pause payouts on its side, but a seller with a negative balance can still buy items, list new items, delete their account, or sign up fresh on the same device. This plan closes all four holes and adds an in-app top-up flow.
 
-Current flow: `stripe-connect-checkout` edge function creates a Stripe Checkout Session → redirects to hosted page → returns to `/checkout/success`.
+## What we'll build
 
-New flow:
-```text
-Checkout.tsx
-  ├─ picks method (Apple Pay | Google Pay | Saved card | New card)
-  ├─ calls stripe-connect-payment-intent  (new edge fn)
-  │    → creates PaymentIntent on Flea platform account
-  │    → application_fee_amount = buyer fee (4% + $0.70, waived if FREEFLEA)
-  │    → transfer_data[destination] = seller connected acct  (direct charge)
-  │    → on_behalf_of = seller
-  │    → customer = buyer Stripe customer
-  │    → returns { clientSecret, ephemeralKey, customerId, paymentIntentId }
-  ├─ Native (Capacitor): @capacitor-community/stripe PaymentSheet.present()
-  ├─ Web: @stripe/react-stripe-js <PaymentElement/> in embedded drawer
-  └─ On success → POST finalize-checkout with paymentIntentId → orders row created
+### 1. Server-side balance check (single source of truth)
+
+New helper in `stripe-connect-status/index.ts` returns:
+- `available` (cents), `pending` (cents)
+- `isNegative` (true if `available + pending < 0`)
+- `negativeAmount` (absolute cents owed)
+
+Cached briefly per request. Every gate below calls this — never trust the client.
+
+Also mirror `negative_balance_cents` and `negative_balance_updated_at` onto `profiles` via the existing `account.updated` webhook + a nightly reconciliation, so we can gate flows without an extra Stripe call on the hot path.
+
+### 2. In-app top-up flow (settle negative balance)
+
+New edge function `stripe-connect-topup`:
+- Takes an amount (defaulted to `negativeAmount`) and a `payment_method_id` (Apple Pay / Google Pay / saved card, reusing the existing `PaymentMethodPicker` and `CardDetailsSheet`).
+- Creates a `PaymentIntent` **on the connected account** (`stripeAccount: accountId`) with the seller's card as source. Funds land directly in their Connect balance and offset the negative.
+- Uses `idempotencyKey: flea-topup-${accountId}-${amount}-${timestamp-bucket}` so double-taps don't double-charge.
+
+New UI in `SellerDashboard.tsx`:
+- When `isNegative`, replace the "Available balance" card with a red **"Balance owed: $X.XX"** block and a **"Settle balance"** primary button that opens a sheet using the same payment picker as checkout.
+- Success → refetch status → banner clears → all gates unlock.
+
+### 3. Block buying while negative
+
+- `stripe-connect-payment-intent` (checkout): before creating the intent, look up the buyer's profile. If `negative_balance_cents > 0`, return `409 { code: "negative_balance", amount }`.
+- `Checkout.tsx`: on that response, show a blocking dialog "Settle your seller balance before making new purchases" with a **Go to Seller Dashboard** button. No fallback path.
+
+### 4. Block selling / new listings while negative
+
+- `CreateListing.tsx` (and `EditListing.tsx` publish action): check `profile.negative_balance_cents` alongside the existing `stripeFullyConnected` gate. If negative, show the same "Settle balance" CTA instead of the Connect Payment prompt.
+- Server-side backstop in the listing insert RLS/edge path so it can't be bypassed.
+
+### 5. Block account deletion while negative
+
+`supabase/functions/delete-account/index.ts` — add a new check after the outstanding-orders check:
+
+```
+if (negative_balance_cents > 0) → 400 "Settle your outstanding balance of $X.XX before deleting your account."
 ```
 
-Saved cards: PaymentSheet's built-in `customerEphemeralKeySecret` + `customerId` shows and saves cards automatically. Web Payment Element uses `setup_future_usage: 'off_session'` when "Save card" is ticked.
+Applies to both buyers and sellers (buyers can only be negative if they were also sellers, but the check covers both roles cleanly).
 
-## New / changed files
+### 6. Block re-registration on the same device
 
-**New edge functions**
-- `supabase/functions/stripe-connect-payment-intent/index.ts` — creates PI + ephemeral key, computes fees via existing `feeCalculator` port, validates coupon (`FREEFLEA` waives buyer fee), pulls seller `stripe_account_id`, sets `application_fee_amount` and `transfer_data.destination`.
-- `supabase/functions/stripe-connect-finalize-intent/index.ts` — verifies PI status = `succeeded`, creates orders rows (mirror current `finalize-checkout` logic keyed off PI instead of session).
+New table `blocked_devices`:
 
-**Modified edge functions**
-- `supabase/functions/stripe-connect-checkout/index.ts` — keep as fallback / delete once new flow is verified. Leave in place initially.
+```
+device_id TEXT PRIMARY KEY,
+reason TEXT NOT NULL,           -- 'negative_balance'
+associated_user_id UUID,        -- the user who owes
+amount_cents INTEGER,
+created_at TIMESTAMPTZ DEFAULT now()
+```
 
-**New frontend files**
-- `src/components/checkout/PaymentMethodPicker.tsx` — Depop-style radio list: Apple Pay (iOS), Google Pay (Android), saved cards, "Add new card". Uses Flea lime/charcoal tokens.
-- `src/components/checkout/CardDetailsSheet.tsx` — Vinted-style full-screen drawer with card brand logos (Mastercard/Visa/Amex/eftpos), Cardholder name, Card number (Stripe CardNumberElement), Expiry + CVC row, "Save card" checkbox, sticky "Use this card" button.
-- `src/lib/stripe/paymentSheet.ts` — thin wrapper: if `Capacitor.isNativePlatform()` → `@capacitor-community/stripe` PaymentSheet; else → mount `<Elements>` + `<PaymentElement>` with Flea appearance tokens.
-- `src/lib/stripe/loadStripe.ts` — cached `loadStripe(publishableKey)`.
+Flow:
+- On app launch (native) capture Capacitor `Device.getId()` and store it on `profiles.device_ids` (array, deduped) whenever a user signs in.
+- If a user tries to delete their account or sign out while negative → we don't block the sign-out itself, but we insert every `device_id` from `profiles.device_ids` into `blocked_devices` linked to that user.
+- New edge function `check-device-eligibility` called from the sign-up path in `Auth.tsx` before creating the auth user. If the device is in `blocked_devices` → return the error and show "This device is linked to an account with an outstanding balance. Please settle it before creating a new account." with a **Sign in to settle** link.
+- Web fallback: no reliable device ID, so we use a signed cookie + IP + browser fingerprint (best-effort). Documented as best-effort — the real teeth are on iOS/Android where `Device.getId()` is stable.
 
-**Modified**
-- `src/pages/Checkout.tsx` — replace the "Payment" card + redirect button with `<PaymentMethodPicker>` + Pay button that opens the in-app sheet. Keep header, summary, coupon, shipping, fee lines, totals exactly as-is.
-- `src/pages/CheckoutSuccess.tsx` — accept `payment_intent` query param path in addition to `session_id`.
-- `capacitor.config.ts` — no change (plugin auto-registers).
-- `ios/App/App/Info.plist` — add `NSApplePayMerchantID` (documented for user; requires native rebuild — I'll flag this).
+### 7. Legal / copy
 
-**Deps**
-- `@stripe/stripe-js`, `@stripe/react-stripe-js` (web)
-- `@capacitor-community/stripe` (native)
+- Update Terms to state that outstanding negative balances must be settled and that re-registration on the same device is blocked until then.
+- Bank-details copy already fixed in the previous turn — no change needed.
 
-## Secrets
-Uses existing `STRIPE_SECRET_KEY`. Publishable key hardcoded in frontend (public). Apple Pay merchant ID + Google Pay merchant config are Xcode/AndroidManifest changes the user has to do once in Xcode/Android Studio — I'll document exactly what to add.
+## Technical details
 
-## Fees (unchanged)
-`application_fee_amount` = `Math.round((subtotal * 0.04 + 0.70) * 100)`, set to `0` when coupon = `FREEFLEA`. Rest of the total flows to the seller's connected account via `transfer_data.destination` (direct charge, same as today).
+**Files touched**
+- `supabase/functions/stripe-connect-status/index.ts` — return balance + `isNegative`
+- `supabase/functions/stripe-connect-topup/index.ts` — new, creates PI on connected account
+- `supabase/functions/stripe-webhook/index.ts` — on `balance.available` / `payout.failed` / `charge.dispute.*` sync `negative_balance_cents` to `profiles`
+- `supabase/functions/stripe-connect-payment-intent/index.ts` — gate buyers
+- `supabase/functions/delete-account/index.ts` — gate deletion
+- `supabase/functions/check-device-eligibility/index.ts` — new
+- Migration: add `profiles.negative_balance_cents`, `profiles.negative_balance_updated_at`, `profiles.device_ids TEXT[]`; create `blocked_devices` table with GRANTs + RLS (service_role only writes; no client reads)
+- `src/pages/SellerDashboard.tsx` — negative banner + Settle button + sheet
+- `src/components/SettleBalanceSheet.tsx` — new, reuses `PaymentMethodPicker`
+- `src/pages/Checkout.tsx` — handle 409 negative_balance
+- `src/pages/CreateListing.tsx` + `EditListing.tsx` — gate publish
+- `src/pages/Auth.tsx` — call `check-device-eligibility` before sign-up
+- `src/lib/deviceId.ts` — new helper wrapping Capacitor `Device.getId()`
 
-## Out of scope
-- Settings > Payments saved-card management screen (Vinted has one). Cards are still saved and re-usable in checkout; managing/deleting them from Settings can be a follow-up.
-- Migrating existing `stripe-connect-checkout` callers away — I'll leave it deployed until you confirm the new flow works.
+**Edge cases handled**
+- Top-up while another charge is in flight → idempotency key
+- Balance flips positive between check and action → server re-checks at the point of action, not just at page load
+- User signs into an existing (owing) account on a new device → device gets added to `profiles.device_ids` and, if still negative, into `blocked_devices` so that device is also locked from creating a *different* new account
+- User deletes app and reinstalls → `Device.getId()` is stable per device on iOS/Android, so the block persists
 
-## Testing plan
-1. Web: Chrome with 4242 4242 4242 4242 → success → order created.
-2. Web: same with FREEFLEA → fee $0.
-3. Native iOS build: Apple Pay sheet shows Flea branding, completes, order created.
-4. Saved card: second checkout shows previously-saved card at top.
+## What I need from you
 
-## Heads-up (needs your action after code merges)
-- Native rebuild required (`npx cap sync ios && npx cap sync android`).
-- Apple Pay: create merchant ID `merchant.app.finditonflea` in Apple Developer, enable Apple Pay capability in Xcode, register domain in Stripe dashboard.
-- Google Pay: nothing extra beyond the plugin; works in test mode out of the box.
+Nothing to decide — this is all mechanical if you approve. Ready to build on your go-ahead.

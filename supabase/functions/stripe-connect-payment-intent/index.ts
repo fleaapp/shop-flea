@@ -44,6 +44,28 @@ serve(async (req) => {
     const { items, shipping, couponCode, saveCard } = await req.json();
     if (!items || !items.length) throw new Error("No items provided");
 
+    // Gate: block buying while the buyer has a negative Stripe Connect balance
+    // (i.e. they owe money as a seller). They must settle before making new purchases.
+    {
+      const svc = createClient(
+        Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "",
+        Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "",
+        { auth: { persistSession: false, autoRefreshToken: false } },
+      );
+      const { data: buyerProfile } = await svc
+        .from("profiles")
+        .select("negative_balance_cents")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const owed = Number(buyerProfile?.negative_balance_cents ?? 0);
+      if (owed > 0) {
+        return new Response(
+          JSON.stringify({ error: "negative_balance", code: "negative_balance", amountCents: owed }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     const serviceClient = createClient(
       Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "",
       Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "",

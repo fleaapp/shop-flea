@@ -98,6 +98,27 @@ serve(async (req) => {
     const available = sum(balance.available, currency);
     const pending = sum(balance.pending, currency);
     const instantAvailable = sum((balance as any).instant_available, currency);
+    const total = available + pending;
+    const negativeBalanceCents = total < 0 ? Math.abs(total) : 0;
+
+    // Mirror to profile so hot paths can gate on it without another Stripe call.
+    try {
+      await fetch(`${EXTERNAL_URL}/rest/v1/profiles?user_id=eq.${userId}`, {
+        method: "PATCH",
+        headers: {
+          apikey: SERVICE,
+          Authorization: `Bearer ${SERVICE}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          negative_balance_cents: negativeBalanceCents,
+          negative_balance_updated_at: new Date().toISOString(),
+        }),
+      });
+    } catch (e) {
+      console.warn("[stripe-connect-dashboard] mirror failed", e);
+    }
 
     const nextPayout = payouts.data.find((p) => p.status === "pending" || p.status === "in_transit") ?? null;
 
@@ -114,6 +135,8 @@ serve(async (req) => {
         available,
         pending,
         instantAvailable,
+        negativeBalanceCents,
+        isNegative: negativeBalanceCents > 0,
         chargesEnabled,
         payoutsEnabled,
         hasSucceededCharge,

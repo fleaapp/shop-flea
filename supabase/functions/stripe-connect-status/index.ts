@@ -217,6 +217,64 @@ serve(async (req) => {
 
     console.log(`[stripe-connect-status] Account ${accountId} state: charges_enabled=${account.charges_enabled}, details_submitted=${account.details_submitted}, payouts_enabled=${account.payouts_enabled}`);
 
+    // Retrieve balance so we can surface negative-balance state and gate flows.
+    let balanceAvailableCents = 0;
+    let balancePendingCents = 0;
+    let negativeBalanceCents = 0;
+    try {
+      const balance = await stripe.balance.retrieve({ stripeAccount: accountId });
+      const sumAud = (arr?: Array<{ amount: number; currency: string }>) =>
+        (arr ?? []).filter((b) => b.currency === "aud").reduce((s, b) => s + (b.amount || 0), 0);
+      balanceAvailableCents = sumAud(balance.available);
+      balancePendingCents = sumAud(balance.pending);
+      const total = balanceAvailableCents + balancePendingCents;
+      negativeBalanceCents = total < 0 ? Math.abs(total) : 0;
+
+      // Mirror to profile so hot paths (checkout, listing) can gate without a Stripe call.
+      await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${lookupUserId}`, {
+        method: "PATCH",
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          negative_balance_cents: negativeBalanceCents,
+          negative_balance_updated_at: new Date().toISOString(),
+        }),
+      });
+
+      // If negative and we have device ids, add them all to blocked_devices.
+      if (negativeBalanceCents > 0) {
+        try {
+          const svc = createClient(externalUrl, serviceKey);
+          const { data: prof } = await svc
+            .from("profiles")
+            .select("device_ids")
+            .eq("user_id", lookupUserId)
+            .maybeSingle();
+          const deviceIds: string[] = Array.isArray(prof?.device_ids) ? prof!.device_ids : [];
+          if (deviceIds.length > 0) {
+            await svc.from("blocked_devices").upsert(
+              deviceIds.map((d) => ({
+                device_id: d,
+                reason: "negative_balance",
+                associated_user_id: lookupUserId,
+                amount_cents: negativeBalanceCents,
+                updated_at: new Date().toISOString(),
+              })),
+              { onConflict: "device_id" },
+            );
+          }
+        } catch (e) {
+          console.warn("[stripe-connect-status] blocked_devices upsert failed", e);
+        }
+      }
+    } catch (balErr: any) {
+      console.warn(`[stripe-connect-status] balance retrieve failed: ${balErr?.message}`);
+    }
+
     // Only persist stripe_onboarding_complete when fully verified (charges + payouts enabled)
     if (account.charges_enabled && account.payouts_enabled) {
       await persistStripeStatus(lookupUserId, accountId);
@@ -270,6 +328,10 @@ serve(async (req) => {
         currentlyDue,
         pastDue,
         needsIdDocument,
+        balanceAvailableCents,
+        balancePendingCents,
+        negativeBalanceCents,
+        isNegative: negativeBalanceCents > 0,
         verificationError: docError
           ? {
               code: docError.code || null,

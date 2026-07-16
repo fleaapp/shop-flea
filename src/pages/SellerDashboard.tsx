@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Loader2 } from 'lucide-react';
+import { ChevronLeft, Loader2, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { useOrders } from '@/hooks/useOrders';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { SettleBalanceSheet } from '@/components/SettleBalanceSheet';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +35,8 @@ type DashboardData = {
   available?: number;
   pending?: number;
   instantAvailable?: number;
+  negativeBalanceCents?: number;
+  isNegative?: boolean;
   chargesEnabled?: boolean;
   payoutsEnabled?: boolean;
   hasSucceededCharge?: boolean;
@@ -90,6 +93,7 @@ const SellerDashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [payoutLoading, setPayoutLoading] = useState<null | 'standard' | 'instant'>(null);
   const [confirm, setConfirm] = useState<null | 'standard' | 'instant'>(null);
+  const [settleOpen, setSettleOpen] = useState(false);
 
   const { sellerOrderGroups } = useOrders();
   const { perOrder } = useUnreadOrderMessages();
@@ -139,7 +143,10 @@ const SellerDashboard = () => {
   const currency = data?.currency ?? 'aud';
   const available = data?.available ?? 0;
   const instantAvailable = data?.instantAvailable ?? 0;
+  const negativeCents = data?.negativeBalanceCents ?? 0;
+  const isNegative = negativeCents > 0;
   const canPayout =
+    !isNegative &&
     !!data?.chargesEnabled &&
     !!data?.payoutsEnabled &&
     !!data?.hasSucceededCharge &&
@@ -221,15 +228,35 @@ const SellerDashboard = () => {
           </div>
         ) : (
           <>
-            {/* Available balance */}
-            <section className="rounded-2xl bg-primary/60 p-5 mt-2">
-              <div className="text-xs font-medium text-charcoal/70 uppercase tracking-wide">
-                Available balance
-              </div>
-              <div className="text-[34px] font-bold text-charcoal leading-tight mt-1">
-                {fmtMoney(available, currency)}
-              </div>
-            </section>
+            {/* Available balance or Balance owed */}
+            {isNegative ? (
+              <section className="rounded-2xl bg-destructive/10 border-2 border-destructive/40 p-5 mt-2">
+                <div className="flex items-center gap-2 text-xs font-semibold text-destructive uppercase tracking-wide">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Balance owed
+                </div>
+                <div className="text-[34px] font-bold text-destructive leading-tight mt-1">
+                  {fmtMoney(negativeCents, currency)}
+                </div>
+                <p className="text-[12px] text-charcoal/80 mt-2 leading-relaxed">
+                  Refunds or disputes brought your balance below zero. Settle this before you can buy, list, or receive payouts.
+                </p>
+                <Button
+                  onClick={() => setSettleOpen(true)}
+                  className="w-full mt-3 h-11 rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 font-semibold"
+                >
+                  Settle balance
+                </Button>
+              </section>
+            ) : (
+              <section className="rounded-2xl bg-primary/60 p-5 mt-2">
+                <div className="text-xs font-medium text-charcoal/70 uppercase tracking-wide">
+                  Available balance
+                </div>
+                <div className="text-[34px] font-bold text-charcoal leading-tight mt-1">
+                  {fmtMoney(available, currency)}
+                </div>
+              </section>
+            )}
 
             {/* Payout actions (outside the balance box) */}
             <div className="flex flex-col gap-2 mt-3">
@@ -366,6 +393,13 @@ const SellerDashboard = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <SettleBalanceSheet
+        open={settleOpen}
+        onOpenChange={setSettleOpen}
+        amountCents={negativeCents}
+        onSettled={() => load()}
+      />
     </div>
   );
 };

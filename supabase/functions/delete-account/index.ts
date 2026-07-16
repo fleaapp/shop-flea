@@ -39,6 +39,28 @@ Deno.serve(async (req) => {
 
     const userId = claimsData.claims.sub;
 
+    // Check outstanding negative balance — must settle before deleting.
+    const supabaseAdminEarly = createClient(
+      externalUrl,
+      Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+    const { data: earlyProfile } = await supabaseAdminEarly
+      .from('profiles')
+      .select('negative_balance_cents')
+      .eq('user_id', userId)
+      .maybeSingle();
+    const owedCents = Number(earlyProfile?.negative_balance_cents ?? 0);
+    if (owedCents > 0) {
+      return new Response(
+        JSON.stringify({
+          error: `Settle your outstanding balance of $${(owedCents / 100).toFixed(2)} before deleting your account.`,
+          code: 'negative_balance',
+          amountCents: owedCents,
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
     // Check for outstanding (non-delivered) orders
     const { count: outstandingCount } = await supabaseUser
       .from('orders')
