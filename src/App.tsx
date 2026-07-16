@@ -48,6 +48,8 @@ const loadAdminTransactions = () => import("./pages/admin/AdminTransactions");
 const loadAdminUsers = () => import("./pages/admin/AdminUsers");
 const loadAdminListings = () => import("./pages/admin/AdminListings");
 const loadAdminErrors = () => import("./pages/admin/AdminErrors");
+const loadAdminBrands = () => import("./pages/admin/AdminBrands");
+const loadAdminRefunds = () => import("./pages/admin/AdminRefunds");
 const loadAuthenticatedProviders = () => import("./components/AuthenticatedProviders");
 
 const Index = lazy(loadIndex);
@@ -84,6 +86,8 @@ const AdminTransactions = lazy(loadAdminTransactions);
 const AdminUsers = lazy(loadAdminUsers);
 const AdminListings = lazy(loadAdminListings);
 const AdminErrors = lazy(loadAdminErrors);
+const AdminBrands = lazy(loadAdminBrands);
+const AdminRefunds = lazy(loadAdminRefunds);
 const AuthenticatedProviders = lazy(loadAuthenticatedProviders);
 import AdminRoute from "@/components/admin/AdminRoute";
 
@@ -251,6 +255,8 @@ const AppContent = () => {
           <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
           <Route path="/admin/listings" element={<AdminRoute><AdminListings /></AdminRoute>} />
           <Route path="/admin/errors" element={<AdminRoute><AdminErrors /></AdminRoute>} />
+          <Route path="/admin/brands" element={<AdminRoute><AdminBrands /></AdminRoute>} />
+          <Route path="/admin/refunds" element={<AdminRoute><AdminRefunds /></AdminRoute>} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="*" element={<NotFound />} />
