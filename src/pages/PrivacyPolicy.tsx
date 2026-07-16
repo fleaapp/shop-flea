@@ -24,7 +24,7 @@ const PrivacyPolicy = () => {
 
       <main className="px-5 max-[375px]:px-4 pt-2 pb-8 max-w-2xl mx-auto">
         <p className="text-xs text-muted-foreground mb-6">
-          Last updated: 4 May 2026 · Version 1.0 · Compliant with the Australian Privacy Act 1988 (Cth) and the Australian Privacy Principles
+          Last updated: 16 July 2026 · Version 1.1 · Compliant with the Australian Privacy Act 1988 (Cth) and the Australian Privacy Principles
         </p>
 
         <article className="prose prose-sm max-w-none text-foreground space-y-6 leading-relaxed text-[15px]">
@@ -75,6 +75,7 @@ const PrivacyPolicy = () => {
             <p className="font-semibold mt-3">Device & usage</p>
             <ul className="list-disc pl-5 space-y-1">
               <li>Device type, operating system, app version, browser, IP address, approximate location (for region detection) and language.</li>
+              <li>A stable device identifier associated with your account. We use this to prevent duplicate accounts and to enforce settlement of any negative balance owing on a prior account created on the same device. It is not an advertising identifier and is not shared with third parties for marketing.</li>
               <li>Push notification subscription tokens (so we can send you alerts).</li>
               <li>Diagnostic logs, error reports and basic analytics about how you use the Platform (e.g. which screens you visit, search queries you make).</li>
             </ul>
@@ -107,6 +108,7 @@ const PrivacyPolicy = () => {
               <li>Send transactional communications (order updates, shipping reminders, refund notices, security alerts, replies to your support requests);</li>
               <li>Send you marketing about Flea (with your consent, which you can withdraw at any time);</li>
               <li>Detect, prevent and respond to fraud, abuse, spam, prohibited listings, infringement, account takeover and other security threats;</li>
+              <li>Prevent the creation of duplicate accounts and enforce settlement of any outstanding balance owing to Flea, including by recording a device identifier linked to your account;</li>
               <li>Moderate content and enforce our <button onClick={() => navigate('/terms')} className="underline font-medium">Terms & Conditions</button>;</li>
               <li>Improve the Platform — fix bugs, measure feature performance, develop new features;</li>
               <li>Comply with our legal obligations including under the Australian Consumer Law, the Spam Act 2003 (Cth) and tax laws.</li>
