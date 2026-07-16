@@ -507,23 +507,27 @@ async function listTransactions() {
 
 // ----------------- Users -----------------
 
-async function fetchLiveAuthUserIds(): Promise<Set<string>> {
-  const ids = new Set<string>();
+async function fetchLiveAuthUsers(): Promise<Map<string, { email: string | null; created_at: string | null }>> {
+  const map = new Map<string, { email: string | null; created_at: string | null }>();
   const admin = createClient(EXTERNAL_URL, EXTERNAL_SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
   let page = 1;
   const perPage = 1000;
-  // Cap at 20 pages (20k users) as a safety.
   while (page <= 20) {
     const { data, error } = await (admin.auth.admin as any).listUsers({ page, perPage });
     if (error) throw error;
     const users = data?.users ?? [];
-    for (const u of users) ids.add(u.id);
+    for (const u of users) map.set(u.id, { email: u.email ?? null, created_at: u.created_at ?? null });
     if (users.length < perPage) break;
     page += 1;
   }
-  return ids;
+  return map;
+}
+
+async function fetchLiveAuthUserIds(): Promise<Set<string>> {
+  const map = await fetchLiveAuthUsers();
+  return new Set(map.keys());
 }
 
 async function deleteOrphanProfiles(orphanIds: string[]) {
@@ -549,15 +553,17 @@ async function listUsers(payload: any = {}) {
   if (status !== "all") params.status = `eq.${status}`;
   let users = await safeSelect("profiles", params);
 
-  // Reconcile with auth.users so profiles orphaned by admin deletion disappear immediately.
+  // Reconcile with auth.users so profiles orphaned by admin deletion disappear immediately,
+  // and enrich with authoritative emails from auth.users.
+  let authMap = new Map<string, { email: string | null; created_at: string | null }>();
   try {
-    const liveIds = await fetchLiveAuthUserIds();
-    const orphans = users.filter((u: any) => !liveIds.has(u.user_id)).map((u: any) => u.user_id);
+    authMap = await fetchLiveAuthUsers();
+    const orphans = users.filter((u: any) => !authMap.has(u.user_id)).map((u: any) => u.user_id);
     if (orphans.length > 0) {
-      // Fire-and-forget cleanup; do not block the response.
       deleteOrphanProfiles(orphans);
     }
-    users = users.filter((u: any) => liveIds.has(u.user_id));
+    users = users.filter((u: any) => authMap.has(u.user_id));
+    users = users.map((u: any) => ({ ...u, email: u.email ?? authMap.get(u.user_id)?.email ?? null }));
   } catch (e) {
     console.warn("[admin-data] auth reconciliation failed, returning raw profiles:", (e as Error).message);
   }
@@ -1385,7 +1391,7 @@ async function getBadges() {
     countRows("orders", { status: "eq.awaiting" }),
     countRows("orders", { refunded_at: "not.is.null" }),
     countRows("listings", { status: "eq.active" }),
-    countRows("profiles", {}),
+    countRows("profiles", { created_at: `gte.${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()}` }),
     countRows("brands", {}).catch(() => 0),
   ]);
   return {
