@@ -93,6 +93,7 @@ const SellerDashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [payoutLoading, setPayoutLoading] = useState<null | 'standard' | 'instant'>(null);
   const [confirm, setConfirm] = useState<null | 'standard' | 'instant'>(null);
+  const [settleOpen, setSettleOpen] = useState(false);
 
   const { sellerOrderGroups } = useOrders();
   const { perOrder } = useUnreadOrderMessages();
