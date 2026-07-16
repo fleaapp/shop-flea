@@ -34,7 +34,7 @@ const CouponInput = ({ value, onChange }: CouponInputProps) => {
       const { data, error: err } = await invokeCloudFunction('validate-coupon', { code });
       if (err) throw new Error(err.message || 'Could not validate code');
       if (!(data as any)?.valid) {
-        setError((data as any)?.message || "That code isn't valid.");
+        setError((data as any)?.message || 'Invalid or expired code.');
         onChange(null);
         return;
       }
@@ -44,7 +44,8 @@ const CouponInput = ({ value, onChange }: CouponInputProps) => {
         message: (data as any).message,
       });
     } catch (e: any) {
-      setError(e?.message || 'Could not validate code.');
+      setError(e?.message || 'Invalid or expired code.');
+      onChange(null);
     } finally {
       setLoading(false);
     }
