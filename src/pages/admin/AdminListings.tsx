@@ -132,7 +132,7 @@ export default function AdminListings() {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   {selected.title}
-                  <Badge className={statusColor[selected.status] ?? ''} variant="outline">{statusLabel(selected.status)}</Badge>
+                  <AdminBadge tone={toneForStatus(selected.status)}>{statusLabel(selected.status)}</AdminBadge>
                 </DialogTitle>
               </DialogHeader>
 
