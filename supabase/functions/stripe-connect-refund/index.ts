@@ -32,6 +32,7 @@ const OPTIONAL_ORDER_COLUMNS = [
   "payment_method",
   "refunded_at",
   "delivered_at",
+  "shipped_at",
   "order_group_id",
   "status",
 ] as const;
@@ -110,6 +111,7 @@ async function fetchOrderWithFallback(externalUrl: string, serviceKey: string, o
       payment_method: order.payment_method ?? "stripe",
       refunded_at: order.refunded_at ?? null,
       delivered_at: order.delivered_at ?? null,
+      shipped_at: order.shipped_at ?? null,
       order_group_id: order.order_group_id ?? null,
       status: order.status ?? null,
     };
@@ -208,6 +210,10 @@ async function reactivateListings(externalUrl: string, serviceKey: string, listi
 
 function isDemoOrder(order: any) {
   return order.payment_method === "demo" || (typeof order.checkout_reference === "string" && order.checkout_reference.startsWith("demo-"));
+}
+
+function shouldReactivateListings(order: any) {
+  return order.status === "awaiting" && !order.shipped_at && !order.delivered_at;
 }
 
 async function resolvePaymentIntentId(stripe: Stripe, order: any) {
@@ -316,7 +322,7 @@ serve(async (req) => {
     if (isDemoOrder(order)) {
       const listingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
       await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
-      await reactivateListings(externalUrl, serviceKey, listingIds);
+      if (shouldReactivateListings(order)) await reactivateListings(externalUrl, serviceKey, listingIds);
       return jsonResponse({ success: true, demo: true });
     }
 
@@ -365,7 +371,7 @@ serve(async (req) => {
 
     const listingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
     await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
-    await reactivateListings(externalUrl, serviceKey, listingIds);
+    if (shouldReactivateListings(order)) await reactivateListings(externalUrl, serviceKey, listingIds);
 
     return jsonResponse({ success: true, refundId: refund.id, status: refund.status });
   } catch (error: any) {
