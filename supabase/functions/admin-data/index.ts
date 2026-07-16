@@ -817,7 +817,7 @@ async function listListings(payload: any = {}) {
     const existing = new Set(listings.map((l: any) => l.id));
     const restoredFromOrders = (refundedOrders as any[])
       .filter((o: any) => o?.listing_id && !existing.has(o.listing_id))
-      .map(refundedOrderListingFallback);
+      .map((o: any) => refundedOrderListingFallback(o));
     listings = mergeUniqueById([...listings, ...restoredFromOrders]);
   } else {
     if (status !== "all") params.status = `eq.${status}`;
