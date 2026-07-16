@@ -36,13 +36,19 @@ Deno.serve(async (req) => {
     if (authErr || !authData?.user?.id) return json({ error: "Unauthorized" }, 401);
     const callerId = authData.user.id;
 
-    // Verify admin role
-    const roleRes = await fetch(
-      `${EXTERNAL_URL}/rest/v1/user_roles?user_id=eq.${callerId}&role=eq.admin&select=role`,
-      { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } },
-    );
-    const roles = await roleRes.json();
-    if (!Array.isArray(roles) || roles.length === 0) return json({ error: "Forbidden" }, 403);
+    // Verify admin role (mirrors admin-check-role using supabase-js)
+    const svc = createClient(EXTERNAL_URL, SERVICE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: roleRow, error: roleErr } = await svc
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", callerId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (roleErr) return json({ error: "role lookup failed", detail: roleErr.message }, 500);
+    if (!roleRow) return json({ error: "Forbidden", callerId }, 403);
+
 
     const { username, accountId: providedAccountId } = await req.json();
     if (!username) return json({ error: "username required" }, 400);
