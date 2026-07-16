@@ -313,8 +313,8 @@ const SalesDetailsSheet = ({
               </div>
             </div>
 
-            {/* Shipping Status Tracker - visible once shipped */}
-            {(primaryOrder.status === 'shipped' || primaryOrder.status === 'delivered') && (
+            {/* Shipping Status Tracker - visible once shipped, hidden if refunded */}
+            {!isRefunded && (primaryOrder.status === 'shipped' || primaryOrder.status === 'delivered') && (
               <ShippingStatusTracker
                 createdAt={primaryOrder.created_at}
                 shippedAt={primaryOrder.shipped_at}
@@ -322,7 +322,7 @@ const SalesDetailsSheet = ({
                 status={primaryOrder.status}
               />
             )}
-            {primaryOrder.status === 'awaiting' && (
+            {!isRefunded && primaryOrder.status === 'awaiting' && (
               <div className="flex justify-center">
                 <Button
                   onClick={handleMarkShipped}
