@@ -57,6 +57,7 @@ const IdVerificationStep = ({ onBack, onDone, onEditName, verificationError }: I
   const [back, setBack] = useState<string | null>(null);
   const [capturing, setCapturing] = useState<'front' | 'back' | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [showWhy, setShowWhy] = useState(false);
   const webInputRef = useRef<HTMLInputElement | null>(null);
   const webTargetRef = useRef<'front' | 'back'>('front');
