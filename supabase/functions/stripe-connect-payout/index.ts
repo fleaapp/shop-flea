@@ -65,6 +65,23 @@ Deno.serve(async (req) => {
     const sum = (arr: any[] | undefined) =>
       (arr || []).filter((b) => b.currency === currency).reduce((s, b) => s + (b.amount || 0), 0);
 
+    // ── Awaiting-shipment guard ─────────────────────────────────────────────
+    // Sellers cannot withdraw funds that correspond to orders they haven't
+    // shipped yet with eligible tracking. This protects buyers and gives us
+    // headroom to auto-refund at day 9 without pulling debits from a bank.
+    const { data: unshippedRows } = await supabase
+      .from("orders")
+      .select("price, shipping_price")
+      .eq("seller_id", userId)
+      .eq("status", "awaiting")
+      .is("refunded_at", null);
+
+    const unshippedCents = (unshippedRows || []).reduce((s: number, o: any) => {
+      const total = (Number(o.price) || 0) + (Number(o.shipping_price) || 0);
+      return s + Math.round(total * 100);
+    }, 0);
+
+
     if (method === "instant") {
       const instantAvailable = sum((balance as any).instant_available);
       if (instantAvailable <= 0) {
