@@ -1,9 +1,7 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
 const json = (body: unknown, status = 200) =>
@@ -20,30 +18,74 @@ const normalizeBrandName = (value: string) =>
     .replace(/\s+/g, " ")
     .trim();
 
+const externalUrl = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
+const externalAnonKey = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "";
+const externalServiceRoleKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+const brandSelect = "id,brand_name,display_name,usage_count,created_at";
+
+const externalRest = async (path: string, init: RequestInit = {}) => {
+  const res = await fetch(`${externalUrl}/rest/v1/${path}`, {
+    ...init,
+    headers: {
+      apikey: externalServiceRoleKey,
+      Authorization: `Bearer ${externalServiceRoleKey}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+      ...(init.headers ?? {}),
+    },
+  });
+
+  const text = await res.text();
+  const body = text ? JSON.parse(text) : null;
+
+  if (!res.ok) {
+    console.error("brand external rest failed", res.status, body ?? text);
+    throw new Error(typeof body?.message === "string" ? body.message : "Brand service failed.");
+  }
+
+  return body;
+};
+
+const getExternalUser = async (authHeader: string) => {
+  const userRes = await fetch(`${externalUrl}/auth/v1/user`, {
+    headers: { apikey: externalAnonKey, Authorization: authHeader },
+  });
+
+  if (!userRes.ok) return null;
+  return userRes.json();
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed." }, 405);
+  if (req.method !== "GET" && req.method !== "POST") return json({ error: "Method not allowed." }, 405);
 
   try {
+    if (!externalUrl || !externalAnonKey || !externalServiceRoleKey) {
+      return json({ error: "Brand service is not configured." }, 500);
+    }
+
+    if (req.method === "GET") {
+      const url = new URL(req.url);
+      const search = (url.searchParams.get("search") ?? "").trim().toLowerCase();
+      const params = new URLSearchParams({ select: brandSelect, order: "display_name.asc", limit: "1000" });
+      const rows = await externalRest(`brands?${params.toString()}`) as unknown[];
+      const brands = search
+        ? rows.filter((brand: any) =>
+            (brand.brand_name ?? "").toLowerCase().includes(search) ||
+            (brand.display_name ?? "").toLowerCase().includes(search)
+          )
+        : rows;
+      return json({ brands });
+    }
+
     const authHeader = req.headers.get("Authorization") ?? "";
     if (!authHeader.startsWith("Bearer ")) {
       return json({ error: "Sign in required." }, 401);
     }
 
-    const externalUrl = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
-    const externalAnonKey = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "";
-    const cloudUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-
-    if (!externalUrl || !externalAnonKey || !cloudUrl || !serviceKey) {
-      return json({ error: "Brand service is not configured." }, 500);
-    }
-
-    const userRes = await fetch(`${externalUrl}/auth/v1/user`, {
-      headers: { apikey: externalAnonKey, Authorization: authHeader },
-    });
-
-    if (!userRes.ok) {
+    const user = await getExternalUser(authHeader);
+    if (!user?.id) {
       return json({ error: "Sign in required." }, 401);
     }
 
@@ -55,38 +97,33 @@ Deno.serve(async (req) => {
       return json({ error: "Enter a valid brand name." }, 400);
     }
 
-    const admin = createClient(cloudUrl, serviceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-
     // Check for existing brand first (case-insensitive)
-    const { data: existing } = await admin
-      .from("brands")
-      .select("id, brand_name, display_name, usage_count")
-      .ilike("brand_name", brandName)
-      .maybeSingle();
+    const existingParams = new URLSearchParams({
+      select: brandSelect,
+      brand_name: `ilike.${brandName}`,
+      limit: "1",
+    });
+    const existingRows = await externalRest(`brands?${existingParams.toString()}`) as any[];
+    const existing = existingRows[0];
 
     if (existing) return json({ brand: existing });
 
-    const { data, error } = await admin
-      .from("brands")
-      .insert({ brand_name: brandName, display_name: trimmed })
-      .select("id, brand_name, display_name, usage_count")
-      .single();
+    try {
+      const insertParams = new URLSearchParams({ select: brandSelect });
+      const inserted = await externalRest(`brands?${insertParams.toString()}`, {
+        method: "POST",
+        body: JSON.stringify({ brand_name: brandName, display_name: trimmed }),
+      }) as any[];
 
-    if (error) {
+      return json({ brand: inserted[0] });
+    } catch (error) {
       // Unique-index race: re-fetch existing
-      const { data: raced } = await admin
-        .from("brands")
-        .select("id, brand_name, display_name, usage_count")
-        .ilike("brand_name", brandName)
-        .maybeSingle();
+      const racedRows = await externalRest(`brands?${existingParams.toString()}`) as any[];
+      const raced = racedRows[0];
       if (raced) return json({ brand: raced });
       console.error("add-brand failed", error);
       return json({ error: "Could not add brand." }, 500);
     }
-
-    return json({ brand: data });
   } catch (error) {
     console.error("add-brand unexpected error", error);
     return json({ error: "Could not add brand." }, 500);
