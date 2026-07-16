@@ -143,7 +143,10 @@ const SellerDashboard = () => {
   const currency = data?.currency ?? 'aud';
   const available = data?.available ?? 0;
   const instantAvailable = data?.instantAvailable ?? 0;
+  const negativeCents = data?.negativeBalanceCents ?? 0;
+  const isNegative = negativeCents > 0;
   const canPayout =
+    !isNegative &&
     !!data?.chargesEnabled &&
     !!data?.payoutsEnabled &&
     !!data?.hasSucceededCharge &&
