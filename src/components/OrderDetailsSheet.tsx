@@ -253,7 +253,7 @@ const OrderDetailsSheet = ({
                 <div>
                   <p className="font-semibold text-foreground mb-1.5">Service Provider:</p>
                   <Input
-                    value={primaryOrder.status === 'awaiting' ? 'Awaiting shipping' : (primaryOrder.tracking_provider || 'N/A')}
+                    value={isRefunded ? 'Refunded' : (primaryOrder.status === 'awaiting' ? 'Awaiting shipping' : (primaryOrder.tracking_provider || 'N/A'))}
                     disabled
                     className="bg-background disabled:opacity-70"
                   />
