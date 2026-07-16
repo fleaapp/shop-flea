@@ -406,7 +406,7 @@ const SalesDetailsSheet = ({
                 if (!primaryOrder) return;
                 setRefunding(true);
                 try {
-                  const res = await invokeCloudFunction<{ ok?: boolean; error?: string }>(
+                  const res: any = await invokeCloudFunction(
                     'stripe-connect-refund',
                     { orderId: primaryOrder.id, reason: 'requested_by_customer' }
                   );
