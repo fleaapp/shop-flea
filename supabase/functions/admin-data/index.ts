@@ -822,11 +822,11 @@ async function listListings(payload: any = {}) {
   } else {
     if (status !== "all") params.status = `eq.${status}`;
     listings = await safeSelect("listings", params);
-    if (status === "all") {
+    if (status === "all" || status === "removed") {
       const existing = new Set(listings.map((l: any) => l.id));
       const restoredFromOrders = (refundedOrders as any[])
         .filter((o: any) => o?.listing_id && !existing.has(o.listing_id))
-        .map(refundedOrderListingFallback);
+        .map((o: any) => refundedOrderListingFallback(o, status === "removed" ? "removed" : "refunded"));
       listings = mergeUniqueById([...listings, ...restoredFromOrders]);
     }
   }
@@ -892,7 +892,7 @@ async function listListings(payload: any = {}) {
   return { listings: enriched };
 }
 
-function refundedOrderListingFallback(order: any) {
+function refundedOrderListingFallback(order: any, status = "refunded") {
   const timestamp = order.refunded_at ?? order.updated_at ?? order.created_at ?? new Date().toISOString();
   return {
     id: order.listing_id,
@@ -901,7 +901,7 @@ function refundedOrderListingFallback(order: any) {
     price: Number(order.price ?? 0),
     shipping_price: Number(order.shipping_price ?? 0),
     images: [],
-    status: "refunded",
+    status,
     category: "",
     subcategory: null,
     size: "",
