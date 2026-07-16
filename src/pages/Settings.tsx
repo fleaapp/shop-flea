@@ -216,7 +216,8 @@ const Settings = () => {
     supportItems.push({
       icon: <span className="text-base">🛡️</span>,
       label: 'Admin Dashboard',
-      action: () => navigate('/admin')
+      action: () => navigate('/admin'),
+      badge: adminBadgeTotal || undefined,
     });
   }
   if (!isGuest) {
