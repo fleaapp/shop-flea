@@ -34,7 +34,7 @@ const CouponInput = ({ value, onChange }: CouponInputProps) => {
       const { data, error: err } = await invokeCloudFunction('validate-coupon', { code });
       if (err) throw new Error(err.message || 'Could not validate code');
       if (!(data as any)?.valid) {
-        setError((data as any)?.message || "That code isn't valid.");
+        setError((data as any)?.message || 'Invalid or expired code.');
         onChange(null);
         return;
       }
@@ -44,7 +44,8 @@ const CouponInput = ({ value, onChange }: CouponInputProps) => {
         message: (data as any).message,
       });
     } catch (e: any) {
-      setError(e?.message || 'Could not validate code.');
+      setError(e?.message || 'Invalid or expired code.');
+      onChange(null);
     } finally {
       setLoading(false);
     }
@@ -76,8 +77,9 @@ const CouponInput = ({ value, onChange }: CouponInputProps) => {
           value={input}
           onChange={(e) => { setInput(e.target.value.toUpperCase()); setError(null); }}
           placeholder="Coupon code"
-          className={cn('h-10 rounded-lg bg-background border-border uppercase', error && 'border-destructive')}
+          className={cn('h-10 rounded-lg bg-background border-border uppercase', error && 'border-destructive focus-visible:ring-destructive')}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); apply(); } }}
+          aria-invalid={!!error}
         />
         <Button
           type="button"
@@ -88,7 +90,11 @@ const CouponInput = ({ value, onChange }: CouponInputProps) => {
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
         </Button>
       </div>
-      {error && <p className="text-[11px] text-destructive">{error}</p>}
+      {error && (
+        <p className="text-[13px] font-medium text-destructive" role="alert" aria-live="polite">
+          {error}
+        </p>
+      )}
     </div>
   );
 };

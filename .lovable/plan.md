@@ -1,22 +1,30 @@
-I found the likely root cause: the app is treating `refunded_at` as a display override only, while the database `status` column still cannot store `refunded` because its check constraint only allows `awaiting`, `shipped`, and `delivered`. That means refunded orders can remain active in lists if `refunded_at` is missing from the client response or stale cache, and the source status is still `awaiting`.
+## Fix coupon UX so invalid codes fail visibly
 
-Plan:
+Only one behaviour change: when the buyer enters a code that doesn't match a live coupon, tell them immediately instead of silently doing nothing at checkout. Keep the code strict as `FREEFLEA` only.
 
-1. Update the database order status model
-   - Change the `orders.status` constraint to allow `refunded`.
-   - Backfill every order with `refunded_at` set so `status = 'refunded'`.
-   - Add a defensive rule/trigger so any future update that sets `refunded_at` also forces `status = 'refunded'`.
+### Root cause
 
-2. Update refund functions
-   - Change seller refund and 9-day auto-refund code so they set both `refunded_at` and `status = 'refunded'` in the same update.
-   - Keep the existing listing reactivation and notification behavior.
+`validate-coupon` and the checkout functions already return a `valid: false` payload for unknown codes, but `CouponInput.tsx` doesn't show that message strongly enough, so the buyer thinks the code applied. On top of that, the server accepts submission without a coupon and quietly charges the full fee.
 
-3. Harden the frontend status mapping
-   - Normalize each order as refunded if either `status === 'refunded'` or `refunded_at` exists.
-   - Fix group status initialization so single-item refunded groups are never initialized as `awaiting`.
-   - Hide all active order actions, tracking prompts, shipping buttons, and refund buttons when a group is refunded.
+### Changes
 
-4. Verify the specific broken case
-   - Query the latest orders and confirm the refunded sale has `status = 'refunded'`.
-   - Confirm the Sales screen logic will place it under the Refunded tab, not To Ship.
-   - Check the Order and Sale details components read the same effective refunded status.
+- `src/components/CouponInput.tsx`
+  - When `validate-coupon` returns `valid: false`, show a clear inline error ("Invalid or expired code") in the input's error slot and never call `onChange` with a fake applied coupon.
+  - Clear the error the moment the buyer edits the field again.
+- `supabase/functions/validate-coupon/index.ts`
+  - Make the lookup case-insensitive and trim whitespace, so `freeflea`, ` FREEFLEA `, etc. still match `FREEFLEA`. Genuine typos like `FLEAFREE` still fail.
+  - Return a consistent `{ valid: false, message: "Invalid or expired code." }` for anything not found / not active / expired / fully redeemed.
+- `supabase/functions/stripe-connect-payment-intent/index.ts` and `supabase/functions/stripe-connect-checkout/index.ts`
+  - Same trim + case-insensitive match on the server so the applied-in-UI state and the charge always agree.
+  - Add a debug log line (`[coupon] code=... matched=... fee=...`) so if this happens again we can confirm from function logs exactly what the server received.
+
+### Not doing
+
+- No alias for `FLEAFREE` (per your answer).
+- No change to who pays the fee refund — behaviour is already correct: Stripe returns Flea's application fee to the buyer, seller's transfer is reversed, Stripe returns its own processing fee.
+
+### Verification
+
+- Try `FLEAFREE` at checkout → inline "Invalid or expired code", no fake applied state, full fee still charged (expected).
+- Try `FREEFLEA` (and `freeflea`) at checkout → applied, buyer fee = $0, Stripe payment intent created with `application_fee_amount: 0`.
+- Check the payment-intent function logs to see the new `[coupon]` line reflect the actual matched coupon.
