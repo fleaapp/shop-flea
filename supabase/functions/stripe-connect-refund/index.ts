@@ -408,9 +408,7 @@ serve(async (req) => {
     // Demo orders (Apple App Review bypass) have no payment intent —
     // just mark refunded directly so reviewers can exercise the refund flow.
     if (isDemoOrder(order)) {
-      const listingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
       await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
-      if (shouldReactivateListings(order)) await reactivateListings(externalUrl, serviceKey, listingIds);
       return jsonResponse({ success: true, demo: true });
     }
 
