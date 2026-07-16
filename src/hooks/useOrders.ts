@@ -239,7 +239,12 @@ const fetchOrdersForUser = async (column: 'buyer_id' | 'seller_id', userId: stri
     }
 
     if (error) throw error;
-    return normalizeOrderRows((data ?? []) as unknown[]).filter((order) => !isDemoOrder(order));
+    const normalized = normalizeOrderRows((data ?? []) as unknown[]).filter((order) => !isDemoOrder(order));
+    if (typeof window !== 'undefined') {
+      const refundedRows = normalized.filter((o) => !!o.refunded_at).map((o) => ({ id: o.id, refunded_at: o.refunded_at, status: o.status }));
+      if (refundedRows.length) console.log('[useOrders] refunded rows for', column, userId, refundedRows);
+    }
+    return normalized;
   }
 };
 
