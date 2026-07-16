@@ -58,38 +58,28 @@ export default function AdminErrors() {
             ))}
           </div>
         ) : issues.length === 0 ? (
-          <Card className="border-emerald-200 bg-emerald-50/50">
+          <Card className="border-primary/30 bg-primary/5">
             <CardContent className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-              <CheckCircle2 className="h-10 w-10 text-emerald-600" />
-              <h3 className="text-lg font-semibold text-emerald-900">All systems healthy</h3>
-              <p className="text-sm text-emerald-800/70">No issues detected. Auto-rescans every 60 seconds.</p>
+              <CheckCircle2 className="h-10 w-10 text-primary" />
+              <h3 className="text-lg font-semibold text-foreground">All systems healthy</h3>
+              <p className="text-sm text-muted-foreground">No issues detected. Auto-rescans every 60 seconds.</p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-3">
             {issues.map((issue) => {
-              const sev = sevStyles[issue.severity];
+              const sev = sevMeta[issue.severity];
               const isFixing = fixing === issue.auto_fix_id;
               return (
-                <Card key={issue.id} className={`border-l-4 ${sev.ring}`}>
+                <Card key={issue.id} className={`rounded-2xl border-l-4 ${sev.ring}`}>
                   <CardHeader className="pb-3">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                          <Badge variant="outline" className={sev.badge}>
-                            {sev.label}
-                          </Badge>
-                          <Badge variant="secondary" className="text-xs">
-                            {issue.category}
-                          </Badge>
-                          <Badge variant="outline" className="text-xs">
-                            {issue.count} affected
-                          </Badge>
-                          {issue.auto_fix_id && (
-                            <Badge variant="outline" className="border-emerald-300 bg-emerald-500/10 text-emerald-700 text-xs">
-                              Auto-fixable
-                            </Badge>
-                          )}
+                        <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+                          <AdminBadge tone={sev.tone}>{sev.emoji} {sev.label}</AdminBadge>
+                          <AdminBadge tone="neutral">{issue.category}</AdminBadge>
+                          <AdminBadge tone="neutral">{issue.count} affected</AdminBadge>
+                          {issue.auto_fix_id && <AdminBadge tone="success">Auto-fixable</AdminBadge>}
                         </div>
                         <CardTitle className="text-base sm:text-lg">{issue.title}</CardTitle>
                         <CardDescription className="mt-1">{issue.description}</CardDescription>
@@ -101,17 +91,11 @@ export default function AdminErrors() {
                           disabled={isFixing}
                           className="gap-1.5"
                         >
-                          {isFixing ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Wrench className="h-4 w-4" />
-                          )}
-                          Fix Now
+                          {isFixing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wrench className="h-4 w-4" />}
+                          Fix now
                         </Button>
                       ) : (
-                        <Badge variant="outline" className="border-border text-muted-foreground">
-                          Manual review
-                        </Badge>
+                        <AdminBadge tone="neutral">Manual review</AdminBadge>
                       )}
                     </div>
                   </CardHeader>
