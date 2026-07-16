@@ -467,7 +467,7 @@ const Cart = () => {
                 <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
                   <span className="text-6xl opacity-50 mb-4">🧾</span>
                   <p className="text-lg font-medium text-muted-foreground">
-                    {orderStatusFilter === 'shipped' ? 'No shipped orders.' : orderStatusFilter === 'delivered' ? 'No delivered orders.' : 'No orders yet.'}
+                    {orderStatusFilter === 'shipped' ? 'No shipped orders.' : orderStatusFilter === 'delivered' ? 'No delivered orders.' : orderStatusFilter === 'refunded' ? 'No refunded orders.' : 'No orders yet.'}
                   </p>
                 </div>
               );
