@@ -37,8 +37,13 @@ const EditProfile = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [canDeleteAccount, setCanDeleteAccount] = useState(true);
-  const [deleteBlockReason, setDeleteBlockReason] = useState<string | null>(null);
+  const owedCents = Number((profile as any)?.negative_balance_cents ?? 0);
+  const [canDeleteAccount, setCanDeleteAccount] = useState(owedCents === 0);
+  const [deleteBlockReason, setDeleteBlockReason] = useState<string | null>(
+    owedCents > 0
+      ? `You owe $${(owedCents / 100).toFixed(2)} from refunds or disputes. Settle it in Seller Dashboard before deleting your account.`
+      : null,
+  );
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [originalUsername, setOriginalUsername] = useState('');
   const [emailSheetOpen, setEmailSheetOpen] = useState(false);
@@ -108,6 +113,17 @@ const EditProfile = () => {
       if ((outstandingCount || 0) > 0) {
         setCanDeleteAccount(false);
         setDeleteBlockReason('Complete all orders first');
+      }
+
+      // Highest priority: negative balance must be settled before deletion.
+      // Enforced server-side in delete-account, mirrored here so the UI is
+      // honest instead of failing after tap.
+      const owed = Number((data as any)?.negative_balance_cents ?? 0);
+      if (owed > 0) {
+        setCanDeleteAccount(false);
+        setDeleteBlockReason(
+          `Settle $${(owed / 100).toFixed(2)} owed from refunds or disputes in Seller Dashboard first.`,
+        );
       }
     };
     

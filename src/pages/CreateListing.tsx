@@ -799,14 +799,23 @@ const CreateListing = () => {
         />
         
         {/* Submit Button */}
-        <div className="flex justify-center pt-4 pb-8">
+        <div className="flex flex-col items-center pt-4 pb-8 gap-2">
           <Button
             type="submit"
-            disabled={isLoading}
-            className="h-12 px-8 rounded-full bg-foreground text-background font-medium hover:bg-foreground/90"
+            disabled={isLoading || Number((profile as any)?.negative_balance_cents ?? 0) > 0}
+            className="h-12 px-8 rounded-full bg-foreground text-background font-medium hover:bg-foreground/90 disabled:opacity-50"
           >
-            {isLoading ? 'Posting...' : 'Post listing'}
+            {isLoading
+              ? 'Posting...'
+              : Number((profile as any)?.negative_balance_cents ?? 0) > 0
+                ? 'Settle balance to list'
+                : 'Post listing'}
           </Button>
+          {Number((profile as any)?.negative_balance_cents ?? 0) > 0 && (
+            <p className="text-[11px] text-muted-foreground text-center max-w-[280px]">
+              You owe ${(Number((profile as any).negative_balance_cents) / 100).toFixed(2)} from refunds or disputes. Settle it in Seller Dashboard to publish listings.
+            </p>
+          )}
         </div>
       </form>
       

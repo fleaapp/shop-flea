@@ -57,6 +57,7 @@ const IdVerificationStep = ({ onBack, onDone, onEditName, verificationError }: I
   const [back, setBack] = useState<string | null>(null);
   const [capturing, setCapturing] = useState<'front' | 'back' | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [showWhy, setShowWhy] = useState(false);
   const webInputRef = useRef<HTMLInputElement | null>(null);
   const webTargetRef = useRef<'front' | 'back'>('front');
@@ -172,7 +173,7 @@ const IdVerificationStep = ({ onBack, onDone, onEditName, verificationError }: I
       if ((data as any)?.error) throw new Error((data as any).error);
       track('id_verification_submitted', { docType });
       toast.success('ID submitted for verification.');
-      onDone();
+      setSubmitted(true);
     } catch (err: any) {
       console.error('upload-id error:', err);
       track('id_verification_stripe_rejected', { message: err?.message ?? null });
@@ -181,6 +182,34 @@ const IdVerificationStep = ({ onBack, onDone, onEditName, verificationError }: I
       setSubmitting(false);
     }
   };
+
+  // ---------- Submitted / pending review ----------
+  if (submitted) {
+    return (
+      <>
+        <SheetHeader className="space-y-2">
+          <SheetTitle className="text-lg text-center">Under review</SheetTitle>
+        </SheetHeader>
+        <div className="flex flex-col items-center gap-4 pt-2 pb-2">
+          <div className="h-16 w-16 rounded-full bg-primary/15 flex items-center justify-center">
+            <ShieldCheck className="h-8 w-8 text-primary" />
+          </div>
+          <p className="text-sm text-muted-foreground text-pretty leading-relaxed max-w-[320px] mx-auto text-center">
+            Thanks. Your ID has been sent to our payment provider for review. This usually takes 1 to 3 business days. You'll get a notification when it's approved, and we'll message you here if anything else is needed.
+          </p>
+          <div className="w-full max-w-[340px] mx-auto rounded-2xl border border-border/60 bg-muted/40 px-4 py-3 text-left text-[12px] text-foreground/80 leading-relaxed">
+            You can keep using Flea while we review this. Your balance and any pending payouts stay put.
+          </div>
+          <Button
+            onClick={onDone}
+            className="w-full max-w-[340px] h-12 rounded-full bg-charcoal text-white hover:bg-charcoal/90 font-semibold mt-1"
+          >
+            Done
+          </Button>
+        </div>
+      </>
+    );
+  }
 
   // ---------- Doc type picker ----------
   if (!docType) {
