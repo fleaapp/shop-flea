@@ -64,7 +64,7 @@ export default function AdminRefunds() {
                       </span>
                       <span className="flex items-center gap-1">
                         <Avatar className="h-4 w-4"><AvatarImage src={o.seller_profile?.avatar_url ?? undefined} /><AvatarFallback className="text-[8px]">{initials(o.seller_profile?.username)}</AvatarFallback></Avatar>
-                        <span className="truncate">Seller @{o.seller_profile?.username ?? '—'}</span>
+                        <span className="truncate">Seller {o.seller_profile?.username ?? '—'}</span>
                       </span>
                     </div>
                     {o.refund_reason && (
