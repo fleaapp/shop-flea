@@ -298,15 +298,17 @@ const OrderDetailsSheet = ({
             </div>
 
             {/* Shipping Status Tracker */}
-            <ShippingStatusTracker
-              createdAt={primaryOrder.created_at}
-              shippedAt={primaryOrder.shipped_at}
-              deliveredAt={primaryOrder.delivered_at}
-              status={primaryOrder.status}
-            />
+            {!isRefunded && (
+              <ShippingStatusTracker
+                createdAt={primaryOrder.created_at}
+                shippedAt={primaryOrder.shipped_at}
+                deliveredAt={primaryOrder.delivered_at}
+                status={primaryOrder.status as 'awaiting' | 'shipped' | 'delivered'}
+              />
+            )}
             <div className="flex flex-col items-center space-y-3 pt-4">
               <div className="flex items-center gap-3 w-full px-4">
-                {(primaryOrder.status === 'awaiting' || primaryOrder.status === 'shipped') && (
+                {!isRefunded && (primaryOrder.status === 'awaiting' || primaryOrder.status === 'shipped') && (
                   <Button
                     onClick={() => {
                       if (primaryOrder.status === 'awaiting') {
@@ -320,7 +322,7 @@ const OrderDetailsSheet = ({
                     Mark as delivered
                   </Button>
                 )}
-                {primaryOrder.status === 'delivered' && !existingReview && (
+                {!isRefunded && primaryOrder.status === 'delivered' && !existingReview && (
                   <Button
                     onClick={() => setReviewDrawerOpen(true)}
                     className="flex-1 rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12"
@@ -328,7 +330,7 @@ const OrderDetailsSheet = ({
                     Review Seller
                   </Button>
                 )}
-                {canShowRefundButton && (
+                {!isRefunded && canShowRefundButton && (
                   <Button
                     onClick={() => {
                       if (refundStatus?.hasPending || refundStatus?.hasAnyRequest) {
