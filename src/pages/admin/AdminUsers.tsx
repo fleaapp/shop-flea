@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAdminUsers, fetchUserDetail, type AdminUser } from '@/hooks/admin/useAdminUsers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,8 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { ArrowLeft, Search, Users, ShieldAlert, ShieldCheck, ShieldBan, KeyRound, Trash2, RotateCcw, AlertTriangle, ExternalLink, Package, CreditCard } from 'lucide-react';
+import { Search, ShieldAlert, ShieldCheck, ShieldBan, KeyRound, Trash2, RotateCcw, AlertTriangle, ExternalLink, Package, CreditCard, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
+import { AdminHeader } from '@/components/admin/shell/AdminHeader';
+import { AdminBadge, toneForStatus, statusLabel } from '@/components/admin/shell/AdminBadge';
+import { AdminChipFilter } from '@/components/admin/shell/AdminChipFilter';
+import { AdminEmptyState } from '@/components/admin/shell/AdminEmptyState';
 
 const fmtCurrency = (n: number) => `$${n.toFixed(2)}`;
 const initials = (s?: string | null) => (s ?? '?').replace('@', '').slice(0, 2).toUpperCase();
