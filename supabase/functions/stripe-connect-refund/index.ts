@@ -505,6 +505,8 @@ serve(async (req) => {
     }, { idempotencyKey: `flea-refund-${orderId}` });
 
     await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
+    const relatedListingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
+    await markListingsRemoved(externalUrl, serviceKey, relatedListingIds);
     await insertRefundNotifications(externalUrl, serviceKey, order);
 
     return jsonResponse({ success: true, refundId: refund.id, status: refund.status });
