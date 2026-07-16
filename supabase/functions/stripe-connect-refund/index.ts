@@ -262,7 +262,7 @@ async function fetchRelatedListingIds(externalUrl: string, serviceKey: string, o
   return Array.from(new Set((Array.isArray(body) ? body : []).map((row: any) => row.listing_id).filter(Boolean)));
 }
 
-async function reactivateListings(externalUrl: string, serviceKey: string, listingIds: string[]) {
+async function markListingsRemoved(externalUrl: string, serviceKey: string, listingIds: string[]) {
   if (!listingIds.length) return;
   const quotedIds = listingIds.map((id) => `"${String(id).replace(/"/g, "")}"`).join(",");
   await fetch(`${externalUrl}/rest/v1/listings?id=in.(${quotedIds})`, {
@@ -273,7 +273,7 @@ async function reactivateListings(externalUrl: string, serviceKey: string, listi
       "Content-Type": "application/json",
       Prefer: "return=minimal",
     },
-    body: JSON.stringify({ status: "active", updated_at: new Date().toISOString() }),
+    body: JSON.stringify({ status: "removed", updated_at: new Date().toISOString() }),
   });
 }
 
