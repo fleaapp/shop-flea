@@ -535,10 +535,6 @@ const BankDetailsStep = ({ firstName, lastName, onBack, onDone }: BankDetailsSte
           provider to send payouts from your sales to this account.
         </p>
         <p>
-          Refunds, disputes, and any adjustments are settled from your Flea balance, not debited
-          from your bank account.
-        </p>
-        <p>
           You certify that you are either an account holder or an authorised signatory on the
           account listed above.
         </p>
