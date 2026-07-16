@@ -428,7 +428,11 @@ export const getNotificationEmoji = (type: string): string => {
     case 'refund_rejected':
       return '❌';
     case 'refund_initiated':
-      return '✅';
+      return '↩️';
+    case 'order_auto_refunded':
+      return '💸';
+    case 'sale_auto_refunded':
+      return '⚠️';
     case 'payment_action_required':
       return '⚠️';
     default:
