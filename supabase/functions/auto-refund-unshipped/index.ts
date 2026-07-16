@@ -13,6 +13,142 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const REQUIRED_ORDER_COLUMNS = [
+  "id",
+  "buyer_id",
+  "seller_id",
+  "listing_id",
+  "price",
+  "shipping_price",
+  "created_at",
+  "status",
+  "refunded_at",
+  "shipped_at",
+] as const;
+
+const OPTIONAL_ORDER_COLUMNS = ["checkout_reference", "payment_method"] as const;
+
+function isMissingColumnError(error: unknown, columnName: string) {
+  if (!error || typeof error !== "object") return false;
+  const code = typeof (error as any).code === "string" ? (error as any).code : "";
+  const message = typeof (error as any).message === "string" ? (error as any).message : "";
+  return (code === "42703" || code === "PGRST204") && message.includes(columnName);
+}
+
+function buildOrderSelect(omitted: Set<string>) {
+  return [
+    ...REQUIRED_ORDER_COLUMNS,
+    ...OPTIONAL_ORDER_COLUMNS.filter((column) => !omitted.has(column)),
+  ].join(",");
+}
+
+async function fetchAwaitingRefundOrders(admin: ReturnType<typeof createClient>, cutoff: string) {
+  const omitted = new Set<string>();
+
+  while (true) {
+    const { data, error } = await admin
+      .from("orders")
+      .select(buildOrderSelect(omitted))
+      .eq("status", "awaiting")
+      .is("refunded_at", null)
+      .is("shipped_at", null)
+      .lte("created_at", cutoff);
+
+    const missing = OPTIONAL_ORDER_COLUMNS.find((column) => !omitted.has(column) && isMissingColumnError(error, column));
+    if (missing) {
+      console.warn(`[auto-refund-unshipped] orders.${missing} missing, retrying without it`);
+      omitted.add(missing);
+      continue;
+    }
+
+    if (error) throw error;
+    return (data ?? []).map((order: any) => ({
+      ...order,
+      checkout_reference: order.checkout_reference ?? null,
+      payment_method: order.payment_method ?? "stripe",
+    }));
+  }
+}
+
+function isDemoOrder(order: any) {
+  return order.payment_method === "demo" || (typeof order.checkout_reference === "string" && order.checkout_reference.startsWith("demo-"));
+}
+
+async function resolvePaymentIntentId(stripe: Stripe, order: any) {
+  const reference = typeof order.checkout_reference === "string" ? order.checkout_reference.trim() : "";
+
+  if (reference.startsWith("pi_")) return reference;
+
+  if (reference.startsWith("cs_")) {
+    const session = await stripe.checkout.sessions.retrieve(reference);
+    const paymentIntentId = typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent?.id;
+    if (paymentIntentId) return paymentIntentId;
+  }
+
+  if (reference && !reference.startsWith("demo-")) {
+    try {
+      const pi = await stripe.paymentIntents.retrieve(reference);
+      if (pi?.id) return pi.id;
+    } catch (_) {
+      // Continue to metadata lookup.
+    }
+  }
+
+  const createdAt = order.created_at ? Math.floor(new Date(order.created_at).getTime() / 1000) : null;
+  const earliestCreated = Math.max(0, (createdAt ?? Math.floor(Date.now() / 1000)) - 30 * 24 * 60 * 60);
+  const latestCreated = (createdAt ?? Math.floor(Date.now() / 1000)) + 2 * 24 * 60 * 60;
+  const matchesOrder = (pi: Stripe.PaymentIntent) => {
+    const metadata = pi.metadata ?? {};
+    const itemIds = String(metadata.item_ids ?? "").split(",").map((id) => id.trim()).filter(Boolean);
+    return metadata.flea_buyer_id === order.buyer_id
+      && metadata.flea_seller_id === order.seller_id
+      && (!order.listing_id || itemIds.includes(order.listing_id))
+      && pi.created >= earliestCreated
+      && pi.created <= latestCreated
+      && ["succeeded", "requires_capture", "processing"].includes(pi.status);
+  };
+
+  try {
+    const query = [
+      `metadata['flea_buyer_id']:'${String(order.buyer_id).replace(/'/g, "\\'")}'`,
+      `metadata['flea_seller_id']:'${String(order.seller_id).replace(/'/g, "\\'")}'`,
+      `created>${earliestCreated}`,
+    ].join(" AND ");
+    const result = await stripe.paymentIntents.search({ query, limit: 20 });
+    const match = result.data.find(matchesOrder);
+    if (match) return match.id;
+  } catch (error) {
+    console.warn("[auto-refund-unshipped] PaymentIntent search failed, trying recent list", error);
+  }
+
+  const recent = await stripe.paymentIntents.list({ created: { gte: earliestCreated }, limit: 100 });
+  const match = recent.data.find(matchesOrder);
+  if (match) return match.id;
+
+  try {
+    const sessions = await stripe.checkout.sessions.list({ created: { gte: earliestCreated }, limit: 100 });
+    const sessionMatch = sessions.data.find((session) => {
+      const metadata = session.metadata ?? {};
+      const itemIds = String(metadata.item_ids ?? "").split(",").map((id) => id.trim()).filter(Boolean);
+      return metadata.flea_buyer_id === order.buyer_id
+        && (!order.listing_id || itemIds.includes(order.listing_id))
+        && session.created >= earliestCreated
+        && session.created <= latestCreated
+        && ["paid", "no_payment_required"].includes(session.payment_status);
+    });
+    const paymentIntentId = typeof sessionMatch?.payment_intent === "string"
+      ? sessionMatch.payment_intent
+      : sessionMatch?.payment_intent?.id;
+    if (paymentIntentId) return paymentIntentId;
+  } catch (error) {
+    console.warn("[auto-refund-unshipped] Checkout Session lookup failed", error);
+  }
+
+  throw new Error("payment reference not found");
+}
+
 async function firePush(userId: string, notification: Record<string, unknown>) {
   try {
     const url = Deno.env.get("SUPABASE_URL") ?? "https://teaicrimlqdayqpmxasc.supabase.co";
@@ -46,15 +182,7 @@ Deno.serve(async (req) => {
     );
 
     const cutoff = new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString();
-    const { data: orders, error } = await admin
-      .from("orders")
-      .select("id, buyer_id, seller_id, listing_id, price, shipping_price, checkout_reference, payment_method, refunded_at, shipped_at, created_at")
-      .eq("status", "awaiting")
-      .is("refunded_at", null)
-      .is("shipped_at", null)
-      .lte("created_at", cutoff);
-
-    if (error) throw error;
+    const orders = await fetchAwaitingRefundOrders(admin, cutoff);
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
 
@@ -63,15 +191,9 @@ Deno.serve(async (req) => {
 
     for (const order of orders ?? []) {
       try {
-        // Demo (Apple Review) orders bypass Stripe.
-        if (order.payment_method !== "demo") {
-          if (!order.checkout_reference) throw new Error("no checkout_reference");
-          const session = await stripe.checkout.sessions.retrieve(order.checkout_reference);
-          const paymentIntentId = typeof session.payment_intent === "string"
-            ? session.payment_intent
-            : session.payment_intent?.id;
-          if (!paymentIntentId) throw new Error("no payment_intent");
-
+        // Demo (Apple Review) orders bypass the payment provider.
+        if (!isDemoOrder(order)) {
+          const paymentIntentId = await resolvePaymentIntentId(stripe, order);
           await stripe.refunds.create({
             payment_intent: paymentIntentId,
             reverse_transfer: true,

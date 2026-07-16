@@ -17,6 +17,281 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const REQUIRED_ORDER_COLUMNS = [
+  "id",
+  "listing_id",
+  "buyer_id",
+  "seller_id",
+  "price",
+  "shipping_price",
+  "created_at",
+] as const;
+
+const OPTIONAL_ORDER_COLUMNS = [
+  "checkout_reference",
+  "payment_method",
+  "refunded_at",
+  "delivered_at",
+  "shipped_at",
+  "order_group_id",
+  "status",
+] as const;
+
+const ORDER_UPDATE_FALLBACK_COLUMNS = [
+  "refunded_at",
+  "updated_at",
+  "status",
+  "refund_reason",
+] as const;
+
+function jsonResponse(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+async function safeJson(res: Response) {
+  const text = await res.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text };
+  }
+}
+
+function isMissingColumnError(error: unknown, columnName: string) {
+  if (!error || typeof error !== "object") return false;
+  const code = typeof (error as any).code === "string" ? (error as any).code : "";
+  const message = typeof (error as any).message === "string" ? (error as any).message : "";
+  return (code === "42703" || code === "PGRST204") && message.includes(columnName);
+}
+
+function missingColumnFrom<T extends readonly string[]>(error: unknown, columns: T, omitted = new Set<string>()) {
+  return columns.find((column) => !omitted.has(column) && isMissingColumnError(error, column));
+}
+
+function buildOrderSelect(omitted: Set<string>) {
+  return [
+    ...REQUIRED_ORDER_COLUMNS,
+    ...OPTIONAL_ORDER_COLUMNS.filter((column) => !omitted.has(column)),
+  ].join(",");
+}
+
+async function fetchOrderWithFallback(externalUrl: string, serviceKey: string, orderId: string) {
+  const omitted = new Set<string>();
+
+  while (true) {
+    const params = new URLSearchParams({
+      id: `eq.${orderId}`,
+      select: buildOrderSelect(omitted),
+    });
+    const res = await fetch(`${externalUrl}/rest/v1/orders?${params.toString()}`, {
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+    });
+    const body = await safeJson(res);
+
+    if (!res.ok) {
+      const missing = missingColumnFrom(body, OPTIONAL_ORDER_COLUMNS, omitted);
+      if (missing) {
+        console.warn(`[stripe-connect-refund] orders.${missing} missing, retrying without it`);
+        omitted.add(missing);
+        continue;
+      }
+      console.error("[stripe-connect-refund] order fetch failed:", res.status, body);
+      throw new Error(typeof (body as any)?.message === "string" ? (body as any).message : "Could not load order");
+    }
+
+    const order = Array.isArray(body) ? body[0] : null;
+    if (!order) throw new Error("Order not found.");
+    return {
+      ...order,
+      checkout_reference: order.checkout_reference ?? null,
+      payment_method: order.payment_method ?? "stripe",
+      refunded_at: order.refunded_at ?? null,
+      delivered_at: order.delivered_at ?? null,
+      shipped_at: order.shipped_at ?? null,
+      order_group_id: order.order_group_id ?? null,
+      status: order.status ?? null,
+    };
+  }
+}
+
+function stripColumns(body: Record<string, unknown>, stripped: Set<string>) {
+  return Object.fromEntries(Object.entries(body).filter(([key]) => !stripped.has(key)));
+}
+
+async function patchOrdersWithFallback(
+  externalUrl: string,
+  serviceKey: string,
+  filter: string,
+  body: Record<string, unknown>,
+) {
+  const stripped = new Set<string>();
+
+  while (true) {
+    const res = await fetch(`${externalUrl}/rest/v1/orders?${filter}`, {
+      method: "PATCH",
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify(stripColumns(body, stripped)),
+    });
+    const responseBody = await safeJson(res);
+    if (res.ok) return;
+
+    const missing = missingColumnFrom(responseBody, ORDER_UPDATE_FALLBACK_COLUMNS, stripped);
+    if (missing) {
+      console.warn(`[stripe-connect-refund] orders.${missing} update column missing, retrying without it`);
+      stripped.add(missing);
+      continue;
+    }
+
+    throw new Error(typeof (responseBody as any)?.message === "string" ? (responseBody as any).message : "Could not update order refund status");
+  }
+}
+
+async function markRelatedOrdersRefunded(externalUrl: string, serviceKey: string, order: any) {
+  const body = {
+    refunded_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    status: "refunded",
+    refund_reason: "seller_refund",
+  };
+
+  if (order.order_group_id) {
+    try {
+      await patchOrdersWithFallback(externalUrl, serviceKey, `order_group_id=eq.${order.order_group_id}`, body);
+      return;
+    } catch (error) {
+      if (!isMissingColumnError(error, "order_group_id")) {
+        console.warn("[stripe-connect-refund] group refund update failed, falling back to order id", error);
+      }
+    }
+  }
+
+  await patchOrdersWithFallback(externalUrl, serviceKey, `id=eq.${order.id}`, body);
+}
+
+async function fetchRelatedListingIds(externalUrl: string, serviceKey: string, order: any) {
+  if (!order.order_group_id) return [order.listing_id].filter(Boolean);
+
+  const params = new URLSearchParams({
+    order_group_id: `eq.${order.order_group_id}`,
+    select: "listing_id",
+  });
+  const res = await fetch(`${externalUrl}/rest/v1/orders?${params.toString()}`, {
+    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+  });
+  const body = await safeJson(res);
+
+  if (!res.ok) return [order.listing_id].filter(Boolean);
+  return Array.from(new Set((Array.isArray(body) ? body : []).map((row: any) => row.listing_id).filter(Boolean)));
+}
+
+async function reactivateListings(externalUrl: string, serviceKey: string, listingIds: string[]) {
+  if (!listingIds.length) return;
+  const quotedIds = listingIds.map((id) => `"${String(id).replace(/"/g, "")}"`).join(",");
+  await fetch(`${externalUrl}/rest/v1/listings?id=in.(${quotedIds})`, {
+    method: "PATCH",
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify({ status: "active", updated_at: new Date().toISOString() }),
+  });
+}
+
+function isDemoOrder(order: any) {
+  return order.payment_method === "demo" || (typeof order.checkout_reference === "string" && order.checkout_reference.startsWith("demo-"));
+}
+
+function shouldReactivateListings(order: any) {
+  return order.status === "awaiting" && !order.shipped_at && !order.delivered_at;
+}
+
+async function resolvePaymentIntentId(stripe: Stripe, order: any) {
+  const reference = typeof order.checkout_reference === "string" ? order.checkout_reference.trim() : "";
+
+  if (reference.startsWith("pi_")) return reference;
+
+  if (reference.startsWith("cs_")) {
+    const session = await stripe.checkout.sessions.retrieve(reference);
+    const paymentIntentId = typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent?.id;
+    if (paymentIntentId) return paymentIntentId;
+  }
+
+  if (reference && !reference.startsWith("demo-")) {
+    try {
+      const pi = await stripe.paymentIntents.retrieve(reference);
+      if (pi?.id) return pi.id;
+    } catch (_) {
+      // Continue to metadata lookup.
+    }
+  }
+
+  const createdAt = order.created_at ? Math.floor(new Date(order.created_at).getTime() / 1000) : null;
+  const earliestCreated = Math.max(0, (createdAt ?? Math.floor(Date.now() / 1000)) - 30 * 24 * 60 * 60);
+  const latestCreated = (createdAt ?? Math.floor(Date.now() / 1000)) + 2 * 24 * 60 * 60;
+
+  const matchesOrder = (pi: Stripe.PaymentIntent) => {
+    const metadata = pi.metadata ?? {};
+    const itemIds = String(metadata.item_ids ?? "").split(",").map((id) => id.trim()).filter(Boolean);
+    return metadata.flea_buyer_id === order.buyer_id
+      && metadata.flea_seller_id === order.seller_id
+      && (!order.listing_id || itemIds.includes(order.listing_id))
+      && pi.created >= earliestCreated
+      && pi.created <= latestCreated
+      && ["succeeded", "requires_capture", "processing"].includes(pi.status);
+  };
+
+  try {
+    const query = [
+      `metadata['flea_buyer_id']:'${String(order.buyer_id).replace(/'/g, "\\'")}'`,
+      `metadata['flea_seller_id']:'${String(order.seller_id).replace(/'/g, "\\'")}'`,
+      `created>${earliestCreated}`,
+    ].join(" AND ");
+    const result = await stripe.paymentIntents.search({ query, limit: 20 });
+    const match = result.data.find(matchesOrder);
+    if (match) return match.id;
+  } catch (error) {
+    console.warn("[stripe-connect-refund] PaymentIntent search failed, trying recent list", error);
+  }
+
+  const recent = await stripe.paymentIntents.list({ created: { gte: earliestCreated }, limit: 100 });
+  const match = recent.data.find(matchesOrder);
+  if (match) return match.id;
+
+  try {
+    const sessions = await stripe.checkout.sessions.list({ created: { gte: earliestCreated }, limit: 100 });
+    const sessionMatch = sessions.data.find((session) => {
+      const metadata = session.metadata ?? {};
+      const itemIds = String(metadata.item_ids ?? "").split(",").map((id) => id.trim()).filter(Boolean);
+      return metadata.flea_buyer_id === order.buyer_id
+        && (!order.listing_id || itemIds.includes(order.listing_id))
+        && session.created >= earliestCreated
+        && session.created <= latestCreated
+        && ["paid", "no_payment_required"].includes(session.payment_status);
+    });
+    const paymentIntentId = typeof sessionMatch?.payment_intent === "string"
+      ? sessionMatch.payment_intent
+      : sessionMatch?.payment_intent?.id;
+    if (paymentIntentId) return paymentIntentId;
+  } catch (error) {
+    console.warn("[stripe-connect-refund] Checkout Session lookup failed", error);
+  }
+
+  throw new Error("Payment reference could not be found for this order. Please contact support.");
+}
+
 async function checkRateLimit(key: string, max: number, windowSeconds: number): Promise<boolean> {
   try {
     const url = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
@@ -43,17 +318,11 @@ serve(async (req) => {
     );
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
     if (!(await checkRateLimit(`stripe-refund:${user.id}`, 10, 3600))) {
-      return new Response(JSON.stringify({ error: "Too many refund attempts. Please try again later." }), {
-        status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Too many refund attempts. Please try again later." }, 429);
     }
 
     const { orderId, amount, reason } = await req.json();
@@ -61,56 +330,23 @@ serve(async (req) => {
 
     const externalUrl = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
     const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    if (!externalUrl || !serviceKey) throw new Error("Payment service is not configured.");
 
-    // Fetch order and verify the caller is the seller.
-    // Schema-resilient: retry without `payment_method` if the column is missing.
-    const baseCols = "id,buyer_id,seller_id,price,shipping_price,checkout_reference,refunded_at,delivered_at,created_at";
-    const withPM = `${baseCols},payment_method`;
-    async function fetchOrder(cols: string) {
-      const res = await fetch(
-        `${externalUrl}/rest/v1/orders?id=eq.${orderId}&select=${cols}`,
-        { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
-      );
-      return { ok: res.ok, status: res.status, body: await res.json() };
-    }
-    let orderRes = await fetchOrder(withPM);
-    if (!orderRes.ok) {
-      const msg = typeof orderRes.body?.message === "string" ? orderRes.body.message : "";
-      if (orderRes.body?.code === "42703" || msg.includes("payment_method")) {
-        console.warn("[stripe-connect-refund] orders.payment_method missing, retrying without it");
-        orderRes = await fetchOrder(baseCols);
-      }
-    }
-    if (!orderRes.ok) {
-      console.error("[stripe-connect-refund] order fetch failed:", orderRes.status, orderRes.body);
-      throw new Error("Could not load order");
-    }
-    const order = Array.isArray(orderRes.body) ? orderRes.body[0] : null;
-    if (!order) throw new Error("Order not found");
-    if (order.payment_method === undefined) order.payment_method = "stripe";
+    const order = await fetchOrderWithFallback(externalUrl, serviceKey, orderId);
     if (order.seller_id !== user.id) throw new Error("Only the seller can initiate this refund");
     if (order.refunded_at) throw new Error("Order already refunded");
 
-    // Demo orders (Apple App Review bypass) have no Stripe payment intent —
+    // Demo orders (Apple App Review bypass) have no payment intent —
     // just mark refunded directly so reviewers can exercise the refund flow.
-    if (order.payment_method === 'demo') {
-      await fetch(`${externalUrl}/rest/v1/orders?id=eq.${orderId}`, {
-        method: "PATCH",
-        headers: {
-          apikey: serviceKey,
-          Authorization: `Bearer ${serviceKey}`,
-          "Content-Type": "application/json",
-          Prefer: "return=minimal",
-        },
-        body: JSON.stringify({ refunded_at: new Date().toISOString() }),
-      });
-      return new Response(JSON.stringify({ success: true, demo: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (isDemoOrder(order)) {
+      const listingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
+      await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
+      if (shouldReactivateListings(order)) await reactivateListings(externalUrl, serviceKey, listingIds);
+      return jsonResponse({ success: true, demo: true });
     }
 
     if (order.payment_method && order.payment_method !== "stripe") {
-      throw new Error("Refund only supported for Stripe orders here");
+      throw new Error("Refund only supported for payment processor orders here");
     }
 
 
@@ -134,13 +370,7 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    // Resolve checkout session → payment intent.
-    if (!order.checkout_reference) throw new Error("No checkout reference on order");
-    const session = await stripe.checkout.sessions.retrieve(order.checkout_reference);
-    const paymentIntentId = typeof session.payment_intent === "string"
-      ? session.payment_intent
-      : session.payment_intent?.id;
-    if (!paymentIntentId) throw new Error("No payment intent for this order");
+    const paymentIntentId = await resolvePaymentIntentId(stripe, order);
 
     // Idempotency key prevents double-refunds on retry/double-click.
     const refund = await stripe.refunds.create({
@@ -158,27 +388,13 @@ serve(async (req) => {
       },
     }, { idempotencyKey: `flea-refund-${orderId}` });
 
-    // Mark order refunded. The webhook will also handle this, but we set it
-    // immediately so the UI updates without waiting for the webhook.
-    await fetch(`${externalUrl}/rest/v1/orders?id=eq.${orderId}`, {
-      method: "PATCH",
-      headers: {
-        apikey: serviceKey,
-        Authorization: `Bearer ${serviceKey}`,
-        "Content-Type": "application/json",
-        Prefer: "return=minimal",
-      },
-      body: JSON.stringify({ refunded_at: new Date().toISOString() }),
-    });
+    const listingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
+    await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
+    if (shouldReactivateListings(order)) await reactivateListings(externalUrl, serviceKey, listingIds);
 
-    return new Response(JSON.stringify({ success: true, refundId: refund.id, status: refund.status }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ success: true, refundId: refund.id, status: refund.status });
   } catch (error: any) {
     console.error("[stripe-connect-refund] error:", error);
-    return new Response(JSON.stringify({ error: error?.message ?? "Refund failed" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: error?.message ?? "Refund failed" }, error?.statusCode || error?.status || 400);
   }
 });

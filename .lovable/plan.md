@@ -1,37 +1,26 @@
-## Problem
+## Plan
 
-The refund edge function is returning 500 because the `orders` table on the source database no longer has a `payment_method` column. The network log confirms this — the same column is failing every front-end query too:
+1. **Fix the refund backend failure**
+   - Update `stripe-connect-refund` so missing optional order fields are retried one at a time, including `checkout_reference` and `payment_method`.
+   - Return the real backend error message to the app instead of the generic non-2xx failure.
 
-```
-GET /rest/v1/orders?...payment_method... → 400
-{"code":"42703","message":"column orders.payment_method does not exist"}
-```
+2. **Support both current payment paths**
+   - If an order has a Checkout Session reference (`cs_...`), resolve it to the payment intent as it does now.
+   - If an order has a PaymentIntent reference (`pi_...`), refund it directly.
+   - If the order is missing a stored reference, look up the payment intent from payment records or provider metadata where available, rather than crashing on the missing column.
 
-Inside `supabase/functions/stripe-connect-refund/index.ts`, line 67 selects `payment_method` from `orders`. PostgREST returns a 400 error object (not an array), so `orders?.[0]` is `undefined`, we throw `"Order not found"`, and the client sees `FunctionsHttpError: Edge Function returned a non-2xx status code`.
+3. **Keep refunds fully in-app**
+   - Keep the native confirmation flow on Sale details.
+   - On success, update the order as refunded, reactivate the listing if needed, refresh seller balance and sales data, and show an in-app success message.
 
-Same root cause is breaking:
-- Seller/buyer sale-count badges (`src/hooks/useNavBadges.ts`)
-- The order list hook (`src/hooks/useOrders.ts`)
+4. **Harden related auto-refund code**
+   - Apply the same PaymentIntent-aware refund logic to the 9-day unshipped auto-refund function so it does not fail for native checkout orders.
 
-## Fix
+5. **Verify the fix**
+   - Deploy the changed functions.
+   - Test the refund function against the failing order path and confirm it returns a successful response or a clear actionable message if the payment provider rejects the refund.
 
-Apply the schema-resilient pattern we already use in `order-messages` (retry the select without the missing column, then default `payment_method` to `"stripe"` in memory).
+## Technical notes
 
-### 1. `supabase/functions/stripe-connect-refund/index.ts`
-- Extract the order fetch into a small helper that first queries with `payment_method`, and on a 42703 / "column ... does not exist" error, retries the same query without it and treats `payment_method` as `"stripe"`.
-- Everything downstream (`order.payment_method === 'demo'`, the stripe-only guard) keeps working unchanged.
-- Also improve the error response: if the order fetch itself returns a non-2xx from PostgREST, return a clear message ("Could not load order") instead of the generic "Order not found", so future schema drift is obvious in logs.
-
-### 2. `src/hooks/useNavBadges.ts`
-- Same pattern: try the select with `payment_method`; if it returns the 42703 error, retry without it and treat every row as non-demo (i.e. `payment_method: 'stripe'`). This unblocks the Sales badge that's currently silently failing.
-
-### 3. `src/hooks/useOrders.ts`
-- Wrap the orders select in the same retry-without-column helper so buyer/seller order lists load again.
-
-No schema migration — the column is intentionally gone on that database, and we already have a resilient path elsewhere. This just extends it to the three remaining call sites.
-
-## Verification
-
-- Redeploy `stripe-connect-refund`, then retry the refund from Sale details. Expect `{ success: true, refundId, status }`.
-- Check the Sales badge and Orders list re-populate for `@jcsbh` and `@sarahhearn2` without 400s in the network tab.
-- Confirm demo orders (App Review) still short-circuit correctly — since fallback treats missing column as `"stripe"`, real demo orders written with `payment_method: 'demo'` will still be detected because the column exists on inserts through `finalize-checkout` (which has its own fallback). If the column truly no longer exists, demo orders will refund via Stripe, which is fine because they're only created when the column is writable.
+- The current live logs show the failure is caused by the refund function selecting `orders.checkout_reference` on a schema path that still reports that column as unavailable.
+- The checkout flow now stores native checkout references as PaymentIntent IDs, so refund code must handle `pi_...` directly and not assume every order uses a hosted checkout session.
