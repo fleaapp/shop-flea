@@ -781,8 +781,27 @@ async function listListings(payload: any = {}) {
   const minReports = Number(payload.minReports ?? 0);
 
   const params: Record<string, string> = { order: `${sort}.${dir}.nullslast`, limit: "500" };
-  if (status !== "all") params.status = `eq.${status}`;
-  let listings = await safeSelect("listings", params);
+  let listings: any[] = [];
+  if (status === 'refunded') {
+    // Include listings marked status=refunded AND listings referenced by any order with refunded_at set.
+    const [directListings, refundedOrders] = await Promise.all([
+      safeSelect("listings", { ...params, status: 'eq.refunded' }),
+      safeSelect("orders", { refunded_at: 'not.is.null', select: 'listing_id' }),
+    ]);
+    const refundedListingIds = unique((refundedOrders as any[]).map((o) => o.listing_id).filter(Boolean));
+    const extraListings = refundedListingIds.length
+      ? await safeSelect("listings", { id: `in.(${refundedListingIds.join(",")})`, order: `${sort}.${dir}.nullslast` })
+      : [];
+    const seen = new Set<string>();
+    listings = [...directListings, ...extraListings].filter((l: any) => {
+      if (seen.has(l.id)) return false;
+      seen.add(l.id);
+      return true;
+    });
+  } else {
+    if (status !== "all") params.status = `eq.${status}`;
+    listings = await safeSelect("listings", params);
+  }
 
   if (search) {
     listings = listings.filter((l: any) =>
