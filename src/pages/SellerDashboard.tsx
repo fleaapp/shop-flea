@@ -146,6 +146,9 @@ const SellerDashboard = () => {
   const currency = data?.currency ?? 'aud';
   const available = data?.available ?? 0;
   const instantAvailable = data?.instantAvailable ?? 0;
+  const unshippedCents = data?.unshippedCents ?? 0;
+  const availableToWithdraw = data?.availableToWithdraw ?? Math.max(available - unshippedCents, 0);
+  const instantAvailableToWithdraw = data?.instantAvailableToWithdraw ?? Math.max(instantAvailable - unshippedCents, 0);
   const negativeCents = data?.negativeBalanceCents ?? 0;
   const isNegative = negativeCents > 0;
   const canPayout =
@@ -153,12 +156,12 @@ const SellerDashboard = () => {
     !!data?.chargesEnabled &&
     !!data?.payoutsEnabled &&
     !!data?.hasSucceededCharge &&
-    available > 0;
+    availableToWithdraw > 0;
   const canInstant =
-    canPayout && !!data?.instantPayoutEligible && instantAvailable > 0;
+    canPayout && !!data?.instantPayoutEligible && instantAvailableToWithdraw > 0;
 
-  const instantFee = Math.round(instantAvailable * 0.015);
-  const instantNet = Math.max(instantAvailable - instantFee, 0);
+  const instantFee = Math.round(instantAvailableToWithdraw * 0.015);
+  const instantNet = Math.max(instantAvailableToWithdraw - instantFee, 0);
 
   const handlePayout = async (method: 'standard' | 'instant') => {
     setConfirm(null);
