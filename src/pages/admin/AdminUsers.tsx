@@ -26,7 +26,6 @@ function riskTone(score: number): 'success' | 'warning' | 'danger' {
 }
 
 export default function AdminUsers() {
-  const navigate = useNavigate();
   const { users, loading, search, setSearch, status, setStatus, sort, setSort, dir, setDir, performAction, stats } = useAdminUsers();
   const [selected, setSelected] = useState<AdminUser | null>(null);
   const [detail, setDetail] = useState<any>(null);
@@ -45,59 +44,64 @@ export default function AdminUsers() {
     }
   };
 
-  return (
-    <div className="admin-scope flex h-screen flex-col bg-background">
-      <header className="border-b border-border bg-card px-4 py-3 sm:px-6 sm:py-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-              <Users className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-base font-bold text-foreground sm:text-xl">User Management</h1>
-              <p className="hidden text-sm text-muted-foreground sm:block">{stats.total} users · {stats.risky} flagged risky</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge className={statusBadge('active')}>Active {stats.active}</Badge>
-            <Badge className={statusBadge('suspended')}>Suspended {stats.suspended}</Badge>
-            <Badge className={statusBadge('blocked')}>Blocked {stats.blocked}</Badge>
-          </div>
-        </div>
-      </header>
+  const statusOptions = [
+    { key: 'all', label: 'All', count: stats.total },
+    { key: 'active', label: 'Active', emoji: '✅', count: stats.active },
+    { key: 'suspended', label: 'Suspended', emoji: '⚠️', count: stats.suspended },
+    { key: 'blocked', label: 'Blocked', emoji: '🚫', count: stats.blocked },
+  ] as const;
 
-      <div className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-4 py-3">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search username, email, name…" className="pl-8" />
+  return (
+    <div className="admin-scope flex min-h-[100svh] flex-col bg-background pb-24">
+      <AdminHeader title="Users" emoji="👥" />
+
+      <div className="px-4 pb-2">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search username, email, name…"
+            className="h-10 rounded-full border-border bg-card pl-9"
+          />
         </div>
-        <Select value={status} onValueChange={(v) => setStatus(v as any)}>
-          <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="suspended">Suspended</SelectItem>
-            <SelectItem value="blocked">Blocked</SelectItem>
-          </SelectContent>
-        </Select>
+      </div>
+
+      <AdminChipFilter
+        options={statusOptions as any}
+        value={status}
+        onChange={(v) => setStatus(v as any)}
+      />
+
+      <div className="flex items-center gap-2 px-4 pb-2">
         <Select value={sort} onValueChange={(v) => setSort(v as any)}>
-          <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-9 w-[170px] rounded-full border-border bg-card text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="created_at">Sort: Signup date</SelectItem>
-            <SelectItem value="last_sign_in_at">Sort: Last active</SelectItem>
-            <SelectItem value="username">Sort: Username</SelectItem>
+            <SelectItem value="created_at">Signup date</SelectItem>
+            <SelectItem value="last_sign_in_at">Last active</SelectItem>
+            <SelectItem value="username">Username</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline" size="sm" onClick={() => setDir(dir === 'asc' ? 'desc' : 'asc')}>{dir === 'asc' ? 'Asc' : 'Desc'}</Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setDir(dir === 'asc' ? 'desc' : 'asc')}
+          className="h-9 rounded-full text-xs"
+        >
+          <ArrowUpDown className="mr-1 h-3.5 w-3.5" />
+          {dir === 'asc' ? 'Asc' : 'Desc'}
+        </Button>
+        {stats.risky > 0 && (
+          <span className="ml-auto text-xs text-muted-foreground">⚠️ {stats.risky} flagged risky</span>
+        )}
       </div>
 
       <div className="flex-1 overflow-auto">
         {loading ? (
-          <div className="space-y-2 p-4">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+          <div className="space-y-2 p-4">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-2xl" />)}</div>
         ) : users.length === 0 ? (
+          <AdminEmptyState emoji="🔍" title="No users match these filters" />
+
           <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
             <p className="text-lg font-medium">No users match these filters</p>
           </div>
