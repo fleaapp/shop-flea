@@ -321,12 +321,13 @@ const Cart = () => {
               { key: 'awaiting' as const, label: 'Ordered' },
               { key: 'shipped' as const, label: 'Shipped' },
               { key: 'delivered' as const, label: 'Delivered' },
+              { key: 'refunded' as const, label: 'Refunded' },
             ]).map(({ key, label }) => (
               <button
                 key={key}
                 onClick={() => setOrderStatusFilter(key)}
                 className={cn(
-                  'rounded-full w-24 py-2 text-sm font-medium transition-all',
+                  'rounded-full w-20 py-2 text-xs font-medium transition-all',
                   orderStatusFilter === key
                     ? 'bg-card text-foreground shadow-sm'
                     : 'text-muted-foreground'
