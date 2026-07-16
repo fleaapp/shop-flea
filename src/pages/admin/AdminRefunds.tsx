@@ -44,7 +44,8 @@ export default function AdminRefunds() {
           <div className="space-y-3">
             {orders.map((o) => {
               const image = o.listing?.images?.[0];
-              const status = o.refunded_at ? 'Refunded' : 'Requested';
+              const isRefunded = Boolean(o.refunded_at || o.status === 'refunded');
+              const status = isRefunded ? 'Refunded' : 'Requested';
               return (
                 <div key={o.id} className="flex gap-3 rounded-xl bg-card p-3 card-shadow">
                   <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted">
@@ -53,7 +54,8 @@ export default function AdminRefunds() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="truncate font-medium">{o.listing?.title ?? 'Item'}</p>
-                      <Badge variant={o.refunded_at ? 'secondary' : 'destructive'}>{status}</Badge>
+                      <Badge variant={isRefunded ? 'secondary' : 'destructive'}>{status}</Badge>
+                      {o.listing?.status === 'removed' && <Badge variant="outline">Deleted listing</Badge>}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       ${(o.price + o.shipping_price).toFixed(2)} · {format(new Date(o.updated_at || o.created_at), 'MMM d, yyyy')}

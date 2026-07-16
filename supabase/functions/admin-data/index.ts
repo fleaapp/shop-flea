@@ -775,7 +775,7 @@ async function userAction(adminId: string, payload: any) {
 
 async function listListings(payload: any = {}) {
   const search = (payload.search ?? "").trim().toLowerCase();
-  const status = payload.status ?? "all"; // all | active | sold | removed | hidden | archived
+  const status = payload.status ?? "all"; // all | active | sold | refunded | removed(deleted) | hidden | archived
   const sort = payload.sort ?? "created_at";
   const dir = payload.dir === "asc" ? "asc" : "desc";
   const minReports = Number(payload.minReports ?? 0);
@@ -1520,15 +1520,15 @@ async function deleteBrand(payload: any = {}) {
 async function listRefunds(payload: any = {}) {
   const filter = payload?.filter ?? "all"; // all | refunded | requested
   const params: Record<string, string> = { select: ORDER_ADMIN_SELECT + ",refunded_at,refund_reason", order: "updated_at.desc", limit: "500" };
-  if (filter === "refunded") params.refunded_at = "not.is.null";
+  if (filter === "refunded") params.or = "(refunded_at.not.is.null,status.eq.refunded)";
   else if (filter === "requested") params.status = "eq.refund_requested";
-  else params.or = "(refunded_at.not.is.null,status.eq.refund_requested)";
+  else params.or = "(refunded_at.not.is.null,status.eq.refunded,status.eq.refund_requested)";
   const orders = await safeSelect("orders", params);
   const userIds = unique([...orders.map((o: any) => o.buyer_id), ...orders.map((o: any) => o.seller_id)]);
   const listingIds = unique(orders.map((o: any) => o.listing_id));
   const [profiles, listings] = await Promise.all([
     userIds.length ? safeSelect("profiles", { user_id: `in.(${userIds.join(",")})` }) : Promise.resolve([] as any[]),
-    listingIds.length ? safeSelect("listings", { id: `in.(${listingIds.join(",")})`, select: "id,title,images,price" }) : Promise.resolve([] as any[]),
+    listingIds.length ? safeSelect("listings", { id: `in.(${listingIds.join(",")})`, select: "id,title,images,price,status" }) : Promise.resolve([] as any[]),
   ]);
   const profileMap = new Map(profiles.map((p: any) => [p.user_id, { username: p.username, avatar_url: p.avatar_url }]));
   const listingMap = new Map(listings.map((l: any) => [l.id, l]));

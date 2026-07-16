@@ -20,6 +20,7 @@ const statusColor: Record<string, string> = {
   archived: 'bg-muted text-muted-foreground border-border',
   featured: 'bg-purple-500/10 text-purple-700 border-purple-300',
 };
+const statusLabel = (status: string) => status === 'removed' ? 'Deleted' : status.charAt(0).toUpperCase() + status.slice(1);
 const initials = (s?: string | null) => (s ?? '?').replace('@', '').slice(0, 2).toUpperCase();
 
 export default function AdminListings() {
@@ -46,7 +47,8 @@ export default function AdminListings() {
           <div className="flex flex-wrap items-center gap-2">
             <Badge className={statusColor.active}>Active {stats.active}</Badge>
             <Badge className={statusColor.sold}>Sold {stats.sold}</Badge>
-            <Badge className={statusColor.removed}>Removed {stats.removed}</Badge>
+            <Badge className={statusColor.refunded}>Refunded {stats.refunded}</Badge>
+            <Badge className={statusColor.removed}>Deleted {stats.deleted}</Badge>
           </div>
         </div>
       </header>
@@ -64,7 +66,7 @@ export default function AdminListings() {
             <SelectItem value="sold">Sold</SelectItem>
             <SelectItem value="refunded">Refunded</SelectItem>
             <SelectItem value="hidden">Hidden</SelectItem>
-            <SelectItem value="removed">Removed</SelectItem>
+            <SelectItem value="removed">Deleted</SelectItem>
             <SelectItem value="archived">Archived</SelectItem>
             <SelectItem value="featured">Featured</SelectItem>
           </SelectContent>
@@ -101,7 +103,7 @@ export default function AdminListings() {
                 <div className="relative aspect-[4/5] overflow-hidden bg-muted">
                   {l.images?.[0] && <img src={l.images[0]} alt={l.title} className="h-full w-full object-cover" loading="lazy" />}
                   <div className="absolute left-1 top-1 flex flex-wrap gap-1">
-                    <Badge className={statusColor[l.status] ?? 'bg-muted text-muted-foreground'} variant="outline">{l.status}</Badge>
+                    <Badge className={statusColor[l.status] ?? 'bg-muted text-muted-foreground'} variant="outline">{statusLabel(l.status)}</Badge>
                     {l.report_count > 0 && <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 gap-0.5"><Flag className="h-3 w-3" />{l.report_count}</Badge>}
                     {l.spam_signal && <Badge variant="outline" className="bg-yellow-500/10 text-yellow-700 border-yellow-300">Spam?</Badge>}
                     {l.is_duplicate && <Badge variant="outline" className="bg-purple-500/10 text-purple-700 border-purple-300">Dup</Badge>}
@@ -129,7 +131,7 @@ export default function AdminListings() {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   {selected.title}
-                  <Badge className={statusColor[selected.status] ?? ''} variant="outline">{selected.status}</Badge>
+                  <Badge className={statusColor[selected.status] ?? ''} variant="outline">{statusLabel(selected.status)}</Badge>
                 </DialogTitle>
               </DialogHeader>
 
@@ -188,7 +190,7 @@ export default function AdminListings() {
                 <Button size="sm" variant="outline" onClick={() => { performAction(selected.id, 'hide'); setSelected(null); }}><EyeOff className="mr-1 h-4 w-4" /> Hide</Button>
                 <Button size="sm" variant="outline" onClick={() => { performAction(selected.id, 'feature'); setSelected(null); }}><Star className="mr-1 h-4 w-4" /> Feature</Button>
                 <Button size="sm" variant="outline" onClick={() => { performAction(selected.id, 'restore'); setSelected(null); }}><RotateCcw className="mr-1 h-4 w-4" /> Restore</Button>
-                <Button size="sm" variant="destructive" onClick={() => { if (confirm('Remove this listing? It stays under Removed so admin history is preserved.')) { performAction(selected.id, 'soft_delete'); setSelected(null); } }}><Trash2 className="mr-1 h-4 w-4" /> Remove listing</Button>
+                <Button size="sm" variant="destructive" onClick={() => { if (confirm('Delete this listing? It stays under Deleted so admin history is preserved.')) { performAction(selected.id, 'soft_delete'); setSelected(null); } }}><Trash2 className="mr-1 h-4 w-4" /> Delete listing</Button>
                 <Button size="sm" variant="ghost" onClick={() => navigate(`/listing/${selected.id}`)}><Eye className="mr-1 h-4 w-4" /> View on site</Button>
               </div>
             </>
