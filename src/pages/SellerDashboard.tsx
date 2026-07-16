@@ -35,6 +35,9 @@ type DashboardData = {
   available?: number;
   pending?: number;
   instantAvailable?: number;
+  unshippedCents?: number;
+  availableToWithdraw?: number;
+  instantAvailableToWithdraw?: number;
   negativeBalanceCents?: number;
   isNegative?: boolean;
   chargesEnabled?: boolean;
