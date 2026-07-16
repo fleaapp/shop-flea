@@ -11,8 +11,9 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const dbUrl = Deno.env.get("EXTERNAL_SUPABASE_DB_URL") ?? "";
-    if (!dbUrl) throw new Error("EXTERNAL_SUPABASE_DB_URL not set");
+    const dbUrl = Deno.env.get("SUPABASE_DB_URL") ?? Deno.env.get("EXTERNAL_SUPABASE_DB_URL") ?? "";
+    if (!dbUrl) throw new Error("DB URL not set");
+    console.log("[admin-fix-refund-schema] host:", new URL(dbUrl.replace("postgresql://", "http://")).host);
     const body = await req.json().catch(() => ({}));
     const orderId: string | undefined = body.orderId;
     const orderGroupId: string | undefined = body.orderGroupId;
