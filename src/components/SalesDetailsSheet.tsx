@@ -125,12 +125,15 @@ const SalesDetailsSheet = ({
   const buyerUsername = rawBuyerUsername.startsWith('@') ? rawBuyerUsername.slice(1) : rawBuyerUsername;
   const buyerAvatar = primaryOrder.buyer_profile?.avatar_url || getDefaultAvatar(primaryOrder.buyer_id);
 
+  const isRefunded = !!primaryOrder.refunded_at;
   const providers = Array.from(new Set(orders.map((o) => o.tracking_provider).filter(Boolean) as string[]));
   const numbers = Array.from(new Set(orders.map((o) => o.tracking_number).filter(Boolean) as string[]));
-  const trackingProviderDisplay =
-    primaryOrder.status === 'awaiting' ? 'Awaiting shipping' : (providers.length === 1 ? providers[0] : 'Multiple');
-  const trackingNumberDisplay =
-    primaryOrder.status === 'awaiting' ? 'Awaiting shipping' : (numbers.length === 1 ? numbers[0] : 'Multiple');
+  const trackingProviderDisplay = isRefunded
+    ? 'Refunded'
+    : (primaryOrder.status === 'awaiting' ? 'Awaiting shipping' : (providers.length === 1 ? providers[0] : 'Multiple'));
+  const trackingNumberDisplay = isRefunded
+    ? 'Refunded'
+    : (primaryOrder.status === 'awaiting' ? 'Awaiting shipping' : (numbers.length === 1 ? numbers[0] : 'Multiple'));
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
