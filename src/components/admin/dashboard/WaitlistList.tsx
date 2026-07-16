@@ -1,18 +1,11 @@
 import { useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, Download, Loader2, Search } from 'lucide-react';
+import { Download, Loader2, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { WaitlistEntry } from '@/hooks/admin/useAdminWaitlist';
-
-type SortKey = 'created_at' | 'email' | 'first_name' | 'last_name' | 'country_code';
+import { AdminBadge } from '@/components/admin/shell/AdminBadge';
+import { AdminEmptyState } from '@/components/admin/shell/AdminEmptyState';
 
 interface Props {
   entries: WaitlistEntry[];
@@ -26,51 +19,29 @@ function toCsv(rows: WaitlistEntry[]) {
   const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
   const lines = [header.join(',')];
   rows.forEach((r) => {
-    lines.push(
-      [
-        escape(r.first_name ?? ''),
-        escape(r.last_name ?? ''),
-        escape(r.email),
-        escape(r.country_code ?? ''),
-        escape(new Date(r.created_at).toISOString()),
-      ].join(','),
-    );
+    lines.push([
+      escape(r.first_name ?? ''),
+      escape(r.last_name ?? ''),
+      escape(r.email),
+      escape(r.country_code ?? ''),
+      escape(new Date(r.created_at).toISOString()),
+    ].join(','));
   });
   return lines.join('\n');
 }
 
 export function WaitlistList({ entries, loading, error, onRefresh }: Props) {
   const [search, setSearch] = useState('');
-  const [sortKey, setSortKey] = useState<SortKey>('created_at');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    let rows = entries;
-    if (q) {
-      rows = rows.filter((r) =>
-        [r.first_name, r.last_name, r.email, r.country_code]
-          .filter(Boolean)
-          .some((v) => (v as string).toLowerCase().includes(q)),
-      );
-    }
-    rows = [...rows].sort((a, b) => {
-      const av = (a[sortKey] ?? '') as string;
-      const bv = (b[sortKey] ?? '') as string;
-      const cmp = String(av).localeCompare(String(bv));
-      return sortDir === 'asc' ? cmp : -cmp;
-    });
-    return rows;
-  }, [entries, search, sortKey, sortDir]);
-
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortKey(key);
-      setSortDir('asc');
-    }
-  };
+    if (!q) return entries;
+    return entries.filter((r) =>
+      [r.first_name, r.last_name, r.email, r.country_code]
+        .filter(Boolean)
+        .some((v) => (v as string).toLowerCase().includes(q))
+    );
+  }, [entries, search]);
 
   const exportCsv = () => {
     const blob = new Blob([toCsv(filtered)], { type: 'text/csv;charset=utf-8' });
@@ -84,83 +55,52 @@ export function WaitlistList({ entries, loading, error, onRefresh }: Props) {
     URL.revokeObjectURL(url);
   };
 
-  const SortHeader = ({ k, label }: { k: SortKey; label: string }) => (
-    <button
-      type="button"
-      onClick={() => toggleSort(k)}
-      className="inline-flex items-center gap-1 font-medium hover:text-foreground"
-    >
-      {label}
-      {sortKey === k &&
-        (sortDir === 'asc' ? (
-          <ArrowUp className="h-3 w-3" />
-        ) : (
-          <ArrowDown className="h-3 w-3" />
-        ))}
-    </button>
-  );
-
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex flex-wrap items-center gap-2 border-b border-border bg-card p-3">
-        <div className="relative flex-1 min-w-[200px]">
+    <div className="flex h-full flex-col bg-background">
+      <div className="px-4 pb-2 pt-2">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name, email, country..."
-            className="pl-9"
+            placeholder="Search name, email, country…"
+            className="h-10 rounded-full border-border bg-card pl-9"
           />
         </div>
-        <div className="text-sm text-muted-foreground">
-          {filtered.length} of {entries.length}
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <span className="text-xs text-muted-foreground">{filtered.length} of {entries.length} signups</span>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={onRefresh} disabled={loading} className="h-8 rounded-full text-xs">
+              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Refresh'}
+            </Button>
+            <Button size="sm" onClick={exportCsv} disabled={filtered.length === 0} className="h-8 rounded-full text-xs">
+              <Download className="mr-1 h-3.5 w-3.5" /> Export
+            </Button>
+          </div>
         </div>
-        <Button variant="outline" size="sm" onClick={onRefresh} disabled={loading}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Refresh'}
-        </Button>
-        <Button size="sm" onClick={exportCsv} disabled={filtered.length === 0}>
-          <Download className="h-4 w-4 mr-1" /> Export CSV
-        </Button>
       </div>
 
       <div className="flex-1 overflow-auto">
-        {error && <div className="p-4 text-sm text-destructive">{error}</div>}
+        {error && <div className="mx-4 my-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
         {loading && entries.length === 0 ? (
-          <div className="flex items-center justify-center p-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
+          <div className="space-y-2 p-4">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-2xl" />)}</div>
+        ) : filtered.length === 0 ? (
+          <AdminEmptyState emoji="📝" title="No signups match" description="Waitlist entries will show up here." />
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead><SortHeader k="first_name" label="First" /></TableHead>
-                <TableHead><SortHeader k="last_name" label="Last" /></TableHead>
-                <TableHead><SortHeader k="email" label="Email" /></TableHead>
-                <TableHead><SortHeader k="country_code" label="Country" /></TableHead>
-                <TableHead><SortHeader k="created_at" label="Signed up" /></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell>{r.first_name ?? '—'}</TableCell>
-                  <TableCell>{r.last_name ?? '—'}</TableCell>
-                  <TableCell className="font-mono text-xs">{r.email}</TableCell>
-                  <TableCell>{r.country_code}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {new Date(r.created_at).toLocaleString()}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filtered.length === 0 && !loading && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                    No signups found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          <div className="space-y-2 px-4 py-2">
+            {filtered.map((r) => (
+              <div key={r.id} className="rounded-2xl bg-card p-3 card-shadow">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-sm font-semibold text-foreground">
+                    {[r.first_name, r.last_name].filter(Boolean).join(' ') || '—'}
+                  </p>
+                  {r.country_code && <AdminBadge tone="neutral">{r.country_code}</AdminBadge>}
+                </div>
+                <a href={`mailto:${r.email}`} className="mt-0.5 block truncate text-xs text-primary hover:underline">{r.email}</a>
+                <p className="mt-1 text-[11px] text-muted-foreground">Signed up {new Date(r.created_at).toLocaleString()}</p>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
