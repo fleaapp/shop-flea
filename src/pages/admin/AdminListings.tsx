@@ -47,6 +47,7 @@ export default function AdminListings() {
           <div className="flex flex-wrap items-center gap-2">
             <Badge className={statusColor.active}>Active {stats.active}</Badge>
             <Badge className={statusColor.sold}>Sold {stats.sold}</Badge>
+            <Badge className={statusColor.refunded}>Refunded {stats.refunded}</Badge>
             <Badge className={statusColor.removed}>Deleted {stats.deleted}</Badge>
           </div>
         </div>
