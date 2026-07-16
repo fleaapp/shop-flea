@@ -136,9 +136,9 @@ const Notifications = () => {
       return;
     }
 
-    // Payment action required → open Stripe dashboard
+    // Payment action required → open Seller Dashboard in-app
     if (notification.type === 'payment_action_required') {
-      window.open('https://dashboard.stripe.com', '_blank');
+      navigate('/seller-dashboard');
       return;
     }
 
