@@ -56,6 +56,7 @@ const SellerOnboardingSheet = ({
   onComplete,
 }: SellerOnboardingSheetProps) => {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
