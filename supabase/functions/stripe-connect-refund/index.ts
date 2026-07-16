@@ -63,13 +63,31 @@ serve(async (req) => {
     const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
     // Fetch order and verify the caller is the seller.
-    const orderRes = await fetch(
-      `${externalUrl}/rest/v1/orders?id=eq.${orderId}&select=id,buyer_id,seller_id,price,shipping_price,checkout_reference,refunded_at,payment_method,delivered_at,created_at`,
-      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
-    );
-    const orders = await orderRes.json();
-    const order = orders?.[0];
+    // Schema-resilient: retry without `payment_method` if the column is missing.
+    const baseCols = "id,buyer_id,seller_id,price,shipping_price,checkout_reference,refunded_at,delivered_at,created_at";
+    const withPM = `${baseCols},payment_method`;
+    async function fetchOrder(cols: string) {
+      const res = await fetch(
+        `${externalUrl}/rest/v1/orders?id=eq.${orderId}&select=${cols}`,
+        { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+      );
+      return { ok: res.ok, status: res.status, body: await res.json() };
+    }
+    let orderRes = await fetchOrder(withPM);
+    if (!orderRes.ok) {
+      const msg = typeof orderRes.body?.message === "string" ? orderRes.body.message : "";
+      if (orderRes.body?.code === "42703" || msg.includes("payment_method")) {
+        console.warn("[stripe-connect-refund] orders.payment_method missing, retrying without it");
+        orderRes = await fetchOrder(baseCols);
+      }
+    }
+    if (!orderRes.ok) {
+      console.error("[stripe-connect-refund] order fetch failed:", orderRes.status, orderRes.body);
+      throw new Error("Could not load order");
+    }
+    const order = Array.isArray(orderRes.body) ? orderRes.body[0] : null;
     if (!order) throw new Error("Order not found");
+    if (order.payment_method === undefined) order.payment_method = "stripe";
     if (order.seller_id !== user.id) throw new Error("Only the seller can initiate this refund");
     if (order.refunded_at) throw new Error("Order already refunded");
 

@@ -1,43 +1,37 @@
-## Changes
+## Problem
 
-### 1. Seller Dashboard: move Pending under Available
-Move the **Pending** row from below the payout buttons to sit **directly under the "Available to withdraw" box**, before the "Pay out to bank" / "Instant payout" buttons. Payout buttons + first-payout note stay where they are, just now below Pending.
+The refund edge function is returning 500 because the `orders` table on the source database no longer has a `payment_method` column. The network log confirms this — the same column is failing every front-end query too:
 
-File: `src/pages/SellerDashboard.tsx` — reorder the two sections (~lines 322-387).
+```
+GET /rest/v1/orders?...payment_method... → 400
+{"code":"42703","message":"column orders.payment_method does not exist"}
+```
 
-### 2. Sale Details sheet: kill every Stripe link, replace with in-app payouts entry
+Inside `supabase/functions/stripe-connect-refund/index.ts`, line 67 selects `payment_method` from `orders`. PostgREST returns a 400 error object (not an array), so `orders?.[0]` is `undefined`, we throw `"Order not found"`, and the client sees `FunctionsHttpError: Edge Function returned a non-2xx status code`.
 
-In `src/components/SalesDetailsSheet.tsx`:
+Same root cause is breaking:
+- Seller/buyer sale-count badges (`src/hooks/useNavBadges.ts`)
+- The order list hook (`src/hooks/useOrders.ts`)
 
-- **Remove the entire "Payment & Payout" section** (lines 309-347) — the "View order on Stripe →" link, the "Need your funds faster?" copy, and the "Instant payout" button that opens `dashboard.stripe.com/payouts`.
-- **Replace it with a single in-app button** styled like the other charcoal actions:
-  - Label: **Seller dashboard**
-  - Subheader under it: *View payouts*
-  - Tap → closes sheet, `navigate('/seller-dashboard')`.
-- **Refund sale button** (line 352):
-  - No longer opens `dashboard.stripe.com/payments`.
-  - Opens an in-app `AlertDialog` — *"Refund this sale? The full amount will be returned to the buyer and taken out of your Flea balance."* → Cancel / Refund.
-  - On confirm: `invokeCloudFunction('stripe-connect-refund', { orderId, reason: 'requested_by_customer' })`, show toast, close sheet, invalidate orders.
-  - Only show the button while the order is refundable (not already `refunded_at`, and within the 10-day-post-delivery / 30-day-post-order window — matches server enforcement).
+## Fix
 
-The `stripe-connect-refund` function already uses `reverse_transfer: true` + `refund_application_fee: true`, so the money comes out of the seller's Connect balance (and pushes it negative if insufficient — see below). No backend changes needed.
+Apply the schema-resilient pattern we already use in `order-messages` (retry the select without the missing column, then default `payment_method` to `"stripe"` in memory).
 
-### Answer: current negative-balance setup
+### 1. `supabase/functions/stripe-connect-refund/index.ts`
+- Extract the order fetch into a small helper that first queries with `payment_method`, and on a 42703 / "column ... does not exist" error, retries the same query without it and treats `payment_method` as `"stripe"`.
+- Everything downstream (`order.payment_method === 'demo'`, the stripe-only guard) keeps working unchanged.
+- Also improve the error response: if the order fetch itself returns a non-2xx from PostgREST, return a clear message ("Could not load order") instead of the generic "Order not found", so future schema drift is obvious in logs.
 
-We already have full coverage. Nothing to build for this question, just explaining.
+### 2. `src/hooks/useNavBadges.ts`
+- Same pattern: try the select with `payment_method`; if it returns the 42703 error, retry without it and treat every row as non-demo (i.e. `payment_method: 'stripe'`). This unblocks the Sales badge that's currently silently failing.
 
-1. **Where negatives come from.** Refunds and Stripe disputes use `reverse_transfer` against the seller's Connect balance. If the balance is too low, Stripe leaves the connected account with a negative balance.
-2. **Sync to our DB.** The `stripe-webhook` and `stripe-connect-status` functions read the connected account's balance and write the shortfall to `profiles.negative_balance_cents` (+ `negative_balance_updated_at`). Push notification fires when it flips negative.
-3. **Seller Dashboard.** When `negative_balance_cents > 0`, the Available box swaps for a red "Balance owed" card with a **Settle balance** button that opens `SettleBalanceSheet`. That sheet calls `stripe-connect-topup` to create a PaymentIntent on the connected account, shows a per-refund/dispute breakdown, and lets them pay with card/Apple Pay in-app.
-4. **Gates while negative.**
-   - Buying: `stripe-connect-payment-intent` blocks with `code: negative_balance` (409).
-   - Listing: `CreateListing` blocks and prompts settle.
-   - Payouts: `stripe-connect-payout` refuses because available < 0.
-   - Account deletion: `delete-account` refuses until settled.
-   - Re-registering on the same device: `check-device-eligibility` reads `blocked_devices` (populated on account deletion / signout with debt) and blocks sign-up on that device fingerprint.
-5. **After settlement.** Topup succeeds → webhook clears `negative_balance_cents` → gates lift, push confirms, dashboard returns to Available.
+### 3. `src/hooks/useOrders.ts`
+- Wrap the orders select in the same retry-without-column helper so buyer/seller order lists load again.
 
-### Technical notes
-- Files touched: `src/pages/SellerDashboard.tsx`, `src/components/SalesDetailsSheet.tsx`.
-- No backend, no schema, no edge-function changes.
-- All Stripe deep links removed from Sale Details. If we find any other `dashboard.stripe.com` links anywhere else, we should sweep them in the same pass — none are expected outside this sheet.
+No schema migration — the column is intentionally gone on that database, and we already have a resilient path elsewhere. This just extends it to the three remaining call sites.
+
+## Verification
+
+- Redeploy `stripe-connect-refund`, then retry the refund from Sale details. Expect `{ success: true, refundId, status }`.
+- Check the Sales badge and Orders list re-populate for `@jcsbh` and `@sarahhearn2` without 400s in the network tab.
+- Confirm demo orders (App Review) still short-circuit correctly — since fallback treats missing column as `"stripe"`, real demo orders written with `payment_method: 'demo'` will still be detected because the column exists on inserts through `finalize-checkout` (which has its own fallback). If the column truly no longer exists, demo orders will refund via Stripe, which is fine because they're only created when the column is writable.
