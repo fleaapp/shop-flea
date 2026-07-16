@@ -131,6 +131,7 @@ const Sales = () => {
             { key: 'awaiting' as const, label: 'To Ship' },
             { key: 'shipped' as const, label: 'Shipped' },
             { key: 'delivered' as const, label: 'Delivered' },
+            { key: 'refunded' as const, label: 'Refunded' },
           ]).map(({ key, label }) => (
             <button
               key={key}
