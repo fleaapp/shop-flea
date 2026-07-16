@@ -27,7 +27,7 @@ export default function AdminRefunds() {
     <div className="admin-scope flex min-h-[100svh] flex-col bg-background pb-24">
       <AdminHeader title="Refunds & disputes" emoji="↩️" />
 
-      <AdminChipFilter options={options} value={filter} onChange={setFilter} />
+      <AdminChipFilter options={options} value={filter} onChange={(v) => setFilter(v)} />
 
       <div className="flex-1 px-4 pt-2">
         {loading ? (
