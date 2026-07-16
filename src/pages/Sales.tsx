@@ -137,7 +137,7 @@ const Sales = () => {
               key={key}
               onClick={() => setSalesStatusFilter(key)}
               className={cn(
-                'rounded-full w-24 py-2 text-sm font-medium transition-all',
+                'rounded-full w-20 py-2 text-sm font-medium transition-all',
                 salesStatusFilter === key ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
               )}
             >
