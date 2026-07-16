@@ -174,7 +174,7 @@ serve(async (req) => {
         for (const o of orders) {
           await serviceClient
             .from("orders")
-            .update({ refunded_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+            .update({ status: "refunded", refunded_at: new Date().toISOString(), updated_at: new Date().toISOString() })
             .eq("id", o.id);
           await notify(o.buyer_id, "refund_processed", "Refund processed",
             "💸 Your refund has been processed and will appear in your account shortly.", o.id);

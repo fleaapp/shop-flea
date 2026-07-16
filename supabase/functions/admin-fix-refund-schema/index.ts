@@ -23,19 +23,51 @@ serve(async (req) => {
     try {
       await sql`ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS refunded_at timestamptz`;
       await sql`ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS refund_reason text`;
+      await sql`ALTER TABLE public.orders DROP CONSTRAINT IF EXISTS orders_status_check`;
+      await sql`
+        ALTER TABLE public.orders
+        ADD CONSTRAINT orders_status_check
+        CHECK (status = ANY (ARRAY['awaiting'::text, 'shipped'::text, 'delivered'::text, 'refunded'::text]))
+      `;
+      await sql`
+        CREATE OR REPLACE FUNCTION public.enforce_refunded_order_status()
+        RETURNS trigger
+        LANGUAGE plpgsql
+        SET search_path = public
+        AS $$
+        BEGIN
+          IF NEW.refunded_at IS NOT NULL THEN
+            NEW.status := 'refunded';
+          END IF;
+          RETURN NEW;
+        END;
+        $$
+      `;
+      await sql`DROP TRIGGER IF EXISTS enforce_refunded_order_status_trigger ON public.orders`;
+      await sql`
+        CREATE TRIGGER enforce_refunded_order_status_trigger
+        BEFORE INSERT OR UPDATE ON public.orders
+        FOR EACH ROW
+        EXECUTE FUNCTION public.enforce_refunded_order_status()
+      `;
+      await sql`
+        UPDATE public.orders
+        SET status = 'refunded', updated_at = now()
+        WHERE refunded_at IS NOT NULL AND status IS DISTINCT FROM 'refunded'
+      `;
 
       let updated: Array<{ id: string }> = [];
       if (orderGroupId) {
         updated = await sql`
           UPDATE public.orders
-          SET refunded_at = now(), refund_reason = ${reason}, updated_at = now()
+          SET refunded_at = now(), status = 'refunded', refund_reason = ${reason}, updated_at = now()
           WHERE order_group_id = ${orderGroupId} AND refunded_at IS NULL
           RETURNING id
         `;
       } else if (orderId) {
         updated = await sql`
           UPDATE public.orders
-          SET refunded_at = now(), refund_reason = ${reason}, updated_at = now()
+          SET refunded_at = now(), status = 'refunded', refund_reason = ${reason}, updated_at = now()
           WHERE id = ${orderId} AND refunded_at IS NULL
           RETURNING id
         `;

@@ -192,6 +192,7 @@ async function markRelatedOrdersRefunded(externalUrl: string, serviceKey: string
         const groupRows = await sql`
           UPDATE public.orders
           SET refunded_at = ${refundedAt},
+              status = 'refunded',
               refund_reason = ${refundReason},
               updated_at = ${refundedAt}
           WHERE order_group_id = ${order.order_group_id}
@@ -204,6 +205,7 @@ async function markRelatedOrdersRefunded(externalUrl: string, serviceKey: string
       const orderRows = await sql`
         UPDATE public.orders
         SET refunded_at = ${refundedAt},
+            status = 'refunded',
             refund_reason = ${refundReason},
             updated_at = ${refundedAt}
         WHERE id = ${order.id}
@@ -225,6 +227,7 @@ async function markRelatedOrdersRefunded(externalUrl: string, serviceKey: string
 
   const body = {
     refunded_at: refundedAt.toISOString(),
+    status: "refunded",
     updated_at: refundedAt.toISOString(),
     refund_reason: refundReason,
   };

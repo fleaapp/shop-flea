@@ -8,9 +8,10 @@ import { sendPushNotification } from '@/utils/pushNotify';
 
 export type OrderStatus = 'awaiting' | 'shipped' | 'delivered' | 'refunded';
 
-export const isOrderRefunded = (order: Pick<Order, 'refunded_at'>) => !!order.refunded_at;
+export const isOrderRefunded = (order: Pick<Order, 'status' | 'refunded_at'>) =>
+  order.status === 'refunded' || !!order.refunded_at;
 export const isGroupRefunded = (group: { orders: Order[] }) =>
-  group.orders.length > 0 && group.orders.every((o) => !!o.refunded_at);
+  group.orders.length > 0 && group.orders.every(isOrderRefunded);
 
 export interface Order {
   id: string;
@@ -163,10 +164,17 @@ const isDemoOrder = (order: Partial<RawOrderRow>) =>
 
 const ORDER_SELECT_FIELDS = buildOrderSelectFields();
 
+const getEffectiveOrderStatus = (order: Pick<RawOrderRow, 'status' | 'refunded_at'>): OrderStatus => {
+  if (order.status === 'refunded' || !!order.refunded_at) return 'refunded';
+  if (order.status === 'shipped') return 'shipped';
+  if (order.status === 'delivered') return 'delivered';
+  return 'awaiting';
+};
+
 const getGroupStatus = (orders: Order[]): OrderStatus => {
-  if (orders.length > 0 && orders.every((o) => !!o.refunded_at)) return 'refunded';
-  if (orders.some((o) => o.status === 'awaiting' && !o.refunded_at)) return 'awaiting';
-  if (orders.some((o) => o.status === 'shipped' && !o.refunded_at)) return 'shipped';
+  if (orders.length > 0 && orders.every(isOrderRefunded)) return 'refunded';
+  if (orders.some((o) => o.status === 'awaiting' && !isOrderRefunded(o))) return 'awaiting';
+  if (orders.some((o) => o.status === 'shipped' && !isOrderRefunded(o))) return 'shipped';
   return 'delivered';
 };
 
@@ -181,7 +189,7 @@ const groupOrders = (orders: Order[]): OrderGroup[] => {
       groups.set(key, {
         id: key,
         order_group_id: order.order_group_id ?? null,
-        status: order.status,
+        status: getGroupStatus([order]),
         created_at: order.created_at,
         buyer_id: order.buyer_id,
         seller_id: order.seller_id,
@@ -283,7 +291,7 @@ export function useOrders() {
 
       return orders.map(order => ({
         ...order,
-        status: order.status as OrderStatus,
+        status: getEffectiveOrderStatus(order),
         listing: listingsMap.get(order.listing_id),
         seller_profile: profilesMap.get(order.seller_id),
         buyer_profile: profilesMap.get(order.buyer_id),
@@ -324,7 +332,7 @@ export function useOrders() {
 
       return orders.map(order => ({
         ...order,
-        status: order.status as OrderStatus,
+        status: getEffectiveOrderStatus(order),
         listing: listingsMap.get(order.listing_id),
         buyer_profile: profilesMap.get(order.buyer_id),
         seller_profile: profilesMap.get(order.seller_id),
