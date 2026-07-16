@@ -14,12 +14,15 @@ export const useBrands = () => {
 
   const fetchBrands = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await invokeCloudFunction('add-brand', { method: 'GET' });
+    try {
+      const { data, error } = await invokeCloudFunction('add-brand', { method: 'GET' });
 
-    if (!error) {
-      setBrands(((data as { brands?: Brand[] } | null)?.brands ?? []) as Brand[]);
+      if (!error) {
+        setBrands(((data as { brands?: Brand[] } | null)?.brands ?? []) as Brand[]);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -64,7 +67,7 @@ export const useBrands = () => {
     const newBrand = (data as { brand?: Brand } | null)?.brand ?? (data as Brand);
     if (!newBrand?.id) return null;
     setBrands(prev => {
-      const next = prev.some(brand => brand.id === newBrand.id) ? prev : [...prev, newBrand];
+      const next = prev.some(brand => brand.id === newBrand.id) ? [...prev] : [...prev, newBrand];
       return next.sort((a, b) =>
         a.display_name.localeCompare(b.display_name, undefined, { sensitivity: 'base' })
       );
