@@ -44,7 +44,14 @@ serve(async (req) => {
       // Notify PostgREST to reload the schema so the new columns are visible.
       try { await sql`NOTIFY pgrst, 'reload schema'`; } catch (_) {}
 
-      return new Response(JSON.stringify({ success: true, updated_ids: updated.map((r) => r.id) }), {
+      let currentRow: any[] = [];
+      if (orderId) {
+        currentRow = await sql`SELECT id, status, refunded_at, refund_reason, order_group_id FROM public.orders WHERE id = ${orderId}`;
+      } else if (orderGroupId) {
+        currentRow = await sql`SELECT id, status, refunded_at, refund_reason, order_group_id FROM public.orders WHERE order_group_id = ${orderGroupId}`;
+      }
+
+      return new Response(JSON.stringify({ success: true, updated_ids: updated.map((r) => r.id), current: currentRow }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } finally {
