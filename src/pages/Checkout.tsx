@@ -254,7 +254,15 @@ const Checkout = () => {
     };
   }, [validItems, totalShipping, coupon]);
 
-  /** Guards run before ANY in-app payment attempt. */
+  if (items.length === 0) {
+    return <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <p className="text-muted-foreground">No items to checkout</p>
+        <Button onClick={() => navigate('/cart')} className="mt-4">
+          Back to Cart
+        </Button>
+      </div>;
+  }
+
   const preflight = () => {
     if (!user) { toast.error('You must be logged in to place an order'); return false; }
     if (isBlocked) { toast.error('Your account is restricted. You cannot make purchases.'); return false; }
