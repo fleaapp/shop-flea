@@ -31,7 +31,12 @@ type AdminAction =
   | "listSystemIssues"
   | "runSystemFix"
   | "listWaitlist"
-  | "listContactSubmissions";
+  | "listContactSubmissions"
+  | "getBadges"
+  | "listBrands"
+  | "updateBrand"
+  | "deleteBrand"
+  | "listRefunds";
 
 type RestOptions = {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
@@ -1308,6 +1313,112 @@ async function runSystemFix(fixId: string) {
   }
 }
 
+// ----------------- Live Badges -----------------
+async function countRows(table: string, params: Record<string, string> = {}) {
+  const search = new URLSearchParams({ select: "id", ...params, limit: "1" });
+  const res = await fetch(`${EXTERNAL_URL}/rest/v1/${table}?${search.toString()}`, {
+    headers: {
+      apikey: EXTERNAL_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${EXTERNAL_SERVICE_ROLE_KEY}`,
+      Prefer: "count=exact",
+      Range: "0-0",
+    },
+  });
+  const range = res.headers.get("content-range") ?? "";
+  const total = Number(range.split("/")[1] ?? 0);
+  return Number.isFinite(total) ? total : 0;
+}
+
+async function getBadges() {
+  const [supportUnread, reportsPending, bansActive, suggestionsUnread, waitlist, contact, awaitingOrders, refundedOrders, listingsActive, users, brands] = await Promise.all([
+    countRows("chat_messages", { sender_type: "eq.user", read: "eq.false" }),
+    countRows("reports", { status: "eq.pending" }),
+    countRows("banned_users", { status: "eq.active" }).catch(() => 0),
+    countRows("suggestions", { read: "eq.false" }).catch(() => 0),
+    countRows("waitlist", {}).catch(() => 0),
+    countRows("contact_submissions", {}).catch(() => 0),
+    countRows("orders", { status: "eq.awaiting" }),
+    countRows("orders", { refunded_at: "not.is.null" }),
+    countRows("listings", { status: "eq.active" }),
+    countRows("profiles", {}),
+    countRows("brands", {}).catch(() => 0),
+  ]);
+  return {
+    support: supportUnread,
+    reports: reportsPending,
+    bans: bansActive,
+    suggestions: suggestionsUnread,
+    waitlist,
+    contact,
+    transactions: awaitingOrders,
+    refunds: refundedOrders,
+    listings: listingsActive,
+    users,
+    brands,
+  };
+}
+
+// ----------------- Brands -----------------
+async function listBrands(payload: any = {}) {
+  const search = (payload?.search ?? "").trim().toLowerCase();
+  const rows = await safeSelect("brands", { order: "usage_count.desc.nullslast", limit: "1000" });
+  const filtered = search
+    ? rows.filter((b: any) =>
+        (b.brand_name ?? "").toLowerCase().includes(search) ||
+        (b.display_name ?? "").toLowerCase().includes(search))
+    : rows;
+  return { brands: filtered };
+}
+
+async function updateBrand(payload: any = {}) {
+  const { id, display_name } = payload ?? {};
+  if (!id || !display_name) throw new Error("id and display_name required");
+  const trimmed = String(display_name).trim();
+  if (!trimmed) throw new Error("display_name required");
+  const brand_name = trimmed
+    .toLowerCase()
+    .replace(/[^\w\s&+'-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  await safePatch("brands", { id: `eq.${id}` }, { display_name: trimmed, brand_name });
+  return { ok: true };
+}
+
+async function deleteBrand(payload: any = {}) {
+  const { id } = payload ?? {};
+  if (!id) throw new Error("id required");
+  await rest(query("brands", { id: `eq.${id}` }), { method: "DELETE", prefer: "return=minimal" });
+  return { ok: true };
+}
+
+// ----------------- Refunds & Disputes -----------------
+async function listRefunds(payload: any = {}) {
+  const filter = payload?.filter ?? "all"; // all | refunded | requested
+  const params: Record<string, string> = { select: ORDER_ADMIN_SELECT + ",refunded_at,refund_reason", order: "updated_at.desc", limit: "500" };
+  if (filter === "refunded") params.refunded_at = "not.is.null";
+  else if (filter === "requested") params.status = "eq.refund_requested";
+  else params.or = "(refunded_at.not.is.null,status.eq.refund_requested)";
+  const orders = await safeSelect("orders", params);
+  const userIds = unique([...orders.map((o: any) => o.buyer_id), ...orders.map((o: any) => o.seller_id)]);
+  const listingIds = unique(orders.map((o: any) => o.listing_id));
+  const [profiles, listings] = await Promise.all([
+    userIds.length ? safeSelect("profiles", { user_id: `in.(${userIds.join(",")})` }) : Promise.resolve([] as any[]),
+    listingIds.length ? safeSelect("listings", { id: `in.(${listingIds.join(",")})`, select: "id,title,images,price" }) : Promise.resolve([] as any[]),
+  ]);
+  const profileMap = new Map(profiles.map((p: any) => [p.user_id, { username: p.username, avatar_url: p.avatar_url }]));
+  const listingMap = new Map(listings.map((l: any) => [l.id, l]));
+  return {
+    orders: orders.map((o: any) => ({
+      ...o,
+      buyer_profile: profileMap.get(o.buyer_id) ?? null,
+      seller_profile: profileMap.get(o.seller_id) ?? null,
+      listing: listingMap.get(o.listing_id) ?? null,
+    })),
+  };
+}
+
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -1371,6 +1482,16 @@ Deno.serve(async (req) => {
         const rows = await safeSelect("contact_submissions", { order: "created_at.desc", limit: 5000 });
         return response({ submissions: rows });
       }
+      case "getBadges":
+        return response(await getBadges());
+      case "listBrands":
+        return response(await listBrands(payload));
+      case "updateBrand":
+        return response(await updateBrand(payload));
+      case "deleteBrand":
+        return response(await deleteBrand(payload));
+      case "listRefunds":
+        return response(await listRefunds(payload));
       default:
         return response({ error: "Unknown admin action" }, 400);
     }

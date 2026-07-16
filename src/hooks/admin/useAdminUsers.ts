@@ -55,6 +55,17 @@ export function useAdminUsers() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Always refetch on window focus / visibility so admins never see stale users.
+  useEffect(() => {
+    const refetch = () => { load(); };
+    window.addEventListener('focus', refetch);
+    document.addEventListener('visibilitychange', refetch);
+    return () => {
+      window.removeEventListener('focus', refetch);
+      document.removeEventListener('visibilitychange', refetch);
+    };
+  }, [load]);
+
   const performAction = useCallback(async (userId: string, type: string, reason?: string) => {
     try {
       const result = await callAdminData<{ ok: boolean; action_link?: string }>('userAction', { userId, type, reason });
