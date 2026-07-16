@@ -51,7 +51,20 @@ serve(async (req) => {
         currentRow = await sql`SELECT id, status, refunded_at, refund_reason, order_group_id FROM public.orders WHERE order_group_id = ${orderGroupId}`;
       }
 
-      return new Response(JSON.stringify({ success: true, updated_ids: updated.map((r) => r.id), current: currentRow }), {
+      // Also verify via PostgREST (as service role) that the column is returned
+      let postgrestRow: any = null;
+      try {
+        const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+        const targetId = orderId || (currentRow[0]?.id ?? "");
+        if (serviceKey && targetId) {
+          const r = await fetch(`https://dzglehiopfgfjmxtejve.supabase.co/rest/v1/orders?id=eq.${targetId}&select=id,status,refunded_at,refund_reason`, {
+            headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+          });
+          postgrestRow = await r.json();
+        }
+      } catch (_) {}
+
+      return new Response(JSON.stringify({ success: true, updated_ids: updated.map((r) => r.id), current: currentRow, postgrest: postgrestRow }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } finally {
