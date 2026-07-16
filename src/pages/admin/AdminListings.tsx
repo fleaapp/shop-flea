@@ -112,7 +112,7 @@ export default function AdminListings() {
                 </div>
                 <div className="p-2.5">
                   <p className="truncate text-sm font-semibold text-foreground">{l.title}</p>
-                  <p className="truncate text-xs text-muted-foreground">${l.price} · @{l.seller_profile.username}</p>
+                  <p className="truncate text-xs text-muted-foreground">${l.price} · {l.seller_profile.username}</p>
                   <p className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
                     <span className="flex items-center gap-0.5"><Heart className="h-3 w-3" />{l.favorites_count}</span>
                     <span className="flex items-center gap-0.5"><MessageCircle className="h-3 w-3" />{l.comments_count}</span>
