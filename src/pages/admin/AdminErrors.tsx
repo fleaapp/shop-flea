@@ -1,20 +1,18 @@
-import { useNavigate } from 'react-router-dom';
 import { useAdminErrors, type Severity } from '@/hooks/admin/useAdminErrors';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  ArrowLeft,
   RefreshCw,
   AlertTriangle,
-  ShieldAlert,
   Wrench,
   CheckCircle2,
   Loader2,
   Activity,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { AdminHeader } from '@/components/admin/shell/AdminHeader';
+import { AdminBadge, type AdminBadgeTone } from '@/components/admin/shell/AdminBadge';
 
 const sevStyles: Record<Severity, { badge: string; ring: string; label: string }> = {
   critical: {
