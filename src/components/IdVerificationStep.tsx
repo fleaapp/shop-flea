@@ -173,7 +173,7 @@ const IdVerificationStep = ({ onBack, onDone, onEditName, verificationError }: I
       if ((data as any)?.error) throw new Error((data as any).error);
       track('id_verification_submitted', { docType });
       toast.success('ID submitted for verification.');
-      onDone();
+      setSubmitted(true);
     } catch (err: any) {
       console.error('upload-id error:', err);
       track('id_verification_stripe_rejected', { message: err?.message ?? null });
