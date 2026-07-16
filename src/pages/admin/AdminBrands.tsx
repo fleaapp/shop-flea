@@ -63,21 +63,27 @@ export default function AdminBrands() {
           <p className="py-12 text-center text-muted-foreground">No brands.</p>
         ) : (
           <div className="space-y-2">
-            {brands.map((b) => (
-              <div key={b.id} className="flex items-center justify-between rounded-xl bg-card p-3 card-shadow">
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{b.display_name}</p>
-                  <p className="truncate text-xs text-muted-foreground">{b.brand_name}</p>
+            {sortedBrands.map((b) => {
+              const fresh = isNew(b);
+              return (
+                <div key={b.id} className={`flex items-center justify-between rounded-xl p-3 card-shadow ${fresh ? 'bg-primary/10 ring-1 ring-primary/40' : 'bg-card'}`}>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate font-medium">{b.display_name}</p>
+                      {fresh && <Badge className="bg-primary text-primary-foreground">New</Badge>}
+                    </div>
+                    <p className="truncate text-xs text-muted-foreground">{b.brand_name}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{b.usage_count ?? 0} uses</Badge>
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(b)}><Pencil className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => { if (confirm(`Delete brand "${b.display_name}"?`)) remove(b.id); }}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">{b.usage_count ?? 0} uses</Badge>
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(b)}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => { if (confirm(`Delete brand "${b.display_name}"?`)) remove(b.id); }}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
