@@ -164,8 +164,9 @@ const isDemoOrder = (order: Partial<RawOrderRow>) =>
 const ORDER_SELECT_FIELDS = buildOrderSelectFields();
 
 const getGroupStatus = (orders: Order[]): OrderStatus => {
-  if (orders.some((o) => o.status === 'awaiting')) return 'awaiting';
-  if (orders.some((o) => o.status === 'shipped')) return 'shipped';
+  if (orders.length > 0 && orders.every((o) => !!o.refunded_at)) return 'refunded';
+  if (orders.some((o) => o.status === 'awaiting' && !o.refunded_at)) return 'awaiting';
+  if (orders.some((o) => o.status === 'shipped' && !o.refunded_at)) return 'shipped';
   return 'delivered';
 };
 
