@@ -27,14 +27,14 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (!c || !c.active) {
-      return json({ valid: false, message: "That code isn't valid." });
+      return json({ valid: false, message: "Invalid or expired code." });
     }
     const now = Date.now();
     if (c.starts_at && new Date(c.starts_at).getTime() > now) {
-      return json({ valid: false, message: "This code isn't active yet." });
+      return json({ valid: false, message: "Invalid or expired code." });
     }
     if (c.expires_at && new Date(c.expires_at).getTime() < now) {
-      return json({ valid: false, message: "This code has expired." });
+      return json({ valid: false, message: "Invalid or expired code." });
     }
     if (c.max_redemptions !== null && c.redemption_count >= c.max_redemptions) {
       return json({ valid: false, message: "This code has reached its limit." });
