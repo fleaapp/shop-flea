@@ -413,7 +413,9 @@ const SalesDetailsSheet = ({
                     'stripe-connect-refund',
                     { orderId: primaryOrder.id, reason: 'requested_by_customer' }
                   );
-                  if (res?.error) throw new Error(res.error);
+                  if (res?.error || !res?.data?.success) {
+                    throw new Error(res?.error?.message || res?.data?.error || 'Refund failed');
+                  }
                   toast.success('Refund issued. Buyer has been notified.');
                   await queryClient.invalidateQueries({ queryKey: ['orders'] });
                   await queryClient.invalidateQueries({ queryKey: ['seller-balance'] });
