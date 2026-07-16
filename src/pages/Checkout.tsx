@@ -49,7 +49,8 @@ const getNativeWalletPlatform = (): 'ios' | 'android' | null => {
 const Checkout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const buyerOwesCents = Number((profile as any)?.negative_balance_cents ?? 0);
   const { isBlocked } = useBlockedStatus();
   const {
     removeFromCart
