@@ -1,35 +1,25 @@
-## Problem
+Plan:
 
-The admin User Management list reads from the external `profiles` table. When you delete a user in Supabase's auth dashboard, `auth.users` is removed but the `public.profiles` row is left behind (no `ON DELETE CASCADE`), so those ghost users keep appearing in the admin dashboard. There's also no realtime subscription, so even legitimate profile deletes don't update the list until a manual refetch.
+1. Point all brand reads and writes at the same source of truth
+- Update the user-facing brand hook so autocomplete, filters, and listing creation read brands from the external app database, not the separate Cloud-generated client.
+- Update the add-brand function so user-created brands are inserted into that same brand table that admin management uses.
 
-## Fix
+2. Fix admin brand editing and deletion
+- Keep Admin Brand Management using the admin backend function, but harden update/delete so it reliably edits the external brands table with admin privileges.
+- Patch the brand update guard on the real app database if it is still blocking admin renames.
+- Make delete remove the brand from autocomplete/admin lists without relisting or changing old listing records.
 
-### 1. Reconcile the profiles table with auth.users (external DB)
+3. Improve admin brand management UX only where needed
+- Show user-added brands in the admin list immediately after refresh.
+- Keep search, rename, delete, usage count, and loading/error states consistent with the existing simple settings-style admin UI.
+- Use clear errors if a brand cannot be renamed because of a duplicate or invalid name.
 
-- Add `ON DELETE CASCADE` to `public.profiles.user_id → auth.users.id` so future auth deletions clear the profile automatically.
-- Run a one-time cleanup deleting any `profiles` rows whose `user_id` no longer exists in `auth.users`.
+4. Validate the flow
+- Test adding a new brand as a user.
+- Confirm it appears in Brand Management.
+- Confirm admin rename updates what users see in autocomplete/filter lists.
+- Confirm admin delete removes it from selectable brands.
 
-### 2. Filter ghost users at read time (defense in depth)
-
-Update `supabase/functions/admin-data/index.ts` → `listUsers`:
-- After loading `profiles`, call `supabase.auth.admin.listUsers` (paginated) and build a Set of live auth ids.
-- Drop any profile whose `user_id` is not in that Set before enriching / returning.
-
-This ensures deletions done directly in the Supabase auth UI immediately disappear from the admin view even if the cascade hasn't fired.
-
-### 3. Live updates in the admin UI
-
-Update `src/hooks/admin/useAdminUsers.ts`:
-- Subscribe (via the external Supabase client) to `postgres_changes` on `public.profiles` for `INSERT`, `UPDATE`, `DELETE` and call `load()` on any event (debounced ~500 ms).
-- Enable Realtime replication for `public.profiles` on the external DB (`ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles`) if not already on.
-
-### 4. Verify
-
-- Delete a test user in the Supabase auth dashboard, confirm it disappears from Admin → Users within a second without a manual refresh.
-- Confirm counts (`stats.total`, etc.) update live.
-
-### Technical notes
-
-- Realtime subscription must be created inside `useEffect` and torn down on unmount to avoid the reconnection-loop billing issue.
-- The `auth.admin.listUsers` reconciliation caps at ~1000 users per page; paginate until exhausted, cache the id Set for the request lifetime.
-- No client-side type changes needed; `AdminUser` shape stays the same.
+Technical notes:
+- The likely issue is split data paths: user brand code is using the Cloud client/table, while admin brand management is using the external app database via admin-data.
+- The fix will consolidate brand operations to the external app database and keep admin operations server-side.
