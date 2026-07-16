@@ -479,7 +479,20 @@ const SellerDashboard = () => {
           await Promise.all([load(), refreshProfile?.()]);
         }}
       />
+
+      <SellerOnboardingSheet
+        open={actionRequiredOpen}
+        onOpenChange={setActionRequiredOpen}
+        stripeActionRequired={true}
+        needsIdVerification={needsIdDocument}
+        verificationError={verificationError}
+        onComplete={async () => {
+          setActionRequiredOpen(false);
+          await Promise.all([refreshProfile?.(), probeStatus(), load()]);
+        }}
+      />
     </div>
+
   );
 };
 
