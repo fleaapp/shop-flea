@@ -51,5 +51,25 @@ export async function invokeCloudFunction(
     invokeOptions.body = options.body;
   }
 
-  return cloudSupabase.functions.invoke(functionPath, invokeOptions);
+  const result = await cloudSupabase.functions.invoke(functionPath, invokeOptions);
+
+  if (result.error && result.response) {
+    try {
+      const contentType = result.response.headers.get('content-type') || '';
+      const detail = contentType.includes('application/json')
+        ? await result.response.clone().json()
+        : await result.response.clone().text();
+      const message = typeof detail === 'string'
+        ? detail
+        : detail?.error || detail?.message || result.error.message;
+
+      if (message) {
+        result.error.message = message;
+      }
+    } catch {
+      // Keep the original function error if the body cannot be parsed.
+    }
+  }
+
+  return result;
 }
