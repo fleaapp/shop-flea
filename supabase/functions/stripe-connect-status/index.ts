@@ -242,7 +242,6 @@ serve(async (req) => {
       } else {
         console.log(`[stripe-connect-status] No stored Stripe account and no recovery match for user ${lookupUserId}.`);
         return new Response(
-        return new Response(
           JSON.stringify({ chargesEnabled: false, detailsSubmitted: false, accountId: null, accountExists: false }),
           {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -252,9 +251,10 @@ serve(async (req) => {
       }
     }
 
-
+    const account = await stripe.accounts.retrieve(accountId);
 
     console.log(`[stripe-connect-status] Account ${accountId} state: charges_enabled=${account.charges_enabled}, details_submitted=${account.details_submitted}, payouts_enabled=${account.payouts_enabled}`);
+
 
     // Retrieve balance so we can surface negative-balance state and gate flows.
     let balanceAvailableCents = 0;
