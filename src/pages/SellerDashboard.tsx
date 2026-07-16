@@ -126,9 +126,11 @@ const SellerDashboard = () => {
   // requirements after verification. Show the dashboard as soon as an account
   // exists and surface an action-required banner if live status regresses.
   const notOnboarded = !hasAccountId && !dbOnboardingComplete;
+  // Action-required banner: only when charges are disabled. Payouts paused
+  // is normal during Stripe's initial fraud-hold window and is handled by
+  // the "first payout may take around 7 days" note instead.
   const liveActionRequired =
-    hasAccountId && stripeStatus != null &&
-    (!stripeStatus.chargesEnabled || !stripeStatus.payoutsEnabled);
+    hasAccountId && stripeStatus != null && !stripeStatus.chargesEnabled;
 
   const load = async () => {
     setError(null);

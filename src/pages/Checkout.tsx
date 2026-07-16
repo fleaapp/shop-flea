@@ -114,35 +114,25 @@ const Checkout = () => {
     loadSellerSettings();
   }, [items]);
 
-  // Fetch seller Stripe accounts
+  // Fetch seller Stripe accounts — live status is the authority.
+  // A seller is payable when chargesEnabled === true. payoutsEnabled is NOT
+  // required: brand new AU sellers often have payouts paused during Stripe's
+  // fraud-hold window, but they can still legitimately accept charges.
   const [sellerStripeAccounts, setSellerStripeAccounts] = useState<Map<string, boolean>>(new Map());
   const [sellerStripeLoading, setSellerStripeLoading] = useState(true);
   useEffect(() => {
     const loadSellerPayments = async () => {
       if (items.length === 0) { setSellerStripeLoading(false); return; }
+      setSellerStripeLoading(true);
       const sellerIds = [...new Set(items.map(item => item.sellerId))];
 
-      // SECURITY DEFINER RPC — returns only onboarding flags (no raw account IDs).
-      // The checkout edge function re-fetches stripe_account_id server-side.
-      const { data } = await (supabase as any).rpc('get_seller_payment_accounts', {
-        seller_ids: sellerIds,
-      });
-
       const stripeAccounts = new Map<string, boolean>();
-      data?.forEach((p: any) => {
-        if (p.stripe_onboarding_complete) {
-          stripeAccounts.set(p.user_id, true);
-        }
-      });
-
-      // Real-time Stripe verification for unconfirmed sellers
-      const unconfirmedSellerIds = sellerIds.filter(id => !stripeAccounts.has(id));
-      for (const sellerId of unconfirmedSellerIds) {
+      for (const sellerId of sellerIds) {
         try {
           const { data: statusData, error } = await invokeCloudFunction('stripe-connect-status', {
             sellerUserId: sellerId,
           });
-          if (!error && statusData && (statusData.chargesEnabled || statusData.detailsSubmitted) && statusData.accountId) {
+          if (!error && statusData && (statusData as any).chargesEnabled === true && (statusData as any).accountId) {
             stripeAccounts.set(sellerId, true);
           }
         } catch (e) {
@@ -750,12 +740,21 @@ const Checkout = () => {
             </div>
 
             {/* Payment method picker (Depop-style) */}
-            {sellerHasStripe && (
+            {sellerStripeLoading ? (
+              <div className="rounded-xl bg-card p-4 text-center text-sm text-muted-foreground">
+                Checking seller payment status...
+              </div>
+            ) : sellerHasStripe ? (
               <PaymentMethodPicker
                 value={selectedMethod}
                 onChange={setSelectedMethod}
                 amountCents={Math.round(total * 100)}
               />
+            ) : (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-center">
+                <p className="text-sm font-semibold text-destructive">This seller can't accept payments right now.</p>
+                <p className="mt-1 text-xs text-charcoal/70">Their payment account isn't fully set up yet. Please try again later or reach out to Flea support.</p>
+              </div>
             )}
 
             {/* Master Pay button */}

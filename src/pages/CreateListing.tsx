@@ -87,7 +87,9 @@ const CreateListing = () => {
     setHasPaymentMethodStripe(getLocalFlag());
   }, [profile?.stripe_account_id, profile?.stripe_onboarding_complete, stripeLocalKey, user]);
 
-  // Check Stripe for action required state (charges enabled but payouts paused)
+  // Live Stripe status probe. Listing gate = chargesEnabled === true.
+  // payoutsEnabled is intentionally NOT required (new AU sellers can have
+  // payouts paused during Stripe's initial fraud-hold window but still list).
   useEffect(() => {
     if (!user || !profile?.stripe_account_id) return;
     let cancelled = false;
@@ -99,13 +101,13 @@ const CreateListing = () => {
         });
         if (cancelled || error) return;
 
-        if (data?.chargesEnabled && !data?.payoutsEnabled) {
-          setStripeActionRequired(true);
-          setHasPaymentMethodStripe(false);
-        } else if (data?.chargesEnabled && data?.payoutsEnabled) {
+        if ((data as any)?.chargesEnabled) {
           setStripeActionRequired(false);
           setHasPaymentMethodStripe(true);
           if (stripeLocalKey) localStorage.setItem(stripeLocalKey, 'true');
+        } else {
+          setStripeActionRequired(true);
+          setHasPaymentMethodStripe(false);
         }
       } catch (e) {
         console.error('Stripe state check failed:', e);
