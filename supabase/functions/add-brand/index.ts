@@ -20,16 +20,17 @@ const normalizeBrandName = (value: string) =>
 
 const externalUrl = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
 const externalAnonKey = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "";
-const externalServiceRoleKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const cloudUrl = Deno.env.get("SUPABASE_URL") ?? "";
+const cloudServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
 const brandSelect = "id,brand_name,display_name,usage_count,created_at";
 
-const externalRest = async (path: string, init: RequestInit = {}) => {
-  const res = await fetch(`${externalUrl}/rest/v1/${path}`, {
+const cloudRest = async (path: string, init: RequestInit = {}) => {
+  const res = await fetch(`${cloudUrl}/rest/v1/${path}`, {
     ...init,
     headers: {
-      apikey: externalServiceRoleKey,
-      Authorization: `Bearer ${externalServiceRoleKey}`,
+      apikey: cloudServiceRoleKey,
+      Authorization: `Bearer ${cloudServiceRoleKey}`,
       "Content-Type": "application/json",
       Prefer: "return=representation",
       ...(init.headers ?? {}),
@@ -40,7 +41,7 @@ const externalRest = async (path: string, init: RequestInit = {}) => {
   const body = text ? JSON.parse(text) : null;
 
   if (!res.ok) {
-    console.error("brand external rest failed", res.status, body ?? text);
+    console.error("brand cloud rest failed", res.status, body ?? text);
     throw new Error(typeof body?.message === "string" ? body.message : "Brand service failed.");
   }
 
@@ -61,7 +62,7 @@ Deno.serve(async (req) => {
   if (req.method !== "GET" && req.method !== "POST") return json({ error: "Method not allowed." }, 405);
 
   try {
-    if (!externalUrl || !externalAnonKey || !externalServiceRoleKey) {
+    if (!externalUrl || !externalAnonKey || !cloudUrl || !cloudServiceRoleKey) {
       return json({ error: "Brand service is not configured." }, 500);
     }
 
@@ -69,7 +70,7 @@ Deno.serve(async (req) => {
       const url = new URL(req.url);
       const search = (url.searchParams.get("search") ?? "").trim().toLowerCase();
       const params = new URLSearchParams({ select: brandSelect, order: "display_name.asc", limit: "1000" });
-      const rows = await externalRest(`brands?${params.toString()}`) as unknown[];
+      const rows = await cloudRest(`brands?${params.toString()}`) as unknown[];
       const brands = search
         ? rows.filter((brand: any) =>
             (brand.brand_name ?? "").toLowerCase().includes(search) ||
@@ -103,14 +104,14 @@ Deno.serve(async (req) => {
       brand_name: `ilike.${brandName}`,
       limit: "1",
     });
-    const existingRows = await externalRest(`brands?${existingParams.toString()}`) as any[];
+    const existingRows = await cloudRest(`brands?${existingParams.toString()}`) as any[];
     const existing = existingRows[0];
 
     if (existing) return json({ brand: existing });
 
     try {
       const insertParams = new URLSearchParams({ select: brandSelect });
-      const inserted = await externalRest(`brands?${insertParams.toString()}`, {
+      const inserted = await cloudRest(`brands?${insertParams.toString()}`, {
         method: "POST",
         body: JSON.stringify({ brand_name: brandName, display_name: trimmed }),
       }) as any[];
@@ -118,7 +119,7 @@ Deno.serve(async (req) => {
       return json({ brand: inserted[0] });
     } catch (error) {
       // Unique-index race: re-fetch existing
-      const racedRows = await externalRest(`brands?${existingParams.toString()}`) as any[];
+      const racedRows = await cloudRest(`brands?${existingParams.toString()}`) as any[];
       const raced = racedRows[0];
       if (raced) return json({ brand: raced });
       console.error("add-brand failed", error);
