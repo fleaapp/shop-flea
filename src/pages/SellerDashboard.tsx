@@ -87,7 +87,7 @@ const statusClass = (s: string) => {
 
 const SellerDashboard = () => {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth() as any;
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -398,7 +398,11 @@ const SellerDashboard = () => {
         open={settleOpen}
         onOpenChange={setSettleOpen}
         amountCents={negativeCents}
-        onSettled={() => load()}
+        onSettled={async () => {
+          // Refresh both dashboard and profile so gates in Checkout /
+          // CreateListing / EditProfile lift immediately.
+          await Promise.all([load(), refreshProfile?.()]);
+        }}
       />
     </div>
   );

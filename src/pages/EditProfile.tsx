@@ -37,8 +37,13 @@ const EditProfile = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [canDeleteAccount, setCanDeleteAccount] = useState(true);
-  const [deleteBlockReason, setDeleteBlockReason] = useState<string | null>(null);
+  const owedCents = Number((profile as any)?.negative_balance_cents ?? 0);
+  const [canDeleteAccount, setCanDeleteAccount] = useState(owedCents === 0);
+  const [deleteBlockReason, setDeleteBlockReason] = useState<string | null>(
+    owedCents > 0
+      ? `You owe $${(owedCents / 100).toFixed(2)} from refunds or disputes. Settle it in Seller Dashboard before deleting your account.`
+      : null,
+  );
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [originalUsername, setOriginalUsername] = useState('');
   const [emailSheetOpen, setEmailSheetOpen] = useState(false);
