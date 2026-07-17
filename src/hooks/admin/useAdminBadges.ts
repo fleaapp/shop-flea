@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { callAdminData } from './useAdminData';
+import { fetchErrorCount24h } from './useAdminErrorLogs';
 
 export type AdminBadges = {
   support: number;
@@ -14,11 +15,12 @@ export type AdminBadges = {
   listings: number;
   users: number;
   brands: number;
+  errorLogs: number;
 };
 
 const EMPTY: AdminBadges = {
   support: 0, reports: 0, bans: 0, suggestions: 0, waitlist: 0, contact: 0,
-  transactions: 0, refunds: 0, listings: 0, users: 0, brands: 0,
+  transactions: 0, refunds: 0, listings: 0, users: 0, brands: 0, errorLogs: 0,
 };
 
 export function useAdminBadges() {
