@@ -122,7 +122,7 @@ const RefundRequestDialog = ({ open, onOpenChange, orderId, userId, onSubmit }: 
               <SelectTrigger className="rounded-xl">
                 <SelectValue placeholder="Select a reason" />
               </SelectTrigger>
-              <SelectContent position="popper" className="z-[100]">
+              <SelectContent position="popper" className="z-[200] pointer-events-auto">
                 {REFUND_REASONS.map(r => (
                   <SelectItem key={r} value={r}>{r}</SelectItem>
                 ))}
