@@ -101,8 +101,24 @@ serve(async (req) => {
       shipping_postcode: (addr as any)?.postcode ?? null,
     }));
 
-    const ins = await svc.from("orders").insert(inserts).select("id, listing_id, seller_id");
-    if (ins.error) throw ins.error;
+    // Insert with fallback for missing optional columns (checkout_reference, payment_method).
+    const FALLBACK_COLS = ["checkout_reference", "payment_method"];
+    const stripped = new Set<string>();
+    let ins: any;
+    while (true) {
+      const rows = inserts.map((r: any) => {
+        const copy: any = { ...r };
+        for (const c of stripped) delete copy[c];
+        return copy;
+      });
+      ins = await svc.from("orders").insert(rows).select("id, listing_id, seller_id");
+      if (!ins.error) break;
+      const msg = String(ins.error?.message ?? "");
+      const code = String(ins.error?.code ?? "");
+      const missing = FALLBACK_COLS.find((c) => !stripped.has(c) && (code === "42703" || code === "PGRST204") && msg.includes(c));
+      if (!missing) throw ins.error;
+      stripped.add(missing);
+    }
 
     // Flip listings sold
     await svc
