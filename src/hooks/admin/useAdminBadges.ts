@@ -40,12 +40,15 @@ export function useAdminBadges() {
   useEffect(() => {
     refresh();
     const tables = ['chat_messages', 'reports', 'orders', 'listings', 'contact_submissions', 'waitlist', 'profiles', 'brands', 'notifications'];
-    const channels = tables.map((t) =>
-      supabase
-        .channel(`admin-badges-${t}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: t }, () => refresh())
-        .subscribe()
-    );
+    // Unique suffix prevents supabase.channel() from returning an already-subscribed
+    // instance on remount, which would throw "cannot add postgres_changes callbacks after subscribe()".
+    const uniq = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    const channels = tables.map((t) => {
+      const ch = supabase.channel(`admin-badges-${t}-${uniq}`);
+      ch.on('postgres_changes' as any, { event: '*', schema: 'public', table: t }, () => refresh());
+      ch.subscribe();
+      return ch;
+    });
     const onFocus = () => refresh();
     window.addEventListener('focus', onFocus);
     return () => {
