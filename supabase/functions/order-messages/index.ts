@@ -506,37 +506,44 @@ async function uploadRefundImages(
   userId: string,
   orderId: string,
   imageUploads: RefundImageUpload[],
-): Promise<string[]> {
-  const imageUrls: string[] = [];
+): Promise<{ url: string; kind: 'photo' | 'video' }[]> {
+  const results: { url: string; kind: 'photo' | 'video' }[] = [];
 
   const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif']);
+  const ALLOWED_VIDEO_TYPES = new Set(['video/mp4', 'video/quicktime', 'video/webm', 'video/mov']);
+  const MAX_VIDEO_BYTES = 30 * 1024 * 1024;
 
-  for (const [index, image] of imageUploads.entries()) {
-    const safeFileName = image.fileName.replace(/[^a-zA-Z0-9._-]/g, "-");
+  for (const [index, item] of imageUploads.entries()) {
+    const isVideo = item.kind === 'video' || (item.contentType || '').toLowerCase().startsWith('video/');
+    const safeFileName = item.fileName.replace(/[^a-zA-Z0-9._-]/g, "-");
     const path = `${userId}/${orderId}/refund-${Date.now()}-${index}-${safeFileName}`;
-    // Whitelist MIME types — never trust client-supplied contentType, since the
-    // bucket serves files with whatever Content-Type is stored, which would
-    // allow a buyer to upload text/html and trigger stored XSS when the seller
-    // opens the attachment.
-    const requestedType = (image.contentType || '').toLowerCase();
-    const contentType = ALLOWED_IMAGE_TYPES.has(requestedType) ? requestedType : 'image/jpeg';
+    const requestedType = (item.contentType || '').toLowerCase();
+
+    let contentType: string;
+    if (isVideo) {
+      contentType = ALLOWED_VIDEO_TYPES.has(requestedType) ? requestedType : 'video/mp4';
+    } else {
+      contentType = ALLOWED_IMAGE_TYPES.has(requestedType) ? requestedType : 'image/jpeg';
+    }
+
+    const bytes = decodeBase64(item.base64);
+    if (isVideo && bytes.length > MAX_VIDEO_BYTES) {
+      throw new Error('Video exceeds size limit (30 MB)');
+    }
 
     const { error: uploadError } = await extClient.storage
       .from("order-attachments")
-      .upload(path, decodeBase64(image.base64), {
-        contentType,
-        upsert: false,
-      });
+      .upload(path, bytes, { contentType, upsert: false });
 
     if (uploadError) {
-      throw new Error(uploadError.message || "Image upload failed");
+      throw new Error(uploadError.message || "Upload failed");
     }
 
     const { data } = extClient.storage.from("order-attachments").getPublicUrl(path);
-    imageUrls.push(data.publicUrl);
+    results.push({ url: data.publicUrl, kind: isVideo ? 'video' : 'photo' });
   }
 
-  return imageUrls;
+  return results;
 }
 
 function getThreadOrderId(
