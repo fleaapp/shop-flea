@@ -1,6 +1,6 @@
 importScripts('/push-sw.js');
 
-const ASSET_CACHE = 'flea-assets-v1';
+const ASSET_CACHE = 'flea-assets-v20260717-refund-ledger';
 
 // Hashed Vite assets are immutable — cache forever
 const isImmutableAsset = (url) => {
@@ -28,11 +28,21 @@ self.addEventListener('activate', (event) => {
     );
 
     await self.clients.claim();
-    // NOTE: Do NOT force-navigate clients here. Reloading open tabs during
-    // activate races with in-flight auth flows (sign-in tokens that haven't
-    // been persisted to localStorage yet), causing users to be bounced back
-    // to /auth right after a successful login. Updates apply on next natural
-    // navigation; that's good enough.
+
+    // Force existing installed/PWA windows onto the fresh app bundle after
+    // this service worker update. Skip auth and checkout/payment routes so we
+    // do not interrupt sign-in or an in-flight purchase.
+    const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    await Promise.allSettled(clientsList.map((client) => {
+      try {
+        const url = new URL(client.url);
+        const skip = /^\/(auth|forgot-password|reset-password|verify-email|checkout|checkout-success)(\/|$)/.test(url.pathname);
+        if (url.origin === self.location.origin && !skip) {
+          return client.navigate(client.url);
+        }
+      } catch (_) {}
+      return undefined;
+    }));
   })());
 });
 
