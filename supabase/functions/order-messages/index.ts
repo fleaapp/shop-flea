@@ -59,6 +59,8 @@ type RefundImageUpload = {
   fileName: string;
   contentType: string;
   base64: string;
+  kind?: 'photo' | 'video';
+  capture_source?: string;
 };
 
 type OrderMessageInsertInput = {
