@@ -481,38 +481,15 @@ const SellerDashboard = () => {
 
             {/* Recent activity — sales, refunds, fees, adjustments */}
             {data?.activity && data.activity.length > 0 && (() => {
-              // Merge fee-refund adjustments into their matching refund so the
-              // row shows the true net impact on the seller's balance (e.g. a
-              // full refund nets to -$1.00, not a confusing -$1.74 + $0.74).
-              // Stripe posts the refund and its fee reversal in the same
-              // moment, so we use a tight 5-minute window to avoid pairing a
-              // refund with an unrelated older fee reversal.
-              const rows = [...data.activity].sort((a, b) => (a.created ?? 0) - (b.created ?? 0));
-              const isRefund = (t: string) => t === 'refund' || t === 'payment_refund';
-              const isFeeGiveback = (r: ActivityRow) =>
-                (r.type === 'adjustment' || r.type === 'stripe_fee' || r.type === 'application_fee_refund') && r.amount > 0;
-              const hidden = new Set<string>();
-              const merged = rows.map((r) => ({ ...r }));
-              for (const r of merged) {
-                if (!isRefund(r.type)) continue;
-                // Refund would be net -$0 if fee was $0 (e.g. FREEFLEA). Only
-                // merge when there is a fee reversal posted within 5 minutes.
-                const match = merged.find((x) =>
-                  !hidden.has(x.id) &&
-                  x.id !== r.id &&
-                  isFeeGiveback(x) &&
-                  Math.abs((x.created ?? 0) - (r.created ?? 0)) <= 60 * 5
-                );
-                if (match) {
-                  r.amount = r.amount + match.amount;
-                  r.net = (r.net ?? r.amount) + match.amount;
-                  hidden.add(match.id);
-                }
-              }
-              const visible = merged
-                .filter((r) => !hidden.has(r.id))
-                .sort((a, b) => (b.created ?? 0) - (a.created ?? 0));
+              // Show each Stripe balance transaction as-is. Merging refunds with
+              // their fee reversals looks tidy but silently combines unrelated
+              // events (Stripe does not link them in the ledger payload), so we
+              // now render every row and let the amounts speak for themselves.
+              const visible = [...data.activity].sort(
+                (a, b) => (b.created ?? 0) - (a.created ?? 0),
+              );
               if (visible.length === 0) return null;
+
               return (
                 <section className="mt-6">
                   <h2 className="text-[13px] font-semibold text-foreground px-1 mb-2">
