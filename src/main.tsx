@@ -117,7 +117,17 @@ const resetAppCache = async () => {
 };
 
 const registerAppServiceWorker = async () => {
-  if (isNativePlatform || isInIframe || isPreviewHost || !('serviceWorker' in navigator)) return;
+  if (!('serviceWorker' in navigator)) return;
+
+  if (!import.meta.env.PROD || isNativePlatform || isInIframe || isPreviewHost) {
+    const registrations = await navigator.serviceWorker.getRegistrations().catch(() => []);
+    await Promise.all(
+      registrations
+        .filter((registration) => registration.active?.scriptURL.includes('/sw.js'))
+        .map((registration) => registration.unregister()),
+    );
+    return;
+  }
 
   try {
     const registration = await navigator.serviceWorker.register(SW_URL, {
