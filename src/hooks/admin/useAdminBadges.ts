@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { callAdminData } from './useAdminData';
+import { fetchErrorCount24h } from './useAdminErrorLogs';
 
 export type AdminBadges = {
   support: number;
@@ -14,11 +15,12 @@ export type AdminBadges = {
   listings: number;
   users: number;
   brands: number;
+  errorLogs: number;
 };
 
 const EMPTY: AdminBadges = {
   support: 0, reports: 0, bans: 0, suggestions: 0, waitlist: 0, contact: 0,
-  transactions: 0, refunds: 0, listings: 0, users: 0, brands: 0,
+  transactions: 0, refunds: 0, listings: 0, users: 0, brands: 0, errorLogs: 0,
 };
 
 export function useAdminBadges() {
@@ -28,8 +30,11 @@ export function useAdminBadges() {
   const refresh = useCallback(async () => {
     try {
       const brandsSince = typeof window !== 'undefined' ? window.localStorage.getItem('admin_brands_last_seen') : null;
-      const data = await callAdminData<AdminBadges>('getBadges', brandsSince ? { brandsSince } : {});
-      setBadges({ ...EMPTY, ...data });
+      const [data, errorLogs] = await Promise.all([
+        callAdminData<Omit<AdminBadges, 'errorLogs'>>('getBadges', brandsSince ? { brandsSince } : {}),
+        fetchErrorCount24h().catch(() => 0),
+      ]);
+      setBadges({ ...EMPTY, ...data, errorLogs });
     } catch (e) {
       console.error('badges fetch failed', e);
     } finally {

@@ -1,52 +1,93 @@
-# Refund request: live-capture proof + full-flow confirmation
+## Live Error Logging in Admin Dashboard
 
-## 1. Require live-captured evidence (no gallery, no file uploads)
+Capture client, edge function, payment, and auth errors into a single table, surface them live in the admin dashboard with rich metadata, auto-purge after 30 days.
 
-Update `src/components/RefundRequestDialog.tsx` so proof can only come from the live camera. Buyer must provide at least one live photo OR one live video before Submit is enabled. Copy updated to explain why (to prevent AI-generated or edited evidence).
+### 1. Database
 
-**Native (Capacitor iOS/Android)** — use `@capacitor/camera` (already installed and used by `IdVerificationStep.tsx`):
-- Photo: `CapCamera.getPhoto({ source: CameraSource.Camera, resultType: CameraResultType.Base64, quality: 70, allowEditing: false })`. `CameraSource.Camera` disables the "Photos" picker entirely.
-- Video: `CapCamera.pickVideos` supports gallery, so instead use a hidden `<input type="file" accept="video/*" capture="environment">`. Inside the Capacitor WKWebView `capture` forces the system camera recorder and blocks the library. Limit to ~30 s / 25 MB post-compression.
+New table `public.error_logs`:
 
-**Web/PWA fallback** — hidden `<input capture="environment">` for both photo and video. On desktop browsers `capture` is ignored, so on non-mobile web we show a banner: "Refund proof must be captured on the Flea mobile app." and disable Submit. Detection via `navigator.userAgent` + Capacitor `isNativePlatform()`.
+- `id` uuid pk
+- `created_at` timestamptz default now()
+- `source` text — `client` | `edge_function` | `payment` | `auth`
+- `severity` text — `error` | `warning` | `critical`
+- `user_id` uuid null (references profile via join)
+- `username` text null (denormalised for fast display)
+- `title` text — one-line human summary ("Refund failed", "Checkout crashed", etc.)
+- `message` text — full error message
+- `stack` text null — stack trace
+- `route` text null — page URL / edge function path
+- `device` jsonb null — `{ platform, app_version, user_agent, viewport }`
+- `context` jsonb null — `{ order_id, listing_id, payment_intent, function_name, http_status, ... }`
 
-UI:
-- Replace the current "Upload images (optional)" section with two live-capture buttons: "📸 Take photo" and "🎥 Record video".
-- Rename section label to "Live proof (required)" with helper text: "Photos and videos must be captured live in the app. Uploads from your gallery are not accepted so we can verify authenticity."
-- Each captured item shows as a thumbnail (video shows a play icon) with an X to retake. Up to 5 total.
-- Submit stays disabled until `reason` is set AND at least 1 live capture exists.
+RLS: `authenticated` can `INSERT` their own client errors; only admins (`has_role(auth.uid(), 'admin')`) can `SELECT` / `DELETE`. `service_role` full access for edge functions to insert.
 
-Payload:
-- Extend the existing `image_uploads` array to also carry videos: add `kind: 'photo' | 'video'` and `duration_seconds?` per item. Keep base64 transport (already used); videos compressed client-side, hard cap 25 MB per file, else toast and reject.
-- Every captured item is tagged `capture_source: 'live_camera'` in the payload so the edge function and admin dashboard can display "Live capture ✅".
+Added to `supabase_realtime` publication so admin feed updates live.
 
-## 2. Backend: accept video attachments
+Daily `pg_cron` job to `DELETE FROM error_logs WHERE created_at < now() - interval '30 days'`.
 
-`supabase/functions/order-messages/index.ts` refund_request handler:
-- Extend the upload loop to accept `contentType: video/*` (currently image-only). Store under the existing `order-attachments` bucket path.
-- Persist `capture_source` in the refund message metadata JSON so it flows through to `RefundSystemMessage` and admin views.
-- No policy changes required — bucket is already private with the existing per-order access rules.
+### 2. Ingestion
 
-## 3. Confirm refund flow works for awaiting / shipped / delivered
+**Client runtime errors** (`src/lib/errorLogger.ts`):
+- Wire into existing React error boundary + `window.onerror` + `unhandledrejection`.
+- Sends to new edge function `log-error` with route, stack, device info, user_id.
+- Debounced/deduped in-memory (same message within 30s dropped) to prevent spam.
 
-Audit the three status paths and fix any gap found:
+**Edge function failures**:
+- Shared helper `supabase/functions/_shared/logError.ts` — every existing function's `catch` block calls `logError({ source: 'edge_function', ... })` with function_name and http_status.
+- Wire into the top-level try/catch of the high-risk functions: `stripe-connect-refund`, `finalize-checkout`, `stripe-connect-payout`, `stripe-connect-topup`, `order-messages`, `stripe-connect-status`, `auto-refund-unshipped`, `delete-account`, `admin-data`.
 
-- **awaiting** (already tested by user) — buyer requests → seller approves → `stripe-connect-refund` reverses charge + application fee. Order flips to `refunded` via `enforce_refunded_order_status` trigger. Keep as-is.
-- **shipped** — same request path is already reachable because `refundWindowExpired` in `OrderDetailsSheet.tsx` only trips after delivery + 10 days, and `canShowRefundButton` doesn't restrict by status. Verify `stripe-connect-refund` doesn't require `delivered_at`. Add a system message note "Shipped — buyer claims non-arrival/damaged" so seller sees context.
-- **delivered** (within 10 days) — button already visible. Confirm `useOrders` / `OrderChat` route the refunded order correctly to the Refunded tab afterward and that the "Mark as delivered" action is hidden once refunded.
+**Payment events**:
+- Stripe webhook handler (`stripe-webhook`) logs `payment_intent.payment_failed`, `charge.refund.updated` failures, `payout.failed`, `account.updated` with `requirements.disabled_reason`.
 
-Verification steps after build:
-1. Manually test all three statuses end-to-end in preview against a real test order.
-2. Check `stripe-connect-refund` logs via `supabase--edge_function_logs` for each.
-3. Confirm the order disappears from active buyer/seller lists and appears in Refunded, and the badge counters update.
-4. Confirm sales details, notifications, and OrderChat all show refunded state consistently.
+**Auth failures**:
+- `src/pages/Auth.tsx` and OAuth callback log signInWithPassword / OAuth errors client-side (bad password excluded — only unexpected errors like network, provider conflict, blocked account).
 
-## Files touched
-- `src/components/RefundRequestDialog.tsx` — live-capture UI, video support, gating.
-- `supabase/functions/order-messages/index.ts` — accept video uploads + capture_source metadata.
-- `src/components/RefundSystemMessage.tsx` — render "Live capture ✅" badge and video thumbnail with play button.
-- `src/components/OrderDetailsSheet.tsx` — no functional change; verify refund button visibility for shipped/delivered.
-- No DB migration required.
+### 3. `log-error` edge function
 
-## Out of scope
-- Server-side AI/deepfake detection on the video itself. We rely on the platform camera capture path to prevent gallery/AI uploads; a heavier authenticity check can be added later if needed.
+- Public (no JWT) — accepts anon client errors, but attaches `user_id` from Authorization header when present.
+- Rate-limited via existing `check_and_record_rate_limit` (30 per user/IP per minute).
+- Server-side length caps (message 2k, stack 8k, context/device jsonb 4k).
+- Inserts into `error_logs` via service role.
+
+### 4. Admin dashboard UI
+
+New tab in existing `AdminDashboard.tsx`: **Errors** (badge count of last-24h unresolved).
+
+Feed layout:
+- Filters: Source (All / Client / Edge / Payment / Auth), Severity, Time range (1h / 24h / 7d / 30d), free-text search on title+message.
+- Row: severity dot, timestamp (relative), source badge, `@username` (tappable → profile), title, chevron.
+- Realtime subscription on `error_logs` INSERT prepends new rows with a subtle highlight flash.
+- Tap row → drawer with full detail:
+  - Full message, stack (monospace, scrollable)
+  - Route, device (platform + version + UA)
+  - Context (order_id / listing_id / payment_intent as tappable links opening the relevant admin drawer)
+  - "Copy details" button
+  - "Delete" button (admin only)
+
+### 5. Files to add / edit
+
+**New**
+- `supabase/migrations/<ts>_error_logs.sql`
+- `supabase/functions/log-error/index.ts`
+- `supabase/functions/_shared/logError.ts`
+- `src/lib/errorLogger.ts`
+- `src/components/admin/AdminErrorsTab.tsx`
+- `src/components/admin/AdminErrorDetailSheet.tsx`
+- `src/hooks/admin/useAdminErrors.ts`
+
+**Edit**
+- `src/main.tsx` — install `window.onerror` / `unhandledrejection` hooks.
+- `src/components/ErrorBoundary.tsx` — call `logError` in `componentDidCatch`.
+- `src/pages/AdminDashboard.tsx` — add Errors tab and badge.
+- `src/hooks/admin/useAdminBadges.ts` — include 24h error count in admin settings badge.
+- High-risk edge functions listed above — wrap catches with `logError`.
+
+### Answer to "anything else?"
+
+Yes — I'd suggest adding these while we're here:
+- **Severity levels** so critical Stripe/refund failures stand out from noisy client warnings.
+- **Deduplication window** so a broken screen doesn't flood the log with 1000 identical rows.
+- **Tappable context links** (order/listing/payment_intent) so an admin can jump straight from an error to the affected order drawer.
+- **24h admin badge** on the Errors tab so you notice spikes without opening the dashboard.
+
+Not included unless you want them: email/push alerts to admins on new `critical` errors, and a "Resolved" toggle to hide handled errors from the feed.

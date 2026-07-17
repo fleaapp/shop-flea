@@ -1,4 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
+import { logError } from '@/lib/errorLogger';
 
 interface Props {
   children: ReactNode;
@@ -18,6 +19,13 @@ class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, info: ErrorInfo) {
     // Surface for debugging; non-fatal
     console.error('[ErrorBoundary]', error, info.componentStack);
+    void logError({
+      title: 'Render crash (ErrorBoundary)',
+      message: error?.message || 'Unknown render error',
+      stack: error?.stack ?? null,
+      severity: 'critical',
+      context: { component_stack: info.componentStack?.slice(0, 4000) ?? null },
+    });
   }
 
   reset = () => {
