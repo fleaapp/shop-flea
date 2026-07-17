@@ -73,14 +73,15 @@ const BottomNav = () => {
   // Alerts badge — mirrors src/pages/Notifications.tsx (since-dismissed)
   const alertsBadge = notificationBadgeCount || undefined;
 
+  const [adminTotal, setAdminTotal] = useState(0);
+  const handleAdminTotal = useCallback((n: number) => setAdminTotal(n), []);
+
   // Settings badge — admins get support + reports + refunds + brands + contact + bans.
   // Non-admins get support-thread unread only.
-  const adminTotalRef = useMemo(() => ({ value: 0 }), []);
   const settingsBadge = useMemo(() => {
-    if (isAdmin) return adminTotalRef.value || undefined;
+    if (isAdmin) return adminTotal || undefined;
     return navBadges.unread_support || undefined;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin, navBadges.unread_support, adminTotalRef.value]);
+  }, [isAdmin, adminTotal, navBadges.unread_support]);
 
   const handleNavigate = useCallback((path: string) => {
     startTransition(() => {
