@@ -53,6 +53,9 @@ const OrderChat = () => {
 
       if (matchesGroup || group.orders.some((o) => o.id === orderId)) {
         return {
+          // Real orders.id — the route param is often the group id, and refund /
+          // order-messages edge functions key on the actual order row.
+          primary_order_id: order?.id ?? null,
           buyer_id: group.buyer_id,
           seller_id: group.seller_id,
           delivered_at: group.delivered_at ?? order?.delivered_at ?? null,
@@ -277,16 +280,21 @@ const OrderChat = () => {
                 onReject={async () => {
                   setRefundActioning(true);
                   try {
+                    const resolvedOrderId = orderInfo?.primary_order_id;
+                    if (!resolvedOrderId) {
+                      throw new Error('Order not found. Please refresh and try again.');
+                    }
                     await invokeCloudFunction('order-messages', {
                       method: 'POST',
-                      query: { orderId: orderId!, action: 'refund_reject' },
+                      query: { orderId: resolvedOrderId, action: 'refund_reject' },
                       body: {},
                     });
                     queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
                     queryClient.invalidateQueries({ queryKey: ['refund-status', orderId] });
+                    queryClient.invalidateQueries({ queryKey: ['refund-status', resolvedOrderId] });
                     toast.success('Refund request rejected');
-                  } catch {
-                    toast.error('Failed to reject refund');
+                  } catch (e: any) {
+                    toast.error(e?.message || 'Failed to reject refund');
                   } finally {
                     setRefundActioning(false);
                   }
@@ -296,19 +304,27 @@ const OrderChat = () => {
                   // unwinds the seller payout AND the buyer's Secure Checkout Fee (4% + $0.70) cleanly.
                   setRefundActioning(true);
                   try {
+                    const resolvedOrderId = orderInfo?.primary_order_id;
+                    if (!resolvedOrderId) {
+                      throw new Error('Order not found. Please refresh and try again.');
+                    }
                     const { data, error } = await invokeCloudFunction('stripe-connect-refund', {
-                      orderId: orderId!,
+                      orderId: resolvedOrderId,
                     });
                     if (error || !(data as any)?.success) {
                       throw new Error((error as any)?.message || (data as any)?.error || 'Refund failed');
                     }
                     await invokeCloudFunction('order-messages', {
                       method: 'POST',
-                      query: { orderId: orderId!, action: 'refund_initiate' },
+                      query: { orderId: resolvedOrderId, action: 'refund_initiate' },
                       body: {},
                     });
                     queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
                     queryClient.invalidateQueries({ queryKey: ['refund-status', orderId] });
+                    queryClient.invalidateQueries({ queryKey: ['refund-status', resolvedOrderId] });
+                    queryClient.invalidateQueries({ queryKey: ['orders'] });
+                    queryClient.invalidateQueries({ queryKey: ['order-groups'] });
+                    queryClient.invalidateQueries({ queryKey: ['seller-balance'] });
                     toast.success('Refund processed. Buyer will see it in 5–10 days.');
                   } catch (e: any) {
                     toast.error(e?.message || 'Failed to process refund');

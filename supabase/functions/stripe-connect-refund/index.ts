@@ -94,13 +94,15 @@ function buildOrderSelect(omitted: Set<string>) {
 
 async function fetchOrderWithFallback(externalUrl: string, serviceKey: string, orderId: string) {
   const omitted = new Set<string>();
+  // Route param is sometimes the order_group_id (OrderChat uses the group id in
+  // the URL). If the direct id lookup misses, retry once against order_group_id
+  // so callers don't have to know which they hold.
+  const filters = [`id=eq.${orderId}`, `order_group_id=eq.${orderId}&order=created_at.asc&limit=1`];
+  let filterIdx = 0;
 
   while (true) {
-    const params = new URLSearchParams({
-      id: `eq.${orderId}`,
-      select: buildOrderSelect(omitted),
-    });
-    const res = await fetch(`${externalUrl}/rest/v1/orders?${params.toString()}`, {
+    const url = `${externalUrl}/rest/v1/orders?${filters[filterIdx]}&select=${encodeURIComponent(buildOrderSelect(omitted))}`;
+    const res = await fetch(url, {
       headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
     });
     const body = await safeJson(res);
@@ -117,7 +119,13 @@ async function fetchOrderWithFallback(externalUrl: string, serviceKey: string, o
     }
 
     const order = Array.isArray(body) ? body[0] : null;
-    if (!order) throw new Error("Order not found.");
+    if (!order) {
+      if (filterIdx < filters.length - 1) {
+        filterIdx += 1;
+        continue;
+      }
+      throw new Error("Order not found.");
+    }
     return {
       ...order,
       checkout_reference: order.checkout_reference ?? null,
