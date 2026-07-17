@@ -71,6 +71,7 @@ export default function AdminDashboard() {
     {
       title: 'System',
       items: [
+        { key: 'error_logs', icon: '🪵', label: 'Runtime error logs', route: '/admin/error-logs', badge: badges.errorLogs },
         { key: 'errors', icon: '🛡️', label: 'System diagnostics', route: '/admin/errors' },
       ],
     },
