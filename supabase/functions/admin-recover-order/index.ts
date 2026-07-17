@@ -49,11 +49,12 @@ serve(async (req) => {
       { auth: { persistSession: false, autoRefreshToken: false } },
     );
 
-    // Idempotency: if order already exists for this PI, bail.
+    // Idempotency: check by listing + buyer since checkout_reference column may not exist.
     const prior = await svc
       .from("orders")
-      .select("id, listing_id, buyer_id")
-      .eq("checkout_reference", paymentIntentId);
+      .select("id, listing_id, buyer_id, created_at")
+      .eq("buyer_id", buyerId)
+      .in("listing_id", itemIds);
     if ((prior.data ?? []).length > 0) {
       return json({ ok: true, alreadyProcessed: true, orders: prior.data });
     }
