@@ -9,6 +9,9 @@ interface RefundRequestData {
   reason: string;
   details: string;
   image_urls: string[];
+  video_urls?: string[];
+  media?: { url: string; kind: 'photo' | 'video' }[];
+  capture_source?: string;
   payment_method?: string;
   requested_at: string;
 }
