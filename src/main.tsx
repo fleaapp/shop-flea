@@ -4,9 +4,11 @@ import App from "./App.tsx";
 import "./index.css";
 import { restoreRouteAppChrome } from "./lib/appChrome.ts";
 import { installIosGoogleSafariGuard } from "./lib/iosGoogleSafariGuard.ts";
+import { installGlobalErrorHandlers } from "./lib/errorLogger.ts";
 
 restoreRouteAppChrome();
 installIosGoogleSafariGuard();
+installGlobalErrorHandlers();
 
 // Detect Android and add class to html for platform-specific CSS
 if (/android/i.test(navigator.userAgent)) {
