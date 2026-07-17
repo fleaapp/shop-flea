@@ -91,22 +91,32 @@ export function usePushNotifications() {
         return;
       }
 
-      console.log('[Push] Replacing all subscriptions for user:', user.id);
-      await (supabase as any).from('push_subscriptions').delete().eq('user_id', user.id);
-
-      const { error } = await (supabase as any).from('push_subscriptions').insert({
-        user_id: user.id,
-        endpoint: subJson.endpoint,
-        p256dh: subJson.keys.p256dh,
-        auth: subJson.keys.auth,
-        updated_at: new Date().toISOString(),
-      });
+      console.log('[Push] Upserting subscription for user:', user.id);
+      const { error } = await (supabase as any)
+        .from('push_subscriptions')
+        .upsert(
+          {
+            user_id: user.id,
+            endpoint: subJson.endpoint,
+            p256dh: subJson.keys.p256dh,
+            auth: subJson.keys.auth,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id,endpoint' }
+        );
 
       if (error) {
-        console.error('[Push] Failed to save subscription:', JSON.stringify(error));
-        toast.error(`Push save failed: ${error.message || error.code || 'Unknown error'}`);
+        // Duplicate-key race is harmless — the row already exists for this endpoint.
+        const code = (error as any).code;
+        if (code === '23505') {
+          console.log('[Push] Subscription already saved (duplicate ignored).');
+          subscribedRef.current = true;
+        } else {
+          console.error('[Push] Failed to save subscription:', JSON.stringify(error));
+          toast.error(`Push save failed: ${error.message || code || 'Unknown error'}`);
+        }
       } else {
-        console.log('[Push] Fresh subscription saved successfully!');
+        console.log('[Push] Subscription saved successfully!');
         subscribedRef.current = true;
       }
     } catch (err) {
