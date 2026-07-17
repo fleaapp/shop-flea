@@ -121,7 +121,7 @@ const BottomNav = () => {
   return (
     <>
       {isAdmin && (
-        <AdminSettingsBadgeProbe onCount={(n) => { adminTotalRef.value = n; }} />
+        <AdminSettingsBadgeProbe onCount={handleAdminTotal} />
       )}
       <nav
         className="fixed bottom-0 left-0 right-0 flex justify-center pb-3 max-[375px]:pb-2 pt-3 max-[375px]:pt-2 z-50 pointer-events-none"
