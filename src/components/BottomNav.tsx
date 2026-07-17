@@ -28,8 +28,9 @@ const AdminSettingsBadgeProbe = ({ onCount }: { onCount: (n: number) => void }) 
     badges.brands +
     badges.contact +
     badges.bans;
-  // Report up on every render — cheap primitive compare in parent.
-  onCount(total);
+  useEffect(() => {
+    onCount(total);
+  }, [total, onCount]);
   return null;
 };
 
