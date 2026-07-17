@@ -1,6 +1,6 @@
 import { Plus, Camera, LayoutGrid, Rows3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/context/AuthContext';
@@ -31,7 +31,13 @@ const Profile = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'listings' | 'sold'>('listings');
+  const [activeTab, setActiveTab] = useState<'listings' | 'sold'>(() => {
+    if (typeof window === 'undefined') return 'listings';
+    return sessionStorage.getItem('own_profile_tab') === 'sold' ? 'sold' : 'listings';
+  });
+  useEffect(() => {
+    try { sessionStorage.setItem('own_profile_tab', activeTab); } catch {}
+  }, [activeTab]);
   const [viewMode, setViewMode] = useState<'single' | 'grid'>('single');
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [salesSheetOpen, setSalesSheetOpen] = useState(false);
