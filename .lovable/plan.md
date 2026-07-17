@@ -1,45 +1,74 @@
-## Root cause of "Order not found."
+## Goal
 
-The seller's **Refund Order** button inside the order chat (`src/pages/OrderChat.tsx`, line ~299) calls `stripe-connect-refund` with `orderId: orderId!` — but the `orderId` route param is actually the **order group id**, not a row id in `public.orders`.
+Two changes in `src/components/BottomNav.tsx`, both fully live:
 
-`supabase/functions/stripe-connect-refund/index.ts` looks the record up with `?id=eq.<value>`. When the value is a group id, the row is not found and the function throws `Order not found.` The refund from the Sales Details sheet works because it passes `primaryOrder.id` (a real order row id).
+1. **Non-admin footer badges must mirror the counts each destination page shows.**
+2. **Admin Settings badge additionally rolls up the important admin queue items** (support, refunds, reports, brand management, contact, bans).
 
-Same problem exists for the reject path — `order-messages?orderId=<groupId>&action=refund_reject|refund_initiate` — and it happens to work only when the server-side handler also accepts a group id.
+Nothing else in the footer changes.
 
-## What I'll change
+## Fix
 
-### 1. Fix the seller refund button in OrderChat (root cause)
-- Resolve a concrete `orders.id` from `orderInfo`/`useOrders()` before calling the refund function. Prefer the specific order that matches `orderId`; fall back to the first order in the group.
-- Pass that real order id to `stripe-connect-refund` and to `order-messages` for both `refund_initiate` and `refund_reject`.
-- Guard the button: if no order row can be resolved, show a clear toast instead of firing the request.
+### A. Mirror page counts for Cart / Profile / Alerts
 
-### 2. Make `stripe-connect-refund` tolerant of a group id (defence in depth)
-- If `?id=eq.<value>` returns no row, retry with `?order_group_id=eq.<value>&limit=1`.
-- Keep the existing "seller must own it" and "already refunded" checks against the resolved row.
-- All refunds still cascade to the whole group via the existing `markRelatedOrdersRefunded` path, so multi-item groups keep refunding atomically.
+Currently the footer pulls buyer/seller/activity numbers from the `get_nav_badges` RPC, which counts individual orders and uses `is_read`. The pages count **order groups** and use a **"seen since dismiss"** timestamp for alerts, so numbers drift apart.
 
-### 3. Full-flow audit fixes I noticed while reading the code
+In `BottomNav.tsx`, replace the RPC-derived math with the exact hooks each page uses:
 
-- **Buyer "Request refund"** (`RefundRequestDialog`) already scopes to a single order id — unchanged.
-- **Seller "Reject refund"** in OrderChat: same group-id bug as above; fix alongside (1).
-- **Sales Details refund button**: already correct (passes `primaryOrder.id`) — unchanged.
-- **Refund status invalidation**: after a successful refund from OrderChat, also invalidate `['orders']`, `['seller-balance']`, and `['order-groups']` so the sheet, seller dashboard activity, and orders list reflect the refund immediately (matches what SalesDetailsSheet already does).
-- **Idempotency + double-tap**: keep the existing `flea-refund-${orderId}` idempotency key but derive it from the resolved order id so retries from either surface collapse to one Stripe refund.
-- **Rejected message state**: after `refund_reject`, invalidate `['order-messages', orderId]` (already done) and additionally refetch `['refund-status', orderId]` so the buyer sees the "You can escalate" state without needing to reopen the chat.
-- **Error surfacing**: `invokeCloudFunction` currently swallows the 400 body in some paths. Route the refund call through a small helper that reads `data.error` from a non-2xx `FunctionsHttpError` and shows it in the toast, so future failures don't come back as the generic "Edge Function returned a non-2xx status code".
+- `useOrders()` → `buyerOrderGroups`, `sellerOrderGroups`
+- `useUnreadOrderMessages()` → `perOrder`
+- `useNotifications()` → `badgeCount` (already the "unseen since dismiss" number rendered on the Alerts page)
+- Keep `useNavBadges()` only for `unread_support`.
 
-### 4. Verification
-- Reproduce the failing seller-side "Refund Order" from a refund request in OrderChat against a real test order and confirm success + UI refresh across Sales Details, Seller Dashboard activity, and buyer Notifications.
-- Repeat with a multi-item order (group id) to confirm all sibling orders and their listings flip to `refunded`.
-- Repeat the Sales Details "Refund" button to confirm no regression.
-- Repeat buyer "Request refund" → seller "Reject" to confirm the rejection path posts the system message and the buyer sees the escalation copy.
-- Repeat with an already-refunded order and confirm the button no longer appears / errors cleanly.
+Compute:
 
-## Technical details
+```ts
+// Cart — mirrors src/pages/Cart.tsx ordersBadgeCount
+const activeBuyerGroups = buyerOrderGroups.filter(g => g.status === 'awaiting' || g.status === 'shipped');
+const cartUnread = activeBuyerGroups.reduce(
+  (s, g) => s + g.orders.reduce((n, o) => n + (perOrder.get(o.id) || 0), 0), 0);
+const ordersBadge = activeBuyerGroups.length + cartUnread;
 
-Files touched:
-- `src/pages/OrderChat.tsx` — resolve real `orders.id` from `useOrders` before calling `stripe-connect-refund` and `order-messages`; expand query invalidations; better error toast.
-- `supabase/functions/stripe-connect-refund/index.ts` — fallback lookup by `order_group_id` when `id` misses; keep existing group-wide refund cascade.
-- (Small) `src/utils/cloudFunctions.ts` helper usage — parse `data.error` from non-2xx responses for surfaced messages. No signature change.
+// Profile — mirrors src/pages/Profile.tsx salesBadge
+const toShip = sellerOrderGroups.filter(g => g.status === 'awaiting').length;
+const sellerUnread = sellerOrderGroups.reduce(
+  (s, g) => s + g.orders.reduce((n, o) => n + (perOrder.get(o.id) || 0), 0), 0);
+const salesBadge = toShip + sellerUnread;
 
-No DB migrations. No changes to buyer refund request flow, Stripe API calls, permissions, or fee handling.
+// Alerts — mirrors src/pages/Notifications.tsx
+const alertsBadge = notificationBadgeCount;
+```
+
+Liveness comes from the hooks themselves: `useOrders` subscribes to `orders` + `order_messages` realtime, `useUnreadOrderMessages` subscribes to `order_messages`, `useNotifications` subscribes to `notifications` and listens for the `alerts-badge-dismissed` window event so tapping into Alerts instantly clears the footer.
+
+### B. Admin-aware Settings badge
+
+Extract the Settings tab into an internal `SettingsNavItem` component so admin hooks only run once and never on non-admin devices.
+
+Inside:
+
+```ts
+const { isAdmin } = useAdminRole();
+const { badges: admin } = useAdminBadges(); // only used when isAdmin
+
+const settingsBadge = isAdmin
+  ? (admin.support + admin.reports + admin.refunds + admin.brands + admin.contact + admin.bans)
+  : navBadges.unread_support;
+```
+
+The "important" admin extras are: **support, refunds, reports, brand management, contact, bans**. Deliberately excluded: `suggestions`, `waitlist`, `listings`, `users`, `transactions` (informational, would inflate the badge). `useAdminBadges` already subscribes to `chat_messages`, `reports`, `orders`, `listings`, `contact_submissions`, `waitlist`, `profiles`, `brands`, `notifications` realtime, so admin counts update live.
+
+Only render / call `useAdminBadges` when `isAdmin === true` (gate via early return in a child component) so non-admin users never open those channels.
+
+## Out of scope
+
+- Any visual/style change to the badge.
+- Backend `get_nav_badges` RPC (left as-is; we simply stop using its buyer/seller/activity fields in the footer).
+- Admin Dashboard chips themselves.
+
+## Technical notes
+
+- `useOrders`, `useUnreadOrderMessages`, `useNotifications` are React Query hooks with stable keys, so mounting them in the always-present `BottomNav` dedupes with the same hooks used on Cart/Profile/Notifications pages — no extra network beyond the initial fetch per session.
+- `useAdminRole` returns cached admin status; a single edge-function check per session.
+- `notificationBadgeCount` is exactly the number rendered on the Alerts page header, so dismiss actions there clear the footer simultaneously via the existing `alerts-badge-dismissed` event.
+- No SQL/migration changes required — every subscription used here is already functional in the app today.
