@@ -9,6 +9,9 @@ interface RefundRequestData {
   reason: string;
   details: string;
   image_urls: string[];
+  video_urls?: string[];
+  media?: { url: string; kind: 'photo' | 'video' }[];
+  capture_source?: string;
   payment_method?: string;
   requested_at: string;
 }
@@ -91,19 +94,43 @@ const RefundSystemMessage = ({
             )}
           </div>
 
-          {d.image_urls?.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {d.image_urls.map((url, i) => (
-                <img
-                  key={i}
-                  src={url}
-                  alt={`Evidence ${i + 1}`}
-                  className="h-16 w-16 rounded-lg object-cover cursor-pointer border border-border hover:opacity-80 transition-opacity"
-                  onClick={() => setExpandedImage(url)}
-                />
-              ))}
-            </div>
-          )}
+          {(() => {
+            const mediaItems: { url: string; kind: 'photo' | 'video' }[] = d.media?.length
+              ? d.media
+              : [
+                  ...(d.image_urls || []).map(url => ({ url, kind: 'photo' as const })),
+                  ...(d.video_urls || []).map(url => ({ url, kind: 'video' as const })),
+                ];
+            if (!mediaItems.length) return null;
+            return (
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2">
+                  {mediaItems.map((m, i) =>
+                    m.kind === 'video' ? (
+                      <video
+                        key={i}
+                        src={m.url}
+                        controls
+                        playsInline
+                        className="h-24 w-24 rounded-lg object-cover border border-border bg-black"
+                      />
+                    ) : (
+                      <img
+                        key={i}
+                        src={m.url}
+                        alt={`Evidence ${i + 1}`}
+                        className="h-16 w-16 rounded-lg object-cover cursor-pointer border border-border hover:opacity-80 transition-opacity"
+                        onClick={() => setExpandedImage(m.url)}
+                      />
+                    )
+                  )}
+                </div>
+                {d.capture_source === 'live_camera' && (
+                  <p className="text-[11px] text-muted-foreground">📷 Captured live in the Flea app.</p>
+                )}
+              </div>
+            );
+          })()}
 
           {isSeller && !hasSellerResponded && (
             <div className="flex gap-2 pt-1">
