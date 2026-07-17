@@ -116,6 +116,55 @@ const resetAppCache = async () => {
   await Promise.all([clearAppCaches(), unregisterServiceWorkers()]);
 };
 
+const registerAppServiceWorker = async () => {
+  if (!('serviceWorker' in navigator)) return;
+
+  if (!import.meta.env.PROD || isNativePlatform || isInIframe || isPreviewHost) {
+    const registrations = await navigator.serviceWorker.getRegistrations().catch(() => []);
+    await Promise.all(
+      registrations
+        .filter((registration) => registration.active?.scriptURL.includes('/sw.js'))
+        .map((registration) => registration.unregister()),
+    );
+    return;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.register(SW_URL, {
+      updateViaCache: 'none',
+    });
+
+    await registration.update().catch(() => undefined);
+
+    if (registration.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+
+    registration.addEventListener('updatefound', () => {
+      const worker = registration.installing;
+      if (!worker) return;
+      worker.addEventListener('statechange', () => {
+        if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+          worker.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
+    });
+  } catch (err) {
+    console.warn('[sw] registration failed', err);
+  }
+};
+
+if (!isNativePlatform && 'serviceWorker' in navigator) {
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshing) return;
+    refreshing = true;
+    const path = window.location.pathname;
+    const skip = /^\/(auth|forgot-password|reset-password|verify-email|checkout|checkout-success)(\/|$)/.test(path);
+    if (!skip) window.location.reload();
+  });
+}
+
 // PWA: Prevent service worker registration in iframes/preview environments
 const isInIframe = (() => {
   try {
@@ -139,6 +188,8 @@ const hideNativeSplash = () => {
 
 const root = createRoot(document.getElementById("root")!);
 root.render(<App />);
+
+void registerAppServiceWorker();
 
 // Hide native splash AFTER React has actually rendered the first frame
 // (Auth screen). Hiding it earlier exposes the lime WebView background
