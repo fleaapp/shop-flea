@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow, format } from 'date-fns';
-import { ArrowLeft, RefreshCw, Search, Trash2, X } from 'lucide-react';
+import { RefreshCw, Search, Trash2, X } from 'lucide-react';
 import { AdminHeader } from '@/components/admin/shell/AdminHeader';
 import { AdminBadge, type AdminBadgeTone } from '@/components/admin/shell/AdminBadge';
 import { Button } from '@/components/ui/button';
