@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useTransition } from 'react';
+import { useMemo, useCallback, useTransition, useState, useEffect } from 'react';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { getAvatarUrl } from '@/utils/optimizedImage';
 import { useLocation, useNavigate } from 'react-router-dom';
