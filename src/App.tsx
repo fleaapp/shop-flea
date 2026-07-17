@@ -87,6 +87,7 @@ const AdminTransactions = lazy(loadAdminTransactions);
 const AdminUsers = lazy(loadAdminUsers);
 const AdminListings = lazy(loadAdminListings);
 const AdminErrors = lazy(loadAdminErrors);
+const AdminErrorLogs = lazy(loadAdminErrorLogs);
 const AdminBrands = lazy(loadAdminBrands);
 const AdminRefunds = lazy(loadAdminRefunds);
 const AuthenticatedProviders = lazy(loadAuthenticatedProviders);
