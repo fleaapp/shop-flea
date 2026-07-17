@@ -54,7 +54,15 @@ interface DbListing {
 const SellerProfile = () => {
   const navigate = useNavigate();
   const { sellerId } = useParams<{ sellerId: string }>();
-  const [activeTab, setActiveTab] = useState<'listings' | 'sold'>('listings');
+  const tabStorageKey = `seller_profile_tab_${sellerId ?? 'unknown'}`;
+  const [activeTab, setActiveTab] = useState<'listings' | 'sold'>(() => {
+    if (typeof window === 'undefined') return 'listings';
+    const saved = sessionStorage.getItem(tabStorageKey);
+    return saved === 'sold' ? 'sold' : 'listings';
+  });
+  useEffect(() => {
+    try { sessionStorage.setItem(tabStorageKey, activeTab); } catch {}
+  }, [activeTab, tabStorageKey]);
   const [sellerProfile, setSellerProfile] = useState<SellerProfile | null>(null);
   const [activeListings, setActiveListings] = useState<DbListing[]>([]);
   const [soldListings, setSoldListings] = useState<DbListing[]>([]);
