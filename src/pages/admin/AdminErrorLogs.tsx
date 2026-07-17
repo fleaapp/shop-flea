@@ -70,11 +70,6 @@ export default function AdminErrorLogs() {
       <AdminHeader
         title="Error logs"
         emoji="🪵"
-        left={
-          <Button variant="ghost" size="icon" onClick={() => navigate('/admin')} className="h-9 w-9 rounded-full">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        }
         right={
           <Button variant="ghost" size="icon" onClick={refresh} className="h-9 w-9 rounded-full">
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
