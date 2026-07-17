@@ -614,15 +614,20 @@ Deno.serve(async (req) => {
           });
         }
 
-        const uploadedImageUrls = Array.isArray(image_uploads)
+        const uploadedMedia = Array.isArray(image_uploads)
           ? await uploadRefundImages(external, userId, threadOrderId, image_uploads as RefundImageUpload[])
           : [];
+        const uploadedImageUrls = uploadedMedia.filter(m => m.kind === 'photo').map(m => m.url);
+        const uploadedVideoUrls = uploadedMedia.filter(m => m.kind === 'video').map(m => m.url);
         const systemContent = JSON.stringify({
           type: "refund_request",
           buyer_username: senderUsername,
           reason: reason.trim().slice(0, 500),
           details: (details || "").trim().slice(0, 2000),
           image_urls: uploadedImageUrls.length ? uploadedImageUrls : (image_urls || []).slice(0, 5),
+          video_urls: uploadedVideoUrls,
+          media: uploadedMedia,
+          capture_source: uploadedMedia.length ? 'live_camera' : undefined,
           payment_method: orderInfo.paymentMethod,
           requested_at: new Date().toISOString(),
         });
