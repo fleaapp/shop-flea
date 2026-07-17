@@ -48,6 +48,7 @@ const loadAdminTransactions = () => import("./pages/admin/AdminTransactions");
 const loadAdminUsers = () => import("./pages/admin/AdminUsers");
 const loadAdminListings = () => import("./pages/admin/AdminListings");
 const loadAdminErrors = () => import("./pages/admin/AdminErrors");
+const loadAdminErrorLogs = () => import("./pages/admin/AdminErrorLogs");
 const loadAdminBrands = () => import("./pages/admin/AdminBrands");
 const loadAdminRefunds = () => import("./pages/admin/AdminRefunds");
 const loadAuthenticatedProviders = () => import("./components/AuthenticatedProviders");
