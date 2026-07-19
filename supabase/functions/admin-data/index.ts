@@ -184,6 +184,16 @@ async function safeInsert(table: string, body: Record<string, unknown>) {
   }
 }
 
+async function safeDelete(table: string, filters: Record<string, string>) {
+  if (Object.keys(filters).length === 0) return [];
+  try {
+    return await rest(query(table, { ...filters, select: "id" }), { method: "DELETE", prefer: "return=minimal" });
+  } catch (error) {
+    if ((error as any)?.missingSchema) return [];
+    throw error;
+  }
+}
+
 async function getVerifiedUserId(req: Request) {
   const authHeader = req.headers.get("Authorization") ?? "";
   const token = authHeader.replace(/^Bearer\s+/i, "").trim();
