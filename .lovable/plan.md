@@ -1,49 +1,72 @@
-## Root cause
+## What's happening
 
-The earlier "transparent status bar so the drawer dim overlay blends across the top" change made the native status bar **permanently** overlay the WebView (`overlaysWebView: true`, always). That means every page renders under the status bar, not just while a drawer/dialog is open. To compensate we then sprinkled `pt-[env(safe-area-inset-top)]` on `#root` and on `fixed inset-0` pages, but:
+Three separate issues stack on cold launch:
 
-- `absolute`-positioned top controls (Sales 💸 button on Profile / Seller Profile, close buttons, etc.) don't respect that padding, so they clip on every device with any status bar height.
-- `DrawerContent`'s `top-10` (40px) is measured from viewport top, so on any device where `env(safe-area-inset-top)` ≥ 40px (notch/Dynamic Island phones) the drag handle and title hide behind the status bar.
-- Behaviour was fine before the status-bar change because the status bar wasn't overlaying the WebView.
+1. **Black screen hang on first open after install** — the native splash auto-hides after 1500 ms whether the web bundle is ready or not. On a fresh install the WebView is still parsing JS, so between splash hide and React mounting you see the app window's default background (black). Killing and reopening works because the JS is now warm in memory.
+2. **Splash flashes too fast** — 1500 ms is short and made worse by the auto-hide firing before React paints anything.
+3. **Black status bar strip on splash** — the iOS app window's `backgroundColor` is black by default. The LaunchScreen storyboard's lime view sits inside the safe area, so the top status-bar strip shows the window colour behind it (black), not lime.
 
-## Fix — restore non-overlay by default, only overlay while a dim backdrop is active
+## The fix
 
-This is a one-place native fix that removes all per-page padding hacks and works on every device.
+### 1. `capacitor.config.ts` — hand splash control to JS
 
-### 1. `src/lib/appChrome.ts` — conditionally toggle `overlaysWebView`
-- When `isOverlay === false` (normal pages): call `StatusBar.setOverlaysWebView({ overlay: false })` and `StatusBar.setBackgroundColor({ color: visibleTopColor })`. The status bar becomes a solid strip matching the route colour (cream / lime), and the WebView sits below it, exactly like before the change.
-- When `isOverlay === true` (Drawer / Dialog / Sheet / AlertDialog open via `useOverlayChrome`): keep the current behaviour, `setOverlaysWebView({ overlay: true })` with transparent background and `Style.Light`, so the dim backdrop blends over the status bar.
-- Remove the "ALWAYS in overlay mode" comment and update to reflect the toggled behaviour.
+- `launchAutoHide: false` so iOS keeps the splash up until we explicitly hide it.
+- Keep `backgroundColor: '#DDFED7'` (already correct).
+- Remove the fixed `launchShowDuration` (ignored when autoHide is off).
 
-### 2. `capacitor.config.ts` — start in non-overlay
-Change `StatusBar.overlaysWebView` from `true` to `false` so the native default matches the app's default state on cold boot before JS mounts.
+### 2. `src/main.tsx` — hide splash only once React has painted
 
-### 3. Revert now-unnecessary safe-area padding
-Because content no longer sits under the status bar in the default state, the compensating padding causes a double gap. Remove:
-- `#root { padding-top: env(safe-area-inset-top) }` in `src/index.css` (if it was added specifically for this).
-- `pt-[env(safe-area-inset-top)]` on the `fixed inset-0` containers in `src/pages/Profile.tsx` (lines 170 and 424), `src/pages/SellerProfile.tsx` (line 278), `src/pages/Index.tsx`, `src/pages/Favorites.tsx`, `src/pages/SuggestionBox.tsx`, `src/pages/ContactSupport.tsx` (whichever pages received the earlier patch).
-- Restore any `pt-safe` / equivalent that was removed in `CreateListing.tsx`, `SellerDashboard.tsx`, `AdminHeader.tsx` **only if** they visually regress; check each after step 1 lands.
+Import `@capacitor/splash-screen` and call `SplashScreen.hide({ fadeOutDuration: 300 })` inside a `requestAnimationFrame` after `ReactDOM.render`. This eliminates the black gap on first install because splash stays up through JS parse + first paint, then fades directly into the app.
 
-### 4. `src/components/ui/drawer.tsx` — safe-area-aware drawer offset
-Even in non-overlay mode, once a drawer opens the status bar flips to overlay, so `DrawerContent`'s viewport-top offset must clear the inset. Change `top-10` to an inline style:
+### 3. One-time Xcode change (I can't edit this from here — it lives in your local iOS project)
 
-```tsx
-style={{ top: 'calc(env(safe-area-inset-top, 0px) + 24px)' }}
+Two tiny native tweaks make the status-bar strip lime and stop the "black flash":
+
+**A. Set the app window background to lime**
+
+Open `ios/App/App/AppDelegate.swift` and inside `application(_:didFinishLaunchingWithOptions:)`, right before `return true`, add:
+
+```swift
+self.window?.backgroundColor = UIColor(red: 0.867, green: 0.996, blue: 0.843, alpha: 1.0)
 ```
 
-Falls back to 24px on devices with no inset (behaves like the current `top-10` visually on non-notch devices, safely below Dynamic Island on notch devices).
+That single line paints the strip behind the status bar lime instead of black — both during launch and during any brief WebView gap.
 
-Auth-related sheets already use the same overlay chrome, so no separate change needed for Dialog/Sheet/AlertDialog — their content is already vertically centred or bottom-anchored.
+**B. Make the status bar icons dark on launch**
 
-### 5. Auth-page logo
-Revert `src/pages/Auth.tsx` line 401 back to its original `top-20 max-[375px]:top-12` (drop the `calc(env(safe-area-inset-top,0px) + …)` we added last turn). With the status bar no longer overlaying, the original values position correctly again across all devices.
+In `ios/App/App/Info.plist`, add (or update) these two keys:
 
-## Verification checklist
+```xml
+<key>UIStatusBarStyle</key>
+<string>UIStatusBarStyleDarkContent</string>
+<key>UIViewControllerBasedStatusBarAppearance</key>
+<false/>
+```
 
-Preview on multiple viewports (iPhone SE 375px, iPhone 15 393px, iPhone 17 Pro Max 440px, and desktop):
-- Profile / Seller Profile: Sales 💸 button fully visible, tappable, badge not clipped.
-- Home, Favorites, Notifications, Suggestion Box, Contact Support, Create Listing, Seller Dashboard: no double top gap, no clipped headers or back buttons.
-- Auth / Forgot Password / Reset Password / Verify Email: logo at correct height, not too high, not too low.
-- Open any Drawer (Filter, Shipping Settings, Order details, Sales Details, Admin drawers): drag handle and title fully visible below the status bar; dim backdrop still blends across the status bar area (transparent overlay while open); status bar returns to solid route colour on close.
-- Open any Dialog / AlertDialog / Sheet: same dim-blend behaviour, no layout regression.
-- Confirm on cold boot (native) there's no cream flash before /auth redirect (auth chrome logic in `appChrome.ts` still runs first).
+That flips the launch-time status bar to dark icons on the lime background so it matches the rest of the app.
+
+I'll give you the exact `PlistBuddy` one-liner and the Swift edit as copy-paste commands after you approve the plan.
+
+## Files I will change
+
+- `capacitor.config.ts` — set `launchAutoHide: false`, drop `launchShowDuration`.
+- `src/main.tsx` — hide splash from JS after first paint.
+
+## Files you edit once in Xcode (I'll give commands)
+
+- `ios/App/App/AppDelegate.swift` — set window backgroundColor to lime.
+- `ios/App/App/Info.plist` — `UIStatusBarStyle` + `UIViewControllerBasedStatusBarAppearance` keys.
+
+## Rebuild command
+
+After approving, use the same push chain as last time:
+
+```bash
+cd ~/Desktop/shop-flea && \
+git stash && git pull --rebase && git stash pop && \
+npm install --legacy-peer-deps && \
+rm -rf dist ios/App/App/public && \
+npm run build && npx cap sync ios && \
+cd ios/App && agvtool next-version -all && cd ../.. && \
+npx cap open ios
+```

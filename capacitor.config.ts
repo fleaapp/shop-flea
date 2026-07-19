@@ -17,8 +17,10 @@ const config: CapacitorConfig = {
       style: 'DARK',
     },
     SplashScreen: {
-      launchShowDuration: 1500,
-      launchAutoHide: true,
+      // JS-controlled hide (see src/main.tsx). Native must NOT auto-hide,
+      // otherwise the splash disappears before React paints and exposes a
+      // black WebView on first install.
+      launchAutoHide: false,
       launchFadeOutDuration: 300,
       backgroundColor: '#DDFED7',
       androidSplashResourceName: 'splash',
