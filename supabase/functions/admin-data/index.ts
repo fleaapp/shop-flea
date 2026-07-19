@@ -1440,7 +1440,7 @@ async function runSystemFix(fixId: string) {
       });
       let fixed = 0;
       for (const l of targets as any[]) {
-        await safePatch("listings", { id: `eq.${l.id}` }, { status: "removed" });
+        await deleteListingAndOrders(l.id, "Auto-removed: heavily reported");
         fixed++;
       }
       return { ok: true, fixed, message: `Removed ${fixed} heavily-reported listing(s).` };
