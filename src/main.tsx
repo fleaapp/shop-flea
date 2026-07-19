@@ -5,10 +5,13 @@ import "./index.css";
 import { restoreRouteAppChrome } from "./lib/appChrome.ts";
 import { installIosGoogleSafariGuard } from "./lib/iosGoogleSafariGuard.ts";
 import { installGlobalErrorHandlers } from "./lib/errorLogger.ts";
+import { installStaleChunkGuard } from "./lib/staleChunkRecovery.ts";
 
 restoreRouteAppChrome();
 installIosGoogleSafariGuard();
+installStaleChunkGuard();
 installGlobalErrorHandlers();
+
 
 // Detect Android and add class to html for platform-specific CSS
 if (/android/i.test(navigator.userAgent)) {

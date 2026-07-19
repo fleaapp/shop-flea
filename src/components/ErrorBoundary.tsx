@@ -1,5 +1,7 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { logError } from '@/lib/errorLogger';
+import { isStaleChunkError, tryRecoverStaleChunk } from '@/lib/staleChunkRecovery';
+
 
 interface Props {
   children: ReactNode;
@@ -17,6 +19,13 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
+    // Stale-chunk failures after a redeploy aren't real crashes — try a
+    // one-shot reload to fetch the fresh bundle. If we've already tried this
+    // session, fall through to the normal error UI.
+    if (isStaleChunkError(error)) {
+      if (tryRecoverStaleChunk()) return;
+      return;
+    }
     // Surface for debugging; non-fatal
     console.error('[ErrorBoundary]', error, info.componentStack);
     void logError({
@@ -27,6 +36,7 @@ class ErrorBoundary extends Component<Props, State> {
       context: { component_stack: info.componentStack?.slice(0, 4000) ?? null },
     });
   }
+
 
   reset = () => {
     this.setState({ hasError: false });
