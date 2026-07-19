@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { markAdminTabSeen } from '@/lib/adminLastSeen';
+
 import { useAdminTransactions } from '@/hooks/admin/useAdminTransactions';
 import { TransactionOrder, getOrderCode } from '@/types/admin/transactions';
 import { TransactionSummaryBar } from '@/components/admin/transactions/TransactionSummaryBar';
@@ -11,6 +13,9 @@ import { AdminHeader } from '@/components/admin/shell/AdminHeader';
 export default function AdminTransactions() {
   const [selected, setSelected] = useState<TransactionOrder | null>(null);
   const isMobile = useIsMobile();
+
+  useEffect(() => { markAdminTabSeen('transactions'); }, []);
+
 
   const { orders, loading, summary, filters, updateFilter, resetFilters, sortField, sortDir, toggleSort } = useAdminTransactions();
 

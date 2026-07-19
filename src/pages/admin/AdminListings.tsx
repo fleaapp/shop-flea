@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { markAdminTabSeen } from '@/lib/adminLastSeen';
+
 import { useNavigate } from 'react-router-dom';
 import { useAdminListings, type AdminListing } from '@/hooks/admin/useAdminListings';
 import { Button } from '@/components/ui/button';
@@ -20,6 +22,9 @@ export default function AdminListings() {
   const navigate = useNavigate();
   const { listings, loading, search, setSearch, status, setStatus, sort, setSort, dir, setDir, minReports, setMinReports, performAction, stats } = useAdminListings();
   const [selected, setSelected] = useState<AdminListing | null>(null);
+
+  useEffect(() => { markAdminTabSeen('listings'); }, []);
+
 
   const statusOptions = [
     { key: 'all', label: 'All', count: stats.total },
