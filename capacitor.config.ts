@@ -15,16 +15,15 @@ const config: CapacitorConfig = {
     StatusBar: {
       overlaysWebView: false,
       style: 'DARK',
+      backgroundColor: '#DDFED7',
     },
     SplashScreen: {
-      // JS-controlled hide (see src/main.tsx). Native must NOT auto-hide,
-      // otherwise the splash disappears before React paints and exposes a
-      // black WebView on first install.
-      launchAutoHide: false,
-      launchFadeOutDuration: 300,
+      launchShowDuration: 0,
+      launchAutoHide: true,
+      launchFadeOutDuration: 0,
       backgroundColor: '#DDFED7',
       androidSplashResourceName: 'splash',
-      androidScaleType: 'CENTER',
+      androidScaleType: 'CENTER_CROP',
       showSpinner: false,
       splashFullScreen: true,
       splashImmersive: true,
