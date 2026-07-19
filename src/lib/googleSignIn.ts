@@ -1,18 +1,12 @@
 import { Capacitor } from '@capacitor/core';
-import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
-import { supabase } from '@/lib/supabase';
 
 /**
- * Native Google sign-in.
- *
- * Uses `@codetrix-studio/capacitor-google-auth` on iOS/Android so the account
- * picker opens as a native sheet on top of the app. No SFSafariViewController,
- * no Safari bounce, no universal-link round-trip. The returned Google ID token
- * is handed to Supabase via `signInWithIdToken` in-process, so the user never
- * leaves the app.
- *
- * On web (PWA / desktop preview) we return { handled: false } so the caller
- * falls back to standard Supabase `signInWithOAuth`.
+ * Google sign-in is currently paused. The native plugin
+ * (`@codetrix-studio/capacitor-google-auth`) has been removed so that
+ * `npx cap sync ios` no longer generates Google URL schemes in Info.plist
+ * (which caused Apple to reject archives due to the `[REVERSED_IOS_CLIENT_ID]`
+ * placeholder). When we re-enable Google auth, restore the native plugin
+ * and the initialize/signIn logic here.
  */
 export type NativeGoogleResult =
   | { handled: false }
@@ -41,65 +35,7 @@ export function isNativeRuntime(): boolean {
   }
 }
 
-// Cache init so we don't call GoogleAuth.initialize() repeatedly.
-let googleAuthInitialized = false;
-async function ensureInitialized() {
-  if (googleAuthInitialized) return;
-  try {
-    await GoogleAuth.initialize({
-      // clientId / iosClientId / serverClientId are picked up from
-      // capacitor.config.ts (iOS) and strings.xml (Android). We still call
-      // initialize() to trigger the JS shim on web platforms; it's a no-op
-      // on native when the plist / config already carries the client ids.
-      scopes: ['profile', 'email'],
-      grantOfflineAccess: false,
-    });
-  } catch (err) {
-    // Non-fatal: on native the plugin auto-initializes from Info.plist.
-    console.warn('[googleSignIn] GoogleAuth.initialize warning', err);
-  }
-  googleAuthInitialized = true;
-}
-
 export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
-  // Only run the native flow when a Capacitor bridge is present. In the
-  // browser we let the caller do the standard web OAuth redirect.
-  if (!isNativeRuntime()) return { handled: false };
-
-  try {
-    await ensureInitialized();
-    const result: any = await GoogleAuth.signIn();
-    const idToken: string | undefined =
-      result?.authentication?.idToken || result?.idToken;
-
-    if (!idToken) {
-      return {
-        handled: true,
-        error: new Error('Google did not return an ID token. Please try again.'),
-        cancelled: false,
-      };
-    }
-
-    const { error } = await supabase.auth.signInWithIdToken({
-      provider: 'google',
-      token: idToken,
-    });
-
-    if (error) {
-      return { handled: true, error: new Error(error.message), cancelled: false };
-    }
-
-    return { handled: true, error: null };
-  } catch (err: any) {
-    const message: string = err?.message || err?.error || String(err ?? '');
-    const cancelled =
-      /cancel/i.test(message) ||
-      /-5\b/.test(message) || // SIGN_IN_CANCELLED
-      /12501/.test(message); // Android SIGN_IN_CANCELLED
-    return {
-      handled: true,
-      error: new Error(message || 'Google sign-in failed.'),
-      cancelled,
-    };
-  }
+  // Paused. Always let the caller fall through to the web OAuth path.
+  return { handled: false };
 }
