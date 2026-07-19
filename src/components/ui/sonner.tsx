@@ -6,11 +6,17 @@ type ToasterProps = React.ComponentProps<typeof Sonner>
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme()
 
+  // Push toasts below the iOS status bar / Dynamic Island. `env(safe-area-inset-top)`
+  // resolves to 0 on browsers/devices without a notch, so this is safe everywhere.
+  const topOffset = "calc(env(safe-area-inset-top, 0px) + 12px)"
+
   return (
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
       closeButton
+      offset={topOffset}
+      mobileOffset={topOffset}
       icons={{
         success: <span className="text-base">✅</span>,
         error: <span className="text-base">❌</span>,
