@@ -108,7 +108,7 @@ const EditProfile = () => {
         .from('orders')
         .select('*', { count: 'exact', head: true })
         .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
-        .not('status', 'eq', 'delivered');
+        .not('status', 'in', '(delivered,refunded)');
       
       if ((outstandingCount || 0) > 0) {
         setCanDeleteAccount(false);
