@@ -39,7 +39,7 @@ const ContactSupport = () => {
     };
     fetchThreads();
   }, [user, newChatOpen]);
-  return <div className="fixed inset-0 bg-background flex flex-col">
+  return <div className="fixed inset-0 bg-background flex flex-col pt-[env(safe-area-inset-top)]">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background px-4 py-4 flex items-center shrink-0">
         <button onClick={() => navigate('/settings')} className="text-foreground absolute left-4">
