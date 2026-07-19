@@ -1,0 +1,17 @@
+{
+  "strings": {
+    "NSCameraUsageDescription": "Flea needs camera access to take listing photos, capture live refund proof, and verify your ID.",
+    "NSMicrophoneUsageDescription": "Flea needs microphone access to record live refund proof videos.",
+    "NSPhotoLibraryUsageDescription": "Flea needs photo library access to attach images to your listings and profile.",
+    "NSPhotoLibraryAddUsageDescription": "Flea saves order receipts to your photo library.",
+    "NSFaceIDUsageDescription": "Flea uses Face ID to keep your account secure.",
+    "CFBundleDisplayName": "Flea",
+    "LSApplicationCategoryType": "public.app-category.shopping"
+  },
+  "bools": {
+    "ITSAppUsesNonExemptEncryption": false
+  },
+  "arrays": {
+    "UIBackgroundModes": ["remote-notification"]
+  }
+}

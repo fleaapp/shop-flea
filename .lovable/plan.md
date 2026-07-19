@@ -1,37 +1,46 @@
-Your `Package.swift` is fine. It is the standard Capacitor 8 template and matches `@capacitor/core@8.3.0` / `@capacitor/ios@8.3.0` in your `package.json`. Nothing in the repo is broken.
+I will commit a one-shot setup script and an entitlements file into the project. After you `git pull`, you run one command and Info.plist keys, all three capabilities, and Associated Domains are applied automatically. No clicking around Signing & Capabilities.
 
-**Root cause (high confidence):** Xcode's Swift Package Manager cache for `capacitor-swift-pm` is corrupted or was never fully downloaded. When that package fails to resolve, every Swift file that does `import Capacitor` or `import Cordova` throws — which looks like a wall of unrelated Swift errors but is actually one problem.
+## What I'll add to the project
 
-Do I know what the issue is? Yes: Xcode SPM cache is stale/corrupt for `capacitor-swift-pm`. This is the same class of error as the earlier "There is no XCFramework found at ... Capacitor.xcframework" message.
+1. **`ios-native/App.entitlements`** — committed entitlements file listing:
+   - `aps-environment = production` (Push Notifications)
+   - `com.apple.developer.applesignin = [Default]` (Sign in with Apple)
+   - `com.apple.developer.associated-domains` = `applinks:app.finditonflea.com`, `webcredentials:app.finditonflea.com`
 
-Plan:
+2. **`ios-native/Info.plist.patch.json`** — declarative list of Info.plist keys to inject:
+   - `NSCameraUsageDescription`, `NSMicrophoneUsageDescription`, `NSPhotoLibraryUsageDescription`, `NSPhotoLibraryAddUsageDescription` — with the copy we agreed on
+   - `UIBackgroundModes = [remote-notification]`
+   - `ITSAppUsesNonExemptEncryption = false`
+   - `CFBundleDisplayName = Flea`
 
-1. Remove the paused Google native dependency
-   - Uninstall `@codetrix-studio/capacitor-google-auth` from `package.json` + lockfile so `cap sync ios` stops touching Google native config. Google auth is already hidden in the UI so nothing user-facing changes.
+3. **`scripts/setup-ios-native.sh`** — one script you run locally after `npx cap add ios`. It:
+   - Copies `App.entitlements` into `ios/App/App/`
+   - Wires the entitlements file into `App.xcodeproj/project.pbxproj` (`CODE_SIGN_ENTITLEMENTS = App/App.entitlements`)
+   - Applies every key from `Info.plist.patch.json` using PlistBuddy
+   - Removes any `REVERSED_IOS_CLIENT_ID` block
+   - Copies your app icons from the newest Xcode Archive into `Assets.xcassets/AppIcon.appiconset/` and writes a valid `Contents.json`
+   - Prints a final summary of what was applied
 
-2. Give you one command to nuke the Swift Package cache and rebuild
-   - Wipes Xcode DerivedData for this app.
-   - Wipes SwiftPM caches: `~/Library/Caches/org.swift.swiftpm`, `~/Library/org.swift.swiftpm`, and `ios/App/App.xcworkspace/xcuserdata`, and `ios/App/.swiftpm` if present.
-   - Wipes `ios/App/App/public` and `dist`.
-   - Then: `npm install`, `npm run build`, `npx cap sync ios`, `npx cap open ios`.
+4. **`README-IOS.md`** — 6-line recovery cheatsheet so this never becomes a scavenger hunt again.
 
-3. In Xcode, do this exact sequence (in order)
-   - File → Packages → **Reset Package Caches**.
-   - Wait until "Resolving Package Graph" finishes at the top bar (this is what actually re-downloads `capacitor-swift-pm`).
-   - Product → **Clean Build Folder**.
-   - Bump Build number by 1.
-   - Product → Archive.
+## What you do on your Mac after this pushes
 
-4. If it still fails
-   - Screenshot only the **first** red error in Xcode's Issue Navigator (⌘5) and paste it. The rest are usually cascading noise from the first one.
+```bash
+cd ~/Desktop/shop-flea
+git pull
+rm -rf ios
+npx cap add ios
+npm run build
+npx cap sync ios
+bash scripts/setup-ios-native.sh
+npx cap open ios
+```
 
-5. Fallback if you need to ship today
-   - Use History to restore this morning's version, then just paste the plist cleanup one-liner to strip `[REVERSED_IOS_CLIENT_ID]` before archiving.
+Then in Xcode: set Team (this is the only thing Apple forces you to click, because Team is Apple-account-specific) → Any iOS Device (arm64) → Clean Build Folder → bump Build → Archive.
 
-<presentation-actions>
-  <presentation-open-history>View History</presentation-open-history>
-</presentation-actions>
+## What's out of scope for this script
 
-<presentation-actions>
-<presentation-link url="https://docs.lovable.dev/tips-tricks/troubleshooting">Troubleshooting docs</presentation-link>
-</presentation-actions>
+- Team ID: Xcode requires a signed-in Apple ID and refuses to accept a hardcoded team from a committed file. This is a 1-click set.
+- Splash logo art: I'll restore the FLEA splash image asset in a follow-up once you're unblocked and shipped — not blocking Archive.
+
+Approve this plan and I'll switch to build and push all four files.
