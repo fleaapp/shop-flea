@@ -1572,20 +1572,41 @@ async function countCloudRows(table: string, params: Record<string, string> = {}
 }
 
 async function getBadges(payload: any = {}) {
-  const brandsSince = typeof payload?.brandsSince === "string" && payload.brandsSince
-    ? payload.brandsSince
-    : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const pickSince = (v: unknown, fallbackDays: number) =>
+    typeof v === "string" && v
+      ? v
+      : new Date(Date.now() - fallbackDays * 24 * 60 * 60 * 1000).toISOString();
+
+  const brandsSince = pickSince(payload?.brandsSince, 30);
+  const usersSince = pickSince(payload?.usersSince, 7);
+  const listingsSince: string | null = typeof payload?.listingsSince === "string" && payload.listingsSince ? payload.listingsSince : null;
+  const refundsSince: string | null = typeof payload?.refundsSince === "string" && payload.refundsSince ? payload.refundsSince : null;
+  const transactionsSince: string | null = typeof payload?.transactionsSince === "string" && payload.transactionsSince ? payload.transactionsSince : null;
+  const contactSince: string | null = typeof payload?.contactSince === "string" && payload.contactSince ? payload.contactSince : null;
+  const waitlistSince: string | null = typeof payload?.waitlistSince === "string" && payload.waitlistSince ? payload.waitlistSince : null;
+
+  const listingsFilter: Record<string, string> = { status: "eq.active" };
+  if (listingsSince) listingsFilter.created_at = `gte.${listingsSince}`;
+
+  const refundsFilter: Record<string, string> = { refunded_at: refundsSince ? `gte.${refundsSince}` : "not.is.null" };
+
+  const transactionsFilter: Record<string, string> = { status: "eq.awaiting" };
+  if (transactionsSince) transactionsFilter.created_at = `gte.${transactionsSince}`;
+
+  const contactFilter: Record<string, string> = contactSince ? { created_at: `gte.${contactSince}` } : {};
+  const waitlistFilter: Record<string, string> = waitlistSince ? { created_at: `gte.${waitlistSince}` } : {};
+
   const [supportUnread, reportsPending, bansActive, suggestionsUnread, waitlist, contact, awaitingOrders, refundedOrders, listingsActive, users, brands] = await Promise.all([
     countRows("chat_messages", { sender_type: "eq.user", read: "eq.false" }),
     countRows("reports", { status: "eq.pending" }),
     countRows("banned_users", { status: "eq.active" }).catch(() => 0),
     countRows("suggestions", { read: "eq.false" }).catch(() => 0),
-    countRows("waitlist", {}).catch(() => 0),
-    countRows("contact_submissions", {}).catch(() => 0),
-    countRows("orders", { status: "eq.awaiting" }),
-    countRows("orders", { refunded_at: "not.is.null" }),
-    countRows("listings", { status: "eq.active" }),
-    countRows("profiles", { created_at: `gte.${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()}` }),
+    countRows("waitlist", waitlistFilter).catch(() => 0),
+    countRows("contact_submissions", contactFilter).catch(() => 0),
+    countRows("orders", transactionsFilter),
+    countRows("orders", refundsFilter),
+    countRows("listings", listingsFilter),
+    countRows("profiles", { created_at: `gte.${usersSince}` }),
     countCloudRows("brands", { created_at: `gte.${brandsSince}` }).catch(() => 0),
   ]);
   return {
@@ -1602,6 +1623,7 @@ async function getBadges(payload: any = {}) {
     brands,
   };
 }
+
 
 // ----------------- Brands -----------------
 async function listBrands(payload: any = {}) {
