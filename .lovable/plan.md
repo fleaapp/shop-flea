@@ -1,72 +1,37 @@
-## What's happening
+Your `Package.swift` is fine. It is the standard Capacitor 8 template and matches `@capacitor/core@8.3.0` / `@capacitor/ios@8.3.0` in your `package.json`. Nothing in the repo is broken.
 
-Three separate issues stack on cold launch:
+**Root cause (high confidence):** Xcode's Swift Package Manager cache for `capacitor-swift-pm` is corrupted or was never fully downloaded. When that package fails to resolve, every Swift file that does `import Capacitor` or `import Cordova` throws — which looks like a wall of unrelated Swift errors but is actually one problem.
 
-1. **Black screen hang on first open after install** — the native splash auto-hides after 1500 ms whether the web bundle is ready or not. On a fresh install the WebView is still parsing JS, so between splash hide and React mounting you see the app window's default background (black). Killing and reopening works because the JS is now warm in memory.
-2. **Splash flashes too fast** — 1500 ms is short and made worse by the auto-hide firing before React paints anything.
-3. **Black status bar strip on splash** — the iOS app window's `backgroundColor` is black by default. The LaunchScreen storyboard's lime view sits inside the safe area, so the top status-bar strip shows the window colour behind it (black), not lime.
+Do I know what the issue is? Yes: Xcode SPM cache is stale/corrupt for `capacitor-swift-pm`. This is the same class of error as the earlier "There is no XCFramework found at ... Capacitor.xcframework" message.
 
-## The fix
+Plan:
 
-### 1. `capacitor.config.ts` — hand splash control to JS
+1. Remove the paused Google native dependency
+   - Uninstall `@codetrix-studio/capacitor-google-auth` from `package.json` + lockfile so `cap sync ios` stops touching Google native config. Google auth is already hidden in the UI so nothing user-facing changes.
 
-- `launchAutoHide: false` so iOS keeps the splash up until we explicitly hide it.
-- Keep `backgroundColor: '#DDFED7'` (already correct).
-- Remove the fixed `launchShowDuration` (ignored when autoHide is off).
+2. Give you one command to nuke the Swift Package cache and rebuild
+   - Wipes Xcode DerivedData for this app.
+   - Wipes SwiftPM caches: `~/Library/Caches/org.swift.swiftpm`, `~/Library/org.swift.swiftpm`, and `ios/App/App.xcworkspace/xcuserdata`, and `ios/App/.swiftpm` if present.
+   - Wipes `ios/App/App/public` and `dist`.
+   - Then: `npm install`, `npm run build`, `npx cap sync ios`, `npx cap open ios`.
 
-### 2. `src/main.tsx` — hide splash only once React has painted
+3. In Xcode, do this exact sequence (in order)
+   - File → Packages → **Reset Package Caches**.
+   - Wait until "Resolving Package Graph" finishes at the top bar (this is what actually re-downloads `capacitor-swift-pm`).
+   - Product → **Clean Build Folder**.
+   - Bump Build number by 1.
+   - Product → Archive.
 
-Import `@capacitor/splash-screen` and call `SplashScreen.hide({ fadeOutDuration: 300 })` inside a `requestAnimationFrame` after `ReactDOM.render`. This eliminates the black gap on first install because splash stays up through JS parse + first paint, then fades directly into the app.
+4. If it still fails
+   - Screenshot only the **first** red error in Xcode's Issue Navigator (⌘5) and paste it. The rest are usually cascading noise from the first one.
 
-### 3. One-time Xcode change (I can't edit this from here — it lives in your local iOS project)
+5. Fallback if you need to ship today
+   - Use History to restore this morning's version, then just paste the plist cleanup one-liner to strip `[REVERSED_IOS_CLIENT_ID]` before archiving.
 
-Two tiny native tweaks make the status-bar strip lime and stop the "black flash":
+<presentation-actions>
+  <presentation-open-history>View History</presentation-open-history>
+</presentation-actions>
 
-**A. Set the app window background to lime**
-
-Open `ios/App/App/AppDelegate.swift` and inside `application(_:didFinishLaunchingWithOptions:)`, right before `return true`, add:
-
-```swift
-self.window?.backgroundColor = UIColor(red: 0.867, green: 0.996, blue: 0.843, alpha: 1.0)
-```
-
-That single line paints the strip behind the status bar lime instead of black — both during launch and during any brief WebView gap.
-
-**B. Make the status bar icons dark on launch**
-
-In `ios/App/App/Info.plist`, add (or update) these two keys:
-
-```xml
-<key>UIStatusBarStyle</key>
-<string>UIStatusBarStyleDarkContent</string>
-<key>UIViewControllerBasedStatusBarAppearance</key>
-<false/>
-```
-
-That flips the launch-time status bar to dark icons on the lime background so it matches the rest of the app.
-
-I'll give you the exact `PlistBuddy` one-liner and the Swift edit as copy-paste commands after you approve the plan.
-
-## Files I will change
-
-- `capacitor.config.ts` — set `launchAutoHide: false`, drop `launchShowDuration`.
-- `src/main.tsx` — hide splash from JS after first paint.
-
-## Files you edit once in Xcode (I'll give commands)
-
-- `ios/App/App/AppDelegate.swift` — set window backgroundColor to lime.
-- `ios/App/App/Info.plist` — `UIStatusBarStyle` + `UIViewControllerBasedStatusBarAppearance` keys.
-
-## Rebuild command
-
-After approving, use the same push chain as last time:
-
-```bash
-cd ~/Desktop/shop-flea && \
-git stash && git pull --rebase && git stash pop && \
-npm install --legacy-peer-deps && \
-rm -rf dist ios/App/App/public && \
-npm run build && npx cap sync ios && \
-cd ios/App && agvtool next-version -all && cd ../.. && \
-npx cap open ios
-```
+<presentation-actions>
+<presentation-link url="https://docs.lovable.dev/tips-tricks/troubleshooting">Troubleshooting docs</presentation-link>
+</presentation-actions>
