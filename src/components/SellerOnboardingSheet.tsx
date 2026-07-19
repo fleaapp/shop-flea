@@ -29,7 +29,7 @@ import fleaLogo from '@/assets/flea-logo.png';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import IdVerificationStep from '@/components/IdVerificationStep';
 import PushPermissionSheet from '@/components/PushPermissionSheet';
-import { shouldShowPushPrompt } from '@/lib/pushPrompt';
+import { shouldShowPushPromptAsync } from '@/lib/pushPrompt';
 
 interface SellerOnboardingSheetProps {
   open: boolean;
@@ -65,9 +65,9 @@ const SellerOnboardingSheet = ({
 
   const handleVerifiedSuccess = (result?: { setupCompleted?: boolean }) => {
     onOpenChange(false);
-    if (shouldShowPushPrompt(user?.id, 'seller_verified')) {
-      setTimeout(() => setShowPushSheet(true), 300);
-    }
+    shouldShowPushPromptAsync(user?.id, 'seller_verified').then((show) => {
+      if (show) setTimeout(() => setShowPushSheet(true), 300);
+    });
     onComplete?.(result);
   };
 

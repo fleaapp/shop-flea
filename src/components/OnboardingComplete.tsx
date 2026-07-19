@@ -4,7 +4,7 @@ import { useOnboarding } from '@/context/OnboardingContext';
 import { pushOverlayAppChrome } from '@/lib/appChrome';
 import { useEffect, useState } from 'react';
 import PushPermissionSheet from '@/components/PushPermissionSheet';
-import { shouldShowPushPrompt } from '@/lib/pushPrompt';
+import { shouldShowPushPromptAsync } from '@/lib/pushPrompt';
 import { useAuth } from '@/context/AuthContext';
 
 const OnboardingComplete = () => {
@@ -20,10 +20,9 @@ const OnboardingComplete = () => {
   const handleFinish = () => {
     // Close the celebratory overlay first so the push sheet gets full focus.
     skipOnboarding();
-    if (shouldShowPushPrompt(user?.id, 'buyer_onboarding')) {
-      // Small delay so the celebratory overlay finishes its exit animation.
-      setTimeout(() => setShowPushSheet(true), 250);
-    }
+    shouldShowPushPromptAsync(user?.id, 'buyer_onboarding').then((show) => {
+      if (show) setTimeout(() => setShowPushSheet(true), 250);
+    });
   };
 
   if (currentStep !== 'complete' && !showPushSheet) return null;

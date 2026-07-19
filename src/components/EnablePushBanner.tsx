@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Bell, X } from 'lucide-react';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from '@/context/AuthContext';
 import PushPermissionSheet from '@/components/PushPermissionSheet';
-import { shouldShowPushPrompt, recordPushPromptDismissed } from '@/lib/pushPrompt';
+import { shouldShowPushPromptAsync, recordPushPromptDismissed } from '@/lib/pushPrompt';
 
 /**
  * Passive banner surfaced on the Alerts page and Seller Dashboard when the
@@ -15,8 +17,23 @@ const EnablePushBanner = ({ variant = 'default' }: { variant?: 'default' | 'comp
   const [sheetOpen, setSheetOpen] = useState(false);
 
   useEffect(() => {
-    setVisible(shouldShowPushPrompt(user?.id, 'passive'));
+    let cancelled = false;
+    const check = async () => {
+      const show = await shouldShowPushPromptAsync(user?.id, 'passive');
+      if (!cancelled) setVisible(show);
+    };
+    check();
+
+    let remove: (() => void) | undefined;
+    if (Capacitor.isNativePlatform()) {
+      const handle = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+        if (isActive) check();
+      });
+      remove = () => { handle.then((h) => h.remove()); };
+    }
+    return () => { cancelled = true; remove?.(); };
   }, [user?.id]);
+
 
   if (!visible) return null;
 
@@ -59,7 +76,7 @@ const EnablePushBanner = ({ variant = 'default' }: { variant?: 'default' | 'comp
         open={sheetOpen}
         onOpenChange={(v) => {
           setSheetOpen(v);
-          if (!v) setVisible(shouldShowPushPrompt(user?.id, 'passive'));
+          if (!v) shouldShowPushPromptAsync(user?.id, 'passive').then(setVisible);
         }}
         source="passive"
       />
