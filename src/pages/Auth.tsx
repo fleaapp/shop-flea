@@ -300,7 +300,7 @@ const Auth = () => {
             localStorage.removeItem('flea_oauth_signup');
             if (!result.cancelled) {
               console.error('Native Google sign-in error:', result.error);
-              logError(result.error, { source: 'auth.google.native' });
+              logError({ title: 'Google sign-in failed (native)', message: result.error.message, stack: result.error.stack ?? null, severity: 'error', source: 'auth' });
               toast.error(
                 `Google sign-in failed: ${result.error.message || 'Please try again.'}`,
               );
