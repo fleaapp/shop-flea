@@ -928,45 +928,51 @@ function refundedOrderListingFallback(order: any, status = "refunded") {
   };
 }
 
-async function refundActiveOrdersForListing(listingId: string, reason: string) {
-  // Auto-refund any awaiting/shipped orders when a listing is removed by admin.
-  // A DB trigger flips status to 'refunded' when refunded_at is set, so buyers
-  // stop seeing it as an active order.
+async function deleteListingAndOrders(listingId: string, reason: string) {
+  // Notify buyers/sellers of any active orders that are about to be deleted.
   const activeOrders = await safeSelect("orders", {
     listing_id: `eq.${listingId}`,
-    status: `in.(awaiting,shipped)`,
-    select: "id,buyer_id,seller_id,listing_id",
+    select: "id,buyer_id,seller_id,listing_id,status",
   });
-  if (!activeOrders.length) return;
 
-  const nowIso = new Date().toISOString();
   for (const o of activeOrders as any[]) {
-    await safePatch("orders", { id: `eq.${o.id}` }, {
-      refunded_at: nowIso,
-      refund_reason: reason,
-      status: "refunded",
-      updated_at: nowIso,
-    });
-    // Notify buyer and seller so it shows up in their Alerts.
-    await safeInsert("notifications", {
-      user_id: o.buyer_id,
-      type: "order_refunded",
-      title: "Order Refunded",
-      message: "↩️ Your order was refunded because the listing was removed. The amount will be returned to your original payment method.",
-      related_listing_id: o.listing_id,
-      related_order_id: o.id,
-      related_user_id: o.seller_id,
-    });
-    await safeInsert("notifications", {
-      user_id: o.seller_id,
-      type: "order_refunded",
-      title: "Order Refunded",
-      message: "⚠️ An order was refunded automatically because your listing was removed by Flea admin.",
-      related_listing_id: o.listing_id,
-      related_order_id: o.id,
-      related_user_id: o.buyer_id,
-    });
+    if (o.status === "awaiting" || o.status === "shipped") {
+      await safeInsert("notifications", {
+        user_id: o.buyer_id,
+        type: "order_refunded",
+        title: "Order Cancelled",
+        message: "↩️ Your order was cancelled because the listing was removed by Flea admin. The amount will be returned to your original payment method.",
+        related_listing_id: o.listing_id,
+        related_user_id: o.seller_id,
+      });
+      await safeInsert("notifications", {
+        user_id: o.seller_id,
+        type: "order_refunded",
+        title: "Order Removed",
+        message: "⚠️ An order was removed because your listing was deleted by Flea admin.",
+        related_listing_id: o.listing_id,
+        related_user_id: o.buyer_id,
+      });
+    }
   }
+
+  // Delete order messages, then orders themselves.
+  const orderIds = (activeOrders as any[]).map((o) => o.id).filter(Boolean);
+  if (orderIds.length) {
+    await safeDelete("order_messages", { order_id: `in.(${orderIds.join(",")})` });
+    await safeDelete("orders", { id: `in.(${orderIds.join(",")})` });
+  }
+
+  // Purge listing side-tables so nothing references the row.
+  await safeDelete("cart_items", { listing_id: `eq.${listingId}` });
+  await safeDelete("favorites", { listing_id: `eq.${listingId}` });
+  await safeDelete("discarded_listings", { listing_id: `eq.${listingId}` });
+  await safeDelete("listing_comments", { listing_id: `eq.${listingId}` });
+  await safeDelete("notifications", { related_listing_id: `eq.${listingId}` });
+
+  // Finally hard-delete the listing itself.
+  await safeDelete("listings", { id: `eq.${listingId}` });
+  void reason;
 }
 
 async function listingAction(payload: any) {
@@ -988,21 +994,19 @@ async function listingAction(payload: any) {
     case "reject":
     case "remove":
     case "soft_delete":
-      await safePatch("listings", { id: `eq.${listingId}` }, { status: "removed" });
-      await refundActiveOrdersForListing(listingId, "Listing removed by admin");
+    case "delete":
+      // Hard-delete: admin removals wipe the listing and any related orders
+      // rather than flipping them to refunded, per product decision.
+      await deleteListingAndOrders(listingId, "Listing removed by admin");
       return { ok: true };
     case "archive":
       await safePatch("listings", { id: `eq.${listingId}` }, { status: "archived" });
-      return { ok: true };
-    case "delete":
-      // Soft delete: preserve row so refund/dispute history and admin audit trail stay intact.
-      await safePatch("listings", { id: `eq.${listingId}` }, { status: "removed" });
-      await refundActiveOrdersForListing(listingId, "Listing removed by admin");
       return { ok: true };
     default:
       throw new Error(`Unknown listing action: ${type}`);
   }
 }
+
 
 // ----------------- System Diagnostics / Error Dashboard -----------------
 
