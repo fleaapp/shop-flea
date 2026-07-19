@@ -4,7 +4,7 @@ import { useOnboarding } from '@/context/OnboardingContext';
 import { pushOverlayAppChrome } from '@/lib/appChrome';
 import { useEffect, useState } from 'react';
 import PushPermissionSheet from '@/components/PushPermissionSheet';
-import { shouldShowPushPrompt } from '@/lib/pushPrompt';
+import { shouldShowPushPromptAsync } from '@/lib/pushPrompt';
 import { useAuth } from '@/context/AuthContext';
 
 const OnboardingComplete = () => {
