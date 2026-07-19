@@ -28,19 +28,6 @@ const config: CapacitorConfig = {
       splashFullScreen: true,
       splashImmersive: true,
     },
-    // Native Google Sign-In via @codetrix-studio/capacitor-google-auth.
-    // These IDs come from Google Cloud → APIs & Services → Credentials.
-    //   - iosClientId: iOS OAuth 2.0 Client ID (bundle: com.finditonflea.app).
-    //   - serverClientId: Web OAuth 2.0 Client ID (used to mint the ID token
-    //     that Supabase's `signInWithIdToken` verifies).
-    // Also add the REVERSED iOS client ID as a URL scheme in
-    // ios/App/App/Info.plist under CFBundleURLTypes.
-    GoogleAuth: {
-      iosClientId: process.env.GOOGLE_IOS_CLIENT_ID || '',
-      serverClientId: process.env.GOOGLE_SERVER_CLIENT_ID || '',
-      scopes: ['profile', 'email'],
-      forceCodeForRefreshToken: false,
-    },
   },
   ios: {
     contentInset: 'never',
