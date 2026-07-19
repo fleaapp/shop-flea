@@ -276,7 +276,7 @@ const SellerDashboard = () => {
   return (
     <div className="min-h-svh bg-background flex flex-col">
       <header className="sticky top-0 z-20 bg-background">
-        <div className="relative flex items-center px-4 py-3 pt-safe">
+        <div className="relative flex items-center px-4 py-3">
           <button
             onClick={() => navigate('/settings')}
             aria-label="Back"

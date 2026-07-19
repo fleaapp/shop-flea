@@ -1,93 +1,47 @@
-## Live Error Logging in Admin Dashboard
+## Problem
 
-Capture client, edge function, payment, and auth errors into a single table, surface them live in the admin dashboard with rich metadata, auto-purge after 30 days.
+On the newest build, Profile / Cart / other pages render content *under* the iOS status bar / Dynamic Island — avatar clipped, Cart/Orders tabs clipped, back buttons in the notch area become un-tappable.
 
-### 1. Database
+Root cause (from `git log`): commits `0493c565` (Jul 14) and `575ff8d5` (Jul 12) made the native status bar **always** a transparent overlay so the page background (cream, lime, or the dim drawer/dialog backdrop) shows through it. That is the behavior you asked for and we want to keep. What was missed at the time: with `overlaysWebView: true` always on, the webview extends into the notch, and pages must add `env(safe-area-inset-top)` padding themselves. Most pages (`Profile.tsx`, `Cart.tsx`, `SellerProfile.tsx`, and others) never did, so their top rows sit under the status bar on tall notches (iPhone 17 Pro Max).
 
-New table `public.error_logs`:
+The existing `body::before { height: env(safe-area-inset-top) }` strip *paints* the notch area to match the route color — it does not push content down. That paint layer is what makes the drawer dim / lime auth / cream home blend into the status bar, and it will remain untouched.
 
-- `id` uuid pk
-- `created_at` timestamptz default now()
-- `source` text — `client` | `edge_function` | `payment` | `auth`
-- `severity` text — `error` | `warning` | `critical`
-- `user_id` uuid null (references profile via join)
-- `username` text null (denormalised for fast display)
-- `title` text — one-line human summary ("Refund failed", "Checkout crashed", etc.)
-- `message` text — full error message
-- `stack` text null — stack trace
-- `route` text null — page URL / edge function path
-- `device` jsonb null — `{ platform, app_version, user_agent, viewport }`
-- `context` jsonb null — `{ order_id, listing_id, payment_intent, function_name, http_status, ... }`
+## Non-negotiable behavior to preserve
 
-RLS: `authenticated` can `INSERT` their own client errors; only admins (`has_role(auth.uid(), 'admin')`) can `SELECT` / `DELETE`. `service_role` full access for edge functions to insert.
+- Native status bar stays a **transparent overlay** at all times (`overlaysWebView: true`, `#00000000` background). Do not change `capacitor.config.ts` or `syncNativeStatusBar` logic.
+- When a Dialog / Sheet / Drawer / AlertDialog is open, the dim backdrop must continue to extend visually through the status bar area (currently handled by `applyOverlayAppChrome` + the `body::before` strip painting the route color, with the overlay dim sitting on top via each overlay's `top-[calc(-1*env(safe-area-inset-top,0px))]`). No change here.
+- Icon style still flips (`Style.Light` while overlay is open, `Style.Dark` otherwise). No change.
+- Auth / splash lime chrome, cream in-app chrome, and route color transitions stay exactly as they are.
 
-Added to `supabase_realtime` publication so admin feed updates live.
+## Fix
 
-Daily `pg_cron` job to `DELETE FROM error_logs WHERE created_at < now() - interval '30 days'`.
+Push page content below the notch **without** touching the status bar transparency.
 
-### 2. Ingestion
+1. **`src/index.css`** — add `padding-top: env(safe-area-inset-top)` to `#root`. This shifts every non-fixed route below the status bar automatically. The `body::before` paint strip stays, so the visible color under the status bar is unchanged.
 
-**Client runtime errors** (`src/lib/errorLogger.ts`):
-- Wire into existing React error boundary + `window.onerror` + `unhandledrejection`.
-- Sends to new edge function `log-error` with route, stack, device info, user_id.
-- Debounced/deduped in-memory (same message within 30s dropped) to prevent spam.
+2. **Full-screen `fixed inset-0` pages** — these ignore `#root` padding, so add `pt-[env(safe-area-inset-top)]` to the outer wrapper on each. Confirmed target: `src/pages/Profile.tsx` (line 170). During build I'll grep for other `fixed inset-0` page roots with header content (e.g. some sheets/support pages) and pad only the ones with a header row.
 
-**Edge function failures**:
-- Shared helper `supabase/functions/_shared/logError.ts` — every existing function's `catch` block calls `logError({ source: 'edge_function', ... })` with function_name and http_status.
-- Wire into the top-level try/catch of the high-risk functions: `stripe-connect-refund`, `finalize-checkout`, `stripe-connect-payout`, `stripe-connect-topup`, `order-messages`, `stripe-connect-status`, `auto-refund-unshipped`, `delete-account`, `admin-data`.
+3. **Remove now-redundant top padding** to avoid double-padding after step 1:
+   - `src/pages/CreateListing.tsx` — 3 occurrences of `pt-[env(safe-area-inset-top)]` on `min-h-screen` wrappers.
+   - `src/pages/SellerDashboard.tsx` — `pt-safe` on the header row (its wrapper is `min-h-screen`).
+   - `src/components/admin/shell/AdminHeader.tsx` — `pt-[calc(env(safe-area-inset-top)+12px)]` → `pt-3`.
+   - `src/components/SearchSheet.tsx` — simplify the two `env(safe-area-inset-top)` paddings (this one may still need its own since it's a portal-mounted sheet; verify during build).
+   - `src/pages/Auth.tsx` — uses `fixed inset-0`, so its own `pt-[env(safe-area-inset-top)]` stays.
 
-**Payment events**:
-- Stripe webhook handler (`stripe-webhook`) logs `payment_intent.payment_failed`, `charge.refund.updated` failures, `payout.failed`, `account.updated` with `requirements.disabled_reason`.
+4. **Do NOT touch**:
+   - `capacitor.config.ts` StatusBar / overlay config.
+   - `src/lib/appChrome.ts` overlay chrome logic.
+   - `body::before` safe-area paint strip.
+   - Dialog / Drawer / Sheet / AlertDialog overlays that already use `top-[calc(-1*env(safe-area-inset-top,0px))]` to bleed dim into the notch.
 
-**Auth failures**:
-- `src/pages/Auth.tsx` and OAuth callback log signInWithPassword / OAuth errors client-side (bad password excluded — only unexpected errors like network, provider conflict, blocked account).
+5. **Verify** — Playwright at 430x932 viewport with a simulated `env(safe-area-inset-top: 59px)` override; screenshot Home, Profile, Cart, Seller Profile, Admin Settings, Create Listing, and a route with an open Drawer. Confirm: (a) headers/back buttons sit fully below the notch, (b) the drawer dim still extends into the notch area, (c) no double padding anywhere.
 
-### 3. `log-error` edge function
+## Files touched
 
-- Public (no JWT) — accepts anon client errors, but attaches `user_id` from Authorization header when present.
-- Rate-limited via existing `check_and_record_rate_limit` (30 per user/IP per minute).
-- Server-side length caps (message 2k, stack 8k, context/device jsonb 4k).
-- Inserts into `error_logs` via service role.
-
-### 4. Admin dashboard UI
-
-New tab in existing `AdminDashboard.tsx`: **Errors** (badge count of last-24h unresolved).
-
-Feed layout:
-- Filters: Source (All / Client / Edge / Payment / Auth), Severity, Time range (1h / 24h / 7d / 30d), free-text search on title+message.
-- Row: severity dot, timestamp (relative), source badge, `@username` (tappable → profile), title, chevron.
-- Realtime subscription on `error_logs` INSERT prepends new rows with a subtle highlight flash.
-- Tap row → drawer with full detail:
-  - Full message, stack (monospace, scrollable)
-  - Route, device (platform + version + UA)
-  - Context (order_id / listing_id / payment_intent as tappable links opening the relevant admin drawer)
-  - "Copy details" button
-  - "Delete" button (admin only)
-
-### 5. Files to add / edit
-
-**New**
-- `supabase/migrations/<ts>_error_logs.sql`
-- `supabase/functions/log-error/index.ts`
-- `supabase/functions/_shared/logError.ts`
-- `src/lib/errorLogger.ts`
-- `src/components/admin/AdminErrorsTab.tsx`
-- `src/components/admin/AdminErrorDetailSheet.tsx`
-- `src/hooks/admin/useAdminErrors.ts`
-
-**Edit**
-- `src/main.tsx` — install `window.onerror` / `unhandledrejection` hooks.
-- `src/components/ErrorBoundary.tsx` — call `logError` in `componentDidCatch`.
-- `src/pages/AdminDashboard.tsx` — add Errors tab and badge.
-- `src/hooks/admin/useAdminBadges.ts` — include 24h error count in admin settings badge.
-- High-risk edge functions listed above — wrap catches with `logError`.
-
-### Answer to "anything else?"
-
-Yes — I'd suggest adding these while we're here:
-- **Severity levels** so critical Stripe/refund failures stand out from noisy client warnings.
-- **Deduplication window** so a broken screen doesn't flood the log with 1000 identical rows.
-- **Tappable context links** (order/listing/payment_intent) so an admin can jump straight from an error to the affected order drawer.
-- **24h admin badge** on the Errors tab so you notice spikes without opening the dashboard.
-
-Not included unless you want them: email/push alerts to admins on new `critical` errors, and a "Resolved" toggle to hide handled errors from the feed.
+- `src/index.css`
+- `src/pages/Profile.tsx`
+- `src/pages/CreateListing.tsx`
+- `src/pages/SellerDashboard.tsx`
+- `src/components/admin/shell/AdminHeader.tsx`
+- `src/components/SearchSheet.tsx` (only if verification shows it's needed)
+- Any additional `fixed inset-0` full-screen page found during a targeted audit
