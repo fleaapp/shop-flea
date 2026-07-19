@@ -210,7 +210,7 @@ export default function AdminErrorLogs() {
       </div>
 
       <Drawer open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <DrawerContent className="fixed top-10 bottom-0 left-0 right-0 flex flex-col rounded-t-3xl">
+        <DrawerContent className="fixed bottom-0 left-0 right-0 flex flex-col rounded-t-3xl">
           <DrawerHeader className="px-4 pt-3 pb-2">
             <DrawerTitle className="text-lg">Error detail</DrawerTitle>
           </DrawerHeader>

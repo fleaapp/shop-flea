@@ -50,7 +50,7 @@ const SuggestionBox = () => {
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-background overflow-hidden pt-[env(safe-area-inset-top)]">
+    <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
       {/* Header */}
       <header className="px-4 py-4 flex items-center flex-shrink-0">
         <button onClick={() => safeNavigateBack(navigate, '/profile')} className="p-1">

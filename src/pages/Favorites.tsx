@@ -130,7 +130,7 @@ const Favorites = () => {
   const hasFilters = Object.keys(appliedFilters).length > 0 || hideSoldItems;
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-background overflow-hidden pt-[env(safe-area-inset-top)]">
+    <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
       {/* Sticky Header */}
       <header className="flex items-center justify-between px-6 py-4 flex-shrink-0">
         <Button
