@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { callAdminData } from './useAdminData';
 import { fetchErrorCount24h } from './useAdminErrorLogs';
+import { getAllAdminLastSeen } from '@/lib/adminLastSeen';
 
 export type AdminBadges = {
   support: number;
@@ -29,9 +30,18 @@ export function useAdminBadges() {
 
   const refresh = useCallback(async () => {
     try {
-      const brandsSince = typeof window !== 'undefined' ? window.localStorage.getItem('admin_brands_last_seen') : null;
+      const lastSeen = getAllAdminLastSeen();
+      const payload: Record<string, string> = {};
+      if (lastSeen.users) payload.usersSince = lastSeen.users;
+      if (lastSeen.listings) payload.listingsSince = lastSeen.listings;
+      if (lastSeen.refunds) payload.refundsSince = lastSeen.refunds;
+      if (lastSeen.transactions) payload.transactionsSince = lastSeen.transactions;
+      if (lastSeen.contact) payload.contactSince = lastSeen.contact;
+      if (lastSeen.waitlist) payload.waitlistSince = lastSeen.waitlist;
+      if (lastSeen.brands) payload.brandsSince = lastSeen.brands;
+
       const [data, errorLogs] = await Promise.all([
-        callAdminData<Omit<AdminBadges, 'errorLogs'>>('getBadges', brandsSince ? { brandsSince } : {}),
+        callAdminData<Omit<AdminBadges, 'errorLogs'>>('getBadges', payload),
         fetchErrorCount24h().catch(() => 0),
       ]);
       setBadges({ ...EMPTY, ...data, errorLogs });
@@ -55,10 +65,13 @@ export function useAdminBadges() {
       return ch;
     });
     const onFocus = () => refresh();
+    const onSeen = () => refresh();
     window.addEventListener('focus', onFocus);
+    window.addEventListener('admin-last-seen-updated', onSeen);
     return () => {
       channels.forEach((c) => supabase.removeChannel(c));
       window.removeEventListener('focus', onFocus);
+      window.removeEventListener('admin-last-seen-updated', onSeen);
     };
   }, [refresh]);
 

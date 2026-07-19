@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { markAdminTabSeen } from '@/lib/adminLastSeen';
+
 import { useAdminUsers, fetchUserDetail, type AdminUser } from '@/hooks/admin/useAdminUsers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +32,9 @@ export default function AdminUsers() {
   const [detail, setDetail] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [confirm, setConfirm] = useState<{ user: AdminUser; type: string; label: string } | null>(null);
+
+  useEffect(() => { markAdminTabSeen('users'); }, []);
+
 
   const openDetail = async (u: AdminUser) => {
     setSelected(u);

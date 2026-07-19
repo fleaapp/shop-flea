@@ -1,4 +1,7 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { markAdminTabSeen } from '@/lib/adminLastSeen';
+
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
@@ -13,6 +16,9 @@ const initials = (s?: string | null) => (s ?? '?').replace('@', '').slice(0, 2).
 export default function AdminRefunds() {
   const navigate = useNavigate();
   const { orders, loading, filter, setFilter } = useAdminRefunds();
+
+  useEffect(() => { markAdminTabSeen('refunds'); }, []);
+
 
   const requestedCount = orders.filter((o) => !o.refunded_at && o.status !== 'refunded').length;
   const refundedCount = orders.filter((o) => o.refunded_at || o.status === 'refunded').length;
