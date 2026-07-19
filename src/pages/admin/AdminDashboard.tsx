@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { markAdminTabSeen } from '@/lib/adminLastSeen';
+
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -132,6 +134,12 @@ function SectionView({ section, onBack }: { section: Section; onBack: () => void
   const { suggestions, loading: sLoading, markAsRead } = useAdminSuggestions();
   const { entries: waitlistEntries, loading: wLoading, error: wError, refresh: refreshWaitlist } = useAdminWaitlist();
   const { submissions: contactSubs, loading: cLoading, error: cError, refresh: refreshContact } = useAdminContactSubmissions();
+
+  useEffect(() => {
+    if (section === 'waitlist') markAdminTabSeen('waitlist');
+    if (section === 'contact') markAdminTabSeen('contact');
+  }, [section]);
+
 
   const handleStatus = async (threadId: string, status: 'active' | 'resolved') => {
     await updateThreadStatus(threadId, status);
