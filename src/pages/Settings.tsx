@@ -55,35 +55,85 @@ const Settings = () => {
   const { isAdmin } = useAdminRole();
   const [adminBadgeTotal, setAdminBadgeTotal] = useState(0);
 
-  // Notifications toggle state
+  // Notifications toggle state (native + web aware)
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   useEffect(() => {
-    if ('Notification' in window) {
-      setNotificationsEnabled(Notification.permission === 'granted');
-    }
+    let cancelled = false;
+    const sync = async () => {
+      const { getPushPermissionAsync } = await import('@/lib/pushPrompt');
+      const perm = await getPushPermissionAsync();
+      if (!cancelled) setNotificationsEnabled(perm === 'granted');
+    };
+    sync();
+
+    let remove: (() => void) | undefined;
+    (async () => {
+      const { Capacitor } = await import('@capacitor/core');
+      if (Capacitor.isNativePlatform()) {
+        const { App: CapacitorApp } = await import('@capacitor/app');
+        const handle = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+          if (isActive) sync();
+        });
+        remove = () => { handle.then((h) => h.remove()); };
+      }
+    })();
+    return () => { cancelled = true; remove?.(); };
   }, []);
 
   const handleToggleNotifications = async (checked: boolean) => {
-    if (!('Notification' in window)) {
+    const { Capacitor } = await import('@capacitor/core');
+    const isNative = Capacitor.isNativePlatform();
+
+    if (!checked) {
+      if (isNative) {
+        toast('To disable notifications, open iOS Settings → Flea → Notifications.');
+      } else {
+        toast('To disable notifications, use your browser or device settings.');
+      }
+      return;
+    }
+
+    if (isNative) {
+      try {
+        const { PushNotifications } = await import('@capacitor/push-notifications');
+        const check = await PushNotifications.checkPermissions();
+        let receive = check.receive;
+        if (receive !== 'granted' && receive !== 'denied') {
+          const req = await PushNotifications.requestPermissions();
+          receive = req.receive;
+        }
+        if (receive === 'granted') {
+          await PushNotifications.register();
+          triggerSubscribe();
+          setNotificationsEnabled(true);
+          toast.success("You're all set. We'll keep you posted.");
+        } else {
+          setNotificationsEnabled(false);
+          toast.error('Notifications blocked. Enable them in iOS Settings → Flea.');
+        }
+      } catch (err) {
+        console.error('[Settings] native push enable failed:', err);
+        toast.error('Could not enable notifications. Please try again.');
+      }
+      return;
+    }
+
+    if (typeof Notification === 'undefined') {
       toast.error('Notifications are not supported in this browser');
       return;
     }
-    if (checked) {
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted') {
-        setNotificationsEnabled(true);
-        // Also trigger the full push subscription save
-        triggerSubscribe();
-      } else if (permission === 'denied') {
-        setNotificationsEnabled(false);
-        toast.error('Notifications blocked. Enable them in your browser/device settings.');
-      } else {
-        setNotificationsEnabled(false);
-      }
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      setNotificationsEnabled(true);
+      triggerSubscribe();
+    } else if (permission === 'denied') {
+      setNotificationsEnabled(false);
+      toast.error('Notifications blocked. Enable them in your browser/device settings.');
     } else {
-      toast('To disable notifications, use your browser or device settings.');
+      setNotificationsEnabled(false);
     }
   };
+
 
   // Get pause_selling from profile
   const pauseSelling = (profile as any)?.pause_selling || false;
