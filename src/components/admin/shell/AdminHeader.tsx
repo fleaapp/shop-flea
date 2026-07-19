@@ -19,7 +19,7 @@ export function AdminHeader({ title, emoji, onBack, backTo = '/admin', right, cl
     <header
       className={cn(
         'sticky top-0 z-40 flex items-center gap-2 bg-background/95 px-3 backdrop-blur-md',
-        'pt-[calc(env(safe-area-inset-top)+12px)] pb-3',
+        'pt-3 pb-3',
         className,
       )}
     >

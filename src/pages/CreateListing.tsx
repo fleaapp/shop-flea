@@ -522,7 +522,8 @@ const CreateListing = () => {
   // Block form until shipping setup is complete for first-time sellers
   if (showShippingSetup) {
     return (
-      <div className="min-h-screen bg-background pb-24 pt-[env(safe-area-inset-top)]">
+      <div className="min-h-screen bg-background pb-24">
+
         <header className="relative flex items-center justify-center px-4 py-4">
           <Button
             variant="ghost"
@@ -545,7 +546,7 @@ const CreateListing = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24 pt-[env(safe-area-inset-top)]">
+    <div className="min-h-screen bg-background pb-24">
       {/* Blocked user banner */}
       {isBlocked && <BlockedUserBanner />}
       {/* Image Crop Dialog */}
