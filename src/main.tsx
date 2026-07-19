@@ -185,7 +185,7 @@ const isPreviewHost =
 
 const hideNativeSplash = () => {
   if (!isNativePlatform) return;
-  void SplashScreen.hide({ fadeOutDuration: 0 }).catch(() => undefined);
+  void SplashScreen.hide({ fadeOutDuration: 300 }).catch(() => undefined);
 };
 
 const root = createRoot(document.getElementById("root")!);
@@ -193,12 +193,13 @@ root.render(<App />);
 
 void registerAppServiceWorker();
 
-// Hide native splash AFTER React has actually rendered the first frame
-// (Auth screen). Hiding it earlier exposes the lime WebView background
-// for hundreds of ms — that's the "green screen" gap users were seeing.
+// Hide native splash AFTER React has actually painted the first frame.
+// launchAutoHide is off in capacitor.config.ts so the splash stays up
+// through JS parse + first paint on cold boot, eliminating the black
+// hang seen on first install. rAF x2 guarantees a real frame committed.
 if (isNativePlatform) {
   requestAnimationFrame(() => requestAnimationFrame(hideNativeSplash));
-  // Safety fallbacks in case rAF is throttled during cold boot
-  window.setTimeout(hideNativeSplash, 400);
-  window.setTimeout(hideNativeSplash, 1500);
+  // Safety net: if rAF is throttled during cold boot, hide after 4s
+  // so the user never gets stuck on the splash.
+  window.setTimeout(hideNativeSplash, 4000);
 }
