@@ -130,7 +130,6 @@
   #root {
     min-height: 100svh;
     background: hsl(var(--background));
-    padding-top: env(safe-area-inset-top);
   }
 
   /* Native cold boot + auth routes: paint #root lime to match splash/auth */
