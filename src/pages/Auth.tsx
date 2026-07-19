@@ -290,10 +290,28 @@ const Auth = () => {
     try {
       localStorage.setItem('flea_oauth_signup', '1');
 
-      // Kick off Google OAuth without letting Supabase auto-redirect. We open
-      // the returned URL through openInAppUrl so on native (iOS/Android) it
-      // opens inside SFSafariViewController / Chrome Custom Tab and returns to
-      // the app via the universal link (`app.finditonflea.com/auth/callback`).
+      // Native (iOS/Android): use the platform Google account-picker sheet.
+      // The plugin returns an ID token that we hand directly to Supabase, so
+      // the user never leaves the app — no Safari, no universal-link bounce.
+      if (isNativeRuntime()) {
+        const result = await nativeGoogleSignIn();
+        if (result.handled) {
+          if (result.error) {
+            localStorage.removeItem('flea_oauth_signup');
+            if (!result.cancelled) {
+              console.error('Native Google sign-in error:', result.error);
+              logError(result.error, { source: 'auth.google.native' });
+              toast.error(
+                `Google sign-in failed: ${result.error.message || 'Please try again.'}`,
+              );
+            }
+          }
+          // On success onAuthStateChange redirects via the useEffect above.
+          return;
+        }
+      }
+
+      // Web / PWA fallback: standard OAuth redirect.
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -306,17 +324,19 @@ const Auth = () => {
       if (error) {
         localStorage.removeItem('flea_oauth_signup');
         console.error('Google sign-in error:', error);
-        toast.error('Google sign-in failed. Please try again.');
+        logError(error, { source: 'auth.google.web' });
+        toast.error(`Google sign-in failed: ${error.message || 'Please try again.'}`);
         return;
       }
 
       if (data?.url) {
         await openInAppUrl(data.url);
       }
-    } catch (err) {
+    } catch (err: any) {
       localStorage.removeItem('flea_oauth_signup');
       console.error('Google sign-in exception:', err);
-      toast.error('Google sign-in failed. Please try again.');
+      logError(err, { source: 'auth.google.exception' });
+      toast.error(`Google sign-in failed: ${err?.message || 'Please try again.'}`);
     }
   };
 
