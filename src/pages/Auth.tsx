@@ -324,7 +324,7 @@ const Auth = () => {
       if (error) {
         localStorage.removeItem('flea_oauth_signup');
         console.error('Google sign-in error:', error);
-        logError(error, { source: 'auth.google.web' });
+        logError({ title: 'Google sign-in failed (web)', message: error.message, severity: 'error', source: 'auth' });
         toast.error(`Google sign-in failed: ${error.message || 'Please try again.'}`);
         return;
       }
