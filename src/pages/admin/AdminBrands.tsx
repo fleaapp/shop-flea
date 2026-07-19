@@ -8,22 +8,18 @@ import { useAdminBrands, type AdminBrand } from '@/hooks/admin/useAdminBrands';
 import { AdminHeader } from '@/components/admin/shell/AdminHeader';
 import { AdminBadge } from '@/components/admin/shell/AdminBadge';
 import { AdminEmptyState } from '@/components/admin/shell/AdminEmptyState';
-
-const LAST_SEEN_KEY = 'admin_brands_last_seen';
+import { getAdminLastSeen, markAdminTabSeen } from '@/lib/adminLastSeen';
 
 export default function AdminBrands() {
   const { brands, loading, search, setSearch, rename, remove } = useAdminBrands();
   const [editing, setEditing] = useState<AdminBrand | null>(null);
   const [value, setValue] = useState('');
-  const [previousLastSeen] = useState<string | null>(() =>
-    typeof window !== 'undefined' ? window.localStorage.getItem(LAST_SEEN_KEY) : null
-  );
+  const [previousLastSeen] = useState<string | null>(() => getAdminLastSeen('brands'));
 
   useEffect(() => {
-    if (!loading) {
-      window.localStorage.setItem(LAST_SEEN_KEY, new Date().toISOString());
-    }
+    if (!loading) markAdminTabSeen('brands');
   }, [loading]);
+
 
   const isNew = useMemo(() => {
     const sinceMs = previousLastSeen ? Date.parse(previousLastSeen) : Date.now() - 30 * 24 * 60 * 60 * 1000;
