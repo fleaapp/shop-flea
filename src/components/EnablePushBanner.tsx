@@ -76,7 +76,7 @@ const EnablePushBanner = ({ variant = 'default' }: { variant?: 'default' | 'comp
         open={sheetOpen}
         onOpenChange={(v) => {
           setSheetOpen(v);
-          if (!v) setVisible(shouldShowPushPrompt(user?.id, 'passive'));
+          if (!v) shouldShowPushPromptAsync(user?.id, 'passive').then(setVisible);
         }}
         source="passive"
       />
