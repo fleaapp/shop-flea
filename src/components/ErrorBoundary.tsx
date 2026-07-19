@@ -1,5 +1,7 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { logError } from '@/lib/errorLogger';
+import { isStaleChunkError, tryRecoverStaleChunk } from '@/lib/staleChunkRecovery';
+
 
 interface Props {
   children: ReactNode;
