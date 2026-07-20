@@ -1,27 +1,30 @@
-## Diagnosis
+# Home feed missing listings after Cloud cutover
 
-Sarah has 3 identical `payment_action_required` notifications (13:40:41, 13:40:55, 13:41:37 — within ~1 min). They come from `supabase/functions/stripe-webhook/index.ts` in the `account.updated` handler (lines 257–263): every time Stripe fires an `account.updated` webhook while the seller isn't fully verified AND has a `disabled_reason`, it inserts a new notification.
+## Root cause (verified)
 
-During Stripe Connect onboarding, `account.updated` fires many times in rapid succession (each requirement collected triggers an update), so sellers get several duplicate "Seller account needs attention" alerts.
+- `profiles` RLS on Cloud has only one SELECT policy: `auth.uid() = user_id`. Nobody can read anyone else's profile row.
+- `public.profiles_public` was recreated with `WITH (security_invoker=on)`, so it inherits the caller's RLS. It returns 0 rows for other users too.
+- `src/utils/fetchSellerProfiles.ts` treats a successful `profiles_public` query as authoritative (`canTrustMissing = true`).
+- `src/hooks/useHomeFeed.ts` then drops every listing whose seller profile is missing → Sarah's active AU listing is stripped from @jcsbh's stack even though the `get_home_feed` RPC returns it.
 
-Memory already promises this notification is "rate-limited to 24h" — but that rate limit was never actually implemented in the webhook.
+Confirmed in the live DB: the listing exists (`active`, `region_id='AU'`), @jcsbh's `region_id='AU'`, no `discarded_listings` row, and `profiles_public` currently returns Sarah's row only when queried as a superuser.
 
 ## Fix
 
-In `supabase/functions/stripe-webhook/index.ts` `account.updated` handler, before inserting a `payment_action_required` notification, check whether one already exists for this user within the last 24 hours. If yes, skip both the DB insert and the push.
+Migration:
 
-Concretely:
+1. Recreate `public.profiles_public` without `security_invoker` (i.e. default `SECURITY DEFINER`, owned by `postgres`) so it bypasses the base-table RLS. Column list stays exactly the same — it already excludes sensitive fields (email, stripe_account_id, paypal_merchant_id, negative_balance_cents, gst_alert timestamps, device_ids, report_strike_count, etc.).
+2. `GRANT SELECT ON public.profiles_public TO authenticated, anon;` so both signed-in and guest home feeds can hydrate seller cards.
+3. Leave the base `profiles` table policies untouched — direct queries to `profiles` from other users stay locked down.
 
-1. Query `notifications` for the most recent row with `user_id = profile.user_id` and `type = 'payment_action_required'`.
-2. If `created_at` is within the last 24h, skip the `notify(...)` call entirely.
-3. Otherwise, proceed as today.
+No client changes needed. `fetchSellerProfiles` already prefers `profiles_public` and only falls back to `profiles` if the view errors.
 
-Also apply the same 24h dedupe to the `seller_verified` success notification in the same handler so a flapping account state can't spam that either.
+## Verification
 
-Cleanup for Sarah's existing duplicates: delete the 2 older duplicate `payment_action_required` notifications for her user (`6b0dd9d6-dee9-4f6d-8d4f-d3c191404c0b`) via a one-off migration so she immediately sees only 1.
+- Re-run the home feed as @jcsbh (via preview) and confirm Sarah's "Test" listing appears in the swipe stack.
+- Query `profiles_public` from an authenticated session for a different user's `user_id` and confirm one row returns.
+- Spot-check that direct `select * from profiles where user_id = '<other user>'` still returns 0 rows for a non-owner (base table RLS unchanged).
 
-## Technical details
+## Update memory
 
-- File: `supabase/functions/stripe-webhook/index.ts` — add a small `wasNotifiedRecently(userId, type, hours)` helper using `serviceClient.from('notifications').select('created_at').eq(...).order('created_at', {ascending:false}).limit(1)` and gate the two `notify()` calls in the `account.updated` case.
-- Migration: `DELETE FROM public.notifications WHERE user_id = '6b0dd9d6-dee9-4f6d-8d4f-d3c191404c0b' AND type = 'payment_action_required' AND id <> '72e28a2c-d283-488e-bc2f-53fd79c01993';` (keep the newest one from 13:41:37).
-- No client changes. No schema changes. Existing `Notifications.tsx` behavior unchanged.
+Add a project memory note that `profiles_public` MUST be `SECURITY DEFINER` (not `security_invoker`) because base-table `profiles` RLS is owner-only, so any future recreate of the view has to keep this or the feed breaks again.
