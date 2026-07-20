@@ -78,7 +78,7 @@ const NewChatForm = ({ open, onOpenChange }: NewChatFormProps) => {
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="pb-[calc(2rem+env(safe-area-inset-bottom))]">
+      <DrawerContent className="pb-8">
         <DrawerHeader>
           <DrawerTitle className="text-lg font-bold">New Support Chat</DrawerTitle>
         </DrawerHeader>
