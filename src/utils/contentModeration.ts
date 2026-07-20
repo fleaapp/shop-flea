@@ -32,41 +32,44 @@ const SOCIAL_PLATFORMS_FULL = [
   'add me', 'follow me', 'message me outside',
 ];
 
-// Character substitution map for leet speak detection
+// Character substitution map for leet speak detection.
+// IMPORTANT: only map non-alphabetic symbols → letter. Never map letter → letter
+// (e.g. l→i, s→z, z→s) — that mangles normal English words and produces false
+// positives on innocuous phrases.
 const CHAR_SUBSTITUTIONS: Record<string, string[]> = {
   'a': ['4', '@', '^', 'α', 'Λ', 'λ'],
   'b': ['8', '|3', 'ß', 'β'],
   'c': ['(', '{', '[', '<', '¢'],
-  'd': ['|)', 'cl', 'đ'],
+  'd': ['|)', 'đ'],
   'e': ['3', '€', 'ε', 'є'],
-  'f': ['|=', 'ph'],
-  'g': ['6', '9', 'q'],
+  'f': ['|='],
+  'g': ['6'],
   'h': ['|-|', '#', '}{'],
-  'i': ['1', '!', '|', 'l', '¡', 'í'],
-  'j': ['_|', ']'],
+  'i': ['1', '!', '¡', 'í'],
+  'j': ['_|'],
   'k': ['|<', '|{'],
-  'l': ['1', '|', '!', 'ł'],
-  'm': ['|v|', '/\\/\\', 'nn'],
+  'l': ['ł'],
+  'm': ['|v|', '/\\/\\'],
   'n': ['|\\|', '/\\/', 'ñ'],
-  'o': ['0', '()', 'ø', 'ö', 'ó'],
+  'o': ['0', 'ø', 'ö', 'ó'],
   'p': ['|>', '|*'],
-  'q': ['9', '0_'],
+  'q': ['0_'],
   'r': ['|2', '®'],
-  's': ['5', '$', '§', 'z'],
+  's': ['5', '$', '§'],
   't': ['7', '+', '†'],
   'u': ['|_|', 'µ', 'ü', 'ú'],
   'v': ['\\/'],
-  'w': ['\\/\\/', 'vv', 'uu'],
-  'x': ['><', '}{'],
+  'w': ['\\/\\/'],
+  'x': ['><'],
   'y': ['`/', '¥'],
-  'z': ['2', '7_', 's'],
+  'z': ['2', '7_'],
 };
 
-// Number words for phone detection
+// Number words for phone detection. Skip single-letter entries — a stray "O" in
+// normal text should not be treated as a digit.
 const NUMBER_WORDS: Record<string, string> = {
   'zero': '0', 'one': '1', 'two': '2', 'three': '3', 'four': '4',
   'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9',
-  'oh': '0', 'o': '0',
 };
 
 export interface ModerationResult {
