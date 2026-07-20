@@ -31,8 +31,13 @@ const getRouteTopColor = () => {
 
 
 let lastAppliedColor: string | null = null;
-let lastAppliedOverlay: boolean | null = null;
 let pendingTimer: ReturnType<typeof setTimeout> | null = null;
+let overlaysWebViewInitialized = false;
+
+// Cached route color + its precomputed tint. Overlay push/pop reads these
+// without doing any color math or DOM work.
+let cachedRouteColor: string = APP_TOP_COLOR;
+let cachedRouteTint: string = APP_TOP_COLOR;
 
 const isNativeBridgeReady = (): boolean => {
   const cap = (window as { Capacitor?: { isNativePlatform?: () => boolean; isPluginAvailable?: (n: string) => boolean } }).Capacitor;
@@ -41,13 +46,9 @@ const isNativeBridgeReady = (): boolean => {
   return cap.isPluginAvailable?.('StatusBar') ?? true;
 };
 
-const syncNativeStatusBar = (color: string, isOverlay: boolean) => {
-  // Only switch the native status bar to transparent overlay mode WHILE a
-  // Drawer/Dialog/Sheet/AlertDialog is open, so the dim backdrop blends over
-  // the status bar. In normal (non-overlay) state the status bar is a solid
-  // strip matching the route colour and the WebView sits below it — no
-  // per-page safe-area padding required.
-  if (color === lastAppliedColor && isOverlay === lastAppliedOverlay) return;
+// Route-color path: debounced to avoid thrash during navigation.
+const syncNativeStatusBarRoute = (color: string) => {
+  if (color === lastAppliedColor && activeOverlayCount === 0) return;
   const requestId = ++nativeChromeRequest;
   if (pendingTimer) clearTimeout(pendingTimer);
   pendingTimer = setTimeout(() => {
@@ -57,26 +58,43 @@ const syncNativeStatusBar = (color: string, isOverlay: boolean) => {
       .then(([{ Capacitor }, { StatusBar, Style }]) => {
         if (requestId !== nativeChromeRequest) return;
         if (!Capacitor.isNativePlatform()) return;
-        const prevOverlay = lastAppliedOverlay;
         lastAppliedColor = color;
-        lastAppliedOverlay = isOverlay;
-        // Keep the WebView layout stable at all times — never toggle
-        // setOverlaysWebView on overlay open/close, which would resize the
-        // WebView by the status-bar height and cause a visible jump near
-        // the top of the screen. Ensure overlay mode is off exactly once.
-        if (prevOverlay === null) {
+        // Keep the WebView layout stable — set overlaysWebView false exactly
+        // once, never toggle it, so it never resizes.
+        if (!overlaysWebViewInitialized) {
+          overlaysWebViewInitialized = true;
           void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
         }
-        // Only the status-bar strip's background colour changes: dim it
-        // when an overlay (Drawer/Sheet/Dialog) is open so the strip
-        // blends with the Radix bg-foreground/50 backdrop, restore route
-        // colour otherwise. Style stays Dark so icons don't flicker.
-        const stripColor = isOverlay ? overlayTint(color) : color;
+        // If an overlay is currently up, respect the tinted color instead of
+        // repainting the strip to the raw route color mid-drawer.
+        const stripColor = activeOverlayCount > 0 ? cachedRouteTint : color;
         void StatusBar.setBackgroundColor({ color: stripColor }).catch(() => undefined);
         void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
       })
       .catch(() => undefined);
   }, 60);
+};
+
+// Overlay-tint path: immediate (no debounce) so the native strip dims in
+// lockstep with the Radix bg-foreground/50 backdrop appearing/disappearing.
+const setStatusBarOverlayTint = (isOverlay: boolean) => {
+  if (!isNativeBridgeReady()) return;
+  const targetColor = isOverlay ? cachedRouteTint : cachedRouteColor;
+  // Cancel any pending route-color write so it doesn't race and overwrite us.
+  if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = null; }
+  const requestId = ++nativeChromeRequest;
+  void Promise.all([import('@capacitor/core'), import('@capacitor/status-bar')])
+    .then(([{ Capacitor }, { StatusBar, Style }]) => {
+      if (requestId !== nativeChromeRequest) return;
+      if (!Capacitor.isNativePlatform()) return;
+      if (!overlaysWebViewInitialized) {
+        overlaysWebViewInitialized = true;
+        void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
+      }
+      void StatusBar.setBackgroundColor({ color: targetColor }).catch(() => undefined);
+      void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
+    })
+    .catch(() => undefined);
 };
 
 // Parse "H S% L%" (the shape Tailwind stores in --foreground) to hex.
@@ -125,35 +143,39 @@ const overlayTint = (routeHex: string): string => {
   return `#${mix(0)}${mix(1)}${mix(2)}`;
 };
 
-export const applyAppChromeColor = (color: string, statusBarStyle: 'default' | 'black-translucent' = 'default') => {
-  const isOverlay = statusBarStyle === 'black-translucent';
+export const applyAppChromeColor = (color: string, _statusBarStyle: 'default' | 'black-translucent' = 'default') => {
+  // The overlay-style branch used to also rewrite CSS vars, meta tags and
+  // classes on every drawer open/close — that caused reflow flashes near the
+  // status bar. Overlay push/pop is now handled exclusively by
+  // setStatusBarOverlayTint, which only recolors the native strip.
   const routeTopColor = getRouteTopColor();
-  // Never repaint the WebView top strip to the transparent overlay value —
-  // that caused a visible flash near the status bar when a drawer opened.
-  // Only the native status bar strip dims (handled in syncNativeStatusBar).
-  const visibleTopColor = routeTopColor;
-  const isAuthColor = visibleTopColor === AUTH_TOP_COLOR;
+  const isAuthColor = routeTopColor === AUTH_TOP_COLOR;
+
+  // Update route caches — the next overlay push/pop uses these instantly.
+  if (routeTopColor !== cachedRouteColor) {
+    cachedRouteColor = routeTopColor;
+    cachedRouteTint = overlayTint(routeTopColor);
+  }
+
   document.documentElement.classList.remove('dark');
-  document.documentElement.classList.toggle('app-overlay-chrome', isOverlay);
-  document.body?.classList.toggle('app-overlay-chrome', isOverlay);
   document.documentElement.style.colorScheme = 'light';
-  document.documentElement.style.setProperty('--app-top-bg', visibleTopColor);
-  document.body?.style.setProperty('--app-top-bg', visibleTopColor);
-  document.documentElement.style.backgroundColor = visibleTopColor;
-  if (document.body) document.body.style.backgroundColor = visibleTopColor;
+  document.documentElement.style.setProperty('--app-top-bg', routeTopColor);
+  document.body?.style.setProperty('--app-top-bg', routeTopColor);
+  document.documentElement.style.backgroundColor = routeTopColor;
+  if (document.body) document.body.style.backgroundColor = routeTopColor;
 
   // Keep #root in sync with route chrome so auth-like routes (and native
   // cold boot) paint lime end-to-end, while in-app routes restore cream.
   if (isAuthColor) {
     document.documentElement.style.setProperty('--background', '111 95% 92%');
     document.documentElement.classList.add('boot-auth');
-  } else if (!isOverlay) {
+  } else {
     document.documentElement.style.removeProperty('--background');
     document.documentElement.classList.remove('boot-auth');
   }
 
   const theme = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
-  theme?.setAttribute('content', visibleTopColor);
+  theme?.setAttribute('content', routeTopColor);
 
   const colorScheme = document.querySelector('meta[name="color-scheme"]') as HTMLMetaElement | null;
   colorScheme?.setAttribute('content', 'light');
@@ -161,42 +183,42 @@ export const applyAppChromeColor = (color: string, statusBarStyle: 'default' | '
   const status = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]') as HTMLMetaElement | null;
   status?.setAttribute('content', 'default');
 
-  syncNativeStatusBar(visibleTopColor, isOverlay);
+  syncNativeStatusBarRoute(routeTopColor);
+  // Preserve unused-arg lint quiet without changing external API.
+  void color;
 };
 
-
-const applyOverlayAppChrome = () => {
-  applyAppChromeColor(OVERLAY_TOP_COLOR, 'black-translucent');
-};
 
 const applyRouteAppChrome = () => {
   applyAppChromeColor(getRouteTopColor());
 };
 
 export const restoreRouteAppChrome = () => {
-  if (activeOverlayCount > 0) {
-    applyOverlayAppChrome();
-    return;
-  }
   applyRouteAppChrome();
+  // If an overlay is still up (e.g. resume while a drawer is open), keep the
+  // status bar dimmed — the route write above respects activeOverlayCount.
 };
 
 export const forceRestoreRouteAppChrome = () => {
   applyRouteAppChrome();
 };
 
-// While an overlay (Dialog/Sheet/Drawer/AlertDialog) is mounted, make the
-// native status bar transparent and keep the route chrome visible underneath
-// so the dim backdrop matches the in-app browser sheet look.
+// While an overlay (Dialog/Sheet/Drawer/AlertDialog) is mounted, dim the
+// native status-bar strip to match the Radix bg-foreground/50 backdrop.
+// Nothing in the WebView layout moves — only the native strip color changes.
 export const pushOverlayAppChrome = () => {
   activeOverlayCount += 1;
-  applyOverlayAppChrome();
+  if (activeOverlayCount === 1) {
+    setStatusBarOverlayTint(true);
+  }
   let released = false;
   return () => {
     if (released) return;
     released = true;
     activeOverlayCount = Math.max(0, activeOverlayCount - 1);
-    if (activeOverlayCount === 0) applyRouteAppChrome();
+    if (activeOverlayCount === 0) {
+      setStatusBarOverlayTint(false);
+    }
   };
 };
 

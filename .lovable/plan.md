@@ -1,27 +1,31 @@
-## Problem
+## Goal
 
-You reverted past the status-bar dimming fix. The current `src/lib/appChrome.ts` dims the native status-bar strip by mixing the route colour with **40% black** (`dimColor(color, 0.4)`), but the drawer/sheet backdrop in the app is actually `bg-foreground/50`. On native iOS this makes the status-bar strip look slightly darker than the backdrop and can make the top edge appear to glitch.
+Eliminate the flash/glitch at the top of the screen when drawers/sheets/dialogs open and close on native, without moving any layout (WebView stays put, footer buttons stay put, no safe-area padding changes).
 
-## Root cause (verified from git history)
+## Root cause
 
-The last revert (`97223f06`) reset the repo to `9084b05e` (the seller-onboarding step-persistence change). That dropped the follow-up fix from `7f9314a8` which replaced the 40% black mix with a 50% `--foreground` overlay tint.
+In `src/lib/appChrome.ts`:
+- `syncNativeStatusBar` debounces `StatusBar.setBackgroundColor` by 60 ms. The Radix `bg-foreground/50` backdrop dims the WebView instantly, but the native status-bar strip changes color ~60 ms later. Same lag on close. That mismatch is the "flash".
+- Every `pushOverlayAppChrome` / release also re-runs the full `applyAppChromeColor` path (meta tags, CSS vars, class toggles, body/html background writes). None of that needs to change for overlay transitions and it adds extra reflow work while the drawer is animating.
 
-## Fix
+## Changes (only `src/lib/appChrome.ts`)
 
-Restore only the `src/lib/appChrome.ts` changes from `7f9314a8`. Leave the seller-onboarding persistence work untouched.
+1. Split status-bar handling into two paths:
+   - Route color changes keep the existing 60 ms debounce (avoids thrash during navigation).
+   - Overlay push/pop calls a new `setStatusBarOverlayTint(isOverlay)` that calls `StatusBar.setBackgroundColor` immediately (no timer) with the precomputed tinted or route color. This makes the strip dim in lockstep with the Radix backdrop.
+2. Cache the current route color and its precomputed `overlayTint` so overlay push/pop does zero DOM work and zero color math.
+3. `pushOverlayAppChrome` / its release no longer call `applyAppChromeColor`. They:
+   - Increment/decrement `activeOverlayCount`.
+   - Call `setStatusBarOverlayTint(true)` on first push, `setStatusBarOverlayTint(false)` on last release.
+   - Do NOT touch `--app-top-bg`, `theme-color`, `app-overlay-chrome` classes, or html/body backgrounds — those already match the route and don't need to move for a dim overlay.
+4. `applyAppChromeColor` (route path) recomputes and caches the tint whenever the route color changes, so the next overlay push has the right value ready with no flicker.
+5. Keep `setOverlaysWebView({ overlay: false })` behavior exactly as-is (called once, never toggled) so the WebView never resizes.
 
-### Changes
+## Result
 
-1. **`src/lib/appChrome.ts`**
-   - Remove the `dimColor` helper that mixes black at 40%.
-   - Add an `overlayTint` helper that reads the CSS `--foreground` token, converts its HSL value to hex, and composites it over the route colour at 50% alpha to match `bg-foreground/50`.
-   - Update the comment and the `syncNativeStatusBar` call to use `overlayTint(color)` instead of `dimColor(color, 0.4)`.
-   - Keep all other chrome logic (no `overlaysWebView` toggle, route colour detection, etc.) exactly as it is now.
+- Native status-bar strip transitions dim/undim in the same frame as the Radix backdrop — no visible flash on open or close.
+- Nothing in the WebView layout moves: no footer shift, no content jump, no safe-area changes.
+- Route color transitions (navigation) still debounced as before.
 
-2. **No other files change.** `capacitor.config.ts` is identical between `9084b05e` and `7f9314a8`, so it does not need editing.
-
-## Verification
-
-- Run `npm run build` to confirm no TypeScript errors.
-- In the native preview, open any drawer/sheet and confirm the native status-bar strip colour matches the dimmed backdrop tone instead of appearing darker.
-- Close the drawer and confirm the status bar returns to the route colour with no jump or resize.
+## Files touched
+- `src/lib/appChrome.ts` (only)
