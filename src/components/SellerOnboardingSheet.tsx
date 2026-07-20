@@ -48,6 +48,31 @@ const TOTAL_STEPS = 4;
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA'];
 const secondaryActionClass = "w-auto h-10 px-4 rounded-full bg-transparent text-muted-foreground hover:bg-transparent hover:text-muted-foreground focus:bg-transparent focus:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:bg-transparent active:bg-muted/60 active:text-foreground";
 
+// Local draft persistence so users can leave the app (e.g. to grab their BSB /
+// account number) and return without losing what they've entered.
+const draftKey = (userId?: string | null) =>
+  userId ? `flea_seller_onboarding_draft_${userId}` : null;
+export type OnboardingDraft = Partial<{
+  firstName: string; lastName: string; dob: string; dobInput: string; phone: string;
+  line1: string; suburb: string; state: string; postcode: string;
+  bsb: string; account: string;
+}>;
+const loadDraft = (userId?: string | null): OnboardingDraft => {
+  const k = draftKey(userId); if (!k) return {};
+  try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch { return {}; }
+};
+const saveDraft = (userId: string | null | undefined, patch: OnboardingDraft) => {
+  const k = draftKey(userId); if (!k) return;
+  try {
+    const cur = loadDraft(userId);
+    localStorage.setItem(k, JSON.stringify({ ...cur, ...patch }));
+  } catch { /* non-blocking */ }
+};
+const clearOnboardingDraft = (userId?: string | null) => {
+  const k = draftKey(userId); if (!k) return;
+  try { localStorage.removeItem(k); } catch { /* non-blocking */ }
+};
+
 const SellerOnboardingSheet = ({
   open,
   onOpenChange,
