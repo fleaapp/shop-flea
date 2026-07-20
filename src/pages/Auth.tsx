@@ -367,18 +367,11 @@ const Auth = () => {
         }
       }
 
-      // Web / PWA / Android: use Lovable-managed Apple OAuth.
-      const result = await lovable.auth.signInWithOAuth('apple', {
-        redirect_uri: window.location.origin,
-      });
+      // Non-native (web/PWA/Android): Apple Sign-In is iOS-app-only.
+      localStorage.removeItem('flea_oauth_signup');
+      toast.info('Sign in with Apple is only available in the Flea iOS app.');
+      return;
 
-      if (result.error) {
-        localStorage.removeItem('flea_oauth_signup');
-        console.error('Apple sign-in error:', result.error);
-        toast.error('Apple sign-in failed. Please try again.');
-        return;
-      }
-      if (result.redirected) return;
     } catch (err) {
       localStorage.removeItem('flea_oauth_signup');
       console.error('Apple sign-in exception:', err);
