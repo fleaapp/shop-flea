@@ -1,41 +1,45 @@
 ## Problem
 
-The native iOS status-bar strip and the WebView area below it show visibly different shades of gray whenever a Drawer / Sheet / Dialog / AlertDialog is open, producing a seam right under the Dynamic Island.
+Opening/closing a Drawer, Sheet, Dialog or AlertDialog causes a visible flash / glitch on the native status-bar strip. This is separate from the earlier colour-match issue — the flash happens regardless of what colour we pick.
 
-## Root cause (verified)
+## Root cause (verified in `src/lib/appChrome.ts`)
 
-`src/lib/appChrome.ts::syncNativeStatusBar` dims the native status-bar strip by mixing **black at 40%** over the route colour:
+With `StatusBar.overlaysWebView: false`, the iOS status bar is a **separate native strip above the WebView**. Every time an overlay opens or closes we call `StatusBar.setBackgroundColor(...)` inside a 60ms `setTimeout`. That produces two visible artefacts:
 
-```
-dimColor('#F5F1EB', 0.4) → #93918D  (warm gray, cream + black)
-```
+1. **Timing mismatch.** Radix animates the backdrop opacity from 0 → 50% over ~150ms. The native strip is instead re-painted in a single frame after a 60ms delay, so during opening you see the strip snap-dim while the WebView is still fading, and during closing the strip snap-restores before the backdrop finishes fading. This reads as a flash right under the Dynamic Island.
+2. **Colour re-composition on every open/close.** `overlayTint()` recomputes the dim from `--foreground` every call. On close, `setBackgroundColor` briefly repaints the strip before the WebView backdrop is gone, causing a second flicker.
 
-But every overlay in the app (`drawer.tsx`, `sheet.tsx`, `dialog.tsx`, `alert-dialog.tsx`) uses `bg-foreground/50` — i.e. **charcoal `hsl(220 20% 20%)` at 50%** over the route colour:
-
-```
-foreground #29303D @ 50% over #F5F1EB → #8F9194  (cool bluish gray)
-```
-
-Warm gray strip (native) vs cool gray WebView (Radix overlay) = the seam the user is seeing.
+We cannot make the native strip's colour animation match Radix's CSS opacity transition — they're two different rendering pipelines.
 
 ## Fix
 
-Make the native status-bar dim colour match the Radix overlay by compositing the same `--foreground` token at 50% over the route colour instead of black at 40%.
+Stop animating the native status bar at all. Make the WebView extend under the status bar so the Radix backdrop (which already covers the full WebView) naturally dims the status-bar area — no native colour changes, no timing mismatch, no flash.
 
 ### Changes
 
-**`src/lib/appChrome.ts`**
-- Replace `dimColor(color, blackAlpha)` with `overlayTint(routeColor)` that:
-  - Reads `--foreground` via `getComputedStyle(document.documentElement).getPropertyValue('--foreground')`, parses the `H S% L%` triple, converts to RGB. Falls back to `#29303D` if parsing fails.
-  - Alpha-composites that foreground at **0.5** over the route colour and returns the hex result.
-- In `syncNativeStatusBar`, use `overlayTint(color)` as the `stripColor` when `isOverlay === true`. Non-overlay path unchanged.
-- Keep everything else (single `setOverlaysWebView({ overlay: false })`, WebView never resized, `Style.Dark` unchanged) exactly as-is so the earlier no-jump fix is preserved.
+**`capacitor.config.ts`**
+- `StatusBar.overlaysWebView: true` (was `false`). Keep `style: 'DARK'`, drop the `backgroundColor` key (irrelevant in overlay mode).
 
-No changes to the Radix overlay classes, the drawer/sheet components, or `useOverlayChrome`. This is a pure colour-match change in one function.
+**`src/lib/appChrome.ts`**
+- Delete `syncNativeStatusBar`'s colour toggling. Keep the function but reduce it to a **one-time** call that sets `StatusBar.setOverlaysWebView({ overlay: true })` and `StatusBar.setStyle({ style: Style.Dark })` on first invocation. Never call `setBackgroundColor` again.
+- Remove `overlayTint`, `hslTripleToHex`, `hexToRgb`, `dimColor` — no longer needed.
+- `pushOverlayAppChrome` / `restoreRouteAppChrome` keep their ref-counting but only update the web-side `--app-top-bg` / meta tags (they already do). No native calls.
+
+**`src/index.css`**
+- The existing `body::before` pseudo-element (lines 124-135) already paints an `env(safe-area-inset-top)` strip in the route colour above the WebView content. Because it's `position: fixed; z-index: 45`, it sits **below** Radix overlays (which use `z-50`). This means when a drawer opens, the Radix `bg-foreground/50` backdrop covers this strip too — producing the dim under the Dynamic Island automatically, in perfect sync with the rest of the backdrop's fade animation. No changes needed here; this is why the fix works.
+- Verify no page adds `padding-top: env(safe-area-inset-top)` that would double-count. If any page (e.g. `Auth.tsx`, `Index.tsx` header) does, they already account for the strip via the pseudo-element and don't need changes. If a page's top content collides with the status bar after switching to overlay mode, add `pt-[env(safe-area-inset-top)]` to that page's top container only.
+
+### What we deliberately don't touch
+
+- Drawer / Sheet / Dialog / AlertDialog components — unchanged.
+- `useOverlayChrome` — unchanged (still ref-counts for the web-side chrome).
+- Footer padding, drawer heights, `pb-12` on listing footer — all preserved.
+- Splash / launch colour `#DDFED7` — unchanged.
 
 ## Verification
 
-- Open a Drawer / Sheet / Dialog on the Settings screen: status-bar strip and the dimmed page immediately below it read as the same gray — no seam under the Dynamic Island.
-- Same check on an auth-coloured route (lime `#DDFED7`) — strip should match the dimmed lime backdrop.
-- Close the overlay: status-bar strip returns to the route colour with no flash.
-- WebView does not resize when opening/closing overlays (regression check for the earlier fix).
+1. Open a drawer on Settings, ListingDetails, Profile → the dim fades in smoothly across the whole screen including under the Dynamic Island. No flash on open. No flash on close.
+2. Open an AlertDialog inside a drawer (e.g. Wishlist remove) → same, no double flash.
+3. Route colour on non-overlay screens still shows correctly at the top (the `body::before` cream/lime strip covers the safe-area).
+4. WebView does not resize when opening/closing an overlay (regression check).
+5. Cold-boot on native to `/auth` — status area reads lime end-to-end, no flash before React mounts.
