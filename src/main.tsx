@@ -172,7 +172,7 @@ const hideNativeSplash = () => {
 const root = createRoot(document.getElementById("root")!);
 root.render(<App />);
 
-void registerAppServiceWorker();
+void unregisterAppServiceWorker();
 
 
 // Hide native splash AFTER React has rendered the first frame (Auth screen).
