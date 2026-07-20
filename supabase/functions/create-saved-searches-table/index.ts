@@ -10,7 +10,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   let sql: any;
   try {
-    const dbUrl = Deno.env.get("EXTERNAL_SUPABASE_DB_URL") ?? "";
+    const dbUrl = Deno.env.get("SUPABASE_DB_URL") ?? "";
     if (!dbUrl) throw new Error("EXTERNAL_SUPABASE_DB_URL missing");
     console.log("[create-saved-searches-table] connecting…");
     sql = postgres(dbUrl, { max: 1, prepare: false, ssl: "require", connect_timeout: 15 });

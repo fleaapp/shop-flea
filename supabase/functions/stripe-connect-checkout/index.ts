@@ -24,8 +24,8 @@ serve(async (req) => {
   try {
     // Authenticate against the external Supabase project where users sign in
     const supabaseClient = createClient(
-      Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '',
-      Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     );
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
@@ -44,8 +44,8 @@ serve(async (req) => {
     // Resolve it server-side from the listing IDs using the service role,
     // and verify all items belong to the same active seller.
     const serviceClient = createClient(
-      Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '',
-      Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { persistSession: false, autoRefreshToken: false } }
     );
     const itemIds = items.map((i: { id: string }) => i.id).filter(Boolean);

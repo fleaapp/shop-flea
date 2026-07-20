@@ -3,8 +3,8 @@
 // Used by the client to prevent duplicate accounts across providers.
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
-const EXTERNAL_URL = Deno.env.get('EXTERNAL_SUPABASE_URL')!;
-const SERVICE_KEY = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY')!;
+const EXTERNAL_URL = Deno.env.get('SUPABASE_URL')!;
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 type Provider = 'email' | 'google' | 'apple' | null;
 

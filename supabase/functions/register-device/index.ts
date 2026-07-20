@@ -24,9 +24,9 @@ serve(async (req) => {
       });
     }
 
-    const externalUrl = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
-    const anonKey = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "";
-    const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const externalUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
     const verifier = createClient(externalUrl, anonKey, {
       auth: { persistSession: false, autoRefreshToken: false },

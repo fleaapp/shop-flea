@@ -21,8 +21,8 @@ function getStripeSecretKey() {
 }
 
 async function persistStripeStatus(userId: string, accountId: string) {
-  const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '';
-  const serviceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const externalUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
   // Use raw REST PATCH directly — avoids any PostgREST schema cache issues
   const response = await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
@@ -57,8 +57,8 @@ async function persistStripeStatus(userId: string, accountId: string) {
 }
 
 async function clearStripeStatus(userId: string) {
-  const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '';
-  const serviceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const externalUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
   const response = await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
     method: 'PATCH',
@@ -112,8 +112,8 @@ serve(async (req) => {
       });
     }
 
-    const EXTERNAL_URL = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '';
-    const EXTERNAL_ANON_KEY = Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY') ?? '';
+    const EXTERNAL_URL = Deno.env.get('SUPABASE_URL') ?? '';
+    const EXTERNAL_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 
     let userId: string;
     try {
@@ -139,8 +139,8 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '';
-    const serviceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const externalUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
     let accountId = stripeAccountId;
     let lookupUserId = userId;

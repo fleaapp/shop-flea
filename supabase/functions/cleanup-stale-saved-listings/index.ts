@@ -64,9 +64,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '';
-    const externalAnonKey = Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY') ?? '';
-    const externalServiceRoleKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const externalUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const externalAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    const externalServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
     if (!externalUrl || !externalAnonKey || !externalServiceRoleKey) {
       return new Response(JSON.stringify({ error: 'Server misconfiguration' }), {

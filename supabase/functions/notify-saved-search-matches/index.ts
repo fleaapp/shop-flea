@@ -6,14 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const EXTERNAL_SUPABASE_URL = Deno.env.get('EXTERNAL_SUPABASE_URL') || Deno.env.get('SUPABASE_URL')!;
-const CLOUD_SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SERVICE_KEY =
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const EXTERNAL_SERVICE_KEY =
-  Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const PUBLISHABLE_KEY =
-  Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_PUBLISHABLE_KEY')!;
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const PUBLISHABLE_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 
 interface SavedSearchRow {
   id: string;
@@ -57,7 +52,7 @@ Deno.serve(async (req) => {
 
   // Require service-role auth — this is an internal cron/admin function.
   const authHeader = req.headers.get('Authorization') ?? '';
-  const expectedKeys = [SERVICE_KEY, EXTERNAL_SERVICE_KEY].filter(Boolean);
+  const expectedKeys = [SERVICE_KEY].filter(Boolean);
   const isAuthorized = expectedKeys.some((k) => authHeader === `Bearer ${k}`);
   if (!isAuthorized) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -67,10 +62,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const admin = createClient(CLOUD_SUPABASE_URL, SERVICE_KEY, {
+    const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { persistSession: false },
     });
-    const externalAdmin = createClient(EXTERNAL_SUPABASE_URL, EXTERNAL_SERVICE_KEY, {
+    const externalAdmin = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { persistSession: false },
     });
 
@@ -127,7 +122,7 @@ Deno.serve(async (req) => {
 
       // Push notification
       try {
-        await fetch(`${CLOUD_SUPABASE_URL}/functions/v1/send-push-notification`, {
+        await fetch(`${SUPABASE_URL}/functions/v1/send-push-notification`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

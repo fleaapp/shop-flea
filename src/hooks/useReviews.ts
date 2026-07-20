@@ -178,7 +178,7 @@ export function useCreateReview() {
       const token = session?.access_token;
       if (!token) throw new Error('Not authenticated');
 
-      const externalUrl = 'https://dzglehiopfgfjmxtejve.supabase.co';
+      const externalUrl = import.meta.env.VITE_SUPABASE_URL as string;
       const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6Z2xlaGlvcGZnZmpteHRlanZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzI0MjUsImV4cCI6MjA4NDU0ODQyNX0.qfOBjubnuod5iGF_G_gH2ZhMDJ1fVwAO9p5BZSxG0xI';
 
       const payload: Record<string, unknown> = {

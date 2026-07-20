@@ -59,8 +59,8 @@ serve(async (req) => {
 
   try {
     const supabaseClient = createClient(
-      Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "",
-      Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "",
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       { global: { headers: { Authorization: req.headers.get("Authorization")! } } },
     );
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
@@ -76,8 +76,8 @@ serve(async (req) => {
     // of Stripe's Files API quota. Uses the shared public.rate_limits table.
     try {
       const rlClient = createClient(
-        Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "",
-        Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "",
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
         { auth: { persistSession: false, autoRefreshToken: false } },
       );
       const { data: allowed, error: rlErr } = await rlClient.rpc('check_and_record_rate_limit', {

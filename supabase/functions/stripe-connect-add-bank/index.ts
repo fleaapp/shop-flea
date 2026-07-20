@@ -17,8 +17,8 @@ function getStripeSecretKey() {
 }
 
 async function markOnboardingComplete(userId: string, accountId: string) {
-  const externalUrl = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
-  const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const externalUrl = Deno.env.get("SUPABASE_URL") ?? "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const response = await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
     method: "PATCH",
     headers: {
@@ -52,8 +52,8 @@ async function markOnboardingComplete(userId: string, accountId: string) {
 }
 
 async function markOnboardingSubmitted(userId: string, accountId: string) {
-  const externalUrl = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
-  const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const externalUrl = Deno.env.get("SUPABASE_URL") ?? "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const response = await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
     method: "PATCH",
     headers: {
@@ -91,8 +91,8 @@ serve(async (req) => {
 
   try {
     const supabaseClient = createClient(
-      Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "",
-      Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "",
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
     );
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();

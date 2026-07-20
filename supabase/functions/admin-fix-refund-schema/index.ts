@@ -11,7 +11,7 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const dbUrl = Deno.env.get("EXTERNAL_SUPABASE_DB_URL") ?? Deno.env.get("SUPABASE_DB_URL") ?? "";
+    const dbUrl = Deno.env.get("SUPABASE_DB_URL") ?? Deno.env.get("SUPABASE_DB_URL") ?? "";
     if (!dbUrl) throw new Error("DB URL not set");
     console.log("[admin-fix-refund-schema] host:", new URL(dbUrl.replace("postgresql://", "http://")).host);
     const body = await req.json().catch(() => ({}));
@@ -86,10 +86,10 @@ serve(async (req) => {
       // Also verify via PostgREST (as service role) that the column is returned
       let postgrestRow: any = null;
       try {
-        const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
         const targetId = orderId || (currentRow[0]?.id ?? "");
         if (serviceKey && targetId) {
-          const r = await fetch(`https://dzglehiopfgfjmxtejve.supabase.co/rest/v1/orders?id=eq.${targetId}&select=id,status,refunded_at,refund_reason`, {
+          const r = await fetch(`https://teaicrimlqdayqpmxasc.supabase.co/rest/v1/orders?id=eq.${targetId}&select=id,status,refunded_at,refund_reason`, {
             headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
           });
           postgrestRow = await r.json();

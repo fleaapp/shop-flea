@@ -43,9 +43,9 @@ serve(async (req) => {
     // callers from sending arbitrary push notifications to any user.
     const authHeader = req.headers.get("Authorization") || "";
     const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-    const serviceRoleKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
-    const supabaseUrl = Deno.env.get("EXTERNAL_SUPABASE_URL")!;
-    const anonKey = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
     // Accept either the Lovable Cloud service role (used by webhooks/triggers
     // on this project) or the external Supabase service role.

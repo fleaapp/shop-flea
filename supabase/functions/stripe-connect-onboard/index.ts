@@ -21,8 +21,8 @@ function getStripeSecretKey() {
 }
 
 async function persistStripeAccount(userId: string, accountId: string) {
-  const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '';
-  const serviceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const externalUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
   const response = await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}`, {
     method: 'PATCH',
@@ -51,8 +51,8 @@ serve(async (req) => {
   try {
     // Authenticate against the external Supabase project
     const supabaseClient = createClient(
-      Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '',
-      Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     );
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
@@ -101,8 +101,8 @@ serve(async (req) => {
     // Create a new application-controlled Express account if needed
     if (!accountId) {
       // Fetch user profile + saved address for pre-filling
-      const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '';
-      const serviceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
+      const externalUrl = Deno.env.get('SUPABASE_URL') ?? '';
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
       const [profileRes, addressRes] = await Promise.all([
         fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${userId}&select=first_name,last_name,email,country_code,legal_name`, {
           headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` },

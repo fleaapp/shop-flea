@@ -14,15 +14,18 @@ function isIosRuntime(): boolean {
   );
 }
 
-// External Supabase project credentials
-const supabaseUrl = "https://dzglehiopfgfjmxtejve.supabase.co";
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6Z2xlaGlvcGZnZmpteHRlanZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NzI0MjUsImV4cCI6MjA4NDU0ODQyNX0.qfOBjubnuod5iGF_G_gH2ZhMDJ1fVwAO9p5BZSxG0xI";
+// Lovable Cloud (Supabase) project credentials — read from Vite env at build time
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  import.meta.env.VITE_SUPABASE_ANON_KEY) as string;
+const supabaseProjectRef = (import.meta.env.VITE_SUPABASE_PROJECT_ID as string) ||
+  new URL(supabaseUrl).hostname.split('.')[0];
 
 // Export the Supabase client for the rest of the app
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: authStorage,
-    storageKey: "sb-dzglehiopfgfjmxtejve-auth-token",
+    storageKey: `sb-${supabaseProjectRef}-auth-token`,
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,

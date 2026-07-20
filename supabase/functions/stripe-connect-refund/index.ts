@@ -46,7 +46,7 @@ const ORDER_UPDATE_FALLBACK_COLUMNS = [
 async function reloadExternalSchemaCache() {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     if (!supabaseUrl || !serviceKey) return;
     await fetch(`${supabaseUrl}/functions/v1/reload-schema`, {
       method: "POST",
@@ -189,7 +189,7 @@ async function patchOrdersWithFallback(
 }
 
 async function markRelatedOrdersRefunded(externalUrl: string, serviceKey: string, order: any) {
-  const dbUrl = Deno.env.get("EXTERNAL_SUPABASE_DB_URL") ?? Deno.env.get("SUPABASE_DB_URL") ?? "";
+  const dbUrl = Deno.env.get("SUPABASE_DB_URL") ?? Deno.env.get("SUPABASE_DB_URL") ?? "";
   const refundedAt = new Date();
   const refundReason = "seller_refund";
 
@@ -368,8 +368,8 @@ async function resolvePaymentIntentId(stripe: Stripe, order: any) {
 
 async function checkRateLimit(key: string, max: number, windowSeconds: number): Promise<boolean> {
   try {
-    const url = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
-    const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const url = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     if (!url || !serviceKey) return true;
     const res = await fetch(`${url}/rest/v1/rpc/check_and_record_rate_limit`, {
       method: "POST",
@@ -435,8 +435,8 @@ serve(async (req) => {
 
   try {
     const supabaseClient = createClient(
-      Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "",
-      Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "",
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       { global: { headers: { Authorization: req.headers.get("Authorization")! } } },
     );
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
@@ -451,8 +451,8 @@ serve(async (req) => {
     const { orderId, amount, reason } = await req.json();
     if (!orderId) throw new Error("orderId required");
 
-    const externalUrl = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
-    const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const externalUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     if (!externalUrl || !serviceKey) throw new Error("Payment service is not configured.");
 
     const order = await fetchOrderWithFallback(externalUrl, serviceKey, orderId);

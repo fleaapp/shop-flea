@@ -4,7 +4,7 @@
  * Avatars pass through as-is (already compressed on upload).
  */
 
-const SUPABASE_STORAGE_HOST = 'dzglehiopfgfjmxtejve.supabase.co/storage';
+const SUPABASE_STORAGE_HOST = 'teaicrimlqdayqpmxasc.supabase.co/storage';
 
 const getTransformedUrl = (
   url: string,
