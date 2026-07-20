@@ -7,6 +7,7 @@ import OnboardingOverlay from "@/components/OnboardingOverlay";
 import OnboardingCarousel from "@/components/OnboardingCarousel";
 import RealtimeAlerts from "@/components/RealtimeAlerts";
 import { PushNotificationSubscriber } from "@/components/PushNotificationSubscriber";
+import SellerOnboardingResumeMount from "@/components/SellerOnboardingResumeMount";
 import useListingsRealtime from "@/hooks/useListingsRealtime";
 
 const OnboardingChrome = ({ enabled }: { enabled: boolean }) => {
@@ -25,6 +26,7 @@ const OnboardingChrome = ({ enabled }: { enabled: boolean }) => {
     <>
       {user && <RealtimeAlerts />}
       {user && <PushNotificationSubscriber />}
+      {user && <SellerOnboardingResumeMount />}
       <OnboardingOverlay />
       <OnboardingCarousel open={showCarousel} onComplete={closeCarousel} />
     </>

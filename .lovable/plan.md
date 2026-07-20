@@ -1,25 +1,38 @@
-## Cause
+## Problem
 
-The dark line above the sheet is **not** a shadow — it's an intentional 3px charcoal top border on the sheet content. My earlier fix removed borders/shadows from the shared `Sheet` primitive (`src/components/ui/sheet.tsx`), but individual sheets override `className` with their own `border-t-[3px] border-charcoal` decoration.
-
-Confirmed on two bottom sheets:
-- `src/components/SellerOnboardingSheet.tsx:318` — `rounded-t-3xl border-t-[3px] border-charcoal ...`
-- `src/components/PushPermissionSheet.tsx:70` — `rounded-t-3xl border-t-[3px] border-charcoal ...`
-
-The screenshot is the Seller Onboarding sheet, so that border is what the user sees as the "shadow/dark line" running across the top.
+The onboarding form data is already saved locally, and the current step is saved to `profiles.stripe_onboarding_step`. But when the app is fully relaunched (native cold-start after backgrounding), the sheet is closed and no one reopens it — the user lands on Profile/Dashboard and has to hunt for the "Set up seller" button to get back in. Radix keeps the sheet open across a normal foreground/background cycle, so this only bites on relaunch.
 
 ## Fix (frontend only)
 
-Drop `border-t-[3px] border-charcoal` from those two SheetContent classNames, keeping `rounded-t-3xl` so the rounded top edge remains.
+Add a global "resume onboarding" flag stored in localStorage, and mount a single always-listening component that reopens the sheet at the saved step when the flag is set.
 
-Files:
-1. `src/components/SellerOnboardingSheet.tsx` — line 318
-2. `src/components/PushPermissionSheet.tsx` — line 70
+### 1. Resume flag helpers (`src/lib/sellerOnboardingResume.ts`, new)
 
-Leave the dialog/modal borders (`CreateListing`, `PasswordSetupDialog`, `WelcomeSetupDialog`, `TieredShippingSetupModal`, `Swiping101Dialog`) untouched — those are centered card dialogs where the full charcoal outline is part of the brand look and the user hasn't complained about them.
+- `setOnboardingResume(userId)` — writes `flea_seller_onboarding_resume_${userId} = "1"`.
+- `clearOnboardingResume(userId)` — removes it.
+- `hasOnboardingResume(userId)` — boolean read.
+
+### 2. Wire flag into `SellerOnboardingSheet.tsx`
+
+- When the sheet opens and the user advances past step 1 (i.e. `handlePersonalNext`, or reaches step 2/3/4 via the requirements-driven jump), call `setOnboardingResume(user.id)`. This ensures we only try to resume when the user has actually engaged, not for a "Not now" tap on step 1.
+- In `handleVerifiedSuccess` and after a successful `handleContinueToStripe` completion (the paths that already call `clearOnboardingDraft`), also call `clearOnboardingResume`.
+- Route explicit user-close through a wrapper: when `onOpenChange(false)` fires from the "Not now" button, the X close, or backdrop dismiss, clear the resume flag. Backgrounding does not fire `onOpenChange`, so the flag survives a real leave-and-return.
+
+### 3. Global resume mounter (`src/components/SellerOnboardingResumeMount.tsx`, new)
+
+- Consumes `useAuth()`; renders nothing when there is no user.
+- On mount and on Capacitor `App` `resume` / web `visibilitychange` → visible, checks: user present, `hasOnboardingResume(user.id)`, and `profile.stripe_onboarding_complete !== true` (skip if seller already finished). If so, sets local `open = true` and renders `<SellerOnboardingSheet open={open} onOpenChange={...} />` — the sheet's existing effect will rehydrate step from `profiles.stripe_onboarding_step` and draft fields from localStorage.
+- Passes `onComplete` that clears the flag and closes.
+- Mount this component once inside `AuthenticatedProviders` so it's available on every authenticated route without duplicating logic in Profile / CreateListing / SellerDashboard / PaymentMethodsSection.
+
+### 4. Avoid double-mounting
+
+The existing per-page `<SellerOnboardingSheet>` instances stay as-is (they handle the "user tapped Set up seller" and "action required" entry points). Because Radix Dialog allows only one modal at a time and the resume mount only opens when the page-owned instance is closed, they will not overlap in practice. If both happen to try to open in the same tick, the page-owned sheet takes precedence — the resume mount reads `hasOnboardingResume` on mount only and won't reopen once the user-triggered sheet takes over and eventually clears the flag on completion.
 
 ### Verification
 
-- Reopen Seller Onboarding on native — rounded cream top with no dark seam.
-- Trigger the push permission sheet — same clean top.
-- Spot-check the branded confirmation dialogs still show their full charcoal outline.
+- Start onboarding, enter details on step 2, background the app, cold-relaunch → sheet reopens on step 2 with fields prefilled.
+- Reach step 4 (bank), background, relaunch → sheet reopens on step 4.
+- Tap "Not now" on step 1 → flag never gets set, sheet stays closed on next launch.
+- Tap X on step 3 → flag cleared, sheet stays closed on next launch.
+- Complete onboarding → flag cleared, no resume on next launch.

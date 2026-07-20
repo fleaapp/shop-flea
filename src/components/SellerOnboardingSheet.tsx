@@ -30,6 +30,7 @@ import AddressAutocomplete from '@/components/AddressAutocomplete';
 import IdVerificationStep from '@/components/IdVerificationStep';
 import PushPermissionSheet from '@/components/PushPermissionSheet';
 import { shouldShowPushPromptAsync } from '@/lib/pushPrompt';
+import { setOnboardingResume, clearOnboardingResume } from '@/lib/sellerOnboardingResume';
 
 interface SellerOnboardingSheetProps {
   open: boolean;
@@ -90,11 +91,19 @@ const SellerOnboardingSheet = ({
 
   const handleVerifiedSuccess = (result?: { setupCompleted?: boolean }) => {
     clearOnboardingDraft(user?.id);
+    clearOnboardingResume(user?.id);
     onOpenChange(false);
     shouldShowPushPromptAsync(user?.id, 'seller_verified').then((show) => {
       if (show) setTimeout(() => setShowPushSheet(true), 300);
     });
     onComplete?.(result);
+  };
+
+  // Explicit user-close (X, backdrop, "Not now") → clear the resume flag so
+  // we don't reopen on next launch. Backgrounding does NOT fire this.
+  const handleOpenChange = (next: boolean) => {
+    if (!next) clearOnboardingResume(user?.id);
+    onOpenChange(next);
   };
 
   const [firstName, setFirstName] = useState('');
@@ -185,6 +194,13 @@ const SellerOnboardingSheet = ({
       } catch { /* non-blocking */ }
     })();
   }, [step, open, user?.id]);
+
+  // Once the user has actively engaged (advanced past the intro), remember
+  // that onboarding is in progress so a cold-relaunch reopens the sheet.
+  useEffect(() => {
+    if (!open || !user?.id) return;
+    if (step > 1) setOnboardingResume(user.id);
+  }, [open, step, user?.id]);
 
   const validatePersonal = () => {
     if (firstName.trim().length < 1 || lastName.trim().length < 1) {
@@ -311,7 +327,7 @@ const SellerOnboardingSheet = ({
   const secondaryAction = (className = '') => `${secondaryActionClass} ${className}`.trim();
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent
         side="bottom"
         overlayClassName="data-[state=closed]:animate-none"
@@ -358,7 +374,7 @@ const SellerOnboardingSheet = ({
                       className="underline underline-offset-2 text-foreground hover:text-foreground/80"
                       onClick={(e) => {
                         e.preventDefault();
-                        onOpenChange(false);
+                        handleOpenChange(false);
                         navigate('/terms');
                       }}
                     >
@@ -377,7 +393,7 @@ const SellerOnboardingSheet = ({
                 </Button>
                 <Button
                   variant="ghost"
-                  onClick={() => onOpenChange(false)}
+                  onClick={() => handleOpenChange(false)}
                   className={secondaryAction()}
                 >
                   Not now
