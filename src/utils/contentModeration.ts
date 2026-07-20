@@ -113,13 +113,10 @@ function detectPhoneNumber(text: string): boolean {
   // Normalize the text first (also strip raw text of digits for a simple count)
   const normalized = normalizeText(text);
   const rawDigits = text.replace(/\D/g, '');
-  const normalizedDigits = normalized.replace(/\D/g, '');
 
-  // Any 7+ total digits in either form is highly likely a contact number.
-  // AU mobile = 10 digits, AU landline = 8, short local = 6–8. We use 7 as
-  // the floor to catch anything longer than a price/quantity while keeping
-  // false positives low (prices rarely stack 7+ digits together).
-  if (rawDigits.length >= 7 || normalizedDigits.length >= 7) {
+  // Only count digits from the ORIGINAL text (raw). Counting digits from the
+  // normalized form is unsafe because leet substitutions inject digits.
+  if (rawDigits.length >= 7) {
     return true;
   }
 
