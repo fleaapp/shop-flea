@@ -367,19 +367,18 @@ const Auth = () => {
         }
       }
 
-      // Web / PWA / Android: web OAuth redirect flow.
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'apple',
-        options: {
-          redirectTo: window.location.origin,
-        },
+      // Web / PWA / Android: use Lovable-managed Apple OAuth.
+      const result = await lovable.auth.signInWithOAuth('apple', {
+        redirect_uri: window.location.origin,
       });
 
-      if (error) {
+      if (result.error) {
         localStorage.removeItem('flea_oauth_signup');
-        console.error('Apple sign-in error:', error);
+        console.error('Apple sign-in error:', result.error);
         toast.error('Apple sign-in failed. Please try again.');
+        return;
       }
+      if (result.redirected) return;
     } catch (err) {
       localStorage.removeItem('flea_oauth_signup');
       console.error('Apple sign-in exception:', err);
