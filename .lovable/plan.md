@@ -1,38 +1,40 @@
-## Problem
+## Root cause
 
-The onboarding form data is already saved locally, and the current step is saved to `profiles.stripe_onboarding_step`. But when the app is fully relaunched (native cold-start after backgrounding), the sheet is closed and no one reopens it — the user lands on Profile/Dashboard and has to hunt for the "Set up seller" button to get back in. Radix keeps the sheet open across a normal foreground/background cycle, so this only bites on relaunch.
+In `src/lib/appChrome.ts`, when a Drawer/Sheet/Dialog/AlertDialog opens, `pushOverlayAppChrome()` flips the native status bar into overlay mode:
 
-## Fix (frontend only)
+```ts
+StatusBar.setOverlaysWebView({ overlay: true })
+```
 
-Add a global "resume onboarding" flag stored in localStorage, and mount a single always-listening component that reopens the sheet at the saved step when the flag is set.
+and flips it back to `overlay: false` when the overlay closes. Each toggle resizes the WebView by the status bar height (~54px on iPhone 17 Pro Max), which is exactly the "glitch/jump near the status bar" visible in the recording. The status bar `Style` is also switched (`Light` ↔ `Dark`), causing a second visible flicker.
 
-### 1. Resume flag helpers (`src/lib/sellerOnboardingResume.ts`, new)
+Everything else about the current chrome (footer padding, drawer heights, safe-area handling) is already in the shape the user is happy with — the only offender is the overlay-mode toggle.
 
-- `setOnboardingResume(userId)` — writes `flea_seller_onboarding_resume_${userId} = "1"`.
-- `clearOnboardingResume(userId)` — removes it.
-- `hasOnboardingResume(userId)` — boolean read.
+## Fix
 
-### 2. Wire flag into `SellerOnboardingSheet.tsx`
+Stop toggling `overlaysWebView` when overlays open/close. Keep the WebView layout stable and dim only the status-bar strip's colour instead.
 
-- When the sheet opens and the user advances past step 1 (i.e. `handlePersonalNext`, or reaches step 2/3/4 via the requirements-driven jump), call `setOnboardingResume(user.id)`. This ensures we only try to resume when the user has actually engaged, not for a "Not now" tap on step 1.
-- In `handleVerifiedSuccess` and after a successful `handleContinueToStripe` completion (the paths that already call `clearOnboardingDraft`), also call `clearOnboardingResume`.
-- Route explicit user-close through a wrapper: when `onOpenChange(false)` fires from the "Not now" button, the X close, or backdrop dismiss, clear the resume flag. Backgrounding does not fire `onOpenChange`, so the flag survives a real leave-and-return.
+### Changes to `src/lib/appChrome.ts`
 
-### 3. Global resume mounter (`src/components/SellerOnboardingResumeMount.tsx`, new)
+1. `syncNativeStatusBar`
+   - Remove the `if (isOverlay) { setOverlaysWebView(true) … } else { setOverlaysWebView(false) … }` branch.
+   - Always keep `setOverlaysWebView({ overlay: false })` (call it once on first sync, then skip if unchanged).
+   - Always keep `StatusBar.setStyle({ style: Style.Dark })` — do not switch to `Light` on overlay.
+   - When `isOverlay` is true, set `StatusBar.setBackgroundColor` to a pre-computed dimmed version of the current route top colour (mix route colour with black at ~40% opacity, matching the Radix backdrop `bg-black/40`) so the status-bar strip visually dims in sync with the sheet backdrop — with no resize.
+   - When `isOverlay` is false, restore the plain route colour.
 
-- Consumes `useAuth()`; renders nothing when there is no user.
-- On mount and on Capacitor `App` `resume` / web `visibilitychange` → visible, checks: user present, `hasOnboardingResume(user.id)`, and `profile.stripe_onboarding_complete !== true` (skip if seller already finished). If so, sets local `open = true` and renders `<SellerOnboardingSheet open={open} onOpenChange={...} />` — the sheet's existing effect will rehydrate step from `profiles.stripe_onboarding_step` and draft fields from localStorage.
-- Passes `onComplete` that clears the flag and closes.
-- Mount this component once inside `AuthenticatedProviders` so it's available on every authenticated route without duplicating logic in Profile / CreateListing / SellerDashboard / PaymentMethodsSection.
+2. `applyAppChromeColor`
+   - Stop writing `--app-top-bg` / `documentElement.backgroundColor` / `body.backgroundColor` to the transparent overlay value (`#00000000`) while an overlay is open. Keep them on the route colour so the WebView never repaints its top strip; only the native status-bar background changes.
+   - `app-overlay-chrome` class and `color-scheme` toggling: leave the class in place for any CSS that still targets it, but do not change `colorScheme` (keeps light mode stable).
+   - `meta[name="theme-color"]`: keep pointed at the route colour, not the transparent overlay value, to avoid PWA header flashes on the same code path.
 
-### 4. Avoid double-mounting
+3. `pushOverlayAppChrome` / `restoreRouteAppChrome`
+   - Keep the ref-count logic. It now only drives the status-bar background dim, not an overlay-mode toggle.
 
-The existing per-page `<SellerOnboardingSheet>` instances stay as-is (they handle the "user tapped Set up seller" and "action required" entry points). Because Radix Dialog allows only one modal at a time and the resume mount only opens when the page-owned instance is closed, they will not overlap in practice. If both happen to try to open in the same tick, the page-owned sheet takes precedence — the resume mount reads `hasOnboardingResume` on mount only and won't reopen once the user-triggered sheet takes over and eventually clears the flag on completion.
+Nothing else changes: drawer/sheet/dialog components, footer padding (`pb-8` / `pb-12` etc.), `h-full` on `ListingDetails` drawer, safe-area handling, and `capacitor.config.ts` (`overlaysWebView: false`) all stay exactly as they are today.
 
-### Verification
+## Verification
 
-- Start onboarding, enter details on step 2, background the app, cold-relaunch → sheet reopens on step 2 with fields prefilled.
-- Reach step 4 (bank), background, relaunch → sheet reopens on step 4.
-- Tap "Not now" on step 1 → flag never gets set, sheet stays closed on next launch.
-- Tap X on step 3 → flag cleared, sheet stays closed on next launch.
-- Complete onboarding → flag cleared, no resume on next launch.
+- Native build: open Home → Listing drawer, Wishlist → remove confirmation, Seller Onboarding sheet, Settings → any sheet. Status bar strip dims to a darker tone as the backdrop appears, then restores; no vertical jump, no content shift, no icon-style flicker.
+- Footer buttons on all drawers remain in the position established last iteration (unchanged).
+- PWA/web: unaffected (native-only code paths).
