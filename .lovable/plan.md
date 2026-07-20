@@ -1,41 +1,22 @@
-## Problem
+## Cause
 
-The onboarding sheet already resumes the correct **step** (persisted to `profiles.stripe_onboarding_step`), but every field is reset to empty on open (`src/components/SellerOnboardingSheet.tsx` lines 91–99). So when the user leaves the app to grab their BSB / account number / address / DOB and returns, they land on the right step but with blank inputs — feeling like a full reset. The `BankDetailsStep` internal `bsb` / `account` state has the same problem.
+The screenshot is the **Sheet** primitive (used by `SellerOnboardingSheet`), not the Drawer. In `src/components/ui/sheet.tsx`:
 
-## Fix
+- Line 39: `shadow-lg` on `sheetVariants` — this is the dark drop shadow visible above the sheet's rounded top edge.
+- Line 45: `border-t` on the bottom variant — adds a hairline dark border across the top of the sheet.
 
-Persist in-progress form values locally per user and rehydrate on open. Keep step persistence server-side as it is.
+The earlier fix targeted `[data-vaul-drawer-wrapper]` (Vaul Drawer), which is why the Sheet variants were unaffected.
 
-### Changes (frontend only — `src/components/SellerOnboardingSheet.tsx`)
+## Fix (frontend only)
 
-1. **Draft storage helper** (module-local):
-   - Key: `flea_seller_onboarding_draft_${user.id}`.
-   - Shape: `{ firstName, lastName, dob, dobInput, phone, line1, suburb, state, postcode, bsb, account }`.
-   - Small `loadDraft(userId)` / `saveDraft(userId, partial)` / `clearDraft(userId)` wrappers around `localStorage` with try/catch.
+Edit `src/components/ui/sheet.tsx`:
 
-2. **Rehydrate on open** (replace the reset block at lines 91–99):
-   - Merge order: profile prefill (`first_name`, `last_name`) → draft override.
-   - Only clear/reset when there is no draft.
+1. Remove `shadow-lg` from the shared `sheetVariants` base string.
+2. Remove `border-t` from the `bottom` variant (and `border-b`/`border-l`/`border-r` from the other sides for parity — none of them are meant to render a visible seam).
 
-3. **Autosave on change**:
-   - One `useEffect` watching the personal + address fields → `saveDraft(user.id, { ...fields })` (debounced via microtask is fine; volumes are tiny).
-   - In `BankDetailsStep`, lift initial values from draft and save on change the same way (pass `userId` + `initialDraft` in as props, or read `localStorage` directly inside the component to keep the diff small).
-
-4. **Clear draft** in these terminal paths:
-   - Successful completion of `BankDetailsStep` (after the external account is attached and `onDone` fires).
-   - When the sheet detects the account is fully verified (existing success path that closes the sheet).
-   - On explicit "start over" / account reset flows if any exist (none identified; skip if not present).
-
-5. **Do not** persist sensitive full account numbers longer than needed:
-   - Only keep `bsb` + `account` in localStorage while the sheet is mid-flow; wipe on completion (step 4 done) and on successful verification. This matches how a user expects "resume where I left off" without leaving card numbers behind indefinitely.
-
-### Out of scope
-
-- No backend/schema changes. `stripe_onboarding_step` already covers server-side resume.
-- No changes to ID verification step (photos are captured live and shouldn't be cached).
-- No changes to Stripe edge functions.
+That's the entire change. No other component consumes these classes for structural reasons.
 
 ### Verification
 
-- Open sheet, fill step 2 partially, background the app, reopen → fields still populated, correct step.
-- Complete flow → reopen sheet (e.g. for re-verification) → starts clean.
+- Reopen the Seller Onboarding sheet on native — no dark line/shadow above the rounded top.
+- Spot-check other bottom sheets (checkout, sales details, refund) to confirm they look clean and haven't lost anything intentional.
