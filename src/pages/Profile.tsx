@@ -279,7 +279,11 @@ const Profile = () => {
           viewMode === 'single' ? (
             <div className="flex gap-4 max-[430px]:gap-3 max-[375px]:gap-2.5">
               <div className="flex-shrink-0 w-[calc(50vw-128px)] max-[430px]:w-[calc(50vw-120px)] max-[393px]:w-[calc(50vw-104px)] max-[375px]:w-[calc(50vw-88px)]" />
-              {displayListings.map((listing, index) => (
+              {displayListings.map((listing, index) => {
+                const rawId = (listing as any).source_listing_id || listing.id;
+                const realId = typeof rawId === 'string' && rawId.includes('::') ? rawId.split('::')[0] : rawId;
+
+                return (
                 <div key={`${listing.id}-${index}`} className="relative w-64 max-[430px]:w-60 max-[393px]:w-52 max-[375px]:w-44 flex-shrink-0 overflow-hidden rounded-3xl max-[375px]:rounded-2xl bg-card p-2.5 max-[430px]:p-2 max-[375px]:p-1.5 card-shadow snap-center">
                   {activeTab === 'listings' && (
                     <button 
@@ -294,7 +298,7 @@ const Profile = () => {
                   )}
                   <div 
                     className="relative aspect-[3/4] max-[430px]:aspect-[3/4] max-[393px]:aspect-[4/5] max-[375px]:aspect-[1/1] w-full overflow-hidden rounded-2xl max-[375px]:rounded-xl cursor-pointer"
-                    onClick={() => navigate(`/listing/${(listing as any).source_listing_id || listing.id}`)}
+                    onClick={() => navigate(`/listing/${realId}`, activeTab === 'sold' ? { state: { isSold: true, orderId: (listing as any).order_id } } : undefined)}
                   >
                     <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
                     {activeTab === 'sold' && getOrderStatusButton((listing as any).source_listing_id || listing.id, (listing as any).order_id)}
@@ -319,7 +323,8 @@ const Profile = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
               <div className="flex-shrink-0 w-[calc(50vw-128px)] max-[430px]:w-[calc(50vw-120px)] max-[393px]:w-[calc(50vw-104px)] max-[375px]:w-[calc(50vw-88px)]" />
             </div>
           ) : (

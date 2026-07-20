@@ -72,6 +72,11 @@ interface SellerProfile {
   country_code: string | null;
 }
 
+const TERMINAL_LISTING_STATUSES = new Set(['sold', 'refunded', 'delivered', 'completed']);
+
+const isTerminalListingStatus = (status?: string | null) =>
+  TERMINAL_LISTING_STATUSES.has((status || '').toLowerCase());
+
 const ListingDetails = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -89,9 +94,9 @@ const ListingDetails = () => {
   const [listingStatus, setListingStatus] = useState<string>(location.state?.isRemoved ? 'removed' : 'active');
   const [showRemoveFromBothDialog, setShowRemoveFromBothDialog] = useState(false);
   
-  // Check if listing is sold - check both navigation state AND database status
-  const isSold = location.state?.isSold || listingStatus === 'sold';
-  const isRemoved = location.state?.isRemoved || listingStatus === 'removed' || listingStatus === 'deleted' || (listingStatus !== 'active' && listingStatus !== 'sold');
+  // Check if listing is sold/completed - check both navigation state AND database status
+  const isSoldFromRouteOrStatus = Boolean(location.state?.isSold) || isTerminalListingStatus(listingStatus);
+  const isRemoved = location.state?.isRemoved || listingStatus === 'removed' || listingStatus === 'deleted' || (listingStatus !== 'active' && !isTerminalListingStatus(listingStatus));
   // Check if we came from the favorites/wishlist page
   const fromWishlist = location.state?.fromWishlist || false;
 
@@ -117,6 +122,10 @@ const ListingDetails = () => {
 
   // Fetch seller orders for own sold listings
   const { sellerOrders, sellerOrderGroups, markAsShipped } = useOrders();
+  const hasSellerOrderForListing = Boolean(
+    listing && sellerOrders.some((order) => order.listing_id === listing.id)
+  );
+  const isSold = isSoldFromRouteOrStatus || hasSellerOrderForListing;
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -259,7 +268,7 @@ const ListingDetails = () => {
         });
 
       // Run access check in background for non-removed listings
-      const isRemovedListing = status !== 'active' && status !== 'sold';
+      const isRemovedListing = status !== 'active' && !isTerminalListingStatus(status);
       if (!isRemovedListing) {
         canOpenListing(listingData.id).then((accessible) => {
           if (!accessible) {
@@ -732,8 +741,9 @@ const ListingDetails = () => {
               isSold ? (
                 // Sold listing owner footer
                 (() => {
-                  const order = sellerOrders.find(o => o.listing_id === listing.id);
-                  const orderGroup = sellerOrderGroups.find(g => g.orders.some(o => o.listing_id === listing.id));
+                  const selectedOrderId = location.state?.orderId as string | undefined;
+                  const order = sellerOrders.find(o => selectedOrderId ? o.id === selectedOrderId : o.listing_id === listing.id);
+                  const orderGroup = sellerOrderGroups.find(g => g.orders.some(o => selectedOrderId ? o.id === selectedOrderId : o.listing_id === listing.id));
                   // Sold elsewhere — no order exists
                   if (!order) {
                     return (
@@ -779,7 +789,7 @@ const ListingDetails = () => {
                               }}
                               className="h-14 rounded-2xl border-2 border-muted text-sm font-medium px-4 bg-muted text-muted-foreground w-44 gap-1"
                             >
-                              {order.status === 'shipped' ? '✈️ Shipped' : '🚚 Delivered'}
+                              {order.status === 'refunded' || order.refunded_at ? '↩️ Refunded' : order.status === 'shipped' ? '✈️ Shipped' : '🚚 Delivered'}
                             </Button>
                           );
                         })()}

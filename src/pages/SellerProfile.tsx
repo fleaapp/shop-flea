@@ -49,7 +49,11 @@ interface DbListing {
   status: string;
   user_id: string;
   created_at: string;
+  source_listing_id?: string;
+  order_id?: string;
 }
+
+const HIDDEN_FROM_PROFILE_STATUSES = new Set(['hidden', 'removed', 'archived', 'blocked', 'deleted']);
 
 const SellerProfile = () => {
   const navigate = useNavigate();
@@ -169,12 +173,16 @@ const SellerProfile = () => {
         .eq('user_id', sellerId);
 
       if (soldData) {
-        const listingMap = new Map(soldData.map(l => [l.id, l]));
+        const listingMap = new Map(
+          soldData
+            .filter(l => !HIDDEN_FROM_PROFILE_STATUSES.has((l.status || '').toLowerCase()))
+            .map(l => [l.id, l])
+        );
         const orderedSold = orders
           .map(order => {
             const listing = listingMap.get(order.listing_id);
             if (!listing) return null;
-            return { ...listing, id: `${listing.id}::${order.id}`, created_at: order.created_at };
+            return { ...listing, id: `${listing.id}::${order.id}`, source_listing_id: listing.id, order_id: order.id, created_at: order.created_at };
           })
           .filter((l): l is DbListing => !!l);
         setSoldListings(orderedSold);
@@ -390,12 +398,13 @@ const SellerProfile = () => {
             <div className="flex gap-4 max-[430px]:gap-3 max-[375px]:gap-2.5">
               <div className="flex-shrink-0 w-[calc(50vw-128px)] max-[430px]:w-[calc(50vw-120px)] max-[393px]:w-[calc(50vw-104px)] max-[375px]:w-[calc(50vw-88px)]" />
               {displayListings.map((listing) => {
-                const realId = listing.id.includes('::') ? listing.id.split('::')[0] : listing.id;
+                const rawId = listing.source_listing_id || listing.id;
+                const realId = rawId.includes('::') ? rawId.split('::')[0] : rawId;
                 return (
                 <div key={listing.id} className="relative w-64 max-[430px]:w-60 max-[393px]:w-52 max-[375px]:w-44 flex-shrink-0 overflow-hidden rounded-3xl max-[375px]:rounded-2xl bg-card p-2.5 max-[430px]:p-2 max-[375px]:p-1.5 card-shadow snap-center">
                   <div 
                     className="aspect-[3/4] max-[430px]:aspect-[3/4] max-[393px]:aspect-[4/5] max-[375px]:aspect-[1/1] w-full overflow-hidden rounded-2xl max-[375px]:rounded-xl cursor-pointer"
-                    onClick={() => navigate(`/listing/${realId}`)}
+                    onClick={() => navigate(`/listing/${realId}`, activeTab === 'sold' ? { state: { isSold: true, orderId: listing.order_id } } : undefined)}
                   >
                     <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
                   </div>
