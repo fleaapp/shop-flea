@@ -49,6 +49,30 @@ async function notify(userId: string, type: string, title: string, message: stri
   }
 }
 
+// Returns true if a notification of `type` for `userId` was created within the
+// last `hours` hours. Used to rate-limit chatty webhook events (e.g. Stripe's
+// account.updated fires several times in quick succession during onboarding).
+async function wasNotifiedRecently(userId: string, type: string, hours: number): Promise<boolean> {
+  try {
+    const since = new Date(Date.now() - hours * 3600 * 1000).toISOString();
+    const { data, error } = await serviceClient
+      .from("notifications")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("type", type)
+      .gte("created_at", since)
+      .limit(1);
+    if (error) {
+      console.warn("[stripe-webhook] wasNotifiedRecently query failed", error);
+      return false;
+    }
+    return (data?.length ?? 0) > 0;
+  } catch (e) {
+    console.warn("[stripe-webhook] wasNotifiedRecently failed", e);
+    return false;
+  }
+}
+
 async function logEvent(event: Stripe.Event, fields: {
   order_id?: string | null;
   buyer_id?: string | null;
@@ -248,19 +272,23 @@ serve(async (req) => {
               .update({ stripe_onboarding_complete: fullyVerified })
               .eq("user_id", profile.user_id);
             if (fullyVerified && !wasVerified) {
-              await notify(
-                profile.user_id,
-                "seller_verified",
-                "You're verified.",
-                "✅ Your seller account is fully verified. You can now receive payouts.",
-              );
+              if (!(await wasNotifiedRecently(profile.user_id, "seller_verified", 24))) {
+                await notify(
+                  profile.user_id,
+                  "seller_verified",
+                  "You're verified.",
+                  "✅ Your seller account is fully verified. You can now receive payouts.",
+                );
+              }
             } else if (!fullyVerified && acct.requirements?.disabled_reason) {
-              await notify(
-                profile.user_id,
-                "payment_action_required",
-                "Seller account needs attention.",
-                "⚠️ Your payouts are paused. Open your seller dashboard to complete verification.",
-              );
+              if (!(await wasNotifiedRecently(profile.user_id, "payment_action_required", 24))) {
+                await notify(
+                  profile.user_id,
+                  "payment_action_required",
+                  "Seller account needs attention.",
+                  "⚠️ Your payouts are paused. Open your seller dashboard to complete verification.",
+                );
+              }
             }
           }
         } catch (e) {

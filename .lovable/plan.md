@@ -1,35 +1,27 @@
-## Why native Apple Sign-In stopped working
+## Diagnosis
 
-Before the Cloud migration, Apple Sign-In was configured on the old (external) Supabase project as **BYOC (Bring Your Own Credentials)**, with your iOS bundle ID `com.finditonflea.app` registered as an accepted `client_id` on the Apple provider. That is why the native sheet worked: the identity token it returns has `aud = com.finditonflea.app`, and Supabase accepted it.
+Sarah has 3 identical `payment_action_required` notifications (13:40:41, 13:40:55, 13:41:37 — within ~1 min). They come from `supabase/functions/stripe-webhook/index.ts` in the `account.updated` handler (lines 257–263): every time Stripe fires an `account.updated` webhook while the seller isn't fully verified AND has a `disabled_reason`, it inserts a new notification.
 
-After migrating to Lovable Cloud, Apple was re-enabled using **managed Apple** (the "Use Lovable's credentials" path). Managed Apple is configured with Lovable's own Services ID as the accepted `client_id` — it does not include your iOS bundle ID as an accepted audience. So the native sheet still gets a valid token from Apple, but Cloud's Apple provider rejects it (`missing OAuth secret` / audience mismatch), which is why sign-in only started failing after the cutover.
+During Stripe Connect onboarding, `account.updated` fires many times in rapid succession (each requirement collected triggers an update), so sellers get several duplicate "Seller account needs attention" alerts.
 
-Managed Apple currently has no knob to add an additional accepted audience, so the fix is to restore the same BYOC setup you had before, this time on Cloud.
+Memory already promises this notification is "rate-limited to 24h" — but that rate limit was never actually implemented in the webhook.
 
-## Plan: restore BYOC Apple Sign-In on Cloud (native-only)
+## Fix
 
-### 1. Reuse or recreate Apple credentials
-Since this worked before, the Apple Developer artefacts likely still exist. Confirm or regenerate:
-- **App ID** `com.finditonflea.app` with "Sign In with Apple" capability enabled (this is the audience the native sheet uses).
-- **Sign In with Apple key** (.p8). If you still have the old .p8, reuse it. If not, create a new one and note the **Key ID**.
-- **Team ID** (10-char, top-right of Apple Developer console).
+In `supabase/functions/stripe-webhook/index.ts` `account.updated` handler, before inserting a `payment_action_required` notification, check whether one already exists for this user within the last 24 hours. If yes, skip both the DB insert and the push.
 
-Because you're native-only now, you do **not** need a Services ID or any web return URL configured on Apple's side.
+Concretely:
 
-### 2. Configure BYOC Apple in Cloud
-In the Cloud backend → Users → Auth Settings → Sign In Methods → Apple:
-- Switch from "Use Lovable's credentials" to "Use your own credentials".
-- **Client ID:** `com.finditonflea.app` (bundle ID, not a Services ID).
-- **Client Secret:** generate the JWT in the same panel using Team ID, Key ID, Client ID = `com.finditonflea.app`, and the .p8 contents. Valid 6 months — set a calendar reminder to regenerate.
+1. Query `notifications` for the most recent row with `user_id = profile.user_id` and `type = 'payment_action_required'`.
+2. If `created_at` is within the last 24h, skip the `notify(...)` call entirely.
+3. Otherwise, proceed as today.
 
-<presentation-actions><presentation-open-backend>View Backend</presentation-open-backend></presentation-actions>
+Also apply the same 24h dedupe to the `seller_verified` success notification in the same handler so a flapping account state can't spam that either.
 
-### 3. Strip the now-dead web fallback in `src/pages/Auth.tsx`
-`handleAppleSignIn` currently branches to `lovable.auth.signInWithOAuth('apple', ...)` for web/PWA. Since you ship native-only and BYOC Apple isn't wired up for a web return URL, that branch will only ever produce confusing errors. Replace it with a short toast telling non-native users Apple Sign-In is only available in the iOS app, and keep the existing `nativeAppleSignIn()` path untouched for iOS.
+Cleanup for Sarah's existing duplicates: delete the 2 older duplicate `payment_action_required` notifications for her user (`6b0dd9d6-dee9-4f6d-8d4f-d3c191404c0b`) via a one-off migration so she immediately sees only 1.
 
-### 4. Verify
-After you save the BYOC config, do a native build and sign in with Apple. The existing `supabase.auth.signInWithIdToken({ provider: 'apple', token, nonce })` call in `src/lib/appleSignIn.ts` will succeed because the token's `aud` now matches the configured `client_id`. No code changes are needed in `appleSignIn.ts`.
+## Technical details
 
-### What I will do vs. what only you can do
-- **You:** steps 1 and 2 in the Apple Developer console and the Cloud backend UI — I can't create Apple keys or edit provider secrets for you.
-- **Me (after you approve):** step 3 (trim the web branch in `Auth.tsx`) so users on non-native surfaces get a clear message instead of a raw error.
+- File: `supabase/functions/stripe-webhook/index.ts` — add a small `wasNotifiedRecently(userId, type, hours)` helper using `serviceClient.from('notifications').select('created_at').eq(...).order('created_at', {ascending:false}).limit(1)` and gate the two `notify()` calls in the `account.updated` case.
+- Migration: `DELETE FROM public.notifications WHERE user_id = '6b0dd9d6-dee9-4f6d-8d4f-d3c191404c0b' AND type = 'payment_action_required' AND id <> '72e28a2c-d283-488e-bc2f-53fd79c01993';` (keep the newest one from 13:41:37).
+- No client changes. No schema changes. Existing `Notifications.tsx` behavior unchanged.
