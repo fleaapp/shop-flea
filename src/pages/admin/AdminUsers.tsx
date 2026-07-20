@@ -19,6 +19,7 @@ import { AdminEmptyState } from '@/components/admin/shell/AdminEmptyState';
 
 const fmtCurrency = (n: number) => `$${n.toFixed(2)}`;
 const initials = (s?: string | null) => (s ?? '?').replace('@', '').slice(0, 2).toUpperCase();
+const fmtDateTime = (s?: string | null) => s ? format(new Date(s), 'MMM d, yyyy h:mm a') : '—';
 
 function riskTone(score: number): 'success' | 'warning' | 'danger' {
   if (score >= 70) return 'danger';
@@ -132,7 +133,7 @@ export default function AdminUsers() {
                     {u.listings_total} listings · {u.orders_as_seller} sales · {fmtCurrency(u.seller_volume + u.buyer_volume)}
                   </p>
                   <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                    Joined {u.created_at ? format(new Date(u.created_at), 'MMM d, yyyy') : '—'} · Active {u.last_sign_in_at ? format(new Date(u.last_sign_in_at), 'MMM d, yyyy') : '—'}
+                    Joined {fmtDateTime(u.created_at)} · Active {fmtDateTime(u.last_sign_in_at)}
                   </p>
                 </div>
               </button>
@@ -179,8 +180,8 @@ export default function AdminUsers() {
                 <Stat label="Refunds" value={String(selected.refunds_count)} tone={selected.refunds_count > 0 ? 'risk' : undefined} />
                 <Stat label="Reports" value={String(selected.reports_against)} tone={selected.reports_against > 0 ? 'risk' : undefined} />
                 <Stat label="Strikes" value={String(selected.report_strike_count)} tone={selected.report_strike_count > 0 ? 'risk' : undefined} />
-                <Stat label="Last active" value={selected.last_sign_in_at ? format(new Date(selected.last_sign_in_at), 'MMM d, yyyy') : '—'} />
-                <Stat label="Joined" value={selected.created_at ? format(new Date(selected.created_at), 'MMM d, yyyy') : '—'} />
+                <Stat label="Last active" value={fmtDateTime(selected.last_sign_in_at)} />
+                <Stat label="Joined" value={fmtDateTime(selected.created_at)} />
               </div>
 
               <div className="px-5 pb-4">
