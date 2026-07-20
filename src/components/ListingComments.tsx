@@ -255,47 +255,11 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
 
       if (error) throw error;
 
-      // Send push notifications for comment/reply (fire-and-forget)
-      const pushPromises: Promise<void>[] = [];
+      // Push notifications for comments/replies are handled server-side by the
+      // notifications DB trigger (see public.trigger_push_notification). No
+      // client-side push call needed — it would 403 targeting another user.
 
-      // Notify listing owner about new comment (if not the commenter)
-      if (sellerId !== user.id) {
-        pushPromises.push(
-          sendPushNotification(sellerId, {
-            type: parentId ? 'new_comment' : 'new_comment',
-            title: 'New Comment',
-            message: `${profile?.username || '@user'} commented on your listing.`,
-            related_listing_id: listingId,
-          })
-        );
-      }
-
-      // Notify parent comment author about reply (if different from listing owner and commenter)
-      if (parentId) {
-        const allCachedComments = queryClient.getQueryData<Comment[]>(['listing-comments', listingId]);
-        let parentAuthorId: string | undefined;
-        if (allCachedComments) {
-          for (const c of allCachedComments) {
-            if (c.id === parentId) { parentAuthorId = c.user_id; break; }
-            const reply = c.replies?.find(r => r.id === parentId);
-            if (reply) { parentAuthorId = reply.user_id; break; }
-          }
-        }
-        if (parentAuthorId && parentAuthorId !== user.id && parentAuthorId !== sellerId) {
-          pushPromises.push(
-            sendPushNotification(parentAuthorId, {
-              type: 'comment_reply',
-              title: 'Reply',
-              message: `${profile?.username || '@user'} replied to your comment.`,
-              related_listing_id: listingId,
-            })
-          );
-        }
-      }
-
-      Promise.all(pushPromises).catch(() => {});
-
-      // Handle @mentions
+      // Fire-and-forget @mention notifications so post feels instant.
       const mentionHandles = Array.from(
         new Set(
           (trimmedContent.match(/@[\w]+/g) ?? [])
@@ -305,16 +269,12 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
       ).slice(0, 10);
 
       if (mentionHandles.length > 0) {
-        try {
-          const { error: mentionError } = await invokeCloudFunction('comment-mentions', {
-            listingId,
-            content: trimmedContent,
-          });
-
-          if (mentionError) throw mentionError;
-        } catch (notifError) {
+        void invokeCloudFunction('comment-mentions', {
+          listingId,
+          content: trimmedContent,
+        }).catch((notifError) => {
           console.error('Failed to send mention notifications:', notifError);
-        }
+        });
       }
     },
     onSuccess: () => {

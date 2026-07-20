@@ -104,35 +104,35 @@ function stripAllNonAlphanumeric(text: string): string {
 
 // Detect phone numbers with various formats
 function detectPhoneNumber(text: string): boolean {
-  // Normalize the text first
+  // Normalize the text first (also strip raw text of digits for a simple count)
   const normalized = normalizeText(text);
-  
-  // Remove all non-digit characters for phone detection
-  const digitsOnly = normalized.replace(/[^0-9]/g, '');
-  
-  // Check for sequences of 8+ digits (phone numbers)
-  if (digitsOnly.length >= 8) {
-    // Check if there's a sequence of 8+ digits that could be a phone
-    const phonePatterns = [
-      /\d{8,}/,  // 8+ consecutive digits
-      /\d{3,4}[\s\-._]*\d{3,4}[\s\-._]*\d{3,4}/, // Formatted phone
-      /\+?\d{1,3}[\s\-._]*\d{3,4}[\s\-._]*\d{3,4}[\s\-._]*\d{3,4}/, // International
-      /04\d{2}[\s\-._]*\d{3}[\s\-._]*\d{3}/, // Australian mobile
-      /\(\d{2,4}\)[\s\-._]*\d{3,4}[\s\-._]*\d{3,4}/, // With area code
-    ];
-    
-    for (const pattern of phonePatterns) {
-      if (pattern.test(normalized)) {
-        return true;
-      }
-    }
-    
-    // Check original text too for spaced numbers
-    if (/\d[\s._-]*\d[\s._-]*\d[\s._-]*\d[\s._-]*\d[\s._-]*\d[\s._-]*\d[\s._-]*\d/.test(text)) {
+  const rawDigits = text.replace(/\D/g, '');
+  const normalizedDigits = normalized.replace(/\D/g, '');
+
+  // Any 7+ total digits in either form is highly likely a contact number.
+  // AU mobile = 10 digits, AU landline = 8, short local = 6–8. We use 7 as
+  // the floor to catch anything longer than a price/quantity while keeping
+  // false positives low (prices rarely stack 7+ digits together).
+  if (rawDigits.length >= 7 || normalizedDigits.length >= 7) {
+    return true;
+  }
+
+  // Formatted patterns (kept for completeness / short-circuit clarity).
+  const phonePatterns = [
+    /\d{7,}/,                                              // 7+ consecutive digits
+    /\d{3,4}[\s\-._]*\d{3,4}[\s\-._]*\d{3,4}/,             // 3-3-4 / 4-3-4 formatted
+    /\+?\d{1,3}[\s\-._]*\d{3,4}[\s\-._]*\d{3,4}[\s\-._]*\d{3,4}/, // International
+    /0[2-8](?:[\s\-._]?\d){7,9}/,                          // AU mobile/landline w/ any separators
+    /\(\d{2,4}\)[\s\-._]*\d{3,4}[\s\-._]*\d{3,4}/,         // With area code
+    /(?:\d[\s\-._]*){6,}\d/,                               // 7+ digits with any separators between
+  ];
+
+  for (const pattern of phonePatterns) {
+    if (pattern.test(normalized) || pattern.test(text)) {
       return true;
     }
   }
-  
+
   return false;
 }
 
