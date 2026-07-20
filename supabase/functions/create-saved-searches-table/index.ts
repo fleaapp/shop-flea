@@ -11,7 +11,7 @@ serve(async (req) => {
   let sql: any;
   try {
     const dbUrl = Deno.env.get("SUPABASE_DB_URL") ?? "";
-    if (!dbUrl) throw new Error("EXTERNAL_SUPABASE_DB_URL missing");
+    if (!dbUrl) throw new Error("SUPABASE_DB_URL missing");
     console.log("[create-saved-searches-table] connecting…");
     sql = postgres(dbUrl, { max: 1, prepare: false, ssl: "require", connect_timeout: 15 });
     console.log("[create-saved-searches-table] running DDL…");
