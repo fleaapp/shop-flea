@@ -1,33 +1,26 @@
 ## Problem
 
-Last change added `env(safe-area-inset-bottom)` on top of the existing bottom padding in drawers/sheets. On iOS the inset is ~34px, so `pb-[calc(2rem+env(safe-area-inset-bottom))]` renders as ~66px — buttons now float too high above the home indicator. Original project convention (per memory) was a flat `pb-8`/`pb-10` with no safe-area addition, and that's what the user wants back.
+Two issues on the listing detail sheet:
+
+1. **Gap under the footer buttons.** The sticky footer uses `pb-8` (32px). With `overlaysWebView=false` the webview already stops above the home indicator, so `pb-8` renders as a visible empty band of background below the ❌ / 💌 / 🛒 buttons.
+2. **Blue outline across the top of the sheet.** Vaul's `DrawerContent` is focusable and receives auto-focus on open. On iOS WKWebView that draws the default focus ring — the "weird blue outline" visible along the top edge of the knit-jumper screenshot. It only appears on some opens because it depends on which element ends up focused after the drawer mounts.
 
 ## Fix
 
-Revert the padding in every file touched in the previous safe-area pass back to the original flat values. Do **not** touch any other logic.
+**1. Tighten the listing footer padding.**
+- `src/pages/ListingDetails.tsx` line 715: `pb-8` → `pb-3` on `[data-listing-footer]`.
+- `src/index.css`: change the `html.is-installed [data-listing-footer]` override from `padding-bottom: 2rem` → `padding-bottom: 0.75rem` to match.
 
-### Files & exact revert
+No other footer/drawer padding is touched — this is scoped to the listing sheet only, which is the one the user screenshotted.
 
-1. `src/components/ui/drawer.tsx` — `DrawerFooter`:
-   - `pb-[calc(1rem+env(safe-area-inset-bottom))]` → `pb-4` (matches memory: `px-4 pt-3 pb-4`)
+**2. Kill the blue focus outline on Drawer/Dialog content.**
+- `src/components/ui/drawer.tsx`: on `DrawerPrimitive.Content`, add `onOpenAutoFocus={(e) => e.preventDefault()}` and `className` gains `focus:outline-none focus-visible:outline-none outline-none`.
+- `src/components/ui/dialog.tsx`: append `focus:outline-none focus-visible:outline-none outline-none` to the existing `DialogContent` className (auto-focus prevention is already in place there).
 
-2. `src/pages/ListingDetails.tsx` — `[data-listing-footer]`: revert to prior `pb-8` (or whatever it had before — will check file before edit).
+This removes the WKWebView focus ring on the sheet container without touching any inner focusable controls (inputs, buttons keep their own focus styles).
 
-3. `src/components/checkout/CardDetailsSheet.tsx`:
-   - `pb-[calc(2rem+env(safe-area-inset-bottom))]` → `pb-8`
+## Not touching
 
-4. `src/components/checkout/WalletPaySheet.tsx`:
-   - `pb-[calc(2rem+env(safe-area-inset-bottom))]` → `pb-8`
-
-5. `src/components/ChangePasswordSheet.tsx`, `ChangeEmailSheet.tsx`, `ShippingSettingsSheet.tsx`, `NewChatForm.tsx`, `WriteReviewDrawer.tsx`, `FilterSheet.tsx`:
-   - Same revert: strip the `+env(safe-area-inset-bottom)` addition, restore original flat `pb-8` / `pb-4` value that was there before the safe-area pass.
-
-6. `src/index.css` — remove the PWA/Capacitor `env(safe-area-inset-bottom)` overrides added in the same pass; leave the rest of the file untouched.
-
-### Why this is correct
-
-The vaul drawer sits above the home indicator already; adding safe-area inset double-counts it. Original `pb-8` (32px) sat visually right for the last year of the project and matches every other footer.
-
-### Not touching
-
-No changes to overlay chrome, scroll-restore, or any business logic.
+- No other drawer/sheet padding changes.
+- No changes to overlay chrome, scroll restoration, or any business logic.
+- No changes to Radix focus behavior beyond preventing the initial auto-focus on the drawer shell itself.
