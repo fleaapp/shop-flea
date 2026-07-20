@@ -182,7 +182,7 @@ function WriteReviewDrawer({
             <p className="text-muted-foreground mt-1">{displayUsername}</p>
           </DrawerHeader>
 
-          <div className="px-4 pb-[calc(2rem+env(safe-area-inset-bottom))] space-y-6">
+          <div className="px-4 pb-8 space-y-6">
             {/* Star Rating */}
             <div className="rounded-xl bg-card p-6 card-shadow">
               <p className="text-center font-medium text-foreground mb-4">
