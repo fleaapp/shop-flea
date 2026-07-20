@@ -1493,6 +1493,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      seed_push_vault_key: { Args: { p_key: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
