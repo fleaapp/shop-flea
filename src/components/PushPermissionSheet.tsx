@@ -67,7 +67,7 @@ const PushPermissionSheet = ({ open, onOpenChange, source }: PushPermissionSheet
       <SheetContent
         side="bottom"
         overlayClassName="data-[state=closed]:animate-none"
-        className="rounded-t-3xl border-t-[3px] border-charcoal p-0 flex flex-col bg-background"
+        className="rounded-t-3xl border-0 p-0 flex flex-col bg-background"
       >
         <div className="px-6 pt-8 pb-8 flex flex-col items-center text-center gap-4">
           <div className="text-5xl" aria-hidden>🔔</div>

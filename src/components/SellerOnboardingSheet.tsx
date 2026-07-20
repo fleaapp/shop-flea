@@ -315,7 +315,7 @@ const SellerOnboardingSheet = ({
       <SheetContent
         side="bottom"
         overlayClassName="data-[state=closed]:animate-none"
-        className="rounded-t-3xl border-t-[3px] border-charcoal p-0 flex flex-col max-h-[92svh] bg-background"
+        className="rounded-t-3xl border-0 p-0 flex flex-col max-h-[92svh] bg-background"
       >
         <div className="px-5 pt-7 pb-8 flex flex-col items-center text-center gap-5 overflow-x-hidden overflow-y-auto">
           {needsIdVerification ? (
