@@ -48,6 +48,31 @@ const TOTAL_STEPS = 4;
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA'];
 const secondaryActionClass = "w-auto h-10 px-4 rounded-full bg-transparent text-muted-foreground hover:bg-transparent hover:text-muted-foreground focus:bg-transparent focus:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:bg-transparent active:bg-muted/60 active:text-foreground";
 
+// Local draft persistence so users can leave the app (e.g. to grab their BSB /
+// account number) and return without losing what they've entered.
+const draftKey = (userId?: string | null) =>
+  userId ? `flea_seller_onboarding_draft_${userId}` : null;
+export type OnboardingDraft = Partial<{
+  firstName: string; lastName: string; dob: string; dobInput: string; phone: string;
+  line1: string; suburb: string; state: string; postcode: string;
+  bsb: string; account: string;
+}>;
+const loadDraft = (userId?: string | null): OnboardingDraft => {
+  const k = draftKey(userId); if (!k) return {};
+  try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch { return {}; }
+};
+const saveDraft = (userId: string | null | undefined, patch: OnboardingDraft) => {
+  const k = draftKey(userId); if (!k) return;
+  try {
+    const cur = loadDraft(userId);
+    localStorage.setItem(k, JSON.stringify({ ...cur, ...patch }));
+  } catch { /* non-blocking */ }
+};
+const clearOnboardingDraft = (userId?: string | null) => {
+  const k = draftKey(userId); if (!k) return;
+  try { localStorage.removeItem(k); } catch { /* non-blocking */ }
+};
+
 const SellerOnboardingSheet = ({
   open,
   onOpenChange,
@@ -64,6 +89,7 @@ const SellerOnboardingSheet = ({
   const [showPushSheet, setShowPushSheet] = useState(false);
 
   const handleVerifiedSuccess = (result?: { setupCompleted?: boolean }) => {
+    clearOnboardingDraft(user?.id);
     onOpenChange(false);
     shouldShowPushPromptAsync(user?.id, 'seller_verified').then((show) => {
       if (show) setTimeout(() => setShowPushSheet(true), 300);
@@ -81,23 +107,32 @@ const SellerOnboardingSheet = ({
   const [state, setState] = useState('');
   const [postcode, setPostcode] = useState('');
 
-  // Reset on open. Prefill from profile if available and resume on saved step.
+  // Reset on open. Prefill from profile, then override with any locally-saved
+  // draft so users who left the app mid-flow (e.g. to grab their BSB) come
+  // back to exactly what they had entered.
   useEffect(() => {
     if (!open) return;
     const p: any = profile || {};
     const savedStep = Number(p.stripe_onboarding_step);
     const resumeStep = savedStep >= 1 && savedStep <= 4 ? (savedStep as 1 | 2 | 3 | 4) : 1;
     setStep(resumeStep);
-    setFirstName(p.first_name || '');
-    setLastName(p.last_name || '');
-    setDob('');
-    setDobInput('');
-    setPhone('');
-    setLine1('');
-    setSuburb('');
-    setState('');
-    setPostcode('');
-  }, [open, profile]);
+    const d = loadDraft(user?.id);
+    setFirstName(d.firstName ?? p.first_name ?? '');
+    setLastName(d.lastName ?? p.last_name ?? '');
+    setDob(d.dob ?? '');
+    setDobInput(d.dobInput ?? '');
+    setPhone(d.phone ?? '');
+    setLine1(d.line1 ?? '');
+    setSuburb(d.suburb ?? '');
+    setState(d.state ?? '');
+    setPostcode(d.postcode ?? '');
+  }, [open, profile, user?.id]);
+
+  // Autosave form drafts locally while the sheet is open.
+  useEffect(() => {
+    if (!open || !user?.id) return;
+    saveDraft(user.id, { firstName, lastName, dob, dobInput, phone, line1, suburb, state, postcode });
+  }, [open, user?.id, firstName, lastName, dob, dobInput, phone, line1, suburb, state, postcode]);
 
   // When re-opened for an existing account that Stripe has flagged for more info
   // (charges/payouts disabled or requirements past-due), probe live status and
@@ -134,6 +169,7 @@ const SellerOnboardingSheet = ({
     })();
     return () => { cancelled = true; };
   }, [open, stripeActionRequired, needsIdVerification, profile]);
+
 
 
   // Persist step to profile whenever it changes so the user resumes here if
@@ -498,10 +534,16 @@ interface BankDetailsStepProps {
 }
 
 const BankDetailsStep = ({ firstName, lastName, onBack, onDone }: BankDetailsStepProps) => {
-  const { profile, refreshProfile } = useAuth() as any;
-  const [bsb, setBsb] = useState('');
-  const [account, setAccount] = useState('');
+  const { user, profile, refreshProfile } = useAuth() as any;
+  const initialDraft = loadDraft(user?.id);
+  const [bsb, setBsb] = useState<string>(initialDraft.bsb || '');
+  const [account, setAccount] = useState<string>(initialDraft.account || '');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    saveDraft(user.id, { bsb, account });
+  }, [user?.id, bsb, account]);
 
   const formatBsb = (v: string) => {
     const d = v.replace(/\D/g, '').slice(0, 6);
