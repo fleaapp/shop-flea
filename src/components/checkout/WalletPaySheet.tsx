@@ -54,7 +54,7 @@ const WalletInner = ({
   };
 
   return (
-    <div className="px-4 pt-2 pb-[calc(2rem+env(safe-area-inset-bottom))] space-y-4 min-h-[220px]">
+    <div className="px-4 pt-2 pb-8 space-y-4 min-h-[220px]">
       <h2 className="text-xl font-bold text-foreground">Confirm payment</h2>
 
       {hasWallet === false && (
