@@ -179,11 +179,13 @@ function detectSocialMedia(text: string, options?: ModerationOptions): boolean {
   // but requires non-alphanumeric boundaries to avoid substring false positives.
   const makeLooseBoundedPattern = (term: string) => {
     const compact = term.toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (!compact) return null;
+    // Require at least 3 alphanumeric chars — shorter compacts (e.g. "a$$" -> "a")
+    // would match every standalone letter and cause massive false positives.
+    if (compact.length < 3) return null;
     const inner = compact
       .split('')
       .map((ch) => escapeRegExp(ch))
-      .join('[^a-z0-9]*');
+      .join('[^a-z0-9]{0,2}');
     return new RegExp(`(?:^|[^a-z0-9])${inner}(?:$|[^a-z0-9])`, 'i');
   };
 
