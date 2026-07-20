@@ -1,40 +1,22 @@
-## What is happening
+## Root cause
 
-This is not a payment/onboarding code failure. The app dependencies are present in `package.json`, and the missing products listed are all native Capacitor Swift Package products. This points to Xcode/Swift Package Manager losing or failing to resolve the generated `CapApp-SPM` package after the latest pull/sync.
+`src/pages/ListingDetails.tsx` line 495 sets `DrawerContent` to `h-[100svh] max-h-[100svh]`. The underlying `DrawerPrimitive.Content` is already `fixed inset-x-0 bottom-0` with `top: calc(env(safe-area-inset-top,0px) + 24px)` — it auto-fills that space.
 
-## Immediate recovery steps for your Mac
+Forcing `100svh` on top of `bottom: 0` makes the drawer taller than the visible viewport, pushing its bottom edge (and the footer buttons) ~68px off-screen on notched iPhones in native WKWebView. PWA masks it because Safari's collapsing chrome shrinks `svh`; native has no chrome to collapse, so the overflow becomes real clipping.
 
-1. Quit Xcode completely.
-2. From the project folder, run a clean sync:
+## Fix — one file
 
-```bash
-cd ~/Desktop/shop-flea
-rm -rf ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
-rm -rf ios/App/App.xcodeproj/project.xcworkspace/xcuserdata
-rm -rf ~/Library/Developer/Xcode/DerivedData/App-*
-rm -rf ~/Library/Caches/org.swift.swiftpm
-npm install
-npm run build
-npx cap sync ios
-npx cap open ios
-```
+**`src/pages/ListingDetails.tsx`** (line 495):
 
-3. In Xcode, wait for package resolution to finish before pressing Archive/Analyze.
-4. If it still shows missing package products, use Xcode menu:
-   - File > Packages > Reset Package Caches
-   - File > Packages > Resolve Package Versions
-   - then close and reopen the workspace.
+- From: `className="mt-0 flex h-[100svh] max-h-[100svh] flex-col overflow-hidden rounded-t-3xl bg-background"`
+- To:   `className="mt-0 flex h-full flex-col overflow-hidden rounded-t-3xl bg-background"`
 
-## If the error still returns
+That's it. The drawer will fill the primitive's bounds, the footer's existing `pb-12` becomes the actual visible bottom padding, and there is no gap under the footer box — identical to PWA.
 
-I’ll make a project-side fix so this is less likely to recur by adding a dedicated local repair script for iOS package resolution. It will do the safe cleanup above in one command, without touching app code or changing payment/seller onboarding packages.
+## Audit
 
-## Why I do not want to change Stripe/Capacitor packages again
+Grep `rg "h-\[100svh\]|max-h-\[100svh\]" src/` — if any other `DrawerContent` uses the same override, apply the same `h-full` change. Plain page containers using `min-h-[100svh]` (admin pages) are not drawers and stay as-is.
 
-The current app package versions are aligned:
+## Out of scope
 
-- `@capacitor-community/stripe` is installed.
-- Apple sign-in and every Capacitor native plugin named in the error is installed.
-- Stripe web packages were already aligned to avoid the npm peer dependency conflict.
-
-Changing versions again is likely to create a new dependency conflict. This specific error is Xcode failing to resolve native package products, not npm missing packages.
+No changes to Capacitor config, StatusBar, safe-area CSS, drawer primitive, or footer padding. No business-logic changes.
