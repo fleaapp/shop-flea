@@ -483,7 +483,7 @@ const ListingDetails = () => {
   return (
     <div className="min-h-screen bg-background">
       <Drawer open={open} onOpenChange={isOpen => !isOpen && handleClose()} repositionInputs={false}>
-        <DrawerContent className="mt-0 flex h-[95svh] max-h-[95svh] flex-col overflow-hidden rounded-t-3xl bg-background">
+        <DrawerContent className="mt-0 flex h-[100svh] max-h-[100svh] flex-col overflow-hidden rounded-t-3xl bg-background">
           <div ref={scrollRef} className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 ${isTextInputFocused ? 'pb-4' : 'pb-32'}`}>
             {/* Image Gallery (swipe) */}
             <div className="relative overflow-hidden rounded-3xl">
@@ -712,7 +712,7 @@ const ListingDetails = () => {
 
           {/* Sticky Footer Actions — hidden in shared-link web preview mode */}
           {!isTextInputFocused && !isWebSharedPreview && (
-          <div data-listing-footer className="left-0 right-0 z-10 flex shrink-0 justify-center gap-3 border-t border-border bg-background px-4 pt-4 pb-3 transition-all duration-200">
+          <div data-listing-footer className="left-0 right-0 z-10 flex shrink-0 justify-center gap-3 border-t border-border bg-background px-4 pt-4 pb-8 transition-all duration-200">
             {isRemoved && !isOwner ? (
               // Removed listing footer
               <div className="flex flex-col items-center gap-3">

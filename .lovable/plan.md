@@ -1,26 +1,17 @@
 ## Problem
 
-Two issues on the listing detail sheet:
+The gap the user is pointing at is not under the buttons — it's under the whole drawer sheet. The listing sheet is set to `h-[95svh] max-h-[95svh]` (line 486 of `src/pages/ListingDetails.tsx`), so 5svh of background shows below the sheet's rounded bottom edge. Shrinking the footer's own `pb-*` (what I did last turn) can't remove that band because the empty space is outside the sheet.
 
-1. **Gap under the footer buttons.** The sticky footer uses `pb-8` (32px). With `overlaysWebView=false` the webview already stops above the home indicator, so `pb-8` renders as a visible empty band of background below the ❌ / 💌 / 🛒 buttons.
-2. **Blue outline across the top of the sheet.** Vaul's `DrawerContent` is focusable and receives auto-focus on open. On iOS WKWebView that draws the default focus ring — the "weird blue outline" visible along the top edge of the knit-jumper screenshot. It only appears on some opens because it depends on which element ends up focused after the drawer mounts.
+For most of the project, `overlaysWebView` was `true`, so the webview extended under the home indicator and 95svh visually reached the bottom. It's now `false`, so the webview stops above the home indicator and the missing 5svh becomes a visible gap.
 
 ## Fix
 
-**1. Tighten the listing footer padding.**
-- `src/pages/ListingDetails.tsx` line 715: `pb-8` → `pb-3` on `[data-listing-footer]`.
-- `src/index.css`: change the `html.is-installed [data-listing-footer]` override from `padding-bottom: 2rem` → `padding-bottom: 0.75rem` to match.
+Make the listing sheet fill the available webview height so the footer sits flush at the bottom, exactly like before.
 
-No other footer/drawer padding is touched — this is scoped to the listing sheet only, which is the one the user screenshotted.
-
-**2. Kill the blue focus outline on Drawer/Dialog content.**
-- `src/components/ui/drawer.tsx`: on `DrawerPrimitive.Content`, add `onOpenAutoFocus={(e) => e.preventDefault()}` and `className` gains `focus:outline-none focus-visible:outline-none outline-none`.
-- `src/components/ui/dialog.tsx`: append `focus:outline-none focus-visible:outline-none outline-none` to the existing `DialogContent` className (auto-focus prevention is already in place there).
-
-This removes the WKWebView focus ring on the sheet container without touching any inner focusable controls (inputs, buttons keep their own focus styles).
+- `src/pages/ListingDetails.tsx` line 486: change `h-[95svh] max-h-[95svh]` → `h-[100svh] max-h-[100svh]` on `DrawerContent`.
+- `src/pages/ListingDetails.tsx` line 715: restore the footer's own bottom padding to the original `pb-8` on `[data-listing-footer]`.
+- `src/index.css` line 361-363: restore `html.is-installed [data-listing-footer]` to `padding-bottom: 2rem` (pb-8) so PWA/native matches.
 
 ## Not touching
 
-- No other drawer/sheet padding changes.
-- No changes to overlay chrome, scroll restoration, or any business logic.
-- No changes to Radix focus behavior beyond preventing the initial auto-focus on the drawer shell itself.
+- No other drawer heights, no other footer padding, no scroll-restore or focus-outline logic (those stay as-is from the previous fix).
