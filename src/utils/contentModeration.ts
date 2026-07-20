@@ -221,11 +221,11 @@ function detectProfanity(text: string): boolean {
   // by enforcing non-alphanumeric boundaries.
   const makeLooseBoundedPattern = (term: string) => {
     const compact = term.toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (!compact) return null;
+    if (compact.length < 3) return null;
     const inner = compact
       .split('')
       .map((ch) => escapeRegExp(ch))
-      .join('[^a-z0-9]*');
+      .join('[^a-z0-9]{0,2}');
     return new RegExp(`(?:^|[^a-z0-9])${inner}(?:$|[^a-z0-9])`, 'i');
   };
 
