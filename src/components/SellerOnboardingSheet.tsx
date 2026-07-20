@@ -30,6 +30,7 @@ import AddressAutocomplete from '@/components/AddressAutocomplete';
 import IdVerificationStep from '@/components/IdVerificationStep';
 import PushPermissionSheet from '@/components/PushPermissionSheet';
 import { shouldShowPushPromptAsync } from '@/lib/pushPrompt';
+import { setOnboardingResume, clearOnboardingResume } from '@/lib/sellerOnboardingResume';
 
 interface SellerOnboardingSheetProps {
   open: boolean;
@@ -90,11 +91,19 @@ const SellerOnboardingSheet = ({
 
   const handleVerifiedSuccess = (result?: { setupCompleted?: boolean }) => {
     clearOnboardingDraft(user?.id);
+    clearOnboardingResume(user?.id);
     onOpenChange(false);
     shouldShowPushPromptAsync(user?.id, 'seller_verified').then((show) => {
       if (show) setTimeout(() => setShowPushSheet(true), 300);
     });
     onComplete?.(result);
+  };
+
+  // Explicit user-close (X, backdrop, "Not now") → clear the resume flag so
+  // we don't reopen on next launch. Backgrounding does NOT fire this.
+  const handleOpenChange = (next: boolean) => {
+    if (!next) clearOnboardingResume(user?.id);
+    onOpenChange(next);
   };
 
   const [firstName, setFirstName] = useState('');
