@@ -89,31 +89,6 @@ const SellerOnboardingSheet = ({
   const [showPushSheet, setShowPushSheet] = useState(false);
 
   const handleVerifiedSuccess = (result?: { setupCompleted?: boolean }) => {
-    onOpenChange(false);
-    shouldShowPushPromptAsync(user?.id, 'seller_verified').then((show) => {
-      if (show) setTimeout(() => setShowPushSheet(true), 300);
-    });
-    onComplete?.(result);
-  };
-
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [dob, setDob] = useState(''); // YYYY-MM-DD
-  const [dobInput, setDobInput] = useState('');
-  const [phone, setPhone] = useState('');
-  const [line1, setLine1] = useState('');
-  const [suburb, setSuburb] = useState('');
-  const [state, setState] = useState('');
-  const [postcode, setPostcode] = useState('');
-
-  // Reset on open. Prefill from profile if available and resume on saved step.
-  useEffect(() => {
-    if (!open) return;
-    const p: any = profile || {};
-    const savedStep = Number(p.stripe_onboarding_step);
-    const resumeStep = savedStep >= 1 && savedStep <= 4 ? (savedStep as 1 | 2 | 3 | 4) : 1;
-    setStep(resumeStep);
-  const handleVerifiedSuccess = (result?: { setupCompleted?: boolean }) => {
     clearOnboardingDraft(user?.id);
     onOpenChange(false);
     shouldShowPushPromptAsync(user?.id, 'seller_verified').then((show) => {
@@ -159,6 +134,31 @@ const SellerOnboardingSheet = ({
     saveDraft(user.id, { firstName, lastName, dob, dobInput, phone, line1, suburb, state, postcode });
   }, [open, user?.id, firstName, lastName, dob, dobInput, phone, line1, suburb, state, postcode]);
 
+  // When re-opened for an existing account that Stripe has flagged for more info
+  // (charges/payouts disabled or requirements past-due), probe live status and
+  // route the user straight to the native step that resolves the block. We
+  // never send them off to a Stripe-hosted page.
+  useEffect(() => {
+    if (!open || needsIdVerification) return;
+    const accountId = (profile as any)?.stripe_account_id;
+    if (!stripeActionRequired || !accountId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await invokeCloudFunction('stripe-connect-status', { stripeAccountId: accountId });
+        if (cancelled || !data) return;
+        const due: string[] = [
+          ...((data as any).currentlyDue || []),
+          ...((data as any).pastDue || []),
+        ];
+        // External account (bank) missing or invalid — jump straight to bank step.
+        if (due.some((r) => r.startsWith('external_account'))) {
+          setStep(4);
+          return;
+        }
+        // Address requirement — jump to address step.
+        if (due.some((r) => r.includes('address'))) {
+          setStep(3);
           return;
         }
         // Otherwise assume personal info is what's needed.
@@ -169,6 +169,7 @@ const SellerOnboardingSheet = ({
     })();
     return () => { cancelled = true; };
   }, [open, stripeActionRequired, needsIdVerification, profile]);
+
 
 
   // Persist step to profile whenever it changes so the user resumes here if
