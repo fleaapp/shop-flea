@@ -1,17 +1,22 @@
 ## Problem
 
-The gap the user is pointing at is not under the buttons — it's under the whole drawer sheet. The listing sheet is set to `h-[95svh] max-h-[95svh]` (line 486 of `src/pages/ListingDetails.tsx`), so 5svh of background shows below the sheet's rounded bottom edge. Shrinking the footer's own `pb-*` (what I did last turn) can't remove that band because the empty space is outside the sheet.
-
-For most of the project, `overlaysWebView` was `true`, so the webview extended under the home indicator and 95svh visually reached the bottom. It's now `false`, so the webview stops above the home indicator and the missing 5svh becomes a visible gap.
+The dark curved outline visible above the drawer's rounded top edge (see screenshot) is not a shadow on the drawer itself — it's the black backdrop that vaul (the drawer library) paints behind the scaled-down page when `shouldScaleBackground` is on. As the page scales down and gets rounded corners, the black body underneath peeks out around its edges, reading as a dark rim right above the sheet.
 
 ## Fix
 
-Make the listing sheet fill the available webview height so the footer sits flush at the bottom, exactly like before.
+Override vaul's wrapper background so the area behind the scaled page matches our app background instead of black.
 
-- `src/pages/ListingDetails.tsx` line 486: change `h-[95svh] max-h-[95svh]` → `h-[100svh] max-h-[100svh]` on `DrawerContent`.
-- `src/pages/ListingDetails.tsx` line 715: restore the footer's own bottom padding to the original `pb-8` on `[data-listing-footer]`.
-- `src/index.css` line 361-363: restore `html.is-installed [data-listing-footer]` to `padding-bottom: 2rem` (pb-8) so PWA/native matches.
+In `src/index.css`, add a global rule:
 
-## Not touching
+```css
+[data-vaul-drawer-wrapper],
+[vaul-drawer-wrapper] {
+  background: hsl(var(--background));
+}
+```
 
-- No other drawer heights, no other footer padding, no scroll-restore or focus-outline logic (those stay as-is from the previous fix).
+This removes the dark seam on every drawer without changing the scale-background animation or any drawer-specific styling.
+
+## Verification
+
+Open any drawer (e.g. Seller Onboarding sheet from the screenshot) and confirm the dark curve above the rounded top is gone while the dim overlay on the page behind still looks correct.
