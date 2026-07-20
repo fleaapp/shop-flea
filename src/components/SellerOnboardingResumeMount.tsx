@@ -21,7 +21,15 @@ const SellerOnboardingResumeMount = () => {
     if ((profile as any)?.stripe_onboarding_complete) return;
 
     const check = () => {
-      if (hasOnboardingResume(user.id)) setOpen(true);
+      if (!hasOnboardingResume(user.id)) return;
+      // Don't stack a second sheet on top of one that's already visible
+      // (e.g. opened from Settings → Payment Methods). That other sheet's
+      // fresh init would otherwise race with ours and clobber the step.
+      if (typeof document !== 'undefined' &&
+          document.querySelector('[data-seller-onboarding-sheet="open"]')) {
+        return;
+      }
+      setOpen(true);
     };
 
     check();

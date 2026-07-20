@@ -1,40 +1,40 @@
-## Root cause
+## Problem
 
-In `src/lib/appChrome.ts`, when a Drawer/Sheet/Dialog/AlertDialog opens, `pushOverlayAppChrome()` flips the native status bar into overlay mode:
+When the user backgrounds the app on step 4 (BSB / account number) of Seller Onboarding and returns, the sheet snaps back to step 1 instead of staying on step 4.
 
-```ts
-StatusBar.setOverlaysWebView({ overlay: true })
-```
+## Root cause (verified from code)
 
-and flips it back to `overlay: false` when the overlay closes. Each toggle resizes the WebView by the status bar height (~54px on iPhone 17 Pro Max), which is exactly the "glitch/jump near the status bar" visible in the recording. The status bar `Style` is also switched (`Light` ↔ `Dark`), causing a second visible flicker.
+`SellerOnboardingSheet.tsx` initializes `step` from `profile.stripe_onboarding_step` inside an effect whose deps are `[open, profile, user?.id]`. Two things break resume:
 
-Everything else about the current chrome (footer padding, drawer heights, safe-area handling) is already in the shape the user is happy with — the only offender is the overlay-mode toggle.
+1. **Effect refires on every `profile` reference change.** When the app resumes, `AuthContext` re-fetches and hands back a new `profile` object. The init effect runs again and *resets* form + step from whatever `profile.stripe_onboarding_step` says. If the write of `"4"` hadn't landed / been re-read yet, or if the profile row served is stale, the step drops back to 1.
+2. **Two sheet instances race.** `PaymentMethodsSection` renders one `SellerOnboardingSheet`, and `SellerOnboardingResumeMount` renders another. On resume, the mount opens *its* sheet even if the user's original sheet is still open, and its fresh init reads whatever profile has — again clobbering the current step.
+3. **Step write can silently fail** under the `profiles_update_guard` RLS (no error surface today), so DB never actually stores `"4"` and the "resume" flow has nothing to read.
 
 ## Fix
 
-Stop toggling `overlaysWebView` when overlays open/close. Keep the WebView layout stable and dim only the status-bar strip's colour instead.
+Make step resume purely local (localStorage), independent of profile round-trip and RLS. Stop letting profile refreshes clobber the current step. Prevent duplicate sheets.
 
-### Changes to `src/lib/appChrome.ts`
+### Changes
 
-1. `syncNativeStatusBar`
-   - Remove the `if (isOverlay) { setOverlaysWebView(true) … } else { setOverlaysWebView(false) … }` branch.
-   - Always keep `setOverlaysWebView({ overlay: false })` (call it once on first sync, then skip if unchanged).
-   - Always keep `StatusBar.setStyle({ style: Style.Dark })` — do not switch to `Light` on overlay.
-   - When `isOverlay` is true, set `StatusBar.setBackgroundColor` to a pre-computed dimmed version of the current route top colour (mix route colour with black at ~40% opacity, matching the Radix backdrop `bg-black/40`) so the status-bar strip visually dims in sync with the sheet backdrop — with no resize.
-   - When `isOverlay` is false, restore the plain route colour.
+1. **`src/lib/sellerOnboardingResume.ts`** — extend to persist the current step per user:
+   - `setOnboardingStep(userId, step)`, `getOnboardingStep(userId): 1|2|3|4|null`, and clear it inside `clearOnboardingResume`.
+   - Key: `flea_seller_onboarding_step_${userId}`.
 
-2. `applyAppChromeColor`
-   - Stop writing `--app-top-bg` / `documentElement.backgroundColor` / `body.backgroundColor` to the transparent overlay value (`#00000000`) while an overlay is open. Keep them on the route colour so the WebView never repaints its top strip; only the native status-bar background changes.
-   - `app-overlay-chrome` class and `color-scheme` toggling: leave the class in place for any CSS that still targets it, but do not change `colorScheme` (keeps light mode stable).
-   - `meta[name="theme-color"]`: keep pointed at the route colour, not the transparent overlay value, to avoid PWA header flashes on the same code path.
+2. **`src/components/SellerOnboardingSheet.tsx`**
+   - In the init effect, change deps to `[open, user?.id]` only (drop `profile`) so profile refreshes on resume don't re-run the reset. Read `profile` inside the effect without subscribing.
+   - Compute resume step as: `getOnboardingStep(userId) ?? Number(profile.stripe_onboarding_step) || 1`. Local wins.
+   - In the "persist step" effect, also call `setOnboardingStep(user.id, step)` (synchronous, cannot fail). Keep the DB write as a best-effort backup.
+   - Keep `clearOnboardingResume` on explicit close and on completion (it will also clear the stored step).
 
-3. `pushOverlayAppChrome` / `restoreRouteAppChrome`
-   - Keep the ref-count logic. It now only drives the status-bar background dim, not an overlay-mode toggle.
+3. **`src/components/SellerOnboardingResumeMount.tsx`**
+   - Only auto-open when no other sheet is already showing. Add a lightweight guard: check `document.querySelector('[data-seller-onboarding-sheet="open"]')` before calling `setOpen(true)`; and tag the sheet's root `DrawerContent`/`SheetContent` with `data-seller-onboarding-sheet={open ? 'open' : 'closed'}` in `SellerOnboardingSheet.tsx`.
+   - This prevents the resume mount from stacking a second sheet over the one the user is already viewing.
 
-Nothing else changes: drawer/sheet/dialog components, footer padding (`pb-8` / `pb-12` etc.), `h-full` on `ListingDetails` drawer, safe-area handling, and `capacitor.config.ts` (`overlaysWebView: false`) all stay exactly as they are today.
+4. **No schema / RLS changes.** DB step column stays as a backup only; we no longer depend on it for resume correctness.
 
 ## Verification
 
-- Native build: open Home → Listing drawer, Wishlist → remove confirmation, Seller Onboarding sheet, Settings → any sheet. Status bar strip dims to a darker tone as the backdrop appears, then restores; no vertical jump, no content shift, no icon-style flicker.
-- Footer buttons on all drawers remain in the position established last iteration (unchanged).
-- PWA/web: unaffected (native-only code paths).
+- Open onboarding from Settings, advance to step 4, background the app for 30s, return → sheet stays on step 4 with BSB/account inputs intact.
+- Cold-relaunch the app while resume flag is set → resume mount reopens the sheet on step 4.
+- Explicitly close the sheet (X / backdrop / "Not now") → resume flag + stored step cleared; next open starts at step 1.
+- Complete onboarding → flag + stored step cleared.

@@ -30,7 +30,7 @@ import AddressAutocomplete from '@/components/AddressAutocomplete';
 import IdVerificationStep from '@/components/IdVerificationStep';
 import PushPermissionSheet from '@/components/PushPermissionSheet';
 import { shouldShowPushPromptAsync } from '@/lib/pushPrompt';
-import { setOnboardingResume, clearOnboardingResume } from '@/lib/sellerOnboardingResume';
+import { setOnboardingResume, clearOnboardingResume, setOnboardingStep, getOnboardingStep } from '@/lib/sellerOnboardingResume';
 
 interface SellerOnboardingSheetProps {
   open: boolean;
@@ -119,11 +119,19 @@ const SellerOnboardingSheet = ({
   // Reset on open. Prefill from profile, then override with any locally-saved
   // draft so users who left the app mid-flow (e.g. to grab their BSB) come
   // back to exactly what they had entered.
+  //
+  // NOTE: deps intentionally exclude `profile` — on app resume the AuthContext
+  // hands back a new profile reference, and re-running this effect would
+  // clobber the current step (dropping the user back to step 1). Local step
+  // storage (below) is authoritative for resume; profile is only a fallback.
   useEffect(() => {
     if (!open) return;
     const p: any = profile || {};
-    const savedStep = Number(p.stripe_onboarding_step);
-    const resumeStep = savedStep >= 1 && savedStep <= 4 ? (savedStep as 1 | 2 | 3 | 4) : 1;
+    const localStep = getOnboardingStep(user?.id);
+    const dbStep = Number(p.stripe_onboarding_step);
+    const resumeStep: 1 | 2 | 3 | 4 =
+      localStep ??
+      (dbStep >= 1 && dbStep <= 4 ? (dbStep as 1 | 2 | 3 | 4) : 1);
     setStep(resumeStep);
     const d = loadDraft(user?.id);
     setFirstName(d.firstName ?? p.first_name ?? '');
@@ -135,7 +143,8 @@ const SellerOnboardingSheet = ({
     setSuburb(d.suburb ?? '');
     setState(d.state ?? '');
     setPostcode(d.postcode ?? '');
-  }, [open, profile, user?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, user?.id]);
 
   // Autosave form drafts locally while the sheet is open.
   useEffect(() => {
@@ -181,10 +190,12 @@ const SellerOnboardingSheet = ({
 
 
 
-  // Persist step to profile whenever it changes so the user resumes here if
-  // they leave the app (e.g. to grab their bank card).
+  // Persist step whenever it changes so the user resumes here if they leave
+  // the app (e.g. to grab their bank card). Local storage is authoritative
+  // (synchronous, cannot fail on RLS); DB write is a best-effort backup.
   useEffect(() => {
     if (!open || !user?.id) return;
+    setOnboardingStep(user.id, step);
     (async () => {
       try {
         await supabase
@@ -332,6 +343,7 @@ const SellerOnboardingSheet = ({
         side="bottom"
         overlayClassName="data-[state=closed]:animate-none"
         className="rounded-t-3xl border-0 p-0 flex flex-col max-h-[92svh] bg-background"
+        data-seller-onboarding-sheet={open ? 'open' : 'closed'}
       >
         <div className="px-5 pt-7 pb-8 flex flex-col items-center text-center gap-5 overflow-x-hidden overflow-y-auto">
           {needsIdVerification ? (
