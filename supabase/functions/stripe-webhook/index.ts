@@ -272,19 +272,23 @@ serve(async (req) => {
               .update({ stripe_onboarding_complete: fullyVerified })
               .eq("user_id", profile.user_id);
             if (fullyVerified && !wasVerified) {
-              await notify(
-                profile.user_id,
-                "seller_verified",
-                "You're verified.",
-                "✅ Your seller account is fully verified. You can now receive payouts.",
-              );
+              if (!(await wasNotifiedRecently(profile.user_id, "seller_verified", 24))) {
+                await notify(
+                  profile.user_id,
+                  "seller_verified",
+                  "You're verified.",
+                  "✅ Your seller account is fully verified. You can now receive payouts.",
+                );
+              }
             } else if (!fullyVerified && acct.requirements?.disabled_reason) {
-              await notify(
-                profile.user_id,
-                "payment_action_required",
-                "Seller account needs attention.",
-                "⚠️ Your payouts are paused. Open your seller dashboard to complete verification.",
-              );
+              if (!(await wasNotifiedRecently(profile.user_id, "payment_action_required", 24))) {
+                await notify(
+                  profile.user_id,
+                  "payment_action_required",
+                  "Seller account needs attention.",
+                  "⚠️ Your payouts are paused. Open your seller dashboard to complete verification.",
+                );
+              }
             }
           }
         } catch (e) {
