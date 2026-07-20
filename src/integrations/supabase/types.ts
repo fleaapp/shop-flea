@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      banned_users: {
+        Row: {
+          banned_at: string
+          banned_by: string
+          created_at: string
+          id: string
+          lifted_at: string | null
+          reason: string
+          related_report_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          banned_at?: string
+          banned_by: string
+          created_at?: string
+          id?: string
+          lifted_at?: string | null
+          reason: string
+          related_report_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          banned_at?: string
+          banned_by?: string
+          created_at?: string
+          id?: string
+          lifted_at?: string | null
+          reason?: string
+          related_report_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banned_users_related_report_id_fkey"
+            columns: ["related_report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blocked_devices: {
         Row: {
           amount_cents: number
@@ -448,6 +495,54 @@ export type Database = {
           id?: string
           token?: string
           used_at?: string | null
+        }
+        Relationships: []
+      }
+      error_logs: {
+        Row: {
+          context: Json | null
+          created_at: string
+          dedupe_key: string | null
+          device: Json | null
+          id: string
+          message: string
+          route: string | null
+          severity: string
+          source: string
+          stack: string | null
+          title: string
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          dedupe_key?: string | null
+          device?: Json | null
+          id?: string
+          message: string
+          route?: string | null
+          severity?: string
+          source: string
+          stack?: string | null
+          title: string
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          dedupe_key?: string | null
+          device?: Json | null
+          id?: string
+          message?: string
+          route?: string | null
+          severity?: string
+          source?: string
+          stack?: string | null
+          title?: string
+          user_id?: string | null
+          username?: string | null
         }
         Relationships: []
       }
@@ -1170,6 +1265,30 @@ export type Database = {
         }
         Relationships: []
       }
+      suggestions: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          read: boolean
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -1191,6 +1310,24 @@ export type Database = {
           id?: string
           metadata?: Json | null
           reason?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -1392,6 +1529,13 @@ export type Database = {
         }[]
       }
       get_user_region_id: { Args: { user_uuid: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       increment_brand_usage: { Args: { _brand_id: string }; Returns: undefined }
       is_region_active: { Args: { region: string }; Returns: boolean }
       is_user_blocked: { Args: { user_uuid: string }; Returns: boolean }
@@ -1496,7 +1640,7 @@ export type Database = {
       seed_push_vault_key: { Args: { p_key: string }; Returns: undefined }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1623,6 +1767,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const
