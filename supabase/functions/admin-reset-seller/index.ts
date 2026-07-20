@@ -1,6 +1,6 @@
-// One-off admin utility to reset a user's seller onboarding state on the
-// external Supabase (source of truth). Uses EXTERNAL_SUPABASE_SERVICE_ROLE_KEY
-// via raw REST to bypass profiles_update_guard.
+// One-off admin utility to reset a user's seller onboarding state in
+// Lovable Cloud. Uses SUPABASE_SERVICE_ROLE_KEY via raw REST to bypass
+// profiles_update_guard.
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
