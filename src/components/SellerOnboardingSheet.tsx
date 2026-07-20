@@ -195,6 +195,13 @@ const SellerOnboardingSheet = ({
     })();
   }, [step, open, user?.id]);
 
+  // Once the user has actively engaged (advanced past the intro), remember
+  // that onboarding is in progress so a cold-relaunch reopens the sheet.
+  useEffect(() => {
+    if (!open || !user?.id) return;
+    if (step > 1) setOnboardingResume(user.id);
+  }, [open, step, user?.id]);
+
   const validatePersonal = () => {
     if (firstName.trim().length < 1 || lastName.trim().length < 1) {
       return 'Please enter your full legal name.';
