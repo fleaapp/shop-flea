@@ -3,7 +3,6 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { preloadImages } from '@/utils/preloadAssets';
 import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
-import { getInvalidListingIds } from '@/utils/listingAccess';
 import { subscribeListingInvalidated } from '@/utils/listingInvalidation';
 import type { DbListing } from '@/hooks/useListings';
 
@@ -90,38 +89,36 @@ export const useHomeFeed = () => {
         return;
       }
 
-      // Validate access (same hygiene as useListings).
-      const invalid = await getInvalidListingIds(rows.map((l) => l.id));
-      const validated = invalid.size > 0 ? rows.filter((l) => !invalid.has(l.id)) : rows;
+      // Paint cards immediately using the RPC's results; the RPC already
+      // filters blocked/paused sellers, discarded listings and non-active
+      // statuses, so we don't need to gate first paint on an edge-function
+      // hop or a second seller-profile query. Preload the very first image
+      // with high priority so the top card appears in the same frame.
+      const initialRows = rows.map((l) => ({ ...l, profiles: null as DbListing['profiles'] }));
 
-      // Hydrate seller profiles.
-      const userIds = [...new Set(validated.map((l) => l.user_id))];
-      const { profiles, canTrustMissing } = await fetchSellerProfiles(userIds);
-      const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
-
-      const withProfiles = validated
-        .filter((l) => {
-          const p = profileMap.get(l.user_id);
-          if (p?.status === 'blocked') return false;
-          if (canTrustMissing && !p) return false;
-          if (p?.pause_selling) return false;
-          return true;
-        })
-        .map((l) => ({ ...l, profiles: profileMap.get(l.user_id) || null }));
+      const firstImage = initialRows[0]?.images?.[0];
+      if (firstImage) {
+        const link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'image';
+        link.href = firstImage;
+        (link as HTMLLinkElement & { fetchPriority?: string }).fetchPriority = 'high';
+        document.head.appendChild(link);
+      }
+      const preloadUrls = initialRows
+        .slice(0, 5)
+        .flatMap((l) => l.images?.slice(0, 1) || [])
+        .filter(Boolean);
+      if (preloadUrls.length > 0) preloadImages(preloadUrls);
 
       if (mode === 'reset') {
-        const urls = withProfiles
-          .slice(0, 3)
-          .flatMap((l) => l.images?.slice(0, 1) || [])
-          .filter(Boolean);
-        if (urls.length > 0) preloadImages(urls);
-        setListings(withProfiles);
+        setListings(initialRows);
         setOffset(rows.length);
       } else {
         setListings((prev) => {
           const seen = new Set(prev.map((l) => l.id));
           const merged = [...prev];
-          for (const l of withProfiles) if (!seen.has(l.id)) merged.push(l);
+          for (const l of initialRows) if (!seen.has(l.id)) merged.push(l);
           return merged;
         });
         setOffset(useOffset + rows.length);
@@ -129,6 +126,27 @@ export const useHomeFeed = () => {
 
       setLoading(false);
       setLoadingMore(false);
+
+      // Hydrate seller profiles in the background and merge them in.
+      // Any listing whose seller has just been blocked / paused since the
+      // RPC ran gets removed here.
+      const userIds = [...new Set(rows.map((l) => l.user_id))];
+      void fetchSellerProfiles(userIds).then(({ profiles, canTrustMissing }) => {
+        const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
+        setListings((prev) =>
+          prev
+            .filter((l) => {
+              const p = profileMap.get(l.user_id);
+              if (p?.status === 'blocked') return false;
+              if (canTrustMissing && !p) return false;
+              if (p?.pause_selling) return false;
+              return true;
+            })
+            .map((l) => ({ ...l, profiles: profileMap.get(l.user_id) || l.profiles || null })),
+        );
+      }).catch((err) => {
+        console.warn('fetchSellerProfiles failed (feed already shown):', err);
+      });
     },
     [profile?.region_id, user?.id],
   );
