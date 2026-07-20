@@ -6,14 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const EXTERNAL_SUPABASE_URL = Deno.env.get('SUPABASE_URL') || Deno.env.get('SUPABASE_URL')!;
-const CLOUD_SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SERVICE_KEY =
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const EXTERNAL_SERVICE_KEY =
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const PUBLISHABLE_KEY =
-  Deno.env.get('SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_PUBLISHABLE_KEY')!;
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const PUBLISHABLE_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 
 interface SavedSearchRow {
   id: string;
