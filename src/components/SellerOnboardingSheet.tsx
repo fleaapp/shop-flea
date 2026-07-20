@@ -327,7 +327,7 @@ const SellerOnboardingSheet = ({
   const secondaryAction = (className = '') => `${secondaryActionClass} ${className}`.trim();
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent
         side="bottom"
         overlayClassName="data-[state=closed]:animate-none"
@@ -374,7 +374,7 @@ const SellerOnboardingSheet = ({
                       className="underline underline-offset-2 text-foreground hover:text-foreground/80"
                       onClick={(e) => {
                         e.preventDefault();
-                        onOpenChange(false);
+                        handleOpenChange(false);
                         navigate('/terms');
                       }}
                     >
@@ -393,7 +393,7 @@ const SellerOnboardingSheet = ({
                 </Button>
                 <Button
                   variant="ghost"
-                  onClick={() => onOpenChange(false)}
+                  onClick={() => handleOpenChange(false)}
                   className={secondaryAction()}
                 >
                   Not now
