@@ -19,6 +19,7 @@ import { AdminEmptyState } from '@/components/admin/shell/AdminEmptyState';
 
 const fmtCurrency = (n: number) => `$${n.toFixed(2)}`;
 const initials = (s?: string | null) => (s ?? '?').replace('@', '').slice(0, 2).toUpperCase();
+const fmtDateTime = (s?: string | null) => s ? format(new Date(s), 'MMM d, yyyy h:mm a') : '—';
 
 function riskTone(score: number): 'success' | 'warning' | 'danger' {
   if (score >= 70) return 'danger';
