@@ -534,10 +534,16 @@ interface BankDetailsStepProps {
 }
 
 const BankDetailsStep = ({ firstName, lastName, onBack, onDone }: BankDetailsStepProps) => {
-  const { profile, refreshProfile } = useAuth() as any;
-  const [bsb, setBsb] = useState('');
-  const [account, setAccount] = useState('');
+  const { user, profile, refreshProfile } = useAuth() as any;
+  const initialDraft = loadDraft(user?.id);
+  const [bsb, setBsb] = useState<string>(initialDraft.bsb || '');
+  const [account, setAccount] = useState<string>(initialDraft.account || '');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    saveDraft(user.id, { bsb, account });
+  }, [user?.id, bsb, account]);
 
   const formatBsb = (v: string) => {
     const d = v.replace(/\D/g, '').slice(0, 6);
