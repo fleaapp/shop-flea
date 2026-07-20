@@ -359,5 +359,5 @@ html.is-installed nav[data-onboarding="bottom-nav"] {
   }
 }
 html.is-installed [data-listing-footer] {
-  padding-bottom: calc(2rem + env(safe-area-inset-bottom)); /* pb-8 + native home indicator */
+  padding-bottom: 2rem; /* pb-8 */
 }
