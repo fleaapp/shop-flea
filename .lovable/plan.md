@@ -1,25 +1,31 @@
-## What's missing
+## Root cause
 
-After the migration to Lovable Cloud, the `public.user_roles` table is empty — so @sarahhearn2 (`6b0dd9d6-dee9-4f6d-8d4f-d3c191404c0b`) no longer has the `admin` role. The Admin Dashboard gate (`useAdminRole` → `admin-check-role` edge function → `has_role()`) returns false, hiding all admin tabs and blocking every admin edge function.
+The web Apple button calls `supabase.auth.signInWithOAuth({ provider: 'apple' })` directly. That routes to GoTrue's `/authorize?provider=apple`, which requires a BYOC Apple client secret to be stored on the provider. Managed Apple Sign In on Lovable Cloud is not exposed through that path — it is exposed through the `lovable.auth.signInWithOAuth` helper. GoTrue therefore returns `validation_failed: Unsupported provider: missing OAuth secret`.
 
-Everything else the admin dashboard reads is intact in Cloud:
-- `brands`: 128 rows
-- `error_logs`: 9 rows
-- `coupons`: 1 row (FREEFLEA)
-- Listings, users, transactions, refunds all present
+Native iOS Apple (via `nativeAppleSignIn` → `signInWithIdToken`) is a different path and isn't affected by this error — the screenshot came from the web/PWA fallback.
 
 ## Fix
 
-Insert one row into `public.user_roles` re-granting @sarahhearn2 the `admin` role:
+In `src/pages/Auth.tsx` → `handleAppleSignIn`, replace the web-fallback branch so it uses the Lovable managed helper instead of the raw Supabase call:
 
-```sql
-INSERT INTO public.user_roles (user_id, role)
-VALUES ('6b0dd9d6-dee9-4f6d-8d4f-d3c191404c0b', 'admin')
-ON CONFLICT (user_id, role) DO NOTHING;
+```ts
+import { lovable } from '@/integrations/lovable';
+
+// Web / PWA / Android fallback:
+const result = await lovable.auth.signInWithOAuth('apple', {
+  redirect_uri: window.location.origin,
+});
+if (result.error) {
+  localStorage.removeItem('flea_oauth_signup');
+  console.error('Apple sign-in error:', result.error);
+  toast.error('Apple sign-in failed. Please try again.');
+  return;
+}
+if (result.redirected) return; // browser is redirecting to Apple
 ```
 
-Then verify by reloading the app — the Admin tab should reappear in Settings and all admin pages (Users, Listings, Transactions, Refunds, Brands, Error Logs) should load.
+Leave the iOS native branch (`nativeAppleSignIn`) untouched — that path is correct.
 
-## Note
+## Verify
 
-If any other accounts previously held `admin` or `moderator` roles on the old project, tell me the usernames and I'll grant those too in the same migration.
+Reload the preview, tap Apple on the web sign-in screen, and confirm the flow redirects to Apple instead of showing the raw JSON error.
