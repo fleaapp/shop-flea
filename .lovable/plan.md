@@ -1,39 +1,46 @@
-## Fixes
+## Problem
 
-### 1. Slow to post a comment
-`addComment.mutationFn` awaits the DB insert, then still awaits the `comment-mentions` edge function whenever the text contains an `@`. The mentions call is what's making it feel slow.
+`src/utils/contentModeration.ts` is blocking normal English like:
 
-- In `src/components/ListingComments.tsx`, resolve the mutation immediately after the DB insert. Fire the `comment-mentions` call as fire-and-forget (same pattern already used for push). No user-visible wait beyond the single insert round-trip.
+> "Label has been removed. I believe around a size 12. Good condition."
 
-### 2. Push not working (app-wide)
-Two independent breakages combining to zero pushes:
+Users can't list items or comment with common words ("I", "a") or single/small numbers ("12"). This is a client-side false positive in the moderation utility used by both listing creation and comments.
 
-- `send-push-notification` rejects non-service-role callers whose `user_id` isn't their own (403). So the client-side push in `ListingComments` targeting the listing owner always fails silently. Same architectural problem for any client-to-other-user push.
-- The DB trigger `public.trigger_push_notification` reads `current_setting('supabase.service_role_key', true)`, which is `NULL` on this project. So the server-side path that fires on every `notifications` insert also silently no-ops.
+## Root cause investigation (step 1)
 
-Fix once, works for every notification type (comments, replies, mentions, order shipped/delivered, order messages, reviews, refunds, cart/wishlist sold, support, etc.), because every one of those already writes into `public.notifications`:
+Add a one-off script to run the exact failing text through `moderateContent` and log which detector fires (`profanity` / `contact` / `social` / `url`) and on which normalized form. Likely culprits based on reading the current code:
 
-- Migration: add a `push_service_role_key` entry to `vault.secrets` (value = the project service role key) and rewrite `public.trigger_push_notification` to read the auth token from `vault.decrypted_secrets` — same pattern already working for `email_queue_dispatch` / `email_queue_wake`.
-- Remove the now-redundant client-side `sendPushNotification` call in `ListingComments.tsx` to avoid double-sending.
-- Leave `send-push-notification`'s 403 guard as-is (correct security posture).
+- `CHAR_SUBSTITUTIONS` is over-broad: e.g. `'i': ['1','!','|','l','¡','í']` rewrites every `l` in the text to `i`, `'s': [...,'z']` and `'z': [...,'s']` swap letters — this can synthesize profanity/social terms that aren't there.
+- `NUMBER_WORDS` maps single letter `'o': '0'`, so any standalone "O" (or word-boundary "o") becomes a digit that then feeds phone detection.
+- `makeLooseBoundedPattern` with `[^a-z0-9]*` between letters can match short profanity across word boundaries after aggressive substitutions.
+- Phone detector's 7-digit threshold is fine, but `normalizeText`-derived digits may inflate the count after substitutions.
 
-### 3. Phone number slipped through
-User confirmed the format was standard AU with spaces (e.g. `0412 345 678`). Current `detectPhoneNumber` in `src/utils/contentModeration.ts` requires either an 8+ digit run in normalized text OR one of the specific formatted patterns. Depending on separators used, the AU pattern can miss, and the `\d{8,}` branch only sees the digits still consecutive after `normalizeText` (which doesn't strip spaces).
+## Fix (step 2)
 
-- Tighten `detectPhoneNumber`:
-  - Also test the "digits only" form: if `text.replace(/\D/g, '').length >= 7`, block.
-  - Add a permissive AU regex: `/0[2-8](?:[\s\-._]?\d){7,9}/` (covers 04xx, 02/03/07/08 landlines with any separators).
-  - Add a generic 7+ digits-with-separators regex: `/(?:\d[\s\-._]*){6,}\d/`.
-- Keep existing patterns as fast-paths.
+Tighten `src/utils/contentModeration.ts`:
 
-### Technical details
-- Only files touched: `src/components/ListingComments.tsx`, `src/utils/contentModeration.ts`, plus one SQL migration.
-- Migration steps:
-  1. `INSERT INTO vault.secrets (name, secret) VALUES ('push_service_role_key', <service role key>) ON CONFLICT (name) DO UPDATE SET secret = EXCLUDED.secret;` — value supplied via a one-shot edge-function seed (has `SUPABASE_SERVICE_ROLE_KEY`), not hardcoded in migration.
-  2. `CREATE OR REPLACE FUNCTION public.trigger_push_notification()` replacing `current_setting(...)` with a `SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'push_service_role_key'` lookup. Wrap in `EXCEPTION WHEN OTHERS` (already does).
-- No changes to `send-push-notification` internals, so existing rate limits / stale-endpoint cleanup / APNs path continue to work.
+1. **Character substitutions**: only apply when a token contains at least one non-alphabetic character (i.e. only run leet decoding on suspicious tokens, not plain English words). Remove the ambiguous letter↔letter swaps (`l↔i`, `s↔z`, `z↔s`, `l↔1`-only-in-letters context, `o↔0` inside words).
+2. **Number words**: drop the single-letter entries (`'o'`, `'oh'`) — too false-positive-prone. Keep multi-letter number words.
+3. **Phone digits**: count digits from the original text (already done via `rawDigits`), but stop using `normalizedDigits` since normalization now injects digits from letters. Keep the 7+ threshold on `rawDigits` only.
+4. **Profanity/social loose matching**: change `[^a-z0-9]*` to `[^a-z0-9]{0,2}` between letters so short banned words like `ass`, `die`, `kys` can't span an entire phrase.
+5. **Whitelist common short English tokens** (`i`, `a`, `an`, `is`, `it`, `to`, `of`, etc.) so they short-circuit before any detector runs on the token.
 
-### Result
-- Comment post feels instant.
-- Every notification (not just comments) sends a push via the single trigger path.
-- `0412 345 678` and equivalent AU formats are blocked before insert.
+## Verification (step 3)
+
+Add a small test script (temporary) that runs a batch of realistic phrases through `moderateContent`:
+- "Label has been removed. I believe around a size 12. Good condition." → allowed
+- "Size 8, worn once, great condition" → allowed
+- "DM me on insta @flea" → blocked (social)
+- "Call me on 0412 345 678" → blocked (contact)
+- "fuck this" → blocked (profanity)
+
+Delete the script after confirmation.
+
+## Files
+
+- `src/utils/contentModeration.ts` — tighten normalization and detection.
+- No server changes needed for listing/comment flow (client util is the gate for both).
+
+## Out of scope
+
+- `supabase/functions/moderate-content/index.ts` isn't invoked by the listing/comment flow (they call `useContentModeration` → client util). I'll leave the edge function alone unless you want it aligned in the same pass.
