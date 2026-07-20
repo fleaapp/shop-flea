@@ -1,22 +1,54 @@
-## Problem
+## Diagnosis
 
-The dark curved outline visible above the drawer's rounded top edge (see screenshot) is not a shadow on the drawer itself — it's the black backdrop that vaul (the drawer library) paints behind the scaled-down page when `shouldScaleBackground` is on. As the page scales down and gets rounded corners, the black body underneath peeks out around its edges, reading as a dark rim right above the sheet.
+That's not "just PWA" — it's a real bug caused by an app-shell service worker (`public/sw.js`) we register on web. It:
 
-## Fix
+- Precaches every hashed Vite asset and serves them cache-first.
+- Runs stale-while-revalidate on Supabase storage.
+- On activate, calls `clients.navigate(client.url)` on every open window to force-refresh installed PWAs.
 
-Override vaul's wrapper background so the area behind the scaled page matches our app background instead of black.
+That last step is what produces the "white screen → skeleton stuck → can't switch screens" flow. When a new SW activates, every installed tab reloads mid-render, and if any hashed chunk referenced by the previous HTML is missing from the new build, cache-first happily returns stale JS that no longer matches the new HTML — the router mounts, hydrates against nothing, and freezes on skeletons. It also silently interferes with client-side navigation until the SW cycle completes.
 
-In `src/index.css`, add a global rule:
+Since we're only shipping the native app (Capacitor already skips this SW via `isNativePlatform`), there is zero reason to keep an app-shell SW on the web. Web push is not in use on the browser build either.
 
-```css
-[data-vaul-drawer-wrapper],
-[vaul-drawer-wrapper] {
-  background: hsl(var(--background));
-}
-```
+## Fix — kill-switch the app-shell SW (per PWA skill)
 
-This removes the dark seam on every drawer without changing the scale-background animation or any drawer-specific styling.
+1. **Replace `public/sw.js` with a kill-switch worker.** Same path so returning browsers pick it up, then it deletes its own caches and unregisters itself. Only touches its own `flea-assets-*` caches — leaves any other origin-scoped caches alone.
+
+    ```js
+    // public/sw.js
+    self.addEventListener('install', () => self.skipWaiting());
+
+    self.addEventListener('activate', (event) =>
+      event.waitUntil((async () => {
+        try {
+          const names = await caches.keys();
+          await Promise.allSettled(
+            names.filter((n) => n.startsWith('flea-assets-')).map((n) => caches.delete(n))
+          );
+          await self.clients.claim();
+          const wins = await self.clients.matchAll({ type: 'window' });
+          await Promise.allSettled(wins.map((c) => c.navigate(c.url)));
+        } finally {
+          await self.registration.unregister();
+        }
+      })())
+    );
+
+    self.addEventListener('fetch', () => {}); // no-op, passthrough
+    ```
+
+2. **Stop registering the SW in `src/main.tsx`.** Replace `registerAppServiceWorker()` with an unconditional unregister of any `/sw.js` registration (keeps the cleanup path for users who still have the old worker). Remove the `controllerchange` reload listener since there's no controller anymore. Leave the `isNativePlatform` guard intact.
+
+3. **Leave `public/push-sw.js` in place, untouched.** Per the PWA skill, messaging workers are outside app-shell cleanup. It's imported only via the old sw.js `importScripts`, so once sw.js is a kill switch it becomes inert but the file staying avoids 404s for any transitional state.
+
+4. **Leave `public/manifest.webmanifest` alone.** Manifest-only install still works for anyone who wants to save the web build to home screen; it just won't have offline/cache behavior — which is what we want.
+
+## Result
+
+- Returning web/PWA users pick up the replacement SW once, it wipes the stale asset cache, unregisters, and future loads are plain network — no more stuck skeletons or frozen navigation.
+- Native app is unaffected (already skipped SW).
+- One release cycle from now the kill switch has run for essentially all users and we can delete `public/sw.js` and `public/push-sw.js` entirely.
 
 ## Verification
 
-Open any drawer (e.g. Seller Onboarding sheet from the screenshot) and confirm the dark curve above the rounded top is gone while the dim overlay on the page behind still looks correct.
+After deploy, in a browser that had the old PWA installed: open DevTools → Application → Service Workers, confirm the SW deactivates and unregisters, `flea-assets-*` caches are gone, and navigating between screens no longer hangs on skeletons.

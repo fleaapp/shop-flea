@@ -121,54 +121,32 @@ const resetAppCache = async () => {
   await Promise.all([clearAppCaches(), unregisterServiceWorkers()]);
 };
 
-const registerAppServiceWorker = async () => {
+// App-shell service worker has been retired. We now ship native only, and the
+// previous SW was causing stuck skeletons / frozen navigation for web/PWA
+// users. `public/sw.js` is now a kill switch that unregisters itself; here we
+// also proactively unregister any lingering `/sw.js` registration and wipe the
+// old asset caches so returning browsers recover on next load.
+const unregisterAppServiceWorker = async () => {
   if (!('serviceWorker' in navigator)) return;
-
-  if (!import.meta.env.PROD || isNativePlatform || isInIframe || isPreviewHost) {
-    const registrations = await navigator.serviceWorker.getRegistrations().catch(() => []);
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations();
     await Promise.all(
       registrations
-        .filter((registration) => registration.active?.scriptURL.includes('/sw.js'))
-        .map((registration) => registration.unregister()),
+        .filter((r) => r.active?.scriptURL.includes('/sw.js') || r.installing?.scriptURL.includes('/sw.js') || r.waiting?.scriptURL.includes('/sw.js'))
+        .map((r) => r.unregister()),
     );
-    return;
-  }
-
-  try {
-    const registration = await navigator.serviceWorker.register(SW_URL, {
-      updateViaCache: 'none',
-    });
-
-    await registration.update().catch(() => undefined);
-
-    if (registration.waiting) {
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    if (typeof caches !== 'undefined') {
+      const names = await caches.keys();
+      await Promise.all(
+        names.filter((n) => n.startsWith('flea-assets-')).map((n) => caches.delete(n)),
+      );
     }
-
-    registration.addEventListener('updatefound', () => {
-      const worker = registration.installing;
-      if (!worker) return;
-      worker.addEventListener('statechange', () => {
-        if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-          worker.postMessage({ type: 'SKIP_WAITING' });
-        }
-      });
-    });
   } catch (err) {
-    console.warn('[sw] registration failed', err);
+    console.warn('[sw] cleanup failed', err);
   }
 };
 
-if (!isNativePlatform && 'serviceWorker' in navigator) {
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (refreshing) return;
-    refreshing = true;
-    const path = window.location.pathname;
-    const skip = /^\/(auth|forgot-password|reset-password|verify-email|checkout|checkout-success)(\/|$)/.test(path);
-    if (!skip) window.location.reload();
-  });
-}
+
 
 // PWA: Prevent service worker registration in iframes/preview environments
 const isInIframe = (() => {
@@ -194,7 +172,8 @@ const hideNativeSplash = () => {
 const root = createRoot(document.getElementById("root")!);
 root.render(<App />);
 
-void registerAppServiceWorker();
+void unregisterAppServiceWorker();
+
 
 // Hide native splash AFTER React has rendered the first frame (Auth screen).
 if (isNativePlatform) {

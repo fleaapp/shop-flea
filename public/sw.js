@@ -1,103 +1,24 @@
-importScripts('/push-sw.js');
+// Kill-switch service worker. Replaces the previous app-shell SW so returning
+// browsers evict stale caches and unregister. Native app already skips SW.
+self.addEventListener('install', () => self.skipWaiting());
 
-const ASSET_CACHE = 'flea-assets-v20260717-refund-ledger';
-
-// Hashed Vite assets are immutable — cache forever
-const isImmutableAsset = (url) => {
-  const path = new URL(url).pathname;
-  return /^\/assets\/.*-[a-zA-Z0-9]{8,}\.(js|css|png|jpg|jpeg|gif|svg|webp|woff2?|ttf|mov)$/.test(path);
-};
-
-// Supabase storage URLs (uploaded listing images, avatars)
-const isStorageAsset = (url) => {
-  return url.includes('/storage/v1/object/') || url.includes('/storage/v1/render/');
-};
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(self.skipWaiting());
-});
-
-self.addEventListener('activate', (event) => {
+self.addEventListener('activate', (event) =>
   event.waitUntil((async () => {
-    // Clean old non-asset caches
-    const cacheNames = await caches.keys();
-    await Promise.all(
-      cacheNames
-        .filter((name) => name !== ASSET_CACHE)
-        .map((name) => caches.delete(name))
-    );
+    try {
+      const names = await caches.keys();
+      await Promise.allSettled(
+        names
+          .filter((n) => n.startsWith('flea-assets-'))
+          .map((n) => caches.delete(n))
+      );
+      await self.clients.claim();
+      const wins = await self.clients.matchAll({ type: 'window' });
+      await Promise.allSettled(wins.map((c) => c.navigate(c.url)));
+    } finally {
+      await self.registration.unregister();
+    }
+  })())
+);
 
-    await self.clients.claim();
-
-    // Force existing installed/PWA windows onto the fresh app bundle after
-    // this service worker update. Skip auth and checkout/payment routes so we
-    // do not interrupt sign-in or an in-flight purchase.
-    const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    await Promise.allSettled(clientsList.map((client) => {
-      try {
-        const url = new URL(client.url);
-        const skip = /^\/(auth|forgot-password|reset-password|verify-email|checkout|checkout-success)(\/|$)/.test(url.pathname);
-        if (url.origin === self.location.origin && !skip) {
-          return client.navigate(client.url);
-        }
-      } catch (_) {}
-      return undefined;
-    }));
-  })());
-});
-
-self.addEventListener('fetch', (event) => {
-  const { request } = event;
-
-  if (request.method !== 'GET') return;
-
-  const url = request.url;
-
-  // Cache-first for immutable hashed assets
-  if (isImmutableAsset(url)) {
-    event.respondWith(
-      caches.open(ASSET_CACHE).then(async (cache) => {
-        const cached = await cache.match(request);
-        if (cached) return cached;
-
-        const response = await fetch(request);
-        if (response.ok) {
-          cache.put(request, response.clone());
-        }
-        return response;
-      })
-    );
-    return;
-  }
-
-  // Stale-while-revalidate for storage assets (avatars, listing images)
-  if (isStorageAsset(url)) {
-    event.respondWith(
-      caches.open(ASSET_CACHE).then(async (cache) => {
-        const cached = await cache.match(request);
-
-        const networkPromise = fetch(request).then((response) => {
-          if (response.ok) {
-            cache.put(request, response.clone());
-          }
-          return response;
-        }).catch(() => undefined);
-
-        // Return cached immediately if available, refresh in background
-        if (cached) return cached;
-
-        const networkResponse = await networkPromise;
-        return networkResponse || new Response('', { status: 504 });
-      })
-    );
-    return;
-  }
-});
-
-self.addEventListener('message', (event) => {
-  if (event.data?.type === 'SKIP_WAITING') {
-    void self.skipWaiting();
-  }
-});
-
-console.log('[sw] Asset-caching service worker loaded');
+// Passthrough — do not intercept any requests.
+self.addEventListener('fetch', () => {});
