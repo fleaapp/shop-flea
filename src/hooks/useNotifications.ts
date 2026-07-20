@@ -273,7 +273,10 @@ export const useNotifications = () => {
 
   // Badge count: unread notifications created AFTER the last time
   // the user visited the Alerts screen. Green dots (is_read) are separate.
-  const [badgeDismissedAt, setBadgeDismissedAt] = useState<string | null>(null);
+  const [badgeDismissedAt, setBadgeDismissedAt] = useState<string | null>(() => {
+    if (typeof window === 'undefined' || !user?.id) return null;
+    return localStorage.getItem(`flea_alerts_seen_${user.id}`);
+  });
 
   // Read from localStorage whenever user.id becomes available (including after re-login)
   useEffect(() => {

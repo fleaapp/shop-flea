@@ -59,7 +59,7 @@ const Notifications = () => {
   const { user } = useAuth();
   const isUnauthed = !user;
   const { sellerOrderGroups, buyerOrderGroups, markAsShipped } = useOrders();
-  const { notifications, isLoading: loadingNotifications, unreadCount, badgeCount, markAsRead, dismissBadge } = useNotifications();
+  const { notifications, isLoading: loadingNotifications, unreadCount, badgeCount, markAsRead, markAllAsRead, dismissBadge } = useNotifications();
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
 
@@ -67,6 +67,14 @@ const Notifications = () => {
   useEffect(() => {
     dismissBadge();
   }, []);
+
+  // Mark all unread notifications as read on open (clears green dots + DB state)
+  useEffect(() => {
+    if (!loadingNotifications && notifications.some(n => !n.is_read && !n.id.startsWith('fallback-'))) {
+      markAllAsRead.mutate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingNotifications]);
 
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.is_read && !notification.id.startsWith('fallback-')) {
