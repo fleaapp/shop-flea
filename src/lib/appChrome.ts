@@ -30,8 +30,6 @@ const getRouteTopColor = () => {
 };
 
 
-let lastAppliedColor: string | null = null;
-let lastAppliedOverlay: boolean | null = null;
 let pendingTimer: ReturnType<typeof setTimeout> | null = null;
 
 const isNativeBridgeReady = (): boolean => {
