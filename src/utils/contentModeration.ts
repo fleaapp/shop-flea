@@ -2,14 +2,17 @@
 // Detects profanity, contact info, and social media references
 
 // Profanity and banned words list (lowercase)
+// NOTE: entries must have at least 3 alphanumeric chars after stripping — otherwise
+// the loose matcher will collapse them to a single letter and flag every standalone
+// occurrence of that letter (e.g. "a$$" -> "a" would block any word "a").
 const PROFANITY_LIST = [
   // Common profanity
-  'fuck', 'shit', 'bitch', 'ass', 'damn', 'crap', 'piss', 'dick', 'cock', 'pussy',
-  'bastard', 'slut', 'whore', 'cunt', 'fag', 'retard', 'nigger', 'nigga',
+  'fuck', 'shit', 'bitch', 'asshole', 'damn', 'crap', 'piss', 'dick', 'cock', 'pussy',
+  'bastard', 'slut', 'whore', 'cunt', 'faggot', 'retard', 'nigger', 'nigga',
   // Hate speech
-  'kill yourself', 'kys', 'die', 'hate you',
+  'kill yourself', 'hate you',
   // Variations
-  'fck', 'fuk', 'sh1t', 'b1tch', 'a$$', 'd1ck', 'c0ck', 'pu$$y', 'fvck',
+  'fck', 'fuk', 'sh1t', 'b1tch', 'd1ck', 'c0ck', 'pu$$y', 'fvck',
 ];
 
 // Social media platforms and communication apps
