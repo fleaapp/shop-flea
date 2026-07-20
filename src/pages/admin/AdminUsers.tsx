@@ -131,6 +131,9 @@ export default function AdminUsers() {
                   <p className="mt-1 truncate text-[11px] text-muted-foreground">
                     {u.listings_total} listings · {u.orders_as_seller} sales · {fmtCurrency(u.seller_volume + u.buyer_volume)}
                   </p>
+                  <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                    Joined {u.created_at ? format(new Date(u.created_at), 'MMM d, yyyy') : '—'} · Active {u.last_sign_in_at ? format(new Date(u.last_sign_in_at), 'MMM d, yyyy') : '—'}
+                  </p>
                 </div>
               </button>
             ))}
