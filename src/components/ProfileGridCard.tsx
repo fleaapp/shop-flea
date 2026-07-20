@@ -24,7 +24,7 @@ const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton }: ProfileGr
     <div className="w-full cursor-pointer" onClick={() => {
       const rawId = (listing as any).source_listing_id || listing.id;
       const realId = typeof rawId === 'string' && rawId.includes('::') ? rawId.split('::')[0] : rawId;
-      navigate(`/listing/${realId}`);
+      navigate(`/listing/${realId}`, activeTab === 'sold' ? { state: { isSold: true } } : undefined);
     }}>
       <div className="flex flex-col overflow-hidden rounded-2xl bg-card p-2 card-shadow">
         {/* Image */}
