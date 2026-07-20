@@ -118,6 +118,7 @@ export const useNavBadges = () => {
     },
     enabled: !!user?.id,
     staleTime: 0,
+    placeholderData: (prev) => prev,
     refetchInterval: 20_000,
     refetchOnWindowFocus: true,
     refetchOnMount: 'always',
