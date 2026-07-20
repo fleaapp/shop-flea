@@ -1,54 +1,41 @@
-## Diagnosis
+# Fix npm install ERESOLVE conflict
 
-That's not "just PWA" — it's a real bug caused by an app-shell service worker (`public/sw.js`) we register on web. It:
+## What's happening
+Your local `npm install` fails because three Stripe packages disagree on which `@stripe/stripe-js` major to use:
 
-- Precaches every hashed Vite asset and serves them cache-first.
-- Runs stale-while-revalidate on Supabase storage.
-- On activate, calls `clients.navigate(client.url)` on every open window to force-refresh installed PWAs.
+- `@capacitor-community/stripe@8.1.1` requires `@stripe/stripe-js ^8.4.0`
+- `@stripe/react-stripe-js@6.x` requires `@stripe/stripe-js >=9.5.0 <10`
+- `@stripe/stripe-js` is pinned at `^9.10.0`
 
-That last step is what produces the "white screen → skeleton stuck → can't switch screens" flow. When a new SW activates, every installed tab reloads mid-render, and if any hashed chunk referenced by the previous HTML is missing from the new build, cache-first happily returns stale JS that no longer matches the new HTML — the router mounts, hydrates against nothing, and freezes on skeletons. It also silently interferes with client-side navigation until the SW cycle completes.
+The Sunday-night build only worked because your `node_modules/` was already installed from an earlier state — the newly-pulled `package.json` never got a clean install. Today's `npm install` hit the conflict for the first time.
 
-Since we're only shipping the native app (Capacitor already skips this SW via `isNativePlatform`), there is zero reason to keep an app-shell SW on the web. Web push is not in use on the browser build either.
+## Fix
+Downgrade the two web Stripe packages to the v8-compatible line so all three peers agree. `@stripe/react-stripe-js@3.9.x` pairs with `@stripe/stripe-js@^8.4.0`, which is exactly what `@capacitor-community/stripe` wants.
 
-## Fix — kill-switch the app-shell SW (per PWA skill)
+Change in `package.json`:
 
-1. **Replace `public/sw.js` with a kill-switch worker.** Same path so returning browsers pick it up, then it deletes its own caches and unregisters itself. Only touches its own `flea-assets-*` caches — leaves any other origin-scoped caches alone.
+```
+"@stripe/react-stripe-js": "^3.9.2",
+"@stripe/stripe-js": "^8.11.0",
+```
 
-    ```js
-    // public/sw.js
-    self.addEventListener('install', () => self.skipWaiting());
+(`@stripe/connect-js` and `@stripe/react-connect-js` stay as-is — they don't depend on stripe-js majors.)
 
-    self.addEventListener('activate', (event) =>
-      event.waitUntil((async () => {
-        try {
-          const names = await caches.keys();
-          await Promise.allSettled(
-            names.filter((n) => n.startsWith('flea-assets-')).map((n) => caches.delete(n))
-          );
-          await self.clients.claim();
-          const wins = await self.clients.matchAll({ type: 'window' });
-          await Promise.allSettled(wins.map((c) => c.navigate(c.url)));
-        } finally {
-          await self.registration.unregister();
-        }
-      })())
-    );
+Then locally:
 
-    self.addEventListener('fetch', () => {}); // no-op, passthrough
-    ```
-
-2. **Stop registering the SW in `src/main.tsx`.** Replace `registerAppServiceWorker()` with an unconditional unregister of any `/sw.js` registration (keeps the cleanup path for users who still have the old worker). Remove the `controllerchange` reload listener since there's no controller anymore. Leave the `isNativePlatform` guard intact.
-
-3. **Leave `public/push-sw.js` in place, untouched.** Per the PWA skill, messaging workers are outside app-shell cleanup. It's imported only via the old sw.js `importScripts`, so once sw.js is a kill switch it becomes inert but the file staying avoids 404s for any transitional state.
-
-4. **Leave `public/manifest.webmanifest` alone.** Manifest-only install still works for anyone who wants to save the web build to home screen; it just won't have offline/cache behavior — which is what we want.
-
-## Result
-
-- Returning web/PWA users pick up the replacement SW once, it wipes the stale asset cache, unregisters, and future loads are plain network — no more stuck skeletons or frozen navigation.
-- Native app is unaffected (already skipped SW).
-- One release cycle from now the kill switch has run for essentially all users and we can delete `public/sw.js` and `public/push-sw.js` entirely.
+```bash
+cd ~/Desktop/shop-flea
+rm -rf node_modules package-lock.json bun.lock
+git pull
+npm install
+npm run build
+npx cap sync ios
+npx cap open ios
+```
 
 ## Verification
+- I'll typecheck after the version bump to confirm the Stripe Elements API surface we use (`Elements`, `useStripe`, `useElements`, `PaymentElement`, `ExpressCheckoutElement`) is unchanged between react-stripe-js 6 → 3.9. These hooks/components exist in both majors with the same signatures we call.
+- If any call site breaks after the downgrade, I'll patch it in the same turn.
 
-After deploy, in a browser that had the old PWA installed: open DevTools → Application → Service Workers, confirm the SW deactivates and unregisters, `flea-assets-*` caches are gone, and navigating between screens no longer hangs on skeletons.
+## Why not the other direction
+Bumping `@capacitor-community/stripe` to a v9 wouldn't help — there is no v9 published; 8.1.1 is current. Using `--legacy-peer-deps` would mask the mismatch and can produce a broken Stripe runtime, so we're aligning the versions properly instead.
