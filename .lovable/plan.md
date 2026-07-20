@@ -1,38 +1,41 @@
-Yes — that terminal output shows the iOS project was updated: the web build succeeded, the new `dist` assets were copied into `ios/App/App/public`, iOS plugins were updated, and `cap sync ios` finished successfully.
+## Problem
 
-The remaining issue is in the current listing drawer sizing code itself. `ListingDetails.tsx` is no longer using `h-[100svh]`, but it is still using `h-full` on the drawer content. Because the drawer already has a fixed `top` and `bottom`, that height override can still push the bottom of the drawer below the visible native iPhone viewport.
+The onboarding sheet already resumes the correct **step** (persisted to `profiles.stripe_onboarding_step`), but every field is reset to empty on open (`src/components/SellerOnboardingSheet.tsx` lines 91–99). So when the user leaves the app to grab their BSB / account number / address / DOB and returns, they land on the right step but with blank inputs — feeling like a full reset. The `BankDetailsStep` internal `bsb` / `account` state has the same problem.
 
-Plan:
+## Fix
 
-1. Update `src/pages/ListingDetails.tsx`
-   - Change the listing drawer content class from:
-     ```text
-     mt-0 flex h-full flex-col overflow-hidden rounded-t-3xl bg-background
-     ```
-   - To:
-     ```text
-     mt-0 flex flex-col overflow-hidden rounded-t-3xl bg-background
-     ```
-   - Keep the existing footer `pb-12` spacing so the buttons have breathing room underneath.
+Persist in-progress form values locally per user and rehydrate on open. Keep step persistence server-side as it is.
 
-2. Leave the shared drawer component alone
-   - Do not change status bar config, safe-area CSS, Capacitor settings, or all drawers globally.
-   - This should only target the full-screen listing drawer that is clipping in native.
+### Changes (frontend only — `src/components/SellerOnboardingSheet.tsx`)
 
-3. Verify there are no other listing drawer height overrides
-   - Re-check for `h-[100svh]`, `max-h-[100svh]`, or `h-full` on listing drawer content.
+1. **Draft storage helper** (module-local):
+   - Key: `flea_seller_onboarding_draft_${user.id}`.
+   - Shape: `{ firstName, lastName, dob, dobInput, phone, line1, suburb, state, postcode, bsb, account }`.
+   - Small `loadDraft(userId)` / `saveDraft(userId, partial)` / `clearDraft(userId)` wrappers around `localStorage` with try/catch.
 
-4. After the fix, use this clean local flow:
-   ```bash
-   cd ~/Desktop/shop-flea
-   git pull
-   npm install
-   npm run build
-   npx cap sync ios
-   npx cap open ios
-   ```
+2. **Rehydrate on open** (replace the reset block at lines 91–99):
+   - Merge order: profile prefill (`first_name`, `last_name`) → draft override.
+   - Only clear/reset when there is no draft.
 
-5. In Xcode after opening
-   - Product → Clean Build Folder.
-   - Run the app on your phone again.
-   - If the old clipped version still appears, delete the app from the phone and run/install again, because the terminal sync was successful but the device may still be opening a previously installed build.
+3. **Autosave on change**:
+   - One `useEffect` watching the personal + address fields → `saveDraft(user.id, { ...fields })` (debounced via microtask is fine; volumes are tiny).
+   - In `BankDetailsStep`, lift initial values from draft and save on change the same way (pass `userId` + `initialDraft` in as props, or read `localStorage` directly inside the component to keep the diff small).
+
+4. **Clear draft** in these terminal paths:
+   - Successful completion of `BankDetailsStep` (after the external account is attached and `onDone` fires).
+   - When the sheet detects the account is fully verified (existing success path that closes the sheet).
+   - On explicit "start over" / account reset flows if any exist (none identified; skip if not present).
+
+5. **Do not** persist sensitive full account numbers longer than needed:
+   - Only keep `bsb` + `account` in localStorage while the sheet is mid-flow; wipe on completion (step 4 done) and on successful verification. This matches how a user expects "resume where I left off" without leaving card numbers behind indefinitely.
+
+### Out of scope
+
+- No backend/schema changes. `stripe_onboarding_step` already covers server-side resume.
+- No changes to ID verification step (photos are captured live and shouldn't be cached).
+- No changes to Stripe edge functions.
+
+### Verification
+
+- Open sheet, fill step 2 partially, background the app, reopen → fields still populated, correct step.
+- Complete flow → reopen sheet (e.g. for re-verification) → starts clean.
