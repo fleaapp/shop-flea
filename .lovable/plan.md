@@ -1,32 +1,33 @@
-## Fix footer badge flashing + mark alerts as read on open
+## Problem
 
-### Problem 1 — Badges flash between screens
-`BottomNav` mounts fresh on every route change and its badge sources (`useNavBadges`, `useNotifications`, `useOrders`, `useUnreadOrderMessages`) each re-run their initial state:
+Last change added `env(safe-area-inset-bottom)` on top of the existing bottom padding in drawers/sheets. On iOS the inset is ~34px, so `pb-[calc(2rem+env(safe-area-inset-bottom))]` renders as ~66px — buttons now float too high above the home indicator. Original project convention (per memory) was a flat `pb-8`/`pb-10` with no safe-area addition, and that's what the user wants back.
 
-- `useNavBadges` uses `staleTime: 0` + `refetchOnMount: 'always'` with no `placeholderData`, so on every nav the query returns `EMPTY` (all zeros) for one render before the cached/refetched data comes back → badges briefly disappear then re-appear.
-- `useNotifications` computes `badgeCount` from `badgeDismissedAt`, which is initialized to `null` via `useState(null)` and only populated inside a `useEffect`. On mount, `badgeDismissedAt` is `null` for the first render → `badgeCount` returns `notifications.length` (full unread) → next tick it flips to the correct "since-dismissed" count. That's the visible flash on the Alerts badge.
+## Fix
 
-### Problem 2 — Opening Alerts doesn't mark notifications as read
-`Notifications.tsx` only calls `dismissBadge()` (a localStorage timestamp that hides the red count). It never sets `is_read = true` in the DB, so:
+Revert the padding in every file touched in the previous safe-area pass back to the original flat values. Do **not** touch any other logic.
 
-- Individual green unread dots stay on every card until the user taps each one.
-- Any downstream logic that reads `is_read` (push, other clients, future badge sources) stays "unread".
+### Files & exact revert
 
-### Changes
+1. `src/components/ui/drawer.tsx` — `DrawerFooter`:
+   - `pb-[calc(1rem+env(safe-area-inset-bottom))]` → `pb-4` (matches memory: `px-4 pt-3 pb-4`)
 
-**`src/hooks/useNotifications.ts`**
-- Lazy-init `badgeDismissedAt` from `localStorage` in `useState(() => …)` so the first render already has the correct value — no null → value flash.
-- Keep the existing `useEffect` for when `user?.id` changes later.
+2. `src/pages/ListingDetails.tsx` — `[data-listing-footer]`: revert to prior `pb-8` (or whatever it had before — will check file before edit).
 
-**`src/hooks/useNavBadges.ts`**
-- Add `placeholderData: (prev) => prev` (keepPreviousData) so navigating between screens keeps the last known counts visible while the refetch runs, instead of momentarily returning `EMPTY`.
-- Keep `refetchOnMount: 'always'` and realtime invalidation unchanged.
+3. `src/components/checkout/CardDetailsSheet.tsx`:
+   - `pb-[calc(2rem+env(safe-area-inset-bottom))]` → `pb-8`
 
-**`src/pages/Notifications.tsx`**
-- On mount, in addition to `dismissBadge()`, call `markAllAsRead.mutate()` so every DB-backed notification for the user is flipped to `is_read = true`. This clears the green unread dots and any cross-device unread state the moment the Alerts screen is opened.
-- Guard the call so it only fires when there is at least one unread notification (avoid pointless writes on every visit).
+4. `src/components/checkout/WalletPaySheet.tsx`:
+   - `pb-[calc(2rem+env(safe-area-inset-bottom))]` → `pb-8`
 
-### Out of scope
-- No visual/UI redesign of the badges or Alerts screen.
-- No changes to notification content, push delivery, or how individual card taps behave.
-- Cart / Profile / Settings badge math (orders to ship, unread order messages, support) is unchanged — they'll simply stop flashing because their source hook now keeps previous data across navigation.
+5. `src/components/ChangePasswordSheet.tsx`, `ChangeEmailSheet.tsx`, `ShippingSettingsSheet.tsx`, `NewChatForm.tsx`, `WriteReviewDrawer.tsx`, `FilterSheet.tsx`:
+   - Same revert: strip the `+env(safe-area-inset-bottom)` addition, restore original flat `pb-8` / `pb-4` value that was there before the safe-area pass.
+
+6. `src/index.css` — remove the PWA/Capacitor `env(safe-area-inset-bottom)` overrides added in the same pass; leave the rest of the file untouched.
+
+### Why this is correct
+
+The vaul drawer sits above the home indicator already; adding safe-area inset double-counts it. Original `pb-8` (32px) sat visually right for the last year of the project and matches every other footer.
+
+### Not touching
+
+No changes to overlay chrome, scroll-restore, or any business logic.
