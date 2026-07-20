@@ -56,7 +56,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/u
  
    return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="px-6 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+      <DrawerContent className="px-6 pb-8">
         <DrawerHeader className="pb-4">
           <DrawerTitle className="text-center">Change Email</DrawerTitle>
         </DrawerHeader>
