@@ -253,30 +253,48 @@ const Checkout = () => {
     const platform = getNativeWalletPlatform();
     if (!platform) return false;
 
+    if (!pi.publishableKey) {
+      toast.error('Payment provider is not configured. Please contact support.');
+      return true;
+    }
     await Stripe.initialize({ publishableKey: pi.publishableKey });
 
     if (platform === 'ios') {
       try {
         await Stripe.isApplePayAvailable();
-      } catch {
-        toast.error('Apple Pay is not available on this device. Please choose Add new card.');
+      } catch (err: any) {
+        // Real reason surfaces here so we don't silently show "not available":
+        // - Apple Pay capability missing from the app target in Xcode
+        // - Merchant ID `merchant.com.finditonflea.app` not ticked / not registered
+        // - No cards in Wallet
+        console.error('isApplePayAvailable failed:', err);
+        const reason = typeof err?.message === 'string' && err.message.length > 0
+          ? err.message
+          : 'Apple Pay is not set up on this device or in this build.';
+        toast.error(`Apple Pay unavailable: ${reason}`);
         return true;
       }
 
-      await Stripe.createApplePay({
-        paymentIntentClientSecret: pi.clientSecret,
-        merchantIdentifier: APPLE_PAY_MERCHANT_ID,
-        countryCode: 'AU',
-        currency: 'AUD',
-        paymentSummaryItems: [
-          {
-            label: pi.merchantDisplayName || 'Flea',
-            amount: Number((pi.amount / 100).toFixed(2)),
-          },
-        ],
-        allowedCountries: ['au'],
-        allowedCountriesErrorDescription: 'Flea is currently available in Australia only.',
-      });
+      try {
+        await Stripe.createApplePay({
+          paymentIntentClientSecret: pi.clientSecret,
+          merchantIdentifier: APPLE_PAY_MERCHANT_ID,
+          countryCode: 'AU',
+          currency: 'AUD',
+          paymentSummaryItems: [
+            {
+              label: pi.merchantDisplayName || 'Flea',
+              amount: Number((pi.amount / 100).toFixed(2)),
+            },
+          ],
+          allowedCountries: ['au'],
+          allowedCountriesErrorDescription: 'Flea is currently available in Australia only.',
+        });
+      } catch (err: any) {
+        console.error('createApplePay failed:', err);
+        toast.error(err?.message || 'Could not start Apple Pay. Please try Add new card.');
+        return true;
+      }
 
       const { paymentResult } = await Stripe.presentApplePay();
       if (paymentResult === ApplePayEventsEnum.Completed) {

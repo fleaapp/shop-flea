@@ -13,5 +13,9 @@
 		<string>applinks:app.finditonflea.com</string>
 		<string>webcredentials:app.finditonflea.com</string>
 	</array>
+	<key>com.apple.developer.in-app-payments</key>
+	<array>
+		<string>merchant.com.finditonflea.app</string>
+	</array>
 </dict>
 </plist>
