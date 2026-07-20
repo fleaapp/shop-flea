@@ -57,31 +57,55 @@ const syncNativeStatusBar = (color: string, isOverlay: boolean) => {
       .then(([{ Capacitor }, { StatusBar, Style }]) => {
         if (requestId !== nativeChromeRequest) return;
         if (!Capacitor.isNativePlatform()) return;
+        const prevOverlay = lastAppliedOverlay;
         lastAppliedColor = color;
         lastAppliedOverlay = isOverlay;
-        if (isOverlay) {
-          void StatusBar.setOverlaysWebView({ overlay: true }).catch(() => undefined);
-          void StatusBar.setBackgroundColor({ color: '#00000000' }).catch(() => undefined);
-          void StatusBar.setStyle({ style: Style.Light }).catch(() => undefined);
-        } else {
+        // Keep the WebView layout stable at all times — never toggle
+        // setOverlaysWebView on overlay open/close, which would resize the
+        // WebView by the status-bar height and cause a visible jump near
+        // the top of the screen. Ensure overlay mode is off exactly once.
+        if (prevOverlay === null) {
           void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
-          void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
-          void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
         }
+        // Only the status-bar strip's background colour changes: dim it
+        // when an overlay (Drawer/Sheet/Dialog) is open so the strip
+        // blends with the Radix bg-black/40 backdrop, restore route
+        // colour otherwise. Style stays Dark so icons don't flicker.
+        const stripColor = isOverlay ? dimColor(color, 0.4) : color;
+        void StatusBar.setBackgroundColor({ color: stripColor }).catch(() => undefined);
+        void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
       })
       .catch(() => undefined);
   }, 60);
 };
 
+// Mix a hex colour with black at the given opacity (0..1). Used to compute
+// the dimmed status-bar strip colour that matches the Radix bg-black/40
+// backdrop shown behind overlays.
+const dimColor = (hex: string, blackAlpha: number): string => {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return hex;
+  const int = parseInt(m[1], 16);
+  const r = (int >> 16) & 0xff;
+  const g = (int >> 8) & 0xff;
+  const b = int & 0xff;
+  const k = 1 - Math.max(0, Math.min(1, blackAlpha));
+  const mix = (c: number) => Math.round(c * k).toString(16).padStart(2, '0');
+  return `#${mix(r)}${mix(g)}${mix(b)}`;
+};
+
 export const applyAppChromeColor = (color: string, statusBarStyle: 'default' | 'black-translucent' = 'default') => {
   const isOverlay = statusBarStyle === 'black-translucent';
   const routeTopColor = getRouteTopColor();
-  const visibleTopColor = isOverlay ? routeTopColor : color;
+  // Never repaint the WebView top strip to the transparent overlay value —
+  // that caused a visible flash near the status bar when a drawer opened.
+  // Only the native status bar strip dims (handled in syncNativeStatusBar).
+  const visibleTopColor = routeTopColor;
   const isAuthColor = visibleTopColor === AUTH_TOP_COLOR;
   document.documentElement.classList.remove('dark');
   document.documentElement.classList.toggle('app-overlay-chrome', isOverlay);
   document.body?.classList.toggle('app-overlay-chrome', isOverlay);
-  document.documentElement.style.colorScheme = isOverlay ? 'dark' : 'light';
+  document.documentElement.style.colorScheme = 'light';
   document.documentElement.style.setProperty('--app-top-bg', visibleTopColor);
   document.body?.style.setProperty('--app-top-bg', visibleTopColor);
   document.documentElement.style.backgroundColor = visibleTopColor;
@@ -101,13 +125,14 @@ export const applyAppChromeColor = (color: string, statusBarStyle: 'default' | '
   theme?.setAttribute('content', visibleTopColor);
 
   const colorScheme = document.querySelector('meta[name="color-scheme"]') as HTMLMetaElement | null;
-  colorScheme?.setAttribute('content', isOverlay ? 'dark light' : 'light');
+  colorScheme?.setAttribute('content', 'light');
 
   const status = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]') as HTMLMetaElement | null;
   status?.setAttribute('content', 'default');
 
   syncNativeStatusBar(visibleTopColor, isOverlay);
 };
+
 
 const applyOverlayAppChrome = () => {
   applyAppChromeColor(OVERLAY_TOP_COLOR, 'black-translucent');
