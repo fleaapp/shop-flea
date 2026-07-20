@@ -13,8 +13,9 @@ const config: CapacitorConfig = {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
     StatusBar: {
-      overlaysWebView: true,
+      overlaysWebView: false,
       style: 'DARK',
+      backgroundColor: '#DDFED7',
     },
     SplashScreen: {
       launchShowDuration: 0,

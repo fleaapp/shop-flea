@@ -30,6 +30,8 @@ const getRouteTopColor = () => {
 };
 
 
+let lastAppliedColor: string | null = null;
+let lastAppliedOverlay: boolean | null = null;
 let pendingTimer: ReturnType<typeof setTimeout> | null = null;
 
 const isNativeBridgeReady = (): boolean => {
@@ -39,33 +41,88 @@ const isNativeBridgeReady = (): boolean => {
   return cap.isPluginAvailable?.('StatusBar') ?? true;
 };
 
-// Configure the native status bar ONCE: overlay the WebView so the Radix
-// backdrop (bg-foreground/50) naturally dims the status-bar area in sync
-// with its opacity animation. Never call setBackgroundColor — any per-open
-// native repaint desyncs from the CSS fade and produces a visible flash.
-let nativeStatusBarConfigured = false;
-const syncNativeStatusBar = (_color: string, _isOverlay: boolean) => {
-  if (nativeStatusBarConfigured) return;
-  nativeStatusBarConfigured = true;
+const syncNativeStatusBar = (color: string, isOverlay: boolean) => {
+  // Only switch the native status bar to transparent overlay mode WHILE a
+  // Drawer/Dialog/Sheet/AlertDialog is open, so the dim backdrop blends over
+  // the status bar. In normal (non-overlay) state the status bar is a solid
+  // strip matching the route colour and the WebView sits below it — no
+  // per-page safe-area padding required.
+  if (color === lastAppliedColor && isOverlay === lastAppliedOverlay) return;
   const requestId = ++nativeChromeRequest;
   if (pendingTimer) clearTimeout(pendingTimer);
   pendingTimer = setTimeout(() => {
     pendingTimer = null;
-    if (!isNativeBridgeReady()) {
-      nativeStatusBarConfigured = false;
-      return;
-    }
+    if (!isNativeBridgeReady()) return;
     void Promise.all([import('@capacitor/core'), import('@capacitor/status-bar')])
       .then(([{ Capacitor }, { StatusBar, Style }]) => {
         if (requestId !== nativeChromeRequest) return;
         if (!Capacitor.isNativePlatform()) return;
-        void StatusBar.setOverlaysWebView({ overlay: true }).catch(() => undefined);
+        const prevOverlay = lastAppliedOverlay;
+        lastAppliedColor = color;
+        lastAppliedOverlay = isOverlay;
+        // Keep the WebView layout stable at all times — never toggle
+        // setOverlaysWebView on overlay open/close, which would resize the
+        // WebView by the status-bar height and cause a visible jump near
+        // the top of the screen. Ensure overlay mode is off exactly once.
+        if (prevOverlay === null) {
+          void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
+        }
+        // Only the status-bar strip's background colour changes: dim it
+        // when an overlay (Drawer/Sheet/Dialog) is open so the strip
+        // blends with the Radix bg-foreground/50 backdrop, restore route
+        // colour otherwise. Style stays Dark so icons don't flicker.
+        const stripColor = isOverlay ? overlayTint(color) : color;
+        void StatusBar.setBackgroundColor({ color: stripColor }).catch(() => undefined);
         void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
       })
-      .catch(() => {
-        nativeStatusBarConfigured = false;
-      });
-  }, 0);
+      .catch(() => undefined);
+  }, 60);
+};
+
+// Parse "H S% L%" (the shape Tailwind stores in --foreground) to hex.
+const hslTripleToHex = (triple: string): string | null => {
+  const m = /^\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*$/.exec(triple);
+  if (!m) return null;
+  const h = parseFloat(m[1]);
+  const s = parseFloat(m[2]) / 100;
+  const l = parseFloat(m[3]) / 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const mm = l - c / 2;
+  let r = 0, g = 0, b = 0;
+  if (h < 60) { r = c; g = x; }
+  else if (h < 120) { r = x; g = c; }
+  else if (h < 180) { g = c; b = x; }
+  else if (h < 240) { g = x; b = c; }
+  else if (h < 300) { r = x; b = c; }
+  else { r = c; b = x; }
+  const to = (v: number) => Math.round((v + mm) * 255).toString(16).padStart(2, '0');
+  return `#${to(r)}${to(g)}${to(b)}`;
+};
+
+const hexToRgb = (hex: string): [number, number, number] | null => {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return null;
+  const int = parseInt(m[1], 16);
+  return [(int >> 16) & 0xff, (int >> 8) & 0xff, int & 0xff];
+};
+
+// Compose the current `--foreground` token at 50% over the route colour to
+// exactly match Radix's `bg-foreground/50` overlay. Falls back to the
+// charcoal token literal (#29303D) if the CSS variable can't be read.
+const overlayTint = (routeHex: string): string => {
+  let fgHex = '#29303D';
+  try {
+    const raw = getComputedStyle(document.documentElement).getPropertyValue('--foreground');
+    const parsed = raw && hslTripleToHex(raw);
+    if (parsed) fgHex = parsed;
+  } catch { /* fall through */ }
+  const fg = hexToRgb(fgHex);
+  const bg = hexToRgb(routeHex);
+  if (!fg || !bg) return routeHex;
+  const a = 0.5;
+  const mix = (i: number) => Math.round(fg[i] * a + bg[i] * (1 - a)).toString(16).padStart(2, '0');
+  return `#${mix(0)}${mix(1)}${mix(2)}`;
 };
 
 export const applyAppChromeColor = (color: string, statusBarStyle: 'default' | 'black-translucent' = 'default') => {
