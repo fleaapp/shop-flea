@@ -179,8 +179,8 @@ export default function AdminUsers() {
                 <Stat label="Refunds" value={String(selected.refunds_count)} tone={selected.refunds_count > 0 ? 'risk' : undefined} />
                 <Stat label="Reports" value={String(selected.reports_against)} tone={selected.reports_against > 0 ? 'risk' : undefined} />
                 <Stat label="Strikes" value={String(selected.report_strike_count)} tone={selected.report_strike_count > 0 ? 'risk' : undefined} />
-                <Stat label="Last active" value={selected.last_sign_in_at ? format(new Date(selected.last_sign_in_at), 'MMM d') : '—'} />
-                <Stat label="Joined" value={format(new Date(selected.created_at), 'MMM yyyy')} />
+                <Stat label="Last active" value={selected.last_sign_in_at ? format(new Date(selected.last_sign_in_at), 'MMM d, yyyy') : '—'} />
+                <Stat label="Joined" value={selected.created_at ? format(new Date(selected.created_at), 'MMM d, yyyy') : '—'} />
               </div>
 
               <div className="px-5 pb-4">
