@@ -146,7 +146,7 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="px-6 pb-8">
+      <DrawerContent className="px-6 pb-[calc(2rem+env(safe-area-inset-bottom))]">
         <DrawerHeader className="py-6">
           <DrawerTitle className="text-center flex items-center justify-center gap-2">
             <span>📦</span> Shipping Settings

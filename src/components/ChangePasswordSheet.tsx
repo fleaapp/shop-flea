@@ -113,7 +113,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
  
    return (
     <Drawer open={open} onOpenChange={handleClose}>
-      <DrawerContent className="px-6 pb-8">
+      <DrawerContent className="px-6 pb-[calc(2rem+env(safe-area-inset-bottom))]">
         <DrawerHeader className="pb-4">
           <DrawerTitle className="text-center">Change Password</DrawerTitle>
         </DrawerHeader>
