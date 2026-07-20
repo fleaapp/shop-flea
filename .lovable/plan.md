@@ -1,46 +1,54 @@
-## Problem
 
-`src/utils/contentModeration.ts` is blocking normal English like:
+## What's actually broken
 
-> "Label has been removed. I believe around a size 12. Good condition."
+Your dad's comment **did** create a notification for @sarahhearn2 on the real (external) database — I can see the row `@jcsbh commented on your listing "Puma sneakers"` at 11:33 UTC today, plus two earlier ones and two `@mention` rows. So the app code and `notify_on_comment` are working. What's broken is everything downstream of the notification row.
 
-Users can't list items or comment with common words ("I", "a") or single/small numbers ("12"). This is a client-side false positive in the moderation utility used by both listing creation and comments.
+Three concrete gaps on the production database (`dzglehiopfgfjmxtejve`):
 
-## Root cause investigation (step 1)
+1. **No push trigger exists on the `notifications` table.** The `trigger_push_notification` function and the three `AFTER INSERT` triggers we set up only live on the Lovable Cloud database, which never sees these inserts. On production, inserting a notification just… sits there. Nothing calls `send-push-notification`. That's why no push arrived for any of today's 5 notifications.
 
-Add a one-off script to run the exact failing text through `moderateContent` and log which detector fires (`profanity` / `contact` / `social` / `url`) and on which normalized form. Likely culprits based on reading the current code:
+2. **`push_subscriptions.platform` column is missing on production.** The native iOS hook (`useNativePushNotifications`) inserts with `platform: 'ios'`, which throws a schema error on production, so **no APNs device token has ever been saved for your TestFlight build**. Every row in production `push_subscriptions` is a web/PWA endpoint (`web.push.apple.com/…`), not an APNs token. Even if the trigger fired, it would try to web-push to old PWA endpoints, not your native app.
 
-- `CHAR_SUBSTITUTIONS` is over-broad: e.g. `'i': ['1','!','|','l','¡','í']` rewrites every `l` in the text to `i`, `'s': [...,'z']` and `'z': [...,'s']` swap letters — this can synthesize profanity/social terms that aren't there.
-- `NUMBER_WORDS` maps single letter `'o': '0'`, so any standalone "O" (or word-boundary "o") becomes a digit that then feeds phone detection.
-- `makeLooseBoundedPattern` with `[^a-z0-9]*` between letters can match short profanity across word boundaries after aggressive substitutions.
-- Phone detector's 7-digit threshold is fine, but `normalizeText`-derived digits may inflate the count after substitutions.
+3. **`push_service_role_key` is not seeded in production's vault.** The trigger reads that secret to authorize the call to `send-push-notification`. Without it, the trigger short-circuits with a warning.
 
-## Fix (step 2)
+Everything else (edge function, APNs credentials in Cloud secrets, `send-push-notification` code) is already correct — it just never gets called for production notification inserts, and there's no native token to send to anyway.
 
-Tighten `src/utils/contentModeration.ts`:
+## Plan
 
-1. **Character substitutions**: only apply when a token contains at least one non-alphabetic character (i.e. only run leet decoding on suspicious tokens, not plain English words). Remove the ambiguous letter↔letter swaps (`l↔i`, `s↔z`, `z↔s`, `l↔1`-only-in-letters context, `o↔0` inside words).
-2. **Number words**: drop the single-letter entries (`'o'`, `'oh'`) — too false-positive-prone. Keep multi-letter number words.
-3. **Phone digits**: count digits from the original text (already done via `rawDigits`), but stop using `normalizedDigits` since normalization now injects digits from letters. Keep the 7+ threshold on `rawDigits` only.
-4. **Profanity/social loose matching**: change `[^a-z0-9]*` to `[^a-z0-9]{0,2}` between letters so short banned words like `ass`, `die`, `kys` can't span an entire phrase.
-5. **Whitelist common short English tokens** (`i`, `a`, `an`, `is`, `it`, `to`, `of`, etc.) so they short-circuit before any detector runs on the token.
+### 1. Migrate the missing schema + trigger to production
+Run one migration against the external database that:
+- Adds `platform text not null default 'web'` to `public.push_subscriptions` and the `(user_id, platform)` index.
+- Creates `public.trigger_push_notification()` (identical body to Cloud: reads `push_service_role_key` from `vault.decrypted_secrets` and `net.http_post`s to `https://dzglehiopfgfjmxtejve.supabase.co/functions/v1/send-push-notification`).
+- Creates a single `AFTER INSERT` trigger `notifications_push_trigger` on `public.notifications` (no duplicates — Cloud currently has three copies of the same trigger, which we won't repeat).
+- Creates `public.seed_push_vault_key(text)` so the key can be seeded from an edge function.
 
-## Verification (step 3)
+### 2. Seed the service role key into production's vault
+Deploy `seed-push-vault-key` targeting the external project (it already exists — we just need to invoke it once against production URL with the external service role key). This unlocks the trigger's `net.http_post` call.
 
-Add a small test script (temporary) that runs a batch of realistic phrases through `moderateContent`:
-- "Label has been removed. I believe around a size 12. Good condition." → allowed
-- "Size 8, worn once, great condition" → allowed
-- "DM me on insta @flea" → blocked (social)
-- "Call me on 0412 345 678" → blocked (contact)
-- "fuck this" → blocked (profanity)
+### 3. Deploy `send-push-notification` under the external project as well
+The trigger will call `https://dzglehiopfgfjmxtejve.supabase.co/functions/v1/send-push-notification`. If that function isn't deployed on the external project, the POST 404s silently. Confirm it's deployed there; if not, deploy it and set the APNs + VAPID secrets on the external project too.
 
-Delete the script after confirmation.
+### 4. Clean up stale web-push subscriptions
+Production has ~20 duplicate `web.push.apple.com/…` rows for @sarahhearn2, all from a single PWA session on July 20 01:37–01:38 UTC. Delete rows older than the newest 1 per user so the edge function stops trying to fan out to dead endpoints. (Non-blocking, but reduces noise and 410 cleanup churn.)
 
-## Files
+### 5. Ship a new TestFlight build so the native APNs token registers
+Once step 1 lands, `useNativePushNotifications` will succeed and insert a row with `platform='ios'`. Until then, no APNs token exists on production and even a working trigger has nothing to send to for your native app. After the build installs and you accept the prompt, verify a row appears with `platform='ios'` and endpoint starting with a 64-hex device token (not `https://…`).
 
-- `src/utils/contentModeration.ts` — tighten normalization and detection.
-- No server changes needed for listing/comment flow (client util is the gate for both).
+### Verification after deploy
+- Have @jcsbh post a fresh comment on a @sarahhearn2 listing.
+- Confirm `send-push-notification` edge function logs show `Found 1 subscription(s)` and `APNs …` for the iOS sub.
+- Confirm the phone receives the banner.
+- Repeat for a `mention`, an `order_message`, and a manual `item_sold` to prove app-wide coverage, not just comments.
 
-## Out of scope
+## Technical section
 
-- `supabase/functions/moderate-content/index.ts` isn't invoked by the listing/comment flow (they call `useContentModeration` → client util). I'll leave the edge function alone unless you want it aligned in the same pass.
+- Migration goes to external via `psql "$EXTERNAL_SUPABASE_DB_URL"` (Cloud migration tools only touch the Cloud DB, which is why production drifted).
+- `trigger_push_notification` body must be byte-identical to the Cloud version (already in `db-functions` context) but with the URL hardcoded to the external project ref.
+- `seed_push_vault_key` should upsert into `vault.secrets` (matches existing Cloud implementation).
+- `send-push-notification` is unchanged — it already reads `EXTERNAL_SUPABASE_URL`/`EXTERNAL_SUPABASE_SERVICE_ROLE_KEY` and dispatches web-push vs APNs based on `platform`.
+- The Cloud DB's three duplicate triggers can be pruned to one at the same time to keep the two DBs consistent, but that's cosmetic — Cloud never sees notification inserts anyway.
+
+## Out of scope for this plan (say the word if you want them folded in)
+
+- Rate-limiting duplicate PWA subscriptions per user (bug that let ~20 identical rows accumulate in one minute).
+- Migrating any other schema drift between Cloud and production (only push was checked).
