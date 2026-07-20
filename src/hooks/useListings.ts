@@ -28,6 +28,8 @@ export interface DbListing {
   status: string;
   created_at: string;
   updated_at: string;
+  source_listing_id?: string;
+  order_id?: string;
   // Joined profile data
   profiles?: {
     username: string;
@@ -38,6 +40,11 @@ export interface DbListing {
     status?: string | null;
   } | null;
 }
+
+const HIDDEN_FROM_PROFILE_STATUSES = new Set(['hidden', 'removed', 'archived', 'blocked', 'deleted']);
+
+const isHiddenFromProfile = (listing: Pick<DbListing, 'status'>) =>
+  HIDDEN_FROM_PROFILE_STATUSES.has((listing.status || '').toLowerCase());
 
 export interface ListingFilters {
   category?: string;
@@ -319,7 +326,11 @@ export const useUserListings = (status?: 'active' | 'sold' | 'archived') => {
             .eq('user_id', user.id);
 
           if (data) {
-            const listingMap = new Map(data.map((listing) => [listing.id, listing]));
+            const listingMap = new Map(
+              data
+                .filter((listing) => !isHiddenFromProfile(listing))
+                .map((listing) => [listing.id, listing])
+            );
             orderedSoldListings = orders
               .map((order) => {
                 const listing = listingMap.get(order.listing_id);
