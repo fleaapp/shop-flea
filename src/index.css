@@ -91,6 +91,13 @@
   }
 }
 
+[data-vaul-drawer-wrapper],
+[vaul-drawer-wrapper] {
+  background: hsl(var(--background));
+}
+
+
+
 @layer base {
   * {
     @apply border-border;
