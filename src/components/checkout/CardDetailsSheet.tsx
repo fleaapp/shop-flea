@@ -99,7 +99,7 @@ const CardForm = ({
   };
 
   return (
-    <div className="px-4 pt-3 pb-8 space-y-4">
+    <div className="px-4 pt-3 pb-[calc(2rem+env(safe-area-inset-bottom))] space-y-4">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-foreground">Card details</h2>
         <div className="mt-1 flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
