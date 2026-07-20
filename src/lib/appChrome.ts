@@ -69,9 +69,9 @@ const syncNativeStatusBar = (color: string, isOverlay: boolean) => {
         }
         // Only the status-bar strip's background colour changes: dim it
         // when an overlay (Drawer/Sheet/Dialog) is open so the strip
-        // blends with the Radix bg-black/40 backdrop, restore route
+        // blends with the Radix bg-foreground/50 backdrop, restore route
         // colour otherwise. Style stays Dark so icons don't flicker.
-        const stripColor = isOverlay ? dimColor(color, 0.4) : color;
+        const stripColor = isOverlay ? overlayTint(color) : color;
         void StatusBar.setBackgroundColor({ color: stripColor }).catch(() => undefined);
         void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
       })
@@ -79,19 +79,50 @@ const syncNativeStatusBar = (color: string, isOverlay: boolean) => {
   }, 60);
 };
 
-// Mix a hex colour with black at the given opacity (0..1). Used to compute
-// the dimmed status-bar strip colour that matches the Radix bg-black/40
-// backdrop shown behind overlays.
-const dimColor = (hex: string, blackAlpha: number): string => {
+// Parse "H S% L%" (the shape Tailwind stores in --foreground) to hex.
+const hslTripleToHex = (triple: string): string | null => {
+  const m = /^\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*$/.exec(triple);
+  if (!m) return null;
+  const h = parseFloat(m[1]);
+  const s = parseFloat(m[2]) / 100;
+  const l = parseFloat(m[3]) / 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const mm = l - c / 2;
+  let r = 0, g = 0, b = 0;
+  if (h < 60) { r = c; g = x; }
+  else if (h < 120) { r = x; g = c; }
+  else if (h < 180) { g = c; b = x; }
+  else if (h < 240) { g = x; b = c; }
+  else if (h < 300) { r = x; b = c; }
+  else { r = c; b = x; }
+  const to = (v: number) => Math.round((v + mm) * 255).toString(16).padStart(2, '0');
+  return `#${to(r)}${to(g)}${to(b)}`;
+};
+
+const hexToRgb = (hex: string): [number, number, number] | null => {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) return hex;
+  if (!m) return null;
   const int = parseInt(m[1], 16);
-  const r = (int >> 16) & 0xff;
-  const g = (int >> 8) & 0xff;
-  const b = int & 0xff;
-  const k = 1 - Math.max(0, Math.min(1, blackAlpha));
-  const mix = (c: number) => Math.round(c * k).toString(16).padStart(2, '0');
-  return `#${mix(r)}${mix(g)}${mix(b)}`;
+  return [(int >> 16) & 0xff, (int >> 8) & 0xff, int & 0xff];
+};
+
+// Compose the current `--foreground` token at 50% over the route colour to
+// exactly match Radix's `bg-foreground/50` overlay. Falls back to the
+// charcoal token literal (#29303D) if the CSS variable can't be read.
+const overlayTint = (routeHex: string): string => {
+  let fgHex = '#29303D';
+  try {
+    const raw = getComputedStyle(document.documentElement).getPropertyValue('--foreground');
+    const parsed = raw && hslTripleToHex(raw);
+    if (parsed) fgHex = parsed;
+  } catch { /* fall through */ }
+  const fg = hexToRgb(fgHex);
+  const bg = hexToRgb(routeHex);
+  if (!fg || !bg) return routeHex;
+  const a = 0.5;
+  const mix = (i: number) => Math.round(fg[i] * a + bg[i] * (1 - a)).toString(16).padStart(2, '0');
+  return `#${mix(0)}${mix(1)}${mix(2)}`;
 };
 
 export const applyAppChromeColor = (color: string, statusBarStyle: 'default' | 'black-translucent' = 'default') => {
