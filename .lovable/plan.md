@@ -1,40 +1,27 @@
 ## Problem
 
-When the user backgrounds the app on step 4 (BSB / account number) of Seller Onboarding and returns, the sheet snaps back to step 1 instead of staying on step 4.
+You reverted past the status-bar dimming fix. The current `src/lib/appChrome.ts` dims the native status-bar strip by mixing the route colour with **40% black** (`dimColor(color, 0.4)`), but the drawer/sheet backdrop in the app is actually `bg-foreground/50`. On native iOS this makes the status-bar strip look slightly darker than the backdrop and can make the top edge appear to glitch.
 
-## Root cause (verified from code)
+## Root cause (verified from git history)
 
-`SellerOnboardingSheet.tsx` initializes `step` from `profile.stripe_onboarding_step` inside an effect whose deps are `[open, profile, user?.id]`. Two things break resume:
-
-1. **Effect refires on every `profile` reference change.** When the app resumes, `AuthContext` re-fetches and hands back a new `profile` object. The init effect runs again and *resets* form + step from whatever `profile.stripe_onboarding_step` says. If the write of `"4"` hadn't landed / been re-read yet, or if the profile row served is stale, the step drops back to 1.
-2. **Two sheet instances race.** `PaymentMethodsSection` renders one `SellerOnboardingSheet`, and `SellerOnboardingResumeMount` renders another. On resume, the mount opens *its* sheet even if the user's original sheet is still open, and its fresh init reads whatever profile has — again clobbering the current step.
-3. **Step write can silently fail** under the `profiles_update_guard` RLS (no error surface today), so DB never actually stores `"4"` and the "resume" flow has nothing to read.
+The last revert (`97223f06`) reset the repo to `9084b05e` (the seller-onboarding step-persistence change). That dropped the follow-up fix from `7f9314a8` which replaced the 40% black mix with a 50% `--foreground` overlay tint.
 
 ## Fix
 
-Make step resume purely local (localStorage), independent of profile round-trip and RLS. Stop letting profile refreshes clobber the current step. Prevent duplicate sheets.
+Restore only the `src/lib/appChrome.ts` changes from `7f9314a8`. Leave the seller-onboarding persistence work untouched.
 
 ### Changes
 
-1. **`src/lib/sellerOnboardingResume.ts`** — extend to persist the current step per user:
-   - `setOnboardingStep(userId, step)`, `getOnboardingStep(userId): 1|2|3|4|null`, and clear it inside `clearOnboardingResume`.
-   - Key: `flea_seller_onboarding_step_${userId}`.
+1. **`src/lib/appChrome.ts`**
+   - Remove the `dimColor` helper that mixes black at 40%.
+   - Add an `overlayTint` helper that reads the CSS `--foreground` token, converts its HSL value to hex, and composites it over the route colour at 50% alpha to match `bg-foreground/50`.
+   - Update the comment and the `syncNativeStatusBar` call to use `overlayTint(color)` instead of `dimColor(color, 0.4)`.
+   - Keep all other chrome logic (no `overlaysWebView` toggle, route colour detection, etc.) exactly as it is now.
 
-2. **`src/components/SellerOnboardingSheet.tsx`**
-   - In the init effect, change deps to `[open, user?.id]` only (drop `profile`) so profile refreshes on resume don't re-run the reset. Read `profile` inside the effect without subscribing.
-   - Compute resume step as: `getOnboardingStep(userId) ?? Number(profile.stripe_onboarding_step) || 1`. Local wins.
-   - In the "persist step" effect, also call `setOnboardingStep(user.id, step)` (synchronous, cannot fail). Keep the DB write as a best-effort backup.
-   - Keep `clearOnboardingResume` on explicit close and on completion (it will also clear the stored step).
-
-3. **`src/components/SellerOnboardingResumeMount.tsx`**
-   - Only auto-open when no other sheet is already showing. Add a lightweight guard: check `document.querySelector('[data-seller-onboarding-sheet="open"]')` before calling `setOpen(true)`; and tag the sheet's root `DrawerContent`/`SheetContent` with `data-seller-onboarding-sheet={open ? 'open' : 'closed'}` in `SellerOnboardingSheet.tsx`.
-   - This prevents the resume mount from stacking a second sheet over the one the user is already viewing.
-
-4. **No schema / RLS changes.** DB step column stays as a backup only; we no longer depend on it for resume correctness.
+2. **No other files change.** `capacitor.config.ts` is identical between `9084b05e` and `7f9314a8`, so it does not need editing.
 
 ## Verification
 
-- Open onboarding from Settings, advance to step 4, background the app for 30s, return → sheet stays on step 4 with BSB/account inputs intact.
-- Cold-relaunch the app while resume flag is set → resume mount reopens the sheet on step 4.
-- Explicitly close the sheet (X / backdrop / "Not now") → resume flag + stored step cleared; next open starts at step 1.
-- Complete onboarding → flag + stored step cleared.
+- Run `npm run build` to confirm no TypeScript errors.
+- In the native preview, open any drawer/sheet and confirm the native status-bar strip colour matches the dimmed backdrop tone instead of appearing darker.
+- Close the drawer and confirm the status bar returns to the route colour with no jump or resize.
