@@ -113,42 +113,52 @@ const SellerOnboardingSheet = ({
     const savedStep = Number(p.stripe_onboarding_step);
     const resumeStep = savedStep >= 1 && savedStep <= 4 ? (savedStep as 1 | 2 | 3 | 4) : 1;
     setStep(resumeStep);
-    setFirstName(p.first_name || '');
-    setLastName(p.last_name || '');
-    setDob('');
-    setDobInput('');
-    setPhone('');
-    setLine1('');
-    setSuburb('');
-    setState('');
-    setPostcode('');
-  }, [open, profile]);
+  const handleVerifiedSuccess = (result?: { setupCompleted?: boolean }) => {
+    clearOnboardingDraft(user?.id);
+    onOpenChange(false);
+    shouldShowPushPromptAsync(user?.id, 'seller_verified').then((show) => {
+      if (show) setTimeout(() => setShowPushSheet(true), 300);
+    });
+    onComplete?.(result);
+  };
 
-  // When re-opened for an existing account that Stripe has flagged for more info
-  // (charges/payouts disabled or requirements past-due), probe live status and
-  // route the user straight to the native step that resolves the block. We
-  // never send them off to a Stripe-hosted page.
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [dob, setDob] = useState(''); // YYYY-MM-DD
+  const [dobInput, setDobInput] = useState('');
+  const [phone, setPhone] = useState('');
+  const [line1, setLine1] = useState('');
+  const [suburb, setSuburb] = useState('');
+  const [state, setState] = useState('');
+  const [postcode, setPostcode] = useState('');
+
+  // Reset on open. Prefill from profile, then override with any locally-saved
+  // draft so users who left the app mid-flow (e.g. to grab their BSB) come
+  // back to exactly what they had entered.
   useEffect(() => {
-    if (!open || needsIdVerification) return;
-    const accountId = (profile as any)?.stripe_account_id;
-    if (!stripeActionRequired || !accountId) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await invokeCloudFunction('stripe-connect-status', { stripeAccountId: accountId });
-        if (cancelled || !data) return;
-        const due: string[] = [
-          ...((data as any).currentlyDue || []),
-          ...((data as any).pastDue || []),
-        ];
-        // External account (bank) missing or invalid — jump straight to bank step.
-        if (due.some((r) => r.startsWith('external_account'))) {
-          setStep(4);
-          return;
-        }
-        // Address requirement — jump to address step.
-        if (due.some((r) => r.includes('address'))) {
-          setStep(3);
+    if (!open) return;
+    const p: any = profile || {};
+    const savedStep = Number(p.stripe_onboarding_step);
+    const resumeStep = savedStep >= 1 && savedStep <= 4 ? (savedStep as 1 | 2 | 3 | 4) : 1;
+    setStep(resumeStep);
+    const d = loadDraft(user?.id);
+    setFirstName(d.firstName ?? p.first_name ?? '');
+    setLastName(d.lastName ?? p.last_name ?? '');
+    setDob(d.dob ?? '');
+    setDobInput(d.dobInput ?? '');
+    setPhone(d.phone ?? '');
+    setLine1(d.line1 ?? '');
+    setSuburb(d.suburb ?? '');
+    setState(d.state ?? '');
+    setPostcode(d.postcode ?? '');
+  }, [open, profile, user?.id]);
+
+  // Autosave form drafts locally while the sheet is open.
+  useEffect(() => {
+    if (!open || !user?.id) return;
+    saveDraft(user.id, { firstName, lastName, dob, dobInput, phone, line1, suburb, state, postcode });
+  }, [open, user?.id, firstName, lastName, dob, dobInput, phone, line1, suburb, state, postcode]);
+
           return;
         }
         // Otherwise assume personal info is what's needed.
