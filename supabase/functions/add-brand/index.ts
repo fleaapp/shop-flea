@@ -18,8 +18,8 @@ const normalizeBrandName = (value: string) =>
     .replace(/\s+/g, " ")
     .trim();
 
-const externalUrl = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
-const externalAnonKey = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "";
+const externalUrl = Deno.env.get("SUPABASE_URL") ?? "";
+const externalAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 const cloudUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const cloudServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 

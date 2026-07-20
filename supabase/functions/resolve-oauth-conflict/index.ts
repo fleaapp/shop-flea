@@ -5,9 +5,9 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const EXTERNAL_URL = Deno.env.get('EXTERNAL_SUPABASE_URL')!;
-const EXTERNAL_ANON_KEY = Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY')!;
-const SERVICE_KEY = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY')!;
+const EXTERNAL_URL = Deno.env.get('SUPABASE_URL')!;
+const EXTERNAL_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 type Provider = 'email' | 'google' | 'apple';
 

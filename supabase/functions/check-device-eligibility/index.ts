@@ -25,8 +25,8 @@ serve(async (req) => {
       });
     }
 
-    const externalUrl = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
-    const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const externalUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const svc = createClient(externalUrl, serviceKey);
 
     const { data: blocked } = await svc

@@ -44,7 +44,7 @@ function buildOrderSelect(omitted: Set<string>) {
 }
 
 async function fetchAwaitingRefundOrders(admin: ReturnType<typeof createClient>, cutoff: string) {
-  const dbUrl = Deno.env.get("EXTERNAL_SUPABASE_DB_URL") ?? Deno.env.get("SUPABASE_DB_URL") ?? "";
+  const dbUrl = Deno.env.get("SUPABASE_DB_URL") ?? Deno.env.get("SUPABASE_DB_URL") ?? "";
   if (dbUrl) {
     const sql = postgres(dbUrl, { max: 1 });
     try {
@@ -106,7 +106,7 @@ async function fetchAwaitingRefundOrders(admin: ReturnType<typeof createClient>,
 }
 
 async function markOrderRefunded(orderId: string, refundReason: string) {
-  const dbUrl = Deno.env.get("EXTERNAL_SUPABASE_DB_URL") ?? Deno.env.get("SUPABASE_DB_URL") ?? "";
+  const dbUrl = Deno.env.get("SUPABASE_DB_URL") ?? Deno.env.get("SUPABASE_DB_URL") ?? "";
   const refundedAt = new Date();
 
   if (!dbUrl) {
@@ -215,7 +215,7 @@ async function resolvePaymentIntentId(stripe: Stripe, order: any) {
 async function firePush(userId: string, notification: Record<string, unknown>) {
   try {
     const url = Deno.env.get("SUPABASE_URL") ?? "https://teaicrimlqdayqpmxasc.supabase.co";
-    const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     await fetch(`${url}/functions/v1/send-push-notification`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
@@ -229,7 +229,7 @@ async function firePush(userId: string, notification: Record<string, unknown>) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const expectedKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const expectedKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!expectedKey || authHeader !== `Bearer ${expectedKey}`) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -240,8 +240,8 @@ Deno.serve(async (req) => {
 
   try {
     const admin = createClient(
-      Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "",
-      Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
     const cutoff = new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString();

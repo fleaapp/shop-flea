@@ -24,9 +24,9 @@ Deno.serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     if (!token) return json({ error: "Unauthorized" }, 401);
 
-    const EXTERNAL_URL = Deno.env.get("EXTERNAL_SUPABASE_URL")!;
-    const EXTERNAL_ANON = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY")!;
-    const SERVICE_KEY = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY")!;
+    const EXTERNAL_URL = Deno.env.get("SUPABASE_URL")!;
+    const EXTERNAL_ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     // Verify caller
     const verifier = createClient(EXTERNAL_URL, EXTERNAL_ANON, {

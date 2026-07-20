@@ -28,8 +28,8 @@ const corsHeaders = {
 
 async function checkRateLimit(key: string, max: number, windowSeconds: number): Promise<boolean> {
   try {
-    const url = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? Deno.env.get("SUPABASE_URL") ?? "";
-    const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const url = Deno.env.get("SUPABASE_URL") ?? Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     if (!url || !serviceKey) return true;
     const res = await fetch(`${url}/rest/v1/rpc/check_and_record_rate_limit`, {
       method: "POST",
@@ -68,7 +68,7 @@ function isMissingColumnError(error: unknown, columnName: string) {
 async function reloadExternalSchemaCache() {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     if (!supabaseUrl || !serviceKey) return;
     await fetch(`${supabaseUrl}/functions/v1/reload-schema`, {
       method: "POST",
@@ -120,7 +120,7 @@ async function fetchOrdersForBuyer(client: ReturnType<typeof createClient>, user
 async function sendPushNotification(userId: string, notification: Record<string, unknown>) {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     if (!supabaseUrl || !serviceKey) return;
     await fetch(`${supabaseUrl}/functions/v1/send-push-notification`, {
       method: "POST",
@@ -140,8 +140,8 @@ async function getUserId(req: Request): Promise<string | null> {
   if (!token) return null;
   try {
     const verifier = createClient(
-      Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "",
-      Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "",
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       { auth: { persistSession: false, autoRefreshToken: false } }
     );
     const { data, error } = await verifier.auth.getClaims(token);
@@ -239,8 +239,8 @@ serve(async (req) => {
 
 
     const serviceClient = createClient(
-      Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "",
-      Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false, autoRefreshToken: false } }
     );
 

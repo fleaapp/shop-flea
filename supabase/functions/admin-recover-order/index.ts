@@ -44,8 +44,8 @@ serve(async (req) => {
     }
 
     const svc = createClient(
-      Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "",
-      Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false, autoRefreshToken: false } },
     );
 
@@ -153,7 +153,7 @@ serve(async (req) => {
       const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
       const serviceKey =
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
-        Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
       for (const o of ins.data ?? []) {
         const listing = listingMap.get((o as any).listing_id) as any;
         await fetch(`${supabaseUrl}/functions/v1/send-push-notification`, {

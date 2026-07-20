@@ -13,8 +13,8 @@ Deno.serve(async (req) => {
     if (!username) return json({ error: "username required" }, 400);
     const normalizedUsername = String(username).trim().replace(/^@/, "");
 
-    const url = Deno.env.get("EXTERNAL_SUPABASE_URL")!;
-    const key = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY")!;
+    const url = Deno.env.get("SUPABASE_URL")!;
+    const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const headers = {
       apikey: key,
       Authorization: `Bearer ${key}`,

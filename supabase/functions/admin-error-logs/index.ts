@@ -9,10 +9,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const EXTERNAL_URL = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
-const EXTERNAL_ANON = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "";
-const EXTERNAL_SR = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
-const DB_URL = Deno.env.get("EXTERNAL_SUPABASE_DB_URL") ?? Deno.env.get("SUPABASE_DB_URL") ?? "";
+const EXTERNAL_URL = Deno.env.get("SUPABASE_URL") ?? "";
+const EXTERNAL_ANON = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const EXTERNAL_SR = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const DB_URL = Deno.env.get("SUPABASE_DB_URL") ?? Deno.env.get("SUPABASE_DB_URL") ?? "";
 
 async function isAdmin(auth: string | null): Promise<{ userId: string; isAdmin: boolean } | null> {
   if (!auth || !EXTERNAL_URL || !EXTERNAL_ANON || !EXTERNAL_SR) return null;

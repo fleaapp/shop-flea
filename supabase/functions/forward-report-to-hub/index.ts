@@ -37,8 +37,8 @@ serve(async (req) => {
       });
     }
     const verifier = createClient(
-      Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "",
-      Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "",
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       { auth: { persistSession: false, autoRefreshToken: false } },
     );
     const { data: claimsData, error: claimsError } = await verifier.auth.getClaims(token);

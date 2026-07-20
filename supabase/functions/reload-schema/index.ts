@@ -17,7 +17,7 @@ serve(async (req) => {
   }
 
   try {
-    const dbUrl = Deno.env.get("EXTERNAL_SUPABASE_DB_URL") ?? Deno.env.get("SUPABASE_DB_URL") ?? "";
+    const dbUrl = Deno.env.get("SUPABASE_DB_URL") ?? Deno.env.get("SUPABASE_DB_URL") ?? "";
 
     if (!dbUrl) {
       throw new Error("DB URL secret is not configured.");

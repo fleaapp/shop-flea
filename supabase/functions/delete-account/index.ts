@@ -19,8 +19,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL')!;
-    const externalAnonKey = Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY')!;
+    const externalUrl = Deno.env.get('SUPABASE_URL')!;
+    const externalAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 
     const supabaseUser = createClient(
       externalUrl,
@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
     // Check outstanding negative balance — must settle before deleting.
     const supabaseAdminEarly = createClient(
       externalUrl,
-      Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
     const { data: earlyProfile } = await supabaseAdminEarly
       .from('profiles')
@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
     // Use service role key to perform privileged deletions
     const supabaseAdmin = createClient(
       externalUrl,
-      Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY')!
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
     // Delete user data in order (profile will cascade or be cleaned up)

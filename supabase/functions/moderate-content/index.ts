@@ -8,8 +8,8 @@ const corsHeaders = {
 
 async function checkRateLimit(key: string, max: number, windowSeconds: number): Promise<boolean> {
   try {
-    const url = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
-    const serviceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const url = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     if (!url || !serviceKey) return true;
     const res = await fetch(`${url}/rest/v1/rpc/check_and_record_rate_limit`, {
       method: "POST",
@@ -320,8 +320,8 @@ serve(async (req) => {
 
   try {
     const supabaseClient = createClient(
-      Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '',
-      Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
           headers: { Authorization: req.headers.get('Authorization')! },

@@ -29,8 +29,8 @@ serve(async (req) => {
 
   try {
     const supabaseClient = createClient(
-      Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "",
-      Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "",
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
     );
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
@@ -48,8 +48,8 @@ serve(async (req) => {
     // (i.e. they owe money as a seller). They must settle before making new purchases.
     {
       const svc = createClient(
-        Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "",
-        Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "",
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
         { auth: { persistSession: false, autoRefreshToken: false } },
       );
       const { data: buyerProfile } = await svc
@@ -67,8 +67,8 @@ serve(async (req) => {
     }
 
     const serviceClient = createClient(
-      Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "",
-      Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false, autoRefreshToken: false } }
     );
     const itemIds = items.map((i: { id: string }) => i.id).filter(Boolean);

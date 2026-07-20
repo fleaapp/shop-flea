@@ -13,8 +13,8 @@ serve(async (req) => {
   }
 
   try {
-    const externalUrl = Deno.env.get('EXTERNAL_SUPABASE_URL') ?? '';
-    const serviceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const externalUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const externalProjectRef = externalUrl.replace('https://', '').split('.')[0];
 
     console.log(`[add-stripe-columns] Adding Stripe columns to external project: ${externalProjectRef}`);
