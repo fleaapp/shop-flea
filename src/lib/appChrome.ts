@@ -79,6 +79,10 @@ const syncNativeStatusBarRoute = (color: string) => {
 // lockstep with the Radix bg-foreground/50 backdrop appearing/disappearing.
 const setStatusBarOverlayTint = (isOverlay: boolean) => {
   if (!isNativeBridgeReady()) return;
+  // Safety net: if tint was never computed (first paint bug), compute now.
+  if (isOverlay && cachedRouteTint === cachedRouteColor) {
+    cachedRouteTint = overlayTint(cachedRouteColor);
+  }
   const targetColor = isOverlay ? cachedRouteTint : cachedRouteColor;
   // Cancel any pending route-color write so it doesn't race and overwrite us.
   if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = null; }
@@ -96,6 +100,7 @@ const setStatusBarOverlayTint = (isOverlay: boolean) => {
     })
     .catch(() => undefined);
 };
+
 
 // Parse "H S% L%" (the shape Tailwind stores in --foreground) to hex.
 const hslTripleToHex = (triple: string): string | null => {
@@ -151,11 +156,12 @@ export const applyAppChromeColor = (color: string, _statusBarStyle: 'default' | 
   const routeTopColor = getRouteTopColor();
   const isAuthColor = routeTopColor === AUTH_TOP_COLOR;
 
-  // Update route caches — the next overlay push/pop uses these instantly.
-  if (routeTopColor !== cachedRouteColor) {
-    cachedRouteColor = routeTopColor;
-    cachedRouteTint = overlayTint(routeTopColor);
-  }
+  // Always keep the cached route color + its overlay tint in sync so the
+  // next overlay push has a correct tint ready — even on the very first
+  // paint where routeTopColor already equals the initial cached value.
+  cachedRouteColor = routeTopColor;
+  cachedRouteTint = overlayTint(routeTopColor);
+
 
   document.documentElement.classList.remove('dark');
   document.documentElement.style.colorScheme = 'light';
