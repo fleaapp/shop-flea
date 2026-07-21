@@ -1,46 +1,58 @@
-## Problem
+## What I think is happening
 
-Your local `npm install` fails at the `patch-package` step:
+This is not caused by the Cloud database itself. The screenshot shows Xcode failing while compiling the native **StripePaymentSheet** Swift package. That package is pulled during `npx cap sync ios` from `@capacitor-community/stripe`, and Xcode/SwiftPM can silently resolve a newer Stripe iOS SDK than the one that worked before.
 
-```
-ERROR Failed to apply patch for package @capacitor-community/stripe
-patches/@capacitor-community+stripe+8.1.1.patch could not be parsed.
-```
+Because the visible error has no useful Swift line above it, I’m going to stop asking you to dig through Xcode and make the native dependency deterministic.
 
-That patch was only adding a diagnostic method (`getApplePayEntitlements`) so the app could read the signed entitlements at runtime. It is **not** the fix for Apple Pay — the real Apple Pay fix is the Xcode signing/provisioning profile including `merchant.com.finditonflea.app`, which `setup-ios-native.sh` and your entitlements file already handle.
+## Plan
 
-The patch was hand-written and `patch-package`'s parser rejects it. Rather than fight the parser, I'll remove the diagnostic path entirely so `npm install` succeeds and the build proceeds. The diagnostic was never load-bearing — if it's absent, `checkApplePayEntitlement` already falls back to `available: false`, and `runApplePayPreflight` skips the entitlement step and lets `Stripe.isApplePayAvailable()` decide, which is the same behaviour every other Stripe-Capacitor app uses.
+1. **Pin the native Stripe iOS SDK version**
+   - Add a valid `patch-package` patch for `@capacitor-community/stripe@8.1.1`.
+   - Patch its `Package.swift` so the Stripe iOS dependency resolves to a stable known-good range instead of floating to the newest SDK Xcode finds.
+   - This avoids StripePaymentSheet compiling against a newly resolved Stripe package that your local Xcode build did not previously use.
 
-The rest of your terminal output is clean:
-- `npx cap sync ios` succeeded (10 plugins).
-- `setup-ios-native.sh` verified entitlements, pbxproj wiring, Apple Pay merchant, and icons — all green.
-- Vite chunk-size and dynamic-import warnings are cosmetic, not errors.
+2. **Make the pin survive future syncs**
+   - Keep the patch under `patches/` so `npm install` applies it automatically.
+   - Do not reintroduce the broken custom Stripe diagnostics patch that caused the earlier `npm install` failure.
 
-## Files to change
+3. **Update the iOS setup script notes/output**
+   - Add a verification line to `scripts/setup-ios-native.sh` explaining that Stripe iOS is pinned through the package patch.
+   - Keep existing Apple Pay entitlements, Sign in with Apple, push, and app icon handling unchanged.
 
-1. **Delete** `patches/@capacitor-community+stripe+8.1.1.patch` — the malformed patch that breaks `npm install`.
-2. **Edit** `src/lib/nativeEntitlements.ts` — simplify to always return `available: false` so the preflight cleanly falls through to Stripe's own check. No more calling a plugin method that doesn't exist.
-3. **Edit** `README-IOS.md` — remove the two lines that reference "Flea's patched native payment plugin" / "built into the patched native payment plugin".
-4. **Edit** `scripts/setup-ios-native.sh` — change the verification line `entitlement checker: built into the patched native payment plugin` to say `entitlement checker: skipped (using Stripe's isApplePayAvailable)` so the script's output matches reality.
-
-No changes to `applePayDiagnostics.ts` — it already handles `entitlement.available === false` correctly by skipping the entitlement branch.
-
-## Expected outcome
-
-After you re-run:
+4. **Give you a clean local rebuild sequence**
+   - After the patch lands, run locally:
 
 ```bash
 cd ~/Desktop/shop-flea
 git pull
-npm install          # succeeds, no patch error
+rm -rf node_modules package-lock.json
+npm install
+rm -rf ios
 npm run build
+npx cap add ios
 npx cap sync ios
 bash scripts/setup-ios-native.sh
 npx cap open ios
 ```
 
-`npm install` completes cleanly, the iOS build proceeds, and Apple Pay behaviour is identical to before the patch attempt: it depends purely on the signed entitlement + provisioning profile from Xcode (which your entitlements file, `setup-ios-native.sh`, and Xcode capability already cover).
+5. **If Xcode still shows the same wrapper error**
+   - Then the next fix is not Cloud/app code; it is a corrupted SwiftPM/Xcode cache or Xcode beta/compiler issue.
+   - The fallback command will be:
 
-## Note
+```bash
+rm -rf ~/Library/Developer/Xcode/DerivedData
+rm -rf ~/Library/Caches/org.swift.swiftpm
+rm -rf ~/Library/org.swift.swiftpm
+```
 
-This does not "give up" on Apple Pay — it removes broken scaffolding. If Apple Pay still shows the PassKit "not available" alert after archiving with the current entitlements, the remaining lever is the provisioning profile on Apple's side (Certificates, Identifiers & Profiles → App ID → confirm Apple Pay Payment Processing is enabled and the merchant ID is checked, then regenerate the profile). Say the word if you want a plan for that verification pass.
+Then reopen Xcode and Archive again.
+
+## Technical details
+
+- I will only touch native dependency configuration and setup documentation.
+- I will not change checkout logic, Cloud functions, Apple Pay business logic, fees, or database code.
+- The goal is to restore the same kind of stable native Stripe build you had before the Cloud migration work caused repeated `cap sync` / package-resolution churn.
+
+## Expected result
+
+`StripePaymentSheet` stops resolving to an unstable/native-incompatible Stripe iOS package, Xcode compiles the Stripe Swift targets cleanly, and you can archive again without this generic `Command SwiftCompile failed` blocker.
