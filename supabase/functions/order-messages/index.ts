@@ -699,29 +699,9 @@ Deno.serve(async (req) => {
       }
 
       if (action === "refund_initiate" && isSeller) {
-        // Stripe refund is executed atomically by stripe-connect-refund before
-        // this is called, so the refund_initiated system message + buyer
-        // notification are safe to emit now.
-        const systemContent = JSON.stringify({
-          type: "refund_initiated",
-          seller_username: senderUsername,
-          payment_method: orderInfo.paymentMethod,
-          initiated_at: new Date().toISOString(),
-        });
-        try {
-          await insertSystemMessage(external, orderMessageKey, threadOrderId, userId, "refund_initiated", systemContent);
-          await insertNotificationWithFallback(external, {
-            user_id: orderInfo.buyerId,
-            type: "refund_initiated",
-            title: "Refund Initiated",
-            message: `${formattedUsername} has initiated your refund. It will appear in your account shortly.`,
-            related_listing_id: orderInfo.listingId,
-            related_user_id: userId,
-            related_order_id: orderInfo.matchedOrderGroupId ?? orderInfo.matchedOrderId ?? threadOrderId,
-          });
-        } catch (e) {
-          console.error("[order-messages] Refund initiate notify error:", e);
-        }
+        // No-op: `stripe-connect-refund` is the single source of truth for
+        // the refund_initiated system message + buyer/seller notifications.
+        // We keep this endpoint responsive so any legacy client call succeeds.
         return new Response(JSON.stringify({ success: true, payment_method: orderInfo.paymentMethod }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
