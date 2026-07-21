@@ -505,7 +505,11 @@ const CreateListing = () => {
       if (error) {
         throw error;
       }
-      
+
+      // Clear draft on successful publish so it doesn't re-hydrate next visit.
+      clearTextDraft();
+      if (imageDraftKey) void clearDraftImages(imageDraftKey);
+
       toast.success('🎉 Listing posted!');
       navigate('/profile');
     } catch (error: any) {
