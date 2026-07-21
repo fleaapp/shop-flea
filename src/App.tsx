@@ -271,7 +271,7 @@ const AppContent = () => {
   return (
     <>
       <Toaster />
-      <Sonner position="top-center" />
+      <Sonner />
       {isAuthRoute ? (
         <Suspense fallback={<AuthRouteFallback />}>{routes}</Suspense>
       ) : (
