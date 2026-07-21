@@ -384,6 +384,15 @@ async function insertNotificationWithFallback(
     return;
   }
 
+  // Duplicate — a matching notification already exists (dedup index). Treat
+  // as success so message sending never fails on a notif collision, and
+  // still fire the push for this fresh message.
+  if (error.code === "23505") {
+    console.log("[order-messages] Notification dedup hit; skipping insert but firing push");
+    await firePushNotification(payload);
+    return;
+  }
+
   const errorText = `${error.message ?? ""} ${error.details ?? ""}`;
   const missingOptionalColumn =
     error.code === "PGRST204" ||
