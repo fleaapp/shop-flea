@@ -18,7 +18,11 @@ interface NavItem {
   badge?: number;
 }
 
-const BottomNav = () => {
+interface BottomNavProps {
+  adminSettingsBadge?: number;
+}
+
+const BottomNav = ({ adminSettingsBadge }: BottomNavProps = {}) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [, startTransition] = useTransition();
@@ -29,7 +33,8 @@ const BottomNav = () => {
   const { perOrder } = useUnreadOrderMessages();
   const { badgeCount: notificationBadgeCount } = useNotifications();
   const { isAdmin } = useAdminRole();
-  const { total: adminTotal } = useAdminBadges({ enabled: isAdmin });
+  const { total: fetchedAdminTotal } = useAdminBadges({ enabled: isAdmin && adminSettingsBadge === undefined });
+  const adminTotal = adminSettingsBadge ?? fetchedAdminTotal;
 
   // Cart badge — mirrors src/pages/Cart.tsx ordersBadgeCount
   const ordersBadge = useMemo(() => {
@@ -58,7 +63,7 @@ const BottomNav = () => {
   // Alerts badge — mirrors src/pages/Notifications.tsx (since-dismissed)
   const alertsBadge = notificationBadgeCount || undefined;
 
-  // Settings badge — admins get support + reports + refunds + brands + contact + bans.
+  // Settings badge — admins get the full Admin Dashboard total.
   // Non-admins get support-thread unread only.
   const settingsBadge = useMemo(() => {
     if (isAdmin) return adminTotal || undefined;
