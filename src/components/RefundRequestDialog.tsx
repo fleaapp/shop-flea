@@ -120,6 +120,9 @@ const RefundRequestDialog = ({ open, onOpenChange, orderId, userId, onSubmit }: 
         toast.error(err.message);
       }
     } finally {
+      // iOS occasionally reverts StatusBar.overlaysWebView to true after the
+      // native camera dismisses, clipping every screen's top row. Re-assert.
+      forceRestoreRouteAppChrome();
       setCapturing(false);
     }
   };
