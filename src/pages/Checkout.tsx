@@ -32,6 +32,7 @@ import mastercardLogo from '@/assets/cards/mastercard.svg';
 import amexLogo from '@/assets/cards/amex.svg';
 import applePayLogo from '@/assets/cards/apple-pay.svg';
 import { runApplePayPreflight, categoriseApplePayError, logApplePayDiagnostic } from '@/lib/applePayDiagnostics';
+import { mapCardDeclineMessage, logCardDecline } from '@/lib/cardDeclineHandler';
 
 // Apple App Review demo account — bypasses the seller-Stripe-connected check
 // so the reviewer can complete a purchase against demo listings.
