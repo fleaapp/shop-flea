@@ -56,6 +56,7 @@ const OrderChat = () => {
           // Real orders.id — the route param is often the group id, and refund /
           // order-messages edge functions key on the actual order row.
           primary_order_id: order?.id ?? null,
+          related_order_ids: group.orders.map((o) => o.id),
           buyer_id: group.buyer_id,
           seller_id: group.seller_id,
           delivered_at: group.delivered_at ?? order?.delivered_at ?? null,
@@ -66,6 +67,7 @@ const OrderChat = () => {
           seller_avatar: group.seller_profile?.avatar_url || null,
         };
       }
+
     }
     return null;
   }, [orderId, user?.id, buyerOrderGroups, sellerOrderGroups]);
