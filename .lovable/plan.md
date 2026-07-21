@@ -1,53 +1,68 @@
-## Root cause
+## Root causes (app-wide duplicate alerts)
 
-Edge function log for `order-messages` shows:
+Two structural issues, both confirmed from the live DB and code:
 
-```
-duplicate key value violates unique constraint "idx_notifications_unique_order_event"
-Key (user_id, type, related_order_id)=(<seller>, order_message_seller, <orderId>)
-```
+### 1. Duplicate database triggers firing the same function on the same table
+`pg_trigger` shows multiple triggers pointing at the same underlying function on several tables. Every INSERT/UPDATE runs the function 2–4×, so any notification, order side-effect, or timestamp write happens that many times:
 
-Two overlapping unique indexes exist on `notifications`:
+| Table | Function | Trigger count |
+|---|---|---|
+| `orders` | `mark_listing_as_sold` | 3 (`on_order_created_mark_listing_sold`, `orders_mark_listing_as_sold_after_insert`, `trg_mark_listing_as_sold`) |
+| `orders` | `generate_order_number` | 3 (`orders_generate_order_number_before_insert`, `set_order_number`, `trg_generate_order_number`) |
+| `orders` | `update_updated_at_column` | 2 (`trg_update_orders_updated_at`, `update_orders_updated_at`) |
+| `profiles` | `cleanup_user_listings_on_profile_change` | 3 (`on_profile_delete_cleanup`, `on_profile_status_cleanup`, `trg_cleanup_user_listings`) |
+| `profiles` | `update_updated_at_column` | 2 |
+| `listings` | `update_updated_at_column` | 2 |
+| `reviews` | `update_user_rating` | 4 (`trg_update_user_rating`, `update_rating_on_review_insert/update/delete`) |
+| `reports` | `process_report` | 2 (`on_report_created`, `trg_process_report`) |
+| `saved_searches` | `update_updated_at_column` | 2 |
+| `waitlist` | `set_waitlist_region` | 2 |
 
-- `idx_notifications_unique_order_event` — covers `(user_id, type, related_order_id)` for **every** type with an `related_order_id`.
-- `idx_notifications_unique_order_message` — the intended dedup for chat, keyed on `(user_id, type, related_order_id, created_at)`, only for `order_message_buyer` / `order_message_seller`.
+The dedup unique indexes on `notifications` mask *some* of this for message/comment/review/sold events, but any code path whose notification key doesn't match an existing dedup index (or that inserts via a different helper) still doubles.
 
-The first index is too broad: the second and later chat messages on the same order collide on it, `insertNotificationWithFallback` re-throws the 23505, and the client shows "Failed to send message" even though the `order_messages` row itself might have inserted.
+### 2. Refund flow inserts the same notification + chat card from two places
+On refund, the client calls `stripe-connect-refund`, which:
+- Inserts buyer + seller `refund_initiated` notification rows.
+- Inserts a `refund_initiated` system message into `order_messages` for each order in the group.
+
+Then `order-messages` (`action: 'refund_initiate'`) is also invoked and it:
+- Inserts another `refund_initiated` system message.
+- Inserts another buyer `refund_initiated` notification.
+
+Result matches the screenshot: two "Refund Initiated" cards in chat, and duplicate refund alerts.
 
 ## Fix
 
-### 1. Migration — narrow the over-broad dedup index
-- Drop `idx_notifications_unique_order_event`.
-- Recreate it with the same shape but exclude chat message types:
-  ```sql
-  CREATE UNIQUE INDEX idx_notifications_unique_order_event
-    ON public.notifications (user_id, type, related_order_id)
-    WHERE related_order_id IS NOT NULL
-      AND type NOT IN (
-        'order_message_buyer',
-        'order_message_seller',
-        'order_shipped',
-        'order_delivered'
-      );
-  ```
-  (Chat messages and status events already have their own `created_at`-scoped indexes; keep those unchanged so lifecycle events like `sale_confirmed` still dedup once per order.)
+### A. Migration — drop every duplicate trigger
 
-### 2. `supabase/functions/order-messages/index.ts` — belt-and-braces
-In `insertNotificationWithFallback`, treat Postgres `23505` (unique violation) as a no-op success:
-- On `error.code === '23505'`, log and return without throwing. Still fire push (dedup means a prior notif exists, but the fresh message still deserves the push).
-- Existing `PGRST204` / missing-column fallback stays as-is.
+Keep only the canonical `trg_` version per (table, function):
 
-This guarantees a notification-side dedup collision can never fail the message write again, even if a future index goes broad.
+- `orders`: drop `on_order_created_mark_listing_sold`, `orders_mark_listing_as_sold_after_insert`, `set_order_number`, `orders_generate_order_number_before_insert`, `update_orders_updated_at`.
+- `profiles`: drop `on_profile_delete_cleanup`, `on_profile_status_cleanup`, `update_profiles_updated_at`. Keep `trg_cleanup_user_listings` + `trg_update_profiles_updated_at`.
+- `listings`: drop `update_listings_updated_at`.
+- `reviews`: drop `update_rating_on_review_insert`, `update_rating_on_review_update`, `update_rating_on_review_delete`. Keep `trg_update_user_rating` (already fires on INSERT/UPDATE/DELETE).
+- `reports`: drop `on_report_created`. Keep `trg_process_report`.
+- `saved_searches`: drop `set_saved_searches_updated_at`.
+- `waitlist`: drop `set_waitlist_region_trigger`.
 
-### 3. Verify the message row commits before pushing
-Confirm the `order_messages` insert is committed **before** `insertNotificationWithFallback` is called (it already is, per `insertOrderMessage`). If any current code awaits the notification insert as part of the same response and returns 500 on failure, wrap that specific call in try/catch so a notif failure never rolls back the message send.
+Also clean up notification rows created in the last 24 h that are exact duplicates (same `user_id, type, related_order_id, related_thread_id, related_listing_id, related_user_id, created_at`), keeping the lowest `id`.
+
+### B. Refund flow — single source of truth
+
+In `supabase/functions/order-messages/index.ts`, remove the `refund_initiate` branch's `insertSystemMessage` and `insertNotificationWithFallback` calls (lines ~701–727). `stripe-connect-refund` already emits both the buyer + seller notifications and the chat system message, so `order-messages` should just return success (still needed so the client's optimistic call has an endpoint to hit).
+
+Leave `stripe-connect-refund` as the sole writer for `refund_initiated`.
+
+### C. Verify
+
+1. `pg_trigger` shows one trigger per (table, function) for the tables above.
+2. Refund an order end-to-end from seller: exactly one "Refund Initiated" card in the chat, one buyer alert, one seller alert.
+3. Complete a checkout: exactly one `item_sold` seller alert (currently possibly 3× via triple `mark_listing_as_sold`).
+4. Post a support message: one "New message from Flea support" alert, one green dot.
+5. Post a review: one `new_review` alert; rating on seller profile increments once.
 
 ## Out of scope
-- Other notification types, other dedup indexes, push pipeline changes.
-- UI/toast copy; the "Failed to send message" toast will simply stop firing once the underlying 500 goes away.
 
-## Verification
-1. Send 3 chat messages back-to-back on the same order from @sarahhearn2 → @jcsbh: all three send, no error toast, three chat rows appear.
-2. Recipient receives at least one push and sees the messages in the chat + a single (dedup'd) unread badge.
-3. Edge function logs for `order-messages` show zero new `23505` errors.
-4. Lifecycle events (sale confirmed, refunds) still dedup — creating a second `sale_confirmed` notif for the same order is still blocked by the narrowed index.
+- Client-side `useNotifications` support-message fallback logic (only appends when no unread real notif exists; safe once the trigger stops double-firing).
+- Push delivery pipeline changes.
+- Rewriting notification content or emojis.
