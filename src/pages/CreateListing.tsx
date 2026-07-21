@@ -918,6 +918,9 @@ const CreateListing = () => {
           )}
         </div>
       </form>
+      </div>
+
+
       
       <SizeSelectionDrawer
         open={sizeDrawerOpen}

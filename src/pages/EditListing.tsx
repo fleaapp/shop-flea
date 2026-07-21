@@ -459,7 +459,7 @@ const EditListing = () => {
   }
 
   return (
-    <div className="native-safe-top min-h-screen bg-background pb-24">
+    <div className="native-safe-top fixed inset-0 bg-background flex flex-col overflow-hidden">
       {/* Image Crop Dialog */}
       {currentCropSrc && (
         <ListingImageCropDialog
@@ -480,7 +480,7 @@ const EditListing = () => {
       />
 
       {/* Header */}
-      <header className="relative flex items-center justify-center px-4 py-4">
+      <header className="shrink-0 relative flex items-center justify-center px-4 py-4">
         <Button
           variant="ghost"
           size="icon"
@@ -491,8 +491,9 @@ const EditListing = () => {
         </Button>
         <h1 className="text-xl font-bold text-foreground">Edit Listing</h1>
       </header>
-      
-      <form onSubmit={handleSubmit} className="px-4 space-y-4">
+
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-24">
+        <form onSubmit={handleSubmit} className="px-4 space-y-4">
         {/* Photo Upload Area */}
         <button
           type="button"
