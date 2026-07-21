@@ -68,7 +68,7 @@ export function useAdminBadges(options: { enabled?: boolean } = {}) {
 
       const [data, errorLogs] = await Promise.all([
         callAdminData<Omit<AdminBadges, 'errorLogs'>>('getBadges', payload),
-        fetchErrorCount24h().catch(() => 0),
+        fetchErrorCount24h(lastSeen.error_logs).catch(() => 0),
       ]);
       // Drop stale responses.
       if (myId !== reqIdRef.current) return;
