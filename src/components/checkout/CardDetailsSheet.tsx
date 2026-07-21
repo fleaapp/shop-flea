@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,11 @@ import {
 import type { StripeElementStyle } from '@stripe/stripe-js';
 import { getStripe } from '@/lib/stripe/loadStripe';
 import { toast } from 'sonner';
+
+// Non-sensitive cardholder-name persistence so backgrounding the app while
+// looking up card details doesn't wipe it. Card number / expiry / CVC are
+// held in Stripe's iframes and are intentionally NEVER persisted (PCI rule).
+const CARDHOLDER_DRAFT_KEY = 'flea_draft_card_cardholder_v1';
 
 interface Props {
   open: boolean;
@@ -69,9 +74,32 @@ const CardForm = ({
 }) => {
   const stripe = useStripe();
   const elements = useElements();
-  const [name, setName] = useState('');
+  const [name, setName] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    try { return localStorage.getItem(CARDHOLDER_DRAFT_KEY) || ''; } catch { return ''; }
+  });
   const [saveCard, setSaveCard] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Persist cardholder name (non-sensitive) on every change and again on
+  // background/unload — the WebView may be evicted the moment we hide.
+  useEffect(() => {
+    const write = () => {
+      try {
+        if (name) localStorage.setItem(CARDHOLDER_DRAFT_KEY, name);
+        else localStorage.removeItem(CARDHOLDER_DRAFT_KEY);
+      } catch { /* noop */ }
+    };
+    const t = window.setTimeout(write, 250);
+    const onVis = () => { if (document.visibilityState === 'hidden') write(); };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pagehide', write);
+    return () => {
+      window.clearTimeout(t);
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('pagehide', write);
+    };
+  }, [name]);
 
   const handleSubmit = async () => {
     if (!stripe || !elements) return;
@@ -104,6 +132,7 @@ const CardForm = ({
         cardholderName: name.trim(),
         saveCard,
       });
+      try { localStorage.removeItem(CARDHOLDER_DRAFT_KEY); } catch { /* noop */ }
     } finally {
       setSubmitting(false);
     }

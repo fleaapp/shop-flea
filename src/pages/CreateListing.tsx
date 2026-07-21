@@ -1,4 +1,6 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useSnapshotDraft } from '@/hooks/useSnapshotDraft';
+import { loadDraftImages, saveDraftImages, clearDraftImages, DraftImageRecord } from '@/lib/imageDraftStore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ImagePlus, X, ChevronRight } from 'lucide-react';
@@ -144,6 +146,82 @@ const CreateListing = () => {
   const [itemPrice, setItemPrice] = useState('');
   const [shippingPrice, setShippingPrice] = useState('');
   const [description, setDescription] = useState('');
+
+  // --- Draft persistence (survives app backgrounding / WebView reload) ---
+  const [draftRestored, setDraftRestored] = useState(false);
+  const draftKey = user ? `flea_draft_create_listing_v1_${user.id}` : null;
+  const imageDraftKey = user ? `flea_draft_create_listing_images_v1_${user.id}` : null;
+
+  const listingSnapshot = useMemo(() => ({
+    productName, fit, category, subcategory, size, brand, condition,
+    colours, styles, itemPrice, shippingPrice, description,
+  }), [productName, fit, category, subcategory, size, brand, condition, colours, styles, itemPrice, shippingPrice, description]);
+
+  const { clear: clearTextDraft } = useSnapshotDraft(draftKey, listingSnapshot, (saved: any) => {
+    if (!saved || typeof saved !== 'object') return;
+    let anyValue = false;
+    if (typeof saved.productName === 'string' && saved.productName) { setProductName(saved.productName); anyValue = true; }
+    if (typeof saved.fit === 'string' && saved.fit) { setFit(saved.fit); anyValue = true; }
+    if (typeof saved.category === 'string' && saved.category) { setCategory(saved.category); anyValue = true; }
+    if (typeof saved.subcategory === 'string' && saved.subcategory) { setSubcategory(saved.subcategory); anyValue = true; }
+    if (typeof saved.size === 'string' && saved.size) { setSize(saved.size); anyValue = true; }
+    if (typeof saved.brand === 'string' && saved.brand) { setBrand(saved.brand); anyValue = true; }
+    if (typeof saved.condition === 'string' && saved.condition) { setCondition(saved.condition); anyValue = true; }
+    if (Array.isArray(saved.colours) && saved.colours.length) { setColours(saved.colours); anyValue = true; }
+    if (Array.isArray(saved.styles) && saved.styles.length) { setStyles(saved.styles); anyValue = true; }
+    if (typeof saved.itemPrice === 'string' && saved.itemPrice) { setItemPrice(saved.itemPrice); anyValue = true; }
+    if (typeof saved.shippingPrice === 'string' && saved.shippingPrice) { setShippingPrice(saved.shippingPrice); anyValue = true; }
+    if (typeof saved.description === 'string' && saved.description) { setDescription(saved.description); anyValue = true; }
+    if (anyValue) setDraftRestored(true);
+  });
+
+  // Hydrate saved photos from IndexedDB once user id is known.
+  const imagesHydratedRef = useRef(false);
+  useEffect(() => {
+    if (!imageDraftKey || imagesHydratedRef.current) return;
+    imagesHydratedRef.current = true;
+    void (async () => {
+      const records = await loadDraftImages(imageDraftKey);
+      if (!records.length) return;
+      const restored: ImageFile[] = records.map((r) => {
+        const file = new File([r.blob], r.filename, { type: r.type || 'image/jpeg' });
+        return { file, preview: URL.createObjectURL(file) };
+      });
+      setImageFiles(restored);
+      setDraftRestored(true);
+    })();
+  }, [imageDraftKey]);
+
+  // Persist photo blobs whenever the image list changes.
+  useEffect(() => {
+    if (!imageDraftKey || !imagesHydratedRef.current) return;
+    const t = window.setTimeout(() => {
+      if (imageFiles.length === 0) {
+        void clearDraftImages(imageDraftKey);
+        return;
+      }
+      const records: DraftImageRecord[] = imageFiles.map((img, idx) => ({
+        blob: img.file,
+        filename: img.file.name || `photo-${idx}.jpg`,
+        type: img.file.type || 'image/jpeg',
+      }));
+      void saveDraftImages(imageDraftKey, records);
+    }, 300);
+    return () => window.clearTimeout(t);
+  }, [imageFiles, imageDraftKey]);
+
+  const discardListingDraft = useCallback(() => {
+    clearTextDraft();
+    if (imageDraftKey) void clearDraftImages(imageDraftKey);
+    setProductName(''); setFit(''); setCategory(''); setSubcategory('');
+    setSize(''); setBrand(''); setCondition(''); setColours([]); setStyles([]);
+    setItemPrice(''); setShippingPrice(''); setDescription('');
+    setImageFiles((prev) => {
+      prev.forEach((img) => URL.revokeObjectURL(img.preview));
+      return [];
+    });
+    setDraftRestored(false);
+  }, [clearTextDraft, imageDraftKey]);
 
   // Reset dependent fields when parent selection changes
   const handleFitChange = (value: string) => {
@@ -427,7 +505,11 @@ const CreateListing = () => {
       if (error) {
         throw error;
       }
-      
+
+      // Clear draft on successful publish so it doesn't re-hydrate next visit.
+      clearTextDraft();
+      if (imageDraftKey) void clearDraftImages(imageDraftKey);
+
       toast.success('🎉 Listing posted!');
       navigate('/profile');
     } catch (error: any) {
@@ -580,6 +662,19 @@ const CreateListing = () => {
         </Button>
         <h1 className="text-xl font-bold text-foreground">Add New Listing</h1>
       </header>
+
+      {draftRestored && (
+        <div className="mx-4 mb-3 flex items-center justify-between rounded-full bg-muted/50 px-3 py-1.5">
+          <span className="text-[12px] text-muted-foreground">Draft restored from your last session.</span>
+          <button
+            type="button"
+            onClick={discardListingDraft}
+            className="text-[12px] font-medium text-foreground underline underline-offset-2"
+          >
+            Discard
+          </button>
+        </div>
+      )}
       
       <form onSubmit={handleSubmit} className="px-4 space-y-4">
         {/* Photo Upload Area */}

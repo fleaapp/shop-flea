@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSnapshotDraft } from '@/hooks/useSnapshotDraft';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { ApplePayEventsEnum, GooglePayEventsEnum, PaymentSheetEventsEnum, Stripe } from '@capacitor-community/stripe';
@@ -169,6 +170,28 @@ const Checkout = () => {
   const [selectedMethod, setSelectedMethod] = useState<SelectedPaymentMethod | null>(null);
   const [cardSheetOpen, setCardSheetOpen] = useState(false);
 
+  // Persist in-progress checkout selections so backgrounding the app (e.g.
+  // hopping out to grab card details) doesn't reset the coupon, chosen
+  // payment method, or open card sheet on return.
+  const checkoutDraftKey = user ? `flea_draft_checkout_v1_${user.id}` : null;
+  const checkoutSnapshot = useMemo(() => ({
+    coupon,
+    selectedMethod,
+    cardSheetOpen,
+    isEditing,
+  }), [coupon, selectedMethod, cardSheetOpen, isEditing]);
+  const { clear: clearCheckoutDraft } = useSnapshotDraft(
+    checkoutDraftKey,
+    checkoutSnapshot,
+    (saved) => {
+      if (!saved || typeof saved !== 'object') return;
+      if (saved.coupon !== undefined) setCoupon(saved.coupon);
+      if (saved.selectedMethod !== undefined) setSelectedMethod(saved.selectedMethod);
+      if (typeof saved.cardSheetOpen === 'boolean') setCardSheetOpen(saved.cardSheetOpen);
+      if (typeof saved.isEditing === 'boolean') setIsEditing(saved.isEditing);
+    },
+  );
+
   /** Persist buyer-side context to localStorage so CheckoutSuccess can finalize orders. */
   const persistCheckoutContext = useCallback(() => {
     const shippingDetails = {
@@ -244,6 +267,7 @@ const Checkout = () => {
   const handlePaymentSuccess = (paymentIntentId: string) => {
     setCardSheetOpen(false);
     localStorage.setItem('checkout_reference', paymentIntentId);
+    clearCheckoutDraft();
     navigate(`/checkout/success?payment_intent=${paymentIntentId}`);
   };
 
