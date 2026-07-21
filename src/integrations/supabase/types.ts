@@ -1136,6 +1136,7 @@ export type Database = {
       }
       reports: {
         Row: {
+          admin_notes: string | null
           created_at: string
           id: string
           reason: string | null
@@ -1143,8 +1144,11 @@ export type Database = {
           reported_entity_id: string
           reported_user_id: string
           reporting_user_id: string
+          status: string
+          updated_at: string
         }
         Insert: {
+          admin_notes?: string | null
           created_at?: string
           id?: string
           reason?: string | null
@@ -1152,8 +1156,11 @@ export type Database = {
           reported_entity_id: string
           reported_user_id: string
           reporting_user_id: string
+          status?: string
+          updated_at?: string
         }
         Update: {
+          admin_notes?: string | null
           created_at?: string
           id?: string
           reason?: string | null
@@ -1161,6 +1168,8 @@ export type Database = {
           reported_entity_id?: string
           reported_user_id?: string
           reporting_user_id?: string
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
