@@ -62,8 +62,10 @@ const Field = ({
 
 const CardForm = ({
   onConfirm,
+  billingPostcode,
 }: {
   onConfirm: Props['onConfirm'];
+  billingPostcode?: string;
 }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -81,10 +83,17 @@ const CardForm = ({
     }
     setSubmitting(true);
     try {
+      const postal = (billingPostcode || '').trim();
       const { paymentMethod, error } = await stripe.createPaymentMethod({
         type: 'card',
         card: cardNumber,
-        billing_details: { name: name.trim() },
+        billing_details: {
+          name: name.trim(),
+          address: {
+            country: 'AU',
+            ...(postal ? { postal_code: postal } : {}),
+          },
+        },
       });
       if (error || !paymentMethod) {
         toast.error(error?.message || 'Could not read card. Please check the details.');
@@ -99,6 +108,7 @@ const CardForm = ({
       setSubmitting(false);
     }
   };
+
 
   return (
     <div className="px-4 pt-3 pb-8 space-y-4">
