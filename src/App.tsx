@@ -8,7 +8,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
 import PageSkeleton from "./components/PageSkeleton";
-import { restoreRouteAppChrome } from "@/lib/appChrome";
+import { forceRestoreRouteAppChrome } from "@/lib/appChrome";
 import { getRouteFromNativeAuthUrl } from "@/lib/authRedirects";
 
 // Critical path – auth is loaded eagerly; app/feed routes are lazy so /auth paints first.
@@ -175,18 +175,20 @@ const AppContent = () => {
   // src/lib/appChrome.ts — do NOT register them here too (caused duplicate
   // App.addListener calls in Xcode and raced the Capacitor bridge during boot).
   useLayoutEffect(() => {
-    restoreRouteAppChrome();
+    // Use the force variant so the internal `lastAppliedColor` guard cannot
+    // skip clearing a stale `.boot-auth` chrome state after leaving /auth.
+    forceRestoreRouteAppChrome();
     const onVisibility = () => {
-      if (!document.hidden) restoreRouteAppChrome();
+      if (!document.hidden) forceRestoreRouteAppChrome();
     };
-    window.addEventListener("pageshow", restoreRouteAppChrome);
-    window.addEventListener("focus", restoreRouteAppChrome);
-    window.addEventListener("popstate", restoreRouteAppChrome);
+    window.addEventListener("pageshow", forceRestoreRouteAppChrome);
+    window.addEventListener("focus", forceRestoreRouteAppChrome);
+    window.addEventListener("popstate", forceRestoreRouteAppChrome);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      window.removeEventListener("pageshow", restoreRouteAppChrome);
-      window.removeEventListener("focus", restoreRouteAppChrome);
-      window.removeEventListener("popstate", restoreRouteAppChrome);
+      window.removeEventListener("pageshow", forceRestoreRouteAppChrome);
+      window.removeEventListener("focus", forceRestoreRouteAppChrome);
+      window.removeEventListener("popstate", forceRestoreRouteAppChrome);
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [location.pathname]);
