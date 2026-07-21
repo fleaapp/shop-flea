@@ -1,40 +1,28 @@
-## Plan
+I’ve confirmed two important current facts:
 
-1. **Keep the current Flea-native checkout**
-   - Do not switch to Stripe’s full PaymentSheet UI.
-   - Keep the existing Flea checkout screen, Flea payment selector, Flea card sheet, and native Apple Pay button flow.
+- The app code and `ios-native/App.entitlements` both use `merchant.com.finditonflea.app`.
+- The live backend `stripe-config` is currently returning a live publishable key but `livemode: false`, which means the Cloud private payment key/config is still test-mode while the app is trying to use live payments. That is configuration drift from the Cloud move and needs fixing.
 
-2. **Fix the Apple Pay setup that likely changed during the Cloud cutover**
-   - Verify the app is initializing native Apple Pay against the same payment account/key that has Apple Pay enabled.
-   - The Cloud cutover changed backend payment secrets, so the most likely break is now: the app is creating PaymentIntents under a different payment account than the one that previously had the Apple Pay merchant/certificate setup.
-   - Add a backend-safe diagnostic response from `stripe-config` showing non-secret payment account metadata only, so we can confirm the live account used by Cloud matches the intended Flea payment account.
+Plan:
 
-3. **Strengthen the native Apple Pay initialization only**
-   - Keep using `@capacitor-community/stripe` direct Apple Pay.
-   - Initialize the native Stripe plugin with both the publishable key and `merchantIdentifier: merchant.com.finditonflea.app` before Apple Pay checks and presentation.
-   - Keep the existing `createApplePay` / `presentApplePay` path.
+1. Fix Cloud payment key mode mismatch
+   - Update the Cloud Stripe/private payment key so the backend and publishable key are both live.
+   - Re-check `stripe-config` afterwards; it must return `livemode: true` with the live publishable key.
 
-4. **Add real native Apple Pay failure logging**
-   - The Admin Error Log is empty because the current failure is a native iOS PassKit dialog, not a normal JS crash.
-   - When Apple Pay preflight/create/present fails, send the sanitized diagnostic into the existing app error logger so the next TestFlight attempt appears in Admin Error Logs.
-   - Include merchant ID, platform, payment account ID, and the native error category, but no secrets.
+2. Add a native runtime entitlement checker in the iOS app
+   - Add a tiny Capacitor iOS plugin that reads the signed app’s actual `com.apple.developer.in-app-payments` entitlement at runtime.
+   - Before showing Apple Pay, call this checker from checkout.
+   - If the signed build does not actually contain `merchant.com.finditonflea.app`, show a Flea toast and write an admin error log before PassKit opens its system alert.
 
-5. **Make the setup script catch the exact local issue before Archive**
-   - Update the iOS setup verification to check that the generated Xcode entitlement file contains `merchant.com.finditonflea.app`.
-   - Print a clear pass/fail result so you can confirm the archive is signed with the Apple Pay entitlement before uploading.
+3. Initialize the Stripe native plugin with the connected account context
+   - The current native code creates the PaymentIntent as a Connect charge for the seller, but `Stripe.initialize()` only receives the publishable key.
+   - Pass the seller account ID to native initialization as `stripeAccount` so native Apple Pay confirmation uses the same Connect account context as the PaymentIntent.
 
-6. **After implementation, you’ll run one clean native push**
-   - `git pull`
-   - `npm install`
-   - `npm run build`
-   - `npx cap sync ios`
-   - run the native setup script if the `ios/` project was regenerated
-   - Archive again in Xcode
+4. Harden the local Xcode verification script
+   - Update `scripts/setup-ios-native.sh` to verify the generated iOS project has `CODE_SIGN_ENTITLEMENTS` wired for every build config.
+   - Add a command that checks the archived `.app` entitlements after archive, not just the source plist, because the source file can be correct while the signed build is wrong.
 
-## What this does not change
-
-- No Stripe sheet.
-- No external checkout.
-- No deep links.
-- No change to seller/buyer fee logic.
-- No change to marketplace transfer/application fee logic.
+5. Deployment/test steps after code changes
+   - Deploy the updated payment config/function if needed.
+   - You’ll run the fresh iOS sequence locally: `git pull`, `npm install`, `npm run build`, `npx cap sync ios`, `bash scripts/setup-ios-native.sh`, then archive.
+   - If the runtime checker says entitlement missing, the fix is Apple provisioning/profile regeneration; if entitlement passes but Apple Pay still fails, the remaining target is Stripe live Apple Pay certificate/merchant setup for `merchant.com.finditonflea.app` on the live account.
