@@ -31,6 +31,7 @@ import visaLogo from '@/assets/cards/visa.svg';
 import mastercardLogo from '@/assets/cards/mastercard.svg';
 import amexLogo from '@/assets/cards/amex.svg';
 import applePayLogo from '@/assets/cards/apple-pay.svg';
+import { runApplePayPreflight, categoriseApplePayError } from '@/lib/applePayDiagnostics';
 
 // Apple App Review demo account — bypasses the seller-Stripe-connected check
 // so the reviewer can complete a purchase against demo listings.
@@ -260,18 +261,10 @@ const Checkout = () => {
     await Stripe.initialize({ publishableKey: pi.publishableKey });
 
     if (platform === 'ios') {
-      try {
-        await Stripe.isApplePayAvailable();
-      } catch (err: any) {
-        // Real reason surfaces here so we don't silently show "not available":
-        // - Apple Pay capability missing from the app target in Xcode
-        // - Merchant ID `merchant.com.finditonflea.app` not ticked / not registered
-        // - No cards in Wallet
-        console.error('isApplePayAvailable failed:', err);
-        const reason = typeof err?.message === 'string' && err.message.length > 0
-          ? err.message
-          : 'Apple Pay is not set up on this device or in this build.';
-        toast.error(`Apple Pay unavailable: ${reason}`);
+      const preflight = await runApplePayPreflight();
+      console.info('[ApplePay] preflight', preflight);
+      if (!preflight.ok) {
+        toast.error(preflight.userMessage);
         return true;
       }
 
@@ -291,18 +284,25 @@ const Checkout = () => {
           allowedCountriesErrorDescription: 'Flea is currently available in Australia only.',
         });
       } catch (err: any) {
-        console.error('createApplePay failed:', err);
-        toast.error(err?.message || 'Could not start Apple Pay. Please try Add new card.');
+        const diag = categoriseApplePayError(err);
+        console.error('[ApplePay] createApplePay failed', { diag, err });
+        toast.error(diag.userMessage);
         return true;
       }
 
-      const { paymentResult } = await Stripe.presentApplePay();
-      if (paymentResult === ApplePayEventsEnum.Completed) {
-        handlePaymentSuccess(pi.paymentIntentId);
-      } else if (paymentResult === ApplePayEventsEnum.Canceled) {
-        toast.message('Payment was cancelled.');
-      } else {
-        toast.error('Payment did not complete. Please try again.');
+      try {
+        const { paymentResult } = await Stripe.presentApplePay();
+        if (paymentResult === ApplePayEventsEnum.Completed) {
+          handlePaymentSuccess(pi.paymentIntentId);
+        } else if (paymentResult === ApplePayEventsEnum.Canceled) {
+          toast.message('Payment was cancelled.');
+        } else {
+          toast.error('Payment did not complete. Please try again.');
+        }
+      } catch (err: any) {
+        const diag = categoriseApplePayError(err);
+        console.error('[ApplePay] presentApplePay failed', { diag, err, merchantId: APPLE_PAY_MERCHANT_ID });
+        toast.error(diag.userMessage);
       }
       return true;
     }
