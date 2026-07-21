@@ -63,6 +63,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error('Failed to fetch profile:', error);
         setProfile(null);
         setIsBanned(false);
+        setProfileLoaded(true);
         return null;
       }
 
@@ -93,12 +94,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       setIsBanned(banned);
+      setProfileLoaded(true);
 
       return data;
     } catch (e) {
       console.error('Unexpected error fetching profile:', e);
       setProfile(null);
       setIsBanned(false);
+      setProfileLoaded(true);
       return null;
     }
   }, []);
