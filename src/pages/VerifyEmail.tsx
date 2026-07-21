@@ -1,12 +1,28 @@
 import { useNavigate, useLocation } from 'react-router-dom';
  import { ArrowLeft } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import fleaLogoAuth from '@/assets/flea-logo-auth.jpeg';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 
 const VerifyEmail = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const email = location.state?.email;
+  const [resending, setResending] = useState(false);
+
+  const handleResend = async () => {
+    if (!email) {
+      toast.error('No email address to resend to.');
+      return;
+    }
+    setResending(true);
+    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    setResending(false);
+    if (error) toast.error(error.message);
+    else toast.success('Verification email sent.');
+  };
 
   return (
     <div className="fixed inset-0 bg-primary flex flex-col overflow-hidden">
@@ -53,10 +69,18 @@ const VerifyEmail = () => {
             >
               Back to Login
             </Button>
-            
+
+            <button
+              onClick={handleResend}
+              disabled={resending || !email}
+              className="text-xs text-foreground/70 underline disabled:opacity-50"
+            >
+              {resending ? 'Sending…' : 'Resend verification email'}
+            </button>
+
             <p className="text-xs text-foreground/50 pt-2">
               Didn't receive the email?<br />
-              Check your spam folder or try signing up again.
+              Check your spam folder.
             </p>
           </div>
         </div>
