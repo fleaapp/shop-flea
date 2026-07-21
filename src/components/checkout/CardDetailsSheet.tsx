@@ -24,6 +24,8 @@ interface Props {
     cardholderName: string;
     saveCard: boolean;
   }) => Promise<void>;
+  /** Buyer's shipping postcode — sent as billing_details.address for AVS. */
+  billingPostcode?: string;
 }
 
 const elementStyle: StripeElementStyle = {
