@@ -56,6 +56,7 @@ const OrderChat = () => {
           // Real orders.id — the route param is often the group id, and refund /
           // order-messages edge functions key on the actual order row.
           primary_order_id: order?.id ?? null,
+          related_order_ids: group.orders.map((o) => o.id),
           buyer_id: group.buyer_id,
           seller_id: group.seller_id,
           delivered_at: group.delivered_at ?? order?.delivered_at ?? null,
@@ -66,6 +67,7 @@ const OrderChat = () => {
           seller_avatar: group.seller_profile?.avatar_url || null,
         };
       }
+
     }
     return null;
   }, [orderId, user?.id, buyerOrderGroups, sellerOrderGroups]);
@@ -112,22 +114,34 @@ const OrderChat = () => {
     retry: 1,
   });
 
-  // Realtime subscription
+  // Realtime subscription — match every underlying order id in the group,
+  // because `order_messages` has no `order_group_id` column on Cloud.
+  const realtimeOrderIds = orderInfo?.related_order_ids?.length
+    ? orderInfo.related_order_ids
+    : orderId
+      ? [orderId]
+      : [];
+  const realtimeKey = realtimeOrderIds.slice().sort().join(',');
   useEffect(() => {
-    if (!orderId) return;
+    if (!realtimeKey) return;
+    const ids = realtimeKey.split(',');
+    const filter = ids.length > 1
+      ? `order_id=in.(${ids.join(',')})`
+      : `order_id=eq.${ids[0]}`;
     const channel = supabase
-      .channel(`order-messages-${orderId}`)
+      .channel(`order-messages-${realtimeKey}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'order_messages',
-        filter: `order_id=eq.${orderId}`,
+        filter,
       }, () => {
         queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [orderId, queryClient]);
+  }, [realtimeKey, orderId, queryClient]);
+
 
   // Refetch when app returns from background (e.g. push notification tap)
   useEffect(() => {

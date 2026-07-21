@@ -717,14 +717,27 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (req.method === "GET") {
-      const messageFilter = orderInfo.requestedIdType === "group" && orderInfo.matchedOrderGroupId
-        ? external.from("order_messages").select("*").eq(orderMessageKey, orderInfo.matchedOrderGroupId)
-        : orderInfo.relatedOrderIds.length > 1
-          ? external.from("order_messages").select("*").in("order_id", orderInfo.relatedOrderIds)
-          : external.from("order_messages").select("*").eq(orderMessageKey, orderInfo.matchedOrderId ?? orderId);
+    // Compute the set of real order ids that this thread covers. On Cloud
+    // `order_messages` has no `order_group_id` column, so if the URL passed a
+    // group id we must expand it to every underlying order.id and filter by
+    // those — otherwise `.eq('order_id', groupId)` returns 0 rows and the
+    // chat looks empty even though refund_request / normal messages exist.
+    const orderIds = orderInfo.relatedOrderIds && orderInfo.relatedOrderIds.length > 0
+      ? orderInfo.relatedOrderIds
+      : [orderInfo.matchedOrderId ?? orderId];
 
-      const { data, error } = await messageFilter.order("created_at", { ascending: true });
+    const buildMessageFilter = (query: any) => {
+      if (orderMessageKey === "order_group_id" && orderInfo.matchedOrderGroupId) {
+        return query.eq("order_group_id", orderInfo.matchedOrderGroupId);
+      }
+      if (orderIds.length > 1) return query.in("order_id", orderIds);
+      return query.eq("order_id", orderIds[0]);
+    };
+
+    if (req.method === "GET") {
+      const { data, error } = await buildMessageFilter(
+        external.from("order_messages").select("*"),
+      ).order("created_at", { ascending: true });
 
       if (error) throw error;
 
@@ -739,13 +752,9 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === "PATCH") {
-      const readFilter = orderInfo.requestedIdType === "group" && orderInfo.matchedOrderGroupId
-        ? external.from("order_messages").update({ read: true }).eq(orderMessageKey, orderInfo.matchedOrderGroupId)
-        : orderInfo.relatedOrderIds.length > 1
-          ? external.from("order_messages").update({ read: true }).in("order_id", orderInfo.relatedOrderIds)
-          : external.from("order_messages").update({ read: true }).eq(orderMessageKey, orderInfo.matchedOrderId ?? orderId);
-
-      const { error } = await readFilter
+      const { error } = await buildMessageFilter(
+        external.from("order_messages").update({ read: true }),
+      )
         .neq("sender_id", userId)
         .eq("read", false);
 
@@ -755,6 +764,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     if (req.method === "POST") {
       if (deliveredAt) {
