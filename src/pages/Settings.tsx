@@ -271,11 +271,13 @@ const Settings = () => {
     { title: 'Account', items: accountItems },
     { title: 'Support', items: supportItems }
   ];
-  return <div className="min-h-screen bg-background pb-24 max-[375px]:pb-20">
+  return <div className="native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-24 max-[375px]:pb-20">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background px-4 max-[375px]:px-3 py-4 max-[375px]:py-3">
         <h1 className="text-xl max-[375px]:text-lg font-bold text-foreground text-center">⚙️ Settings</h1>
       </header>
+
       
       {/* Settings Groups */}
       <div className="px-4 max-[375px]:px-3 space-y-6 max-[375px]:space-y-4">
@@ -427,8 +429,8 @@ const Settings = () => {
 
       {/* Shipping Settings Sheet */}
       <ShippingSettingsSheet open={shippingOpen} onOpenChange={setShippingOpen} />
-      
-      
+      </div>
+
       <BottomNav adminSettingsBadge={!isGuest && isAdmin ? adminBadgeTotal : undefined} />
     </div>;
 };

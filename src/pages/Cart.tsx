@@ -263,9 +263,11 @@ const Cart = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24 max-[375px]:pb-20">
+    <div className="native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-24 max-[375px]:pb-20">
       {/* Sticky Header with Wishlist Button */}
       <div className="sticky top-0 z-40 bg-background">
+
         <div className="relative flex justify-center pt-8 max-[375px]:pt-6 pb-6 max-[375px]:pb-4">
         {/* Wishlist button - charcoal background with heart envelope emoji */}
           <Button
@@ -519,10 +521,12 @@ const Cart = () => {
         onOpenChange={(open) => !open && setSelectedOrderGroup(null)}
         onMarkDelivered={handleMarkDelivered}
       />
+      </div>
 
       <BottomNav />
     </div>
   );
 };
+
 
 export default Cart;
