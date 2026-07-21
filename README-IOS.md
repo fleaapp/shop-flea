@@ -32,13 +32,25 @@ Then in Xcode (one-time per Mac):
 - Copies `ios-native/App.entitlements` into place with all three capabilities:
   - Push Notifications (`aps-environment = production`)
   - Sign in with Apple
+  - Apple Pay (`merchant.com.finditonflea.app`)
   - Associated Domains: `applinks:app.finditonflea.com`, `webcredentials:app.finditonflea.com`
 - Wires the entitlements file into `App.xcodeproj/project.pbxproj`.
+- Installs Flea's native entitlement checker so checkout can detect whether the
+  signed app really contains the Apple Pay entitlement before PassKit opens.
 - Restores the app icon from your newest local Xcode Archive.
 
 ## What you still do in Xcode
 
 Only the Apple Team selection (Apple refuses to let a repo hardcode this).
+
+After Archive, verify the signed app contains Apple Pay before uploading:
+
+```bash
+APP="$(find ~/Library/Developer/Xcode/Archives -path '*/Products/Applications/Flea.app' -type d | sort | tail -1)"
+codesign -d --entitlements :- "$APP" | grep -A6 'com.apple.developer.in-app-payments'
+```
+
+The output must include `merchant.com.finditonflea.app`.
 
 ## To edit what's applied
 

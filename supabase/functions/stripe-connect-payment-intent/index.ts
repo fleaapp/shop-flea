@@ -6,7 +6,7 @@
 //
 // Response:
 //   { clientSecret, ephemeralKey, customerId, publishableKey,
-//     paymentIntentId, amount, sellerAccountId }
+//     paymentIntentId, amount, sellerAccountId, clientStripeAccountId }
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
@@ -253,6 +253,10 @@ serve(async (req) => {
       currency: "aud",
       merchantDisplayName: "Flea",
       sellerAccountId: sellerStripeAccountId,
+      // Destination-charge PaymentIntents live on the platform account. Keep
+      // client confirmation on the platform; only set this for future direct
+      // charges created with a Stripe-Account request option.
+      clientStripeAccountId: null,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
   } catch (error) {
     console.error("[stripe-connect-payment-intent] error:", error);
