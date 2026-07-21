@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useTransition, useState, useEffect } from 'react';
+import { useMemo, useCallback, useTransition } from 'react';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { getAvatarUrl } from '@/utils/optimizedImage';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -9,7 +9,7 @@ import { useOrders } from '@/hooks/useOrders';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useAdminRole } from '@/hooks/useAdminRole';
-import { useAdminBadges } from '@/hooks/admin/useAdminBadges';
+import { formatAdminBadgeCount, useAdminBadges } from '@/hooks/admin/useAdminBadges';
 
 interface NavItem {
   icon: React.ReactNode;
@@ -17,28 +17,6 @@ interface NavItem {
   path: string;
   badge?: number;
 }
-
-// Isolated so useAdminBadges only mounts when the user is actually an admin.
-const AdminSettingsBadgeProbe = ({ onCount }: { onCount: (n: number) => void }) => {
-  const { badges } = useAdminBadges();
-  const total =
-    badges.support +
-    badges.reports +
-    badges.bans +
-    badges.suggestions +
-    badges.waitlist +
-    badges.contact +
-    badges.transactions +
-    badges.refunds +
-    badges.listings +
-    badges.users +
-    badges.brands +
-    badges.errorLogs;
-  useEffect(() => {
-    onCount(total);
-  }, [total, onCount]);
-  return null;
-};
 
 const BottomNav = () => {
   const location = useLocation();
@@ -51,6 +29,7 @@ const BottomNav = () => {
   const { perOrder } = useUnreadOrderMessages();
   const { badgeCount: notificationBadgeCount } = useNotifications();
   const { isAdmin } = useAdminRole();
+  const { total: adminTotal } = useAdminBadges({ enabled: isAdmin });
 
   // Cart badge — mirrors src/pages/Cart.tsx ordersBadgeCount
   const ordersBadge = useMemo(() => {
@@ -78,9 +57,6 @@ const BottomNav = () => {
 
   // Alerts badge — mirrors src/pages/Notifications.tsx (since-dismissed)
   const alertsBadge = notificationBadgeCount || undefined;
-
-  const [adminTotal, setAdminTotal] = useState(0);
-  const handleAdminTotal = useCallback((n: number) => setAdminTotal(n), []);
 
   // Settings badge — admins get support + reports + refunds + brands + contact + bans.
   // Non-admins get support-thread unread only.
@@ -126,9 +102,6 @@ const BottomNav = () => {
 
   return (
     <>
-      {isAdmin && (
-        <AdminSettingsBadgeProbe onCount={handleAdminTotal} />
-      )}
       <nav
         className="fixed bottom-0 left-0 right-0 flex justify-center pb-3 max-[375px]:pb-2 pt-3 max-[375px]:pt-2 z-50 pointer-events-none"
         data-onboarding="bottom-nav"
@@ -152,8 +125,8 @@ const BottomNav = () => {
               >
                 {isActive ? item.label : item.icon}
                 {item.badge && !isActive && (
-                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                    {item.badge}
+                  <span className="absolute right-0 top-0 flex h-5 min-w-5 translate-x-1/3 -translate-y-1/3 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
+                    {formatAdminBadgeCount(item.badge)}
                   </span>
                 )}
               </button>
