@@ -169,11 +169,9 @@ export const applyAppChromeColor = (color: string, _statusBarStyle: 'default' | 
   const routeTopColor = getRouteTopColor();
   const isAuthColor = routeTopColor === AUTH_TOP_COLOR;
 
-  // Always keep the cached route color + its overlay tint in sync so the
-  // next overlay push has a correct tint ready — even on the very first
-  // paint where routeTopColor already equals the initial cached value.
   cachedRouteColor = routeTopColor;
-  cachedRouteTint = overlayTint(routeTopColor);
+
+
 
 
   document.documentElement.classList.remove('dark');
