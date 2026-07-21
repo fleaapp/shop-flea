@@ -181,7 +181,7 @@ const CardForm = ({
   );
 };
 
-const CardDetailsSheet = ({ open, onClose, onConfirm }: Props) => {
+const CardDetailsSheet = ({ open, onClose, onConfirm, billingPostcode }: Props) => {
   return (
     <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
       <DrawerContent className="bg-background">
@@ -191,7 +191,7 @@ const CardDetailsSheet = ({ open, onClose, onConfirm }: Props) => {
           </button>
         </div>
         <Elements stripe={getStripe()} options={{ locale: 'en' }}>
-          <CardForm onConfirm={onConfirm} />
+          <CardForm onConfirm={onConfirm} billingPostcode={billingPostcode} />
         </Elements>
       </DrawerContent>
     </Drawer>
