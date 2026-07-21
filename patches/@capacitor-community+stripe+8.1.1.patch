@@ -1,0 +1,51 @@
+diff --git a/node_modules/@capacitor-community/stripe/ios/Sources/StripePlugin/StripePlugin.swift b/node_modules/@capacitor-community/stripe/ios/Sources/StripePlugin/StripePlugin.swift
+index 0000000..1111111 100644
+--- a/node_modules/@capacitor-community/stripe/ios/Sources/StripePlugin/StripePlugin.swift
++++ b/node_modules/@capacitor-community/stripe/ios/Sources/StripePlugin/StripePlugin.swift
+@@ -2,6 +2,7 @@ import Foundation
+ import Capacitor
+ import StripePaymentSheet
+ import StripeApplePay
++import Security
+ 
+ @objc(StripePlugin)
+ public class StripePlugin: CAPPlugin, CAPBridgedPlugin {
+@@ -20,7 +21,8 @@ public class StripePlugin: CAPPlugin, CAPBridgedPlugin {
+         CAPPluginMethod(name: "presentApplePay", returnType: CAPPluginReturnPromise),
+         CAPPluginMethod(name: "isGooglePayAvailable", returnType: CAPPluginReturnPromise),
+         CAPPluginMethod(name: "createGooglePay", returnType: CAPPluginReturnPromise),
+-        CAPPluginMethod(name: "presentGooglePay", returnType: CAPPluginReturnPromise)
++        CAPPluginMethod(name: "presentGooglePay", returnType: CAPPluginReturnPromise),
++        CAPPluginMethod(name: "getApplePayEntitlements", returnType: CAPPluginReturnPromise)
+     ]
+     private let paymentSheetExecutor = PaymentSheetExecutor()
+     private let paymentFlowExecutor = PaymentFlowExecutor()
+@@ -118,6 +120,27 @@ public class StripePlugin: CAPPlugin, CAPBridgedPlugin {
+         call.unavailable("Not implemented on iOS.")
+     }
+ 
++    @objc func getApplePayEntitlements(_ call: CAPPluginCall) {
++        let expectedMerchant = call.getString("merchantIdentifier") ?? "merchant.com.finditonflea.app"
++        let entitlementName = "com.apple.developer.in-app-payments"
++        var merchantIdentifiers: [String] = []
++
++        if let task = SecTaskCreateFromSelf(nil),
++           let value = SecTaskCopyValueForEntitlement(task, entitlementName as CFString, nil) {
++            if let merchants = value as? [String] {
++                merchantIdentifiers = merchants
++            } else if let merchant = value as? String {
++                merchantIdentifiers = [merchant]
++            }
++        }
++
++        call.resolve([
++            "expectedMerchant": expectedMerchant,
++            "merchantIdentifiers": merchantIdentifiers,
++            "hasInAppPaymentsEntitlement": !merchantIdentifiers.isEmpty,
++            "hasExpectedMerchant": merchantIdentifiers.contains(expectedMerchant),
++        ])
++    }
++
+     func getRootVC() -> UIViewController? {
+         var window: UIWindow? = UIApplication.shared.delegate?.window ?? nil
+ 
