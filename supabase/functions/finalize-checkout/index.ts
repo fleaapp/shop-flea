@@ -56,8 +56,6 @@ type ShippingDetails = {
 type ListingRow = { id: string; user_id: string; title: string; price: number; status: string };
 
 const ORDER_INSERT_FALLBACK_COLUMNS = ["checkout_reference", "payment_method"] as const;
-const NOTIFICATION_INSERT_FALLBACK_COLUMNS = ["related_order_id"] as const;
-
 function isMissingColumnError(error: unknown, columnName: string) {
   if (!error || typeof error !== "object" || !("code" in error) || !("message" in error)) return false;
   const code = typeof (error as any).code === "string" ? (error as any).code : "";
@@ -95,16 +93,6 @@ async function insertOrdersWithFallback(client: ReturnType<typeof createClient>,
   }
 }
 
-async function insertNotificationsWithFallback(client: ReturnType<typeof createClient>, rows: Record<string, unknown>[]) {
-  const stripped = new Set<string>();
-  while (true) {
-    const result = await client.from("notifications").insert(stripCols(rows, stripped));
-    const missing = NOTIFICATION_INSERT_FALLBACK_COLUMNS.find((c) => !stripped.has(c) && isMissingColumnError(result.error, c));
-    if (!missing) return result;
-    stripped.add(missing);
-  }
-}
-
 async function fetchOrdersForBuyer(client: ReturnType<typeof createClient>, userId: string, itemIds: string[], ref?: string) {
   let q = client.from("orders").select("id, listing_id, seller_id, created_at, checkout_reference")
     .eq("buyer_id", userId).in("listing_id", itemIds).order("created_at", { ascending: false });
@@ -115,19 +103,6 @@ async function fetchOrdersForBuyer(client: ReturnType<typeof createClient>, user
       .eq("buyer_id", userId).in("listing_id", itemIds).order("created_at", { ascending: false });
   }
   return result;
-}
-
-async function sendPushNotification(userId: string, notification: Record<string, unknown>) {
-  try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-    if (!supabaseUrl || !serviceKey) return;
-    await fetch(`${supabaseUrl}/functions/v1/send-push-notification`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${serviceKey}` },
-      body: JSON.stringify({ user_id: userId, notification }),
-    });
-  } catch (error) { console.error("[finalize-checkout] Push send failed:", error); }
 }
 
 // Signature-verified JWT extraction. Uses Supabase's auth client to validate
@@ -361,56 +336,9 @@ serve(async (req) => {
       .update({ status: "sold", updated_at: new Date().toISOString() })
       .in("id", authoritativeItems.map((i) => i.id));
 
-    const [cartUsersResult, wishlistUsersResult] = await Promise.all([
-      serviceClient.from("cart_items").select("listing_id, user_id").in("listing_id", itemIds),
-      serviceClient.from("favorites").select("listing_id, user_id").in("listing_id", itemIds),
-    ]);
-    if (cartUsersResult.error) throw cartUsersResult.error;
-    if (wishlistUsersResult.error) throw wishlistUsersResult.error;
-
-    const cartUsersByListing = new Map<string, Set<string>>();
-    for (const row of cartUsersResult.data ?? []) {
-      const s = cartUsersByListing.get(row.listing_id) ?? new Set<string>();
-      s.add(row.user_id); cartUsersByListing.set(row.listing_id, s);
-    }
-    const wishlistUsersByListing = new Map<string, Set<string>>();
-    for (const row of wishlistUsersResult.data ?? []) {
-      const s = wishlistUsersByListing.get(row.listing_id) ?? new Set<string>();
-      s.add(row.user_id); wishlistUsersByListing.set(row.listing_id, s);
-    }
-
-    const notificationRows: Record<string, unknown>[] = [];
-    for (const order of insertedOrders ?? []) {
-      const listing = listingMap.get(order.listing_id);
-      if (!listing) continue;
-      notificationRows.push({
-        user_id: order.seller_id, type: "item_sold", title: "Item Sold", message: listing.title,
-        related_listing_id: order.listing_id, related_user_id: userId, related_order_id: order.id,
-      });
-      await sendPushNotification(order.seller_id, {
-        type: "item_sold", title: "Item Sold",
-        message: `🎉🤑 Cha-ching! Your item \"${listing.title}\" has just sold.`,
-        related_listing_id: order.listing_id, related_order_id: order.id,
-      });
-      const cartUsers = cartUsersByListing.get(order.listing_id) ?? new Set<string>();
-      const wishlistUsers = wishlistUsersByListing.get(order.listing_id) ?? new Set<string>();
-      for (const watcherId of new Set([...cartUsers, ...wishlistUsers])) {
-        if (watcherId === userId || watcherId === order.seller_id) continue;
-        const inCart = cartUsers.has(watcherId);
-        const inWishlist = wishlistUsers.has(watcherId);
-        const type = inCart && inWishlist ? "cart_wishlist_item_sold" : inCart ? "cart_item_sold" : "wishlist_item_sold";
-        notificationRows.push({
-          user_id: watcherId, type, title: "Item Sold", message: listing.title,
-          related_listing_id: order.listing_id, related_user_id: userId,
-        });
-        await sendPushNotification(watcherId, { type, title: "Item Sold", message: `${listing.title}.`, related_listing_id: order.listing_id });
-      }
-    }
-
-    if (notificationRows.length > 0) {
-      const { error } = await insertNotificationsWithFallback(serviceClient, notificationRows);
-      if (error) throw error;
-    }
+    // Sold/cart/wishlist notifications are created exactly once by the
+    // canonical database trigger on public.orders. Do not insert or push them
+    // here, or checkout creates duplicate alerts on native devices.
 
     await serviceClient.from("cart_items").delete().eq("user_id", userId).in("listing_id", itemIds);
 
