@@ -33,6 +33,7 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  profileLoaded: boolean;
   isBanned: boolean;
   signUp: (email: string, password: string, username: string, countryCode?: string, regionId?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -47,6 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [isBanned, setIsBanned] = useState(false);
 
   const fetchProfile = useCallback(async (userId: string) => {
@@ -61,6 +63,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error('Failed to fetch profile:', error);
         setProfile(null);
         setIsBanned(false);
+        setProfileLoaded(true);
         return null;
       }
 
@@ -91,12 +94,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       setIsBanned(banned);
+      setProfileLoaded(true);
 
       return data;
     } catch (e) {
       console.error('Unexpected error fetching profile:', e);
       setProfile(null);
       setIsBanned(false);
+      setProfileLoaded(true);
       return null;
     }
   }, []);
@@ -206,6 +211,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }, 0);
         } else {
           setProfile(null);
+          setProfileLoaded(true);
           clearTimeout(safetyTimer);
           setLoading(false);
         }
@@ -224,6 +230,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setLoading(false);
         });
       } else {
+        setProfileLoaded(true);
         clearTimeout(safetyTimer);
         setLoading(false);
       }
@@ -349,6 +356,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setSession(null);
     setUser(null);
     setProfile(null);
+    setProfileLoaded(false);
     setIsBanned(false);
     try {
       await supabase.auth.signOut({ scope: 'local' });
@@ -364,7 +372,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, isBanned, signUp, signIn, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, profileLoaded, isBanned, signUp, signIn, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

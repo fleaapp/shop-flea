@@ -52,17 +52,17 @@ const Index = () => {
   const { addFavorite, removeFavorite, favoriteIds } = useFavorites();
   const { addDiscarded, removeDiscarded, discardedIds } = useDiscardedListings();
   const { checkAndTriggerOnboarding, openCarousel } = useOnboarding();
-  const { user, profile, loading: authLoading, refreshProfile } = useAuth();
+  const { user, profile, loading: authLoading, profileLoaded, refreshProfile } = useAuth();
   const { isGuest, requireAuth } = useGuestMode();
 
   // Check if user needs to set up their profile.
   // Triggers when: profile is missing entirely, username is missing/blank,
   // username is the auto-generated placeholder, OR region/country is missing.
   // Any of these means the user hasn't completed onboarding and must be gated.
-  // IMPORTANT: gate on `!authLoading` so we don't flash the welcome dialog
-  // during the brief window after login when `user` is set but `profile`
-  // hasn't been fetched yet.
-  const needsProfileSetup = !!user && !authLoading && (
+  // IMPORTANT: gate on `profileLoaded` so we don't flash the welcome dialog
+  // during the brief window on cold boot / resume when `user` is set but the
+  // profile row is still being fetched.
+  const needsProfileSetup = !!user && !authLoading && profileLoaded && (
     !profile ||
     !profile.username ||
     profile.username.trim() === '' ||
@@ -70,10 +70,9 @@ const Index = () => {
     !profile.region_id ||
     !profile.country_code
   );
-  // profileLoaded reflects "we've finished trying to load it", regardless of whether a row exists.
-  // The AuthContext sets profile to null both when loading and when no row exists, so we treat
-  // a missing row as "loaded" once the user is present and not in initial loading.
-  const profileLoaded = !!user;
+  // `profileLoaded` comes from AuthContext and is true only after the profile
+  // fetch has settled (success or empty). Used below to gate password logic.
+
   // Persist `welcomeCompleted` per-user in localStorage. Without this, navigating
   // between routes during the onboarding carousel unmounts/remounts Index and
   // resets this flag to false — which, combined with a brief profile-refetch lag,
