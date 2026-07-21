@@ -539,8 +539,15 @@ async function uploadRefundImages(
       throw new Error(uploadError.message || "Upload failed");
     }
 
-    const { data } = extClient.storage.from("order-attachments").getPublicUrl(path);
-    results.push({ url: data.publicUrl, kind: isVideo ? 'video' : 'photo' });
+    // Bucket is private — signed URL so buyer/seller can render evidence in chat.
+    // 1-year expiry; long enough for the 10-day refund window plus disputes.
+    const { data: signed, error: signError } = await extClient.storage
+      .from("order-attachments")
+      .createSignedUrl(path, 60 * 60 * 24 * 365);
+    if (signError || !signed?.signedUrl) {
+      throw new Error(signError?.message || "Failed to sign upload URL");
+    }
+    results.push({ url: signed.signedUrl, kind: isVideo ? 'video' : 'photo' });
   }
 
   return results;
