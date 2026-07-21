@@ -628,7 +628,7 @@ const CreateListing = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="native-safe-top fixed inset-0 bg-background flex flex-col overflow-hidden">
       {/* Blocked user banner */}
       {isBlocked && <BlockedUserBanner />}
       {/* Image Crop Dialog */}
@@ -651,7 +651,7 @@ const CreateListing = () => {
       />
 
       {/* Header */}
-      <header className="relative flex items-center justify-center px-4 py-4">
+      <header className="shrink-0 relative flex items-center justify-center px-4 py-4">
         <Button
           variant="ghost"
           size="icon"
@@ -663,20 +663,21 @@ const CreateListing = () => {
         <h1 className="text-xl font-bold text-foreground">Add New Listing</h1>
       </header>
 
-      {draftRestored && (
-        <div className="mx-4 mb-3 flex items-center justify-between rounded-full bg-muted/50 px-3 py-1.5">
-          <span className="text-[12px] text-muted-foreground">Draft restored from your last session.</span>
-          <button
-            type="button"
-            onClick={discardListingDraft}
-            className="text-[12px] font-medium text-foreground underline underline-offset-2"
-          >
-            Discard
-          </button>
-        </div>
-      )}
-      
-      <form onSubmit={handleSubmit} className="px-4 space-y-4">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-24">
+        {draftRestored && (
+          <div className="mx-4 mb-3 flex items-center justify-between rounded-full bg-muted/50 px-3 py-1.5">
+            <span className="text-[12px] text-muted-foreground">Draft restored from your last session.</span>
+            <button
+              type="button"
+              onClick={discardListingDraft}
+              className="text-[12px] font-medium text-foreground underline underline-offset-2"
+            >
+              Discard
+            </button>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="px-4 space-y-4">
         {/* Photo Upload Area */}
         <button
           type="button"
@@ -917,6 +918,9 @@ const CreateListing = () => {
           )}
         </div>
       </form>
+      </div>
+
+
       
       <SizeSelectionDrawer
         open={sizeDrawerOpen}

@@ -88,7 +88,10 @@ serve(async (req) => {
       }
 
       if (action === "count24h") {
-        const [row] = await sql`SELECT COUNT(*)::int AS c FROM public.error_logs WHERE created_at > now() - interval '24 hours'`;
+        const since = typeof body.since === "string" && body.since ? body.since : null;
+        const [row] = since
+          ? await sql`SELECT COUNT(*)::int AS c FROM public.error_logs WHERE created_at > ${since}::timestamptz`
+          : await sql`SELECT COUNT(*)::int AS c FROM public.error_logs WHERE created_at > now() - interval '24 hours'`;
         return new Response(JSON.stringify({ count: row?.c ?? 0 }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow, format } from 'date-fns';
 import { RefreshCw, Search, Trash2, X } from 'lucide-react';
@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { useAdminErrorLogs, type ErrorLogRow, type ErrorLogFilters } from '@/hooks/admin/useAdminErrorLogs';
+import { markAdminTabSeen } from '@/lib/adminLastSeen';
 
 const sourceLabel: Record<ErrorLogRow['source'], string> = {
   client: 'Client',
@@ -65,8 +66,15 @@ export default function AdminErrorLogs() {
     return s;
   }, [rows]);
 
+  // Clear the Error Logs badge as soon as the tab is opened, and again
+  // whenever new rows arrive while it's already open, so the count never
+  // lingers after the admin has actually seen the latest entries.
+  useEffect(() => {
+    markAdminTabSeen('error_logs');
+  }, [rows.length]);
+
   return (
-    <div className="admin-scope native-safe-top min-h-[100svh] bg-background pb-24">
+    <div className="admin-scope native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden">
       <AdminHeader
         title="Error logs"
         emoji="🪵"
@@ -77,7 +85,7 @@ export default function AdminErrorLogs() {
         }
       />
 
-      <div className="px-4 pt-2 space-y-3">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-2 pb-24 space-y-3">
         {/* Summary chips */}
         <div className="grid grid-cols-4 gap-2">
           <StatChip label="Total" value={summary.total} />

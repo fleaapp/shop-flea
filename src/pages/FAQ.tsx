@@ -7,14 +7,14 @@ const FAQ = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="native-safe-top min-h-screen bg-background pb-8">
-      <header className="sticky top-0 z-40 bg-background px-4 py-4 flex items-center">
+    <div className="native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden">
+      <header className="shrink-0 bg-background px-4 py-4 flex items-center">
         <button onClick={() => safeNavigateBack(navigate, '/profile')} className="absolute left-4">
           <ChevronLeft className="h-6 w-6 text-foreground" />
         </button>
         <h1 className="text-xl font-bold text-foreground text-center w-full">❓ FAQ</h1>
       </header>
-      <div className="px-4">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-8">
         <FAQSection />
       </div>
     </div>

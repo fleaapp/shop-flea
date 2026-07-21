@@ -9,7 +9,8 @@ export type AdminTab =
   | 'transactions'
   | 'contact'
   | 'waitlist'
-  | 'brands';
+  | 'brands'
+  | 'error_logs';
 
 const KEY: Record<AdminTab, string> = {
   users: 'admin_users_last_seen',
@@ -19,6 +20,7 @@ const KEY: Record<AdminTab, string> = {
   contact: 'admin_contact_last_seen',
   waitlist: 'admin_waitlist_last_seen',
   brands: 'admin_brands_last_seen',
+  error_logs: 'admin_error_logs_last_seen',
 };
 
 export function getAdminLastSeen(tab: AdminTab): string | null {

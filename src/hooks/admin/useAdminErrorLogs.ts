@@ -98,9 +98,11 @@ export function useAdminErrorLogs() {
   return { rows, loading, filters, setFilters, refresh, deleteRow, clearOlderThan };
 }
 
-export async function fetchErrorCount24h(): Promise<number> {
+export async function fetchErrorCount24h(sinceIso?: string): Promise<number> {
   try {
-    const data = await call<{ count: number }>({ action: 'count24h' });
+    const payload: Record<string, unknown> = { action: 'count24h' };
+    if (sinceIso) payload.since = sinceIso;
+    const data = await call<{ count: number }>(payload);
     return data.count ?? 0;
   } catch { return 0; }
 }

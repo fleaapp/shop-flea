@@ -274,8 +274,8 @@ const SellerDashboard = () => {
   };
 
   return (
-    <div className="native-safe-top min-h-svh bg-background flex flex-col">
-      <header className="sticky top-0 z-20 bg-background">
+    <div className="native-safe-top fixed inset-0 bg-background flex flex-col overflow-hidden">
+      <header className="shrink-0 bg-background">
         <div className="relative flex items-center px-4 py-3">
           <button
             onClick={() => navigate('/settings')}
@@ -306,7 +306,7 @@ const SellerDashboard = () => {
         </div>
       </header>
 
-      <main className="flex-1 px-4 pb-10">
+      <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-10">
         <div className="pt-3">
           <EnablePushBanner />
         </div>

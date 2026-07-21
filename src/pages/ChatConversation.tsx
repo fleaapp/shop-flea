@@ -49,9 +49,10 @@ const ChatConversation = () => {
         .neq('sender_type', 'user')
         .eq('read', false);
       queryClient.invalidateQueries({ queryKey: ['unread-support'] });
+      queryClient.invalidateQueries({ queryKey: ['nav-badges'] });
     };
     markRead();
-  }, [threadId, user, queryClient]);
+  }, [threadId, user, queryClient, messages.length]);
 
   const scrollToBottom = () => {
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 100);
@@ -161,7 +162,7 @@ const ChatConversation = () => {
   const isResolved = thread?.status === 'resolved';
 
   return (
-    <div className="native-safe-top flex flex-col h-screen bg-background">
+    <div className="native-safe-top fixed inset-0 flex flex-col bg-background">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background px-4 py-4 flex items-center border-b border-border">
         <button onClick={() => navigate('/contact-support')} className="text-foreground absolute left-4 z-10">
