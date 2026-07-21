@@ -1,9 +1,7 @@
 const AUTH_TOP_COLOR = '#DDFED7';
 const APP_TOP_COLOR = '#F5F1EB';
-const OVERLAY_TOP_COLOR = '#00000000';
 
 let nativeChromeRequest = 0;
-let activeOverlayCount = 0;
 
 const getRouteTopColor = () => {
   const pathname = window.location.pathname;
@@ -45,10 +43,9 @@ const isNativeBridgeReady = (): boolean => {
 };
 
 // Route-color path: debounced to avoid thrash during navigation.
-// The native strip ALWAYS shows the raw route color — overlay dimming is
-// handled by a DOM overlay (see ensureTintEl / setOverlayTintVisible below),
-// so we never animate the native background and never see iOS's icon-lag
-// crossfade on drawer close.
+// The native strip always shows the raw route color. Drawer dimming is handled
+// by the drawer overlay itself; adding a separate status-bar dim layer makes
+// the notch area darker than the rest of the screen.
 const syncNativeStatusBarRoute = (color: string) => {
   if (color === lastAppliedColor) return;
   const requestId = ++nativeChromeRequest;
@@ -62,10 +59,11 @@ const syncNativeStatusBarRoute = (color: string) => {
         if (!Capacitor.isNativePlatform()) return;
         lastAppliedColor = color;
         // Keep the WebView layout stable — set overlaysWebView false exactly
-        // once, never toggle it, so it never resizes.
+        // once, never toggle it, so it never resizes or shifts under the
+        // native status bar.
         if (!overlaysWebViewInitialized) {
           overlaysWebViewInitialized = true;
-          void StatusBar.setOverlaysWebView({ overlay: true }).catch(() => undefined);
+          void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
         }
         void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
       })
