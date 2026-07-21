@@ -132,6 +132,7 @@ const CardForm = ({
         cardholderName: name.trim(),
         saveCard,
       });
+      try { localStorage.removeItem(CARDHOLDER_DRAFT_KEY); } catch { /* noop */ }
     } finally {
       setSubmitting(false);
     }
