@@ -70,10 +70,9 @@ const Index = () => {
     !profile.region_id ||
     !profile.country_code
   );
-  // profileLoaded reflects "we've finished trying to load it", regardless of whether a row exists.
-  // The AuthContext sets profile to null both when loading and when no row exists, so we treat
-  // a missing row as "loaded" once the user is present and not in initial loading.
-  const profileLoaded = !!user;
+  // `profileLoaded` comes from AuthContext and is true only after the profile
+  // fetch has settled (success or empty). Used below to gate password logic.
+
   // Persist `welcomeCompleted` per-user in localStorage. Without this, navigating
   // between routes during the onboarding carousel unmounts/remounts Index and
   // resets this flag to false — which, combined with a brief profile-refetch lag,
