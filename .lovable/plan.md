@@ -1,50 +1,35 @@
-Every remaining page that clips under the notch shares the same root cause: the root uses `min-h-screen` / `min-h-svh` / `h-screen` (or a plain `fixed inset-0`) without the `native-safe-top` utility that pads `env(safe-area-inset-top)` on native. Add the utility (and, where the root isn't already `fixed inset-0`, keep the existing layout — the class works on any block-level container).
+## Diagnosis
 
-### Add `native-safe-top` to these page roots
+Both symptoms — headers clipped up under the notch AND lime showing under the bottom nav — come from **one stuck state** on `<html>`.
 
-User-called-out:
-- `src/pages/SellerDashboard.tsx` (line 277) — `min-h-svh …`
-- `src/pages/FAQ.tsx` (line 10) — help centre
-- `src/pages/PrivacyPolicy.tsx` (line 11) — help centre
-- `src/pages/Terms.tsx` (line 11) — help centre
-- `src/pages/ContactSupport.tsx` — help centre entry
-- `src/pages/SuggestionBox.tsx` — help centre entry
-- `src/pages/CreateListing.tsx` (three branches: 531, 543, 607)
-- `src/pages/EditListing.tsx` (two branches: 455, 462)
-- `src/pages/Favorites.tsx` (Wishlist)
-- `src/pages/Sales.tsx`
-- `src/pages/OrderChat.tsx` (buyer/seller + support chat)
+While on `/auth`, `appChrome.ts` adds `.boot-auth` to `<html>` and sets `--app-top-bg: hsl(var(--flea-lime))`. That class also suppresses the native safe-area padding on `#root` (so the auth screen can paint edge-to-edge lime under the status bar).
 
-Rest of sweep (same issue, same one-class fix):
-- `src/pages/EditProfile.tsx`
-- `src/pages/Checkout.tsx` (both branches: 246, 598)
-- `src/pages/CheckoutSuccess.tsx` (both branches: 157, 168)
-- `src/pages/ChatConversation.tsx`
-- `src/pages/ListingDetails.tsx` (branches: 339, 347, 493)
-- `src/pages/Install.tsx` (branches: 60, 74)
-- `src/pages/ForgotPassword.tsx`, `src/pages/ResetPassword.tsx`, `src/pages/VerifyEmail.tsx` (auth screens — safe-top so headers/back buttons clear the notch)
-- Admin pages (all use `min-h-[100svh]` with no safe-top and were also reported stuck):
-  - `src/pages/admin/AdminDashboard.tsx` (both branches: 85, 164 — also convert `min-h-screen` branch to `fixed inset-0 flex flex-col overflow-hidden` shell with an inner `flex-1 overflow-y-auto` so the dashboard scrolls on native)
-  - `src/pages/admin/AdminBrands.tsx`
-  - `src/pages/admin/AdminUsers.tsx`
-  - `src/pages/admin/AdminListings.tsx`
-  - `src/pages/admin/AdminRefunds.tsx`
-  - `src/pages/admin/AdminTransactions.tsx`
-  - `src/pages/admin/AdminErrors.tsx`
-  - `src/pages/admin/AdminErrorLogs.tsx`
+After sign-in, `navigate()` moves you to the app, but `restoreRouteAppChrome()` is not wired to fire on route change — so `.boot-auth` and the lime `--app-top-bg` variable stay on `<html>`. Result on any page you land on next:
 
-Skipping: `NotFound`, `AuthCallback` (transient/redirect screens with no top-anchored UI).
+- `#root` still has no `padding-top: env(safe-area-inset-top)` → headers slide up under the notch.
+- `<html>` background is still lime → bleeds through the BottomNav's transparent safe-area padding at the bottom.
 
-### Fix Profile Sales button offset
+A hard refresh clears the class because the auth route isn't the entry point anymore — which is exactly why your clean refresh fixed both at once.
 
-`src/pages/Profile.tsx` lines 171 and 432 use `absolute top-10 right-4`. Absolute children position from the padding-edge, so the parent's `native-safe-top` padding does NOT push them down — that's why the Sales button still sits under the Dynamic Island. Change both wrappers to:
+## Fix
 
-```tsx
-<div className="absolute right-4 z-10" style={{ top: 'calc(env(safe-area-inset-top) + 0.5rem)' }}>
-```
+**Only** clear the stuck state. No layout, safe-area, padding, or positioning values change anywhere.
 
-Same visual offset on web; sits below the status bar on native.
+1. `src/App.tsx` — add a `useEffect` on `location.pathname` that calls `restoreRouteAppChrome()` whenever the route is not `/auth*`. This removes `.boot-auth` and resets `--app-top-bg` back to `--background` the instant you leave auth.
 
-### Out of scope
+2. `src/lib/appChrome.ts` — make `restoreRouteAppChrome()` idempotent and explicit: remove `.boot-auth`, clear the inline `--app-top-bg` override, and reassert `overlay: true` for the transparent edge-to-edge status bar we already agreed on. No other behavior changes.
 
-No changes to layout composition, spacing, business logic, or hooks. Purely `native-safe-top` additions plus the Profile Sales button offset — and the AdminDashboard scroll-container wrap so it becomes scrollable on native.
+3. Add a one-time safety net in `AuthContext` on `SIGNED_IN`: call `restoreRouteAppChrome()` after session hydration so even a hard-coded `window.location` post-auth redirect can't leave the class behind.
+
+## What does NOT change
+
+- No page's `native-safe-top`, `pb-*`, header height, or scroll shell is touched.
+- BottomNav height, padding, and positioning stay identical.
+- Element positions on Index, Profile, SellerProfile, OrderChat, Cart, etc. are byte-identical to the "good" screenshot.
+
+The scroll-shell sweep and Error Logs / Support badge fixes stay parked — this plan is only the stuck-chrome bug.
+
+## Verification
+
+- Playwright: load `/auth`, sign in, land on `/`, assert `<html>` has no `.boot-auth` class and computed `background-color` on `html`/`body` equals `--background`. Screenshot Index and OrderChat and diff header top offset against the good state.
+- Manual sanity: sign out → sign in → open OrderChat. Header sits below the notch, no lime strip under nav, no clean refresh needed.
