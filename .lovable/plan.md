@@ -1,69 +1,75 @@
-## Scope
+# Full-app scroll audit
 
-Two related follow-ups from the earlier sweep:
-1. Convert the remaining page-level-scroll pages to the internal scroll-shell pattern (fixes lingering "too high" / "won't scroll" cases and prevents iOS rubber-band from revealing the lime footer).
-2. Clear the **Error Logs** and **Support chat** badges when the user actually reads them.
+Goal: check every page and screen in the app — not just the ones I converted this session — and fix any scroll regression or inconsistency. Terms, Privacy, Help Centre articles, onboarding, marketing, everything.
 
-No visual redesign — only container structure and badge bookkeeping.
+## Why a full sweep is needed
 
-## Part 1 — Scroll-shell sweep
+I converted ~15 pages to a `fixed inset-0` scroll-shell this session. That change interacts with things that live *outside* those pages: BottomNav padding, safe-area handling on `#root`, keyboard behavior, sticky sub-headers, scroll-restoration, `scrollIntoView`, pull-to-refresh. So a page I never touched can still be broken by the shared chrome changes — and pages I did touch can have subtle regressions in loading/empty states, keyboard flow, or sticky bars.
 
-Pattern (already in use on Index/Cart/Favorites/Settings/etc.):
-```text
-<div className="native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden">
-  <Header … />                                  ← shrink-0
-  <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-24">
-    …page content…
-  </div>
-  <BottomNav /> (if applicable)
-</div>
-```
+Every page needs to be looked at, not just the ones on my edit log.
 
-Pages to convert (currently `min-h-screen` / `min-h-svh` page-level scroll):
+## Inventory (everything under `src/pages/` + any screen-level component)
 
-- `src/pages/SellerDashboard.tsx` (root at L277)
-- `src/pages/CreateListing.tsx` (main render L607; keep the small "gated" states as-is)
-- `src/pages/EditListing.tsx` (L462)
-- `src/pages/EditProfile.tsx` (L280)
-- `src/pages/Checkout.tsx` (main L598; keep centered gated state)
-- `src/pages/CheckoutSuccess.tsx` (both L157 / L168 — centered, wrap in `fixed inset-0` shell)
-- `src/pages/Sales.tsx` (L118)
-- `src/pages/ListingDetails.tsx` (L493 main render)
-- `src/pages/FAQ.tsx` (L10)
-- `src/pages/SuggestionBox.tsx` — already shell; verify no double-scroll
-- `src/pages/admin/AdminErrorLogs.tsx` (L69)
-- `src/pages/admin/AdminUsers.tsx` (L60)
-- `src/pages/admin/AdminListings.tsx` (L41)
-- `src/pages/admin/AdminRefunds.tsx` (L33)
-- `src/pages/admin/AdminTransactions.tsx` (L47)
-- `src/pages/admin/AdminBrands.tsx` (L43)
-- `src/pages/admin/AdminErrors.tsx` (L28)
+I'll enumerate from `src/pages/**` and `src/App.tsx` routes to make sure nothing is missed. Expected set:
 
-Chat pages (`OrderChat`, `ChatConversation`) already use `h-screen` + inner scroll — swap to `h-[100svh]` for iOS URL-bar stability, no other changes.
+- **Auth / onboarding**: Auth, SignUp, Onboarding, SplashScreen, ProfileSetup, PushPermission
+- **Core tabs**: Home (swipe stack), Search, Sell/CreateListing, Alerts, Profile
+- **Listings**: ListingDetails, EditListing, Wishlist, Cart, Checkout, CheckoutSuccess
+- **Orders/Chat**: Sales, Orders, OrderChat, ChatConversation, RefundRequest, ShippingStatus
+- **Seller**: SellerDashboard, SellerProfile, SellerOnboardingSheet flows, SettleBalance, IdVerification
+- **Settings / Help**: Settings, EditProfile, Notifications, PaymentMethods, Addresses, HelpCentre index, FAQ, Terms, Privacy, Refund Policy, Community Guidelines, Contact/Support, About
+- **Admin**: AdminDashboard, AdminUsers, AdminListings, AdminRefunds, AdminBrands, AdminTransactions, AdminErrors, AdminErrorLogs, AdminReports
+- **Misc**: NotFound, any marketing/landing pages
 
-Rule preserved across all conversions: keep `native-safe-top` on the outer element so `env(safe-area-inset-top)` padding is applied by the shell, not lost when nested content overflows.
+I'll build the actual list from the filesystem so nothing is skipped.
 
-## Part 2 — Badge clearing
+## What I check on every page
 
-### Error Logs
+For each page (converted or not):
 
-- Extend `src/lib/adminLastSeen.ts` `AdminTab` union with `'error_logs'` and add key `admin_error_logs_last_seen`.
-- In `src/hooks/admin/useAdminBadges.ts`, filter `errorLogs` count by `getAdminLastSeen('error_logs')` (mirrors how other tabs work: only count rows with `created_at > lastSeen`).
-- In `src/pages/admin/AdminErrorLogs.tsx`, call `markAdminTabSeen('error_logs')` in a `useEffect` on mount and whenever the fetched list updates (so newly-arrived rows after the user is already on the page also clear).
+- Header/back button visible under the notch (safe-area padding applied and not doubled).
+- Page scrolls when content is longer than the viewport.
+- Page does **not** scroll when it shouldn't (fixed shells, chat).
+- Last row/CTA reachable — not hidden behind BottomNav or home indicator.
+- Sticky sub-headers / tab bars / filter chips still stick.
+- Keyboard-input pages: input bar stays above the keyboard; active field scrolls into view; submit remains reachable.
+- Auto-scroll behaviors (chat scroll-to-bottom, `scrollIntoView`, restore-on-back) target the correct scroll container.
+- Loading, empty, error branches use the same layout shell as the loaded state (no jump between `min-h-screen` and `fixed inset-0`).
+- No `overscroll-contain` on pages that legitimately need pull-to-refresh (if any).
+- `native-safe-top` appears exactly once per page tree.
+- No lime bleed at footer, no chrome tint stuck from a prior route.
+- Drawers/Sheets/Dialogs opened from the page don't break page scroll on close.
 
-### Support chat
+## Method
 
-- `useUnreadSupport` already recomputes on `['unread-support']` invalidation.
-- In `src/pages/ChatConversation.tsx`, when the route is the support thread, mark all inbound messages read on mount and on new-message arrival (update `read_at` for messages where `sender_id != user.id`), then invalidate `['unread-support']` and `['nav-badges']`.
-- `useNavBadges` already reads `unread_support` from the RPC, so once messages are flagged read the footer + Settings badge drop to zero without a manual event.
+1. **Enumerate** — list every file under `src/pages/**` and every route in `src/App.tsx` so the checklist is exhaustive.
+2. **Static read pass** — for each page, read the file once and mark it against the checklist above. Group into: OK / needs-fix / needs-manual-verify.
+3. **Runtime pass on ambiguous cases** — drive Playwright against the running preview at mobile viewport for the pages I can't decide from source alone (sticky headers, keyboard flow, chat auto-scroll, sales tabs, checkout success, help/legal article length). Take screenshots as evidence.
+4. **Fix** — apply targeted fixes only where I can point to the exact symptom and cause in code. No speculative rewrites.
+5. **Report** — for every page checked, one line in chat: page → status (OK / fixed: X / flagged for you: Y). You get a full matrix, not a summary.
 
-## Validation
+## Known suspects to verify first
 
-- After edits, spot-check three pages on the preview (`SellerDashboard`, `AdminErrorLogs`, `ChatConversation` support thread) via Playwright screenshots: header sits under the notch, body scrolls internally, footer nav stays pinned, no lime bleed on overscroll.
-- Confirm Error Logs badge clears immediately on opening `/admin/error-logs` and reappears only when a new row lands.
-- Confirm Support badge clears on opening a support conversation.
+- Terms, Privacy, Help Centre articles — long-form content; if they were converted or if they inherit any shell wrapper, confirm the whole document is reachable.
+- Home swipe stack — must **not** scroll; confirm it's still fixed and gestures aren't stolen by an inner scroller.
+- OrderChat / ChatConversation — composer above keyboard, auto-scroll to newest message.
+- Sales — sticky tabs, list reaches bottom above BottomNav.
+- SellerDashboard — payout history reaches bottom.
+- CreateListing / EditListing — long forms, submit reachable with keyboard open.
+- Checkout / CheckoutSuccess — Apple Pay sheet interaction, success state layout consistent with processing state.
+- Onboarding / Splash — full-viewport screens, no accidental scroll or safe-area double-padding.
+- Admin tables — vertical scroll to last row, horizontal overflow where applicable.
 
-## Out of scope
+## Fix categories I expect
 
-- No layout/visual redesign, no header restyling, no auth chrome changes (already fixed).
-- No changes to admin RPCs beyond the client-side `lastSeen` filter for `error_logs`.
+- Restore missing `pb-24` / `pb-28` on inner scrollers where BottomNav shows.
+- Move composer/action bars out of `flex-1` into their own `shrink-0` row.
+- Rewrite loading/empty branches to match loaded-state shell.
+- Retarget `scrollIntoView` / auto-scroll hooks at the inner scroller ref instead of `window`.
+- Remove duplicate `native-safe-top`.
+- Re-add sticky positioning on filter/tab bars where lost.
+- Convert any page still on `min-h-screen` that regressed after the chrome changes to the standard shell, only if it actually broke.
+
+## Deliverable
+
+One sweep, full matrix report back to you, targeted fixes only. Non-app-owned copy (Terms, Privacy) is layout-only — I don't rewrite legal text, I just make sure the page renders and scrolls end-to-end.

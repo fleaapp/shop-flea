@@ -8,8 +8,8 @@ const PrivacyPolicy = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="native-safe-top min-h-screen bg-background pb-24 max-[375px]:pb-20">
-      <header className="sticky top-0 z-40 bg-background px-4 py-4 flex items-center">
+    <div className="native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden">
+      <header className="shrink-0 bg-background px-4 py-4 flex items-center relative">
         <button
           onClick={() => navigate('/settings')}
           className="text-foreground absolute left-4"
@@ -22,6 +22,7 @@ const PrivacyPolicy = () => {
         </h1>
       </header>
 
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-24 max-[375px]:pb-20">
       <main className="px-5 max-[375px]:px-4 pt-2 pb-8 max-w-2xl mx-auto">
         <p className="text-xs text-muted-foreground mb-6">
           Last updated: 16 July 2026 · Version 1.1 · Compliant with the Australian Privacy Act 1988 (Cth) and the Australian Privacy Principles
@@ -267,6 +268,7 @@ const PrivacyPolicy = () => {
           </p>
         </article>
       </main>
+      </div>
 
       <BottomNav />
     </div>
