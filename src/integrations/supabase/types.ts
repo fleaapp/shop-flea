@@ -1407,61 +1407,7 @@ export type Database = {
           user_id: string | null
           username: string | null
         }
-        Insert: {
-          avatar_url?: string | null
-          country_code?: string | null
-          created_at?: string | null
-          id?: string | null
-          last_sign_in_at?: string | null
-          location?: string | null
-          pause_selling?: boolean | null
-          paypal_onboarding_complete?: boolean | null
-          rating?: number | null
-          region_id?: string | null
-          shipping_preferences_set?: boolean | null
-          shipping_tier_1?: number | null
-          shipping_tier_2?: number | null
-          shipping_tier_3?: number | null
-          status?: string | null
-          stripe_onboarding_complete?: boolean | null
-          tiered_shipping_enabled?: boolean | null
-          total_reviews?: number | null
-          updated_at?: string | null
-          user_id?: string | null
-          username?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          country_code?: string | null
-          created_at?: string | null
-          id?: string | null
-          last_sign_in_at?: string | null
-          location?: string | null
-          pause_selling?: boolean | null
-          paypal_onboarding_complete?: boolean | null
-          rating?: number | null
-          region_id?: string | null
-          shipping_preferences_set?: boolean | null
-          shipping_tier_1?: number | null
-          shipping_tier_2?: number | null
-          shipping_tier_3?: number | null
-          status?: string | null
-          stripe_onboarding_complete?: boolean | null
-          tiered_shipping_enabled?: boolean | null
-          total_reviews?: number | null
-          updated_at?: string | null
-          user_id?: string | null
-          username?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_region_id_fkey"
-            columns: ["region_id"]
-            isOneToOne: false
-            referencedRelation: "regions"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Functions: {
@@ -1522,6 +1468,32 @@ export type Database = {
         }
       }
       get_nav_badges: { Args: { _user_id: string }; Returns: Json }
+      get_profiles_public: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          country_code: string
+          created_at: string
+          id: string
+          last_sign_in_at: string
+          location: string
+          pause_selling: boolean
+          paypal_onboarding_complete: boolean
+          rating: number
+          region_id: string
+          shipping_preferences_set: boolean
+          shipping_tier_1: number
+          shipping_tier_2: number
+          shipping_tier_3: number
+          status: string
+          stripe_onboarding_complete: boolean
+          tiered_shipping_enabled: boolean
+          total_reviews: number
+          updated_at: string
+          user_id: string
+          username: string
+        }[]
+      }
       get_seller_payment_accounts: {
         Args: { seller_ids: string[] }
         Returns: {
