@@ -212,6 +212,7 @@ const Checkout = () => {
       paymentIntentId: string;
       amount: number;
       publishableKey: string;
+      livemode?: boolean;
       sellerAccountId?: string;
       merchantDisplayName?: string;
     };
@@ -250,6 +251,7 @@ const Checkout = () => {
     paymentIntentId: string;
     amount: number;
     publishableKey: string;
+    livemode?: boolean;
     sellerAccountId?: string;
     merchantDisplayName?: string;
   }) => {
@@ -263,17 +265,38 @@ const Checkout = () => {
     await Stripe.initialize({ publishableKey: pi.publishableKey });
 
     if (platform === 'ios') {
+      const publishableKeyMode = pi.publishableKey.startsWith('pk_live_') ? 'live' : 'test';
+      if (typeof pi.livemode === 'boolean' && pi.livemode !== (publishableKeyMode === 'live')) {
+        const diag = {
+          ok: false as const,
+          code: 'unknown' as const,
+          userMessage: 'Payment provider is misconfigured. Please choose Add new card or contact support.',
+          raw: `PaymentIntent mode ${pi.livemode ? 'live' : 'test'} does not match publishable key mode ${publishableKeyMode}.`,
+        };
+        console.error('[ApplePay] key mode mismatch', { diag, merchantId: APPLE_PAY_MERCHANT_ID });
+        void logApplePayDiagnostic('key mode mismatch', diag, {
+          merchantId: APPLE_PAY_MERCHANT_ID,
+          publishableKeyMode,
+          paymentIntentMode: pi.livemode ? 'live' : 'test',
+          sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
+        });
+        toast.error(diag.userMessage);
+        return true;
+      }
+
       const preflight = await runApplePayPreflight();
       console.info('[ApplePay] preflight', {
         preflight,
         merchantId: APPLE_PAY_MERCHANT_ID,
-        publishableKeyMode: pi.publishableKey.startsWith('pk_live_') ? 'live' : 'test',
+        publishableKeyMode,
+        paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
         sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
       });
       if (!preflight.ok) {
         void logApplePayDiagnostic('preflight failed', preflight, {
           merchantId: APPLE_PAY_MERCHANT_ID,
-          publishableKeyMode: pi.publishableKey.startsWith('pk_live_') ? 'live' : 'test',
+          publishableKeyMode,
+          paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
           sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
         });
         toast.error(preflight.userMessage);
@@ -287,7 +310,8 @@ const Checkout = () => {
         console.error('[ApplePay] native failed event', { diag, nativeFailureMessage, merchantId: APPLE_PAY_MERCHANT_ID });
         void logApplePayDiagnostic('native failed event', diag, {
           merchantId: APPLE_PAY_MERCHANT_ID,
-          publishableKeyMode: pi.publishableKey.startsWith('pk_live_') ? 'live' : 'test',
+          publishableKeyMode,
+          paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
           sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
         });
       });
@@ -312,7 +336,8 @@ const Checkout = () => {
         console.error('[ApplePay] createApplePay failed', { diag, err });
         void logApplePayDiagnostic('create failed', diag, {
           merchantId: APPLE_PAY_MERCHANT_ID,
-          publishableKeyMode: pi.publishableKey.startsWith('pk_live_') ? 'live' : 'test',
+          publishableKeyMode,
+          paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
           sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
         });
         void failedHandle.remove();
@@ -331,7 +356,8 @@ const Checkout = () => {
           void logApplePayDiagnostic('present returned failed', diag, {
             merchantId: APPLE_PAY_MERCHANT_ID,
             paymentResult,
-            publishableKeyMode: pi.publishableKey.startsWith('pk_live_') ? 'live' : 'test',
+            publishableKeyMode,
+            paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
             sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
           });
           toast.error(diag.userMessage);
@@ -341,7 +367,8 @@ const Checkout = () => {
         console.error('[ApplePay] presentApplePay failed', { diag, err, merchantId: APPLE_PAY_MERCHANT_ID });
         void logApplePayDiagnostic('present threw', diag, {
           merchantId: APPLE_PAY_MERCHANT_ID,
-          publishableKeyMode: pi.publishableKey.startsWith('pk_live_') ? 'live' : 'test',
+          publishableKeyMode,
+          paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
           sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
         });
         toast.error(diag.userMessage);

@@ -248,6 +248,7 @@ serve(async (req) => {
       ephemeralKey: ephemeralKey.secret,
       customerId,
       publishableKey,
+      livemode: Boolean(pi.livemode),
       amount: amountCents,
       currency: "aud",
       merchantDisplayName: "Flea",
