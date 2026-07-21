@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
-import { ApplePayEventsEnum, GooglePayEventsEnum, Stripe } from '@capacitor-community/stripe';
+import { ApplePayEventsEnum, GooglePayEventsEnum, PaymentSheetEventsEnum, Stripe } from '@capacitor-community/stripe';
 import type { CanMakePaymentResult, PaymentRequestPaymentMethodEvent } from '@stripe/stripe-js';
 
 import { Button } from '@/components/ui/button';
