@@ -356,19 +356,22 @@ html.is-installed [data-listing-footer] {
   padding-bottom: 3rem; /* pb-12 */
 }
 
-/* Native only: reserve the Dynamic Island / notch height per-screen (not on
-   #root) so overscroll rubber-band doesn't reveal the body background above
-   or below the padded region. Screens opt in by adding `native-safe-top` to
-   their outermost container. */
+/* Native only: reserve the Dynamic Island / notch height. Flow-layout pages
+   inherit this via #root; fixed-inset screens (Home, Auth, Profile, Seller
+   Profile) opt in with the `native-safe-top` class since they escape #root. */
+html.is-installed #root {
+  padding-top: env(safe-area-inset-top);
+}
 html.is-installed .native-safe-top {
   padding-top: env(safe-area-inset-top);
 }
 
-/* Match overscroll bleed to the app background so any rubber-band shows the
-   cream page colour instead of the lime auth screen background bleeding through. */
+/* Kill the lime overscroll bleed: match html/body background to the app
+   background and lock overscroll so rubber-band can't reveal it. */
 html.is-installed,
 html.is-installed body {
   background-color: hsl(var(--background));
   overscroll-behavior-y: none;
 }
+
 
