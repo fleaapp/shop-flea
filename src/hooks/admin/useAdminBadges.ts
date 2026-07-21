@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { callAdminData } from './useAdminData';
 import { fetchErrorCount24h } from './useAdminErrorLogs';
@@ -27,8 +27,13 @@ const EMPTY: AdminBadges = {
 export function useAdminBadges() {
   const [badges, setBadges] = useState<AdminBadges>(EMPTY);
   const [loading, setLoading] = useState(true);
+  // Monotonic request id — late responses can't overwrite fresher state.
+  const reqIdRef = useRef(0);
+  // Trailing debounce timer.
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const refresh = useCallback(async () => {
+  const runRefresh = useCallback(async () => {
+    const myId = ++reqIdRef.current;
     try {
       const lastSeen = getAllAdminLastSeen();
       const payload: Record<string, string> = {};
@@ -44,17 +49,29 @@ export function useAdminBadges() {
         callAdminData<Omit<AdminBadges, 'errorLogs'>>('getBadges', payload),
         fetchErrorCount24h().catch(() => 0),
       ]);
+      // Drop stale responses.
+      if (myId !== reqIdRef.current) return;
       setBadges({ ...EMPTY, ...data, errorLogs });
     } catch (e) {
       console.error('badges fetch failed', e);
     } finally {
-      setLoading(false);
+      if (myId === reqIdRef.current) setLoading(false);
     }
   }, []);
 
+  const refresh = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      debounceRef.current = null;
+      void runRefresh();
+    }, 400);
+  }, [runRefresh]);
+
   useEffect(() => {
-    refresh();
-    const tables = ['chat_messages', 'reports', 'orders', 'listings', 'contact_submissions', 'waitlist', 'profiles', 'brands', 'notifications'];
+    void runRefresh();
+    // Notifications table intentionally excluded — it's a firehose and admin
+    // categories are derived from the source tables below.
+    const tables = ['chat_messages', 'reports', 'orders', 'listings', 'contact_submissions', 'waitlist', 'profiles', 'brands'];
     // Unique suffix prevents supabase.channel() from returning an already-subscribed
     // instance on remount, which would throw "cannot add postgres_changes callbacks after subscribe()".
     const uniq = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -69,11 +86,12 @@ export function useAdminBadges() {
     window.addEventListener('focus', onFocus);
     window.addEventListener('admin-last-seen-updated', onSeen);
     return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
       channels.forEach((c) => supabase.removeChannel(c));
       window.removeEventListener('focus', onFocus);
       window.removeEventListener('admin-last-seen-updated', onSeen);
     };
-  }, [refresh]);
+  }, [refresh, runRefresh]);
 
   return { badges, loading, refresh };
 }
