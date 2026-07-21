@@ -356,10 +356,19 @@ html.is-installed [data-listing-footer] {
   padding-bottom: 3rem; /* pb-12 */
 }
 
-/* Native only: reserve the Dynamic Island / notch height so headers and
-   sticky top bars clear the status bar. The transparent status bar still
-   shows the page background live, so nothing looks "moved" — content just
-   sits below the notch instead of behind it. */
-html.is-installed #root {
+/* Native only: reserve the Dynamic Island / notch height per-screen (not on
+   #root) so overscroll rubber-band doesn't reveal the body background above
+   or below the padded region. Screens opt in by adding `native-safe-top` to
+   their outermost container. */
+html.is-installed .native-safe-top {
   padding-top: env(safe-area-inset-top);
 }
+
+/* Match overscroll bleed to the app background so any rubber-band shows the
+   cream page colour instead of the lime auth screen background bleeding through. */
+html.is-installed,
+html.is-installed body {
+  background-color: hsl(var(--background));
+  overscroll-behavior-y: none;
+}
+
