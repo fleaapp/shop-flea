@@ -32,7 +32,7 @@ const BottomNav = ({ adminSettingsBadge }: BottomNavProps = {}) => {
   const { buyerOrderGroups, sellerOrderGroups } = useOrders();
   const { perOrder } = useUnreadOrderMessages();
   const { badgeCount: notificationBadgeCount } = useNotifications();
-  const { isAdmin } = useAdminRole();
+  const { isAdmin, loading: adminRoleLoading } = useAdminRole();
   const { total: fetchedAdminTotal } = useAdminBadges({ enabled: isAdmin && adminSettingsBadge === undefined });
   const adminTotal = adminSettingsBadge ?? fetchedAdminTotal;
 
@@ -67,8 +67,9 @@ const BottomNav = ({ adminSettingsBadge }: BottomNavProps = {}) => {
   // Non-admins get support-thread unread only.
   const settingsBadge = useMemo(() => {
     if (isAdmin) return adminTotal || undefined;
+    if (adminRoleLoading) return undefined;
     return navBadges.unread_support || undefined;
-  }, [isAdmin, adminTotal, navBadges.unread_support]);
+  }, [isAdmin, adminRoleLoading, adminTotal, navBadges.unread_support]);
 
   const handleNavigate = useCallback((path: string) => {
     startTransition(() => {
