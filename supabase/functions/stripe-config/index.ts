@@ -53,9 +53,12 @@ serve(async (req) => {
       const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
       const acct = await stripe.accounts.retrieve();
       account = { id: acct.id, livemode: Boolean(acct.livemode) };
+      console.log("[stripe-config] keyPrefix=", stripeKey.slice(0, 7), "accountId=", acct.id, "livemode=", acct.livemode);
     } catch (error) {
       console.warn("[stripe-config] account lookup skipped:", (error as Error).message);
     }
+  } else {
+    console.warn("[stripe-config] STRIPE_SECRET_KEY is empty");
   }
   return new Response(
     JSON.stringify({
