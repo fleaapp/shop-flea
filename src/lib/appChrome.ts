@@ -71,98 +71,9 @@ const syncNativeStatusBarRoute = (color: string) => {
   }, 60);
 };
 
-// DOM overlay that dims the safe-area top strip. Fades with the same 200ms
-// ease as the Radix/Vaul backdrop, so the status-bar area dims together
-// with the rest of the screen — no layout shift, no native color animation,
-// no icon-lag flash.
-const TINT_EL_ID = 'lv-statusbar-tint';
-const ensureTintEl = (): HTMLElement | null => {
-  if (typeof document === 'undefined') return null;
-  let el = document.getElementById(TINT_EL_ID) as HTMLElement | null;
-  if (el) return el;
-  el = document.createElement('div');
-  el.id = TINT_EL_ID;
-  el.setAttribute('aria-hidden', 'true');
-  Object.assign(el.style, {
-    position: 'fixed',
-    top: '0',
-    left: '0',
-    right: '0',
-    height: 'env(safe-area-inset-top, 0px)',
-    background: 'hsl(var(--foreground) / 0.5)',
-    zIndex: '2147483647',
-    pointerEvents: 'none',
-    opacity: '0',
-    transition: 'opacity 200ms ease',
-    willChange: 'opacity',
-  } as CSSStyleDeclaration);
-  (document.body ?? document.documentElement).appendChild(el);
-  return el;
-};
-
-const setOverlayTintVisible = (visible: boolean) => {
-  const el = ensureTintEl();
-  if (!el) return;
-  // Force a style read so the transition applies even when set in the same
-  // frame the element is created.
-  void el.offsetWidth;
-  el.style.opacity = visible ? '1' : '0';
-};
-
-
-
-
-// Parse "H S% L%" (the shape Tailwind stores in --foreground) to hex.
-const hslTripleToHex = (triple: string): string | null => {
-  const m = /^\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*$/.exec(triple);
-  if (!m) return null;
-  const h = parseFloat(m[1]);
-  const s = parseFloat(m[2]) / 100;
-  const l = parseFloat(m[3]) / 100;
-  const c = (1 - Math.abs(2 * l - 1)) * s;
-  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-  const mm = l - c / 2;
-  let r = 0, g = 0, b = 0;
-  if (h < 60) { r = c; g = x; }
-  else if (h < 120) { r = x; g = c; }
-  else if (h < 180) { g = c; b = x; }
-  else if (h < 240) { g = x; b = c; }
-  else if (h < 300) { r = x; b = c; }
-  else { r = c; b = x; }
-  const to = (v: number) => Math.round((v + mm) * 255).toString(16).padStart(2, '0');
-  return `#${to(r)}${to(g)}${to(b)}`;
-};
-
-const hexToRgb = (hex: string): [number, number, number] | null => {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) return null;
-  const int = parseInt(m[1], 16);
-  return [(int >> 16) & 0xff, (int >> 8) & 0xff, int & 0xff];
-};
-
-// Compose the current `--foreground` token at 50% over the route colour to
-// exactly match Radix's `bg-foreground/50` overlay. Falls back to the
-// charcoal token literal (#29303D) if the CSS variable can't be read.
-const overlayTint = (routeHex: string): string => {
-  let fgHex = '#29303D';
-  try {
-    const raw = getComputedStyle(document.documentElement).getPropertyValue('--foreground');
-    const parsed = raw && hslTripleToHex(raw);
-    if (parsed) fgHex = parsed;
-  } catch { /* fall through */ }
-  const fg = hexToRgb(fgHex);
-  const bg = hexToRgb(routeHex);
-  if (!fg || !bg) return routeHex;
-  const a = 0.5;
-  const mix = (i: number) => Math.round(fg[i] * a + bg[i] * (1 - a)).toString(16).padStart(2, '0');
-  return `#${mix(0)}${mix(1)}${mix(2)}`;
-};
-
 export const applyAppChromeColor = (color: string, _statusBarStyle: 'default' | 'black-translucent' = 'default') => {
-  // The overlay-style branch used to also rewrite CSS vars, meta tags and
-  // classes on every drawer open/close — that caused reflow flashes near the
-  // status bar. Overlay push/pop is now handled exclusively by
-  // setStatusBarOverlayTint, which only recolors the native strip.
+  // Keep route chrome stable. Overlay dimming belongs to the overlay backdrop,
+  // not a second status-bar tint layer.
   const routeTopColor = getRouteTopColor();
   const isAuthColor = routeTopColor === AUTH_TOP_COLOR;
 
@@ -209,22 +120,20 @@ const applyRouteAppChrome = () => {
 
 export const restoreRouteAppChrome = () => {
   applyRouteAppChrome();
-  // If an overlay is still up (e.g. resume while a drawer is open), keep the
-  // status bar dimmed — the route write above respects activeOverlayCount.
 };
 
-// Always re-assert `overlaysWebView:true` on the native side. Native plugins
+// Always re-assert `overlaysWebView:false` on the native side. Native plugins
 // (Camera, Share, Wallet) can cause iOS to silently revert the overlay flag
-// when they dismiss. Calling this after a native return restores the
-// edge-to-edge WebView so the DOM notch strip keeps painting.
-const reassertOverlayTrue = () => {
+// when they dismiss. Calling this after a native return keeps content below
+// the native status bar instead of shifting it under the notch.
+const reassertOverlayFalse = () => {
   if (!isNativeBridgeReady()) return;
   const requestId = ++nativeChromeRequest;
   void Promise.all([import('@capacitor/core'), import('@capacitor/status-bar')])
     .then(([{ Capacitor }, { StatusBar, Style }]) => {
       if (requestId !== nativeChromeRequest) return;
       if (!Capacitor.isNativePlatform()) return;
-      void StatusBar.setOverlaysWebView({ overlay: true }).catch(() => undefined);
+      void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
       void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
     })
     .catch(() => undefined);
@@ -235,28 +144,14 @@ export const forceRestoreRouteAppChrome = () => {
   // not just the color.
   lastAppliedColor = null;
   applyRouteAppChrome();
-  reassertOverlayTrue();
+  reassertOverlayFalse();
 };
 
-// While an overlay (Dialog/Sheet/Drawer/AlertDialog) is mounted, dim the
-// safe-area top strip with a DOM overlay that fades in lockstep with the
-// Radix/Vaul backdrop. Nothing in the WebView layout moves, and the native
-// status-bar background is never touched — so there is no iOS color
-// crossfade and no icon-lag flash on close.
+// Drawer/Dialog dimming is handled by the actual overlay only. Do not add a
+// separate status-bar tint layer: it stacks with the backdrop and makes the
+// notch strip darker than the rest of the screen.
 export const pushOverlayAppChrome = () => {
-  activeOverlayCount += 1;
-  if (activeOverlayCount === 1) {
-    setOverlayTintVisible(true);
-  }
-  let released = false;
-  return () => {
-    if (released) return;
-    released = true;
-    activeOverlayCount = Math.max(0, activeOverlayCount - 1);
-    if (activeOverlayCount === 0) {
-      setOverlayTintVisible(false);
-    }
-  };
+  return () => undefined;
 };
 
 
