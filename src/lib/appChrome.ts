@@ -86,15 +86,18 @@ export const applyAppChromeColor = (color: string, _statusBarStyle: 'default' | 
   document.documentElement.style.colorScheme = 'light';
   document.documentElement.style.setProperty('--app-top-bg', routeTopColor);
   document.body?.style.setProperty('--app-top-bg', routeTopColor);
-  document.documentElement.style.backgroundColor = routeTopColor;
-  if (document.body) document.body.style.backgroundColor = routeTopColor;
 
-  // Keep #root in sync with route chrome so auth-like routes (and native
-  // cold boot) paint lime end-to-end, while in-app routes restore cream.
+  // Only paint html/body with the route colour when we're on an auth-like
+  // route (or the cold-boot lime splash). In-app routes must expose the
+  // normal app background so iOS rubber-band never reveals lime.
   if (isAuthColor) {
+    document.documentElement.style.backgroundColor = routeTopColor;
+    if (document.body) document.body.style.backgroundColor = routeTopColor;
     document.documentElement.style.setProperty('--background', '111 95% 92%');
     document.documentElement.classList.add('boot-auth');
   } else {
+    document.documentElement.style.removeProperty('background-color');
+    if (document.body) document.body.style.removeProperty('background-color');
     document.documentElement.style.removeProperty('--background');
     document.documentElement.classList.remove('boot-auth');
   }
