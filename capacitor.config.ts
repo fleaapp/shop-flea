@@ -13,9 +13,8 @@ const config: CapacitorConfig = {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
     StatusBar: {
-      overlaysWebView: false,
+      overlaysWebView: true,
       style: 'DARK',
-      backgroundColor: '#DDFED7',
     },
     SplashScreen: {
       launchShowDuration: 0,
@@ -30,7 +29,7 @@ const config: CapacitorConfig = {
     },
   },
   ios: {
-    contentInset: 'never',
+    contentInset: 'always',
     limitsNavigationsToAppBoundDomains: false,
     backgroundColor: '#DDFED7',
   },
