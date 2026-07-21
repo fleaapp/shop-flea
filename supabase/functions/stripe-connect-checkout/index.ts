@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isStripePermissionError, logStripeScopeGap } from "../_shared/stripeErrors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -265,11 +266,18 @@ serve(async (req) => {
         acct.company?.name ||
         "";
     } catch (e) {
-      console.error("[stripe-connect-checkout] account retrieve failed:", e);
-      return new Response(
-        JSON.stringify({ error: "Could not verify seller payment status. Please try again.", code: "seller_lookup_failed" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 502 },
-      );
+      if (isStripePermissionError(e)) {
+        console.warn("[stripe-connect-checkout] scope gap on accounts.retrieve — proceeding without preflight");
+        await logStripeScopeGap(serviceClient, "stripe-connect-checkout", e, { sellerStripeAccountId });
+        // Fall through with empty sellerLabel; Stripe will still reject the
+        // session if the account cannot process charges.
+      } else {
+        console.error("[stripe-connect-checkout] account retrieve failed:", e);
+        return new Response(
+          JSON.stringify({ error: "Could not verify seller payment status. Please try again.", code: "seller_lookup_failed" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 502 },
+        );
+      }
     }
 
     // Receipt/description: co-branded so buyers see both Flea and the seller.
