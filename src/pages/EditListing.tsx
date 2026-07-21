@@ -810,6 +810,9 @@ const EditListing = () => {
           </Button>
         </div>
       </form>
+      </div>
+
+
       
       <SizeSelectionDrawer
         open={sizeDrawerOpen}
