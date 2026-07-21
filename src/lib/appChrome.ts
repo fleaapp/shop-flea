@@ -224,7 +224,7 @@ export const restoreRouteAppChrome = () => {
 const reassertOverlayFalse = () => {
   if (!isNativeBridgeReady()) return;
   const requestId = ++nativeChromeRequest;
-  const targetColor = activeOverlayCount > 0 ? cachedRouteTint : cachedRouteColor;
+  const targetColor = cachedRouteColor;
   void Promise.all([import('@capacitor/core'), import('@capacitor/status-bar')])
     .then(([{ Capacitor }, { StatusBar, Style }]) => {
       if (requestId !== nativeChromeRequest) return;
@@ -246,12 +246,14 @@ export const forceRestoreRouteAppChrome = () => {
 };
 
 // While an overlay (Dialog/Sheet/Drawer/AlertDialog) is mounted, dim the
-// native status-bar strip to match the Radix bg-foreground/50 backdrop.
-// Nothing in the WebView layout moves — only the native strip color changes.
+// safe-area top strip with a DOM overlay that fades in lockstep with the
+// Radix/Vaul backdrop. Nothing in the WebView layout moves, and the native
+// status-bar background is never touched — so there is no iOS color
+// crossfade and no icon-lag flash on close.
 export const pushOverlayAppChrome = () => {
   activeOverlayCount += 1;
   if (activeOverlayCount === 1) {
-    setStatusBarOverlayTint(true);
+    setOverlayTintVisible(true);
   }
   let released = false;
   return () => {
@@ -259,10 +261,11 @@ export const pushOverlayAppChrome = () => {
     released = true;
     activeOverlayCount = Math.max(0, activeOverlayCount - 1);
     if (activeOverlayCount === 0) {
-      setStatusBarOverlayTint(false);
+      setOverlayTintVisible(false);
     }
   };
 };
+
 
 // Web visibility re-apply + a SINGLE native resume listener.
 // Previously these were also registered in src/App.tsx, which caused the
