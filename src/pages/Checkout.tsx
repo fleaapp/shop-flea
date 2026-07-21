@@ -305,64 +305,69 @@ const Checkout = () => {
         return true;
       }
 
-      // Route Apple Pay through Stripe's PaymentSheet so Apple's native
-      // sheet is presented under Stripe's merchant plumbing. This avoids
-      // the direct PassKit "Apple Pay Is Not Available" alert that fires
-      // when the Payment Processing Certificate isn't provisioned on our
-      // Apple Merchant ID. Buyer still sees the standard Apple sheet.
-      let failureMessage = '';
-      const failedHandle = await Stripe.addListener(
-        PaymentSheetEventsEnum.Failed,
-        (error: any) => {
-          failureMessage = typeof error === 'string' ? error : String(error?.message || error || '');
-          console.error('[PaymentSheet] failed', { failureMessage, merchantId: APPLE_PAY_MERCHANT_ID });
-        }
-      );
-
+      // Direct PassKit Apple Pay — Stripe brokers the merchant certificate
+      // under the hood; no cert upload from us is required. The Stripe
+      // combined sheet is intentionally bypassed so the buyer goes straight
+      // into Apple's native sheet.
       try {
-        await Stripe.createPaymentSheet({
+        await Stripe.isApplePayAvailable();
+      } catch (err) {
+        const diag = categoriseApplePayError(err);
+        void logApplePayDiagnostic('isApplePayAvailable', diag, {
+          merchantId: APPLE_PAY_MERCHANT_ID,
+          paymentIntentId: pi.paymentIntentId,
+        });
+        toast.error(diag.userMessage || 'Apple Pay is not available on this device. Please choose Add new card.');
+        return true;
+      }
+
+      const totalAud = Math.round(Number(pi.amount ?? total) * 100) / 100;
+      try {
+        await Stripe.createApplePay({
           paymentIntentClientSecret: pi.clientSecret,
-          merchantDisplayName: pi.merchantDisplayName || 'Flea',
+          paymentSummaryItems: [{ label: pi.merchantDisplayName || 'Flea', amount: totalAud }],
+          merchantIdentifier: APPLE_PAY_MERCHANT_ID,
           countryCode: 'AU',
-          currencyCode: 'AUD',
-          enableApplePay: true,
-          applePayMerchantId: APPLE_PAY_MERCHANT_ID,
+          currency: 'AUD',
         });
       } catch (err: any) {
-        console.error('[PaymentSheet] createPaymentSheet failed', { err, merchantId: APPLE_PAY_MERCHANT_ID });
-        void failedHandle.remove();
-        toast.error(mapCardDeclineMessage({ message: String(err?.message || err) }) || 'Unable to start payment. Please try again.');
+        const diag = categoriseApplePayError(err);
+        void logApplePayDiagnostic('createApplePay', diag, {
+          merchantId: APPLE_PAY_MERCHANT_ID,
+          paymentIntentId: pi.paymentIntentId,
+        });
+        toast.error(diag.userMessage || 'Unable to start Apple Pay. Please choose Add new card.');
         return true;
       }
 
       try {
-        const { paymentResult } = await Stripe.presentPaymentSheet();
-        if (paymentResult === PaymentSheetEventsEnum.Completed) {
+        const { paymentResult } = await Stripe.presentApplePay();
+        if (paymentResult === ApplePayEventsEnum.Completed) {
           handlePaymentSuccess(pi.paymentIntentId);
-        } else if (paymentResult === PaymentSheetEventsEnum.Canceled) {
+        } else if (paymentResult === ApplePayEventsEnum.Canceled) {
           toast.message('Payment was cancelled.');
         } else {
-          const errShape = { message: failureMessage || String(paymentResult) };
+          const errShape = { message: String(paymentResult) };
           const msg = mapCardDeclineMessage(errShape) || 'Payment did not complete. Please try again.';
           void logCardDecline({
-            where: 'payment-sheet',
+            where: 'apple-pay',
             error: errShape,
             paymentIntentId: pi.paymentIntentId,
           });
           toast.error(msg);
         }
       } catch (err: any) {
-        console.error('[PaymentSheet] presentPaymentSheet failed', { err, merchantId: APPLE_PAY_MERCHANT_ID });
-        const errShape = { message: String(err?.message || err) };
-        const msg = mapCardDeclineMessage(errShape) || 'Payment did not complete. Please try again.';
-        void logCardDecline({
-          where: 'payment-sheet',
-          error: errShape,
+        const diag = categoriseApplePayError(err);
+        void logApplePayDiagnostic('presentApplePay', diag, {
+          merchantId: APPLE_PAY_MERCHANT_ID,
           paymentIntentId: pi.paymentIntentId,
         });
-        toast.error(msg);
-      } finally {
-        void failedHandle.remove();
+        void logCardDecline({
+          where: 'apple-pay',
+          error: { message: String(err?.message || err) },
+          paymentIntentId: pi.paymentIntentId,
+        });
+        toast.error(diag.userMessage || 'Payment did not complete. Please try again.');
       }
       return true;
     }
