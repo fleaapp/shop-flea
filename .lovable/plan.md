@@ -1,23 +1,23 @@
 ## Problem
 
-With `overlaysWebView: true` + `contentInset: 'always'` and no safe-area padding on the app shell, the WebView draws edge-to-edge but our top UI (FLEA logo, page headers like "Profile", Cart/Orders tabs, notifications bell) sits *behind* the Dynamic Island / notch and gets clipped — exactly what the screenshots show.
+Two separate bugs in the admin settings footer badge:
 
-Booking.com's effect works because their status-bar area is transparent (WebView + backdrop show through) **and** their interactive top chrome is padded down by `env(safe-area-inset-top)`. We currently have the first half but not the second.
+1. **Misalignment** — `BottomNav` sums only 6 of the 12 admin categories (`support + reports + refunds + brands + contact + bans`), ignoring `suggestions`, `waitlist`, `transactions`, `listings`, `users`, and `errorLogs`. The Admin Dashboard header sums all of them, so the two counts never match.
+
+2. **Flashing / glitching** — `useAdminBadges` subscribes to 9 tables with **wildcard** (no user filter) postgres_changes listeners, including high-churn ones (`chat_messages`, `orders`, `listings`, `notifications`, `profiles`). Every unrelated row change anywhere in the app fires `refresh()`, which round-trips the `admin-data` edge function. Concurrent responses can land out of order, so the badge visibly jumps between values (and briefly to the previous state) several times a second under normal traffic.
 
 ## Fix
 
-Keep the transparent edge-to-edge status bar (no visual/color change, drawers still dim through it), and reserve the notch height for headers only — so nothing tappable is hidden but backgrounds still extend to the top edge.
+### `src/components/BottomNav.tsx`
+- In `AdminSettingsBadgeProbe`, sum **all** admin categories so the footer matches the dashboard:
+  `support + reports + bans + suggestions + waitlist + contact + transactions + refunds + listings + users + brands + errorLogs`.
 
-1. `src/index.css` — add `padding-top: env(safe-area-inset-top)` to `#root` only on native (gated by `html.is-installed` / Capacitor class), so browser/PWA layout is unchanged. Body background stays cream/lime per route, so the safe-area strip looks identical to the page — nothing "moves" visually except sliding down out from under the notch.
-2. Verify no page uses `fixed top-0` chrome that would still clip (Header, sticky page headers like FAQ, Cart tabs, Profile). If any are `fixed`/`sticky top-0`, add `pt-[env(safe-area-inset-top)]` to those specific bars instead of relying on #root padding, so they don't overlap the notch when scrolled.
-3. Leave `capacitor.config.ts`, `appChrome.ts`, and drawer dimming untouched — the earlier transparent status bar work stays.
-
-## Technical notes
-
-- The previous "moved elements up off screen" complaint was about a different change (adding a solid strip). This change only pads the top by the exact notch height (`env(safe-area-inset-top)`, ~59px on 17 Pro Max) so headers clear the Dynamic Island. Below the notch, layout is byte-identical.
-- Gated to native via `html.is-installed` (already set for Capacitor) so Safari browser and desktop PWA are untouched.
-- No changes to the Header component's height, spacing, or padding — only a top offset on the root container (and any `fixed top-0` bars that need to match).
+### `src/hooks/admin/useAdminBadges.ts`
+- Add a trailing-debounced `refresh` (≈400ms) so bursts of realtime events collapse into one fetch.
+- Add a monotonically increasing request-id guard so late responses can't overwrite fresher state (kills the "jump back" visible flash).
+- Drop `notifications` from the subscribed tables — admin categories are derived from source tables (chat_messages, reports, orders, listings, contact_submissions, waitlist, profiles, brands), so the wildcard `notifications` firehose only adds noise.
+- Keep the existing `focus` + `admin-last-seen-updated` triggers, but route them through the same debounced refresh.
 
 ## Out of scope
 
-No changes to status bar color, drawer dim behavior, or any component internals beyond adding the safe-area offset.
+No changes to the admin edge function, dashboard counts, or non-admin nav badges. No visual/style changes to the badge itself.
