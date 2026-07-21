@@ -35,8 +35,7 @@ Then in Xcode (one-time per Mac):
   - Apple Pay (`merchant.com.finditonflea.app`)
   - Associated Domains: `applinks:app.finditonflea.com`, `webcredentials:app.finditonflea.com`
 - Wires the entitlements file into `App.xcodeproj/project.pbxproj`.
-- Uses Flea's patched native payment plugin to detect whether the signed app
-  really contains the Apple Pay entitlement before PassKit opens.
+- Apple Pay availability is checked at runtime via Stripe's `isApplePayAvailable()`.
 - Restores the app icon from your newest local Xcode Archive.
 
 ## What you still do in Xcode
