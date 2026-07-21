@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# One-shot setup for the native iOS project.
-# Run this AFTER `npx cap add ios && npx cap sync ios` whenever you rebuild the ios/ folder.
+# Safe setup for the existing native iOS project.
+# Run this AFTER `npx cap sync ios`. Do not delete ios/ and do not run `npx cap add ios`
+# unless you intentionally want to rebuild the Xcode project from scratch.
 # Applies Info.plist keys, entitlements (Push, Sign in with Apple, Associated Domains),
-# strips any stale Google URL scheme, and restores the app icon from your newest Xcode Archive.
+# and strips any stale Google URL scheme. It does not touch icons or splash assets.
 
 set -u
 
@@ -15,7 +16,7 @@ ENTITLEMENTS_DEST="$IOS_APP_DIR/App.entitlements"
 PATCH_JSON="$ROOT/ios-native/Info.plist.patch.json"
 
 if [ ! -d "$IOS_APP_DIR" ]; then
-  echo "ERROR: $IOS_APP_DIR not found. Run: npx cap add ios && npx cap sync ios first."
+  echo "ERROR: $IOS_APP_DIR not found. Your ios/ project is missing. Restore it from git or your backup before running this script."
   exit 1
 fi
 
@@ -72,38 +73,6 @@ with open(plist_path, "wb") as f:
     plistlib.dump(plist, f)
 PY
 
-echo "==> Restoring app icon from newest Xcode Archive"
-ARCHIVE_APP=""
-for A in "$HOME"/Library/Developer/Xcode/Archives/*/*.xcarchive; do
-  CANDIDATE=$(find "$A/Products" -maxdepth 4 -name "*.app" -type d 2>/dev/null | head -1)
-  if [ -n "$CANDIDATE" ]; then
-    ARCHIVE_APP="$CANDIDATE"
-  fi
-done
-
-ICON_DIR="$IOS_APP_DIR/Assets.xcassets/AppIcon.appiconset"
-mkdir -p "$ICON_DIR"
-
-if [ -n "$ARCHIVE_APP" ] && ls "$ARCHIVE_APP"/AppIcon*.png >/dev/null 2>&1; then
-  cp "$ARCHIVE_APP"/AppIcon*.png "$ICON_DIR"/ 2>/dev/null || true
-  # Prefer AppIcon60x60@3x.png (180x180) as the marketing icon source if 1024 is missing.
-  if [ ! -f "$ICON_DIR/AppIcon-1024.png" ] && [ -f "$ICON_DIR/AppIcon60x60@3x.png" ]; then
-    cp "$ICON_DIR/AppIcon60x60@3x.png" "$ICON_DIR/AppIcon-1024.png"
-  fi
-  echo "   copied icons from: $ARCHIVE_APP"
-else
-  echo "   WARNING: no Xcode Archive found; add your 1024x1024 icon manually in Xcode."
-fi
-
-cat > "$ICON_DIR/Contents.json" <<'JSON'
-{
-  "images" : [
-    { "filename" : "AppIcon-1024.png", "idiom" : "universal", "platform" : "ios", "size" : "1024x1024" }
-  ],
-  "info" : { "author" : "xcode", "version" : 1 }
-}
-JSON
-
 echo
 echo "==> Verification"
 echo "   entitlements file: $(test -f "$ENTITLEMENTS_DEST" && echo yes || echo NO)"
@@ -114,7 +83,6 @@ echo "   Apple Pay merchant:    $(grep -q "merchant.com.finditonflea.app" "$ENTI
 echo "   Stripe iOS SDK pin:    exact 25.9.0 via patch-package"
 echo "   entitlement checker:   skipped (using Stripe's isApplePayAvailable)"
 echo "   Google leftovers:  $(grep -R 'REVERSED_IOS_CLIENT_ID\|@codetrix-studio/capacitor-google-auth' "$ROOT/ios" "$ROOT/package.json" "$ROOT/capacitor.config.ts" 2>/dev/null | wc -l | tr -d ' ')"
-echo "   icon files:        $(ls "$ICON_DIR"/*.png 2>/dev/null | wc -l | tr -d ' ')"
 echo
 if ! grep -q "com.apple.developer.in-app-payments" "$ENTITLEMENTS_DEST" || ! grep -q "merchant.com.finditonflea.app" "$ENTITLEMENTS_DEST"; then
   echo "ERROR: Apple Pay entitlement is missing from $ENTITLEMENTS_DEST. Do not Archive until this says yes."
