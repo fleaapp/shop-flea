@@ -307,7 +307,7 @@ const Checkout = () => {
       } catch (err: any) {
         console.error('[PaymentSheet] createPaymentSheet failed', { err, merchantId: APPLE_PAY_MERCHANT_ID });
         void failedHandle.remove();
-        toast.error(mapCardDeclineMessage(err) || 'Unable to start payment. Please try again.');
+        toast.error(mapCardDeclineMessage({ message: String(err?.message || err) }) || 'Unable to start payment. Please try again.');
         return true;
       }
 
@@ -318,21 +318,23 @@ const Checkout = () => {
         } else if (paymentResult === PaymentSheetEventsEnum.Canceled) {
           toast.message('Payment was cancelled.');
         } else {
-          const msg = mapCardDeclineMessage(failureMessage) || 'Payment did not complete. Please try again.';
+          const errShape = { message: failureMessage || String(paymentResult) };
+          const msg = mapCardDeclineMessage(errShape) || 'Payment did not complete. Please try again.';
           void logCardDecline({
-            source: 'payment-sheet',
+            where: 'payment-sheet',
+            error: errShape,
             paymentIntentId: pi.paymentIntentId,
-            raw: failureMessage || paymentResult,
           });
           toast.error(msg);
         }
       } catch (err: any) {
         console.error('[PaymentSheet] presentPaymentSheet failed', { err, merchantId: APPLE_PAY_MERCHANT_ID });
-        const msg = mapCardDeclineMessage(err) || 'Payment did not complete. Please try again.';
+        const errShape = { message: String(err?.message || err) };
+        const msg = mapCardDeclineMessage(errShape) || 'Payment did not complete. Please try again.';
         void logCardDecline({
-          source: 'payment-sheet',
+          where: 'payment-sheet',
+          error: errShape,
           paymentIntentId: pi.paymentIntentId,
-          raw: String(err?.message || err),
         });
         toast.error(msg);
       } finally {
