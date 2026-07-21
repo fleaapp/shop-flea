@@ -115,40 +115,41 @@ const Sales = () => {
   };
 
   return (
-    <div className="native-safe-top min-h-screen bg-background pb-24">
+    <div className="native-safe-top fixed inset-0 bg-background flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background px-4 py-4 flex items-center">
+      <header className="shrink-0 bg-background px-4 py-4 flex items-center">
         <button onClick={() => safeNavigateBack(navigate, '/profile')} className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-border bg-card hover:bg-secondary">
           <ChevronLeft className="h-5 w-5" />
         </button>
         <h1 className="flex-1 text-center text-xl font-bold text-foreground pr-10">💸 Sales</h1>
       </header>
 
-      {/* Status filter */}
-      <div className="flex justify-center px-4 pb-4">
-        <div className="inline-flex items-center rounded-full bg-muted p-1">
-          {([
-            { key: 'awaiting' as const, label: 'To Ship' },
-            { key: 'shipped' as const, label: 'Shipped' },
-            { key: 'delivered' as const, label: 'Delivered' },
-            { key: 'refunded' as const, label: 'Refunded' },
-          ]).map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setSalesStatusFilter(key)}
-              className={cn(
-                'rounded-full w-20 py-2 text-sm font-medium transition-all',
-                salesStatusFilter === key ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
-              )}
-            >
-              {label}
-            </button>
-          ))}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-24">
+        {/* Status filter */}
+        <div className="flex justify-center px-4 pb-4">
+          <div className="inline-flex items-center rounded-full bg-muted p-1">
+            {([
+              { key: 'awaiting' as const, label: 'To Ship' },
+              { key: 'shipped' as const, label: 'Shipped' },
+              { key: 'delivered' as const, label: 'Delivered' },
+              { key: 'refunded' as const, label: 'Refunded' },
+            ]).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setSalesStatusFilter(key)}
+                className={cn(
+                  'rounded-full w-20 py-2 text-sm font-medium transition-all',
+                  salesStatusFilter === key ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="px-4 space-y-3">
+        {/* Content */}
+        <div className="px-4 space-y-3">
         {!user ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
             <p className="text-base font-bold text-foreground max-w-[280px] mb-2 leading-relaxed">
