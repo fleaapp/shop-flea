@@ -218,6 +218,7 @@ const Sales = () => {
             </div>
           );
         })()}
+        </div>
       </div>
 
       <SalesDetailsSheet
