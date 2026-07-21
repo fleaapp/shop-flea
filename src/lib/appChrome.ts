@@ -68,7 +68,6 @@ const syncNativeStatusBarRoute = (color: string) => {
           void StatusBar.setOverlaysWebView({ overlay: true }).catch(() => undefined);
         }
         void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
-        void color;
       })
       .catch(() => undefined);
   }, 60);
