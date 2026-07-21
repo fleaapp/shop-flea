@@ -1,58 +1,83 @@
-## What I think is happening
+## You are right
 
-This is not caused by the Cloud database itself. The screenshot shows Xcode failing while compiling the native **StripePaymentSheet** Swift package. That package is pulled during `npx cap sync ios` from `@capacitor-community/stripe`, and Xcode/SwiftPM can silently resolve a newer Stripe iOS SDK than the one that worked before.
+Do not run that reset sequence again. Deleting `ios/` is what wipes Xcode-only settings, app icons, splash settings, signing tweaks, and anything you changed directly in Xcode. I should not have kept giving you that command.
 
-Because the visible error has no useful Swift line above it, I’m going to stop asking you to dig through Xcode and make the native dependency deterministic.
+## What the issue is
+
+The current error is **not fixed by deleting `ios/`**. `Missing CapApp-SPM` / `missing capacitor-swift-pm` is a Swift Package Manager resolution/linking issue in the existing Xcode project.
+
+I checked the project and found two relevant things:
+
+- The native app uses Capacitor 8 packages.
+- One patch for Apple Sign In still points at a broad/older `capacitor-swift-pm` range instead of matching Capacitor 8 exactly.
+- Capacitor's own docs and GitHub issues say `CapApp-SPM` is generated/managed by Capacitor sync, and if Xcode loses it, the fix is to reset Swift package resolution/caches and re-sync the existing project, not delete the native project.
 
 ## Plan
 
-1. **Pin the native Stripe iOS SDK version**
-   - Add a valid `patch-package` patch for `@capacitor-community/stripe@8.1.1`.
-   - Patch its `Package.swift` so the Stripe iOS dependency resolves to a stable known-good range instead of floating to the newest SDK Xcode finds.
-   - This avoids StripePaymentSheet compiling against a newly resolved Stripe package that your local Xcode build did not previously use.
+1. **Fix the package mismatch in the repo**
+   - Update only `patches/@capacitor-community+apple-sign-in+7.1.0.patch`.
+   - Change its `capacitor-swift-pm` dependency to `from: "8.0.0"` so it matches the rest of the Capacitor 8 plugins.
+   - Leave the Stripe iOS SDK pin as-is.
+   - Do not touch checkout, Cloud/backend, Apple Pay logic, icons, splash, signing, or app settings.
 
-2. **Make the pin survive future syncs**
-   - Keep the patch under `patches/` so `npm install` applies it automatically.
-   - Do not reintroduce the broken custom Stripe diagnostics patch that caused the earlier `npm install` failure.
+2. **Stop using destructive iOS commands**
+   - Do **not** run:
 
-3. **Update the iOS setup script notes/output**
-   - Add a verification line to `scripts/setup-ios-native.sh` explaining that Stripe iOS is pinned through the package patch.
-   - Keep existing Apple Pay entitlements, Sign in with Apple, push, and app icon handling unchanged.
+```bash
+rm -rf ios
+npx cap add ios
+```
 
-4. **Give you a clean local rebuild sequence**
-   - After the patch lands, run locally:
+   - Do **not** delete `package-lock.json` unless dependency install is actually broken.
+   - Do **not** use the old full reset sequence again.
+
+3. **Use a safe local command sequence that preserves Xcode settings**
+
+After I make the patch change, run this locally:
 
 ```bash
 cd ~/Desktop/shop-flea
 git pull
-rm -rf node_modules package-lock.json
 npm install
-rm -rf ios
 npm run build
-npx cap add ios
 npx cap sync ios
 bash scripts/setup-ios-native.sh
 npx cap open ios
 ```
 
-5. **If Xcode still shows the same wrapper error**
-   - Then the next fix is not Cloud/app code; it is a corrupted SwiftPM/Xcode cache or Xcode beta/compiler issue.
-   - The fallback command will be:
+4. **If Xcode still says `Missing CapApp-SPM`**
+
+Use only cache/package repair commands, still without deleting `ios/`:
 
 ```bash
+cd ~/Desktop/shop-flea
 rm -rf ~/Library/Developer/Xcode/DerivedData
 rm -rf ~/Library/Caches/org.swift.swiftpm
 rm -rf ~/Library/org.swift.swiftpm
+npm install
+npm run build
+npx cap sync ios
+npx cap open ios
 ```
 
-Then reopen Xcode and Archive again.
+Then in Xcode:
 
-## Technical details
+```text
+File > Packages > Reset Package Caches
+File > Packages > Resolve Package Versions
+```
 
-- I will only touch native dependency configuration and setup documentation.
-- I will not change checkout logic, Cloud functions, Apple Pay business logic, fees, or database code.
-- The goal is to restore the same kind of stable native Stripe build you had before the Cloud migration work caused repeated `cap sync` / package-resolution churn.
+5. **If CapApp-SPM is missing from Xcode after that**
+
+In Xcode, repair it manually without recreating the app project:
+
+```text
+Project navigator > App project > Package Dependencies > + > Add Local...
+Select: ios/App/CapApp-SPM
+```
+
+Then build again.
 
 ## Expected result
 
-`StripePaymentSheet` stops resolving to an unstable/native-incompatible Stripe iOS package, Xcode compiles the Stripe Swift targets cleanly, and you can archive again without this generic `Command SwiftCompile failed` blocker.
+Your existing Xcode project keeps its icons, splash, signing, capabilities, general settings, and app configuration. The repo only fixes the incompatible Swift package range, then local Xcode/SwiftPM resolution is repaired in place.
