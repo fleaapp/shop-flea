@@ -267,13 +267,15 @@ const Notifications = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-24">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-background">
         <div className="flex justify-center pt-8 pb-6">
           <h1 className="text-xl font-bold text-foreground">🔔 Alerts</h1>
         </div>
       </div>
+
 
       {/* Content */}
       <div className="px-4 space-y-3">
@@ -306,10 +308,12 @@ const Notifications = () => {
         onOpenChange={(open) => { setSaleSheetOpen(open); if (!open) setSelectedGroup(null); }}
         onMarkShipped={handleMarkShipped}
       />
+      </div>
 
       <BottomNav />
     </div>
   );
 };
+
 
 export default Notifications;

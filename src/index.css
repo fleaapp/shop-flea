@@ -356,22 +356,23 @@ html.is-installed [data-listing-footer] {
   padding-bottom: 3rem; /* pb-12 */
 }
 
-/* Native only: reserve the Dynamic Island / notch height. Flow-layout pages
-   inherit this via #root; fixed-inset screens (Home, Auth, Profile, Seller
-   Profile) opt in with the `native-safe-top` class since they escape #root. */
-html.is-installed #root {
-  padding-top: env(safe-area-inset-top);
-}
+/* Native only: reserve the Dynamic Island / notch height on every screen
+   via the `native-safe-top` utility. #root no longer receives this padding
+   so the document itself cannot become taller than the viewport. */
 html.is-installed .native-safe-top {
   padding-top: env(safe-area-inset-top);
 }
 
-/* Kill the lime overscroll bleed: match html/body background to the app
-   background and lock overscroll so rubber-band can't reveal it. */
+/* Lock the app shell to the viewport on native so the whole page cannot
+   scroll or rubber-band. Internal scroll containers still scroll normally. */
 html.is-installed,
-html.is-installed body {
+html.is-installed body,
+html.is-installed #root {
   background-color: hsl(var(--background));
-  overscroll-behavior-y: none;
+  height: 100svh;
+  max-height: 100svh;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 
