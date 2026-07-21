@@ -1,4 +1,5 @@
-import { Capacitor, registerPlugin } from '@capacitor/core';
+import { Capacitor } from '@capacitor/core';
+import { Stripe } from '@capacitor-community/stripe';
 
 type ApplePayEntitlementResult = {
   available: boolean;
@@ -8,12 +9,6 @@ type ApplePayEntitlementResult = {
   hasExpectedMerchant: boolean;
   error?: string;
 };
-
-type FleaEntitlementsPlugin = {
-  getApplePayEntitlements(options: { merchantIdentifier: string }): Promise<Omit<ApplePayEntitlementResult, 'available'>>;
-};
-
-const FleaEntitlements = registerPlugin<FleaEntitlementsPlugin>('FleaEntitlements');
 
 export const checkApplePayEntitlement = async (
   merchantIdentifier: string,
@@ -29,7 +24,9 @@ export const checkApplePayEntitlement = async (
   }
 
   try {
-    const result = await FleaEntitlements.getApplePayEntitlements({ merchantIdentifier });
+    const result = await (Stripe as unknown as {
+      getApplePayEntitlements(options: { merchantIdentifier: string }): Promise<Omit<ApplePayEntitlementResult, 'available'>>;
+    }).getApplePayEntitlements({ merchantIdentifier });
     return { available: true, ...result };
   } catch (error: any) {
     return {
