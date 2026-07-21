@@ -1,28 +1,61 @@
-## Status bar fixes
+## Switch Apple Pay to direct PassKit (no Stripe sheet)
 
-Two separate bugs, both purely native-strip color — no layout, no repositioning.
+You're right — Stripe brokers the Apple Pay certificate under the hood in both flows. The Stripe PaymentSheet's Apple Pay button just calls PassKit with Stripe's cert; the plugin's direct `createApplePay` / `presentApplePay` uses the same plumbing. No cert upload from us needed.
 
-### 1. Drawer / dialog open + close flash
+### What went wrong last time
 
-**What's happening (from the video frames)**
-- On open: the native status strip snaps to the dimmed color one frame *before* the Radix/Vaul backdrop has faded in over the WebView. For ~100ms the strip is dark while the page below it is still fully cream — reads as a flash.
-- On close: `useOverlayChrome` releases the moment `data-state` flips to `"closed"`, which is the *start* of the exit animation. The strip snaps back to cream while the backdrop is still visibly fading out over the WebView — same flash in reverse.
+When we first tried `createApplePay`, PassKit threw "Apple Pay Is Not Available in Flea". That was almost certainly because:
 
-**Fix (in `src/lib/useOverlayChrome.ts` only)**
-- On open, delay `pushOverlayAppChrome()` by one animation frame + a short tick (~30ms) so the WebView backdrop has begun fading in before the strip changes. If the overlay is already closed before the delay fires, cancel — never push.
-- On close, do not release when `data-state` becomes `"closed"`. Instead attach `animationend` / `transitionend` on the overlay element and release only when the exit animation completes. Fall back to a 400ms timeout in case the animation event doesn't fire (Vaul drag-close path).
-- Keep the unmount safety-net release so nothing gets stuck dimmed.
+1. `merchant.com.finditonflea.app` wasn't registered in the Stripe Dashboard → Settings → Payments → Apple Pay list. Stripe blocks the direct call if the merchant id isn't registered against your account, even though it works through their PaymentSheet (which uses a Stripe-owned merchant id transparently).
+2. Or the Apple Pay capability / entitlement in Xcode wasn't linked to that exact merchant id in the Release signing profile.
 
-`appChrome.ts` itself does not change — the fix is entirely in how push/release timing is scheduled around the animation. This applies uniformly to Drawer, Dialog, Sheet, and AlertDialog because all four go through the same hook.
+Both are fixable without any Payment Processing Certificate upload.
 
-### 2. Onboarding walkthrough status bar stays cream
+### Plan
 
-The tutorial (`src/components/OnboardingCarousel.tsx`) is a plain `<div class="fixed inset-0 z-[999]">` with `bg-charcoal/90` — not a Radix overlay, so `useOverlayChrome` never fires and the native strip stays cream while the WebView is fully dimmed.
+**Code change — `src/pages/Checkout.tsx` (lines 308–367):**
 
-**Fix (in `src/components/OnboardingCarousel.tsx` only)**
-- While `open` is true, call `pushOverlayAppChrome()` once via a `useEffect`, and release it on close / unmount. Same mechanism the Radix overlays use; no visual repositioning.
-- Spotlight slides (which use a lighter mask) still tint the strip — matches what the user described ("should match the screens").
+Replace the current `createPaymentSheet` / `presentPaymentSheet` iOS branch with the direct Apple Pay path:
 
-### Out of scope
-- No repositioning, no padding changes, no z-index changes, no changes to the overlay backgrounds themselves.
-- No changes to auth/lime chrome behavior.
+```ts
+await Stripe.isApplePayAvailable(); // throws if unavailable
+await Stripe.createApplePay({
+  paymentIntentClientSecret: pi.clientSecret,
+  paymentSummaryItems: [{ label: 'Flea', amount: totalAud }],
+  merchantIdentifier: APPLE_PAY_MERCHANT_ID,
+  countryCode: 'AU',
+  currency: 'AUD',
+});
+const { paymentResult } = await Stripe.presentApplePay();
+```
+
+Handle three outcomes: `Completed` → `handlePaymentSuccess`, `Canceled` → toast, anything else → `mapCardDeclineMessage` + `logCardDecline`.
+
+**No fallback to PaymentSheet.** If Apple Pay isn't available on the device, surface a clear toast telling the buyer to use Add new card — never open the Stripe sheet.
+
+**Diagnostics on failure:** on any non-Completed result, log to `error_logs` via `logApplePayDiagnostic` with the merchant id, PaymentIntent id, and raw error message so we can see exactly why PassKit refused (e.g. `not_registered_with_stripe`, `no_supported_cards`, `entitlement_missing`).
+
+### One-time Stripe dashboard step (you do this, no code)
+
+Confirm the merchant id is registered on the LIVE account:
+
+- Stripe Dashboard → Settings → Payments → Apple Pay → **Add new application**
+- Enter `merchant.com.finditonflea.app`
+- Save. That's it — no CSR, no `.cer` upload needed for the iOS in-app flow. Stripe uses their own processing certificate.
+
+If that merchant id is already listed, nothing to do.
+
+### Xcode check (once)
+
+In the Release scheme's Signing & Capabilities:
+
+- Apple Pay capability present
+- `merchant.com.finditonflea.app` ticked in the merchant list
+
+`ios-native/App.entitlements` already declares this; just confirm the checkbox in Xcode matches on the Release profile.
+
+### Files touched
+
+- `src/pages/Checkout.tsx` — only the iOS Apple Pay branch inside `handleNativeWalletConfirm` (~60 lines).
+
+Nothing else changes. Manual card entry and web wallet paths stay as-is.
