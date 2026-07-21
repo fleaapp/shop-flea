@@ -82,7 +82,7 @@ export default function AdminDashboard() {
   if (section) return <SectionView section={section} onBack={() => setParams({})} />;
 
   return (
-    <div className="admin-scope min-h-screen bg-background pb-24">
+    <div className="admin-scope native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden"><div className="flex-1 overflow-y-auto pb-24">
       <header className="sticky top-0 z-40 flex items-center gap-2 bg-background px-4 py-4">
         <Button variant="ghost" size="icon" onClick={() => navigate('/settings')}><ArrowLeft className="h-4 w-4" /></Button>
         <h1 className="flex-1 text-center text-xl font-bold">🛡️ Admin</h1>
@@ -118,6 +118,7 @@ export default function AdminDashboard() {
           </div>
         ))}
       </div>
+    </div>
     </div>
   );
 }
@@ -161,7 +162,7 @@ function SectionView({ section, onBack }: { section: Section; onBack: () => void
   const showReportDetail = !isMobile || !!selectedReport;
 
   return (
-    <div className="admin-scope flex h-screen flex-col bg-background">
+    <div className="admin-scope native-safe-top flex h-screen flex-col bg-background">
       <header className="sticky top-0 z-40 flex items-center gap-2 border-b border-border bg-background px-4 py-3">
         <Button variant="ghost" size="icon" onClick={() => { setSelectedThread(null); setSelectedReport(null); onBack(); }}>
           <ArrowLeft className="h-4 w-4" />

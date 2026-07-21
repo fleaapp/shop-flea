@@ -115,7 +115,7 @@ const Sales = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="native-safe-top min-h-screen bg-background pb-24">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background px-4 py-4 flex items-center">
         <button onClick={() => safeNavigateBack(navigate, '/profile')} className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-border bg-card hover:bg-secondary">

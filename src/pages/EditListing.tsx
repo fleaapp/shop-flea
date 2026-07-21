@@ -452,14 +452,14 @@ const EditListing = () => {
 
   if (authLoading || isFetching) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="native-safe-top min-h-screen bg-background flex items-center justify-center">
         <span className="text-5xl">⏳</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="native-safe-top min-h-screen bg-background pb-24">
       {/* Image Crop Dialog */}
       {currentCropSrc && (
         <ListingImageCropDialog

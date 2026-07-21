@@ -528,7 +528,7 @@ const CreateListing = () => {
   // Show loading only while auth is loading
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-8">
+      <div className="native-safe-top min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-8">
         <span className="text-5xl">⏳</span>
         <p className="text-sm text-muted-foreground text-center leading-relaxed">
           Loading...
@@ -540,7 +540,7 @@ const CreateListing = () => {
   // Show verifying dialog if Stripe is pending (account exists but not yet connected)
   if (stripePending && user && profile) {
     return (
-      <div className="min-h-screen bg-background pb-24">
+      <div className="native-safe-top min-h-screen bg-background pb-24">
 
         <header className="relative flex items-center justify-center px-4 py-4">
           <Button
@@ -604,7 +604,7 @@ const CreateListing = () => {
   // Block form until shipping setup is complete for first-time sellers
   if (showShippingSetup) {
     return (
-      <div className="min-h-screen bg-background pb-24">
+      <div className="native-safe-top min-h-screen bg-background pb-24">
 
         <header className="relative flex items-center justify-center px-4 py-4">
           <Button

@@ -161,7 +161,7 @@ const ChatConversation = () => {
   const isResolved = thread?.status === 'resolved';
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="native-safe-top flex flex-col h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background px-4 py-4 flex items-center border-b border-border">
         <button onClick={() => navigate('/contact-support')} className="text-foreground absolute left-4 z-10">

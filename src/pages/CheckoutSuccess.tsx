@@ -154,7 +154,7 @@ const CheckoutSuccess = () => {
 
   if (processing) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="native-safe-top min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="animate-spin h-8 w-8 border-2 border-foreground border-t-transparent rounded-full mx-auto" />
           <p className="text-muted-foreground">Processing your order...</p>
@@ -165,7 +165,7 @@ const CheckoutSuccess = () => {
 
   if (finalizationError && !showSuccess) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-6">
+      <div className="native-safe-top min-h-screen bg-background flex items-center justify-center px-6">
         <div className="text-center space-y-4 max-w-sm">
           <p className="text-foreground font-medium">{finalizationError}</p>
           <div className="flex items-center justify-center gap-3">

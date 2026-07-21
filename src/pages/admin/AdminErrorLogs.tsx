@@ -66,7 +66,7 @@ export default function AdminErrorLogs() {
   }, [rows]);
 
   return (
-    <div className="admin-scope min-h-[100svh] bg-background pb-24">
+    <div className="admin-scope native-safe-top min-h-[100svh] bg-background pb-24">
       <AdminHeader
         title="Error logs"
         emoji="🪵"

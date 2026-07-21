@@ -8,7 +8,7 @@ const PrivacyPolicy = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background pb-24 max-[375px]:pb-20">
+    <div className="native-safe-top min-h-screen bg-background pb-24 max-[375px]:pb-20">
       <header className="sticky top-0 z-40 bg-background px-4 py-4 flex items-center">
         <button
           onClick={() => navigate('/settings')}
