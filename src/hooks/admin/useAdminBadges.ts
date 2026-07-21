@@ -24,15 +24,36 @@ const EMPTY: AdminBadges = {
   transactions: 0, refunds: 0, listings: 0, users: 0, brands: 0, errorLogs: 0,
 };
 
-export function useAdminBadges() {
-  const [badges, setBadges] = useState<AdminBadges>(EMPTY);
-  const [loading, setLoading] = useState(true);
+let cachedBadges: AdminBadges = EMPTY;
+let hasCachedBadges = false;
+
+export const getAdminBadgeTotal = (badges: AdminBadges) =>
+  (badges.support || 0) +
+  (badges.reports || 0) +
+  (badges.bans || 0) +
+  (badges.suggestions || 0) +
+  (badges.waitlist || 0) +
+  (badges.contact || 0) +
+  (badges.transactions || 0) +
+  (badges.refunds || 0) +
+  (badges.listings || 0) +
+  (badges.users || 0) +
+  (badges.brands || 0) +
+  (badges.errorLogs || 0);
+
+export const formatAdminBadgeCount = (count: number) => (count > 99 ? '99+' : String(count));
+
+export function useAdminBadges(options: { enabled?: boolean } = {}) {
+  const enabled = options.enabled ?? true;
+  const [badges, setBadges] = useState<AdminBadges>(() => cachedBadges);
+  const [loading, setLoading] = useState(() => enabled && !hasCachedBadges);
   // Monotonic request id — late responses can't overwrite fresher state.
   const reqIdRef = useRef(0);
   // Trailing debounce timer.
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const runRefresh = useCallback(async () => {
+    if (!enabled) return;
     const myId = ++reqIdRef.current;
     try {
       const lastSeen = getAllAdminLastSeen();
@@ -51,23 +72,31 @@ export function useAdminBadges() {
       ]);
       // Drop stale responses.
       if (myId !== reqIdRef.current) return;
-      setBadges({ ...EMPTY, ...data, errorLogs });
+      const nextBadges = { ...EMPTY, ...data, errorLogs };
+      cachedBadges = nextBadges;
+      hasCachedBadges = true;
+      setBadges(nextBadges);
     } catch (e) {
       console.error('badges fetch failed', e);
     } finally {
       if (myId === reqIdRef.current) setLoading(false);
     }
-  }, []);
+  }, [enabled]);
 
   const refresh = useCallback(() => {
+    if (!enabled) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       debounceRef.current = null;
       void runRefresh();
     }, 400);
-  }, [runRefresh]);
+  }, [enabled, runRefresh]);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
     void runRefresh();
     // Notifications table intentionally excluded — it's a firehose and admin
     // categories are derived from the source tables below.
@@ -91,7 +120,8 @@ export function useAdminBadges() {
       window.removeEventListener('focus', onFocus);
       window.removeEventListener('admin-last-seen-updated', onSeen);
     };
-  }, [refresh, runRefresh]);
+  }, [enabled, refresh, runRefresh]);
 
-  return { badges, loading, refresh };
+  const visibleBadges = enabled ? badges : EMPTY;
+  return { badges: visibleBadges, total: getAdminBadgeTotal(visibleBadges), loading, refresh };
 }
