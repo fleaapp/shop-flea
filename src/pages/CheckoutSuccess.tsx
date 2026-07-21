@@ -4,11 +4,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
-import { supabase } from '@/lib/supabase';
 import { Listing } from '@/types/listing';
 import OrderSuccessDialog from '@/components/OrderSuccessDialog';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
-import { sendPushNotification } from '@/utils/pushNotify';
 
 const CheckoutSuccess = () => {
   const navigate = useNavigate();
@@ -114,48 +112,6 @@ const CheckoutSuccess = () => {
 
         if (!finalizeData?.ok) {
           throw new Error('Checkout finalization failed');
-        }
-
-        // Fire push notifications for item sold (seller + cart/wishlist users)
-        // Notify cart/wishlist users about sold items
-        for (const item of items) {
-          // Get users who had this item in cart (excluding buyer and seller)
-          const { data: cartUsers } = await supabase
-            .from('cart_items')
-            .select('user_id')
-            .eq('listing_id', item.id)
-            .neq('user_id', user.id)
-            .neq('user_id', item.sellerId);
-
-          const { data: wishlistUsers } = await supabase
-            .from('favorites')
-            .select('user_id')
-            .eq('listing_id', item.id)
-            .neq('user_id', user.id)
-            .neq('user_id', item.sellerId);
-
-          const cartUserIds = new Set((cartUsers || []).map(u => u.user_id));
-          const wishlistUserIds = new Set((wishlistUsers || []).map(u => u.user_id));
-
-          for (const uid of cartUserIds) {
-            const type = wishlistUserIds.has(uid) ? 'cart_wishlist_item_sold' : 'cart_item_sold';
-            sendPushNotification(uid, {
-              type,
-              title: 'Item Sold',
-              message: item.title,
-              related_listing_id: item.id,
-            });
-          }
-          for (const uid of wishlistUserIds) {
-            if (!cartUserIds.has(uid)) {
-              sendPushNotification(uid, {
-                type: 'wishlist_item_sold',
-                title: 'Item Sold',
-                message: item.title,
-                related_listing_id: item.id,
-              });
-            }
-          }
         }
 
         // Remove items from cart
