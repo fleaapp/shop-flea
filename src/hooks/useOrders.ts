@@ -372,7 +372,7 @@ export function useOrders() {
       });
       if (error) throw error;
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       toast.success('Order marked as shipped');
     },
