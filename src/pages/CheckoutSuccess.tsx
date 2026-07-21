@@ -55,6 +55,7 @@ const CheckoutSuccess = () => {
           await queryClient.invalidateQueries({ queryKey: ['orders'] });
           ['checkout_items','checkout_shipping','checkout_seller_settings','checkout_shipping_by_seller','checkout_payment_method','checkout_reference','checkout_coupon_code']
             .forEach(k => localStorage.removeItem(k));
+          if (user?.id) localStorage.removeItem(`flea_draft_checkout_v1_${user.id}`);
         } catch (e) { console.error('Demo cleanup failed:', e); }
         setShowSuccess(true);
         setProcessing(false);
