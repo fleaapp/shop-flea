@@ -1,83 +1,33 @@
-## You are right
-
-Do not run that reset sequence again. Deleting `ios/` is what wipes Xcode-only settings, app icons, splash settings, signing tweaks, and anything you changed directly in Xcode. I should not have kept giving you that command.
-
-## What the issue is
-
-The current error is **not fixed by deleting `ios/`**. `Missing CapApp-SPM` / `missing capacitor-swift-pm` is a Swift Package Manager resolution/linking issue in the existing Xcode project.
-
-I checked the project and found two relevant things:
-
-- The native app uses Capacitor 8 packages.
-- One patch for Apple Sign In still points at a broad/older `capacitor-swift-pm` range instead of matching Capacitor 8 exactly.
-- Capacitor's own docs and GitHub issues say `CapApp-SPM` is generated/managed by Capacitor sync, and if Xcode loses it, the fix is to reset Swift package resolution/caches and re-sync the existing project, not delete the native project.
-
 ## Plan
 
-1. **Fix the package mismatch in the repo**
-   - Update only `patches/@capacitor-community+apple-sign-in+7.1.0.patch`.
-   - Change its `capacitor-swift-pm` dependency to `from: "8.0.0"` so it matches the rest of the Capacitor 8 plugins.
-   - Leave the Stripe iOS SDK pin as-is.
-   - Do not touch checkout, Cloud/backend, Apple Pay logic, icons, splash, signing, or app settings.
+I will make this a preservation-only native repair. No icons, no splash files, and no `ios/` regeneration.
 
-2. **Stop using destructive iOS commands**
-   - Do **not** run:
+### 1. Remove icon/splash side effects from the native setup script
+- Delete the section that copies app icons from old Xcode Archives.
+- Delete the section that rewrites `AppIcon.appiconset/Contents.json`.
+- Keep only safe items that matter for build/runtime: entitlements, required Info.plist keys, and verification output.
+- Update the script wording so it never tells you to run `npx cap add ios` for an existing project.
 
-```bash
-rm -rf ios
-npx cap add ios
-```
+### 2. Add a CapApp-SPM repair script
+- Add a dedicated script that runs `npx cap sync ios` and then checks the Xcode project for `CapApp-SPM`.
+- If `CapApp-SPM` is still missing, it will run Capacitor’s iOS sync/update path again without deleting `ios/`.
+- It will fail with a clear message if the local Xcode project is too broken to repair automatically, instead of wiping settings.
 
-   - Do **not** delete `package-lock.json` unless dependency install is actually broken.
-   - Do **not** use the old full reset sequence again.
+### 3. Add safe package commands
+- Add npm scripts such as:
+  - `npm run ios:repair-spm` for fixing missing Capacitor SPM references.
+  - Keep existing build/sync commands, but avoid any destructive `rm -rf ios` workflow.
 
-3. **Use a safe local command sequence that preserves Xcode settings**
-
-After I make the patch change, run this locally:
+### 4. Give you the final safe command sequence
+After this change, the only local commands should be:
 
 ```bash
 cd ~/Desktop/shop-flea
 git pull
 npm install
 npm run build
-npx cap sync ios
-bash scripts/setup-ios-native.sh
+npm run ios:repair-spm
 npx cap open ios
 ```
 
-4. **If Xcode still says `Missing CapApp-SPM`**
-
-Use only cache/package repair commands, still without deleting `ios/`:
-
-```bash
-cd ~/Desktop/shop-flea
-rm -rf ~/Library/Developer/Xcode/DerivedData
-rm -rf ~/Library/Caches/org.swift.swiftpm
-rm -rf ~/Library/org.swift.swiftpm
-npm install
-npm run build
-npx cap sync ios
-npx cap open ios
-```
-
-Then in Xcode:
-
-```text
-File > Packages > Reset Package Caches
-File > Packages > Resolve Package Versions
-```
-
-5. **If CapApp-SPM is missing from Xcode after that**
-
-In Xcode, repair it manually without recreating the app project:
-
-```text
-Project navigator > App project > Package Dependencies > + > Add Local...
-Select: ios/App/CapApp-SPM
-```
-
-Then build again.
-
-## Expected result
-
-Your existing Xcode project keeps its icons, splash, signing, capabilities, general settings, and app configuration. The repo only fixes the incompatible Swift package range, then local Xcode/SwiftPM resolution is repaired in place.
+No `rm -rf ios`. No `npx cap add ios`. No icon/splash rewrite.
