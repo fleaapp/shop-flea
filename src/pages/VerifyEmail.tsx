@@ -69,10 +69,18 @@ const VerifyEmail = () => {
             >
               Back to Login
             </Button>
-            
+
+            <button
+              onClick={handleResend}
+              disabled={resending || !email}
+              className="text-xs text-foreground/70 underline disabled:opacity-50"
+            >
+              {resending ? 'Sending…' : 'Resend verification email'}
+            </button>
+
             <p className="text-xs text-foreground/50 pt-2">
               Didn't receive the email?<br />
-              Check your spam folder or try signing up again.
+              Check your spam folder.
             </p>
           </div>
         </div>
