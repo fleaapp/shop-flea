@@ -74,9 +74,32 @@ const CardForm = ({
 }) => {
   const stripe = useStripe();
   const elements = useElements();
-  const [name, setName] = useState('');
+  const [name, setName] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    try { return localStorage.getItem(CARDHOLDER_DRAFT_KEY) || ''; } catch { return ''; }
+  });
   const [saveCard, setSaveCard] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Persist cardholder name (non-sensitive) on every change and again on
+  // background/unload — the WebView may be evicted the moment we hide.
+  useEffect(() => {
+    const write = () => {
+      try {
+        if (name) localStorage.setItem(CARDHOLDER_DRAFT_KEY, name);
+        else localStorage.removeItem(CARDHOLDER_DRAFT_KEY);
+      } catch { /* noop */ }
+    };
+    const t = window.setTimeout(write, 250);
+    const onVis = () => { if (document.visibilityState === 'hidden') write(); };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pagehide', write);
+    return () => {
+      window.clearTimeout(t);
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('pagehide', write);
+    };
+  }, [name]);
 
   const handleSubmit = async () => {
     if (!stripe || !elements) return;
