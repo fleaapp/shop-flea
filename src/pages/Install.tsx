@@ -71,8 +71,8 @@ const Install = () => {
   }
 
   return (
-    <div className="native-safe-top min-h-screen bg-background">
-      <header className="relative flex items-center justify-center px-4 py-4">
+    <div className="native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden">
+      <header className="shrink-0 relative flex items-center justify-center px-4 py-4">
         <Button
           variant="ghost"
           size="icon"
@@ -83,6 +83,8 @@ const Install = () => {
         </Button>
         <h1 className="text-lg font-semibold">Get the App</h1>
       </header>
+
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-8">
 
       <div className="px-6 py-8 flex flex-col items-center gap-8">
         <img src="/pwa-icon-512.png" alt="Flea" className="w-24 h-24 rounded-2xl shadow-lg" />
@@ -167,6 +169,7 @@ const Install = () => {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

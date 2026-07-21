@@ -162,7 +162,7 @@ function SectionView({ section, onBack }: { section: Section; onBack: () => void
   const showReportDetail = !isMobile || !!selectedReport;
 
   return (
-    <div className="admin-scope native-safe-top flex h-screen flex-col bg-background">
+    <div className="admin-scope native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden">
       <header className="sticky top-0 z-40 flex items-center gap-2 border-b border-border bg-background px-4 py-3">
         <Button variant="ghost" size="icon" onClick={() => { setSelectedThread(null); setSelectedReport(null); onBack(); }}>
           <ArrowLeft className="h-4 w-4" />
