@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
-import { ApplePayEventsEnum, GooglePayEventsEnum, Stripe } from '@capacitor-community/stripe';
+import { ApplePayEventsEnum, GooglePayEventsEnum, PaymentSheetEventsEnum, Stripe } from '@capacitor-community/stripe';
 import type { CanMakePaymentResult, PaymentRequestPaymentMethodEvent } from '@stripe/stripe-js';
 
 import { Button } from '@/components/ui/button';
@@ -272,115 +272,71 @@ const Checkout = () => {
     if (platform === 'ios') {
       const publishableKeyMode = pi.publishableKey.startsWith('pk_live_') ? 'live' : 'test';
       if (typeof pi.livemode === 'boolean' && pi.livemode !== (publishableKeyMode === 'live')) {
-        const diag = {
-          ok: false as const,
-          code: 'unknown' as const,
-          userMessage: 'Payment provider is misconfigured. Please choose Add new card or contact support.',
-          raw: `PaymentIntent mode ${pi.livemode ? 'live' : 'test'} does not match publishable key mode ${publishableKeyMode}.`,
-        };
-        console.error('[ApplePay] key mode mismatch', { diag, merchantId: APPLE_PAY_MERCHANT_ID });
-        void logApplePayDiagnostic('key mode mismatch', diag, {
+        console.error('[ApplePay] key mode mismatch', {
           merchantId: APPLE_PAY_MERCHANT_ID,
           publishableKeyMode,
           paymentIntentMode: pi.livemode ? 'live' : 'test',
-          sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
         });
-        toast.error(diag.userMessage);
+        toast.error('Payment provider is misconfigured. Please choose Add new card or contact support.');
         return true;
       }
 
-      const preflight = await runApplePayPreflight(APPLE_PAY_MERCHANT_ID);
-      console.info('[ApplePay] preflight', {
-        preflight,
-        merchantId: APPLE_PAY_MERCHANT_ID,
-        clientStripeAccountSuffix: pi.clientStripeAccountId?.slice(-4) ?? null,
-        publishableKeyMode,
-        paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
-        sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
-      });
-      if (!preflight.ok) {
-        void logApplePayDiagnostic('preflight failed', preflight, {
-          merchantId: APPLE_PAY_MERCHANT_ID,
-          clientStripeAccountSuffix: pi.clientStripeAccountId?.slice(-4) ?? null,
-          publishableKeyMode,
-          paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
-          sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
-        });
-        toast.error(preflight.userMessage);
-        return true;
-      }
-
-      let nativeFailureMessage = '';
-      const failedHandle = await Stripe.addListener(ApplePayEventsEnum.Failed, (error: any) => {
-        nativeFailureMessage = typeof error === 'string' ? error : String(error?.error || error?.message || JSON.stringify(error || {}));
-        const diag = categoriseApplePayError(nativeFailureMessage);
-        console.error('[ApplePay] native failed event', { diag, nativeFailureMessage, merchantId: APPLE_PAY_MERCHANT_ID });
-        void logApplePayDiagnostic('native failed event', diag, {
-          merchantId: APPLE_PAY_MERCHANT_ID,
-          clientStripeAccountSuffix: pi.clientStripeAccountId?.slice(-4) ?? null,
-          publishableKeyMode,
-          paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
-          sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
-        });
-      });
+      // Route Apple Pay through Stripe's PaymentSheet so Apple's native
+      // sheet is presented under Stripe's merchant plumbing. This avoids
+      // the direct PassKit "Apple Pay Is Not Available" alert that fires
+      // when the Payment Processing Certificate isn't provisioned on our
+      // Apple Merchant ID. Buyer still sees the standard Apple sheet.
+      let failureMessage = '';
+      const failedHandle = await Stripe.addListener(
+        PaymentSheetEventsEnum.Failed,
+        (error: any) => {
+          failureMessage = typeof error === 'string' ? error : String(error?.message || error || '');
+          console.error('[PaymentSheet] failed', { failureMessage, merchantId: APPLE_PAY_MERCHANT_ID });
+        }
+      );
 
       try {
-        await Stripe.createApplePay({
+        await Stripe.createPaymentSheet({
           paymentIntentClientSecret: pi.clientSecret,
-          merchantIdentifier: APPLE_PAY_MERCHANT_ID,
+          merchantDisplayName: pi.merchantDisplayName || 'Flea',
           countryCode: 'AU',
-          currency: 'AUD',
-          paymentSummaryItems: [
-            {
-              label: pi.merchantDisplayName || 'Flea',
-              amount: Number((pi.amount / 100).toFixed(2)),
-            },
-          ],
-          allowedCountries: ['au'],
-          allowedCountriesErrorDescription: 'Flea is currently available in Australia only.',
+          currencyCode: 'AUD',
+          enableApplePay: true,
+          applePayMerchantId: APPLE_PAY_MERCHANT_ID,
         });
       } catch (err: any) {
-        const diag = categoriseApplePayError(err);
-        console.error('[ApplePay] createApplePay failed', { diag, err });
-        void logApplePayDiagnostic('create failed', diag, {
-          merchantId: APPLE_PAY_MERCHANT_ID,
-          clientStripeAccountSuffix: pi.clientStripeAccountId?.slice(-4) ?? null,
-          publishableKeyMode,
-          paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
-          sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
-        });
+        console.error('[PaymentSheet] createPaymentSheet failed', { err, merchantId: APPLE_PAY_MERCHANT_ID });
         void failedHandle.remove();
-        toast.error(diag.userMessage);
+        toast.error(mapCardDeclineMessage({ message: String(err?.message || err) }) || 'Unable to start payment. Please try again.');
         return true;
       }
 
       try {
-        const { paymentResult } = await Stripe.presentApplePay();
-        if (paymentResult === ApplePayEventsEnum.Completed) {
+        const { paymentResult } = await Stripe.presentPaymentSheet();
+        if (paymentResult === PaymentSheetEventsEnum.Completed) {
           handlePaymentSuccess(pi.paymentIntentId);
-        } else if (paymentResult === ApplePayEventsEnum.Canceled) {
+        } else if (paymentResult === PaymentSheetEventsEnum.Canceled) {
           toast.message('Payment was cancelled.');
         } else {
-          const diag = categoriseApplePayError(nativeFailureMessage || paymentResult);
-          void logApplePayDiagnostic('present returned failed', diag, {
-            merchantId: APPLE_PAY_MERCHANT_ID,
-            paymentResult,
-            publishableKeyMode,
-            paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
-            sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
+          const errShape = { message: failureMessage || String(paymentResult) };
+          const msg = mapCardDeclineMessage(errShape) || 'Payment did not complete. Please try again.';
+          void logCardDecline({
+            where: 'payment-sheet',
+            error: errShape,
+            paymentIntentId: pi.paymentIntentId,
           });
-          toast.error(diag.userMessage);
+          toast.error(msg);
         }
       } catch (err: any) {
-        const diag = categoriseApplePayError(err);
-        console.error('[ApplePay] presentApplePay failed', { diag, err, merchantId: APPLE_PAY_MERCHANT_ID });
-        void logApplePayDiagnostic('present threw', diag, {
-          merchantId: APPLE_PAY_MERCHANT_ID,
-          publishableKeyMode,
-          paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
-          sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
+        console.error('[PaymentSheet] presentPaymentSheet failed', { err, merchantId: APPLE_PAY_MERCHANT_ID });
+        const errShape = { message: String(err?.message || err) };
+        const msg = mapCardDeclineMessage(errShape) || 'Payment did not complete. Please try again.';
+        void logCardDecline({
+          where: 'payment-sheet',
+          error: errShape,
+          paymentIntentId: pi.paymentIntentId,
         });
-        toast.error(diag.userMessage);
+        toast.error(msg);
       } finally {
         void failedHandle.remove();
       }
