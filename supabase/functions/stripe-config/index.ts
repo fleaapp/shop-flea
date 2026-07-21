@@ -46,6 +46,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   await ensurePaymentMethodDomain(req);
   const stripeKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
+  const inferredLivemode = stripeKey.startsWith("sk_live_") || stripeKey.startsWith("rk_live_");
   let account: { id: string; livemode: boolean } | null = null;
   if (stripeKey) {
     try {
@@ -61,7 +62,7 @@ serve(async (req) => {
       publishableKey: Deno.env.get("STRIPE_PUBLISHABLE_KEY") || "",
       merchantIdentifier: "merchant.com.finditonflea.app",
       accountIdSuffix: account?.id ? account.id.slice(-4) : null,
-      livemode: account?.livemode ?? null,
+      livemode: account?.livemode ?? inferredLivemode,
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
   );

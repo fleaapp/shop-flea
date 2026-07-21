@@ -19,7 +19,8 @@ diff --git a/node_modules/@capacitor-community/stripe/ios/Sources/StripePlugin/S
      ]
      private let paymentSheetExecutor = PaymentSheetExecutor()
      private let paymentFlowExecutor = PaymentFlowExecutor()
-@@ -118,6 +120,27 @@ public class StripePlugin: CAPPlugin, CAPBridgedPlugin {
+@@ -118,6 +120,28 @@ public class StripePlugin: CAPPlugin, CAPBridgedPlugin {
+     @objc func presentGooglePay(_ call: CAPPluginCall) {
          call.unavailable("Not implemented on iOS.")
      }
  
