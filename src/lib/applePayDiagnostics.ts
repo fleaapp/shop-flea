@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { Stripe } from '@capacitor-community/stripe';
+import { logError } from '@/lib/errorLogger';
 
 export type ApplePayDiagnosis = {
   ok: boolean;
@@ -60,6 +61,26 @@ export const categoriseApplePayError = (err: unknown): ApplePayDiagnosis => {
     userMessage: raw || 'Apple Pay could not start. Please try Add new card.',
     raw,
   };
+};
+
+export const logApplePayDiagnostic = async (
+  stage: string,
+  diagnosis: ApplePayDiagnosis,
+  context: Record<string, unknown> = {},
+) => {
+  const raw = typeof diagnosis.raw === 'string' ? diagnosis.raw : JSON.stringify(diagnosis.raw ?? null);
+  await logError({
+    title: `Apple Pay ${stage}`,
+    message: `${diagnosis.code}: ${raw || diagnosis.userMessage}`,
+    severity: diagnosis.code === 'canceled' ? 'warning' : 'error',
+    source: 'client',
+    context: {
+      platform: Capacitor.getPlatform(),
+      diagnosisCode: diagnosis.code,
+      ok: diagnosis.ok,
+      ...context,
+    },
+  });
 };
 
 /** Pre-flight only — cannot detect a missing entitlement (PassKit does). */

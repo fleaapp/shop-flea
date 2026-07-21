@@ -45,8 +45,24 @@ const ensurePaymentMethodDomain = async (req: Request) => {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   await ensurePaymentMethodDomain(req);
+  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
+  let account: { id: string; livemode: boolean } | null = null;
+  if (stripeKey) {
+    try {
+      const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+      const acct = await stripe.accounts.retrieve();
+      account = { id: acct.id, livemode: Boolean(acct.livemode) };
+    } catch (error) {
+      console.warn("[stripe-config] account lookup skipped:", (error as Error).message);
+    }
+  }
   return new Response(
-    JSON.stringify({ publishableKey: Deno.env.get("STRIPE_PUBLISHABLE_KEY") || "" }),
+    JSON.stringify({
+      publishableKey: Deno.env.get("STRIPE_PUBLISHABLE_KEY") || "",
+      merchantIdentifier: "merchant.com.finditonflea.app",
+      accountIdSuffix: account?.id ? account.id.slice(-4) : null,
+      livemode: account?.livemode ?? null,
+    }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
   );
 });
