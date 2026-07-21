@@ -44,7 +44,7 @@ export default function AdminTransactions() {
   const showDetail = !isMobile || !!selected;
 
   return (
-    <div className="admin-scope flex min-h-[100svh] flex-col bg-background">
+    <div className="admin-scope native-safe-top flex min-h-[100svh] flex-col bg-background">
       <AdminHeader title="Transactions" emoji="📊" />
 
       <div className="flex flex-1 overflow-hidden">

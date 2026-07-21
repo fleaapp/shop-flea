@@ -30,7 +30,7 @@ export default function AdminRefunds() {
   ];
 
   return (
-    <div className="admin-scope flex min-h-[100svh] flex-col bg-background pb-24">
+    <div className="admin-scope native-safe-top flex min-h-[100svh] flex-col bg-background pb-24">
       <AdminHeader title="Refunds & disputes" emoji="↩️" />
 
       <AdminChipFilter options={options} value={filter} onChange={(v) => setFilter(v)} />

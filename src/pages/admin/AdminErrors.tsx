@@ -25,7 +25,7 @@ export default function AdminErrors() {
   const { issues, summary, loading, fixing, reload, runFix } = useAdminErrors();
 
   return (
-    <div className="admin-scope flex min-h-[100svh] flex-col bg-background pb-24">
+    <div className="admin-scope native-safe-top flex min-h-[100svh] flex-col bg-background pb-24">
       <AdminHeader
         title="Diagnostics"
         emoji="🩺"

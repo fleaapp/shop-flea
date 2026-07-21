@@ -243,7 +243,7 @@ const Checkout = () => {
   }, [validItems, totalShipping, coupon]);
 
   if (items.length === 0) {
-    return <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+    return <div className="native-safe-top min-h-screen bg-background flex flex-col items-center justify-center p-4">
         <p className="text-muted-foreground">No items to checkout</p>
         <Button onClick={() => navigate('/cart')} className="mt-4">
           Back to Cart
@@ -595,7 +595,7 @@ const Checkout = () => {
     }
   };
 
-  return <div className="min-h-screen bg-background">
+  return <div className="native-safe-top min-h-screen bg-background">
       <Drawer open={open} onOpenChange={isOpen => !isOpen && handleClose()} shouldScaleBackground={false}>
         <DrawerContent className="bg-background">
           {/* Sticky Header */}

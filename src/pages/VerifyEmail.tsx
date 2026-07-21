@@ -25,7 +25,7 @@ const VerifyEmail = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-primary flex flex-col overflow-hidden">
+    <div className="native-safe-top fixed inset-0 bg-primary flex flex-col overflow-hidden">
       {/* Back button */}
       <button
         onClick={() => navigate('/auth')}
