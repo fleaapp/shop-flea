@@ -430,6 +430,65 @@ async function insertRefundNotifications(externalUrl: string, serviceKey: string
   }
 }
 
+async function insertRefundInitiatedChatMessage(externalUrl: string, serviceKey: string, order: any) {
+  try {
+    // Fetch seller username for the system message payload (RefundSystemMessage renders this).
+    let sellerUsername: string | null = null;
+    if (order.seller_id) {
+      const res = await fetch(
+        `${externalUrl}/rest/v1/profiles?user_id=eq.${order.seller_id}&select=username`,
+        { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+      );
+      if (res.ok) {
+        const rows = await res.json();
+        if (Array.isArray(rows) && rows[0]?.username) sellerUsername = rows[0].username;
+      }
+    }
+
+    // Post one system message per underlying order in the group so both single
+    // and grouped-order chats surface the "Refund Initiated" card.
+    const orderIds: string[] = [];
+    if (order.order_group_id) {
+      const res = await fetch(
+        `${externalUrl}/rest/v1/orders?order_group_id=eq.${order.order_group_id}&select=id`,
+        { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+      );
+      if (res.ok) {
+        const rows = await res.json();
+        if (Array.isArray(rows)) rows.forEach((r: any) => r?.id && orderIds.push(r.id));
+      }
+    }
+    if (orderIds.length === 0 && order.id) orderIds.push(order.id);
+
+    const payload = JSON.stringify({
+      type: 'refund_initiated',
+      seller_username: sellerUsername,
+      payment_method: 'stripe',
+      initiated_at: new Date().toISOString(),
+    });
+
+    const rows = orderIds.map((oid) => ({
+      order_id: oid,
+      sender_id: order.seller_id,
+      message: payload,
+      message_type: 'refund_initiated',
+    }));
+
+    await fetch(`${externalUrl}/rest/v1/order_messages`, {
+      method: 'POST',
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify(rows),
+    });
+  } catch (error) {
+    console.error('[stripe-connect-refund] chat system message insert failed:', error);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -515,6 +574,7 @@ serve(async (req) => {
     const relatedListingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
     await markListingsRefunded(externalUrl, serviceKey, relatedListingIds);
     await insertRefundNotifications(externalUrl, serviceKey, order);
+    await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order);
 
     return jsonResponse({ success: true, refundId: refund.id, status: refund.status });
   } catch (error: any) {

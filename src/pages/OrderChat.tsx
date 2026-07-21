@@ -65,6 +65,8 @@ const OrderChat = () => {
           seller_username: group.seller_profile?.username || 'Seller',
           buyer_avatar: group.buyer_profile?.avatar_url || null,
           seller_avatar: group.seller_profile?.avatar_url || null,
+          is_refunded: group.status === 'refunded'
+            || group.orders.some((o) => o.status === 'refunded' || !!o.refunded_at),
         };
       }
 
@@ -271,8 +273,11 @@ const OrderChat = () => {
 
           if (isSystem) {
             // Determine if seller has responded to this refund request
-            const hasSellerResponded = msg.message_type === 'refund_request' && messages.slice(msgIndex + 1).some(
-              m => m.message_type === 'refund_rejected' || m.message_type === 'refund_initiated'
+            const hasSellerResponded = msg.message_type === 'refund_request' && (
+              !!orderInfo?.is_refunded
+              || messages.slice(msgIndex + 1).some(
+                m => m.message_type === 'refund_rejected' || m.message_type === 'refund_initiated'
+              )
             );
             // Show auto-reminder if 4+ days since request with no response
             const showAutoReminder = msg.message_type === 'refund_request' && !hasSellerResponded && (() => {
