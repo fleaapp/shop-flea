@@ -4,6 +4,7 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { preloadImages } from '@/utils/preloadAssets';
 import OnboardingMiniCard, { type GestureDirection } from '@/components/onboarding/OnboardingMiniCard';
+import { pushOverlayAppChrome } from '@/lib/appChrome';
 
 // Import onboarding assets
 import listingSneakers from '@/assets/onboarding/listing-sneakers.jpg';
@@ -101,6 +102,14 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
       setSpotlightRects([]);
       setPendingSlideIndex(null);
     }
+  }, [open]);
+
+  // Dim the native status-bar strip while the walkthrough overlay is up so
+  // it matches the darkened WebView instead of staying cream.
+  useEffect(() => {
+    if (!open) return;
+    const release = pushOverlayAppChrome();
+    return () => release();
   }, [open]);
 
   // Find and measure all spotlight target elements
