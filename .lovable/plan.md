@@ -1,39 +1,56 @@
-## Findings
+# Keep app state when you leave and return
 
-Two audit issues found — the sale-notification fix didn't cover everything:
+When iOS backgrounds Flea for more than a few minutes (or you open a banking app, camera, autofill sheet, etc.), the WebView can be evicted and the app cold-starts on return. Right now that means: mid-checkout you lose your coupon, payment selection, and any open sheet; mid-listing you lose the title, price, description, brand, category, and photos you'd added. This plan makes those flows survive a background/return.
 
-### 1. Duplicate triggers on `chat_messages` (support messages)
-Both `on_support_message_notify` and `trg_notify_on_support_message` fire the same `notify_on_support_message()` function. Every support reply currently creates **2** notification rows → 2 pushes.
+## What will persist
 
-### 2. Duplicate triggers on `order_messages` (buyer/seller chat)
-Both `on_order_message_notify` and `trg_notify_on_order_message` fire the same `notify_on_order_message()` function. Every buyer/seller chat message currently creates **2** notification rows → 2 pushes.
+**Checkout (`src/pages/Checkout.tsx` + `CardDetailsSheet`)**
+- Applied coupon code
+- Selected payment method (Apple Pay / Google Pay / card)
+- "Editing address" vs "saved" state
+- Whether the card-details sheet was open, plus the card form's non-sensitive fields (name on card, postcode). Card number / CVV are never persisted — PCI rule, and the Stripe Elements iframe clears them on reload regardless.
+- Existing shipping-address persistence stays as-is.
 
-### 3. Missing dedup safety nets
-Only order events (`idx_notifications_unique_order_event`) and listing-sold events (`idx_notifications_unique_listing_sold_event`) have unique indexes. Comments, mentions, reviews, and message events rely only on trigger uniqueness — no DB-level guard.
+**Create listing (`src/pages/CreateListing.tsx`) and Edit listing (`src/pages/EditListing.tsx`)**
+- All text fields: title, description, price, shipping price, brand, category, subcategory, size, condition, colours, styles, fit.
+- Photos already added (including any that were cropped). Stored as blobs in IndexedDB so they survive a WebView reload without bloating localStorage.
+- Draft is cleared once the listing is successfully published or when the user taps a new "Discard draft" action.
 
-Everything else (single trigger + unique index or single trigger + idempotent function) looks correct.
+**Other in-progress flows already handled**
+- Seller onboarding (already resumes via `SellerOnboardingResumeMount`) — untouched.
+- Order chat / support chat drafts — out of scope for this pass unless you want them included.
 
-## Fix (migration)
+## How it will work
 
-1. Drop the older duplicate triggers, keep the canonical `trg_` versions:
-   - `DROP TRIGGER on_support_message_notify ON public.chat_messages`
-   - `DROP TRIGGER on_order_message_notify ON public.order_messages`
+1. **Draft hooks**
+   - New `src/hooks/useFormDraft.ts` — small wrapper around `useState` that reads an initial value from localStorage on mount and writes back (debounced ~300ms) on every change. Keyed per user so drafts don't leak across accounts on the same device.
+   - New `src/lib/imageDraftStore.ts` — thin IndexedDB helper (`get`, `set`, `clear` keyed by draft ID) for the listing photo blobs. Falls back silently if IndexedDB is unavailable.
 
-2. Clean up any duplicate rows already created in the last 30 days for support and order message notifications (keep the earliest, delete siblings created within 5 seconds of it for the same user + type + related_order_id/related_thread_id).
+2. **Checkout wiring**
+   - Replace the affected `useState` calls with `useFormDraft` under keys like `checkout_draft_coupon`, `checkout_draft_method`, `checkout_draft_edit_mode`, `checkout_draft_card_open`.
+   - Persist card-form name + postcode the same way inside `CardDetailsSheet`.
+   - Clear all `checkout_draft_*` keys on successful payment (in `CheckoutSuccess`) and on explicit "Cancel checkout".
 
-3. Add safety-net unique indexes so any future duplicate-trigger regression is stopped at the DB layer:
-   - `idx_notifications_unique_order_message` — `(user_id, type, related_order_id, created_at)` truncated to the second, WHERE `type IN ('order_message_buyer','order_message_seller')`. (Uses `date_trunc('second', created_at)` inside an expression index so simultaneous inserts collide but legitimate follow-up messages seconds later still succeed.)
-   - `idx_notifications_unique_support_message` — same pattern on `related_thread_id` WHERE `type = 'support_message'`.
-   - `idx_notifications_unique_comment_event` — `(user_id, type, related_listing_id, related_user_id, date_trunc('second', created_at))` WHERE `type IN ('new_comment','comment_reply','mention')`.
-   - `idx_notifications_unique_review_event` — `(user_id, type, related_user_id, related_listing_id)` WHERE `type = 'new_review'`.
+3. **Listing wiring**
+   - Same treatment for every text field in `CreateListing` under a single `listing_draft_v1` object.
+   - On image add/crop, write the resulting blob into IndexedDB under that draft ID. On mount, if a draft exists, restore text fields and reconstruct `imageFiles` with `URL.createObjectURL` from the stored blobs.
+   - Add a small "Draft restored — Discard" chip at the top of the page when a draft is rehydrated, so nothing feels sticky if you meant to start fresh.
+   - Clear the draft on successful publish.
+   - Same pattern for `EditListing`, keyed by listing ID so edits to different listings don't collide.
 
-4. Verify only one push trigger (`trg_push_notification`) exists on `notifications` — already confirmed, no change needed.
+4. **Native lifecycle safety net**
+   - Add a single `src/lib/appResume.ts` that subscribes to Capacitor's `App.appStateChange`. On background it forces a flush of any pending debounced writes so nothing is lost even if iOS kills the WebView the instant we hide.
+   - No forced reloads, no navigation on resume — the existing route/URL restores the page naturally, and the drafts above restore the inputs.
 
-## Verification
+## What this does not change
 
-- Post-migration query: enumerate all triggers referencing `public.notifications` or notification-inserting functions and confirm each event source has exactly one.
-- Query `notifications` for the last 24h grouped by `(user_id, type, related_order_id, related_thread_id, related_listing_id, date_trunc('second', created_at))` and confirm no group has count > 1.
-- Ask user to send one comment, one order message, one support reply → confirm exactly one push each.
+- No changes to auth, routing, payments, or the checkout success flow itself.
+- Card number / CVV still won't survive backgrounding — that's a security constraint, not a bug we can fix.
+- If iOS fully kills the app while a Stripe Apple Pay sheet is open, Apple Pay itself will still need to be re-tapped (it's a system sheet, not ours); everything up to that point will be restored.
 
-## Technical note
-The `date_trunc('second', created_at)` in the expression indexes is intentional — it dedupes rapid-fire duplicates from double triggers/manual inserts without blocking legitimate repeat notifications the same minute (e.g. two real messages 10s apart).
+## Files touched
+
+- New: `src/hooks/useFormDraft.ts`, `src/lib/imageDraftStore.ts`, `src/lib/appResume.ts`
+- Edited: `src/pages/Checkout.tsx`, `src/components/checkout/CardDetailsSheet.tsx`, `src/pages/CreateListing.tsx`, `src/pages/EditListing.tsx`, `src/pages/CheckoutSuccess.tsx` (draft-clear on success), `src/App.tsx` (mount `appResume` listener once)
+
+Reply "go" and I'll build it. If you'd like order-chat message drafts included in the same pass, say so and I'll add them.
