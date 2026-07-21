@@ -277,9 +277,9 @@ const EditProfile = () => {
   };
 
   return (
-    <div className="native-safe-top min-h-screen bg-background pb-8">
+    <div className="native-safe-top fixed inset-0 bg-background flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background px-4 py-4">
+      <header className="shrink-0 bg-background px-4 py-4">
         <div className="flex items-center">
           <button onClick={() => safeNavigateBack(navigate, '/profile')} className="p-2 -ml-2">
             <ArrowLeft className="h-6 w-6 text-foreground" />
@@ -288,7 +288,7 @@ const EditProfile = () => {
         </div>
       </header>
 
-      <div className="px-6 space-y-6">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 pb-8 space-y-6">
         {/* Avatar */}
         <div className="flex justify-center">
           <div className="relative">
