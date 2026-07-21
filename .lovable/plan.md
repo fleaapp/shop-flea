@@ -1,38 +1,53 @@
-## Diagnosis
+## Root cause
 
-The app was originally built for `overlaysWebView: true` (Reels-style, WebView edge-to-edge under the notch) — every overlay in `dialog.tsx`, `sheet.tsx`, `drawer.tsx`, `alert-dialog.tsx` uses `top: calc(-1 * env(safe-area-inset-top, 0px))` to extend up into the notch, and `body::before` already paints the safe-area strip in the route color. It was flipped to `overlay: false` earlier to unclip headers after a plugin regression, which made `env(safe-area-inset-top)` inside the WebView equal to `0`. That's why the tint overlay (height `env(safe-area-inset-top)`) collapses to nothing and the strip stays solid cream.
+Edge function log for `order-messages` shows:
 
-## Fix (no element moves)
+```
+duplicate key value violates unique constraint "idx_notifications_unique_order_event"
+Key (user_id, type, related_order_id)=(<seller>, order_message_seller, <orderId>)
+```
 
-### 1. `src/lib/appChrome.ts` — flip to overlay mode
-- Change `StatusBar.setOverlaysWebView({ overlay: false })` → `{ overlay: true }` in both the init inside `syncNativeStatusBarRoute` and in `reassertOverlayFalse` (rename to `reassertOverlayTrue`).
-- Drop `StatusBar.setBackgroundColor` calls — with overlay:true the native strip is transparent and irrelevant; the DOM paints it.
-- Keep `StatusBar.setStyle(Style.Dark)` and the resume/visibility re-assert path unchanged.
+Two overlapping unique indexes exist on `notifications`:
 
-### 2. `src/index.css` — reserve the strip on the shell so content Y stays put
-- Add `padding-top: env(safe-area-inset-top)` to `#root` (and `html.boot-auth #root`).
-  - Before: WebView starts below the notch, content top = ~59 px from screen top.
-  - After: WebView starts under the notch, `#root` is padded by ~59 px, content top = ~59 px from screen top. **Identical visual position.**
-- `body::before` already paints that strip in `--app-top-bg` (route color), so the notch shows cream in-app / lime on auth — same as today.
-- No changes to per-page headers, no `pt-` additions to any component. Every existing element renders at the same Y.
+- `idx_notifications_unique_order_event` — covers `(user_id, type, related_order_id)` for **every** type with an `related_order_id`.
+- `idx_notifications_unique_order_message` — the intended dedup for chat, keyed on `(user_id, type, related_order_id, created_at)`, only for `order_message_buyer` / `order_message_seller`.
 
-### 3. Everything else — unchanged
-- `useOverlayChrome.ts` timing already correct.
-- `#lv-statusbar-tint` overlay is already sized to `env(safe-area-inset-top)` — it will now have real height and cover the notch strip, fading in one CSS transition alongside the Radix/Vaul backdrop.
-- All Dialog/Sheet/Drawer/AlertDialog overlays already use negative `top: calc(-1 * env(...))` — they will now naturally extend up to cover the notch too.
+The first index is too broad: the second and later chat messages on the same order collide on it, `insertNotificationWithFallback` re-throws the 23505, and the client shows "Failed to send message" even though the `order_messages` row itself might have inserted.
 
-## Why nothing moves
-- Content: `#root` padding replaces the 59 px the native status bar used to occupy. Net Y offset = 0.
-- Chrome color: `body::before` paints the strip the exact route color the native strip currently paints. No color change at rest.
-- Overlays: their `top` was already written for overlay:true and was a no-op under overlay:false. Flipping mode activates the design that was intended.
+## Fix
+
+### 1. Migration — narrow the over-broad dedup index
+- Drop `idx_notifications_unique_order_event`.
+- Recreate it with the same shape but exclude chat message types:
+  ```sql
+  CREATE UNIQUE INDEX idx_notifications_unique_order_event
+    ON public.notifications (user_id, type, related_order_id)
+    WHERE related_order_id IS NOT NULL
+      AND type NOT IN (
+        'order_message_buyer',
+        'order_message_seller',
+        'order_shipped',
+        'order_delivered'
+      );
+  ```
+  (Chat messages and status events already have their own `created_at`-scoped indexes; keep those unchanged so lifecycle events like `sale_confirmed` still dedup once per order.)
+
+### 2. `supabase/functions/order-messages/index.ts` — belt-and-braces
+In `insertNotificationWithFallback`, treat Postgres `23505` (unique violation) as a no-op success:
+- On `error.code === '23505'`, log and return without throwing. Still fire push (dedup means a prior notif exists, but the fresh message still deserves the push).
+- Existing `PGRST204` / missing-column fallback stays as-is.
+
+This guarantees a notification-side dedup collision can never fail the message write again, even if a future index goes broad.
+
+### 3. Verify the message row commits before pushing
+Confirm the `order_messages` insert is committed **before** `insertNotificationWithFallback` is called (it already is, per `insertOrderMessage`). If any current code awaits the notification insert as part of the same response and returns 500 on failure, wrap that specific call in try/catch so a notif failure never rolls back the message send.
 
 ## Out of scope
-- No header/page component edits.
-- No route color, resume, or drawer timing changes.
-- Auto-hide/status-bar-style unchanged.
+- Other notification types, other dedup indexes, push pipeline changes.
+- UI/toast copy; the "Failed to send message" toast will simply stop firing once the underlying 500 goes away.
 
 ## Verification
-- Open any drawer (Filter Preferences, Sale Details): status-bar strip dims in one motion with the rest of the screen, no cream band, no dark stripe under the notch.
-- Close: strip and content undim together, no color flash.
-- Cold boot to `/auth`: notch shows lime; navigate into app: notch shows cream. Content elements sit exactly where they do today (back buttons, headers, toasts unchanged).
-- Return from native Camera (refund photo, ID verification): `reassertOverlayTrue` runs on resume, headers stay in place, nothing clipped.
+1. Send 3 chat messages back-to-back on the same order from @sarahhearn2 → @jcsbh: all three send, no error toast, three chat rows appear.
+2. Recipient receives at least one push and sees the messages in the chat + a single (dedup'd) unread badge.
+3. Edge function logs for `order-messages` show zero new `23505` errors.
+4. Lifecycle events (sale confirmed, refunds) still dedup — creating a second `sale_confirmed` notif for the same order is still blocked by the narrowed index.
