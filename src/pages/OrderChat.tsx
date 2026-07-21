@@ -65,6 +65,8 @@ const OrderChat = () => {
           seller_username: group.seller_profile?.username || 'Seller',
           buyer_avatar: group.buyer_profile?.avatar_url || null,
           seller_avatar: group.seller_profile?.avatar_url || null,
+          is_refunded: group.status === 'refunded'
+            || group.orders.some((o) => o.status === 'refunded' || !!o.refunded_at),
         };
       }
 
