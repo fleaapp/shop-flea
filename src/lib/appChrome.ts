@@ -65,10 +65,10 @@ const syncNativeStatusBarRoute = (color: string) => {
         // once, never toggle it, so it never resizes.
         if (!overlaysWebViewInitialized) {
           overlaysWebViewInitialized = true;
-          void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
+          void StatusBar.setOverlaysWebView({ overlay: true }).catch(() => undefined);
         }
-        void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
         void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
+        void color;
       })
       .catch(() => undefined);
   }, 60);
