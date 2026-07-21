@@ -96,6 +96,9 @@ const IdVerificationStep = ({ onBack, onDone, onEditName, verificationError }: I
       const msg = err?.message || '';
       if (!/cancel/i.test(msg)) toast.error(msg || 'Camera unavailable.');
     } finally {
+      // iOS occasionally reverts StatusBar.overlaysWebView to true after the
+      // native camera dismisses, clipping every screen's top row. Re-assert.
+      forceRestoreRouteAppChrome();
       setCapturing(null);
     }
   };
