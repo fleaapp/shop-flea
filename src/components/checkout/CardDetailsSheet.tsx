@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,11 @@ import {
 import type { StripeElementStyle } from '@stripe/stripe-js';
 import { getStripe } from '@/lib/stripe/loadStripe';
 import { toast } from 'sonner';
+
+// Non-sensitive cardholder-name persistence so backgrounding the app while
+// looking up card details doesn't wipe it. Card number / expiry / CVC are
+// held in Stripe's iframes and are intentionally NEVER persisted (PCI rule).
+const CARDHOLDER_DRAFT_KEY = 'flea_draft_card_cardholder_v1';
 
 interface Props {
   open: boolean;

@@ -128,6 +128,7 @@ const CheckoutSuccess = () => {
         localStorage.removeItem('checkout_payment_method');
         localStorage.removeItem('checkout_reference');
         localStorage.removeItem('checkout_coupon_code');
+        if (user?.id) localStorage.removeItem(`flea_draft_checkout_v1_${user.id}`);
 
         setShowSuccess(true);
       } catch (error) {
