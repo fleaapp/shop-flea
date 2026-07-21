@@ -142,18 +142,32 @@ serve(async (req) => {
     // Verify seller can accept charges. payouts_enabled is intentionally NOT
     // required — brand new AU sellers can have payouts paused during Stripe's
     // fraud-hold window but are still able to accept charges legitimately.
-    const acct = await stripe.accounts.retrieve(sellerStripeAccountId);
-    if (!acct.charges_enabled) {
-      return new Response(
-        JSON.stringify({ error: "This seller is temporarily unable to accept payments.", code: "seller_charges_disabled" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 },
-      );
+    // If our Stripe key is a restricted key without accounts_kyc_basic_read
+    // scope, this call throws — degrade gracefully rather than block checkout.
+    let sellerLabel = "";
+    try {
+      const acct = await stripe.accounts.retrieve(sellerStripeAccountId);
+      if (!acct.charges_enabled) {
+        return new Response(
+          JSON.stringify({ error: "This seller is temporarily unable to accept payments.", code: "seller_charges_disabled" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 },
+        );
+      }
+      sellerLabel =
+        acct.business_profile?.name ||
+        acct.settings?.dashboard?.display_name ||
+        [acct.individual?.first_name, acct.individual?.last_name].filter(Boolean).join(" ") ||
+        acct.company?.name || "";
+    } catch (e) {
+      if (isStripePermissionError(e)) {
+        console.warn("[stripe-connect-payment-intent] scope gap on accounts.retrieve — proceeding without preflight");
+        await logStripeScopeGap(serviceClient, "stripe-connect-payment-intent", e, { sellerStripeAccountId });
+        // Continue: Stripe will still reject the PaymentIntent if the account
+        // truly cannot accept charges, and the buyer will see a real error.
+      } else {
+        throw e;
+      }
     }
-    const sellerLabel =
-      acct.business_profile?.name ||
-      acct.settings?.dashboard?.display_name ||
-      [acct.individual?.first_name, acct.individual?.last_name].filter(Boolean).join(" ") ||
-      acct.company?.name || "";
 
     // Fees
     const itemsTotal = authoritativeItems.reduce((s, i) => s + i.price, 0);
