@@ -355,3 +355,11 @@ html.is-installed nav[data-onboarding="bottom-nav"] {
 html.is-installed [data-listing-footer] {
   padding-bottom: 3rem; /* pb-12 */
 }
+
+/* Native only: reserve the Dynamic Island / notch height so headers and
+   sticky top bars clear the status bar. The transparent status bar still
+   shows the page background live, so nothing looks "moved" — content just
+   sits below the notch instead of behind it. */
+html.is-installed #root {
+  padding-top: env(safe-area-inset-top);
+}
