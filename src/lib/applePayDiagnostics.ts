@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { Stripe } from '@capacitor-community/stripe';
 import { logError } from '@/lib/errorLogger';
+import { checkApplePayEntitlement } from '@/lib/nativeEntitlements';
 
 export type ApplePayDiagnosis = {
   ok: boolean;
@@ -9,6 +10,7 @@ export type ApplePayDiagnosis = {
     | 'available'
     | 'stripe-check-failed'
     | 'entitlement-missing'
+    | 'merchant-missing'
     | 'no-cards'
     | 'canceled'
     | 'unknown';
@@ -83,11 +85,37 @@ export const logApplePayDiagnostic = async (
   });
 };
 
-/** Pre-flight only — cannot detect a missing entitlement (PassKit does). */
-export const runApplePayPreflight = async (): Promise<ApplePayDiagnosis> => {
+/**
+ * Pre-flight Apple Pay before PassKit opens its system sheet. The native
+ * entitlement check reads the entitlements from the signed app binary, which
+ * catches the exact case where the source plist is correct but the archived
+ * provisioning profile did not include the Apple Pay merchant entitlement.
+ */
+export const runApplePayPreflight = async (merchantIdentifier: string): Promise<ApplePayDiagnosis> => {
   if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'ios') {
     return { ok: false, code: 'not-ios', userMessage: 'Apple Pay is only available on iOS.' };
   }
+
+  const entitlement = await checkApplePayEntitlement(merchantIdentifier);
+  if (entitlement.available && !entitlement.hasInAppPaymentsEntitlement) {
+    return {
+      ok: false,
+      code: 'entitlement-missing',
+      userMessage:
+        'Apple Pay is not enabled in this app build. Please use Add new card while we update the signed Apple Pay entitlement.',
+      raw: entitlement,
+    };
+  }
+  if (entitlement.available && !entitlement.hasExpectedMerchant) {
+    return {
+      ok: false,
+      code: 'merchant-missing',
+      userMessage:
+        'Apple Pay is enabled, but this build is signed with the wrong merchant. Please use Add new card while we update it.',
+      raw: entitlement,
+    };
+  }
+
   try {
     await Stripe.isApplePayAvailable();
     return { ok: true, code: 'available', userMessage: 'Apple Pay is available.' };

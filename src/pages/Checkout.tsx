@@ -253,6 +253,7 @@ const Checkout = () => {
     publishableKey: string;
     livemode?: boolean;
     sellerAccountId?: string;
+    clientStripeAccountId?: string | null;
     merchantDisplayName?: string;
   }) => {
     const platform = getNativeWalletPlatform();
@@ -262,7 +263,10 @@ const Checkout = () => {
       toast.error('Payment provider is not configured. Please contact support.');
       return true;
     }
-    await Stripe.initialize({ publishableKey: pi.publishableKey });
+    await Stripe.initialize({
+      publishableKey: pi.publishableKey,
+      ...(pi.clientStripeAccountId ? { stripeAccount: pi.clientStripeAccountId } : {}),
+    });
 
     if (platform === 'ios') {
       const publishableKeyMode = pi.publishableKey.startsWith('pk_live_') ? 'live' : 'test';
@@ -284,10 +288,11 @@ const Checkout = () => {
         return true;
       }
 
-      const preflight = await runApplePayPreflight();
+      const preflight = await runApplePayPreflight(APPLE_PAY_MERCHANT_ID);
       console.info('[ApplePay] preflight', {
         preflight,
         merchantId: APPLE_PAY_MERCHANT_ID,
+        clientStripeAccountSuffix: pi.clientStripeAccountId?.slice(-4) ?? null,
         publishableKeyMode,
         paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
         sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
@@ -295,6 +300,7 @@ const Checkout = () => {
       if (!preflight.ok) {
         void logApplePayDiagnostic('preflight failed', preflight, {
           merchantId: APPLE_PAY_MERCHANT_ID,
+          clientStripeAccountSuffix: pi.clientStripeAccountId?.slice(-4) ?? null,
           publishableKeyMode,
           paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
           sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
@@ -310,6 +316,7 @@ const Checkout = () => {
         console.error('[ApplePay] native failed event', { diag, nativeFailureMessage, merchantId: APPLE_PAY_MERCHANT_ID });
         void logApplePayDiagnostic('native failed event', diag, {
           merchantId: APPLE_PAY_MERCHANT_ID,
+          clientStripeAccountSuffix: pi.clientStripeAccountId?.slice(-4) ?? null,
           publishableKeyMode,
           paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
           sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
@@ -336,6 +343,7 @@ const Checkout = () => {
         console.error('[ApplePay] createApplePay failed', { diag, err });
         void logApplePayDiagnostic('create failed', diag, {
           merchantId: APPLE_PAY_MERCHANT_ID,
+          clientStripeAccountSuffix: pi.clientStripeAccountId?.slice(-4) ?? null,
           publishableKeyMode,
           paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
           sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
