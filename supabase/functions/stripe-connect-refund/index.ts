@@ -574,6 +574,7 @@ serve(async (req) => {
     const relatedListingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
     await markListingsRefunded(externalUrl, serviceKey, relatedListingIds);
     await insertRefundNotifications(externalUrl, serviceKey, order);
+    await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order);
 
     return jsonResponse({ success: true, refundId: refund.id, status: refund.status });
   } catch (error: any) {
