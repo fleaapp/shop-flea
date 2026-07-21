@@ -842,6 +842,7 @@ const Checkout = () => {
             open={cardSheetOpen}
             onClose={() => setCardSheetOpen(false)}
             onConfirm={handleCardConfirm}
+            billingPostcode={shippingPostcode}
           />
         </DrawerContent>
       </Drawer>
