@@ -1,23 +1,50 @@
-Root cause: The "Introduce yourself!" welcome dialog (`WelcomeSetupDialog`) is briefly shown on cold boot / app resume.
+Every remaining page that clips under the notch shares the same root cause: the root uses `min-h-screen` / `min-h-svh` / `h-screen` (or a plain `fixed inset-0`) without the `native-safe-top` utility that pads `env(safe-area-inset-top)` on native. Add the utility (and, where the root isn't already `fixed inset-0`, keep the existing layout — the class works on any block-level container).
 
-- `Index.tsx` opens it when `needsProfileSetup = !!user && !authLoading && (!profile || ...)`.
-- In `AuthContext.tsx` a 1.5s safety timer force-clears `loading` even if the profile fetch is still in flight. On native cold boot / resume the auth session restores fast but the profile fetch can lag, so there is a window where `user` is set, `authLoading` is false, and `profile` is still `null` — the dialog flashes until the profile arrives.
-- The `getSession()` path also clears `loading` as soon as `fetchProfile` settles, but if that returns an error/timeout with no row, we still can't distinguish "not fetched yet" from "fetched, empty".
+### Add `native-safe-top` to these page roots
 
-Fix plan:
-1. Track a distinct `profileLoaded` flag in `AuthContext.tsx`
-   - Starts `false`, becomes `true` only after `fetchProfile` completes (success or empty), and resets `false` on sign-out / user change.
-   - Expose it via context alongside `profile` and `loading`.
-   - Do not have the 1.5s safety timer set `profileLoaded` — only `loading`.
+User-called-out:
+- `src/pages/SellerDashboard.tsx` (line 277) — `min-h-svh …`
+- `src/pages/FAQ.tsx` (line 10) — help centre
+- `src/pages/PrivacyPolicy.tsx` (line 11) — help centre
+- `src/pages/Terms.tsx` (line 11) — help centre
+- `src/pages/ContactSupport.tsx` — help centre entry
+- `src/pages/SuggestionBox.tsx` — help centre entry
+- `src/pages/CreateListing.tsx` (three branches: 531, 543, 607)
+- `src/pages/EditListing.tsx` (two branches: 455, 462)
+- `src/pages/Favorites.tsx` (Wishlist)
+- `src/pages/Sales.tsx`
+- `src/pages/OrderChat.tsx` (buyer/seller + support chat)
 
-2. Gate the welcome dialog on `profileLoaded` in `Index.tsx`
-   - Change `needsProfileSetup` to also require `profileLoaded === true` before evaluating the missing-field checks.
-   - This prevents any flash during the `user-known / profile-loading` window on cold boot or app resume.
+Rest of sweep (same issue, same one-class fix):
+- `src/pages/EditProfile.tsx`
+- `src/pages/Checkout.tsx` (both branches: 246, 598)
+- `src/pages/CheckoutSuccess.tsx` (both branches: 157, 168)
+- `src/pages/ChatConversation.tsx`
+- `src/pages/ListingDetails.tsx` (branches: 339, 347, 493)
+- `src/pages/Install.tsx` (branches: 60, 74)
+- `src/pages/ForgotPassword.tsx`, `src/pages/ResetPassword.tsx`, `src/pages/VerifyEmail.tsx` (auth screens — safe-top so headers/back buttons clear the notch)
+- Admin pages (all use `min-h-[100svh]` with no safe-top and were also reported stuck):
+  - `src/pages/admin/AdminDashboard.tsx` (both branches: 85, 164 — also convert `min-h-screen` branch to `fixed inset-0 flex flex-col overflow-hidden` shell with an inner `flex-1 overflow-y-auto` so the dashboard scrolls on native)
+  - `src/pages/admin/AdminBrands.tsx`
+  - `src/pages/admin/AdminUsers.tsx`
+  - `src/pages/admin/AdminListings.tsx`
+  - `src/pages/admin/AdminRefunds.tsx`
+  - `src/pages/admin/AdminTransactions.tsx`
+  - `src/pages/admin/AdminErrors.tsx`
+  - `src/pages/admin/AdminErrorLogs.tsx`
 
-3. No visual/layout changes
-   - Do not touch `OnboardingOverlay`, `OnboardingCarousel`, `WelcomeSetupDialog`, or any styling.
-   - Do not change the onboarding trigger logic for genuine new users — they still see the dialog exactly once, just no longer flashed on returning-user cold boot.
+Skipping: `NotFound`, `AuthCallback` (transient/redirect screens with no top-anchored UI).
 
-4. Verify
-   - Confirm on cold boot for an existing signed-in user: cream screen → spinner → home feed, with no welcome dialog frame in between.
-   - Confirm a genuine new user (with `flea-new-user-pending-onboarding = 'true'` and an incomplete profile) still gets the dialog exactly once.
+### Fix Profile Sales button offset
+
+`src/pages/Profile.tsx` lines 171 and 432 use `absolute top-10 right-4`. Absolute children position from the padding-edge, so the parent's `native-safe-top` padding does NOT push them down — that's why the Sales button still sits under the Dynamic Island. Change both wrappers to:
+
+```tsx
+<div className="absolute right-4 z-10" style={{ top: 'calc(env(safe-area-inset-top) + 0.5rem)' }}>
+```
+
+Same visual offset on web; sits below the status bar on native.
+
+### Out of scope
+
+No changes to layout composition, spacing, business logic, or hooks. Purely `native-safe-top` additions plus the Profile Sales button offset — and the AdminDashboard scroll-container wrap so it becomes scrollable on native.
