@@ -24,10 +24,16 @@ const AdminSettingsBadgeProbe = ({ onCount }: { onCount: (n: number) => void }) 
   const total =
     badges.support +
     badges.reports +
-    badges.refunds +
-    badges.brands +
+    badges.bans +
+    badges.suggestions +
+    badges.waitlist +
     badges.contact +
-    badges.bans;
+    badges.transactions +
+    badges.refunds +
+    badges.listings +
+    badges.users +
+    badges.brands +
+    badges.errorLogs;
   useEffect(() => {
     onCount(total);
   }, [total, onCount]);
