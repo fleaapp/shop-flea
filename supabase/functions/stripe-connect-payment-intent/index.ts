@@ -230,6 +230,9 @@ serve(async (req) => {
       on_behalf_of: sellerStripeAccountId,
       transfer_data: { destination: sellerStripeAccountId },
       automatic_payment_methods: { enabled: true },
+      // Let issuers challenge with 3DS instead of hard-declining a first-time
+      // manual card entry on a new merchant descriptor.
+      payment_method_options: { card: { request_three_d_secure: "automatic" } },
       ...(saveCard ? { setup_future_usage: "off_session" as const } : {}),
       metadata: {
         item_ids: itemIds.join(","),
