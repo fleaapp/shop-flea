@@ -126,7 +126,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
+
+        // Safety net: clear the auth-route chrome state (.boot-auth + lime
+        // --app-top-bg) the instant a session is established, even if the
+        // caller uses window.location instead of react-router navigate().
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          try {
+            const { forceRestoreRouteAppChrome } = await import('@/lib/appChrome');
+            forceRestoreRouteAppChrome();
+          } catch { /* non-fatal */ }
+        }
+
         if (session?.user) {
           // Mark loading until profile fetch completes so consumers don't
           // briefly see (user && !profile) and flash onboarding UI.
