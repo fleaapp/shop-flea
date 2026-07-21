@@ -519,7 +519,8 @@ const Checkout = () => {
         payment_method: paymentMethodId,
       });
       if (error) {
-        toast.error(error.message || 'Card was declined. Please try another card.');
+        void logCardDecline({ where: 'manual-card', error: error as any, paymentIntentId: pi.paymentIntentId, amountCents: pi.amount });
+        toast.error(mapCardDeclineMessage(error as any));
         return;
       }
       if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
