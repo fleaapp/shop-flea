@@ -205,8 +205,33 @@ export const restoreRouteAppChrome = () => {
   // status bar dimmed — the route write above respects activeOverlayCount.
 };
 
+// Always re-assert `overlaysWebView:false` on the native side and re-paint
+// the status strip. Native plugins (Camera, Share, Wallet) can cause iOS to
+// silently revert the overlay flag when they dismiss, which slides the
+// WebView under the notch and clips every screen's top row. Calling this
+// after a native return closes that window without a fresh app launch.
+const reassertOverlayFalse = () => {
+  if (!isNativeBridgeReady()) return;
+  const requestId = ++nativeChromeRequest;
+  const targetColor = activeOverlayCount > 0 ? cachedRouteTint : cachedRouteColor;
+  void Promise.all([import('@capacitor/core'), import('@capacitor/status-bar')])
+    .then(([{ Capacitor }, { StatusBar, Style }]) => {
+      if (requestId !== nativeChromeRequest) return;
+      if (!Capacitor.isNativePlatform()) return;
+      void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
+      void StatusBar.setBackgroundColor({ color: targetColor }).catch(() => undefined);
+      void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
+      lastAppliedColor = targetColor;
+    })
+    .catch(() => undefined);
+};
+
 export const forceRestoreRouteAppChrome = () => {
+  // Reset guards so the route write below always re-pushes the native flag,
+  // not just the color.
+  lastAppliedColor = null;
   applyRouteAppChrome();
+  reassertOverlayFalse();
 };
 
 // While an overlay (Dialog/Sheet/Drawer/AlertDialog) is mounted, dim the
@@ -237,7 +262,7 @@ const installResumeListeners = () => {
   if (resumeListenersInstalled || typeof window === 'undefined') return;
   resumeListenersInstalled = true;
 
-  const reapply = () => restoreRouteAppChrome();
+  const reapply = () => forceRestoreRouteAppChrome();
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') reapply();

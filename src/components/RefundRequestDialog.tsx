@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X, Loader2, Play } from 'lucide-react';
 import { compressImage } from '@/utils/imageCompression';
+import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
 import { toast } from 'sonner';
 
 const REFUND_REASONS = [
@@ -119,6 +120,9 @@ const RefundRequestDialog = ({ open, onOpenChange, orderId, userId, onSubmit }: 
         toast.error(err.message);
       }
     } finally {
+      // iOS occasionally reverts StatusBar.overlaysWebView to true after the
+      // native camera dismisses, clipping every screen's top row. Re-assert.
+      forceRestoreRouteAppChrome();
       setCapturing(false);
     }
   };

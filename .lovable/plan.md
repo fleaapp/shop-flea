@@ -1,61 +1,29 @@
-## Switch Apple Pay to direct PassKit (no Stripe sheet)
+## Bug
+Every screen shifts up so the top row (page header, back button, segment pills) draws under the notch/status bar and gets clipped. Fully killing Flea restores it. You noticed it after a refund request.
 
-You're right — Stripe brokers the Apple Pay certificate under the hood in both flows. The Stripe PaymentSheet's Apple Pay button just calls PassKit with Stripe's cert; the plugin's direct `createApplePay` / `presentApplePay` uses the same plumbing. No cert upload from us needed.
+## Root cause (high confidence)
+Refund proof and ID verification both invoke `@capacitor/camera`'s native `getPhoto`. On iOS, when the native camera dismisses, the WebView is briefly re-laid-out and the StatusBar overlay setting can revert to overlay=true, so the WebView's top edge slides under the status bar and `env(safe-area-inset-top)` becomes 0 for the rest of the session. That matches the symptoms exactly: happens mid-session, affects every screen, and only a fresh launch clears it (because `overlaysWebViewInitialized` in `src/lib/appChrome.ts` is a module-level `true` after first boot, so nothing ever re-asserts `overlay:false`).
 
-### What went wrong last time
+Today's `restoreRouteAppChrome` runs on `visibilitychange`, `pageshow`, `focus`, and Capacitor `resume`/`appStateChange`, but:
+- `syncNativeStatusBarRoute` early-exits when `color === lastAppliedColor`, so the resume reapply is a no-op.
+- Even when it runs, it skips `setOverlaysWebView({overlay:false})` because `overlaysWebViewInitialized` is already true.
 
-When we first tried `createApplePay`, PassKit threw "Apple Pay Is Not Available in Flea". That was almost certainly because:
+## Fix (frontend only, no layout changes)
 
-1. `merchant.com.finditonflea.app` wasn't registered in the Stripe Dashboard → Settings → Payments → Apple Pay list. Stripe blocks the direct call if the merchant id isn't registered against your account, even though it works through their PaymentSheet (which uses a Stripe-owned merchant id transparently).
-2. Or the Apple Pay capability / entitlement in Xcode wasn't linked to that exact merchant id in the Release signing profile.
+1. `src/lib/appChrome.ts`
+   - Add a `reassertOverlayFalse()` helper that always calls `StatusBar.setOverlaysWebView({ overlay: false })` (bypassing the once-only flag) and then re-applies the current route color + style. Wrap in try/catch and no-op off-native.
+   - Make `forceRestoreRouteAppChrome()` reset `lastAppliedColor = null` and call `reassertOverlayFalse()` so it always re-pushes the native flag, not just the color.
+   - In the existing resume/appStateChange/visibilitychange handlers, call `forceRestoreRouteAppChrome()` instead of `restoreRouteAppChrome()` so returning to the app always re-locks overlay=false.
 
-Both are fixable without any Payment Processing Certificate upload.
+2. `src/components/RefundRequestDialog.tsx` and `src/components/IdVerificationStep.tsx`
+   - Immediately after every `CapCamera.getPhoto(...)` resolves OR throws (finally block), call `forceRestoreRouteAppChrome()`. This closes the specific camera-dismiss window that triggers the regression, without waiting for the OS resume event.
 
-### Plan
+3. Safety net for other native pickers (push permission, share sheet) — no change needed; the resume-listener upgrade in step 1 covers them.
 
-**Code change — `src/pages/Checkout.tsx` (lines 308–367):**
+## Verification
+- Rebuild in Xcode, request a refund with a camera photo, dismiss, confirm every screen (Home, Orders, Profile, Settings) still shows its top header/back button uncut.
+- Repeat with ID verification and by backgrounding via Control Center.
+- Confirm the status-bar dimming during drawers still works (activeOverlayCount path unchanged).
 
-Replace the current `createPaymentSheet` / `presentPaymentSheet` iOS branch with the direct Apple Pay path:
-
-```ts
-await Stripe.isApplePayAvailable(); // throws if unavailable
-await Stripe.createApplePay({
-  paymentIntentClientSecret: pi.clientSecret,
-  paymentSummaryItems: [{ label: 'Flea', amount: totalAud }],
-  merchantIdentifier: APPLE_PAY_MERCHANT_ID,
-  countryCode: 'AU',
-  currency: 'AUD',
-});
-const { paymentResult } = await Stripe.presentApplePay();
-```
-
-Handle three outcomes: `Completed` → `handlePaymentSuccess`, `Canceled` → toast, anything else → `mapCardDeclineMessage` + `logCardDecline`.
-
-**No fallback to PaymentSheet.** If Apple Pay isn't available on the device, surface a clear toast telling the buyer to use Add new card — never open the Stripe sheet.
-
-**Diagnostics on failure:** on any non-Completed result, log to `error_logs` via `logApplePayDiagnostic` with the merchant id, PaymentIntent id, and raw error message so we can see exactly why PassKit refused (e.g. `not_registered_with_stripe`, `no_supported_cards`, `entitlement_missing`).
-
-### One-time Stripe dashboard step (you do this, no code)
-
-Confirm the merchant id is registered on the LIVE account:
-
-- Stripe Dashboard → Settings → Payments → Apple Pay → **Add new application**
-- Enter `merchant.com.finditonflea.app`
-- Save. That's it — no CSR, no `.cer` upload needed for the iOS in-app flow. Stripe uses their own processing certificate.
-
-If that merchant id is already listed, nothing to do.
-
-### Xcode check (once)
-
-In the Release scheme's Signing & Capabilities:
-
-- Apple Pay capability present
-- `merchant.com.finditonflea.app` ticked in the merchant list
-
-`ios-native/App.entitlements` already declares this; just confirm the checkbox in Xcode matches on the Release profile.
-
-### Files touched
-
-- `src/pages/Checkout.tsx` — only the iOS Apple Pay branch inside `handleNativeWalletConfirm` (~60 lines).
-
-Nothing else changes. Manual card entry and web wallet paths stay as-is.
+## Out of scope
+No changes to layout, safe-area CSS, or `capacitor.config.ts`.

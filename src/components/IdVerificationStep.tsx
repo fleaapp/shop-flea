@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAuth } from '@/context/AuthContext';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
+import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
 import { track } from '@/lib/analytics';
 
 interface IdVerificationStepProps {
@@ -95,6 +96,9 @@ const IdVerificationStep = ({ onBack, onDone, onEditName, verificationError }: I
       const msg = err?.message || '';
       if (!/cancel/i.test(msg)) toast.error(msg || 'Camera unavailable.');
     } finally {
+      // iOS occasionally reverts StatusBar.overlaysWebView to true after the
+      // native camera dismisses, clipping every screen's top row. Re-assert.
+      forceRestoreRouteAppChrome();
       setCapturing(null);
     }
   };
