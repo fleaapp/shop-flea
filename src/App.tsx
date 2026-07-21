@@ -8,7 +8,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
 import PageSkeleton from "./components/PageSkeleton";
-import { restoreRouteAppChrome } from "@/lib/appChrome";
+import { restoreRouteAppChrome, forceRestoreRouteAppChrome } from "@/lib/appChrome";
 import { getRouteFromNativeAuthUrl } from "@/lib/authRedirects";
 
 // Critical path – auth is loaded eagerly; app/feed routes are lazy so /auth paints first.
