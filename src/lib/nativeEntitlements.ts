@@ -1,5 +1,4 @@
 import { Capacitor } from '@capacitor/core';
-import { Stripe } from '@capacitor-community/stripe';
 
 type ApplePayEntitlementResult = {
   available: boolean;
@@ -10,32 +9,21 @@ type ApplePayEntitlementResult = {
   error?: string;
 };
 
+/**
+ * Runtime entitlement inspection would require a native plugin method to call
+ * SecTaskCopyValueForEntitlement. We ship without that plugin patch, so this
+ * always returns `available: false` and the Apple Pay preflight falls through
+ * to Stripe's own `isApplePayAvailable()` check.
+ */
 export const checkApplePayEntitlement = async (
   merchantIdentifier: string,
 ): Promise<ApplePayEntitlementResult> => {
-  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'ios') {
-    return {
-      available: false,
-      expectedMerchant: merchantIdentifier,
-      merchantIdentifiers: [],
-      hasInAppPaymentsEntitlement: false,
-      hasExpectedMerchant: false,
-    };
-  }
-
-  try {
-    const result = await (Stripe as unknown as {
-      getApplePayEntitlements(options: { merchantIdentifier: string }): Promise<Omit<ApplePayEntitlementResult, 'available'>>;
-    }).getApplePayEntitlements({ merchantIdentifier });
-    return { available: true, ...result };
-  } catch (error: any) {
-    return {
-      available: false,
-      expectedMerchant: merchantIdentifier,
-      merchantIdentifiers: [],
-      hasInAppPaymentsEntitlement: false,
-      hasExpectedMerchant: false,
-      error: error?.message || String(error),
-    };
-  }
+  void Capacitor.getPlatform();
+  return {
+    available: false,
+    expectedMerchant: merchantIdentifier,
+    merchantIdentifiers: [],
+    hasInAppPaymentsEntitlement: false,
+    hasExpectedMerchant: false,
+  };
 };
