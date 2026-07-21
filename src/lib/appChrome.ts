@@ -34,10 +34,8 @@ let lastAppliedColor: string | null = null;
 let pendingTimer: ReturnType<typeof setTimeout> | null = null;
 let overlaysWebViewInitialized = false;
 
-// Cached route color + its precomputed tint. Overlay push/pop reads these
-// without doing any color math or DOM work.
+// Cached route color (used only for the native strip's route paint).
 let cachedRouteColor: string = APP_TOP_COLOR;
-let cachedRouteTint: string = APP_TOP_COLOR;
 
 const isNativeBridgeReady = (): boolean => {
   const cap = (window as { Capacitor?: { isNativePlatform?: () => boolean; isPluginAvailable?: (n: string) => boolean } }).Capacitor;
@@ -47,8 +45,12 @@ const isNativeBridgeReady = (): boolean => {
 };
 
 // Route-color path: debounced to avoid thrash during navigation.
+// The native strip ALWAYS shows the raw route color — overlay dimming is
+// handled by a DOM overlay (see ensureTintEl / setOverlayTintVisible below),
+// so we never animate the native background and never see iOS's icon-lag
+// crossfade on drawer close.
 const syncNativeStatusBarRoute = (color: string) => {
-  if (color === lastAppliedColor && activeOverlayCount === 0) return;
+  if (color === lastAppliedColor) return;
   const requestId = ++nativeChromeRequest;
   if (pendingTimer) clearTimeout(pendingTimer);
   pendingTimer = setTimeout(() => {
@@ -65,41 +67,52 @@ const syncNativeStatusBarRoute = (color: string) => {
           overlaysWebViewInitialized = true;
           void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
         }
-        // If an overlay is currently up, respect the tinted color instead of
-        // repainting the strip to the raw route color mid-drawer.
-        const stripColor = activeOverlayCount > 0 ? cachedRouteTint : color;
-        void StatusBar.setBackgroundColor({ color: stripColor }).catch(() => undefined);
+        void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
         void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
       })
       .catch(() => undefined);
   }, 60);
 };
 
-// Overlay-tint path: immediate (no debounce) so the native strip dims in
-// lockstep with the Radix bg-foreground/50 backdrop appearing/disappearing.
-const setStatusBarOverlayTint = (isOverlay: boolean) => {
-  if (!isNativeBridgeReady()) return;
-  // Safety net: if tint was never computed (first paint bug), compute now.
-  if (isOverlay && cachedRouteTint === cachedRouteColor) {
-    cachedRouteTint = overlayTint(cachedRouteColor);
-  }
-  const targetColor = isOverlay ? cachedRouteTint : cachedRouteColor;
-  // Cancel any pending route-color write so it doesn't race and overwrite us.
-  if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = null; }
-  const requestId = ++nativeChromeRequest;
-  void Promise.all([import('@capacitor/core'), import('@capacitor/status-bar')])
-    .then(([{ Capacitor }, { StatusBar, Style }]) => {
-      if (requestId !== nativeChromeRequest) return;
-      if (!Capacitor.isNativePlatform()) return;
-      if (!overlaysWebViewInitialized) {
-        overlaysWebViewInitialized = true;
-        void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
-      }
-      void StatusBar.setBackgroundColor({ color: targetColor }).catch(() => undefined);
-      void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
-    })
-    .catch(() => undefined);
+// DOM overlay that dims the safe-area top strip. Fades with the same 200ms
+// ease as the Radix/Vaul backdrop, so the status-bar area dims together
+// with the rest of the screen — no layout shift, no native color animation,
+// no icon-lag flash.
+const TINT_EL_ID = 'lv-statusbar-tint';
+const ensureTintEl = (): HTMLElement | null => {
+  if (typeof document === 'undefined') return null;
+  let el = document.getElementById(TINT_EL_ID) as HTMLElement | null;
+  if (el) return el;
+  el = document.createElement('div');
+  el.id = TINT_EL_ID;
+  el.setAttribute('aria-hidden', 'true');
+  Object.assign(el.style, {
+    position: 'fixed',
+    top: '0',
+    left: '0',
+    right: '0',
+    height: 'env(safe-area-inset-top, 0px)',
+    background: 'hsl(var(--foreground) / 0.5)',
+    zIndex: '2147483647',
+    pointerEvents: 'none',
+    opacity: '0',
+    transition: 'opacity 200ms ease',
+    willChange: 'opacity',
+  } as CSSStyleDeclaration);
+  (document.body ?? document.documentElement).appendChild(el);
+  return el;
 };
+
+const setOverlayTintVisible = (visible: boolean) => {
+  const el = ensureTintEl();
+  if (!el) return;
+  // Force a style read so the transition applies even when set in the same
+  // frame the element is created.
+  void el.offsetWidth;
+  el.style.opacity = visible ? '1' : '0';
+};
+
+
 
 
 // Parse "H S% L%" (the shape Tailwind stores in --foreground) to hex.
