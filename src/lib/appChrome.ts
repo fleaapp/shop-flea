@@ -30,7 +30,7 @@ const getRouteTopColor = () => {
 
 let lastAppliedColor: string | null = null;
 let pendingTimer: ReturnType<typeof setTimeout> | null = null;
-let overlaysWebViewInitialized = false;
+let edgeToEdgeInitialized = false;
 
 // Cached route color (used only for the native strip's route paint).
 let cachedRouteColor: string = APP_TOP_COLOR;
@@ -43,9 +43,9 @@ const isNativeBridgeReady = (): boolean => {
 };
 
 // Route-color path: debounced to avoid thrash during navigation.
-// The native strip always shows the raw route color. Drawer dimming is handled
-// by the drawer overlay itself; adding a separate status-bar dim layer makes
-// the notch area darker than the rest of the screen.
+// On native iOS the status bar must stay transparent/edge-to-edge so the
+// WebView and drawer backdrop remain "live" behind the notch area. Never paint
+// a separate native status-bar background here.
 const syncNativeStatusBarRoute = (color: string) => {
   if (color === lastAppliedColor) return;
   const requestId = ++nativeChromeRequest;
@@ -58,12 +58,12 @@ const syncNativeStatusBarRoute = (color: string) => {
         if (requestId !== nativeChromeRequest) return;
         if (!Capacitor.isNativePlatform()) return;
         lastAppliedColor = color;
-        // Keep the WebView layout stable — set overlaysWebView false exactly
-        // once, never toggle it, so it never resizes or shifts under the
-        // native status bar.
-        if (!overlaysWebViewInitialized) {
-          overlaysWebViewInitialized = true;
-          void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
+        // Keep the native status bar transparent/edge-to-edge. The WebView's
+        // iOS contentInset setting keeps content stable without global CSS
+        // padding, while the live page/backdrop renders behind the icons.
+        if (!edgeToEdgeInitialized) {
+          edgeToEdgeInitialized = true;
+          void StatusBar.setOverlaysWebView({ overlay: true }).catch(() => undefined);
         }
         void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
       })
@@ -122,18 +122,18 @@ export const restoreRouteAppChrome = () => {
   applyRouteAppChrome();
 };
 
-// Always re-assert `overlaysWebView:false` on the native side. Native plugins
-// (Camera, Share, Wallet) can cause iOS to silently revert the overlay flag
-// when they dismiss. Calling this after a native return keeps content below
-// the native status bar instead of shifting it under the notch.
-const reassertOverlayFalse = () => {
+// Always re-assert transparent edge-to-edge status bar on the native side.
+// Native plugins (Camera, Share, Wallet) can cause iOS to silently revert the
+// overlay flag when they dismiss. Calling this after a native return keeps the
+// notch area live instead of reverting to a solid native strip.
+const reassertEdgeToEdgeStatusBar = () => {
   if (!isNativeBridgeReady()) return;
   const requestId = ++nativeChromeRequest;
   void Promise.all([import('@capacitor/core'), import('@capacitor/status-bar')])
     .then(([{ Capacitor }, { StatusBar, Style }]) => {
       if (requestId !== nativeChromeRequest) return;
       if (!Capacitor.isNativePlatform()) return;
-      void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
+      void StatusBar.setOverlaysWebView({ overlay: true }).catch(() => undefined);
       void StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
     })
     .catch(() => undefined);
@@ -143,8 +143,9 @@ export const forceRestoreRouteAppChrome = () => {
   // Reset guards so the route write below always re-pushes the native flag,
   // not just the color.
   lastAppliedColor = null;
+  edgeToEdgeInitialized = false;
   applyRouteAppChrome();
-  reassertOverlayFalse();
+  reassertEdgeToEdgeStatusBar();
 };
 
 // Drawer/Dialog dimming is handled by the actual overlay only. Do not add a
