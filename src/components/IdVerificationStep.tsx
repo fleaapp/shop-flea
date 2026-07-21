@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAuth } from '@/context/AuthContext';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
+import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
 import { track } from '@/lib/analytics';
 
 interface IdVerificationStepProps {
