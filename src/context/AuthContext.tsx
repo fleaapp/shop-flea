@@ -211,6 +211,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }, 0);
         } else {
           setProfile(null);
+          setProfileLoaded(true);
           clearTimeout(safetyTimer);
           setLoading(false);
         }
@@ -229,6 +230,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setLoading(false);
         });
       } else {
+        setProfileLoaded(true);
         clearTimeout(safetyTimer);
         setLoading(false);
       }
