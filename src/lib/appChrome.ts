@@ -262,7 +262,7 @@ const installResumeListeners = () => {
   if (resumeListenersInstalled || typeof window === 'undefined') return;
   resumeListenersInstalled = true;
 
-  const reapply = () => restoreRouteAppChrome();
+  const reapply = () => forceRestoreRouteAppChrome();
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') reapply();
