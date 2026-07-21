@@ -502,7 +502,7 @@ const Index = () => {
   const searchListings = dbListings.map(toDisplayListing);
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-background overflow-hidden">
+    <div className="native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden">
       <Header onSearchClick={handleSearchClick} onFilterClick={handleFilterClick} onUndoClick={handleUndo} canUndo={!!lastAction} />
       
       {/* Active Filters */}

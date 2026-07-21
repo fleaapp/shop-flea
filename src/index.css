@@ -356,10 +356,22 @@ html.is-installed [data-listing-footer] {
   padding-bottom: 3rem; /* pb-12 */
 }
 
-/* Native only: reserve the Dynamic Island / notch height so headers and
-   sticky top bars clear the status bar. The transparent status bar still
-   shows the page background live, so nothing looks "moved" — content just
-   sits below the notch instead of behind it. */
+/* Native only: reserve the Dynamic Island / notch height. Flow-layout pages
+   inherit this via #root; fixed-inset screens (Home, Auth, Profile, Seller
+   Profile) opt in with the `native-safe-top` class since they escape #root. */
 html.is-installed #root {
   padding-top: env(safe-area-inset-top);
 }
+html.is-installed .native-safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Kill the lime overscroll bleed: match html/body background to the app
+   background and lock overscroll so rubber-band can't reveal it. */
+html.is-installed,
+html.is-installed body {
+  background-color: hsl(var(--background));
+  overscroll-behavior-y: none;
+}
+
+

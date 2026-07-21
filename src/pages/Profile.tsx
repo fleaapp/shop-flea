@@ -167,7 +167,7 @@ const Profile = () => {
 
 
   return (
-    <div className="fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col" style={{ touchAction: 'pan-x', overscrollBehavior: 'none' }}>
+    <div className="native-safe-top fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col" style={{ touchAction: 'pan-x', overscrollBehavior: 'none' }}>
       <div className="absolute top-6 right-4 z-10">
         <div className="relative">
           <Button
@@ -426,7 +426,7 @@ const GuestProfile = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col">
+    <div className="native-safe-top fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col">
       {/* Top-right sales button (guests see it and tap through to Sales screen) */}
       <div className="absolute top-6 right-4 z-10">
         <Button
