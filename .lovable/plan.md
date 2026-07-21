@@ -1,35 +1,69 @@
-## Diagnosis
+## Scope
 
-Both symptoms — headers clipped up under the notch AND lime showing under the bottom nav — come from **one stuck state** on `<html>`.
+Two related follow-ups from the earlier sweep:
+1. Convert the remaining page-level-scroll pages to the internal scroll-shell pattern (fixes lingering "too high" / "won't scroll" cases and prevents iOS rubber-band from revealing the lime footer).
+2. Clear the **Error Logs** and **Support chat** badges when the user actually reads them.
 
-While on `/auth`, `appChrome.ts` adds `.boot-auth` to `<html>` and sets `--app-top-bg: hsl(var(--flea-lime))`. That class also suppresses the native safe-area padding on `#root` (so the auth screen can paint edge-to-edge lime under the status bar).
+No visual redesign — only container structure and badge bookkeeping.
 
-After sign-in, `navigate()` moves you to the app, but `restoreRouteAppChrome()` is not wired to fire on route change — so `.boot-auth` and the lime `--app-top-bg` variable stay on `<html>`. Result on any page you land on next:
+## Part 1 — Scroll-shell sweep
 
-- `#root` still has no `padding-top: env(safe-area-inset-top)` → headers slide up under the notch.
-- `<html>` background is still lime → bleeds through the BottomNav's transparent safe-area padding at the bottom.
+Pattern (already in use on Index/Cart/Favorites/Settings/etc.):
+```text
+<div className="native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden">
+  <Header … />                                  ← shrink-0
+  <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-24">
+    …page content…
+  </div>
+  <BottomNav /> (if applicable)
+</div>
+```
 
-A hard refresh clears the class because the auth route isn't the entry point anymore — which is exactly why your clean refresh fixed both at once.
+Pages to convert (currently `min-h-screen` / `min-h-svh` page-level scroll):
 
-## Fix
+- `src/pages/SellerDashboard.tsx` (root at L277)
+- `src/pages/CreateListing.tsx` (main render L607; keep the small "gated" states as-is)
+- `src/pages/EditListing.tsx` (L462)
+- `src/pages/EditProfile.tsx` (L280)
+- `src/pages/Checkout.tsx` (main L598; keep centered gated state)
+- `src/pages/CheckoutSuccess.tsx` (both L157 / L168 — centered, wrap in `fixed inset-0` shell)
+- `src/pages/Sales.tsx` (L118)
+- `src/pages/ListingDetails.tsx` (L493 main render)
+- `src/pages/FAQ.tsx` (L10)
+- `src/pages/SuggestionBox.tsx` — already shell; verify no double-scroll
+- `src/pages/admin/AdminErrorLogs.tsx` (L69)
+- `src/pages/admin/AdminUsers.tsx` (L60)
+- `src/pages/admin/AdminListings.tsx` (L41)
+- `src/pages/admin/AdminRefunds.tsx` (L33)
+- `src/pages/admin/AdminTransactions.tsx` (L47)
+- `src/pages/admin/AdminBrands.tsx` (L43)
+- `src/pages/admin/AdminErrors.tsx` (L28)
 
-**Only** clear the stuck state. No layout, safe-area, padding, or positioning values change anywhere.
+Chat pages (`OrderChat`, `ChatConversation`) already use `h-screen` + inner scroll — swap to `h-[100svh]` for iOS URL-bar stability, no other changes.
 
-1. `src/App.tsx` — add a `useEffect` on `location.pathname` that calls `restoreRouteAppChrome()` whenever the route is not `/auth*`. This removes `.boot-auth` and resets `--app-top-bg` back to `--background` the instant you leave auth.
+Rule preserved across all conversions: keep `native-safe-top` on the outer element so `env(safe-area-inset-top)` padding is applied by the shell, not lost when nested content overflows.
 
-2. `src/lib/appChrome.ts` — make `restoreRouteAppChrome()` idempotent and explicit: remove `.boot-auth`, clear the inline `--app-top-bg` override, and reassert `overlay: true` for the transparent edge-to-edge status bar we already agreed on. No other behavior changes.
+## Part 2 — Badge clearing
 
-3. Add a one-time safety net in `AuthContext` on `SIGNED_IN`: call `restoreRouteAppChrome()` after session hydration so even a hard-coded `window.location` post-auth redirect can't leave the class behind.
+### Error Logs
 
-## What does NOT change
+- Extend `src/lib/adminLastSeen.ts` `AdminTab` union with `'error_logs'` and add key `admin_error_logs_last_seen`.
+- In `src/hooks/admin/useAdminBadges.ts`, filter `errorLogs` count by `getAdminLastSeen('error_logs')` (mirrors how other tabs work: only count rows with `created_at > lastSeen`).
+- In `src/pages/admin/AdminErrorLogs.tsx`, call `markAdminTabSeen('error_logs')` in a `useEffect` on mount and whenever the fetched list updates (so newly-arrived rows after the user is already on the page also clear).
 
-- No page's `native-safe-top`, `pb-*`, header height, or scroll shell is touched.
-- BottomNav height, padding, and positioning stay identical.
-- Element positions on Index, Profile, SellerProfile, OrderChat, Cart, etc. are byte-identical to the "good" screenshot.
+### Support chat
 
-The scroll-shell sweep and Error Logs / Support badge fixes stay parked — this plan is only the stuck-chrome bug.
+- `useUnreadSupport` already recomputes on `['unread-support']` invalidation.
+- In `src/pages/ChatConversation.tsx`, when the route is the support thread, mark all inbound messages read on mount and on new-message arrival (update `read_at` for messages where `sender_id != user.id`), then invalidate `['unread-support']` and `['nav-badges']`.
+- `useNavBadges` already reads `unread_support` from the RPC, so once messages are flagged read the footer + Settings badge drop to zero without a manual event.
 
-## Verification
+## Validation
 
-- Playwright: load `/auth`, sign in, land on `/`, assert `<html>` has no `.boot-auth` class and computed `background-color` on `html`/`body` equals `--background`. Screenshot Index and OrderChat and diff header top offset against the good state.
-- Manual sanity: sign out → sign in → open OrderChat. Header sits below the notch, no lime strip under nav, no clean refresh needed.
+- After edits, spot-check three pages on the preview (`SellerDashboard`, `AdminErrorLogs`, `ChatConversation` support thread) via Playwright screenshots: header sits under the notch, body scrolls internally, footer nav stays pinned, no lime bleed on overscroll.
+- Confirm Error Logs badge clears immediately on opening `/admin/error-logs` and reappears only when a new row lands.
+- Confirm Support badge clears on opening a support conversation.
+
+## Out of scope
+
+- No layout/visual redesign, no header restyling, no auth chrome changes (already fixed).
+- No changes to admin RPCs beyond the client-side `lastSeen` filter for `error_logs`.
