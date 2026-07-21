@@ -33,6 +33,7 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  profileLoaded: boolean;
   isBanned: boolean;
   signUp: (email: string, password: string, username: string, countryCode?: string, regionId?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -47,6 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [isBanned, setIsBanned] = useState(false);
 
   const fetchProfile = useCallback(async (userId: string) => {
