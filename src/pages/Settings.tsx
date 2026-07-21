@@ -18,20 +18,8 @@ import PaymentMethodsSection from '@/components/PaymentMethodsSection';
 
 import { useUnreadSupport } from '@/hooks/useUnreadSupport';
 import { useAdminRole } from '@/hooks/useAdminRole';
-import { useAdminBadges } from '@/hooks/admin/useAdminBadges';
+import { formatAdminBadgeCount, useAdminBadges } from '@/hooks/admin/useAdminBadges';
 
-const AdminBadgeCount = ({ onCount }: { onCount: (n: number) => void }) => {
-  const { badges } = useAdminBadges();
-  const total =
-    (badges.support || 0) +
-    (badges.contact || 0) +
-    (badges.refunds || 0) +
-    (badges.reports || 0) +
-    (badges.suggestions || 0) +
-    (badges.waitlist || 0);
-  useEffect(() => { onCount(total); }, [total, onCount]);
-  return null;
-};
 const Settings = () => {
   const navigate = useNavigate();
   const {
@@ -53,7 +41,7 @@ const Settings = () => {
   } = useUnreadSupport();
   const { triggerSubscribe } = usePushNotifications();
   const { isAdmin } = useAdminRole();
-  const [adminBadgeTotal, setAdminBadgeTotal] = useState(0);
+  const { total: adminBadgeTotal } = useAdminBadges({ enabled: !isGuest && isAdmin });
 
   // Notifications toggle state (native + web aware)
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
@@ -284,7 +272,6 @@ const Settings = () => {
     { title: 'Support', items: supportItems }
   ];
   return <div className="min-h-screen bg-background pb-24 max-[375px]:pb-20">
-      {!isGuest && isAdmin && <AdminBadgeCount onCount={setAdminBadgeTotal} />}
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background px-4 max-[375px]:px-3 py-4 max-[375px]:py-3">
         <h1 className="text-xl max-[375px]:text-lg font-bold text-foreground text-center">⚙️ Settings</h1>
@@ -333,8 +320,8 @@ const Settings = () => {
                             <span className="text-base max-[375px]:text-sm font-medium text-foreground">{item.label}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            {(item as any).badge && <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                                {(item as any).badge}
+                            {(item as any).badge && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
+                                {formatAdminBadgeCount((item as any).badge)}
                               </span>}
                           {item.toggle ? <Switch checked={item.checked} onCheckedChange={item.onToggle} className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime" /> : item.expandable ? (item as any).isExpanded ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
                           </div>
@@ -392,8 +379,8 @@ const Settings = () => {
                         <span className="text-base max-[375px]:text-sm font-medium text-foreground">{item.label}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        {(item as any).badge && <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                            {(item as any).badge}
+                        {(item as any).badge && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
+                            {formatAdminBadgeCount((item as any).badge)}
                           </span>}
                       {item.toggle ? <Switch checked={item.checked} onCheckedChange={item.onToggle} className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime" /> : item.expandable ? (item as any).isExpanded ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
                       </div>
@@ -414,8 +401,8 @@ const Settings = () => {
                                 <span className="text-base max-[375px]:text-sm font-medium text-foreground">{subItem.label}</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                {(subItem as any).badge && <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                                    {(subItem as any).badge}
+                                {(subItem as any).badge && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
+                                    {formatAdminBadgeCount((subItem as any).badge)}
                                   </span>}
                                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
                               </div>
@@ -442,7 +429,7 @@ const Settings = () => {
       <ShippingSettingsSheet open={shippingOpen} onOpenChange={setShippingOpen} />
       
       
-      <BottomNav />
+      <BottomNav adminSettingsBadge={!isGuest && isAdmin ? adminBadgeTotal : undefined} />
     </div>;
 };
 export default Settings;
