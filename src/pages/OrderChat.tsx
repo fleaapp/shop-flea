@@ -230,7 +230,7 @@ const OrderChat = () => {
   const cleanUsername = (u: string) => u.startsWith('@') ? u.slice(1) : u;
 
   return (
-    <div className="native-safe-top flex flex-col h-screen bg-background">
+    <div className="native-safe-top fixed inset-0 flex flex-col bg-background">
       <header className="sticky top-0 z-40 bg-background px-4 py-3 flex items-center gap-3 border-b border-border">
         <button onClick={() => safeNavigateBack(navigate, '/cart')}>
           <ChevronLeft className="h-6 w-6 text-foreground" />

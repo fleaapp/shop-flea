@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow, format } from 'date-fns';
 import { RefreshCw, Search, Trash2, X } from 'lucide-react';
@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { useAdminErrorLogs, type ErrorLogRow, type ErrorLogFilters } from '@/hooks/admin/useAdminErrorLogs';
+import { markAdminTabSeen } from '@/lib/adminLastSeen';
 
 const sourceLabel: Record<ErrorLogRow['source'], string> = {
   client: 'Client',
