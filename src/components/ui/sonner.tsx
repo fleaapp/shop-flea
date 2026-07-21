@@ -11,37 +11,66 @@ const Toaster = ({ ...props }: ToasterProps) => {
   const topOffset = "calc(env(safe-area-inset-top, 0px) + 12px)"
 
   return (
-    <Sonner
-      theme={theme as ToasterProps["theme"]}
-      className="toaster group"
-      position="top-center"
-      closeButton
-      offset={topOffset}
-      mobileOffset={topOffset}
-      icons={{
-        success: <span className="text-base">✅</span>,
-        error: <span className="text-base">❌</span>,
-        info: <span className="text-base">ℹ️</span>,
-        warning: <span className="text-base">⚠️</span>,
-        loading: <span className="text-base animate-spin">⏳</span>,
-      }}
-      toastOptions={{
-        duration: 1800,
-        classNames: {
-          toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg group-[.toaster]:!py-3 group-[.toaster]:!px-4 group-[.toaster]:!min-h-[48px] group-[.toaster]:!w-[calc(100vw-24px)] group-[.toaster]:!max-w-[420px]",
-          description: "group-[.toast]:text-muted-foreground group-[.toast]:text-left",
-          actionButton:
-            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
-          cancelButton:
-            "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
-          closeButton:
-            "group-[.toast]:!static group-[.toast]:!ml-auto group-[.toast]:!mr-0 group-[.toast]:!mt-0 group-[.toast]:!mb-0 group-[.toast]:!transform-none group-[.toast]:!border-0 group-[.toast]:!bg-transparent group-[.toast]:!text-foreground group-[.toast]:!opacity-70 group-[.toast]:hover:!opacity-100 group-[.toast]:!h-7 group-[.toast]:!w-7 group-[.toast]:flex-shrink-0",
-        },
-      }}
-      {...props}
-    />
+    <>
+      {/* Force the sonner container to stay centered and on-screen,
+          overriding any mobile edge-anchoring the library may apply. */}
+      <style>{`
+        [data-sonner-toaster] {
+          --width: min(420px, calc(100vw - 24px)) !important;
+          left: 50% !important;
+          right: auto !important;
+          transform: translateX(-50%) !important;
+          --mobile-offset-left: auto !important;
+          --mobile-offset-right: auto !important;
+        }
+        [data-sonner-toaster][data-mobile="true"] {
+          left: 50% !important;
+          right: auto !important;
+          transform: translateX(-50%) !important;
+          --mobile-offset-left: auto !important;
+          --mobile-offset-right: auto !important;
+        }
+      `}</style>
+      <Sonner
+        theme={theme as ToasterProps["theme"]}
+        className="toaster group"
+        position="top-center"
+        closeButton
+        offset={topOffset}
+        mobileOffset={topOffset}
+        style={{
+          left: "50%",
+          right: "auto",
+          transform: "translateX(-50%)",
+          width: "min(420px, calc(100vw - 24px))",
+          maxWidth: "calc(100vw - 24px)",
+        }}
+        icons={{
+          success: <span className="text-base">✅</span>,
+          error: <span className="text-base">❌</span>,
+          info: <span className="text-base">ℹ️</span>,
+          warning: <span className="text-base">⚠️</span>,
+          loading: <span className="text-base animate-spin">⏳</span>,
+        }}
+        toastOptions={{
+          duration: 1800,
+          classNames: {
+            toast:
+              "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg group-[.toaster]:!py-3 group-[.toaster]:!px-4 group-[.toaster]:!min-h-[48px] group-[.toaster]:!w-[calc(100vw-24px)] group-[.toaster]:!max-w-[420px]",
+            description: "group-[.toast]:text-muted-foreground group-[.toast]:text-left",
+            actionButton:
+              "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
+            cancelButton:
+              "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+            closeButton:
+              "group-[.toast]:!static group-[.toast]:!ml-auto group-[.toast]:!mr-0 group-[.toast]:!mt-0 group-[.toast]:!mb-0 group-[.toast]:!transform-none group-[.toast]:!border-0 group-[.toast]:!bg-transparent group-[.toast]:!text-foreground group-[.toast]:!opacity-70 group-[.toast]:hover:!opacity-100 group-[.toast]:!h-7 group-[.toast]:!w-7 group-[.toast]:flex-shrink-0",
+          },
+        }}
+        {...props}
+      />
+    </>
   )
 }
+
 
 export { Toaster }
