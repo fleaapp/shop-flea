@@ -167,7 +167,7 @@ const Profile = () => {
 
 
   return (
-    <div className="fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col" style={{ touchAction: 'pan-x', overscrollBehavior: 'none' }}>
+    <div className="native-safe-top fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col" style={{ touchAction: 'pan-x', overscrollBehavior: 'none' }}>
       <div className="absolute top-6 right-4 z-10">
         <div className="relative">
           <Button
