@@ -32,6 +32,7 @@ import mastercardLogo from '@/assets/cards/mastercard.svg';
 import amexLogo from '@/assets/cards/amex.svg';
 import applePayLogo from '@/assets/cards/apple-pay.svg';
 import { runApplePayPreflight, categoriseApplePayError, logApplePayDiagnostic } from '@/lib/applePayDiagnostics';
+import { mapCardDeclineMessage, logCardDecline } from '@/lib/cardDeclineHandler';
 
 // Apple App Review demo account — bypasses the seller-Stripe-connected check
 // so the reviewer can complete a purchase against demo listings.
@@ -518,7 +519,8 @@ const Checkout = () => {
         payment_method: paymentMethodId,
       });
       if (error) {
-        toast.error(error.message || 'Card was declined. Please try another card.');
+        void logCardDecline({ where: 'manual-card', error: error as any, paymentIntentId: pi.paymentIntentId, amountCents: pi.amount });
+        toast.error(mapCardDeclineMessage(error as any));
         return;
       }
       if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
@@ -548,7 +550,8 @@ const Checkout = () => {
         payment_method: paymentMethodId,
       });
       if (error) {
-        toast.error(error.message || 'Payment failed. Please try another method.');
+        void logCardDecline({ where: 'saved-card', error: error as any, paymentIntentId: pi.paymentIntentId, amountCents: pi.amount });
+        toast.error(mapCardDeclineMessage(error as any));
         return;
       }
       if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
@@ -839,6 +842,7 @@ const Checkout = () => {
             open={cardSheetOpen}
             onClose={() => setCardSheetOpen(false)}
             onConfirm={handleCardConfirm}
+            billingPostcode={shippingPostcode}
           />
         </DrawerContent>
       </Drawer>
