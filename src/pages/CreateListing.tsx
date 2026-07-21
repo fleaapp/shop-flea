@@ -662,6 +662,19 @@ const CreateListing = () => {
         </Button>
         <h1 className="text-xl font-bold text-foreground">Add New Listing</h1>
       </header>
+
+      {draftRestored && (
+        <div className="mx-4 mb-3 flex items-center justify-between rounded-full bg-muted/50 px-3 py-1.5">
+          <span className="text-[12px] text-muted-foreground">Draft restored from your last session.</span>
+          <button
+            type="button"
+            onClick={discardListingDraft}
+            className="text-[12px] font-medium text-foreground underline underline-offset-2"
+          >
+            Discard
+          </button>
+        </div>
+      )}
       
       <form onSubmit={handleSubmit} className="px-4 space-y-4">
         {/* Photo Upload Area */}
