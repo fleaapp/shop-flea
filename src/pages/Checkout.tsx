@@ -267,6 +267,7 @@ const Checkout = () => {
   const handlePaymentSuccess = (paymentIntentId: string) => {
     setCardSheetOpen(false);
     localStorage.setItem('checkout_reference', paymentIntentId);
+    clearCheckoutDraft();
     navigate(`/checkout/success?payment_intent=${paymentIntentId}`);
   };
 
