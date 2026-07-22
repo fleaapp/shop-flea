@@ -242,6 +242,99 @@ const Checkout = () => {
     };
   }, [validItems, totalShipping, coupon]);
 
+  // ---------------------------------------------------------------------------
+  // Apple Pay warm-up + PI pre-mint
+  //
+  // Tapping "Buy with Apple Pay" used to serialize:
+  //   createPaymentIntent → Stripe.initialize → isApplePayAvailable
+  //   → createApplePay → presentApplePay
+  // Each bridge/edge call is a round-trip and adds visible delay before the
+  // PassKit sheet renders. We warm the SDK once on mount and pre-mint the
+  // PaymentIntent as soon as the buyer selects the Apple Pay tile, so the tap
+  // jumps straight to createApplePay/presentApplePay.
+  // ---------------------------------------------------------------------------
+  type WarmedPi = {
+    clientSecret: string;
+    paymentIntentId: string;
+    amount: number;
+    publishableKey: string;
+    livemode?: boolean;
+    sellerAccountId?: string;
+    clientStripeAccountId?: string | null;
+    merchantDisplayName?: string;
+  };
+  const stripeWarmPromiseRef = useRef<Promise<void> | null>(null);
+  const stripeWarmedKeyRef = useRef<string | null>(null);
+  const warmedPiRef = useRef<WarmedPi | null>(null);
+  const warmedPiAmountCentsRef = useRef<number | null>(null);
+  const warmingPiRef = useRef<Promise<WarmedPi | null> | null>(null);
+
+  const currentAmountCents = Math.round(total * 100);
+
+  const warmStripe = useCallback((publishableKey: string, stripeAccountId?: string | null) => {
+    if (!publishableKey) return Promise.resolve();
+    const warmKey = `${publishableKey}::${stripeAccountId ?? ''}`;
+    if (stripeWarmedKeyRef.current === warmKey && stripeWarmPromiseRef.current) {
+      return stripeWarmPromiseRef.current;
+    }
+    stripeWarmedKeyRef.current = warmKey;
+    stripeWarmPromiseRef.current = Stripe.initialize({
+      publishableKey,
+      ...(stripeAccountId ? { stripeAccount: stripeAccountId } : {}),
+    }).catch((e) => {
+      // Reset so a subsequent tap can retry.
+      stripeWarmedKeyRef.current = null;
+      stripeWarmPromiseRef.current = null;
+      throw e;
+    });
+    return stripeWarmPromiseRef.current;
+  }, []);
+
+  /** Ensure we have a fresh PI whose `amount` matches the current basket. */
+  const ensureWarmedPaymentIntent = useCallback(async (): Promise<WarmedPi | null> => {
+    if (warmingPiRef.current) return warmingPiRef.current;
+    const existing = warmedPiRef.current;
+    if (existing && warmedPiAmountCentsRef.current === currentAmountCents) {
+      return existing;
+    }
+    const promise = (async () => {
+      try {
+        const pi = await createPaymentIntent(false);
+        if (!pi) return null;
+        warmedPiRef.current = pi;
+        warmedPiAmountCentsRef.current = pi.amount ?? currentAmountCents;
+        // Kick off Stripe.initialize now so it's done by the time we tap.
+        if (pi.publishableKey) {
+          void warmStripe(pi.publishableKey, pi.clientStripeAccountId ?? null);
+        }
+        return pi;
+      } finally {
+        warmingPiRef.current = null;
+      }
+    })();
+    warmingPiRef.current = promise;
+    return promise;
+  }, [createPaymentIntent, currentAmountCents, warmStripe]);
+
+  // Invalidate any cached PI whenever the basket amount changes.
+  useEffect(() => {
+    if (warmedPiAmountCentsRef.current !== null && warmedPiAmountCentsRef.current !== currentAmountCents) {
+      warmedPiRef.current = null;
+      warmedPiAmountCentsRef.current = null;
+    }
+  }, [currentAmountCents]);
+
+  // When the buyer picks the Apple/Google Pay tile on native, start pre-minting
+  // the PI in the background. Also pre-warm Stripe once we have a key.
+  useEffect(() => {
+    if (!getNativeWalletPlatform()) return;
+    if (selectedMethod?.kind !== 'wallet') return;
+    if (!preflightReady()) return;
+    void ensureWarmedPaymentIntent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMethod, currentAmountCents, isShippingComplete, user?.id]);
+
+
   if (items.length === 0) {
     return <div className="native-safe-top min-h-screen bg-background flex flex-col items-center justify-center p-4">
         <p className="text-muted-foreground">No items to checkout</p>
