@@ -214,13 +214,29 @@ serve(async (req) => {
 
     const description = sellerLabel ? `Flea — ${sellerLabel}` : "Flea order";
 
-    // Idempotency: same buyer + same items + same total = same PI
-    const idemBasis = `${user.id}|${itemIds.slice().sort().join(",")}|${amountCents}|${saveCard ? "s" : "n"}`;
+    // Idempotency: include EVERY parameter that materially changes the
+    // PaymentIntent request. If any of these change (coupon toggled, seller
+    // changed, fee logic changed, request shape bumped), we get a fresh key
+    // and never collide with a stale one Stripe cached for 24h.
+    // PI_REQUEST_VERSION: bump whenever the paymentIntents.create body shape
+    // changes so old cached keys can't collide with new params.
+    const PI_REQUEST_VERSION = "v3-2026-07-22";
+    const idemBasis = [
+      PI_REQUEST_VERSION,
+      user.id,
+      customerId ?? "",
+      sellerStripeAccountId,
+      itemIds.slice().sort().join(","),
+      amountCents,
+      applicationFeeAmount,
+      appliedCoupon?.code ?? "",
+      saveCard ? "s" : "n",
+    ].join("|");
     const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(idemBasis));
     const idemHash = Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
-    const idempotencyKey = `flea-pi-${idemHash}`;
+    const baseIdempotencyKey = `flea-pi-${idemHash}`;
 
-    const pi = await stripe.paymentIntents.create({
+    const piParams: Stripe.PaymentIntentCreateParams = {
       amount: amountCents,
       currency: "aud",
       customer: customerId,
@@ -242,7 +258,27 @@ serve(async (req) => {
         flea_seller_id: sellerId,
         ...(appliedCoupon ? { coupon_code: appliedCoupon.code, coupon_id: appliedCoupon.id } : {}),
       },
-    }, { idempotencyKey });
+    };
+
+    // Retry on idempotency conflict — a stale key from an earlier deploy would
+    // otherwise block this buyer for 24h. We retry once with a random suffix.
+    let pi: Stripe.PaymentIntent;
+    try {
+      pi = await stripe.paymentIntents.create(piParams, { idempotencyKey: baseIdempotencyKey });
+    } catch (e: any) {
+      const isIdemConflict =
+        e?.type === "StripeIdempotencyError" ||
+        e?.rawType === "idempotency_error" ||
+        String(e?.raw?.type ?? "") === "idempotency_error";
+      if (!isIdemConflict) throw e;
+      const suffix = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+      console.warn(
+        `[stripe-connect-payment-intent] idempotency conflict on ${baseIdempotencyKey}; retrying with fresh key`,
+      );
+      pi = await stripe.paymentIntents.create(piParams, {
+        idempotencyKey: `${baseIdempotencyKey}-r${suffix}`,
+      });
+    }
 
     // Ephemeral key for the mobile PaymentSheet (lets the sheet list saved cards)
     const ephemeralKey = await stripe.ephemeralKeys.create(
