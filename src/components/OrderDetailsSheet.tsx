@@ -29,6 +29,7 @@ import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { openTrackingUrl } from '@/lib/tracking';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import SecureCheckoutInfoPopover from '@/components/SecureCheckoutInfoPopover';
+import { fetchSellerShippingSettings, getBundleBreakdownText } from '@/utils/shippingCalculator';
 import { toast } from 'sonner';
 
 interface OrderDetailsSheetProps {
