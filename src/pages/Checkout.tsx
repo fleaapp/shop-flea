@@ -214,6 +214,8 @@ const Checkout = () => {
     const { data, error } = await invokeCloudFunction('stripe-connect-payment-intent', {
       items: validItems.map(item => ({ id: item.id, title: item.title, price: item.price, image: item.image })),
       shipping: totalShipping,
+      shippingBySeller: Array.from(shippingBySeller.entries()),
+      expectedAmountCents: Math.round(total * 100),
       couponCode: coupon?.code ?? null,
       saveCard,
     });
@@ -241,7 +243,7 @@ const Checkout = () => {
       clientStripeAccountId?: string | null;
       merchantDisplayName?: string;
     };
-  }, [validItems, totalShipping, coupon]);
+  }, [validItems, totalShipping, shippingBySeller, total, coupon]);
 
 
 
@@ -314,26 +316,42 @@ const Checkout = () => {
         return true;
       }
 
+      const preflight = await runApplePayPreflight(APPLE_PAY_MERCHANT_ID);
+      if (!preflight.ok) {
+        void logApplePayDiagnostic('preflight', preflight, {
+          merchantId: APPLE_PAY_MERCHANT_ID,
+          paymentIntentId: pi.paymentIntentId,
+        });
+        toast.error(preflight.userMessage || 'Apple Pay is not available. Please choose Add new card.');
+        return true;
+      }
+
       // Direct PassKit Apple Pay — Stripe brokers the merchant certificate
       // under the hood; no cert upload from us is required. The Stripe
       // combined sheet is intentionally bypassed so the buyer goes straight
       // into Apple's native sheet.
-      //
-      // NOTE: We intentionally do NOT call `Stripe.isApplePayAvailable()` here.
-      // The Apple Pay tile is only rendered when `getNativeWalletPlatform()`
-      // returned 'ios' — the extra bridge round-trip just delayed the sheet.
-      // The try/catch around `createApplePay` below is enough to surface any
-      // real "not available" error to the user.
-
-
-      // pi.amount is in cents (integer) from the edge function; `total` is already in dollars.
-      const totalAud = pi.amount != null
-        ? Math.round(Number(pi.amount)) / 100
-        : Math.round(Number(total) * 100) / 100;
+      const applePayTotalAud = Math.round(Number(pi.amount || 0)) / 100;
+      const checkoutTotalAud = Math.round(Number(total) * 100) / 100;
+      if (!Number.isFinite(applePayTotalAud) || Math.abs(applePayTotalAud - checkoutTotalAud) > 0.005) {
+        const diag = {
+          ok: false,
+          code: 'amount-mismatch' as const,
+          userMessage: 'Payment total changed. Please reopen checkout and try again.',
+          raw: `Apple Pay ${applePayTotalAud.toFixed(2)} vs checkout ${checkoutTotalAud.toFixed(2)}`,
+        };
+        void logApplePayDiagnostic('amount-mismatch', diag, {
+          merchantId: APPLE_PAY_MERCHANT_ID,
+          paymentIntentId: pi.paymentIntentId,
+          applePayTotalAud,
+          checkoutTotalAud,
+        });
+        toast.error(diag.userMessage);
+        return true;
+      }
       try {
         await Stripe.createApplePay({
           paymentIntentClientSecret: pi.clientSecret,
-          paymentSummaryItems: [{ label: pi.merchantDisplayName || 'Flea', amount: totalAud }],
+          paymentSummaryItems: [{ label: pi.merchantDisplayName || 'Flea', amount: applePayTotalAud }],
           merchantIdentifier: APPLE_PAY_MERCHANT_ID,
           countryCode: 'AU',
           currency: 'AUD',

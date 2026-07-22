@@ -42,7 +42,7 @@ serve(async (req) => {
       });
     }
 
-    const { items, shipping, couponCode, saveCard } = await req.json();
+    const { items, shipping, shippingBySeller, expectedAmountCents, couponCode, saveCard } = await req.json();
     if (!items || !items.length) throw new Error("No items provided");
 
     // Gate: block buying while the buyer has a negative Stripe Connect balance
@@ -77,7 +77,7 @@ serve(async (req) => {
 
     const { data: listingRows, error: listingErr } = await serviceClient
       .from("listings")
-      .select("id, user_id, status, price, title, images")
+      .select("id, user_id, status, price, title, images, shipping_price")
       .in("id", itemIds);
     if (listingErr || !listingRows || listingRows.length !== itemIds.length) {
       throw new Error("Could not verify listings");
@@ -95,7 +95,7 @@ serve(async (req) => {
     const listingById = new Map(listingRows.map((l: any) => [l.id, l]));
     const authoritativeItems = itemIds.map((id: string) => {
       const l: any = listingById.get(id);
-      return { id: l.id, title: l.title, price: Number(l.price) };
+      return { id: l.id, title: l.title, price: Number(l.price), shippingPrice: Number(l.shipping_price || 0) };
     });
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -129,7 +129,7 @@ serve(async (req) => {
 
     const { data: sellerProfile } = await serviceClient
       .from("profiles")
-      .select("stripe_account_id")
+      .select("stripe_account_id, bundle_shipping_mode, bundle_shipping_discount_percent")
       .eq("user_id", sellerId).maybeSingle();
     if (!sellerProfile?.stripe_account_id) {
       return new Response(
@@ -170,8 +170,27 @@ serve(async (req) => {
     }
 
     // Fees
+    const round2 = (n: number) => Math.round(n * 100) / 100;
     const itemsTotal = authoritativeItems.reduce((s, i) => s + i.price, 0);
-    const shippingAmount = Number(shipping) || 0;
+    const rawShippingAmount = authoritativeItems.reduce((s, i) => s + (Number(i.shippingPrice) || 0), 0);
+    const isBundle = authoritativeItems.length >= 2;
+    const bundleMode = String((sellerProfile as any)?.bundle_shipping_mode || "none");
+    const bundleDiscountPercent = Number((sellerProfile as any)?.bundle_shipping_discount_percent || 0);
+    let shippingAmount = rawShippingAmount;
+    if (isBundle && bundleMode === "free") {
+      shippingAmount = 0;
+    } else if (isBundle && bundleMode === "discounted" && bundleDiscountPercent > 0) {
+      const pct = Math.max(0, Math.min(100, bundleDiscountPercent));
+      shippingAmount = rawShippingAmount * (1 - pct / 100);
+    }
+    shippingAmount = round2(shippingAmount);
+
+    const clientShippingTotal = Array.isArray(shippingBySeller)
+      ? shippingBySeller.reduce((sum: number, entry: unknown) => {
+          const pair = Array.isArray(entry) ? entry : [];
+          return sum + Number(pair[1] || 0);
+        }, 0)
+      : Number(shipping) || 0;
     const subtotal = itemsTotal + shippingAmount;
     const SECURE_CHECKOUT_RATE = 0.04;
     const SECURE_CHECKOUT_FIXED = 0.70;
@@ -199,6 +218,28 @@ serve(async (req) => {
     const amountCents = Math.round(buyerTotalDollars * 100);
     const applicationFeeAmount = Math.round(secureCheckoutFee * 100);
 
+    const clientExpectedAmountCents = Number(expectedAmountCents);
+    if (Number.isFinite(clientExpectedAmountCents) && Math.round(clientExpectedAmountCents) !== amountCents) {
+      console.warn("[stripe-connect-payment-intent] amount mismatch", {
+        itemIds,
+        itemsTotal,
+        rawShippingAmount: round2(rawShippingAmount),
+        serverShippingAmount: shippingAmount,
+        clientShippingTotal: round2(clientShippingTotal),
+        secureCheckoutFee,
+        serverAmountCents: amountCents,
+        clientExpectedAmountCents: Math.round(clientExpectedAmountCents),
+        bundleMode,
+        bundleDiscountPercent,
+      });
+      return new Response(JSON.stringify({
+        error: "Checkout total changed. Please reopen checkout and try again.",
+        code: "checkout_amount_mismatch",
+        serverAmountCents: amountCents,
+        clientExpectedAmountCents: Math.round(clientExpectedAmountCents),
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 });
+    }
+
     // Find or create Stripe customer for the buyer (needed for saved cards + ephemeral key)
     let customerId: string | undefined;
     const existing = await stripe.customers.list({ email: user.email, limit: 1 });
@@ -220,7 +261,7 @@ serve(async (req) => {
     // and never collide with a stale one Stripe cached for 24h.
     // PI_REQUEST_VERSION: bump whenever the paymentIntents.create body shape
     // changes so old cached keys can't collide with new params.
-    const PI_REQUEST_VERSION = "v3-2026-07-22";
+    const PI_REQUEST_VERSION = "v4-2026-07-22-bundle-shipping";
     const idemBasis = [
       PI_REQUEST_VERSION,
       user.id,

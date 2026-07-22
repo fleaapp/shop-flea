@@ -11,6 +11,7 @@ export type ApplePayDiagnosis = {
     | 'stripe-check-failed'
     | 'entitlement-missing'
     | 'merchant-missing'
+    | 'amount-mismatch'
     | 'no-cards'
     | 'canceled'
     | 'unknown';

@@ -24,13 +24,14 @@ echo "==> Copying entitlements"
 cp "$ENTITLEMENTS_SRC" "$ENTITLEMENTS_DEST"
 
 echo "==> Wiring entitlements into project.pbxproj"
-if ! grep -q "CODE_SIGN_ENTITLEMENTS = App/App.entitlements" "$PBXPROJ"; then
-  # Insert CODE_SIGN_ENTITLEMENTS into every buildSettings block that doesn't have one.
-  /usr/bin/perl -0pi -e 's/(buildSettings = \{\n)(?!(?:(?!\}\;).)*CODE_SIGN_ENTITLEMENTS)/$1\t\t\t\tCODE_SIGN_ENTITLEMENTS = App\/App.entitlements;\n/gs' "$PBXPROJ"
-  echo "   entitlements path added to pbxproj"
-else
-  echo "   entitlements path already present"
-fi
+# Force the App target/project build settings to use the entitlements file.
+# Xcode can show Apple Pay as ticked while the signed Debug/Archive build uses
+# a stale or empty CODE_SIGN_ENTITLEMENTS value, which produces a binary with no
+# `com.apple.developer.in-app-payments` entitlement. Remove every old value and
+# insert the canonical path into every buildSettings block.
+/usr/bin/perl -0pi -e 's/^\s*CODE_SIGN_ENTITLEMENTS = [^;]+;\n//mg' "$PBXPROJ"
+/usr/bin/perl -0pi -e 's/(buildSettings = \{\n)/$1\t\t\t\tCODE_SIGN_ENTITLEMENTS = App\/App.entitlements;\n/gs' "$PBXPROJ"
+echo "   entitlements path force-wired in pbxproj"
 
 echo "==> Applying Info.plist keys from $PATCH_JSON"
 /usr/bin/python3 - "$PATCH_JSON" "$INFO_PLIST" <<'PY'
