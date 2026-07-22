@@ -229,13 +229,13 @@ echo
 echo "==> Verification"
 echo "   entitlements file: $(test -f "$ENTITLEMENTS_DEST" && echo yes || echo NO)"
 WIRED_COUNT=$(grep -c "CODE_SIGN_ENTITLEMENTS = App/App.entitlements" "$PBXPROJ" || true)
-CAPABILITY_COUNT=$(grep -c "com.apple.ApplePay\|com.apple.Push" "$PBXPROJ" || true)
+CAPABILITY_COUNT=$(grep -E -c "com\.apple\.(ApplePay|Push)" "$PBXPROJ" || true)
 echo "   pbxproj wired:     $(test "$WIRED_COUNT" -gt 0 && echo yes || echo NO) ($WIRED_COUNT App target build settings)"
 echo "   Xcode capabilities: $(test "$CAPABILITY_COUNT" -ge 2 && echo yes || echo NO)"
 echo "   Apple Pay entitlement: $(grep -q "com.apple.developer.in-app-payments" "$ENTITLEMENTS_DEST" && echo yes || echo NO)"
 echo "   Apple Pay merchant:    $(grep -q "merchant.com.finditonflea.app" "$ENTITLEMENTS_DEST" && echo yes || echo NO)"
 echo "   APNs delegate bridge:  $(grep -q "capacitorDidRegisterForRemoteNotifications" "$APP_DELEGATE" && echo yes || echo NO)"
-echo "   Stripe iOS SDK pin:    exact 25.9.0 via patch-package"
+echo "   Stripe iOS SDK pin:    exact 25.9.0 via native postinstall patcher"
 echo "   entitlement checker:   skipped (using Stripe's isApplePayAvailable)"
 echo "   Google leftovers:  $(grep -R 'REVERSED_IOS_CLIENT_ID\|@codetrix-studio/capacitor-google-auth' "$ROOT/ios" "$ROOT/package.json" "$ROOT/capacitor.config.ts" 2>/dev/null | wc -l | tr -d ' ')"
 echo
