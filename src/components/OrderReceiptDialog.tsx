@@ -80,6 +80,17 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
   // Sellers keep the full items + shipping — no platform fee.
   const sellerReceives = subtotal;
 
+  const { data: sellerShippingSettings } = useQuery({
+    queryKey: ['seller-shipping-settings', primaryOrder.seller_id],
+    queryFn: async () => {
+      const map = await fetchSellerShippingSettings([primaryOrder.seller_id]);
+      return map.get(primaryOrder.seller_id) || null;
+    },
+    enabled: open && !!primaryOrder.seller_id && orders.length >= 2,
+    staleTime: 60_000,
+  });
+  const bundleText = orders.length >= 2 ? getBundleBreakdownText(orders.length, sellerShippingSettings || undefined) : null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[360px] p-0 rounded-none border-none bg-transparent shadow-none overflow-hidden [&>button]:hidden">
