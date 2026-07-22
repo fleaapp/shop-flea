@@ -1,40 +1,34 @@
-## Confirmed findings
+## What I found
 
-- **Push notifications:** the Cloud database currently has one iOS push token, and it belongs to `@jcsbh`. There is still **no saved iOS token for `@sarahhearn2`**, so comment alerts can appear in-app while native push delivery has nothing to send to.
-- **Push root cause:** native registration depends on APNs callbacks being forwarded from the generated iOS `AppDelegate.swift`. That forwarding is only added by `scripts/setup-ios-native.sh`, so it can be wiped out or skipped after native sync/rebuild. This explains why permission can be on but no token is saved.
-- **Apple Pay:** PWA Apple Pay works, so the payment intent, amount, and backend key path are usable. The failing path is native iOS only.
-- **Apple Pay likely native bug:** the native Stripe plugin keeps `STPAPIClient.shared.stripeAccount` if it was ever initialized with a connected account. This can make native Apple Pay confirm a platform destination-charge PaymentIntent with the wrong account context, while PWA still works.
-- **Existing native setup:** `ios/` is not committed in this project; it is generated locally. Fixes that only patch generated iOS files are fragile unless we also patch the npm/native packages or the setup script.
+The local `npm install` failed during `patch-package`, before the native build could be trusted:
+
+- The Push Notifications patch applied, but with a version mismatch warning because the installed package resolved to `@capacitor/push-notifications@8.1.2` while the patch file is named for `8.0.3`.
+- The Stripe native patch failed completely for `@capacitor-community/stripe`, so the Apple Pay native fix did not make it into `node_modules`.
+- The setup script also reports `Xcode capabilities: NO` even though it says the entitlements file and Apple Pay merchant are present. That means the verification logic or the project patching is not robust enough.
 
 ## Plan
 
-1. **Make push registration independent of the generated AppDelegate patch**
-   - Add a persistent patch for `@capacitor/push-notifications` so the iOS plugin installs the APNs callback forwarders itself when it loads.
-   - Keep the existing `setup-ios-native.sh` AppDelegate patch as a backup, but stop relying on it as the only path.
-   - This should make `PushNotifications.register()` produce the JS `registration` event and save the APNs token even after `cap sync` regenerates the native app.
+1. **Make native dependency versions deterministic**
+   - Pin the Capacitor native packages to the exact versions the project is patching instead of using `^` ranges.
+   - This prevents `npm install` from silently installing `@capacitor/push-notifications@8.1.2` when the patch expects `8.0.3`.
 
-2. **Keep native token registration aggressive but safe**
-   - Leave the existing foreground/mount registration checks in place.
-   - If permission is granted but Cloud has no iOS token, force APNs registration again.
-   - Keep the timeout/error logging so we can see if the native callback still fails.
+2. **Replace the fragile Stripe patch with a version-safe native patch**
+   - Regenerate or rewrite the `@capacitor-community/stripe` patch against the actual installed `8.1.1` package structure.
+   - Keep the intended Apple Pay fix: reset `STPAPIClient.shared.stripeAccount` to `nil` when no connected account is passed, so direct Apple Pay does not inherit a stale connected-account header.
+   - Keep the Stripe iOS SDK pinned exactly to `25.9.0` if the package file still supports that patch.
 
-3. **Fix native Apple Pay account-context leakage**
-   - Add a persistent patch for `@capacitor-community/stripe` so `Stripe.initialize()` clears `STPAPIClient.shared.stripeAccount` when no connected account is provided.
-   - This matches the current backend response where `clientStripeAccountId` is intentionally `null` for platform destination charges.
-   - This avoids native Apple Pay confirming the PaymentIntent under a stale connected-account context.
+3. **Fix the setup script’s Xcode capability patching**
+   - Update `scripts/setup-ios-native.sh` so it inserts `SystemCapabilities` into the exact `TargetAttributes` structure Xcode expects.
+   - Make the verification check look for the full capability block, not just grep fragments that can miss or miscount valid output.
+   - Keep the script safe: no deleting iOS project files, no resetting Xcode, no changing icons/assets.
 
-4. **Preserve the hidden PaymentSheet-initialized Apple Pay setup**
-   - Keep `createPaymentSheet()` before `createApplePay()` but do not present the sheet, so users still go directly to Apple Pay with no visible middle sheet.
-   - Do not change the PWA/web Apple Pay path, since it already works.
+4. **Add a clear terminal recovery sequence**
+   - Provide the exact commands to run after the fix.
+   - Include a clean `node_modules` reinstall only if needed, because the failed patch left local dependencies in an untrusted state.
+   - Include a final `codesign` entitlement check after building in Xcode, because that is the only reliable proof the signed native binary has Apple Pay and APNs entitlements.
 
-5. **Verify with real signals after implementation**
-   - Confirm the patch files are applied by `patch-package`.
-   - Deploy any changed push/payment functions only if source changes are needed there.
-   - Re-check `push_subscriptions` after a native app open: `@sarahhearn2` must have an iOS token.
-   - Trigger a comment notification and confirm the push function reports an APNs send attempt instead of “no subscriptions”.
-   - For Apple Pay, confirm native checkout no longer uses a stale connected-account Stripe context.
-
-## Technical notes
-
-- The external backend remnants are not the immediate cause of this push failure: the current Cloud push table is what `send-push-notification` reads, and the missing row is specifically for the recipient account.
-- The native package patches are the key change because local generated iOS files are not committed and can be overwritten by native sync.
+5. **Do not touch unrelated app logic**
+   - No checkout UI changes.
+   - No notification business-logic changes.
+   - No backend changes.
+   - This plan only fixes the native install/build pipeline that currently prevents the Apple Pay and push fixes from actually being included in the iOS app.
