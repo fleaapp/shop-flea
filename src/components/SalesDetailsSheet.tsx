@@ -26,7 +26,8 @@ import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import ShippingStatusTracker from '@/components/ShippingStatusTracker';
 import { openTrackingUrl } from '@/lib/tracking';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchSellerShippingSettings, getBundleBreakdownText } from '@/utils/shippingCalculator';
 import { toast } from 'sonner';
 import { Loader2, ChevronRight } from 'lucide-react';
 
