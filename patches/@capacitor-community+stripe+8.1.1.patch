@@ -14,7 +14,7 @@ diff --git a/node_modules/@capacitor-community/stripe/ios/Sources/StripePlugin/S
 index 2222222..3333333 100644
 --- a/node_modules/@capacitor-community/stripe/ios/Sources/StripePlugin/StripePlugin.swift
 +++ b/node_modules/@capacitor-community/stripe/ios/Sources/StripePlugin/StripePlugin.swift
-@@ -44,9 +44,15 @@ public class StripePlugin: CAPPlugin, CAPBridgedPlugin {
+@@ -44,10 +44,16 @@ public class StripePlugin: CAPPlugin, CAPBridgedPlugin {
          if stripeAccount != "" {
              STPAPIClient.shared.stripeAccount = stripeAccount
 +        } else {
@@ -29,3 +29,4 @@ index 2222222..3333333 100644
  
          call.resolve()
      }
+ 
