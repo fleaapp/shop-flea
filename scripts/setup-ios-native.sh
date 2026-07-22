@@ -249,9 +249,9 @@ PY
 )
 eval "$VERIFY_COUNTS"
 WIRED_COUNT=${wired:-0}
-CAPABILITY_COUNT=$(( ${apple_pay:-0} + ${push:-0} ))
+CAPABILITY_COUNT=$(( ${apple_pay:-0} + ${push:-0} + ${associated_domains:-0} + ${sign_in:-0} ))
 echo "   pbxproj wired:     $(test "$WIRED_COUNT" -gt 0 && echo yes || echo NO) ($WIRED_COUNT App target build settings)"
-echo "   Xcode capabilities: $(test "$CAPABILITY_COUNT" -ge 2 && echo yes || echo NO)"
+echo "   Xcode capabilities: $(test "$CAPABILITY_COUNT" -eq 4 && echo yes || echo NO) ($CAPABILITY_COUNT/4 required flags)"
 echo "   Associated Domains: $(test "${associated_domains:-0}" -eq 1 && echo yes || echo NO)"
 echo "   Sign in with Apple: $(test "${sign_in:-0}" -eq 1 && echo yes || echo NO)"
 echo "   Apple Pay entitlement: $(grep -q "com.apple.developer.in-app-payments" "$ENTITLEMENTS_DEST" && echo yes || echo NO)"
@@ -269,7 +269,7 @@ if [ "$WIRED_COUNT" -lt 1 ]; then
   echo "ERROR: CODE_SIGN_ENTITLEMENTS is not wired. Do not Archive until this says yes."
   exit 1
 fi
-if [ "$CAPABILITY_COUNT" -lt 2 ]; then
+if [ "$CAPABILITY_COUNT" -ne 4 ]; then
   echo "ERROR: Xcode capability flags are missing. Do not Archive until this says yes."
   exit 1
 fi
