@@ -291,7 +291,16 @@ const Checkout = () => {
       toast.error('Payment provider is not configured. Please contact support.');
       return true;
     }
-    await warmStripe(pi.publishableKey, pi.clientStripeAccountId ?? null);
+    try {
+      await Stripe.initialize({
+        publishableKey: pi.publishableKey,
+        ...(pi.clientStripeAccountId ? { stripeAccount: pi.clientStripeAccountId } : {}),
+      });
+    } catch (e) {
+      console.error('[ApplePay] Stripe.initialize failed', e);
+      toast.error('Failed to start payment. Please try again.');
+      return true;
+    }
 
     if (platform === 'ios') {
       const publishableKeyMode = pi.publishableKey.startsWith('pk_live_') ? 'live' : 'test';
