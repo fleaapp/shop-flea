@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { useAuth } from '@/context/AuthContext';
@@ -15,16 +16,23 @@ import { invokeCloudFunction } from '@/utils/cloudFunctions';
 export function useNativePushNotifications() {
   const { user } = useAuth();
   const registeredRef = useRef(false);
+  const registeredUserRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (registeredUserRef.current !== user?.id) {
+      registeredRef.current = false;
+      registeredUserRef.current = user?.id ?? null;
+    }
+
     if (!user?.id || registeredRef.current) return;
     if (!Capacitor.isNativePlatform()) return;
     if (Capacitor.getPlatform() !== 'ios') return;
 
     let registrationListener: { remove: () => void } | null = null;
     let errorListener: { remove: () => void } | null = null;
+    let appStateListener: { remove: () => void } | null = null;
 
-    (async () => {
+    const registerNativePush = async () => {
       try {
         let perm = await PushNotifications.checkPermissions();
 
@@ -75,11 +83,21 @@ export function useNativePushNotifications() {
       } catch (err) {
         console.error('[NativePush] Setup error:', err);
       }
-    })();
+    };
+
+    void registerNativePush();
+    void CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+      if (isActive && !registeredRef.current) {
+        void registerNativePush();
+      }
+    }).then((handle) => {
+      appStateListener = handle;
+    });
 
     return () => {
       registrationListener?.remove();
       errorListener?.remove();
+      appStateListener?.remove();
     };
   }, [user?.id]);
 }

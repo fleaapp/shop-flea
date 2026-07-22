@@ -21,8 +21,14 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 export function usePushNotifications() {
   const { user } = useAuth();
   const subscribedRef = useRef(false);
+  const subscribedUserRef = useRef<string | null>(null);
 
   const subscribe = useCallback(async (opts?: { requestPermission?: boolean }) => {
+    if (subscribedUserRef.current !== user?.id) {
+      subscribedRef.current = false;
+      subscribedUserRef.current = user?.id ?? null;
+    }
+
     if (!user?.id || subscribedRef.current) return;
     // Native iOS uses APNs via useNativePushNotifications, not web push.
     if (Capacitor.isNativePlatform()) return;
@@ -94,11 +100,11 @@ export function usePushNotifications() {
       console.log('[Push] Saving subscription for user:', user.id);
       const { error } = await invokeCloudFunction('register-push-subscription', {
         body: {
-            endpoint: subJson.endpoint,
-            p256dh: subJson.keys.p256dh,
-            auth: subJson.keys.auth,
-            platform: 'web',
-          },
+          endpoint: subJson.endpoint,
+          p256dh: subJson.keys.p256dh,
+          auth: subJson.keys.auth,
+          platform: 'web',
+        },
       });
 
       if (error) {
