@@ -27,7 +27,6 @@ import ReportDialog from '@/components/ReportDialog';
 import { useContentModeration } from '@/hooks/useContentModeration';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
-import { sendPushNotification } from '@/utils/pushNotify';
 
 
 interface Comment {
@@ -245,29 +244,15 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
 
       const trimmedContent = content.trim();
       
-      const { error } = await supabase
-        .from('listing_comments')
-        .insert({
-          listing_id: listingId,
-          user_id: user.id,
+      const { error } = await invokeCloudFunction('add-listing-comment', {
+        body: {
+          listingId,
           content: trimmedContent,
-          parent_id: parentId || null,
-        });
+          parentId: parentId || null,
+        },
+      });
 
       if (error) throw error;
-
-      const pushRecipientId = parentId ? replyingTo?.userId : sellerId;
-      if (pushRecipientId && pushRecipientId !== user.id) {
-        void sendPushNotification(pushRecipientId, {
-          type: parentId ? 'comment_reply' : 'new_comment',
-          title: parentId ? 'Reply' : 'New Comment',
-          message: parentId
-            ? `${profile?.username || 'Someone'} replied to your comment.`
-            : `${profile?.username || 'Someone'} commented on your listing.`,
-          related_listing_id: listingId,
-          related_user_id: user.id,
-        });
-      }
 
       // Fire-and-forget @mention notifications so post feels instant.
       const mentionHandles = Array.from(
