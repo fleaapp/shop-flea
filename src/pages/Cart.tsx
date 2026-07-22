@@ -386,28 +386,32 @@ const Cart = () => {
                       </Button>
                     )}
 
-                    {/* Tiered shipping label + Checkout button (only for non-removed groups) */}
+                    {/* Bundle shipping label + Checkout button (only for non-removed groups) */}
                     {!allSold && !allRemoved && (() => {
                       const allPaused = items.every(item => item.isPaused);
                       const allInactive = items.every(item => item.isInactive);
                       const allPausedOrInactive = items.every(item => item.isPaused || item.isInactive);
                       const availableItems = items.filter(i => i.status !== 'sold' && !i.isPaused && !i.isInactive && !i.isRemoved);
                       const settings = sellerSettings.get(sellerId);
-                      const showTierLabel = !allPausedOrInactive && settings?.tieredEnabled && availableItems.length > 1;
-                      const tierText = showTierLabel
-                        ? availableItems.length <= 3
-                          ? `2–3 items: $${settings!.tier2.toFixed(2)} combined shipping`
-                          : `4+ items: $${settings!.tier3.toFixed(2)} combined shipping`
+                      const bundleText = !allPausedOrInactive
+                        ? getBundleBreakdownText(availableItems.length, settings)
                         : null;
+                      const combinedShipping = calculateSellerShipping(
+                        availableItems.map(i => ({ id: i.id, sellerId: i.sellerId, shippingPrice: i.shippingPrice })),
+                        settings
+                      );
 
                       return (
                         <>
-                          {tierText && (
+                          {bundleText && (
                             <div className="px-4 py-2 bg-accent/30 text-center">
-                             <span className="text-xs text-accent-foreground">✈️ {showTierLabel && availableItems.length <= 3
-                                ? <><span className="font-bold">2–3 items:</span> ${settings!.tier2.toFixed(2)} combined shipping</>
-                                : <><span className="font-bold">4+ items:</span> ${settings!.tier3.toFixed(2)} combined shipping</>
-                              }</span>
+                              <span className="text-xs text-accent-foreground">
+                                ✈️ <span className="font-bold">{bundleText}</span>
+                                {' — '}
+                                {combinedShipping === 0
+                                  ? 'Free combined shipping'
+                                  : `$${combinedShipping.toFixed(2)} combined shipping`}
+                              </span>
                             </div>
                           )}
                           {allPausedOrInactive ? (
