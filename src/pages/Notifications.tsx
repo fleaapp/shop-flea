@@ -59,20 +59,16 @@ const Notifications = () => {
   const { user } = useAuth();
   const isUnauthed = !user;
   const { sellerOrderGroups, buyerOrderGroups, markAsShipped } = useOrders();
-  const { notifications, isLoading: loadingNotifications, unreadCount, badgeCount, markAsRead, markAllAsRead, dismissBadge } = useNotifications();
+  const { notifications, isLoading: loadingNotifications, unreadCount, badgeCount, markAsRead, markAllAsRead } = useNotifications();
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
 
-  // Dismiss the nav badge when the screen is viewed
+  // Mark all unread notifications as read on open — this also clears the
+  // bottom-nav badge (both are derived from `is_read` in the DB now).
   useEffect(() => {
-    dismissBadge();
-  }, []);
-
-  // Mark all unread notifications as read on open (clears green dots + DB state)
-  useEffect(() => {
-    if (!loadingNotifications && notifications.some(n => !n.is_read && !n.id.startsWith('fallback-'))) {
-      markAllAsRead.mutate();
-    }
+    if (loadingNotifications) return;
+    if (!notifications.some(n => !n.is_read && !n.id.startsWith('fallback-'))) return;
+    markAllAsRead.mutate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadingNotifications]);
 
