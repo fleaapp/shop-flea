@@ -1,56 +1,45 @@
-## Goal
-Replace tiered shipping with a Depop-style **Bundle Shipping** system (No bundle / Discounted / Free), add a Shipping button on the seller profile, and swap the 📦 emoji for ✈️ across the app.
+## 1. Speed up Apple Pay sheet
 
-## Bundle shipping rules (confirmed)
-A "bundle" = **2+ items from the same seller in one order**. Single-item orders are never affected — they always pay that item's full shipping price.
+Right now tapping **Buy with Apple Pay** does a strictly serial chain of native/edge calls before PassKit renders:
 
-Per seller group at checkout, given items with per-item `shippingPrice`:
-- **none** → sum of each item's shipping (no bundle behaviour).
-- **discounted** → if `itemCount === 1`: item's shipping. If `itemCount >= 2`: `sum(items.shippingPrice) × (1 − discount%)`, rounded to 2dp.
-- **free** → if `itemCount === 1`: item's shipping. If `itemCount >= 2`: **$0** (free).
+1. `createPaymentIntent` (edge function round-trip)
+2. `Stripe.initialize` (bridge call)
+3. `Stripe.isApplePayAvailable` (bridge call — redundant, we already know the device supports it because we rendered the Apple Pay tile)
+4. `Stripe.createApplePay`
+5. `Stripe.presentApplePay`
 
-## 1. Data model (migration)
-Add to `profiles` (keep old tier columns temporarily; stop reading them):
-- `bundle_shipping_mode text` — `'none' | 'discounted' | 'free'`, default `'none'`.
-- `bundle_shipping_discount_percent int` — nullable, used only when mode = `'discounted'` (10/20/30/40/50).
+Fix in `src/pages/Checkout.tsx` / `src/lib/nativeWallet.ts`:
 
-Re-`CREATE OR REPLACE` `profiles_public` to expose the two new columns. Update `profiles_update_guard` to allow the owner to modify them. Regenerate types.
+- **Warm Stripe on mount.** As soon as Checkout mounts on iOS and a publishable key is known, call `Stripe.initialize(...)` once (idempotent). Skip the second `Stripe.initialize` inside `handleNativeWalletConfirm` if the key hasn't changed.
+- **Pre-create the PaymentIntent** in the background when the user picks the Apple Pay tile (and refresh it if `total`, coupon, or shipping address changes). Cache `{ clientSecret, paymentIntentId, amount, publishableKey, livemode, ... }` in a ref. On tap, use the cached PI immediately; only fall back to creating one synchronously if the cache is stale/missing. Invalidate the cache on any input change and on unmount.
+- **Remove the `Stripe.isApplePayAvailable` gate** inside `handleNativeWalletConfirm`. The wallet tile is only shown when `getNativeWalletPlatform() === 'ios'`, so the check is a duplicate bridge round-trip. Keep the try/catch around `createApplePay` — its error is enough to surface "not available".
+- **Do not `await Stripe.initialize` on tap** when it was warmed on mount; kick it off during warm-up and only await if it hasn't resolved yet.
 
-## 2. Shipping calculator (`src/utils/shippingCalculator.ts`)
-Rewrite around the bundle rules above. Expose:
-- `fetchSellerBundleSettings(sellerIds)`
-- `calculateSellerBundleShipping(items, settings)`
-- `calculateTotalShipping(items, settingsMap)` (same signature as today)
-- `getBundleBreakdownText(itemCount, settings)` for Cart/Checkout copy.
+Result: on tap, we go straight into `createApplePay` → `presentApplePay` with an already-minted client secret, cutting three sequential round-trips out of the critical path.
 
-## 3. Seller-facing Shipping settings
-Rebuild `ShippingSettingsSheet` (drawer used from Settings):
-- Header: **✈️ Bundle Shipping**
-- Radio-style options: No bundle shipping / Discounted shipping for bundles / Free shipping for bundles.
-- When Discounted is selected, show a percentage picker (10/20/30/40/50%) with helper copy ("Buyers save X% off total shipping when they buy 2+ items").
-- Save writes `bundle_shipping_mode` + `bundle_shipping_discount_percent`, refreshes profile, keeps localStorage fallback for `PGRST204`.
+Guardrails:
+- If `total` / shipping / coupon changes after the PI was pre-created, discard the cached PI (the amount would mismatch what PassKit shows).
+- Keep the existing live/test key-mode mismatch check.
+- Card and Google Pay paths are unchanged.
 
-Update `TieredShippingSetupModal` (first-listing setup) to the same three-option UI and header.
+## 2. Kill the lime footer strip after login
 
-Update `CreateListing.tsx` / `EditListing.tsx`: they currently prefill shipping from `shipping_tier_1`; switch to the seller's own per-listing shipping input (bundle logic is applied at checkout, not on the listing). Remove tier prefill.
+`src/index.css` paints `html` and `body` with `background-color: var(--app-top-bg)`. `--app-top-bg` is only defined by `applyAppChromeColor()` writing an inline style — there's no default in `:root`. During auth, that inline value is `#DDFED7` (lime) and `.boot-auth` is added. After sign-in the route change eventually clears `.boot-auth` and rewrites the var to cream, but the lime strip in the home-indicator safe-area keeps re-appearing app-wide because the reset isn't guaranteed on every path:
 
-## 4. Seller Profile — new Shipping button
-On `src/pages/Profile.tsx`, directly under the top-right 💸 Sales button (line ~171), add an identical-styled button:
-- Same size, border, rounded-xl treatment.
-- Icon: ✈️, `aria-label="Shipping"`.
-- Opens the same `ShippingSettingsSheet`.
-- Guest `Profile` (line 431) mirrors it but taps through to `/auth` like Sales does.
+- `applyAppChromeColor` mutates `documentElement.style` and `body.style` — but the SIGNED_IN handler in `AuthContext.tsx` calls `forceRestoreRouteAppChrome()` while `pathname` is still `/auth`, so it re-asserts lime. If the post-login navigate uses `window.location` (or the redirect fires before `AppContent`'s `useLayoutEffect` re-runs), the lime var never gets rewritten.
+- Even after the class is removed, there's no CSS fallback: `var(--app-top-bg)` with no default resolves to `initial` (transparent), and the WebView paints its own base color for the safe area — which on iOS ends up showing the last CSS-declared color if `--app-top-bg` was previously lime and still cached on `body`.
 
-## 5. Cart + Checkout wiring
-- `Cart.tsx` bundle label (line ~407): only show when `itemCount >= 2` and mode ≠ `'none'`. Copy: `✈️ Bundle discount: X% off shipping` or `✈️ Free bundle shipping`.
-- `Checkout.tsx` uses the new `calculateTotalShipping` (same signature) — verify buyer-facing totals and the amounts sent to `finalize-checkout` reflect the bundle rules.
-- `SalesDetailsSheet.tsx` / `OrderDetailsSheet.tsx` / receipts: shipping totals come from stored `orders.shipping_price` per item, so no math change — swap 📦 → ✈️ in copy only.
+Fix (all in `src/index.css` + `src/lib/appChrome.ts`, no layout changes):
 
-## 6. Emoji sweep (📦 → ✈️)
-Swap in shipping contexts: `SwipeCard`, `ProfileGridCard`, `WishlistCard`, `WishlistGridCard`, `SellerProfile` and `Profile` list cards, `Cart.tsx` bundle label, `Settings.tsx` shipping row, `SalesDetailsSheet`/`OrderDetailsSheet` "Track parcel", `Profile.tsx` + `ListingDetails.tsx` "Mark as shipped" toasts, `ShippingStatusTracker` shipped step, `RealtimeAlerts` `order_shipped`, `useNotifications` shipped/reminder templates, `OnboardingMiniCard`, `Notifications` fallback, `OrderItemThumbnailStack` fallback, `FAQSection` "Shipping" category header. Leave 📦 in admin-only "Listings" contexts (`AdminListings`, `AdminDashboard`, `ReportList`) — those refer to the listings module, not shipping.
+- **Add a hard default** in `:root { --app-top-bg: #F5F1EB; }` so the safe-area always resolves to cream unless auth explicitly overrides it.
+- **Scope the lime override to `.boot-auth` only.** Change `applyAppChromeColor` so that on non-auth routes it does not write `--app-top-bg` inline at all — it calls `removeProperty('--app-top-bg')` on both `documentElement` and `body`. That way the `:root` default takes over immediately and no stale inline lime can survive.
+- **Clear the SIGNED_IN safety-net trap.** In `AuthContext.tsx`, when SIGNED_IN fires, don't call `forceRestoreRouteAppChrome()` synchronously (pathname is still `/auth`). Instead, unconditionally strip the auth chrome (remove `.boot-auth`, remove inline `--app-top-bg`, remove inline `background-color` on html/body) and let the next route change re-assert the correct color. This guarantees no lime persists past sign-in regardless of who navigates.
+- **Belt-and-braces**: also `removeProperty('--app-top-bg')` on `body` in the non-auth branch (currently we only touch `background-color` and `--background`).
 
-## 7. Cleanup / safety
-- `AuthContext` profile type: add `bundle_shipping_mode`, `bundle_shipping_discount_percent`; keep old tier fields optional.
-- `shippingPrefs.ts` localStorage: extend to `{ mode, discountPercent }`; keep old shape readable for one release.
-- Existing orders/receipts unchanged; only new checkouts use bundle math.
-- No fee changes (buyer 4% + $0.70).
+Nothing about `#root`, `native-safe-top`, screen positioning, or the scroll-shell layout changes.
+
+## Verification
+
+- Native iOS build: cold-boot → log in with email/password → land on `/index` and `/admin` → confirm the home-indicator safe area is cream (no lime strip).
+- Same flow via OAuth (Apple/Google) → confirm no lime strip after callback.
+- Tap Apple Pay in Checkout → sheet appears without the current multi-second delay; total is correct (from the recently fixed cents conversion).
