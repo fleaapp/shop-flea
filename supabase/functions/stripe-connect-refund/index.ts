@@ -433,7 +433,7 @@ async function insertRefundNotifications(externalUrl: string, serviceKey: string
       },
     ];
 
-    await fetch(`${externalUrl}/rest/v1/notifications`, {
+    const insertRes = await fetch(`${externalUrl}/rest/v1/notifications`, {
       method: 'POST',
       headers: {
         apikey: serviceKey,
@@ -443,6 +443,24 @@ async function insertRefundNotifications(externalUrl: string, serviceKey: string
       },
       body: JSON.stringify(rows),
     });
+    await insertRes.text().catch(() => "");
+
+    if (!insertRes.ok) {
+      console.error('[stripe-connect-refund] notification insert failed:', insertRes.status);
+      return;
+    }
+
+    await Promise.allSettled(rows.map(async (row) => {
+      const pushRes = await fetch(`${externalUrl}/functions/v1/send-push-notification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({ user_id: row.user_id, notification: row }),
+      });
+      await pushRes.text().catch(() => "");
+    }));
   } catch (error) {
     console.error('[stripe-connect-refund] notification insert failed:', error);
   }
