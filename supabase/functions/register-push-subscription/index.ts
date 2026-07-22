@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logEdgeError } from "../_shared/logError.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,7 +45,17 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const userId = parseVerifiedUserId(req);
-    if (!userId) return json({ error: "Unauthorized" }, 401);
+    if (!userId) {
+      console.warn("[register-push-subscription] unauthorized request");
+      await logEdgeError({
+        functionName: "register-push-subscription",
+        title: "Push token registration unauthorized",
+        error: new Error("Missing or invalid user session"),
+        severity: "warning",
+        httpStatus: 401,
+      });
+      return json({ error: "Unauthorized" }, 401);
+    }
 
     const body = await req.json().catch(() => ({}));
     const endpoint = typeof body.endpoint === "string" ? body.endpoint.trim() : "";
@@ -53,10 +64,12 @@ serve(async (req) => {
     const auth = typeof body.auth === "string" ? body.auth : null;
 
     if (!endpoint || endpoint.length < 8) {
+      console.warn(`[register-push-subscription] missing endpoint for user ${userId}`);
       return json({ error: "Missing endpoint" }, 400);
     }
 
     if (platform === "web" && (!p256dh || !auth)) {
+      console.warn(`[register-push-subscription] missing web keys for user ${userId}`);
       return json({ error: "Missing web push keys" }, 400);
     }
 
@@ -74,6 +87,14 @@ serve(async (req) => {
 
       if (deleteError) {
         console.error("[register-push-subscription] iOS stale cleanup failed:", deleteError);
+        await logEdgeError({
+          functionName: "register-push-subscription",
+          title: "iOS stale push token cleanup failed",
+          error: deleteError,
+          severity: "warning",
+          userId,
+          context: { platform },
+        });
       }
     }
 
@@ -91,13 +112,29 @@ serve(async (req) => {
 
     if (upsertError) {
       console.error("[register-push-subscription] save failed:", upsertError);
+      await logEdgeError({
+        functionName: "register-push-subscription",
+        title: "Push token save failed",
+        error: upsertError,
+        severity: "error",
+        userId,
+        context: { platform },
+        httpStatus: 500,
+      });
       return json({ error: "Failed to save push subscription" }, 500);
     }
 
-    console.log(`[register-push-subscription] saved ${platform} token for user ${userId}`);
+    console.log(`[register-push-subscription] saved ${platform} token for user ${userId} endpoint=${endpoint.slice(0, 16)}…`);
     return json({ ok: true, platform });
   } catch (err) {
     console.error("[register-push-subscription] error:", err);
+    await logEdgeError({
+      functionName: "register-push-subscription",
+      title: "Push token registration crashed",
+      error: err,
+      severity: "error",
+      httpStatus: 500,
+    });
     return json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
   }
 });
