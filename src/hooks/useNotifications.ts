@@ -273,50 +273,25 @@ export const useNotifications = () => {
     },
   });
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  // Unread + badge counts are both derived from the DB `is_read` column.
+  // Previously the badge was tracked in localStorage which reset to the full
+  // count on every fresh session (new device, PWA reinstall, private tab,
+  // first login on a device). Using `is_read` means the badge persists across
+  // logout/login and stays consistent across devices.
+  const unreadCount = useMemo(
+    () => notifications.filter(n => !n.is_read).length,
+    [notifications],
+  );
+  const badgeCount = unreadCount;
 
-  // Badge count: unread notifications created AFTER the last time
-  // the user visited the Alerts screen. Green dots (is_read) are separate.
-  const [badgeDismissedAt, setBadgeDismissedAt] = useState<string | null>(() => {
-    if (typeof window === 'undefined' || !user?.id) return null;
-    return localStorage.getItem(`flea_alerts_seen_${user.id}`);
-  });
-
-  // Read from localStorage whenever user.id becomes available (including after re-login)
-  useEffect(() => {
-    if (user?.id) {
-      setBadgeDismissedAt(localStorage.getItem(`flea_alerts_seen_${user.id}`));
-    } else {
-      setBadgeDismissedAt(null);
-    }
-  }, [user?.id]);
-
-  // Sync across multiple hook instances via custom event
-  useEffect(() => {
-    const handler = () => {
-      if (user?.id) {
-        setBadgeDismissedAt(localStorage.getItem(`flea_alerts_seen_${user.id}`));
-      }
-    };
-    window.addEventListener('alerts-badge-dismissed', handler);
-    return () => window.removeEventListener('alerts-badge-dismissed', handler);
-  }, [user?.id]);
-
-  const badgeCount = useMemo(() => {
-    if (!user?.id) return 0;
-    if (!badgeDismissedAt) return notifications.length;
-    const lastSeenDate = new Date(badgeDismissedAt);
-    return notifications.filter(n => new Date(n.created_at) > lastSeenDate).length;
-  }, [notifications, user?.id, badgeDismissedAt]);
-
+  // Kept for backwards compatibility with callers (e.g. Notifications screen).
+  // Marking all as read is what actually clears the badge now.
   const dismissBadge = useCallback(() => {
-    if (user?.id) {
-      const now = new Date().toISOString();
-      localStorage.setItem(`flea_alerts_seen_${user.id}`, now);
-      setBadgeDismissedAt(now);
-      window.dispatchEvent(new Event('alerts-badge-dismissed'));
-    }
-  }, [user?.id]);
+    if (!user?.id) return;
+    if (unreadCount === 0) return;
+    markAllAsRead.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, unreadCount]);
 
   return {
     notifications,
