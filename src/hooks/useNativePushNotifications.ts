@@ -6,6 +6,30 @@ import { useAuth } from '@/context/AuthContext';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { logError } from '@/lib/errorLogger';
 
+type NativePushEvent =
+  | 'setup-started'
+  | 'permission-checked'
+  | 'permission-requested'
+  | 'permission-not-granted'
+  | 'registration-requested'
+  | 'token-received'
+  | 'token-save-started'
+  | 'token-save-succeeded';
+
+const logNativePushState = (
+  event: NativePushEvent,
+  context: Record<string, unknown>,
+  severity: 'warning' | 'error' = 'warning',
+) => {
+  void logError({
+    title: `Native push ${event}`,
+    message: event,
+    severity,
+    source: 'client',
+    context,
+  });
+};
+
 /**
  * Registers the iOS device with APNs and stores the token in push_subscriptions
  * with platform = 'ios'. The send-push-notification edge function reads the
@@ -34,6 +58,13 @@ export function useNativePushNotifications() {
     saveInFlightRef.current = true;
     try {
       console.log('[NativePush] Saving APNs token:', { reason, userId: user.id });
+      logNativePushState('token-save-started', {
+        reason,
+        user_id: user.id,
+        platform: Capacitor.getPlatform(),
+        token_prefix: apnsToken.slice(0, 12),
+      });
+
       const { error } = await invokeCloudFunction('register-push-subscription', {
         body: {
           endpoint: apnsToken,
@@ -60,6 +91,12 @@ export function useNativePushNotifications() {
       lastSavedTokenRef.current = apnsToken;
       lastSavedAtRef.current = Date.now();
       console.log('[NativePush] APNs token saved');
+      logNativePushState('token-save-succeeded', {
+        reason,
+        user_id: user.id,
+        platform: Capacitor.getPlatform(),
+        token_prefix: apnsToken.slice(0, 12),
+      });
     } catch (err) {
       console.error('[NativePush] Token save exception:', err);
       void logError({
@@ -88,6 +125,11 @@ export function useNativePushNotifications() {
     if (!Capacitor.isNativePlatform()) return;
     if (Capacitor.getPlatform() !== 'ios') return;
 
+    logNativePushState('setup-started', {
+      user_id: user.id,
+      platform: Capacitor.getPlatform(),
+    });
+
     let registrationListener: { remove: () => void } | null = null;
     let errorListener: { remove: () => void } | null = null;
     let appStateListener: { remove: () => void } | null = null;
@@ -95,6 +137,13 @@ export function useNativePushNotifications() {
     const registerNativePush = async (reason: string) => {
       try {
         let perm = await PushNotifications.checkPermissions();
+        console.log('[NativePush] Permission status:', perm.receive, reason);
+        logNativePushState('permission-checked', {
+          reason,
+          user_id: user.id,
+          platform: Capacitor.getPlatform(),
+          permission: perm.receive,
+        });
 
         // On iOS, trigger the native system prompt on first open so Apple
         // still asks the user directly. Our branded PushPermissionSheet is
@@ -102,14 +151,31 @@ export function useNativePushNotifications() {
         if (perm.receive === 'prompt' || perm.receive === 'prompt-with-rationale') {
           console.log('[NativePush] Requesting iOS permission on first open');
           perm = await PushNotifications.requestPermissions();
+          logNativePushState('permission-requested', {
+            reason,
+            user_id: user.id,
+            platform: Capacitor.getPlatform(),
+            permission: perm.receive,
+          });
         }
 
         if (perm.receive !== 'granted') {
           console.log('[NativePush] Permission not granted; waiting for user opt-in');
+          logNativePushState('permission-not-granted', {
+            reason,
+            user_id: user.id,
+            platform: Capacitor.getPlatform(),
+            permission: perm.receive,
+          });
           return;
         }
 
         console.log('[NativePush] Registering with APNs:', reason);
+        logNativePushState('registration-requested', {
+          reason,
+          user_id: user.id,
+          platform: Capacitor.getPlatform(),
+        });
         await PushNotifications.register();
       } catch (err) {
         console.error('[NativePush] Setup error:', err);
@@ -135,6 +201,11 @@ export function useNativePushNotifications() {
         const apnsToken = token.value;
         if (!apnsToken) return;
         console.log('[NativePush] APNs token received:', apnsToken.slice(0, 12) + '…');
+        logNativePushState('token-received', {
+          user_id: user.id,
+          platform: Capacitor.getPlatform(),
+          token_prefix: apnsToken.slice(0, 12),
+        });
         void saveNativeToken(apnsToken, 'registration');
       });
 

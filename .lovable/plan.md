@@ -1,32 +1,27 @@
-### What I confirmed
-- The PWA/native split is not the cause. A PWA user can trigger a push to a native user.
-- The latest comment alert exists in the database for `@sarahhearn2`, so the in-app notification path is working.
-- The push sender ran and logged: `No subscriptions found for user`, meaning `@sarahhearn2` has no saved native push token in the backend.
-- The fix should focus on native token registration, not the comment notification itself.
+## Diagnosis confirmed
+- The latest comment test created the in-app notification for `@sarahhearn2`.
+- The push sender function did run for that same notification.
+- The push sender still found **zero saved push subscriptions** for `@sarahhearn2`.
+- The token registration function has **no recent calls at all**, so this is not a PWA-to-native issue and not yet an APNs delivery failure. The native app is not reaching the backend to save its device token.
 
-### Plan
-1. **Make native token registration more reliable**
-   - Ensure the native push registration component is mounted globally after login.
-   - Re-register the APNs token on app open, login, and foreground resume, even if the hook thinks it already registered earlier.
-   - Avoid relying on a one-time in-memory flag that can get stuck after a failed save.
+## Plan
+1. **Fix the native registration call path**
+   - Update push token registration to use the same auth client/session source as the rest of the app.
+   - Remove the fragile split between `src/lib/supabase` and the generated cloud client for this call so the Authorization token is reliably attached.
+   - Add a direct fallback `fetch` to the registration function if `functions.invoke()` does not execute in native WebView.
 
-2. **Add visible failure handling for native push setup**
-   - If APNs permission is granted but token save fails, log a clear error to the existing live error logging system.
-   - Keep the user-facing experience quiet unless permission is denied or unavailable.
+2. **Add a visible in-app push health check**
+   - On native iOS after login/open/foreground, log clear states for: permission status, APNs registration attempted, APNs token received, backend save attempted, backend save success/failure.
+   - Send failures to the admin error logs so we can see device-side problems even when Xcode is not attached.
 
-3. **Harden backend token registration**
-   - Keep the service-role save path for `push_subscriptions`.
-   - Add clearer backend logs for: unauthorized token save, missing endpoint, save failure, and successful save.
-   - Confirm `platform = ios` rows are stored for native devices.
+3. **Keep the sender-side push path explicit**
+   - Keep comment/reply push sends tied to the matching in-app notification row, so one in-app alert equals one push attempt.
+   - Add the same explicit send pattern to any notification types that still only create in-app alerts and rely on a missing/disabled trigger.
 
-4. **Add a small admin/debug signal**
-   - Add enough logging to confirm whether a user has zero push subscriptions, web subscriptions, iOS subscriptions, or stale iOS tokens.
-   - This will make future “in-app only, no push” issues immediately diagnosable.
+4. **Verify with real data**
+   - Confirm `@sarahhearn2` gets a row in `push_subscriptions` after reopening the native app.
+   - Re-test `@jcsbh` commenting on `@sarahhearn2`’s listing.
+   - Confirm the push sender logs show an iOS subscription count greater than zero and no “No subscriptions found” warning.
 
-5. **Verify after implementation**
-   - Check backend logs for successful `register-push-subscription` after `@sarahhearn2` opens the native app.
-   - Check `push_subscriptions` has an `ios` row for `@sarahhearn2`.
-   - Re-test comment push from `@jcsbh` to `@sarahhearn2` and confirm the push sender attempts APNs delivery instead of saying no subscriptions.
-
-### Expected result
-After `@sarahhearn2` fully closes and reopens the native app once, the app should save an iOS push token, and comment pushes from `@jcsbh` should be delivered to the native device.
+## Important note
+The current evidence says the sender being on PWA and recipient being on native is fine. The blocker is that the native recipient has not saved an APNs token into the database.

@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase';
-import { supabase as cloudSupabase } from '@/integrations/supabase/client';
 
 interface InvokeCloudFunctionOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
@@ -13,11 +12,6 @@ const isOptionsObject = (
   return 'method' in value || 'body' in value || 'query' in value;
 };
 
-/**
- * Invoke a Cloud edge function with the external Supabase auth token.
- * The Cloud edge functions validate auth against the external Supabase project,
- * so we need to forward the external session token.
- */
 export async function invokeCloudFunction(
   functionName: string,
   bodyOrOptions: Record<string, unknown> | InvokeCloudFunctionOptions = {}
@@ -39,37 +33,37 @@ export async function invokeCloudFunction(
       ).toString()
     : '';
 
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID as string;
+  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
   const functionPath = queryString ? `${functionName}?${queryString}` : functionName;
+  const url = `https://${projectId}.supabase.co/functions/v1/${functionPath}`;
+  const method = options.method ?? 'POST';
 
-  const invokeOptions: Record<string, unknown> = {
-    method: options.method ?? 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  };
+  const response = await fetch(url, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: anonKey,
+      Authorization: token ? `Bearer ${token}` : `Bearer ${anonKey}`,
+    },
+    body: method !== 'GET' && options.body ? JSON.stringify(options.body) : undefined,
+  });
 
-  // Only include body for non-GET methods
-  if (options.method !== 'GET' && options.body) {
-    invokeOptions.body = options.body;
+  const contentType = response.headers.get('content-type') || '';
+  const data = contentType.includes('application/json')
+    ? await response.json().catch(() => null)
+    : await response.text().catch(() => null);
+
+  if (!response.ok) {
+    const message = typeof data === 'string'
+      ? data
+      : data?.error || data?.message || `Function ${functionName} failed`;
+    return {
+      data: null,
+      error: Object.assign(new Error(message), { status: response.status, response }),
+      response,
+    };
   }
 
-  const result = await cloudSupabase.functions.invoke(functionPath, invokeOptions);
-
-  if (result.error && result.response) {
-    try {
-      const contentType = result.response.headers.get('content-type') || '';
-      const detail = contentType.includes('application/json')
-        ? await result.response.clone().json()
-        : await result.response.clone().text();
-      const message = typeof detail === 'string'
-        ? detail
-        : detail?.error || detail?.message || result.error.message;
-
-      if (message) {
-        result.error.message = message;
-      }
-    } catch {
-      // Keep the original function error if the body cannot be parsed.
-    }
-  }
-
-  return result;
+  return { data, error: null, response };
 }
