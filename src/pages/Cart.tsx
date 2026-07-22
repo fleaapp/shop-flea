@@ -16,7 +16,7 @@ import OrderDetailsSheet from '@/components/OrderDetailsSheet';
 import OrderItemThumbnailStack from '@/components/OrderItemThumbnailStack';
 import { formatDistanceToNow } from 'date-fns';
 import { Listing } from '@/types/listing';
-import { fetchSellerShippingSettings, SellerShippingInfo } from '@/utils/shippingCalculator';
+import { fetchSellerShippingSettings, SellerShippingInfo, calculateSellerShipping, getBundleBreakdownText } from '@/utils/shippingCalculator';
 import { getAvatarUrl } from '@/utils/optimizedImage';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
