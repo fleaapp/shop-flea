@@ -16,7 +16,7 @@ import OrderDetailsSheet from '@/components/OrderDetailsSheet';
 import OrderItemThumbnailStack from '@/components/OrderItemThumbnailStack';
 import { formatDistanceToNow } from 'date-fns';
 import { Listing } from '@/types/listing';
-import { fetchSellerShippingSettings, SellerShippingInfo, calculateSellerShipping, getBundleBreakdownText } from '@/utils/shippingCalculator';
+import { fetchSellerShippingSettings, SellerShippingInfo, getBundleBreakdownText } from '@/utils/shippingCalculator';
 import { getAvatarUrl } from '@/utils/optimizedImage';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
@@ -396,11 +396,6 @@ const Cart = () => {
                       const bundleText = !allPausedOrInactive
                         ? getBundleBreakdownText(availableItems.length, settings)
                         : null;
-                      const combinedShipping = calculateSellerShipping(
-                        availableItems.map(i => ({ id: i.id, sellerId: i.sellerId, shippingPrice: i.shippingPrice })),
-                        settings
-                      );
-
                       return (
                         <>
                           {bundleText && (
