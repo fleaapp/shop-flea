@@ -168,7 +168,7 @@ const Profile = () => {
 
   return (
     <div className="native-safe-top fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col" style={{ touchAction: 'pan-x', overscrollBehavior: 'none' }}>
-      <div className="absolute right-4 z-10" style={{ top: 'calc(env(safe-area-inset-top) + 0.5rem)' }}>
+      <div className="absolute right-4 z-10 flex flex-col gap-2" style={{ top: 'calc(env(safe-area-inset-top) + 0.5rem)' }}>
 
         <div className="relative">
           <Button
@@ -176,6 +176,7 @@ const Profile = () => {
             size="icon"
             onClick={() => navigate('/sales')}
             className="h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-xl border-2 border-border bg-card hover:bg-secondary text-lg max-[375px]:text-base"
+            aria-label="Sales"
           >
             💸
           </Button>
@@ -185,6 +186,16 @@ const Profile = () => {
             </span>
           )}
         </div>
+
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setShippingSettingsOpen(true)}
+          className="h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-xl border-2 border-border bg-card hover:bg-secondary text-lg max-[375px]:text-base"
+          aria-label="Bundle Shipping"
+        >
+          ✈️
+        </Button>
       </div>
 
       <div className="flex flex-col items-center px-4 pt-6">
