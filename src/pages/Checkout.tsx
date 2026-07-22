@@ -734,6 +734,8 @@ const Checkout = () => {
                   
                   return Array.from(groupedItems.entries()).map(([sellerId, sellerItems]) => {
                     const shipping = shippingBySeller.get(sellerId) || 0;
+                    const bundleText = getBundleBreakdownText(sellerItems.length, sellerSettings.get(sellerId));
+                    const hasBundleRow = !!bundleText;
                     
                     return (
                       <div key={sellerId} className="space-y-4">
@@ -744,7 +746,7 @@ const Checkout = () => {
                               <h3 className="font-semibold text-foreground">{item.title}</h3>
                               <div className="text-right">
                                 <p className="text-lg font-semibold">${item.price}</p>
-                                {idx === sellerItems.length - 1 && (
+                                {!hasBundleRow && idx === sellerItems.length - 1 && (
                                   <p className="text-sm text-muted-foreground">+${shipping.toFixed(2)} shipping</p>
                                 )}
                               </div>
