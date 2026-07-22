@@ -1,22 +1,17 @@
-Problem found:
-- @sarahhearn2 does have bundle shipping turned on: `discounted`, `20%`.
-- The cart fetches bundle settings from `profiles_public`, but that public profile path is currently blocked with `permission denied for function get_profiles_public`.
-- Unlike the normal seller-profile lookup, the bundle-shipping lookup silently ignores that failure and returns an empty settings map, so the cart never gets `discounted/free` and `getBundleBreakdownText()` returns nothing.
+## Simplify bundle shipping banner in Cart
 
-Plan:
-1. Restore public profile access for safe seller fields
-   - Add a small backend migration to re-allow app users to read the safe `profiles_public` helper/view used across the marketplace.
-   - Keep only public-safe fields exposed; no private payment, email, or verification data.
+The current banner appends a separate shipping amount line (e.g. "— Free combined shipping" or "— $4.50 combined shipping") which is confusing when items already ship free.
 
-2. Make bundle shipping resilient in frontend
-   - Update `fetchSellerShippingSettings()` to handle `profiles_public` errors instead of silently returning no settings.
-   - Add the same fallback pattern used by seller profile lookups so Cart and Checkout still receive bundle settings if the public view glitches.
+### Change
+In `src/pages/Cart.tsx` (lines ~406-416), remove the suffix entirely and rely solely on `getBundleBreakdownText`, updating that helper to return the exact copy:
 
-3. Fix cart messaging behavior
-   - Ensure seller cards with 2+ available items show the bundle shipping banner whenever the seller mode is `discounted` or `free`, even if the current item shipping prices are `$0`.
-   - Keep the message brand-consistent: `✈️ Bundle discount: 20% off shipping` or `✈️ Free bundle shipping`.
+- **Discounted mode:** `✈️ Bundle discount: 20% off combined shipping`
+- **Free mode:** `✈️ Free shipping for bundles`
 
-4. Verify the exact reported case
-   - Re-check @jcsbh cart with 2 listings from @sarahhearn2.
-   - Confirm the bundle banner appears in Cart before Checkout.
-   - Confirm Checkout still calculates the same bundled shipping total.
+The banner will render only the emoji + breakdown text, centered, with no extra amount or "Free combined shipping" suffix.
+
+### Files touched
+- `src/pages/Cart.tsx` — remove the `{' — '}` and amount branch, render only `bundleText`.
+- `src/utils/shippingCalculator.ts` — update `getBundleBreakdownText` to return the two strings above.
+
+No other UI or logic changes.

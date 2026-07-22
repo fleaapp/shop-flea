@@ -406,11 +406,7 @@ const Cart = () => {
                           {bundleText && (
                             <div className="px-4 py-2 bg-accent/30 text-center">
                               <span className="text-xs text-accent-foreground">
-                                ✈️ <span className="font-bold">{bundleText}</span>
-                                {' — '}
-                                {combinedShipping === 0
-                                  ? 'Free combined shipping'
-                                  : `$${combinedShipping.toFixed(2)} combined shipping`}
+                                <span className="font-bold">{bundleText}</span>
                               </span>
                             </div>
                           )}
