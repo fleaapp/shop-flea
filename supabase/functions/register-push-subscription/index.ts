@@ -124,8 +124,24 @@ serve(async (req) => {
       return json({ error: "Failed to save push subscription" }, 500);
     }
 
+    const { data: savedRows, error: savedRowsError } = await svc
+      .from("push_subscriptions")
+      .select("id, platform, updated_at")
+      .eq("user_id", userId)
+      .eq("platform", platform)
+      .order("updated_at", { ascending: false });
+
+    if (savedRowsError) {
+      console.warn("[register-push-subscription] saved but status check failed:", savedRowsError);
+    }
+
     console.log(`[register-push-subscription] saved ${platform} token for user ${userId} endpoint=${endpoint.slice(0, 16)}…`);
-    return json({ ok: true, platform });
+    return json({
+      ok: true,
+      platform,
+      token_count_for_platform: savedRows?.length ?? null,
+      latest_updated_at: savedRows?.[0]?.updated_at ?? null,
+    });
   } catch (err) {
     console.error("[register-push-subscription] error:", err);
     await logEdgeError({

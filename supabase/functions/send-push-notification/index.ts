@@ -126,21 +126,6 @@ serve(async (req) => {
       }
     }
 
-    const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY");
-    if (!vapidPrivateKey) {
-      return new Response(JSON.stringify({ error: "VAPID_PRIVATE_KEY not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Configure web-push with VAPID keys
-    webpush.setVapidDetails(
-      "mailto:hello@finditonflea.com",
-      VAPID_PUBLIC_KEY,
-      vapidPrivateKey
-    );
-
     console.log("[Push] Using Supabase URL:", supabaseUrl?.slice(0, 30));
 
     // Get user's push subscriptions
@@ -208,12 +193,19 @@ serve(async (req) => {
     const apnsBundleId = Deno.env.get("APNS_BUNDLE_ID") ?? "";
     const apnsAuthKeyPem = Deno.env.get("APNS_AUTH_KEY") ?? "";
     const apnsHost = (Deno.env.get("APNS_HOST") ?? "api.push.apple.com").trim();
+    const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
 
     let apnsJwt: string | null = null;
     const buildApnsJwt = async (): Promise<string> => {
       if (apnsJwt) return apnsJwt;
-      if (!apnsKeyId || !apnsTeamId || !apnsAuthKeyPem) {
-        throw new Error("APNs not configured");
+      if (!apnsKeyId || !apnsTeamId || !apnsBundleId || !apnsAuthKeyPem) {
+        const missing = [
+          !apnsKeyId ? "APNS_KEY_ID" : null,
+          !apnsTeamId ? "APNS_TEAM_ID" : null,
+          !apnsBundleId ? "APNS_BUNDLE_ID" : null,
+          !apnsAuthKeyPem ? "APNS_AUTH_KEY" : null,
+        ].filter(Boolean).join(", ");
+        throw new Error(`APNs not configured: missing ${missing}`);
       }
       const pemBody = apnsAuthKeyPem
         .replace(/-----BEGIN PRIVATE KEY-----/g, "")
@@ -286,6 +278,16 @@ serve(async (req) => {
           sent++;
           continue;
         }
+
+        if (!vapidPrivateKey) {
+          throw new Error("VAPID_PRIVATE_KEY not configured for web push");
+        }
+
+        webpush.setVapidDetails(
+          "mailto:hello@finditonflea.com",
+          VAPID_PUBLIC_KEY,
+          vapidPrivateKey,
+        );
 
         const pushSubscription = {
           endpoint: sub.endpoint,
