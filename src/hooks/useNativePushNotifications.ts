@@ -12,6 +12,7 @@ type NativePushEvent =
   | 'permission-requested'
   | 'permission-not-granted'
   | 'registration-requested'
+  | 'registration-callback-timeout'
   | 'token-received'
   | 'token-save-started'
   | 'token-save-succeeded';
@@ -43,6 +44,32 @@ export function useNativePushNotifications() {
   const lastSavedTokenRef = useRef<string | null>(null);
   const lastSavedAtRef = useRef(0);
   const saveInFlightRef = useRef(false);
+  const pendingRegistrationRef = useRef<{ requestedAt: number; reason: string } | null>(null);
+  const registrationTimeoutRef = useRef<number | null>(null);
+
+  const clearRegistrationTimeout = useCallback(() => {
+    if (registrationTimeoutRef.current !== null) {
+      window.clearTimeout(registrationTimeoutRef.current);
+      registrationTimeoutRef.current = null;
+    }
+    pendingRegistrationRef.current = null;
+  }, []);
+
+  const startRegistrationTimeout = useCallback((reason: string, userId: string) => {
+    clearRegistrationTimeout();
+    pendingRegistrationRef.current = { requestedAt: Date.now(), reason };
+    registrationTimeoutRef.current = window.setTimeout(() => {
+      const pending = pendingRegistrationRef.current;
+      if (!pending) return;
+      logNativePushState('registration-callback-timeout', {
+        reason: pending.reason,
+        user_id: userId,
+        platform: Capacitor.getPlatform(),
+        elapsed_ms: Date.now() - pending.requestedAt,
+        likely_fix: 'Run scripts/setup-ios-native.sh so AppDelegate forwards APNs callbacks to Capacitor.',
+      }, 'error');
+    }, 12_000);
+  }, [clearRegistrationTimeout]);
 
   const saveNativeToken = useCallback(async (apnsToken: string, reason: string) => {
     if (!user?.id || !apnsToken) return;
@@ -176,6 +203,7 @@ export function useNativePushNotifications() {
           user_id: user.id,
           platform: Capacitor.getPlatform(),
         });
+        startRegistrationTimeout(reason, user.id);
         await PushNotifications.register();
       } catch (err) {
         console.error('[NativePush] Setup error:', err);
@@ -198,6 +226,7 @@ export function useNativePushNotifications() {
 
     const setup = async () => {
       registrationListener = await PushNotifications.addListener('registration', (token) => {
+        clearRegistrationTimeout();
         const apnsToken = token.value;
         if (!apnsToken) return;
         console.log('[NativePush] APNs token received:', apnsToken.slice(0, 12) + '…');
@@ -210,6 +239,7 @@ export function useNativePushNotifications() {
       });
 
       errorListener = await PushNotifications.addListener('registrationError', (err) => {
+        clearRegistrationTimeout();
         console.error('[NativePush] APNs registration error:', err);
         void logError({
           title: 'Native APNs registration error',
@@ -253,6 +283,7 @@ export function useNativePushNotifications() {
       registrationListener?.remove();
       errorListener?.remove();
       appStateListener?.remove();
+      clearRegistrationTimeout();
     };
-  }, [saveNativeToken, user?.id]);
+  }, [clearRegistrationTimeout, saveNativeToken, startRegistrationTimeout, user?.id]);
 }
