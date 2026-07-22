@@ -778,12 +778,18 @@ const Checkout = () => {
                 if (rows.length === 0) return null;
                 return (
                   <div className="px-4 py-3 border-t border-border space-y-2">
-                    {rows.map(({ sellerId, bundleText }) => (
-                      <div key={sellerId} className="text-xs text-accent-foreground text-left">
-                        <div><span className="mr-1">✈️</span><span className="font-bold">Bundle shipping:</span></div>
-                        <div>{bundleText!.detail}</div>
-                      </div>
-                    ))}
+                    {rows.map(({ sellerId, bundleText }) => {
+                      const shipping = shippingBySeller.get(sellerId) || 0;
+                      return (
+                        <div key={sellerId} className="flex items-start justify-between gap-3 text-xs text-accent-foreground">
+                          <div className="text-left">
+                            <div><span className="mr-1">✈️</span><span className="font-bold">Bundle shipping:</span></div>
+                            <div>{bundleText!.detail}</div>
+                          </div>
+                          <div className="text-right whitespace-nowrap">+${shipping.toFixed(2)}</div>
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })()}
