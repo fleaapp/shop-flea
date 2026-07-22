@@ -1,37 +1,33 @@
-# Fix persistent support-chat notification badge
+## Root cause (confirmed from logs)
 
-## Root cause
+Stripe returned:
+`Keys for idempotent requests can only be used with the same parameters they were first used with. Try using a key other than 'flea-pi-6c149349774f4267692ab0198d5e970a'`
 
-The Alerts bottom-nav badge is derived from unread rows in the `notifications` table. Support-chat alerts have two sources that must both be cleared:
+The Apple Pay speed-up work added:
+- pre-warmed PaymentIntent creation from `useEffect`
+- `payment_method_options: { card: { request_three_d_secure: "automatic" } }`
+- coupon recalculation flow
 
-- A real `notifications` row (`type = 'support_message'`, `related_thread_id = <thread>`)
-- A synthesized fallback in `useNotifications` built from `chat_messages` where `sender_type != 'user'` AND `read = false`
+The idempotency key is currently `flea-pi-sha256(user | sorted item ids | amountCents | saveCard flag)`. That key doesn't include coupon, 3DS options, or a code-version salt. When a basket was first submitted before today's deploy and then re-attempted after the deploy, Stripe sees "same key, different params" and rejects the request for 24h. Result: both Apple Pay and Add-new-card fail on that basket for that buyer.
 
-Today:
+## Fix plan
 
-- Opening the support conversation marks `chat_messages.read = true` but never updates the matching `notifications` row and never invalidates the `['notifications']` query, so the DB-derived badge stays and reappears after any refetch.
-- Tapping the alert on the Alerts screen skips `markAsRead` for fallback entries, and the "mark all as read" tap early-returns when only fallback entries are unread — so opening Alerts doesn't clear it either.
+1. Strengthen the idempotency key in `supabase/functions/stripe-connect-payment-intent/index.ts`
+   - Include a code-version salt (bumps whenever request params change).
+   - Include coupon code, seller stripe account id, application fee amount, and a stable hash of the full PaymentIntent request body.
+   - This guarantees any change to what we send Stripe produces a new key.
 
-## Changes
+2. Retry-on-idempotency-conflict
+   - Wrap `paymentIntents.create` so that if Stripe returns `type === 'idempotency_error'`, we retry once with a fresh random-suffixed key.
+   - This unblocks any buyer already stuck from today's collision without them needing to wait 24h.
 
-### 1. `src/pages/ChatConversation.tsx` — clear both sources on open
+3. Keep Apple Pay pre-warm safe
+   - Ensure the pre-warm path and the manual card path both go through the same hardened create-PI function, so they can never collide with each other on a shared key.
 
-In the existing `markRead` effect, after updating `chat_messages`:
+4. Verify
+   - Deploy the edge function.
+   - Watch `stripe-connect-payment-intent` logs for any remaining idempotency errors and confirm a fresh PI is created for both Apple Pay and manual card tests.
 
-- Also update `notifications` set `is_read = true` where `user_id = auth user`, `related_thread_id = threadId`, `type = 'support_message'`, `is_read = false`.
-- Invalidate `['notifications']` in addition to `['unread-support']` and `['nav-badges']`.
+## Not part of this fix
 
-### 2. `src/pages/Notifications.tsx` — don't ignore fallback support items
-
-- Remove the `!n.id.startsWith('fallback-')` guard on the auto "mark all as read" effect so any unread item (including support fallbacks) triggers a clear pass.
-- Update `markAllAsRead` in `src/hooks/useNotifications.ts` to also mark the user's support `chat_messages` as read in the same mutation: for every `chat_threads.id` where `user_id = auth uid`, set `chat_messages.read = true` where `sender_type != 'user'` AND `read = false`. This guarantees taps on the Alerts screen clear the fallback source too.
-- When an individual fallback support notification is tapped, run the same targeted update on `chat_messages` for that `related_thread_id` (in addition to navigating).
-
-### 3. Verification
-
-- `supabase--read_query`: confirm after opening the support chat that `notifications.is_read = true` for the matching row, and `chat_messages.read = true` for that thread's non-user messages.
-- Reopen the native app: the badge should not reappear.
-
-## Scope
-
-Frontend only. No schema, RLS, or edge-function changes. No behavioral changes to any non-support notification type.
+- The screenshot's "Apple Pay Is Not Available in 'Flea'" iOS system alert is a separate native signing/provisioning issue (the archived build's provisioning profile didn't include the `merchant.com.finditonflea.app` entitlement). That needs to be handled by re-archiving with Apple Pay enabled on the App ID and provisioning profile via `scripts/setup-ios-native.sh`, not in the web code. Manual card checkout will start working immediately once the idempotency fix ships.
