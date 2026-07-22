@@ -330,7 +330,7 @@ const Checkout = () => {
   useEffect(() => {
     if (!getNativeWalletPlatform()) return;
     if (selectedMethod?.kind !== 'wallet') return;
-    if (!preflightReady()) return;
+    if (!user || isBlocked || buyerOwesCents > 0 || !isShippingComplete || !sellerHasStripe) return;
     void ensureWarmedPaymentIntent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMethod, currentAmountCents, isShippingComplete, user?.id]);
