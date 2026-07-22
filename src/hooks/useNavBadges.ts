@@ -136,8 +136,9 @@ export const useNavBadges = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, invalidate)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `buyer_id=eq.${user.id}` }, invalidate)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `seller_id=eq.${user.id}` }, invalidate)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_messages', filter: `sender_id=neq.${user.id}` }, invalidate)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages', filter: `sender_id=neq.${user.id}` }, invalidate)
+      // Skip global order_messages/chat_messages subs — they fanout to every user in the system.
+      // Focus refetch + 30s stale time is sufficient for message-badge freshness.
+
 
       .subscribe();
 
