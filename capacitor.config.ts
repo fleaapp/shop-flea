@@ -29,12 +29,15 @@ const config: CapacitorConfig = {
     },
   },
   ios: {
-    contentInset: 'always',
+    // Edge-to-edge: WebView draws under the home indicator so the page's own
+    // background (lime on auth, cream in-app) fills the bottom safe area,
+    // mirroring the transparent status-bar overlay at the top. No element
+    // positions change — only the native strip beneath the WebView goes away.
+    contentInset: 'never',
     limitsNavigationsToAppBoundDomains: false,
-    // Cream so the home-indicator safe area matches the app background on
-    // in-app routes. The splash screen has its own `backgroundColor` above
-    // (lime) and is unaffected by this value.
-    backgroundColor: '#F5F1EB',
+    // Transparent so the native layer behind the WebView never paints its own
+    // color into the safe-area regions.
+    backgroundColor: '#00000000',
   },
   android: {
     allowMixedContent: false,
