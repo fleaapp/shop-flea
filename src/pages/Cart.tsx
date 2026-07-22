@@ -399,7 +399,7 @@ const Cart = () => {
                       return (
                         <>
                           {bundleText && (
-                            <div className="px-4 py-2 bg-accent/30 text-left text-xs text-accent-foreground">
+                            <div className="px-4 py-2 bg-accent/30 text-center text-xs text-accent-foreground">
                               <span className="mr-1">✈️</span>
                               <span className="font-bold">Bundle shipping:</span>{' '}
                               <span>{bundleText.detail}</span>
