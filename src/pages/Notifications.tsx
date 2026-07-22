@@ -7,6 +7,8 @@ import { useNotifications, getNotificationMessage, getNotificationEmoji, Notific
 import { useOrders } from '@/hooks/useOrders';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { canOpenListing } from '@/utils/listingAccess';
+import { supabase } from '@/integrations/supabase/client';
+
 
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
