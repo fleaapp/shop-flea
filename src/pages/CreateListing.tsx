@@ -895,16 +895,6 @@ const CreateListing = () => {
         onOpenChange={(open) => {
           setShowShippingSettings(open);
           if (!open && user) {
-            const localPrefs = loadShippingPrefs(user.id);
-            if (localPrefs) {
-              setTieredShippingEnabled(localPrefs.tieredEnabled);
-              if (localPrefs.tieredEnabled) {
-                setTier1Price(localPrefs.tier1);
-                setShippingPrice(localPrefs.tier1.toString());
-              } else {
-                setShippingPrice('');
-              }
-            }
             refreshProfile();
           }
         }}
