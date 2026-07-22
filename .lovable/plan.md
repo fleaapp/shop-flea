@@ -1,69 +1,60 @@
-I agree this can work again. I found two concrete problems to fix in code/config, not a UI rewrite:
+## Direct answer
 
-1. The current checkout still has part of the Apple Pay speed-up change: it intentionally skips `Stripe.isApplePayAvailable()` before opening Apple Pay.
-2. The Apple Pay sheet amount can be different from the checkout total (`$1.50` vs `$1.35`) because the payment-intent function accepts client-supplied shipping instead of recalculating bundle shipping server-side.
-3. The native setup script only checks that `CODE_SIGN_ENTITLEMENTS` exists somewhere in the Xcode project. It does not force every App build configuration to use `App/App.entitlements`, which can explain why Xcode shows the merchant ticked but `codesign` output is empty for the installed build.
+No — the evidence does **not** point to a missing Stripe payment-processing certificate as the current Apple Pay failure.
 
-## Plan
+What we have confirmed is stronger and earlier in the chain:
 
-### 1. Restore the safer Apple Pay launch path
-Update `src/pages/Checkout.tsx` so Apple Pay goes back to the reliable flow:
+- Your previous `codesign -d --entitlements :- ... | grep in-app-payments` output was empty.
+- Xcode’s merchant row flashing red points to signing/provisioning not attaching the Apple Pay entitlement to the built app.
+- Push notifications show the same native-signing/bridge pattern: iOS permission is granted and registration is requested, but no APNs token ever reaches the app, and the backend has zero stored iOS push subscriptions for the tested accounts.
 
-```text
-Tap Apple Pay
-→ create fresh PaymentIntent
-→ run Apple Pay availability preflight
-→ verify PaymentIntent amount exactly matches checkout total
-→ createApplePay
-→ presentApplePay
-```
+For Stripe Apple Pay:
 
-This removes the remaining “fast popup” shortcut that skipped Apple Pay preflight.
+- **Required in the native signed app:** Apple Pay capability + `merchant.com.finditonflea.app` embedded in the signed entitlements.
+- **Required for actual Stripe processing:** the Stripe account behind the publishable key must be Apple Pay-ready for that merchant. Stripe handles the payment processing certificate side for this integration, but the native app still must be signed with the Apple Pay entitlement.
+- **Current failure:** happens before a normal Stripe charge path can complete, because the signed app is missing the entitlement / provisioning capability.
 
-### 2. Block Apple Pay if the amount is wrong
-Before showing the Apple Pay sheet, compare:
+## Plan that actually changes the broken paths
 
-```text
-PaymentIntent amount from backend
-vs
-checkout total shown in Flea
-```
+1. **Fix Apple Pay signing at the source**
+   - Update `scripts/setup-ios-native.sh` so it patches the **App target only**, not every build settings block.
+   - Force `CODE_SIGN_ENTITLEMENTS = App/App.entitlements` into the App target Debug/Release build configurations.
+   - Add Xcode App target capability flags for:
+     - Apple Pay
+     - Push Notifications
+     - Associated Domains
+     - Sign in with Apple
+   - Keep copying `ios-native/App.entitlements` with:
+     - `merchant.com.finditonflea.app`
+     - `aps-environment = production`
+     - associated domains
+     - Apple sign-in
 
-If they differ by even 1 cent, do not open Apple Pay. Show a Flea toast and log the mismatch so it does not reach the native Apple system alert.
+2. **Fix native push token delivery**
+   - Patch `ios/App/App/AppDelegate.swift` through the setup script with the official Capacitor APNs callbacks:
+     - `didRegisterForRemoteNotificationsWithDeviceToken`
+     - `didFailToRegisterForRemoteNotificationsWithError`
+   - These callbacks post the APNs token/error into Capacitor so `useNativePushNotifications.ts` can receive the token and save it.
+   - This addresses the confirmed failure: permission is granted, registration is requested, but no token is stored.
 
-### 3. Recalculate bundle shipping in the payment function
-Update `supabase/functions/stripe-connect-payment-intent/index.ts` so the backend calculates shipping from database listing rows and seller bundle settings instead of trusting the client `shipping` number.
+3. **Add a timeout diagnostic so this cannot silently fail again**
+   - Update `src/hooks/useNativePushNotifications.ts` to log a clear warning if iOS registration is requested but no token or registration error returns within a short timeout.
+   - Keep the existing token-save function because the backend failure is currently “no subscription exists”, not “send failed after subscription exists”.
 
-That fixes the `$1.50` Apple Pay sheet vs `$1.35` checkout total problem.
+4. **Make verification impossible to miss**
+   - Update the setup script’s final checks to print and fail on:
+     - missing entitlements file
+     - missing `CODE_SIGN_ENTITLEMENTS`
+     - missing Xcode capability flags
+     - missing Apple Pay merchant ID
+     - missing APNs delegate bridge
+   - After you rebuild, the proof will be:
+     - `codesign` output includes `merchant.com.finditonflea.app`
+     - native app logs show `Native push token-received`
+     - native app logs show `Native push token-save-succeeded`
+     - backend shows an `ios` push subscription row for the logged-in user
 
-### 4. Send checkout amount context to the backend
-Update the checkout request to send:
-
-```text
-expectedAmountCents
-shippingBySeller
-couponCode
-```
-
-The backend will use this as a validation check, not as the source of truth. If the backend-calculated amount does not match the Flea checkout total, it returns a clear error instead of creating a bad PaymentIntent.
-
-### 5. Bump the PaymentIntent idempotency version
-Update the payment-intent idempotency version so no stale PaymentIntent from this morning’s speed-up change can be reused.
-
-### 6. Harden the iOS entitlement setup script
-Update `scripts/setup-ios-native.sh` so it force-wires:
-
-```text
-CODE_SIGN_ENTITLEMENTS = App/App.entitlements
-```
-
-for every App build configuration, not just “if it appears somewhere”. This makes the local Debug build and Archive build both sign with the Apple Pay entitlement file.
-
-### 7. Keep unchanged
-No Stripe PaymentSheet. No external checkout. No deep links. No changes to the Flea-native payment UI, seller flow, fees, or manual card path except the shared amount validation.
-
-## After implementation
-You will need to run locally:
+5. **Commands after implementation**
 
 ```bash
 git pull
@@ -74,15 +65,4 @@ bash scripts/setup-ios-native.sh
 npx cap open ios
 ```
 
-Then build/run again and re-check:
-
-```bash
-APP="$(find ~/Library/Developer/Xcode/DerivedData -path '*/Build/Products/Debug-iphoneos/App.app' -type d | sort | tail -1)"
-codesign -d --entitlements :- "$APP" 2>&1 | grep -A6 in-app-payments
-```
-
-The output must include:
-
-```text
-merchant.com.finditonflea.app
-```
+This does **not** reset Xcode caches, does **not** delete DerivedData, and does **not** wipe Swift Package Manager artifacts.
