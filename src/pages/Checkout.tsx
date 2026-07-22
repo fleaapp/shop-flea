@@ -649,8 +649,14 @@ const Checkout = () => {
     setIsSubmitting(true);
     try {
       if (getNativeWalletPlatform()) {
-        const pi = await createPaymentIntent(false);
+        // Use the pre-minted PI when the buyer has already tapped the wallet
+        // tile (see the pre-mint useEffect above). Falls back to creating one
+        // synchronously if the cache is missing or stale.
+        const pi = await ensureWarmedPaymentIntent();
         if (!pi) return;
+        // Consume the cache — the next tap will start with a fresh one.
+        warmedPiRef.current = null;
+        warmedPiAmountCentsRef.current = null;
         await handleNativeWalletConfirm(pi);
         return;
       }
