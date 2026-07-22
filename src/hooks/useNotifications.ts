@@ -161,8 +161,11 @@ export const useNotifications = () => {
         }
 
         for (const [threadId, message] of latestUnreadByThread) {
+          // Skip synthesizing a fallback when we already have ANY notification
+          // row (read or unread) for this support thread — otherwise, once the
+          // real notification is marked read, the fallback would re-inject an
+          // unread copy on the next refetch.
           const hasExistingSupportNotification = existingNotifications.some(notification =>
-            !notification.is_read &&
             notification.type === 'support_message' &&
             notification.related_thread_id === threadId
           );
