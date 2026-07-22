@@ -39,7 +39,7 @@ const ShippingStatusTracker = ({
     {
       key: 'in_transit',
       label: 'Shipped',
-      icon: '📦',
+      icon: '✈️',
       timestamp: shippedAt,
     },
     {

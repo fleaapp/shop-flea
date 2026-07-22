@@ -35,13 +35,13 @@ const ProductThumbnail = ({
           e.currentTarget.parentElement?.classList.add('bg-muted', 'flex', 'items-center', 'justify-center', 'rounded-xl');
           const emoji = document.createElement('span');
           emoji.className = 'text-3xl';
-          emoji.textContent = fallbackEmoji || '📦';
+          emoji.textContent = fallbackEmoji || '✈️';
           e.currentTarget.parentElement?.appendChild(emoji);
         }}
       />
     ) : (
       <div className="h-full w-full rounded-xl bg-muted flex items-center justify-center">
-        <span className="text-3xl">{fallbackEmoji || '📦'}</span>
+        <span className="text-3xl">{fallbackEmoji || '✈️'}</span>
       </div>
     )}
     {avatar && (

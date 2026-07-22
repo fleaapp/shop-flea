@@ -33,13 +33,13 @@ export default function AdminListings() {
     { key: 'refunded', label: 'Refunded', emoji: '↩️', count: stats.refunded },
     { key: 'hidden', label: 'Hidden', emoji: '🙈' },
     { key: 'removed', label: 'Deleted', emoji: '🗑️', count: stats.deleted },
-    { key: 'archived', label: 'Archived', emoji: '📦' },
+    { key: 'archived', label: 'Archived', emoji: '✈️' },
     { key: 'featured', label: 'Featured', emoji: '⭐️' },
   ] as const;
 
   return (
     <div className="admin-scope native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden pb-24">
-      <AdminHeader title="Listings" emoji="📦" />
+      <AdminHeader title="Listings" emoji="✈️" />
 
       <div className="px-4 pb-2">
         <div className="relative">

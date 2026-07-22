@@ -291,7 +291,7 @@ const OrderDetailsSheet = ({
                     onClick={() => openTrackingUrl(primaryOrder.tracking_provider, primaryOrder.tracking_number!)}
                     className="w-full rounded-full bg-charcoal text-white hover:bg-charcoal-light h-10"
                   >
-                    📦 Track parcel
+                    ✈️ Track parcel
                   </Button>
                 )}
               </div>

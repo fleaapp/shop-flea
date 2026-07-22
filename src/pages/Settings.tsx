@@ -221,7 +221,7 @@ const Settings = () => {
     label: 'Filter Preferences',
     action: isGuest ? promptGuest : () => setPreferencesOpen(true)
   }, {
-    icon: <span className="text-base">📦</span>,
+    icon: <span className="text-base">✈️</span>,
     label: 'Shipping Settings',
     action: isGuest ? promptGuest : () => setShippingOpen(true)
   }, isGuest ? {

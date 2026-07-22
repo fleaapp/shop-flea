@@ -110,7 +110,7 @@ const Profile = () => {
           }}
           className="absolute left-1/2 -translate-x-1/2 bottom-3 max-[430px]:bottom-2.5 max-[375px]:bottom-2 z-10 rounded-full bg-[#ddfed7] text-charcoal text-xs font-medium px-4 py-2 max-[375px]:px-3 max-[375px]:py-1.5 max-[375px]:text-[10px] whitespace-nowrap"
         >
-          📦 Mark as shipped
+          ✈️ Mark as shipped
         </button>
       );
     }
@@ -332,7 +332,7 @@ const Profile = () => {
                       </div>
                       <div className="text-right flex-shrink-0 ml-1.5 max-[393px]:ml-0.5 max-[375px]:ml-0.5">
                         <p className="text-lg max-[393px]:text-base max-[375px]:text-sm font-bold text-foreground leading-none">${listing.price}</p>
-                        <p className="text-xs max-[393px]:text-[10px] max-[375px]:text-[9px] text-muted-foreground whitespace-nowrap leading-tight mt-0.5">📦 +${listing.shipping_price || 0}</p>
+                        <p className="text-xs max-[393px]:text-[10px] max-[375px]:text-[9px] text-muted-foreground whitespace-nowrap leading-tight mt-0.5">✈️ +${listing.shipping_price || 0}</p>
                       </div>
                     </div>
                   </div>

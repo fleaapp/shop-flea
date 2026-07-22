@@ -150,7 +150,7 @@ const OnboardingMiniCard = ({ direction }: OnboardingMiniCardProps) => {
               </div>
               <div className="text-right flex-shrink-0 ml-1">
                 <p className="text-[11px] font-bold text-foreground/40">$45</p>
-                <p className="text-[7px] text-muted-foreground/40">📦 +$8</p>
+                <p className="text-[7px] text-muted-foreground/40">✈️ +$8</p>
               </div>
             </div>
           </div>
@@ -191,7 +191,7 @@ const OnboardingMiniCard = ({ direction }: OnboardingMiniCardProps) => {
               </div>
               <div className="text-right flex-shrink-0 ml-1">
                 <p className="text-[11px] font-bold text-foreground">$55</p>
-                <p className="text-[7px] text-muted-foreground">📦 +$12</p>
+                <p className="text-[7px] text-muted-foreground">✈️ +$12</p>
               </div>
             </div>
           </div>

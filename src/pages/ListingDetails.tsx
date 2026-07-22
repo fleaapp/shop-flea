@@ -774,7 +774,7 @@ const ListingDetails = () => {
                                 }}
                                 className="h-14 rounded-2xl text-sm font-medium px-2 bg-[#ddfed7] text-foreground hover:bg-[#ddfed7]/80 border-2 border-[#ddfed7] w-44 gap-1"
                               >
-                                📦 Mark as shipped
+                                ✈️ Mark as shipped
                               </Button>
                             );
                           }

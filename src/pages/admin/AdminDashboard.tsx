@@ -56,7 +56,7 @@ export default function AdminDashboard() {
     {
       title: 'Marketplace',
       items: [
-        { key: 'listings', icon: '📦', label: 'Listings management', route: '/admin/listings', badge: badges.listings },
+        { key: 'listings', icon: '✈️', label: 'Listings management', route: '/admin/listings', badge: badges.listings },
         { key: 'brands', icon: '🏷️', label: 'Brand management', route: '/admin/brands', badge: badges.brands },
         { key: 'transactions', icon: '💳', label: 'Transaction dashboard', route: '/admin/transactions', badge: badges.transactions },
       ],
