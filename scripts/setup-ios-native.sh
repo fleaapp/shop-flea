@@ -228,14 +228,36 @@ PY
 echo
 echo "==> Verification"
 echo "   entitlements file: $(test -f "$ENTITLEMENTS_DEST" && echo yes || echo NO)"
-WIRED_COUNT=$(grep -c "CODE_SIGN_ENTITLEMENTS = App/App.entitlements" "$PBXPROJ" || true)
-CAPABILITY_COUNT=$(grep -c "com.apple.ApplePay\|com.apple.Push" "$PBXPROJ" || true)
+VERIFY_COUNTS=$(/usr/bin/python3 - "$PBXPROJ" <<'PY'
+import sys
+
+path = sys.argv[1]
+with open(path, encoding="utf-8") as f:
+    text = f.read()
+
+checks = {
+    "wired": text.count("CODE_SIGN_ENTITLEMENTS = App/App.entitlements"),
+    "apple_pay": int("com.apple.ApplePay" in text),
+    "push": int("com.apple.Push" in text),
+    "associated_domains": int("com.apple.AssociatedDomains" in text),
+    "sign_in": int("com.apple.SignInWithApple" in text),
+}
+
+for key, value in checks.items():
+    print(f"{key}={value}")
+PY
+)
+eval "$VERIFY_COUNTS"
+WIRED_COUNT=${wired:-0}
+CAPABILITY_COUNT=$(( ${apple_pay:-0} + ${push:-0} ))
 echo "   pbxproj wired:     $(test "$WIRED_COUNT" -gt 0 && echo yes || echo NO) ($WIRED_COUNT App target build settings)"
 echo "   Xcode capabilities: $(test "$CAPABILITY_COUNT" -ge 2 && echo yes || echo NO)"
+echo "   Associated Domains: $(test "${associated_domains:-0}" -eq 1 && echo yes || echo NO)"
+echo "   Sign in with Apple: $(test "${sign_in:-0}" -eq 1 && echo yes || echo NO)"
 echo "   Apple Pay entitlement: $(grep -q "com.apple.developer.in-app-payments" "$ENTITLEMENTS_DEST" && echo yes || echo NO)"
 echo "   Apple Pay merchant:    $(grep -q "merchant.com.finditonflea.app" "$ENTITLEMENTS_DEST" && echo yes || echo NO)"
 echo "   APNs delegate bridge:  $(grep -q "capacitorDidRegisterForRemoteNotifications" "$APP_DELEGATE" && echo yes || echo NO)"
-echo "   Stripe iOS SDK pin:    exact 25.9.0 via patch-package"
+echo "   Stripe iOS SDK pin:    exact 25.9.0 via native postinstall patcher"
 echo "   entitlement checker:   skipped (using Stripe's isApplePayAvailable)"
 echo "   Google leftovers:  $(grep -R 'REVERSED_IOS_CLIENT_ID\|@codetrix-studio/capacitor-google-auth' "$ROOT/ios" "$ROOT/package.json" "$ROOT/capacitor.config.ts" 2>/dev/null | wc -l | tr -d ' ')"
 echo
