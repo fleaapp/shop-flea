@@ -783,12 +783,12 @@ const Checkout = () => {
                     {rows.map(({ sellerId, bundleText }) => {
                       const shipping = shippingBySeller.get(sellerId) || 0;
                       return (
-                        <div key={sellerId} className="flex items-end justify-between gap-3 text-accent-foreground">
-                          <div className="text-left text-xs">
+                        <div key={sellerId} className="flex items-end justify-between gap-3 text-accent-foreground text-sm">
+                          <div className="text-left">
                             <div><span className="mr-1">✈️</span><span className="font-bold">Bundle shipping:</span></div>
                             <div>{bundleText!.detail}</div>
                           </div>
-                          <div className="text-right whitespace-nowrap text-sm text-muted-foreground">+${shipping.toFixed(2)}</div>
+                          <div className="text-right whitespace-nowrap text-muted-foreground">+${shipping.toFixed(2)}</div>
                         </div>
                       );
                     })}
