@@ -240,6 +240,8 @@ export const useNotifications = () => {
     },
     enabled: !!user?.id,
     staleTime: 30_000,
+    placeholderData: (prev) => prev,
+    refetchOnMount: 'always',
   });
 
   const markAsRead = useMutation({
