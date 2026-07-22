@@ -26,7 +26,8 @@ import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import ShippingStatusTracker from '@/components/ShippingStatusTracker';
 import { openTrackingUrl } from '@/lib/tracking';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchSellerShippingSettings, getBundleBreakdownText } from '@/utils/shippingCalculator';
 import { toast } from 'sonner';
 import { Loader2, ChevronRight } from 'lucide-react';
 
@@ -102,10 +103,22 @@ const SalesDetailsSheet = ({
   if (!orders || orders.length === 0) return null;
 
   const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
+  const shippingTotal = orders.reduce((sum, o) => sum + Number(o.shipping_price || 0), 0);
   // Sellers pay no selling fees — you keep the full items + shipping.
   const youReceived = subtotal;
   const statusBadge = getDisplayStatusBadge(primaryOrder);
   const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
+
+  const { data: sellerShippingSettings } = useQuery({
+    queryKey: ['seller-shipping-settings', primaryOrder.seller_id],
+    queryFn: async () => {
+      const map = await fetchSellerShippingSettings([primaryOrder.seller_id]);
+      return map.get(primaryOrder.seller_id) || null;
+    },
+    enabled: !!primaryOrder.seller_id && orders.length >= 2,
+    staleTime: 60_000,
+  });
+  const bundleText = orders.length >= 2 ? getBundleBreakdownText(orders.length, sellerShippingSettings || undefined) : null;
 
   const handleMarkShipped = () => {
     // Validate tracking details
@@ -232,12 +245,22 @@ const SalesDetailsSheet = ({
                           <h3 className="font-semibold text-foreground">{listingTitle}</h3>
                           <div className="text-right">
                             <p className="text-lg font-semibold">${o.price}</p>
-                            <p className="text-sm text-muted-foreground">+${o.shipping_price} shipping</p>
                           </div>
                         </div>
                       </div>
                     );
                   })}
+                  <div className="pt-1 flex items-center justify-between border-t border-border pt-3">
+                    <div className="text-sm text-muted-foreground">
+                      Shipping{orders.length >= 2 ? ' (combined)' : ''}
+                    </div>
+                    <div className="text-right">
+                      {bundleText && (
+                        <p className="text-xs text-accent-foreground font-medium">✈️ {bundleText}</p>
+                      )}
+                      <p className="text-sm text-foreground">+${shippingTotal.toFixed(2)}</p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* No selling fees */}
