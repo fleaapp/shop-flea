@@ -10,6 +10,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import PageSkeleton from "./components/PageSkeleton";
 import { forceRestoreRouteAppChrome } from "@/lib/appChrome";
 import { getRouteFromNativeAuthUrl } from "@/lib/authRedirects";
+import { PushNotificationSubscriber } from "@/components/PushNotificationSubscriber";
 
 // Critical path – auth is loaded eagerly; app/feed routes are lazy so /auth paints first.
 import Auth from "./pages/Auth";
@@ -290,6 +291,7 @@ const App = () => (
         <NativeDeepLinkHandler />
         <AuthProvider>
           <TooltipProvider>
+            <PushNotificationSubscriber />
             <AppContent />
           </TooltipProvider>
         </AuthProvider>

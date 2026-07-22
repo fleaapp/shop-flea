@@ -1,34 +1,32 @@
-## What I found
+### What I confirmed
+- The PWA/native split is not the cause. A PWA user can trigger a push to a native user.
+- The latest comment alert exists in the database for `@sarahhearn2`, so the in-app notification path is working.
+- The push sender ran and logged: `No subscriptions found for user`, meaning `@sarahhearn2` has no saved native push token in the backend.
+- The fix should focus on native token registration, not the comment notification itself.
 
-- The latest in-app alert for @sarahhearn2 was created at `08:46:45`, so the notification event itself is working.
-- The push function ran immediately after, but logged: `No subscriptions found for user`.
-- `push_subscriptions` still has no row for @sarahhearn2 or @jcsbh.
-- The table policies exist, but the explicit table grants query still returns no rows, so the previous database grant did not persist or did not apply to the active backend path.
+### Plan
+1. **Make native token registration more reliable**
+   - Ensure the native push registration component is mounted globally after login.
+   - Re-register the APNs token on app open, login, and foreground resume, even if the hook thinks it already registered earlier.
+   - Avoid relying on a one-time in-memory flag that can get stuck after a failed save.
 
-## Plan
+2. **Add visible failure handling for native push setup**
+   - If APNs permission is granted but token save fails, log a clear error to the existing live error logging system.
+   - Keep the user-facing experience quiet unless permission is denied or unavailable.
 
-1. **Re-apply the missing database grants**
-   - Grant authenticated users permission to create, update, read, and delete only their own push subscription rows.
-   - Grant backend functions full access so delivery and stale-token cleanup can work.
-   - Keep the existing row-level rules in place so users can only manage their own subscription rows.
+3. **Harden backend token registration**
+   - Keep the service-role save path for `push_subscriptions`.
+   - Add clearer backend logs for: unauthorized token save, missing endpoint, save failure, and successful save.
+   - Confirm `platform = ios` rows are stored for native devices.
 
-2. **Add a safer registration path for native push tokens**
-   - Create a protected backend function endpoint for saving push tokens.
-   - The function will derive `user_id` from the signed-in session, not from caller-supplied data.
-   - This avoids future Data API grant or RLS regressions blocking device-token registration silently.
+4. **Add a small admin/debug signal**
+   - Add enough logging to confirm whether a user has zero push subscriptions, web subscriptions, iOS subscriptions, or stale iOS tokens.
+   - This will make future “in-app only, no push” issues immediately diagnosable.
 
-3. **Update app registration hooks**
-   - Change iOS native push registration to call the protected token-registration function.
-   - Change web push registration to use the same path.
-   - Show/log clear errors if token save fails instead of silently leaving the user without push delivery.
+5. **Verify after implementation**
+   - Check backend logs for successful `register-push-subscription` after `@sarahhearn2` opens the native app.
+   - Check `push_subscriptions` has an `ios` row for `@sarahhearn2`.
+   - Re-test comment push from `@jcsbh` to `@sarahhearn2` and confirm the push sender attempts APNs delivery instead of saying no subscriptions.
 
-4. **Verify after implementation**
-   - Confirm grants exist on `push_subscriptions`.
-   - Confirm a signed-in token-save request creates a row for the authenticated user.
-   - Confirm caller-supplied alternative `user_id` cannot save a token for another user.
-   - Check `send-push-notification` logs after a test alert; expected result is `Found 1 subscription(s)` instead of `No subscriptions found`.
-
-## Technical notes
-
-- The delivery function is currently running; the failing point is token persistence, not notification creation.
-- This will not fix APNs certificate/key issues if they appear later, but it will unblock the current confirmed failure: no saved push subscriptions.
+### Expected result
+After `@sarahhearn2` fully closes and reopens the native app once, the app should save an iOS push token, and comment pushes from `@jcsbh` should be delivered to the native device.

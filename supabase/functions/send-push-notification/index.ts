@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
+import { logEdgeError } from "../_shared/logError.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -158,12 +159,30 @@ serve(async (req) => {
 
     if (!subscriptions || subscriptions.length === 0) {
       console.log("[Push] No subscriptions found for user:", user_id);
+      await logEdgeError({
+        functionName: "send-push-notification",
+        title: "No push subscription for recipient",
+        error: new Error(`No push subscriptions found for user ${user_id}`),
+        severity: "warning",
+        userId: user_id,
+        context: {
+          notification_type: notification.type,
+          related_listing_id: notification.related_listing_id ?? null,
+          related_order_id: notification.related_order_id ?? null,
+          related_thread_id: notification.related_thread_id ?? null,
+        },
+      });
       return new Response(JSON.stringify({ sent: 0, message: "No subscriptions found" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log(`[Push] Found ${subscriptions.length} subscription(s) for user ${user_id}`);
+    const platformCounts = subscriptions.reduce((acc: Record<string, number>, sub: { platform?: string }) => {
+      const platform = sub.platform || "web";
+      acc[platform] = (acc[platform] || 0) + 1;
+      return acc;
+    }, {});
+    console.log(`[Push] Found ${subscriptions.length} subscription(s) for user ${user_id}: ${JSON.stringify(platformCounts)}`);
 
     const title = ALERT_TITLES[notification.type] || notification.title || "Flea";
     const body = notification.message?.slice(0, 200) || "";
@@ -282,6 +301,18 @@ serve(async (req) => {
         console.log(`[Push] Web success status=${result.statusCode}`);
       } catch (e: any) {
         console.error(`[Push] Failed (${sub.platform || "web"}):`, e?.statusCode, e?.body || e?.message);
+        await logEdgeError({
+          functionName: "send-push-notification",
+          title: `${sub.platform === "ios" ? "APNs" : "Web push"} delivery failed`,
+          error: e,
+          severity: "warning",
+          userId: user_id,
+          context: {
+            platform: sub.platform || "web",
+            status_code: e?.statusCode ?? null,
+            notification_type: notification.type,
+          },
+        });
         // APNs 410 = unregistered, 400 BadDeviceToken; web-push 404/410 = gone
         if (e?.statusCode === 404 || e?.statusCode === 410 || /BadDeviceToken/i.test(e?.body || "")) {
           staleEndpoints.push(sub.endpoint);
