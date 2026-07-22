@@ -31,7 +31,10 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: 'always',
     limitsNavigationsToAppBoundDomains: false,
-    backgroundColor: '#DDFED7',
+    // Cream so the home-indicator safe area matches the app background on
+    // in-app routes. The splash screen has its own `backgroundColor` above
+    // (lime) and is unaffected by this value.
+    backgroundColor: '#F5F1EB',
   },
   android: {
     allowMixedContent: false,
