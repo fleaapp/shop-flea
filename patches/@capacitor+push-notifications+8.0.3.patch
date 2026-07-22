@@ -18,11 +18,10 @@ index 4444444..5555555 100644
          self.bridge?.notificationRouter.pushNotificationHandler = self.notificationDelegateHandler
          self.notificationDelegateHandler.plugin = self
  
-@@ -46,6 +48,46 @@ public class PushNotificationsPlugin: CAPPlugin, CAPBridgedPlugin {
-                                                name: .capacitorDidFailToRegisterForRemoteNotifications,
+@@ -47,6 +49,42 @@ public class PushNotificationsPlugin: CAPPlugin, CAPBridgedPlugin {
                                                 object: nil)
      }
-+
+ 
 +    private func installAppDelegateForwardersIfNeeded() {
 +        DispatchQueue.main.async {
 +            guard let appDelegate = UIApplication.shared.delegate else {
@@ -58,6 +57,6 @@ index 4444444..5555555 100644
 +            }
 +        }
 +    }
- 
++
      deinit {
          NotificationCenter.default.removeObserver(self)
