@@ -391,7 +391,7 @@ const Auth = () => {
   return (
     <div className="auth-screen native-safe-top fixed inset-0 bg-primary flex flex-col overflow-hidden">
       {/* Logo - positioned at top */}
-      <div className="auth-logo absolute top-20 max-[375px]:top-12 left-0 right-0 flex justify-center">
+      <div className="auth-logo absolute top-32 max-[375px]:top-24 left-0 right-0 flex justify-center">
         <img 
           src={fleaLogoAuth} 
           alt="FLEA" 
