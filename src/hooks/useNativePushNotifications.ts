@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
 
 /**
  * Registers the iOS device with APNs and stores the token in push_subscriptions
@@ -48,21 +48,12 @@ export function useNativePushNotifications() {
             if (!apnsToken) return;
             console.log('[NativePush] APNs token received:', apnsToken.slice(0, 12) + '…');
 
-            // Replace any prior ios subscriptions for this user
-            await (supabase as any)
-              .from('push_subscriptions')
-              .delete()
-              .eq('user_id', user.id)
-              .eq('platform', 'ios');
-
-            const { error } = await (supabase as any)
-              .from('push_subscriptions')
-              .insert({
-                user_id: user.id,
+            const { error } = await invokeCloudFunction('register-push-subscription', {
+              body: {
                 endpoint: apnsToken,
                 platform: 'ios',
-                updated_at: new Date().toISOString(),
-              });
+              },
+            });
 
             if (error) {
               console.error('[NativePush] Failed to save token:', error);
