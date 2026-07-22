@@ -28,7 +28,7 @@ project_id = "teaicrimlqdayqpmxasc"
   [functions.process-email-queue]
     verify_jwt = true
   [functions.register-push-subscription]
-    verify_jwt = false
+    verify_jwt = true
   [functions.send-push-notification]
     verify_jwt = false
   [functions.saved-searches]
