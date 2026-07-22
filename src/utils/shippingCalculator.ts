@@ -29,28 +29,50 @@ export async function fetchSellerShippingSettings(
   const settingsMap = new Map<string, SellerShippingInfo>();
   if (uniqueIds.length === 0) return settingsMap;
 
-  const { data } = await supabase
+  const selectFields =
+    'user_id, bundle_shipping_mode, bundle_shipping_discount_percent, tiered_shipping_enabled, shipping_tier_1, shipping_tier_2, shipping_tier_3';
+
+  const normalizeRows = (rows: any[] | null | undefined) => {
+    (rows || []).forEach((profile: any) => {
+      const mode = (profile.bundle_shipping_mode as BundleShippingMode) || 'none';
+      settingsMap.set(profile.user_id, {
+        sellerId: profile.user_id,
+        mode,
+        discountPercent:
+          mode === 'discounted' && profile.bundle_shipping_discount_percent != null
+            ? Number(profile.bundle_shipping_discount_percent)
+            : null,
+        tieredEnabled: profile.tiered_shipping_enabled ?? false,
+        tier1: Number(profile.shipping_tier_1) || 0,
+        tier2: Number(profile.shipping_tier_2) || 0,
+        tier3: Number(profile.shipping_tier_3) || 0,
+      });
+    });
+  };
+
+  const publicResponse = await supabase
     .from('profiles_public')
-    .select(
-      'user_id, bundle_shipping_mode, bundle_shipping_discount_percent, tiered_shipping_enabled, shipping_tier_1, shipping_tier_2, shipping_tier_3'
-    )
+    .select(selectFields)
     .in('user_id', uniqueIds);
 
-  (data || []).forEach((profile: any) => {
-    const mode = (profile.bundle_shipping_mode as BundleShippingMode) || 'none';
-    settingsMap.set(profile.user_id, {
-      sellerId: profile.user_id,
-      mode,
-      discountPercent:
-        mode === 'discounted' && profile.bundle_shipping_discount_percent != null
-          ? Number(profile.bundle_shipping_discount_percent)
-          : null,
-      tieredEnabled: profile.tiered_shipping_enabled ?? false,
-      tier1: Number(profile.shipping_tier_1) || 0,
-      tier2: Number(profile.shipping_tier_2) || 0,
-      tier3: Number(profile.shipping_tier_3) || 0,
-    });
-  });
+  if (!publicResponse.error) {
+    normalizeRows(publicResponse.data as any[] | null);
+    return settingsMap;
+  }
+
+  console.warn('profiles_public unavailable for shipping settings, falling back to profiles table:', publicResponse.error.message);
+
+  const fallbackResponse = await supabase
+    .from('profiles')
+    .select(selectFields)
+    .in('user_id', uniqueIds);
+
+  if (fallbackResponse.error) {
+    console.error('Failed to fetch seller shipping settings:', fallbackResponse.error);
+    return settingsMap;
+  }
+
+  normalizeRows(fallbackResponse.data as any[] | null);
 
   return settingsMap;
 }
