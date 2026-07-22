@@ -15,6 +15,7 @@ import FilterPreferencesSheet from '@/components/FilterPreferencesSheet';
 import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
 import { useOnboarding } from '@/context/OnboardingContext';
 import PaymentMethodsSection from '@/components/PaymentMethodsSection';
+import { requestNativePushRegistration } from '@/hooks/useNativePushNotifications';
 
 import { useUnreadSupport } from '@/hooks/useUnreadSupport';
 import { useAdminRole } from '@/hooks/useAdminRole';
@@ -50,6 +51,17 @@ const Settings = () => {
     const sync = async () => {
       const { getPushPermissionAsync } = await import('@/lib/pushPrompt');
       const perm = await getPushPermissionAsync();
+      if (perm === 'granted') {
+        const { Capacitor } = await import('@capacitor/core');
+        if (Capacitor.isNativePlatform() && user?.id) {
+          const { invokeCloudFunction } = await import('@/utils/cloudFunctions');
+          const { data } = await invokeCloudFunction('push-status', { method: 'GET' });
+          const hasToken = Boolean((data as { has_ios_token?: boolean } | null)?.has_ios_token);
+          if (!hasToken) requestNativePushRegistration('settings-status-missing-token');
+          if (!cancelled) setNotificationsEnabled(hasToken);
+          return;
+        }
+      }
       if (!cancelled) setNotificationsEnabled(perm === 'granted');
     };
     sync();
@@ -66,7 +78,7 @@ const Settings = () => {
       }
     })();
     return () => { cancelled = true; remove?.(); };
-  }, []);
+  }, [user?.id]);
 
   const handleToggleNotifications = async (checked: boolean) => {
     const { Capacitor } = await import('@capacitor/core');
@@ -91,10 +103,9 @@ const Settings = () => {
           receive = req.receive;
         }
         if (receive === 'granted') {
-          await PushNotifications.register();
-          triggerSubscribe();
-          setNotificationsEnabled(true);
-          toast.success("You're all set. We'll keep you posted.");
+          requestNativePushRegistration('settings-toggle');
+          setNotificationsEnabled(false);
+          toast.success("Notifications are on. We're finishing device setup now.");
         } else {
           setNotificationsEnabled(false);
           toast.error('Notifications blocked. Enable them in iOS Settings → Flea.');

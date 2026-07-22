@@ -40,6 +40,18 @@ export async function getPushPermissionAsync(): Promise<PushPermissionState> {
   return Notification.permission as 'default' | 'granted' | 'denied';
 }
 
+export async function hasNativeCloudPushToken(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return false;
+  try {
+    const { invokeCloudFunction } = await import('@/utils/cloudFunctions');
+    const { data, error } = await invokeCloudFunction('push-status', { method: 'GET' });
+    if (error) return false;
+    return Boolean((data as { has_ios_token?: boolean } | null)?.has_ios_token);
+  } catch {
+    return false;
+  }
+}
+
 function passesCooldown(userId: string): boolean {
   try {
     const count = Number(localStorage.getItem(COUNT_KEY(userId)) || '0');
