@@ -143,12 +143,17 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
                     <span className="text-gray-500">Item price</span>
                     <span className="text-gray-900">${o.price.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-gray-500">Shipping</span>
-                    <span className="text-gray-900">${o.shipping_price.toFixed(2)}</span>
-                  </div>
                 </div>
               ))}
+              <div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Shipping{orders.length >= 2 ? ' (combined)' : ''}</span>
+                  <span className="text-gray-900">${shippingTotal.toFixed(2)}</span>
+                </div>
+                {bundleText && (
+                  <div className="text-[10px] text-gray-500 text-right mt-0.5">✈️ {bundleText}</div>
+                )}
+              </div>
 
               <div className="border-t border-dotted border-gray-300 pt-3 space-y-1.5">
                 {viewAs === 'buyer' ? (
