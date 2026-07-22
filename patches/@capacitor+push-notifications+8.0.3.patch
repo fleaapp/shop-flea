@@ -60,3 +60,4 @@ index 4444444..5555555 100644
 +
      deinit {
          NotificationCenter.default.removeObserver(self)
+     }
