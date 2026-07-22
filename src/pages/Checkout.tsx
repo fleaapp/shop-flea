@@ -321,7 +321,10 @@ const Checkout = () => {
         return true;
       }
 
-      const totalAud = Math.round(Number(pi.amount ?? total) * 100) / 100;
+      // pi.amount is in cents (integer) from the edge function; `total` is already in dollars.
+      const totalAud = pi.amount != null
+        ? Math.round(Number(pi.amount)) / 100
+        : Math.round(Number(total) * 100) / 100;
       try {
         await Stripe.createApplePay({
           paymentIntentClientSecret: pi.clientSecret,
