@@ -28,7 +28,7 @@ type ThumbnailTileProps = {
   style: CSSProperties;
 };
 
-const ThumbnailTile = ({ src, alt, fallbackEmoji = '📦', objectPosition = 'center', style }: ThumbnailTileProps) => {
+const ThumbnailTile = ({ src, alt, fallbackEmoji = '✈️', objectPosition = 'center', style }: ThumbnailTileProps) => {
   const [imageFailed, setImageFailed] = useState(false);
 
   if (!src || imageFailed) {

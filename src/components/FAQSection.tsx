@@ -104,7 +104,7 @@ const faqItems = [
   },
 
   {
-    category: '📦 Shipping',
+    category: '✈️ Shipping',
     questions: [
       {
         q: 'How does shipping work?',

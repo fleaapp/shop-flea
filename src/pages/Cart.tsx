@@ -404,7 +404,7 @@ const Cart = () => {
                         <>
                           {tierText && (
                             <div className="px-4 py-2 bg-accent/30 text-center">
-                             <span className="text-xs text-accent-foreground">📦 {showTierLabel && availableItems.length <= 3
+                             <span className="text-xs text-accent-foreground">✈️ {showTierLabel && availableItems.length <= 3
                                 ? <><span className="font-bold">2–3 items:</span> ${settings!.tier2.toFixed(2)} combined shipping</>
                                 : <><span className="font-bold">4+ items:</span> ${settings!.tier3.toFixed(2)} combined shipping</>
                               }</span>

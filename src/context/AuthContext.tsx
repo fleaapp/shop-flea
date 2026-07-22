@@ -20,6 +20,8 @@ interface Profile {
   shipping_tier_1?: number;
   shipping_tier_2?: number;
   shipping_tier_3?: number;
+  bundle_shipping_mode?: 'none' | 'discounted' | 'free';
+  bundle_shipping_discount_percent?: number | null;
   shipping_preferences_set?: boolean;
   region_id?: string | null;
   country_code?: string | null;

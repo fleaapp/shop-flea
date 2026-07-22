@@ -929,6 +929,8 @@ export type Database = {
         Row: {
           auth_provider: string | null
           avatar_url: string | null
+          bundle_shipping_discount_percent: number | null
+          bundle_shipping_mode: string
           country_code: string | null
           created_at: string
           device_ids: string[]
@@ -970,6 +972,8 @@ export type Database = {
         Insert: {
           auth_provider?: string | null
           avatar_url?: string | null
+          bundle_shipping_discount_percent?: number | null
+          bundle_shipping_mode?: string
           country_code?: string | null
           created_at?: string
           device_ids?: string[]
@@ -1011,6 +1015,8 @@ export type Database = {
         Update: {
           auth_provider?: string | null
           avatar_url?: string | null
+          bundle_shipping_discount_percent?: number | null
+          bundle_shipping_mode?: string
           country_code?: string | null
           created_at?: string
           device_ids?: string[]
@@ -1386,6 +1392,8 @@ export type Database = {
       profiles_public: {
         Row: {
           avatar_url: string | null
+          bundle_shipping_discount_percent: number | null
+          bundle_shipping_mode: string | null
           country_code: string | null
           created_at: string | null
           id: string | null
@@ -1472,6 +1480,8 @@ export type Database = {
         Args: never
         Returns: {
           avatar_url: string
+          bundle_shipping_discount_percent: number
+          bundle_shipping_mode: string
           country_code: string
           created_at: string
           id: string

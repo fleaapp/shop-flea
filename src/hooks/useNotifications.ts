@@ -356,7 +356,7 @@ export const getNotificationMessage = (type: string, username?: string, listingT
     case 'item_sold':
       return '🎉🤑 Cha-ching! Your item has just sold. Tap to view the order.';
     case 'order_shipped':
-      return '📦 Your order is on the way! Tap for details.';
+      return '✈️ Your order is on the way! Tap for details.';
     case 'order_delivered':
       return 'Delivered! Your order is home safe 🏠 Tap for details.';
     case 'new_comment':
@@ -366,7 +366,7 @@ export const getNotificationMessage = (type: string, username?: string, listingT
     case 'mention':
       return displayUsername ? `${displayUsername} mentioned you in a comment.` : 'Someone mentioned you in a comment.';
     case 'shipping_reminder_3d':
-      return '🚨 Reminder: Your buyer is waiting 👀 Ship now & update tracking. 📦';
+      return '🚨 Reminder: Your buyer is waiting 👀 Ship now & update tracking. ✈️';
     case 'shipping_reminder_6d':
       return '🚨 Urgent action: Your sale is 6 days overdue. Ship today to avoid issues. 🚚';
     case 'order_message_seller':
@@ -408,7 +408,7 @@ export const getNotificationEmoji = (type: string): string => {
     case 'item_sold':
       return '🎉';
     case 'order_shipped':
-      return '📦';
+      return '✈️';
     case 'order_delivered':
       return '🏠';
     case 'new_comment':

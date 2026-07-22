@@ -38,7 +38,7 @@ export function ReportList({ reports, loading, filter, onFilterChange, selectedR
 
   const typeOptions = [
     { key: 'all', label: 'All types' },
-    { key: 'listing', label: 'Listings', emoji: '📦' },
+    { key: 'listing', label: 'Listings', emoji: '✈️' },
     { key: 'comment', label: 'Comments', emoji: '💬' },
     { key: 'user', label: 'Users', emoji: '👤' },
   ];
