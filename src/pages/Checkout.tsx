@@ -382,10 +382,7 @@ const Checkout = () => {
       toast.error('Payment provider is not configured. Please contact support.');
       return true;
     }
-    await Stripe.initialize({
-      publishableKey: pi.publishableKey,
-      ...(pi.clientStripeAccountId ? { stripeAccount: pi.clientStripeAccountId } : {}),
-    });
+    await warmStripe(pi.publishableKey, pi.clientStripeAccountId ?? null);
 
     if (platform === 'ios') {
       const publishableKeyMode = pi.publishableKey.startsWith('pk_live_') ? 'live' : 'test';
@@ -403,17 +400,13 @@ const Checkout = () => {
       // under the hood; no cert upload from us is required. The Stripe
       // combined sheet is intentionally bypassed so the buyer goes straight
       // into Apple's native sheet.
-      try {
-        await Stripe.isApplePayAvailable();
-      } catch (err) {
-        const diag = categoriseApplePayError(err);
-        void logApplePayDiagnostic('isApplePayAvailable', diag, {
-          merchantId: APPLE_PAY_MERCHANT_ID,
-          paymentIntentId: pi.paymentIntentId,
-        });
-        toast.error(diag.userMessage || 'Apple Pay is not available on this device. Please choose Add new card.');
-        return true;
-      }
+      //
+      // NOTE: We intentionally do NOT call `Stripe.isApplePayAvailable()` here.
+      // The Apple Pay tile is only rendered when `getNativeWalletPlatform()`
+      // returned 'ios' — the extra bridge round-trip just delayed the sheet.
+      // The try/catch around `createApplePay` below is enough to surface any
+      // real "not available" error to the user.
+
 
       // pi.amount is in cents (integer) from the edge function; `total` is already in dollars.
       const totalAud = pi.amount != null
