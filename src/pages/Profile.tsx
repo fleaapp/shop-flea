@@ -20,6 +20,7 @@ import AvatarCropDialog from '@/components/AvatarCropDialog';
 import ProfileGridCard from '@/components/ProfileGridCard';
 import { Button } from '@/components/ui/button';
 import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
+import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
 import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
 
 
@@ -43,6 +44,7 @@ const Profile = () => {
   const [salesSheetOpen, setSalesSheetOpen] = useState(false);
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const [paymentGateOpen, setPaymentGateOpen] = useState(false);
+  const [shippingSettingsOpen, setShippingSettingsOpen] = useState(false);
 
   const stripeLocalKey = user ? `stripe_onboarding_complete_${user.id}` : null;
   const hasPaymentMethod =
