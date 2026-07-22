@@ -1,94 +1,73 @@
-Honest answer first: the app is **not ready for thousands of users today**, but it can be made ready. The two biggest blockers are the Lovable Cloud instance size and an email-queue cron that is firing roughly every 5 seconds and has already generated ~876,000 function calls despite the database only holding 4 listings. That pattern will explode once real traffic arrives.
+# Scalability Roadmap — Implement Before Resize
 
-Below is a three-phase roadmap to get the app production-grade. I recommend treating Phase 1 as urgent.
+Goal: harden the backend, database, and frontend so the app is ready for thousands of users. Resize picker returns at the end.
 
-````text
-Current state snapshot
-----------------------
-- Lovable Cloud instance: Tiny
-- DB memory used: 58%  |  Disk used: 47%  |  Connections: 14/60
-- Database size: 3.36 GB (mostly WAL/logs, not user data)
-- Public tables: only 4 listings, ~6 profiles, tiny order/notification volume
-- Edge functions: 52  |  Migrations: 142
-- Rolled-back transactions since boot: 106,819
-- Top slow query: email_queue_dispatch called 876,347 times
-- Linter/security findings: 86 linter issues, 82 security findings
-- Frontend: no code-splitting configured; single large bundle likely
-````
+---
 
-Phase 1 — Stop the bleeding (do this first)
----------------------------------------------
-1. Fix the email-queue cron firestorm
-   - The trigger `email_queue_wake` schedules `process-email-queue` every 5 seconds and immediately invokes the edge function.
-   - Even with empty queues the cron keeps firing, causing the ~876k dispatch calls.
-   - Change the wake strategy to schedule once per enqueue and disarm reliably when queues are empty, or replace the cron with a longer poll interval (e.g., 60 s) backed by a dead-letter / retry counter.
-   - Add a guard so `email_queue_dispatch` returns early without `net.http_post` when both queues are empty and no cooldown is active.
+## Phase 1 — Backend hardening (highest impact)
 
-2. Resize Lovable Cloud compute
-   - A Tiny instance cannot serve thousands of concurrent marketplace users.
-   - Upgrade to at least a Small/Medium instance before any public launch.
-   - Monitor `db_health` again after the resize to confirm memory and connection headroom.
+**1. Neutralise the email-queue firestorm**
+- Rewrite `email_queue_wake` so it does NOT (re)schedule cron on every enqueue — only arm cron when queues have >N rows OR after a failed direct dispatch.
+- Change `email_queue_dispatch` cron interval from `60 seconds` to `2 minutes` when armed.
+- Add an early exit if `email_send_state.retry_after_until > now()`.
+- Confirm the historical 876k invocations stop climbing.
 
-3. Patch the highest-risk security findings
-   - 82 scan findings are dominated by SECURITY DEFINER functions executable by `anon` and mutable search paths.
-   - Revoke `EXECUTE` from `anon` on helper/security functions that are not meant to be public.
-   - Add `SET search_path = ''` (or explicit schema) to all SECURITY DEFINER functions.
-   - Review the one public bucket that allows listing all objects.
-   - Review the RLS policy flagged as `USING (true)` for write operations.
+**2. Harden SECURITY DEFINER surface**
+- `REVOKE EXECUTE ... FROM anon, authenticated` on internal helpers: `delete_email`, `enqueue_email`, `read_email_batch`, `move_to_dlq`, `email_queue_dispatch`, `email_queue_wake`, `seed_push_vault_key`, `get_profiles_public`.
+- Keep `EXECUTE` for `service_role` only where needed.
+- Set explicit `SET search_path = ''` (or `public`) on any DEFINER function still missing it — audit via `supabase--linter`.
 
-Phase 2 — Harden and optimize
------------------------------
-4. Database indexing and query review
-   - Add targeted indexes for hot query paths seen in `slow_queries`:
-     - `listings(status, created_at)` for the catalog feed.
-     - `listings(user_id, status, created_at)` for seller profiles.
-     - `notifications(user_id, is_read, created_at)` for badge counts.
-     - `orders(buyer_id, status)` and `orders(seller_id, status)` for order screens.
-   - Replace the `useListings` fallback `SELECT *` with explicit columns and a materialised seller-status check where possible.
-   - Audit the 106k rolled-back transactions; identify which transactions are failing and why.
+**3. Fix `security_definer_view` finding**
+- Confirm `profiles_public` view uses `SECURITY INVOKER = ON` (per memory) and re-run scanner to clear.
 
-5. Edge-function consolidation
-   - 52 functions is a lot for a 4-listing app and creates cold-start and maintenance overhead.
-   - Merge related Stripe Connect functions where possible (status, onboard, add-bank, dashboard, payment-intent, account-session).
-   - Standardise error handling and idempotency keys across checkout/refund/webhook paths.
+---
 
-6. Realtime and notification efficiency
-   - Verify every open Realtime channel is scoped to the logged-in user and unsubscribed on unmount.
-   - Ensure the push-notification trigger does not create a feedback loop on retries.
-   - Keep the recent fix that reads badge counts from `notifications.is_read` in the DB rather than `localStorage`.
+## Phase 2 — Database performance
 
-Phase 3 — Scale-ready architecture
-----------------------------------
-7. Frontend performance
-   - Add route-based code splitting in `vite.config.ts` and lazy-load admin pages, onboarding, and heavy flows.
-   - Audit bundle size after build and remove unused Radix / Stripe / Capacitor modules if possible.
-   - Add `React.lazy` boundaries around admin routes and seller onboarding.
+**4. Add missing indexes for hot paths** (all created via migration, plain `CREATE INDEX`):
+- `notifications (user_id, is_read, created_at DESC)` — badge count query
+- `orders (buyer_id, status)` and `orders (seller_id, status)` — nav badges + dashboards
+- `order_messages (order_id, read) WHERE read = false` — unread counts
+- `cart_items (listing_id)`, `favorites (listing_id)` — sold-notification fanout
+- `listings (status, region_id, created_at DESC)` — home feed candidate scan
+- `chat_messages (thread_id, read, sender_type)` — support unread
 
-8. Caching and rate limiting
-   - Add server-side rate limits for checkout, listing creation, and refund requests.
-   - Cache brand/category lists and home-feed metadata with short TTLs.
-   - Consider a read replica or connection-pool tuning if connection count becomes the bottleneck.
+**5. Tighten `get_home_feed`**
+- Cap candidate scan to `LIMIT 300` (down from 500) once indexes land.
+- Add `STABLE PARALLEL SAFE` where applicable.
 
-9. Monitoring and incident response
-   - Surface the `error_logs` table in the admin dashboard as a live feed with filtering.
-   - Add alerts for:
-     - edge-function error rates,
-     - DB connection saturation > 70%,
-     - cron job failures,
-     - rolled-back transaction spikes.
-   - Run a load test against the home feed, checkout, and notification paths before marketing launch.
+**6. Run `supabase--slow_queries` after indexes**
+- Verify top offenders drop; add follow-up indexes only for what actually shows up.
 
-10. Compliance and operational readiness
-    - Confirm Stripe Connect Standard account verification flow works end-to-end under load.
-    - Document the refund, dispute, and negative-balance settlement flows.
-    - Add automated daily/weekly DB health checks.
+---
 
-What I recommend we do now
---------------------------
-If you approve, I will start with Phase 1:
-1. Fix the email-queue cron firestorm.
-2. Patch the top security findings (search_path and anon-executable SECURITY DEFINER functions).
-3. Add the critical missing indexes.
-4. Prepare a compute-resize recommendation for you to approve.
+## Phase 3 — Frontend & realtime
 
-That alone will remove the biggest scalability and cost risks before you grow the user base.
+**7. Query hygiene**
+- Replace `select('*')` in `useListings.ts` and other hot hooks with explicit column lists (drop heavy fields like `description`, extra image arrays from list views).
+
+**8. Realtime discipline**
+- Audit realtime channels: ensure each subscribed table has a filter (`user_id=eq.<uid>`) and channels are cleaned up on unmount. Consolidate duplicate subscriptions.
+
+**9. Bundle & caching**
+- Confirm route-level code splitting on the heaviest pages (Admin, Checkout, SellerDashboard).
+- Add `staleTime` (30-60s) on nav-badge and profile queries to reduce refetch storms.
+
+---
+
+## Phase 4 — Return to compute resize
+
+**10. Recheck `db_health`** — confirm memory / connection pressure after cleanup.
+
+**11. Open the resize picker** via `supabase--resize_compute` so you can see exact credit costs and pick a size (Small for dev, Large before launch).
+
+---
+
+## Technical notes
+
+- All schema/function/index changes go through the migration tool in small, reviewable batches.
+- Cron changes to `email_queue_dispatch` use the insert tool (contains project-specific URL + anon key per project rules).
+- After each phase, re-run `security--run_security_scan` and `supabase--linter` to confirm findings decrease, not increase.
+- No changes to payment flows, RLS on user tables, or UI behaviour in this roadmap — purely infra + query shape.
+
+Approve to switch to build mode and I'll start with Phase 1.
