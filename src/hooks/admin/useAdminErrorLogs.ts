@@ -29,12 +29,15 @@ const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 async function call<T>(payload: Record<string, unknown>): Promise<T> {
   const { data: sess } = await supabase.auth.getSession();
   const token = sess.session?.access_token;
+  // Skip when signed out — admin endpoint requires a real user JWT and would
+  // otherwise 403 during logout / on public pages and pollute error logs.
+  if (!token) throw new Error('admin-error-logs: not authenticated');
   const res = await fetch(FN_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       apikey: ANON,
-      Authorization: token ? `Bearer ${token}` : `Bearer ${ANON}`,
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(payload),
   });
