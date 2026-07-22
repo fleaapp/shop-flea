@@ -74,9 +74,19 @@ const Notifications = () => {
 
 
   const handleNotificationClick = async (notification: Notification) => {
-    if (!notification.is_read && !notification.id.startsWith('fallback-')) {
+    if (notification.id.startsWith('fallback-')) {
+      if (notification.related_thread_id) {
+        await (supabase as any)
+          .from('chat_messages')
+          .update({ read: true })
+          .eq('thread_id', notification.related_thread_id)
+          .neq('sender_type', 'user')
+          .eq('read', false);
+      }
+    } else if (!notification.is_read) {
       markAsRead.mutate(notification.id);
     }
+
     
     // Shipping reminders → navigate to sales page
     if (notification.type === 'shipping_reminder_3d' || notification.type === 'shipping_reminder_6d') {
