@@ -1,67 +1,40 @@
-You are right to challenge this. The reason I believe this can fix it this time is that I’m no longer treating this as a generic “push setup” issue.
+## Confirmed findings
 
-Confirmed evidence from the live backend:
+- **Push notifications:** the Cloud database currently has one iOS push token, and it belongs to `@jcsbh`. There is still **no saved iOS token for `@sarahhearn2`**, so comment alerts can appear in-app while native push delivery has nothing to send to.
+- **Push root cause:** native registration depends on APNs callbacks being forwarded from the generated iOS `AppDelegate.swift`. That forwarding is only added by `scripts/setup-ios-native.sh`, so it can be wiped out or skipped after native sync/rebuild. This explains why permission can be on but no token is saved.
+- **Apple Pay:** PWA Apple Pay works, so the payment intent, amount, and backend key path are usable. The failing path is native iOS only.
+- **Apple Pay likely native bug:** the native Stripe plugin keeps `STPAPIClient.shared.stripeAccount` if it was ever initialized with a connected account. This can make native Apple Pay confirm a platform destination-charge PaymentIntent with the wrong account context, while PWA still works.
+- **Existing native setup:** `ios/` is not committed in this project; it is generated locally. Fixes that only patch generated iOS files are fragile unless we also patch the npm/native packages or the setup script.
 
-- The in-app notification was created successfully for @sarahhearn2.
-- The push sender ran and logged: `No push subscriptions found for recipient`.
-- @jcsbh has a saved iOS push token in the Cloud database.
-- @sarahhearn2 has no saved iOS push token in the Cloud database.
-- That means APNs cannot send to Sarah at all, even if permissions are enabled on the phone.
-- There is also still a mixed system: database trigger push + client push + function push. That makes failures and duplicates likely.
-- The old external-backend wording exists in variable names/comments, but the live evidence points to the current Cloud database: Sarah’s token is missing there.
+## Plan
 
-Why previous fixes did not solve it:
+1. **Make push registration independent of the generated AppDelegate patch**
+   - Add a persistent patch for `@capacitor/push-notifications` so the iOS plugin installs the APNs callback forwarders itself when it loads.
+   - Keep the existing `setup-ios-native.sh` AppDelegate patch as a backup, but stop relying on it as the only path.
+   - This should make `PushNotifications.register()` produce the JS `registration` event and save the APNs token even after `cap sync` regenerates the native app.
 
-- They focused on delivery and Apple/native setup.
-- But the current failed test never reached APNs for Sarah because there was no device token to send to.
-- Settings can currently say notifications are on based on iOS permission, even when the backend has no saved token. That is the misleading part.
+2. **Keep native token registration aggressive but safe**
+   - Leave the existing foreground/mount registration checks in place.
+   - If permission is granted but Cloud has no iOS token, force APNs registration again.
+   - Keep the timeout/error logging so we can see if the native callback still fails.
 
-Plan:
+3. **Fix native Apple Pay account-context leakage**
+   - Add a persistent patch for `@capacitor-community/stripe` so `Stripe.initialize()` clears `STPAPIClient.shared.stripeAccount` when no connected account is provided.
+   - This matches the current backend response where `clientStripeAccountId` is intentionally `null` for platform destination charges.
+   - This avoids native Apple Pay confirming the PaymentIntent under a stale connected-account context.
 
-1. Make notification status truthful
-   - Add a backend token check to the native push hook/settings flow.
-   - If iOS permission is granted but no Cloud token exists for the signed-in user, force a fresh native registration.
-   - Do not show notifications as fully enabled unless both are true:
-     - iOS permission is granted.
-     - The Cloud database has a saved iOS token for that user.
+4. **Preserve the hidden PaymentSheet-initialized Apple Pay setup**
+   - Keep `createPaymentSheet()` before `createApplePay()` but do not present the sheet, so users still go directly to Apple Pay with no visible middle sheet.
+   - Do not change the PWA/web Apple Pay path, since it already works.
 
-2. Fix native token registration persistence
-   - Update `useNativePushNotifications.ts` so token registration runs reliably on:
-     - login/account switch,
-     - app foreground,
-     - notification permission changes,
-     - Settings notification toggle/open.
-   - Remove the current short-circuit that can suppress saving after account changes.
-   - Log a clear backend error if APNs returns a token but the save does not complete.
+5. **Verify with real signals after implementation**
+   - Confirm the patch files are applied by `patch-package`.
+   - Deploy any changed push/payment functions only if source changes are needed there.
+   - Re-check `push_subscriptions` after a native app open: `@sarahhearn2` must have an iOS token.
+   - Trigger a comment notification and confirm the push function reports an APNs send attempt instead of “no subscriptions”.
+   - For Apple Pay, confirm native checkout no longer uses a stale connected-account Stripe context.
 
-3. Add a small push status endpoint or extend registration response
-   - Let the app ask: “does this user currently have a saved iOS token?”
-   - Use that as the self-healing trigger instead of guessing from local permission state.
+## Technical notes
 
-4. Fix iOS push delivery blocking
-   - In `send-push-notification`, move web-push VAPID validation into the web-only branch.
-   - APNs delivery must not fail just because web push config is absent.
-   - Add explicit APNs config diagnostics so a real APNs failure is visible immediately.
-
-5. Remove duplicate/competing push sends
-   - Stop relying on the database notification trigger for push delivery.
-   - Keep push sends explicit from the code path that creates the notification.
-   - This follows the project rule already stored in memory: explicit function calls, not database triggers.
-
-6. Fix comments specifically
-   - Move listing comment notification creation and push into one Cloud function.
-   - The function will:
-     - create the comment,
-     - create the in-app notification,
-     - send the push using the recipient’s saved token,
-     - return the push result.
-   - This removes the fragile client “insert comment, then separately try push” flow.
-
-7. Proof before calling it fixed
-   - After implementation, verify these exact checks:
-     - @sarahhearn2 has a saved `ios` row in `push_subscriptions` after opening the native app.
-     - A test comment creates one in-app notification, not duplicates.
-     - `send-push-notification` returns `sent: 1` for Sarah, or returns a concrete APNs error instead of `No subscriptions found`.
-     - Settings no longer says notifications are fully on when the backend token is missing.
-
-This is different from the earlier attempts because the fix target is now the confirmed missing token registration for the recipient, plus removing the duplicate push architecture, not another blind APNs/Xcode tweak.
+- The external backend remnants are not the immediate cause of this push failure: the current Cloud push table is what `send-push-notification` reads, and the missing row is specifically for the recipient account.
+- The native package patches are the key change because local generated iOS files are not committed and can be overwritten by native sync.

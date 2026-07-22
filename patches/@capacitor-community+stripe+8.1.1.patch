@@ -10,4 +10,22 @@ index 0000000..1111111 100644
 +        .package(url: "https://github.com/stripe/stripe-ios-spm.git", exact: "25.9.0")
      ],
      targets: [
+diff --git a/node_modules/@capacitor-community/stripe/ios/Sources/StripePlugin/StripePlugin.swift b/node_modules/@capacitor-community/stripe/ios/Sources/StripePlugin/StripePlugin.swift
+index 2222222..3333333 100644
+--- a/node_modules/@capacitor-community/stripe/ios/Sources/StripePlugin/StripePlugin.swift
++++ b/node_modules/@capacitor-community/stripe/ios/Sources/StripePlugin/StripePlugin.swift
+@@ -43,8 +43,15 @@ public class StripePlugin: CAPPlugin, CAPBridgedPlugin {
+         let stripeAccount = call.getString("stripeAccount") ?? ""
+ 
+         if stripeAccount != "" {
+             STPAPIClient.shared.stripeAccount = stripeAccount
++        } else {
++            // Reset any connected-account context from an earlier native call.
++            // Platform PaymentIntents (destination charges) must be confirmed on
++            // the platform account; leaving a stale Stripe-Account header here
++            // breaks native Apple Pay while web/PWA checkout still works.
++            STPAPIClient.shared.stripeAccount = nil
+         }
+ 
+         STPAPIClient.shared.appInfo = STPAppInfo(name: "@capacitor-community/stripe", partnerId: nil, version: nil, url: nil)
          .target(

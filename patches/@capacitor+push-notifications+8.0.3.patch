@@ -1,0 +1,63 @@
+diff --git a/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsPlugin.swift b/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsPlugin.swift
+index 4444444..5555555 100644
+--- a/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsPlugin.swift
++++ b/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsPlugin.swift
+@@ -1,6 +1,7 @@
+ import Foundation
+ import Capacitor
+ import UserNotifications
++import ObjectiveC.runtime
+ 
+ enum PushNotificationError: Error {
+     case tokenParsingFailed
+@@ -33,6 +34,7 @@ public class PushNotificationsPlugin: CAPPlugin, CAPBridgedPlugin {
+     private var appDelegateRegistrationCalled: Bool = false
+ 
+     override public func load() {
++        self.installAppDelegateForwardersIfNeeded()
+         self.bridge?.notificationRouter.pushNotificationHandler = self.notificationDelegateHandler
+         self.notificationDelegateHandler.plugin = self
+ 
+@@ -46,6 +48,46 @@ public class PushNotificationsPlugin: CAPPlugin, CAPBridgedPlugin {
+                                                name: .capacitorDidFailToRegisterForRemoteNotifications,
+                                                object: nil)
+     }
++
++    private func installAppDelegateForwardersIfNeeded() {
++        DispatchQueue.main.async {
++            guard let appDelegate = UIApplication.shared.delegate else {
++                return
++            }
++
++            let delegateClass: AnyClass = type(of: appDelegate)
++
++            let didRegisterSelector = NSSelectorFromString("application:didRegisterForRemoteNotificationsWithDeviceToken:")
++            if class_getInstanceMethod(delegateClass, didRegisterSelector) == nil {
++                let didRegisterBlock: @convention(block) (AnyObject, UIApplication, Data) -> Void = { _, _, deviceToken in
++                    NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)
++                }
++                class_addMethod(
++                    delegateClass,
++                    didRegisterSelector,
++                    imp_implementationWithBlock(didRegisterBlock as Any),
++                    "v@:@@"
++                )
++            }
++
++            let didFailSelector = NSSelectorFromString("application:didFailToRegisterForRemoteNotificationsWithError:")
++            if class_getInstanceMethod(delegateClass, didFailSelector) == nil {
++                let didFailBlock: @convention(block) (AnyObject, UIApplication, NSError) -> Void = { _, _, error in
++                    NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
++                }
++                class_addMethod(
++                    delegateClass,
++                    didFailSelector,
++                    imp_implementationWithBlock(didFailBlock as Any),
++                    "v@:@@"
++                )
++            }
++        }
++    }
+ 
+     deinit {
+         NotificationCenter.default.removeObserver(self)
