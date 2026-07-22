@@ -219,12 +219,22 @@ const OrderDetailsSheet = ({
                           <h3 className="font-semibold text-foreground">{listingTitle}</h3>
                           <div className="text-right">
                             <p className="text-lg font-semibold">${o.price}</p>
-                            <p className="text-sm text-muted-foreground">+${o.shipping_price} shipping</p>
                           </div>
                         </div>
                       </div>
                     );
                   })}
+                  <div className="pt-1 flex items-center justify-between border-t border-border pt-3">
+                    <div className="text-sm text-muted-foreground">
+                      Shipping{orders.length >= 2 ? ' (combined)' : ''}
+                    </div>
+                    <div className="text-right">
+                      {bundleText && (
+                        <p className="text-xs text-accent-foreground font-medium">✈️ {bundleText}</p>
+                      )}
+                      <p className="text-sm text-foreground">+${shippingTotal.toFixed(2)}</p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Fee line */}
