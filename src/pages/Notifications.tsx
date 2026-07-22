@@ -7,6 +7,8 @@ import { useNotifications, getNotificationMessage, getNotificationEmoji, Notific
 import { useOrders } from '@/hooks/useOrders';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { canOpenListing } from '@/utils/listingAccess';
+import { supabase } from '@/integrations/supabase/client';
+
 
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
@@ -67,15 +69,26 @@ const Notifications = () => {
   // bottom-nav badge (both are derived from `is_read` in the DB now).
   useEffect(() => {
     if (loadingNotifications) return;
-    if (!notifications.some(n => !n.is_read && !n.id.startsWith('fallback-'))) return;
+    if (!notifications.some(n => !n.is_read)) return;
     markAllAsRead.mutate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadingNotifications]);
 
+
   const handleNotificationClick = async (notification: Notification) => {
-    if (!notification.is_read && !notification.id.startsWith('fallback-')) {
+    if (notification.id.startsWith('fallback-')) {
+      if (notification.related_thread_id) {
+        await (supabase as any)
+          .from('chat_messages')
+          .update({ read: true })
+          .eq('thread_id', notification.related_thread_id)
+          .neq('sender_type', 'user')
+          .eq('read', false);
+      }
+    } else if (!notification.is_read) {
       markAsRead.mutate(notification.id);
     }
+
     
     // Shipping reminders → navigate to sales page
     if (notification.type === 'shipping_reminder_3d' || notification.type === 'shipping_reminder_6d') {

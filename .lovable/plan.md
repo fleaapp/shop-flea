@@ -1,27 +1,37 @@
-## Diagnosis confirmed
-- The latest comment test created the in-app notification for `@sarahhearn2`.
-- The push sender function did run for that same notification.
-- The push sender still found **zero saved push subscriptions** for `@sarahhearn2`.
-- The token registration function has **no recent calls at all**, so this is not a PWA-to-native issue and not yet an APNs delivery failure. The native app is not reaching the backend to save its device token.
+# Fix persistent support-chat notification badge
 
-## Plan
-1. **Fix the native registration call path**
-   - Update push token registration to use the same auth client/session source as the rest of the app.
-   - Remove the fragile split between `src/lib/supabase` and the generated cloud client for this call so the Authorization token is reliably attached.
-   - Add a direct fallback `fetch` to the registration function if `functions.invoke()` does not execute in native WebView.
+## Root cause
 
-2. **Add a visible in-app push health check**
-   - On native iOS after login/open/foreground, log clear states for: permission status, APNs registration attempted, APNs token received, backend save attempted, backend save success/failure.
-   - Send failures to the admin error logs so we can see device-side problems even when Xcode is not attached.
+The Alerts bottom-nav badge is derived from unread rows in the `notifications` table. Support-chat alerts have two sources that must both be cleared:
 
-3. **Keep the sender-side push path explicit**
-   - Keep comment/reply push sends tied to the matching in-app notification row, so one in-app alert equals one push attempt.
-   - Add the same explicit send pattern to any notification types that still only create in-app alerts and rely on a missing/disabled trigger.
+- A real `notifications` row (`type = 'support_message'`, `related_thread_id = <thread>`)
+- A synthesized fallback in `useNotifications` built from `chat_messages` where `sender_type != 'user'` AND `read = false`
 
-4. **Verify with real data**
-   - Confirm `@sarahhearn2` gets a row in `push_subscriptions` after reopening the native app.
-   - Re-test `@jcsbh` commenting on `@sarahhearn2`’s listing.
-   - Confirm the push sender logs show an iOS subscription count greater than zero and no “No subscriptions found” warning.
+Today:
 
-## Important note
-The current evidence says the sender being on PWA and recipient being on native is fine. The blocker is that the native recipient has not saved an APNs token into the database.
+- Opening the support conversation marks `chat_messages.read = true` but never updates the matching `notifications` row and never invalidates the `['notifications']` query, so the DB-derived badge stays and reappears after any refetch.
+- Tapping the alert on the Alerts screen skips `markAsRead` for fallback entries, and the "mark all as read" tap early-returns when only fallback entries are unread — so opening Alerts doesn't clear it either.
+
+## Changes
+
+### 1. `src/pages/ChatConversation.tsx` — clear both sources on open
+
+In the existing `markRead` effect, after updating `chat_messages`:
+
+- Also update `notifications` set `is_read = true` where `user_id = auth user`, `related_thread_id = threadId`, `type = 'support_message'`, `is_read = false`.
+- Invalidate `['notifications']` in addition to `['unread-support']` and `['nav-badges']`.
+
+### 2. `src/pages/Notifications.tsx` — don't ignore fallback support items
+
+- Remove the `!n.id.startsWith('fallback-')` guard on the auto "mark all as read" effect so any unread item (including support fallbacks) triggers a clear pass.
+- Update `markAllAsRead` in `src/hooks/useNotifications.ts` to also mark the user's support `chat_messages` as read in the same mutation: for every `chat_threads.id` where `user_id = auth uid`, set `chat_messages.read = true` where `sender_type != 'user'` AND `read = false`. This guarantees taps on the Alerts screen clear the fallback source too.
+- When an individual fallback support notification is tapped, run the same targeted update on `chat_messages` for that `related_thread_id` (in addition to navigating).
+
+### 3. Verification
+
+- `supabase--read_query`: confirm after opening the support chat that `notifications.is_read = true` for the matching row, and `chat_messages.read = true` for that thread's non-user messages.
+- Reopen the native app: the badge should not reappear.
+
+## Scope
+
+Frontend only. No schema, RLS, or edge-function changes. No behavioral changes to any non-support notification type.

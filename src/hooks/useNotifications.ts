@@ -269,11 +269,32 @@ export const useNotifications = () => {
         .eq('is_read', false);
 
       if (error) throw error;
+
+      // Also clear support-chat fallbacks: mark all non-user messages in the
+      // user's support threads as read so the fallback source stops
+      // re-injecting an unread entry on the next refetch.
+      const { data: threads } = await (supabase as any)
+        .from('chat_threads')
+        .select('id')
+        .eq('user_id', user.id);
+
+      const threadIds = (threads || []).map((t: { id: string }) => t.id);
+      if (threadIds.length > 0) {
+        await (supabase as any)
+          .from('chat_messages')
+          .update({ read: true })
+          .in('thread_id', threadIds)
+          .neq('sender_type', 'user')
+          .eq('read', false);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['unread-support'] });
+      queryClient.invalidateQueries({ queryKey: ['nav-badges'] });
     },
   });
+
 
   // Unread + badge counts are both derived from the DB `is_read` column.
   // Previously the badge was tracked in localStorage which reset to the full

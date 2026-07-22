@@ -48,11 +48,20 @@ const ChatConversation = () => {
         .eq('thread_id', threadId)
         .neq('sender_type', 'user')
         .eq('read', false);
+      await (supabase as any)
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('related_thread_id', threadId)
+        .eq('type', 'support_message')
+        .eq('is_read', false);
       queryClient.invalidateQueries({ queryKey: ['unread-support'] });
       queryClient.invalidateQueries({ queryKey: ['nav-badges'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     };
     markRead();
   }, [threadId, user, queryClient, messages.length]);
+
 
   const scrollToBottom = () => {
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 100);
