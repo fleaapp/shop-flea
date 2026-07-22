@@ -124,6 +124,18 @@ const OrderDetailsSheet = ({
   const chatThreadId = primaryOrder.order_group_id || primaryOrder.id;
   const displayId = primaryOrder.order_number || chatThreadId.slice(0, 8).toUpperCase();
 
+  const shippingTotal = orders.reduce((sum, o) => sum + Number(o.shipping_price || 0), 0);
+  const { data: sellerShippingSettings } = useQuery({
+    queryKey: ['seller-shipping-settings', primaryOrder.seller_id],
+    queryFn: async () => {
+      const map = await fetchSellerShippingSettings([primaryOrder.seller_id]);
+      return map.get(primaryOrder.seller_id) || null;
+    },
+    enabled: !!primaryOrder.seller_id && orders.length >= 2,
+    staleTime: 60_000,
+  });
+  const bundleText = orders.length >= 2 ? getBundleBreakdownText(orders.length, sellerShippingSettings || undefined) : null;
+
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent>
