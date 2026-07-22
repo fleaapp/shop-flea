@@ -383,6 +383,24 @@ async function checkRateLimit(key: string, max: number, windowSeconds: number): 
 
 async function insertRefundNotifications(externalUrl: string, serviceKey: string, order: any) {
   try {
+    // Idempotency guard: if a refund_initiated notification for this order
+    // already exists in the last 5 minutes, skip. Prevents duplicates when
+    // this function is retried after a partial failure.
+    if (order.id) {
+      const since = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const dupRes = await fetch(
+        `${externalUrl}/rest/v1/notifications?type=eq.refund_initiated&related_order_id=eq.${order.id}&created_at=gte.${since}&select=id&limit=1`,
+        { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+      );
+      if (dupRes.ok) {
+        const dupRows = await dupRes.json();
+        if (Array.isArray(dupRows) && dupRows.length > 0) {
+          console.log('[stripe-connect-refund] refund_initiated already sent for order', order.id);
+          return;
+        }
+      }
+    }
+
     let listingTitle = 'your order';
     if (order.listing_id) {
       const res = await fetch(`${externalUrl}/rest/v1/listings?id=eq.${order.listing_id}&select=title`, {
