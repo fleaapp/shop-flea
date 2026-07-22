@@ -130,9 +130,8 @@ const CreateListing = () => {
 
 
   
-  // Tiered shipping state
-  const [tieredShippingEnabled, setTieredShippingEnabled] = useState<boolean | null>(null);
-  const [tier1Price, setTier1Price] = useState<number | null>(null);
+  // Kept for back-compat; bundle shipping no longer locks the shipping price input.
+  const tieredShippingEnabled = false;
   
   const [productName, setProductName] = useState('');
   const [fit, setFit] = useState(''); // Gender/Fit selection
@@ -252,36 +251,13 @@ const CreateListing = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // Check if shipping preferences need to be set and load tiered shipping state
+  // First-time sellers must pick a bundle shipping mode before listing.
   useEffect(() => {
-    // Only check shipping AFTER payment gate is resolved
     if (!authLoading && user && profile && !shippingChecked && hasPaymentMethod) {
       setShippingChecked(true);
-
-      // First-time sellers MUST complete shipping setup if they haven't explicitly saved preferences
       const needsShippingSetup = profile.shipping_preferences_set !== true;
-
       if (needsShippingSetup) {
         setShowShippingSetup(true);
-        return;
-      }
-
-      // Only use cached/profile shipping data for returning sellers
-      const localPrefs = loadShippingPrefs(user.id);
-      if (localPrefs) {
-        setTieredShippingEnabled(localPrefs.tieredEnabled);
-        if (localPrefs.tieredEnabled) {
-          setTier1Price(localPrefs.tier1);
-          setShippingPrice(localPrefs.tier1.toString());
-        }
-        return;
-      }
-
-      // Fall back to profile data
-      setTieredShippingEnabled(profile.tiered_shipping_enabled ?? false);
-      if (profile.tiered_shipping_enabled && profile.shipping_tier_1 != null) {
-        setTier1Price(profile.shipping_tier_1);
-        setShippingPrice(profile.shipping_tier_1.toString());
       }
     }
   }, [user, profile, authLoading, shippingChecked, hasPaymentMethod]);
@@ -289,41 +265,10 @@ const CreateListing = () => {
   const handleShippingSetupComplete = async () => {
     setShowShippingSetup(false);
     await refreshProfile();
-    
-    // Reload shipping prefs after setup — try localStorage first, then re-fetch profile
-    if (user) {
-      const localPrefs = loadShippingPrefs(user.id);
-      if (localPrefs) {
-        setTieredShippingEnabled(localPrefs.tieredEnabled);
-        if (localPrefs.tieredEnabled) {
-          setTier1Price(localPrefs.tier1);
-          setShippingPrice(localPrefs.tier1.toString());
-        } else {
-          setTieredShippingEnabled(false);
-        }
-        return;
-      }
-
-      // Fallback: read directly from DB in case localStorage wasn't used
-      const { data } = await supabase
-        .from('profiles')
-        .select('tiered_shipping_enabled, shipping_tier_1, shipping_tier_2, shipping_tier_3')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (data) {
-        setTieredShippingEnabled(data.tiered_shipping_enabled ?? false);
-        if (data.tiered_shipping_enabled && data.shipping_tier_1 != null) {
-          setTier1Price(data.shipping_tier_1);
-          setShippingPrice(data.shipping_tier_1.toString());
-        }
-      }
-    }
   };
 
   const handleShippingSetupCancel = () => {
     setShowShippingSetup(false);
-    // Navigate back since they can't proceed without setting shipping
     navigate(-1);
   };
 
