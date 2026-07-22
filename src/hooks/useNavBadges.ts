@@ -117,12 +117,12 @@ export const useNavBadges = () => {
       };
     },
     enabled: !!user?.id,
-    staleTime: 0,
+    staleTime: 30_000,
     placeholderData: (prev) => prev,
-    refetchInterval: 20_000,
     refetchOnWindowFocus: true,
-    refetchOnMount: 'always',
+    refetchOnMount: true,
     retry: false,
+
   });
 
   // Live updates via realtime + focus/visibility events.
