@@ -1,24 +1,17 @@
-## Goal
-Restore Apple Pay to its pre-morning behaviour (which was working) without touching the manual card path or the edge-function idempotency fix (both are working now).
+## Bug
+Opening an order drawer crashes into the app-wide ErrorBoundary ("Something went wrong / A small hiccup"). Root cause verified against `error_logs`: React error #310 (rules-of-hooks violation) originating from Cart.
 
-## What to revert (Apple Pay only)
-In `src/pages/Checkout.tsx`:
-- Remove the pre-warm plumbing: `WarmedPi` type, `stripeWarmPromiseRef`, `stripeWarmedKeyRef`, `warmedPiRef`, `warmedPiAmountCentsRef`, `warmingPiRef`, `warmStripe`, `ensureWarmedPaymentIntent`, the basket-change invalidation effect, and the pre-mint `useEffect` that fires when the wallet tile is selected.
-- Restore `handleWalletTap` to the original synchronous path on native: on tap → `createPaymentIntent(false)` → `Stripe.initialize({ publishableKey })` → `Stripe.createApplePay(...)` → `Stripe.presentApplePay()`. No cached PI, no pre-initialised Stripe.
-- Keep `handleNativeWalletConfirm` for the actual PassKit call, but have it call `Stripe.initialize` inline instead of relying on the warm cache.
+## Cause
+In `src/components/OrderDetailsSheet.tsx`, the `useQuery` for `seller-shipping-settings` (line 128) runs **after** the early return `if (!orders || orders.length === 0) return null;` (line 109). When the drawer is closed the component returns early; when a user taps an order it renders further and calls one extra hook → hook count mismatch → crash.
 
-## What to keep untouched
-- `supabase/functions/stripe-connect-payment-intent/index.ts` — the versioned idempotency key + one-shot retry stays. This is what unblocked manual card and is not the cause of the Apple Pay post-authorisation failure.
-- `handleCardConfirm`, `handleSavedCardConfirm`, `handleWebWalletConfirm`, coupon logic, bundle shipping copy, and every other change from today.
-- Native config (`capacitor.config.ts`, entitlements) — unchanged.
+This regressed with the recent bundle-shipping wiring (`sellerShippingSettings` + `bundleText`).
 
-## Why this should fix Apple Pay
-The pre-warm path was minting the PaymentIntent and calling `Stripe.initialize` ahead of the tap, sometimes with a slightly different context than what PassKit later handed back (warm PI amount, initialise-then-createApplePay ordering). Returning to the original serial flow — create PI → initialise → createApplePay → presentApplePay on the tap itself — matches the state Apple Pay was verified working in.
+## Fix
+Move the `useQuery` for `seller-shipping-settings` (and the derived `bundleText`/`shippingTotal` computations) **above** the `if (!orders …) return null;` guard, so every render calls the same hooks in the same order. Use `primaryOrder?.seller_id` and gate with `enabled: !!primaryOrder?.seller_id && (orders?.length ?? 0) >= 2` so it stays inert when there's no order.
 
-## Verification after the change
-1. Native build, add item to cart, tap Buy with Apple Pay → PassKit sheet → Face ID → success screen.
-2. Manual card still works (no edge-function changes).
-3. FREEFLEA coupon still zeroes the fee (no edge-function changes).
+No other files change. No backend or edge-function changes.
 
-## Trade-off (accepted)
-Apple Pay sheet will take ~300-600 ms longer to appear after tap than the pre-warmed version — same latency as before this morning. That's the behaviour you had working.
+## Verify
+- Open Orders tab → tap the order from @sarahhearn2 → drawer opens with bundle shipping line ("X% off combined shipping" / "Free shipping on bundles").
+- Close and reopen the drawer several times → no crash.
+- Single-item orders still open (bundleText stays null).
