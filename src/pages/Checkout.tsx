@@ -241,6 +241,8 @@ const Checkout = () => {
       livemode?: boolean;
       sellerAccountId?: string;
       clientStripeAccountId?: string | null;
+      ephemeralKey?: string;
+      customerId?: string;
       merchantDisplayName?: string;
     };
   }, [validItems, totalShipping, shippingBySeller, total, coupon]);
