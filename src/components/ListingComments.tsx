@@ -49,7 +49,7 @@ interface ListingCommentsProps {
   onComposerFocusChange?: (isFocused: boolean) => void;
 }
 
-const ListingComments = ({ listingId, onComposerFocusChange }: ListingCommentsProps) => {
+const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: ListingCommentsProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<{ id: string; username: string; userId: string } | null>(null);
