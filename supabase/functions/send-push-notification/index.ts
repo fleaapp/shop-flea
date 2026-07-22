@@ -192,7 +192,7 @@ serve(async (req) => {
     const apnsTeamId = Deno.env.get("APNS_TEAM_ID") ?? "";
     const apnsBundleId = Deno.env.get("APNS_BUNDLE_ID") ?? "";
     const apnsAuthKeyPem = Deno.env.get("APNS_AUTH_KEY") ?? "";
-    const apnsHost = (Deno.env.get("APNS_HOST") ?? "api.push.apple.com").trim();
+    const configuredApnsHost = (Deno.env.get("APNS_HOST") ?? "api.push.apple.com").trim();
     const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
 
     let apnsJwt: string | null = null;
@@ -238,7 +238,7 @@ serve(async (req) => {
       return apnsJwt;
     };
 
-    const sendApns = async (deviceToken: string) => {
+    const sendApnsToHost = async (deviceToken: string, host: string) => {
       const jwt = await buildApnsJwt();
       const apsPayload = JSON.stringify({
         aps: {
@@ -251,7 +251,7 @@ serve(async (req) => {
         related_order_id: notification.related_order_id,
         related_thread_id: notification.related_thread_id,
       });
-      const res = await fetch(`https://${apnsHost}/3/device/${deviceToken}`, {
+      const res = await fetch(`https://${host}/3/device/${deviceToken}`, {
         method: "POST",
         headers: {
           "authorization": `bearer ${jwt}`,
@@ -263,10 +263,31 @@ serve(async (req) => {
       });
       if (!res.ok) {
         const text = await res.text().catch(() => "");
-        const err: any = new Error(`APNs ${res.status}: ${text}`);
+        const err: any = new Error(`APNs ${host} ${res.status}: ${text}`);
         err.statusCode = res.status;
         err.body = text;
+        err.host = host;
         throw err;
+      }
+    };
+
+    const sendApns = async (deviceToken: string) => {
+      const primaryHost = configuredApnsHost || "api.push.apple.com";
+      const fallbackHost = primaryHost === "api.sandbox.push.apple.com"
+        ? "api.push.apple.com"
+        : "api.sandbox.push.apple.com";
+
+      try {
+        await sendApnsToHost(deviceToken, primaryHost);
+        return { host: primaryHost };
+      } catch (err: any) {
+        const body = String(err?.body || "");
+        const isBadDeviceToken = err?.statusCode === 400 && /BadDeviceToken|DeviceTokenNotForTopic/i.test(body);
+        if (!isBadDeviceToken) throw err;
+
+        console.warn(`[Push] APNs token rejected by ${primaryHost}; retrying ${fallbackHost}`);
+        await sendApnsToHost(deviceToken, fallbackHost);
+        return { host: fallbackHost };
       }
     };
 
@@ -274,8 +295,9 @@ serve(async (req) => {
       try {
         if (sub.platform === "ios") {
           console.log(`[Push] APNs → ${sub.endpoint.slice(0, 16)}…`);
-          await sendApns(sub.endpoint);
+          const apnsResult = await sendApns(sub.endpoint);
           sent++;
+          console.log(`[Push] APNs success via ${apnsResult.host}`);
           continue;
         }
 
