@@ -128,20 +128,46 @@ export function useNativePushNotifications() {
       }
     };
 
-    void PushNotifications.addListener('registration', (token) => {
-      const apnsToken = token.value;
-      if (!apnsToken) return;
-      console.log('[NativePush] APNs token received:', apnsToken.slice(0, 12) + '…');
-      void saveNativeToken(apnsToken, 'registration');
-    }).then((handle) => {
-      registrationListener = handle;
-    });
+    let cancelled = false;
 
-    void PushNotifications.addListener('registrationError', (err) => {
-      console.error('[NativePush] APNs registration error:', err);
+    const setup = async () => {
+      registrationListener = await PushNotifications.addListener('registration', (token) => {
+        const apnsToken = token.value;
+        if (!apnsToken) return;
+        console.log('[NativePush] APNs token received:', apnsToken.slice(0, 12) + '…');
+        void saveNativeToken(apnsToken, 'registration');
+      });
+
+      errorListener = await PushNotifications.addListener('registrationError', (err) => {
+        console.error('[NativePush] APNs registration error:', err);
+        void logError({
+          title: 'Native APNs registration error',
+          message: typeof err === 'object' && err && 'error' in err ? String((err as { error?: unknown }).error) : JSON.stringify(err),
+          severity: 'warning',
+          source: 'client',
+          context: {
+            user_id: user.id,
+            platform: Capacitor.getPlatform(),
+          },
+        });
+      });
+
+      if (cancelled) return;
+      await registerNativePush('mount');
+
+      appStateListener = await CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+        if (isActive) {
+          void registerNativePush('foreground');
+        }
+      });
+    };
+
+    void setup().catch((err) => {
+      console.error('[NativePush] Listener setup failed:', err);
       void logError({
-        title: 'Native APNs registration error',
-        message: typeof err === 'object' && err && 'error' in err ? String((err as { error?: unknown }).error) : JSON.stringify(err),
+        title: 'Native push listener setup failed',
+        message: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack ?? null : null,
         severity: 'warning',
         source: 'client',
         context: {
@@ -149,20 +175,10 @@ export function useNativePushNotifications() {
           platform: Capacitor.getPlatform(),
         },
       });
-    }).then((handle) => {
-      errorListener = handle;
-    });
-
-    void registerNativePush('mount');
-    void CapacitorApp.addListener('appStateChange', ({ isActive }) => {
-      if (isActive) {
-        void registerNativePush('foreground');
-      }
-    }).then((handle) => {
-      appStateListener = handle;
     });
 
     return () => {
+      cancelled = true;
       registrationListener?.remove();
       errorListener?.remove();
       appStateListener?.remove();
