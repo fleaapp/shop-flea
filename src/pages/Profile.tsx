@@ -401,6 +401,11 @@ const Profile = () => {
         onMarkShipped={handleMarkShipped}
       />
 
+      <ShippingSettingsSheet
+        open={shippingSettingsOpen}
+        onOpenChange={setShippingSettingsOpen}
+      />
+
       {user && (
         <ReviewsDrawer
           userId={user.id}
