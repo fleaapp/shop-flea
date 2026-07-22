@@ -53,7 +53,7 @@ type ShippingDetails = {
   shippingState?: string;
   shippingPostcode?: string;
 };
-type ListingRow = { id: string; user_id: string; title: string; price: number; status: string };
+type ListingRow = { id: string; user_id: string; title: string; price: number; shipping_price?: number | null; status: string };
 type NotificationRow = {
   user_id: string;
   type: string;
@@ -357,7 +357,7 @@ serve(async (req) => {
     const itemIds = [...new Set(items.map((i) => i.id))];
     const { data: listingRows, error: listingError } = await serviceClient
       .from("listings")
-      .select("id, user_id, title, price, status")
+      .select("id, user_id, title, price, shipping_price, status")
       .in("id", itemIds);
     if (listingError) throw listingError;
 
@@ -365,12 +365,37 @@ serve(async (req) => {
     const authoritativeItems = itemIds.map((id) => listingMap.get(id)).filter((x): x is ListingRow => !!x);
     if (authoritativeItems.length === 0) throw new Error("Purchased items could not be found.");
 
-    // Compute expected paid amount from DB-authoritative prices (items +
-    // shipping + buyer-paid Secure Checkout Fee). This is what we passed the
-    // provider when creating the checkout, so the provider's recorded
-    // amount must match within rounding tolerance.
-    const shippingMap = new Map<string, number>(Array.isArray(shippingBySeller) ? shippingBySeller : []);
+    // Compute expected paid amount from DB-authoritative prices and seller
+    // bundle-shipping settings. This must match stripe-connect-payment-intent
+    // exactly; do not trust client-supplied shipping totals for verification.
+    const round2 = (n: number) => Math.round(n * 100) / 100;
     const dbItemsTotal = authoritativeItems.reduce((s, i) => s + Number(i.price), 0);
+    const sellerIds = Array.from(new Set(authoritativeItems.map((item) => item.user_id)));
+    const { data: sellerProfiles, error: sellerProfilesError } = await serviceClient
+      .from("profiles")
+      .select("user_id, bundle_shipping_mode, bundle_shipping_discount_percent")
+      .in("user_id", sellerIds);
+    if (sellerProfilesError) throw sellerProfilesError;
+
+    const sellerSettings = new Map((sellerProfiles ?? []).map((row: any) => [row.user_id, row]));
+    const itemsBySellerForShipping = new Map<string, ListingRow[]>();
+    for (const item of authoritativeItems) {
+      const arr = itemsBySellerForShipping.get(item.user_id) ?? [];
+      arr.push(item);
+      itemsBySellerForShipping.set(item.user_id, arr);
+    }
+    const shippingMap = new Map<string, number>();
+    for (const [sellerId, sellerItems] of itemsBySellerForShipping.entries()) {
+      const settings: any = sellerSettings.get(sellerId) ?? {};
+      const rawShipping = sellerItems.reduce((sum, item) => sum + Number(item.shipping_price || 0), 0);
+      const isBundle = sellerItems.length >= 2;
+      const mode = String(settings.bundle_shipping_mode || "none");
+      const discount = Math.max(0, Math.min(100, Number(settings.bundle_shipping_discount_percent || 0)));
+      let sellerShipping = rawShipping;
+      if (isBundle && mode === "free") sellerShipping = 0;
+      if (isBundle && mode === "discounted" && discount > 0) sellerShipping = rawShipping * (1 - discount / 100);
+      shippingMap.set(sellerId, round2(sellerShipping));
+    }
     const dbShippingTotal = Array.from(shippingMap.values()).reduce((s, v) => s + Number(v || 0), 0);
     const subtotalForFee = dbItemsTotal + dbShippingTotal;
     const SECURE_CHECKOUT_RATE = 0.04, SECURE_CHECKOUT_FIXED = 0.70;
