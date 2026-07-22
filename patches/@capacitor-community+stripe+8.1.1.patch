@@ -1,5 +1,5 @@
 diff --git a/node_modules/@capacitor-community/stripe/Package.swift b/node_modules/@capacitor-community/stripe/Package.swift
-index 0000000..1111111 100644
+index 1111111..2222222 100644
 --- a/node_modules/@capacitor-community/stripe/Package.swift
 +++ b/node_modules/@capacitor-community/stripe/Package.swift
 @@ -11,7 +11,7 @@ let package = Package(
