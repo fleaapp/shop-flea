@@ -281,6 +281,8 @@ const Checkout = () => {
     paymentIntentId: string;
     amount: number;
     publishableKey: string;
+    ephemeralKey?: string;
+    customerId?: string;
     livemode?: boolean;
     sellerAccountId?: string;
     clientStripeAccountId?: string | null;

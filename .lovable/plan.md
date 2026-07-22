@@ -1,68 +1,52 @@
-## Direct answer
+## Goal
 
-No — the evidence does **not** point to a missing Stripe payment-processing certificate as the current Apple Pay failure.
+Recreate the exact Apple Pay wiring from when it last worked: initialize Stripe via the PaymentSheet config path (which is what actually registered Apple Pay correctly with the native Stripe SDK), but never present the sheet — go straight into Apple's native Apple Pay sheet.
 
-What we have confirmed is stronger and earlier in the chain:
+You will not see the Stripe / Link sheet at any point. It's only used as an initializer, then bypassed.
 
-- Your previous `codesign -d --entitlements :- ... | grep in-app-payments` output was empty.
-- Xcode’s merchant row flashing red points to signing/provisioning not attaching the Apple Pay entitlement to the built app.
-- Push notifications show the same native-signing/bridge pattern: iOS permission is granted and registration is requested, but no APNs token ever reaches the app, and the backend has zero stored iOS push subscriptions for the tested accounts.
+## Change — `src/pages/Checkout.tsx`, iOS branch of `handleNativeWalletConfirm`
 
-For Stripe Apple Pay:
+1. Keep the existing calls that must not change: `Stripe.initialize`, the key-mode guard, `runApplePayPreflight`, and the amount-mismatch guard.
 
-- **Required in the native signed app:** Apple Pay capability + `merchant.com.finditonflea.app` embedded in the signed entitlements.
-- **Required for actual Stripe processing:** the Stripe account behind the publishable key must be Apple Pay-ready for that merchant. Stripe handles the payment processing certificate side for this integration, but the native app still must be signed with the Apple Pay entitlement.
-- **Current failure:** happens before a normal Stripe charge path can complete, because the signed app is missing the entitlement / provisioning capability.
+2. Restore the PaymentSheet initializer before Apple Pay (this is the step that was removed in the "speed up Apple Pay" change and is what registered Apple Pay against the Stripe SDK correctly):
+   ```
+   await Stripe.createPaymentSheet({
+     paymentIntentClientSecret: pi.clientSecret,
+     customerId: pi.customerId,
+     customerEphemeralKeySecret: pi.ephemeralKey,
+     enableApplePay: true,
+     applePayMerchantId: 'merchant.com.finditonflea.app',
+     countryCode: 'AU',
+     merchantDisplayName: pi.merchantDisplayName || 'Flea',
+     returnURL: 'flea://stripe-redirect',
+     style: 'alwaysLight',
+   });
+   ```
+   The sheet is never presented — no `Stripe.presentPaymentSheet()` call.
 
-## Plan that actually changes the broken paths
+3. Immediately after that, keep the direct Apple Pay path (unchanged):
+   ```
+   await Stripe.createApplePay({
+     paymentIntentClientSecret: pi.clientSecret,
+     paymentSummaryItems: [{ label: pi.merchantDisplayName || 'Flea', amount: applePayTotalAud }],
+     merchantIdentifier: 'merchant.com.finditonflea.app',
+     countryCode: 'AU',
+     currency: 'AUD',
+   });
+   const { paymentResult } = await Stripe.presentApplePay();
+   ```
+   Success/cancel/failure handling stays exactly as it is today.
 
-1. **Fix Apple Pay signing at the source**
-   - Update `scripts/setup-ios-native.sh` so it patches the **App target only**, not every build settings block.
-   - Force `CODE_SIGN_ENTITLEMENTS = App/App.entitlements` into the App target Debug/Release build configurations.
-   - Add Xcode App target capability flags for:
-     - Apple Pay
-     - Push Notifications
-     - Associated Domains
-     - Sign in with Apple
-   - Keep copying `ios-native/App.entitlements` with:
-     - `merchant.com.finditonflea.app`
-     - `aps-environment = production`
-     - associated domains
-     - Apple sign-in
+4. Add `ephemeralKey` and `customerId` to the `pi` type in `handleNativeWalletConfirm` and to the return type of `createPaymentIntent` so the initializer call above compiles. The backend function `stripe-connect-payment-intent` already returns both — no server changes.
 
-2. **Fix native push token delivery**
-   - Patch `ios/App/App/AppDelegate.swift` through the setup script with the official Capacitor APNs callbacks:
-     - `didRegisterForRemoteNotificationsWithDeviceToken`
-     - `didFailToRegisterForRemoteNotificationsWithError`
-   - These callbacks post the APNs token/error into Capacitor so `useNativePushNotifications.ts` can receive the token and save it.
-   - This addresses the confirmed failure: permission is granted, registration is requested, but no token is stored.
+## What this does NOT change
 
-3. **Add a timeout diagnostic so this cannot silently fail again**
-   - Update `src/hooks/useNativePushNotifications.ts` to log a clear warning if iOS registration is requested but no token or registration error returns within a short timeout.
-   - Keep the existing token-save function because the backend failure is currently “no subscription exists”, not “send failed after subscription exists”.
+- No visible Stripe / Link sheet — `presentPaymentSheet` is never called.
+- No changes to card / saved-card / web wallet paths.
+- No changes to `stripe-connect-payment-intent`, entitlements, `setup-ios-native.sh`, or push notifications.
+- No changes to the amount, fees, or coupon logic.
 
-4. **Make verification impossible to miss**
-   - Update the setup script’s final checks to print and fail on:
-     - missing entitlements file
-     - missing `CODE_SIGN_ENTITLEMENTS`
-     - missing Xcode capability flags
-     - missing Apple Pay merchant ID
-     - missing APNs delegate bridge
-   - After you rebuild, the proof will be:
-     - `codesign` output includes `merchant.com.finditonflea.app`
-     - native app logs show `Native push token-received`
-     - native app logs show `Native push token-save-succeeded`
-     - backend shows an `ios` push subscription row for the logged-in user
+## Verification
 
-5. **Commands after implementation**
-
-```bash
-git pull
-npm install
-npm run build
-npx cap sync ios
-bash scripts/setup-ios-native.sh
-npx cap open ios
-```
-
-This does **not** reset Xcode caches, does **not** delete DerivedData, and does **not** wipe Swift Package Manager artifacts.
+- Typecheck runs automatically after the edit.
+- On device: tap Apple Pay → Apple's native sheet opens directly, no Stripe / Link sheet ever visible. Complete payment with a card in Wallet and confirm the order lands in the success screen.
