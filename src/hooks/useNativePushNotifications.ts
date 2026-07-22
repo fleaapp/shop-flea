@@ -6,6 +6,13 @@ import { useAuth } from '@/context/AuthContext';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { logError } from '@/lib/errorLogger';
 
+const NATIVE_PUSH_REGISTER_EVENT = 'flea-native-push-register';
+
+export const requestNativePushRegistration = (reason = 'manual') => {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(NATIVE_PUSH_REGISTER_EVENT, { detail: { reason } }));
+};
+
 type NativePushEvent =
   | 'setup-started'
   | 'permission-checked'
@@ -71,14 +78,46 @@ export function useNativePushNotifications() {
     }, 12_000);
   }, [clearRegistrationTimeout]);
 
+  const checkCloudTokenStatus = useCallback(async (reason: string) => {
+    if (!user?.id) return { hasIosToken: false, checked: false };
+
+    try {
+      const { data, error } = await invokeCloudFunction('push-status', {
+        method: 'GET',
+        query: { reason },
+      });
+
+      if (error) {
+        void logError({
+          title: 'Native push token status check failed',
+          message: error.message || 'push-status failed',
+          severity: 'warning',
+          source: 'client',
+          context: { reason, user_id: user.id, platform: Capacitor.getPlatform() },
+        });
+        return { hasIosToken: false, checked: false };
+      }
+
+      return {
+        hasIosToken: Boolean((data as { has_ios_token?: boolean } | null)?.has_ios_token),
+        checked: true,
+      };
+    } catch (err) {
+      void logError({
+        title: 'Native push token status check crashed',
+        message: err instanceof Error ? err.message : String(err),
+        severity: 'warning',
+        source: 'client',
+        context: { reason, user_id: user.id, platform: Capacitor.getPlatform() },
+      });
+      return { hasIosToken: false, checked: false };
+    }
+  }, [user?.id]);
+
   const saveNativeToken = useCallback(async (apnsToken: string, reason: string) => {
     if (!user?.id || !apnsToken) return;
 
-    const now = Date.now();
-    if (
-      saveInFlightRef.current ||
-      (lastSavedTokenRef.current === apnsToken && now - lastSavedAtRef.current < 30_000)
-    ) {
+    if (saveInFlightRef.current) {
       return;
     }
 
@@ -160,8 +199,9 @@ export function useNativePushNotifications() {
     let registrationListener: { remove: () => void } | null = null;
     let errorListener: { remove: () => void } | null = null;
     let appStateListener: { remove: () => void } | null = null;
+    let manualRegisterListener: ((event: Event) => void) | null = null;
 
-    const registerNativePush = async (reason: string) => {
+    const registerNativePush = async (reason: string, opts?: { force?: boolean }) => {
       try {
         let perm = await PushNotifications.checkPermissions();
         console.log('[NativePush] Permission status:', perm.receive, reason);
@@ -195,6 +235,23 @@ export function useNativePushNotifications() {
             permission: perm.receive,
           });
           return;
+        }
+
+        if (!opts?.force) {
+          const cloudStatus = await checkCloudTokenStatus(reason);
+          if (cloudStatus.checked && cloudStatus.hasIosToken) {
+            console.log('[NativePush] Cloud iOS token already present:', reason);
+            return;
+          }
+          if (cloudStatus.checked && !cloudStatus.hasIosToken) {
+            void logError({
+              title: 'Native push permission granted but no Cloud token',
+              message: 'Permission is granted, but the backend has no iOS push token. Forcing APNs registration.',
+              severity: 'warning',
+              source: 'client',
+              context: { reason, user_id: user.id, platform: Capacitor.getPlatform() },
+            });
+          }
         }
 
         console.log('[NativePush] Registering with APNs:', reason);
@@ -261,6 +318,12 @@ export function useNativePushNotifications() {
           void registerNativePush('foreground');
         }
       });
+
+      manualRegisterListener = (event: Event) => {
+        const detail = (event as CustomEvent<{ reason?: string }>).detail;
+        void registerNativePush(detail?.reason || 'manual-event', { force: true });
+      };
+      window.addEventListener(NATIVE_PUSH_REGISTER_EVENT, manualRegisterListener);
     };
 
     void setup().catch((err) => {
@@ -283,7 +346,8 @@ export function useNativePushNotifications() {
       registrationListener?.remove();
       errorListener?.remove();
       appStateListener?.remove();
+      if (manualRegisterListener) window.removeEventListener(NATIVE_PUSH_REGISTER_EVENT, manualRegisterListener);
       clearRegistrationTimeout();
     };
-  }, [clearRegistrationTimeout, saveNativeToken, startRegistrationTimeout, user?.id]);
+  }, [checkCloudTokenStatus, clearRegistrationTimeout, saveNativeToken, startRegistrationTimeout, user?.id]);
 }

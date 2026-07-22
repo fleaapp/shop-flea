@@ -10,23 +10,18 @@ const corsHeaders = {
 
 type PushPlatform = "web" | "ios";
 
-function parseVerifiedUserId(req: Request): string | null {
+async function getVerifiedUserId(req: Request, supabaseUrl: string, anonKey: string): Promise<string | null> {
   const authHeader = req.headers.get("Authorization") ?? "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
   if (!token) return null;
 
   try {
-    const [, payload] = token.split(".");
-    if (!payload) return null;
-    const claims = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/"))) as {
-      sub?: string;
-      role?: string;
-      exp?: number;
-    };
-
-    if (!claims.sub || claims.role === "anon") return null;
-    if (claims.exp && claims.exp * 1000 < Date.now()) return null;
-    return claims.sub;
+    const verifier = createClient(supabaseUrl, anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data, error } = await verifier.auth.getUser(token);
+    if (error || !data.user?.id) return null;
+    return data.user.id;
   } catch {
     return null;
   }
@@ -43,8 +38,9 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-    const userId = parseVerifiedUserId(req);
+    const userId = await getVerifiedUserId(req, supabaseUrl, anonKey);
     if (!userId) {
       console.warn("[register-push-subscription] unauthorized request");
       await logEdgeError({
@@ -124,8 +120,24 @@ serve(async (req) => {
       return json({ error: "Failed to save push subscription" }, 500);
     }
 
+    const { data: savedRows, error: savedRowsError } = await svc
+      .from("push_subscriptions")
+      .select("id, platform, updated_at")
+      .eq("user_id", userId)
+      .eq("platform", platform)
+      .order("updated_at", { ascending: false });
+
+    if (savedRowsError) {
+      console.warn("[register-push-subscription] saved but status check failed:", savedRowsError);
+    }
+
     console.log(`[register-push-subscription] saved ${platform} token for user ${userId} endpoint=${endpoint.slice(0, 16)}…`);
-    return json({ ok: true, platform });
+    return json({
+      ok: true,
+      platform,
+      token_count_for_platform: savedRows?.length ?? null,
+      latest_updated_at: savedRows?.[0]?.updated_at ?? null,
+    });
   } catch (err) {
     console.error("[register-push-subscription] error:", err);
     await logEdgeError({

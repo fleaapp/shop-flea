@@ -41,7 +41,9 @@ export async function sendPushNotification(
     if (!res.ok) {
       console.error('[Push] Failed:', res.status, data);
     }
+    return { ok: res.ok, status: res.status, data };
   } catch (err) {
     console.error('[Push] Failed to send push notification:', err);
+    return { ok: false, status: 0, data: null, error: err };
   }
 }
