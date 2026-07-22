@@ -1,39 +1,28 @@
-## Bundle shipping label: standardised copy + layout
+## Root cause
 
-### Copy
-Both variants render with a single ✈️ and bold "Bundle shipping:" prefix:
-- Discounted → **Bundle shipping:** `<N>% off combined shipping`
-- Free → **Bundle shipping:** `Free shipping on bundles` (single ✈️ shown, same as discounted)
+Push notifications never arrive because the `public.push_subscriptions` table has **zero table grants**. RLS is enabled, policies exist, but with no `GRANT` to `authenticated` the Data API rejects every insert from the app. Verified:
 
-### Layouts
+- `send-push-notification` logs show `No subscriptions found for user: <sarahhearn2>` — the trigger fires and the edge function runs correctly.
+- `SELECT count(*) FROM push_subscriptions` = **0** across every user.
+- `information_schema.role_table_grants` for `push_subscriptions` returns no rows.
 
-**Cart (`src/pages/Cart.tsx` ~396–407)** — one line, left-aligned, inside the seller card slot above the Checkout button:
-```tsx
-<div className="px-4 py-2 bg-accent/30 text-left text-xs text-accent-foreground">
-  <span className="mr-1">✈️</span>
-  <span className="font-bold">Bundle shipping:</span>{' '}
-  <span>{bundleText.detail}</span>
-</div>
+So both web (`usePushNotifications`) and native iOS (`useNativePushNotifications`) upserts silently fail with permission-denied, no token is ever stored, and every downstream push (comments, sales, messages, refunds, mentions, reminders) has nothing to deliver to. The in-app sonner alert still works because it reads directly from Realtime on `notifications`.
+
+## Fix
+
+Add a migration that grants the standard Data API privileges on `public.push_subscriptions`:
+
+```sql
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.push_subscriptions TO authenticated;
+GRANT ALL ON public.push_subscriptions TO service_role;
 ```
 
-**Checkout (`src/pages/Checkout.tsx` ~738–755)** — two lines, left-aligned. Move OUT of the per-seller item card into its own row in the totals section, **below the coupon code input and above the Secure Checkout Fee line**. Stack one block per qualifying seller.
+RLS + existing policies already restrict rows to `auth.uid() = user_id`, so this only unblocks the legitimate self-owned writes.
 
-**OrderDetailsSheet (~233), SalesDetailsSheet (~259), OrderReceiptDialog (~154)** — two lines, left-aligned, in place (replacing today's single-line `✈️ {bundleText}`). Receipt keeps 10px sizing but switches from `text-right` to `text-left`.
+## Verify
 
-Two-line block:
-```tsx
-<div className="text-xs text-accent-foreground text-left">
-  <div><span className="mr-1">✈️</span><span className="font-bold">Bundle shipping:</span></div>
-  <div>{bundleText.detail}</div>
-</div>
-```
+1. Re-open the app on @sarahhearn2's device so `useNativePushNotifications` re-registers.
+2. Query `SELECT user_id, platform, updated_at FROM push_subscriptions` — expect an `ios` row for her user id.
+3. Post a comment from @jcsbh and confirm the APNs push arrives; check `send-push-notification` logs show `Found 1 subscription(s)` and `APNs …` success.
 
-### Helper change
-`src/utils/shippingCalculator.ts` — `getBundleBreakdownText` returns `{ detail: string } | null`:
-- discounted → `{ detail: '<N>% off combined shipping' }`
-- free → `{ detail: 'Free shipping on bundles' }`
-
-Callers render the ✈️ and the bold "Bundle shipping:" prefix.
-
-### Not touched
-Bundle math, seller settings fetching, and which surfaces show the label — unchanged.
+No client code changes needed — the hooks are already correct.
