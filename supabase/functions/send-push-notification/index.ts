@@ -13,7 +13,7 @@ const VAPID_PUBLIC_KEY = "BOaAjWRbh4KQDJcS-Cx8XHtz7MFnI9RAfnXSW2U2J48f7gQiud-cFk
 
 const ALERT_TITLES: Record<string, string> = {
   item_sold: "🎉 Item Sold!",
-  order_shipped: "📦 Order Shipped",
+  order_shipped: "✈️ Order Shipped",
   order_delivered: "🏠 Order Delivered",
   new_review: "⭐ New Review",
   new_comment: "💬 New Comment",
