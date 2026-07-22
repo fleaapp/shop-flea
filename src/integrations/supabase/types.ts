@@ -1065,6 +1065,84 @@ export type Database = {
           },
         ]
       }
+      profiles_public: {
+        Row: {
+          avatar_url: string | null
+          bundle_shipping_discount_percent: number | null
+          bundle_shipping_mode: string | null
+          country_code: string | null
+          created_at: string | null
+          id: string
+          last_sign_in_at: string | null
+          location: string | null
+          pause_selling: boolean | null
+          paypal_onboarding_complete: boolean | null
+          rating: number | null
+          region_id: string | null
+          shipping_preferences_set: boolean | null
+          shipping_tier_1: number | null
+          shipping_tier_2: number | null
+          shipping_tier_3: number | null
+          status: string | null
+          stripe_onboarding_complete: boolean | null
+          tiered_shipping_enabled: boolean | null
+          total_reviews: number | null
+          updated_at: string | null
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bundle_shipping_discount_percent?: number | null
+          bundle_shipping_mode?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          id: string
+          last_sign_in_at?: string | null
+          location?: string | null
+          pause_selling?: boolean | null
+          paypal_onboarding_complete?: boolean | null
+          rating?: number | null
+          region_id?: string | null
+          shipping_preferences_set?: boolean | null
+          shipping_tier_1?: number | null
+          shipping_tier_2?: number | null
+          shipping_tier_3?: number | null
+          status?: string | null
+          stripe_onboarding_complete?: boolean | null
+          tiered_shipping_enabled?: boolean | null
+          total_reviews?: number | null
+          updated_at?: string | null
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bundle_shipping_discount_percent?: number | null
+          bundle_shipping_mode?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          id?: string
+          last_sign_in_at?: string | null
+          location?: string | null
+          pause_selling?: boolean | null
+          paypal_onboarding_complete?: boolean | null
+          rating?: number | null
+          region_id?: string | null
+          shipping_preferences_set?: boolean | null
+          shipping_tier_1?: number | null
+          shipping_tier_2?: number | null
+          shipping_tier_3?: number | null
+          status?: string | null
+          stripe_onboarding_complete?: boolean | null
+          tiered_shipping_enabled?: boolean | null
+          total_reviews?: number | null
+          updated_at?: string | null
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string | null
@@ -1389,34 +1467,7 @@ export type Database = {
       }
     }
     Views: {
-      profiles_public: {
-        Row: {
-          avatar_url: string | null
-          bundle_shipping_discount_percent: number | null
-          bundle_shipping_mode: string | null
-          country_code: string | null
-          created_at: string | null
-          id: string | null
-          last_sign_in_at: string | null
-          location: string | null
-          pause_selling: boolean | null
-          paypal_onboarding_complete: boolean | null
-          rating: number | null
-          region_id: string | null
-          shipping_preferences_set: boolean | null
-          shipping_tier_1: number | null
-          shipping_tier_2: number | null
-          shipping_tier_3: number | null
-          status: string | null
-          stripe_onboarding_complete: boolean | null
-          tiered_shipping_enabled: boolean | null
-          total_reviews: number | null
-          updated_at: string | null
-          user_id: string | null
-          username: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       check_and_record_rate_limit: {
