@@ -136,8 +136,9 @@ export const useNavBadges = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, invalidate)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `buyer_id=eq.${user.id}` }, invalidate)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `seller_id=eq.${user.id}` }, invalidate)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_messages' }, invalidate)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages' }, invalidate)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_messages', filter: `sender_id=neq.${user.id}` }, invalidate)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages', filter: `sender_id=neq.${user.id}` }, invalidate)
+
       .subscribe();
 
     const onFocus = () => invalidate();
