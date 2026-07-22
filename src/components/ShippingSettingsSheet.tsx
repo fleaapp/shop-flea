@@ -1,59 +1,51 @@
 import { useState, useEffect } from 'react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { loadShippingPrefs, saveShippingPrefs } from '@/utils/shippingPrefs';
+import { loadShippingPrefs, saveShippingPrefs, BundleShippingMode } from '@/utils/shippingPrefs';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface ShippingSettingsSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+const DISCOUNT_OPTIONS = [10, 20, 30, 40, 50] as const;
+
 const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProps) => {
   const { user, refreshProfile } = useAuth();
-  const [tieredEnabled, setTieredEnabled] = useState(true);
-  const [tier1, setTier1] = useState('10.00');
-  const [tier2, setTier2] = useState('13.00');
-  const [tier3, setTier3] = useState('17.00');
+  const [mode, setMode] = useState<BundleShippingMode>('none');
+  const [discountPercent, setDiscountPercent] = useState<number>(20);
   const [isLoading, setIsLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
-  // Load current settings
   useEffect(() => {
     const loadSettings = async () => {
       if (!user || !open) return;
-      
+
       setInitialLoading(true);
       const { data, error } = await supabase
         .from('profiles')
-        .select('tiered_shipping_enabled, shipping_tier_1, shipping_tier_2, shipping_tier_3')
+        .select('bundle_shipping_mode, bundle_shipping_discount_percent')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (error) {
-        if ((error as any).code === 'PGRST204') {
-          const local = loadShippingPrefs(user.id);
-          if (local) {
-            setTieredEnabled(local.tieredEnabled);
-            if (local.tieredEnabled) {
-              setTier1(local.tier1.toFixed(2));
-              setTier2(local.tier2.toFixed(2));
-              setTier3(local.tier3.toFixed(2));
-            }
+      if (error || !data) {
+        const local = loadShippingPrefs(user.id);
+        if (local) {
+          setMode(local.mode);
+          if (local.mode === 'discounted' && local.discountPercent) {
+            setDiscountPercent(local.discountPercent);
           }
-        } else {
-          console.error('Error loading shipping settings:', error);
         }
-      } else if (data) {
-        setTieredEnabled(data.tiered_shipping_enabled ?? true);
-        setTier1(data.shipping_tier_1?.toString() ?? '10.00');
-        setTier2(data.shipping_tier_2?.toString() ?? '13.00');
-        setTier3(data.shipping_tier_3?.toString() ?? '17.00');
+      } else {
+        const m = (data.bundle_shipping_mode as BundleShippingMode) || 'none';
+        setMode(m);
+        if (m === 'discounted' && data.bundle_shipping_discount_percent) {
+          setDiscountPercent(Number(data.bundle_shipping_discount_percent));
+        }
       }
 
       setInitialLoading(false);
@@ -65,73 +57,26 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
   const handleSave = async () => {
     if (!user) return;
 
-    // Validate inputs if tiered is enabled
-    if (tieredEnabled) {
-      const t1 = parseFloat(tier1);
-      const t2 = parseFloat(tier2);
-      const t3 = parseFloat(tier3);
-      
-      if (isNaN(t1) || t1 < 0) {
-        toast.error('Please enter a valid base shipping price');
-        return;
-      }
-      if (isNaN(t2) || t2 < 0) {
-        toast.error('Please enter a valid 2-3 items shipping price');
-        return;
-      }
-      if (isNaN(t3) || t3 < 0) {
-        toast.error('Please enter a valid 4+ items shipping price');
-        return;
-      }
-    }
-
     setIsLoading(true);
     try {
       const updateData: Record<string, any> = {
-        tiered_shipping_enabled: tieredEnabled,
+        bundle_shipping_mode: mode,
+        bundle_shipping_discount_percent: mode === 'discounted' ? discountPercent : null,
       };
-
-      if (tieredEnabled) {
-        updateData.shipping_tier_1 = parseFloat(tier1);
-        updateData.shipping_tier_2 = parseFloat(tier2);
-        updateData.shipping_tier_3 = parseFloat(tier3);
-      }
 
       const { error } = await supabase
         .from('profiles')
         .update(updateData)
         .eq('user_id', user.id);
 
-      if (error) {
-        if ((error as any).code === 'PGRST204') {
-          // External Supabase may not have these columns yet.
-          saveShippingPrefs(
-            user.id,
-            tieredEnabled
-              ? {
-                  tieredEnabled: true,
-                  tier1: parseFloat(tier1),
-                  tier2: parseFloat(tier2),
-                  tier3: parseFloat(tier3),
-                }
-              : { tieredEnabled: false }
-          );
+      saveShippingPrefs(user.id, {
+        mode,
+        discountPercent: mode === 'discounted' ? discountPercent : null,
+      });
 
-          toast.success('Shipping settings saved!');
-          onOpenChange(false);
-          return;
-        }
-
+      if (error && (error as any).code !== 'PGRST204') {
         throw error;
       }
-
-      // Always persist to localStorage so listing pages can read it immediately
-      saveShippingPrefs(
-        user.id,
-        tieredEnabled
-          ? { tieredEnabled: true, tier1: parseFloat(tier1), tier2: parseFloat(tier2), tier3: parseFloat(tier3) }
-          : { tieredEnabled: false }
-      );
 
       await refreshProfile();
       toast.success('Shipping settings saved!');
@@ -144,12 +89,51 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
     }
   };
 
+  const OptionRow = ({
+    value,
+    title,
+    subtitle,
+  }: {
+    value: BundleShippingMode;
+    title: string;
+    subtitle: string;
+  }) => {
+    const selected = mode === value;
+    return (
+      <button
+        type="button"
+        onClick={() => setMode(value)}
+        className={cn(
+          'w-full text-left rounded-2xl border p-4 transition-colors',
+          selected
+            ? 'border-charcoal bg-charcoal/5'
+            : 'border-border bg-card hover:bg-secondary/40'
+        )}
+      >
+        <div className="flex items-start gap-3">
+          <span
+            className={cn(
+              'mt-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 shrink-0',
+              selected ? 'border-charcoal' : 'border-muted-foreground/40'
+            )}
+          >
+            {selected && <span className="h-2.5 w-2.5 rounded-full bg-charcoal" />}
+          </span>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-foreground">{title}</p>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{subtitle}</p>
+          </div>
+        </div>
+      </button>
+    );
+  };
+
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="px-6 pb-8">
         <DrawerHeader className="py-6">
           <DrawerTitle className="text-center flex items-center justify-center gap-2">
-            <span>📦</span> Shipping Settings
+            <span>✈️</span> Bundle Shipping
           </DrawerTitle>
         </DrawerHeader>
 
@@ -158,83 +142,54 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
             <span className="text-3xl">⏳</span>
           </div>
         ) : (
-          <div className="space-y-4">
-            {/* Toggle */}
-            <div className="flex items-center justify-between rounded-xl bg-card p-4 border border-border">
-              <Label htmlFor="tiered-toggle-settings" className="text-sm font-medium cursor-pointer">
-                Tiered shipping
-              </Label>
-              <Switch 
-                id="tiered-toggle-settings"
-                checked={tieredEnabled} 
-                onCheckedChange={setTieredEnabled}
-                className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted"
-              />
-            </div>
+          <div className="space-y-3">
+            <OptionRow
+              value="none"
+              title="No bundle shipping"
+              subtitle="Buyers pay each item's shipping in full, even in bundles."
+            />
+            <OptionRow
+              value="discounted"
+              title="Discounted shipping for bundles"
+              subtitle="Discount the total shipping when buyers buy 2+ items from you."
+            />
+            <OptionRow
+              value="free"
+              title="Free shipping for bundles"
+              subtitle="Bundles of 2+ items ship free. Single items still pay shipping."
+            />
 
-            {/* Tier inputs - only show if enabled */}
-            {tieredEnabled && (
-              <div className="space-y-3">
-                <p className="text-sm font-medium text-foreground">Shipping tiers</p>
-                
-                <div className="flex items-center gap-3">
-                  <span className="text-sm w-24">1 item:</span>
-                  <div className="relative flex-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={tier1}
-                      onChange={(e) => setTier1(e.target.value)}
-                      className="pl-7 h-11 rounded-xl"
-                    />
-                  </div>
+            {mode === 'discounted' && (
+              <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+                <p className="text-sm font-medium text-foreground">Discount amount</p>
+                <div className="grid grid-cols-5 gap-2">
+                  {DISCOUNT_OPTIONS.map((pct) => {
+                    const selected = discountPercent === pct;
+                    return (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() => setDiscountPercent(pct)}
+                        className={cn(
+                          'h-11 rounded-xl text-sm font-semibold border-2 transition-colors',
+                          selected
+                            ? 'border-charcoal bg-charcoal text-white'
+                            : 'border-border bg-background text-foreground hover:bg-secondary/40'
+                        )}
+                      >
+                        {pct}%
+                      </button>
+                    );
+                  })}
                 </div>
-                
-                <div className="flex items-center gap-3">
-                  <span className="text-sm w-24">2–3 items:</span>
-                  <div className="relative flex-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={tier2}
-                      onChange={(e) => setTier2(e.target.value)}
-                      className="pl-7 h-11 rounded-xl"
-                    />
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <span className="text-sm w-24">4+ items:</span>
-                  <div className="relative flex-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={tier3}
-                      onChange={(e) => setTier3(e.target.value)}
-                      className="pl-7 h-11 rounded-xl"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {!tieredEnabled && (
-              <div className="rounded-xl bg-muted/50 p-4 text-center">
-                <p className="text-sm text-muted-foreground">
-                  Tiered shipping is disabled.<br />
-                  Shipping for each listing will be charged individually.
+                <p className="text-xs text-muted-foreground leading-snug">
+                  Buyers save {discountPercent}% off their total shipping when they buy 2+ items
+                  from you.
                 </p>
               </div>
             )}
 
-            {/* Save Button */}
-            <div className="flex justify-center pt-2">
+            <div className="flex justify-center pt-4">
               <Button
                 onClick={handleSave}
                 disabled={isLoading}

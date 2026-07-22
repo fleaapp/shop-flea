@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { saveShippingPrefs } from '@/utils/shippingPrefs';
+import { saveShippingPrefs, BundleShippingMode } from '@/utils/shippingPrefs';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface TieredShippingSetupModalProps {
   open: boolean;
@@ -15,75 +13,36 @@ interface TieredShippingSetupModalProps {
   onCancel: () => void;
 }
 
+const DISCOUNT_OPTIONS = [10, 20, 30, 40, 50] as const;
+
 const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShippingSetupModalProps) => {
   const { user, refreshProfile } = useAuth();
-  const [tieredEnabled, setTieredEnabled] = useState(true);
-  const [tier1, setTier1] = useState('10.00');
-  const [tier2, setTier2] = useState('13.00');
-  const [tier3, setTier3] = useState('17.00');
+  const [mode, setMode] = useState<BundleShippingMode>('discounted');
+  const [discountPercent, setDiscountPercent] = useState<number>(20);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSave = async () => {
     if (!user) return;
 
-    // Validate inputs if tiered is enabled
-    if (tieredEnabled) {
-      const t1 = parseFloat(tier1);
-      const t2 = parseFloat(tier2);
-      const t3 = parseFloat(tier3);
-      
-      if (isNaN(t1) || t1 < 0) {
-        toast.error('Please enter a valid base shipping price');
-        return;
-      }
-      if (isNaN(t2) || t2 < 0) {
-        toast.error('Please enter a valid 2-3 items shipping price');
-        return;
-      }
-      if (isNaN(t3) || t3 < 0) {
-        toast.error('Please enter a valid 4+ items shipping price');
-        return;
-      }
-    }
-
     setIsLoading(true);
     try {
       const updateData: Record<string, any> = {
-        tiered_shipping_enabled: tieredEnabled,
+        bundle_shipping_mode: mode,
+        bundle_shipping_discount_percent: mode === 'discounted' ? discountPercent : null,
         shipping_preferences_set: true,
       };
-
-      if (tieredEnabled) {
-        updateData.shipping_tier_1 = parseFloat(tier1);
-        updateData.shipping_tier_2 = parseFloat(tier2);
-        updateData.shipping_tier_3 = parseFloat(tier3);
-      }
 
       const { error } = await supabase
         .from('profiles')
         .update(updateData)
         .eq('user_id', user.id);
 
-      if (error) {
-        // External Supabase may not have these columns yet.
-        if ((error as any).code === 'PGRST204') {
-          saveShippingPrefs(
-            user.id,
-            tieredEnabled
-              ? {
-                  tieredEnabled: true,
-                  tier1: parseFloat(tier1),
-                  tier2: parseFloat(tier2),
-                  tier3: parseFloat(tier3),
-                }
-              : { tieredEnabled: false }
-          );
+      saveShippingPrefs(user.id, {
+        mode,
+        discountPercent: mode === 'discounted' ? discountPercent : null,
+      });
 
-          toast.success('Shipping preferences saved!');
-          onComplete();
-          return;
-        }
-
+      if (error && (error as any).code !== 'PGRST204') {
         throw error;
       }
 
@@ -98,108 +57,107 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
     }
   };
 
+  const OptionRow = ({
+    value,
+    title,
+    subtitle,
+  }: {
+    value: BundleShippingMode;
+    title: string;
+    subtitle: string;
+  }) => {
+    const selected = mode === value;
+    return (
+      <button
+        type="button"
+        onClick={() => setMode(value)}
+        className={cn(
+          'w-full text-left rounded-2xl border p-3.5 transition-colors',
+          selected
+            ? 'border-charcoal bg-charcoal/5'
+            : 'border-border bg-card hover:bg-secondary/40'
+        )}
+      >
+        <div className="flex items-start gap-3">
+          <span
+            className={cn(
+              'mt-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 shrink-0',
+              selected ? 'border-charcoal' : 'border-muted-foreground/40'
+            )}
+          >
+            {selected && <span className="h-2.5 w-2.5 rounded-full bg-charcoal" />}
+          </span>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-foreground">{title}</p>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{subtitle}</p>
+          </div>
+        </div>
+      </button>
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
-      <DialogContent 
+      <DialogContent
         className="w-[90vw] max-w-md rounded-3xl border-[3px] border-charcoal bg-card p-6"
         hideCloseButton={false}
       >
         <DialogHeader className="text-center space-y-3 pt-4 pb-2">
           <DialogTitle className="text-xl font-bold flex items-center justify-center gap-2">
-            <span>📦</span> Set Your Shipping
+            <span>✈️</span> Bundle Shipping
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground text-center leading-relaxed">
-            Before you list your first item,<br />set your shipping preferences.
+            Choose how you charge shipping<br />when buyers bundle items.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-4 space-y-5">
-          {/* Toggle */}
-          <div className="flex items-center justify-between rounded-xl bg-card p-4 border border-border">
-            <Label htmlFor="tiered-toggle" className="text-sm font-medium cursor-pointer">
-              {tieredEnabled ? 'Tiered shipping (recommended)' : 'Tiered shipping OFF'}
-            </Label>
-            <Switch 
-              id="tiered-toggle"
-              checked={tieredEnabled} 
-              onCheckedChange={setTieredEnabled}
-              className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted"
-            />
-          </div>
+        <div className="mt-4 space-y-3">
+          <OptionRow
+            value="none"
+            title="No bundle shipping"
+            subtitle="Buyers pay each item's shipping in full."
+          />
+          <OptionRow
+            value="discounted"
+            title="Discounted for bundles"
+            subtitle="Discount total shipping on bundles of 2+."
+          />
+          <OptionRow
+            value="free"
+            title="Free for bundles"
+            subtitle="Bundles of 2+ items ship free."
+          />
 
-          {/* Tier inputs - only show if enabled */}
-          {tieredEnabled && (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground text-center leading-relaxed">
-                Buyers pay less when they buy<br />multiple items from you.
-              </p>
-              
-              <div className="flex items-center justify-center gap-3">
-                <span className="text-sm font-medium w-20 text-left">1 item</span>
-                <div className="relative w-24">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={tier1}
-                    onChange={(e) => setTier1(e.target.value)}
-                    className="pl-7 h-11 rounded-xl"
-                    placeholder="10.00"
-                  />
-                </div>
-                <span className="text-xs text-muted-foreground w-20 text-left">Base shipping</span>
+          {mode === 'discounted' && (
+            <div className="rounded-2xl border border-border bg-background p-4 space-y-3">
+              <p className="text-sm font-medium text-foreground text-center">Discount amount</p>
+              <div className="grid grid-cols-5 gap-2">
+                {DISCOUNT_OPTIONS.map((pct) => {
+                  const selected = discountPercent === pct;
+                  return (
+                    <button
+                      key={pct}
+                      type="button"
+                      onClick={() => setDiscountPercent(pct)}
+                      className={cn(
+                        'h-10 rounded-xl text-sm font-semibold border-2 transition-colors',
+                        selected
+                          ? 'border-charcoal bg-charcoal text-white'
+                          : 'border-border bg-card text-foreground'
+                      )}
+                    >
+                      {pct}%
+                    </button>
+                  );
+                })}
               </div>
-              
-              <div className="flex items-center justify-center gap-3">
-                <span className="text-sm font-medium w-20 text-left">2–3 items</span>
-                <div className="relative w-24">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={tier2}
-                    onChange={(e) => setTier2(e.target.value)}
-                    className="pl-7 h-11 rounded-xl"
-                    placeholder="13.00"
-                  />
-                </div>
-                <span className="text-xs text-muted-foreground w-20 text-left">Slightly higher</span>
-              </div>
-              
-              <div className="flex items-center justify-center gap-3">
-                <span className="text-sm font-medium w-20 text-left">4+ items</span>
-                <div className="relative w-24">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={tier3}
-                    onChange={(e) => setTier3(e.target.value)}
-                    className="pl-7 h-11 rounded-xl"
-                    placeholder="17.00"
-                  />
-                </div>
-                <span className="text-xs text-muted-foreground w-20 text-left whitespace-nowrap">Discounted rate</span>
-              </div>
-            </div>
-          )}
-
-          {!tieredEnabled && (
-            <div className="rounded-xl bg-muted/50 p-4 text-center">
-              <p className="text-sm text-muted-foreground">
-                Each listing charges exactly what you enter —<br />no combined shipping, no discounts.
-              </p>
             </div>
           )}
 
           <p className="text-xs text-muted-foreground text-center leading-relaxed pt-1">
-            You can always adjust shipping per listing<br />or in Settings → Shipping.
+            You can change this anytime<br />in Settings → Shipping.
           </p>
 
-          {/* CTA Button */}
           <div className="flex justify-center pt-1">
             <Button
               onClick={handleSave}
