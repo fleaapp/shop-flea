@@ -22,7 +22,9 @@ type NativePushEvent =
   | 'registration-callback-timeout'
   | 'token-received'
   | 'token-save-started'
-  | 'token-save-succeeded';
+  | 'token-save-succeeded'
+  | 'cloud-token-verified'
+  | 'cloud-token-missing-after-save';
 
 const logNativePushState = (
   event: NativePushEvent,
@@ -163,6 +165,14 @@ export function useNativePushNotifications() {
         platform: Capacitor.getPlatform(),
         token_prefix: apnsToken.slice(0, 12),
       });
+
+      const verified = await checkCloudTokenStatus(`${reason}-post-save`);
+      logNativePushState(verified.hasIosToken ? 'cloud-token-verified' : 'cloud-token-missing-after-save', {
+        reason,
+        user_id: user.id,
+        platform: Capacitor.getPlatform(),
+        checked: verified.checked,
+      }, verified.hasIosToken ? 'warning' : 'error');
     } catch (err) {
       console.error('[NativePush] Token save exception:', err);
       void logError({
@@ -180,7 +190,7 @@ export function useNativePushNotifications() {
     } finally {
       saveInFlightRef.current = false;
     }
-  }, [user?.id]);
+  }, [checkCloudTokenStatus, user?.id]);
 
   useEffect(() => {
     lastSavedTokenRef.current = null;

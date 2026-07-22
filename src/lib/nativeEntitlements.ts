@@ -10,20 +10,20 @@ type ApplePayEntitlementResult = {
 };
 
 /**
- * Runtime entitlement inspection would require a native plugin method to call
- * SecTaskCopyValueForEntitlement. We ship without that plugin patch, so this
- * always returns `available: false` and the Apple Pay preflight falls through
- * to Stripe's own `isApplePayAvailable()` check.
+ * No JS-readable entitlement API exists in the current native bridge. Return
+ * `available: false` so Apple Pay preflight falls through to Stripe/PassKit,
+ * where the signed build is checked by iOS itself.
  */
 export const checkApplePayEntitlement = async (
   merchantIdentifier: string,
 ): Promise<ApplePayEntitlementResult> => {
-  void Capacitor.getPlatform();
+  const isNativeIOS = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios';
   return {
     available: false,
     expectedMerchant: merchantIdentifier,
     merchantIdentifiers: [],
     hasInAppPaymentsEntitlement: false,
     hasExpectedMerchant: false,
+    error: isNativeIOS ? 'native-entitlement-bridge-unavailable' : 'not-native-ios',
   };
 };
