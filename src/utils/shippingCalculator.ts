@@ -148,9 +148,9 @@ export function getBundleBreakdownText(
   sellerSettings: SellerShippingInfo | undefined
 ): string | null {
   if (!sellerSettings || itemCount < 2) return null;
-  if (sellerSettings.mode === 'free') return 'Free bundle shipping';
+  if (sellerSettings.mode === 'free') return '✈️ Free shipping for bundles';
   if (sellerSettings.mode === 'discounted' && sellerSettings.discountPercent) {
-    return `Bundle discount: ${sellerSettings.discountPercent}% off shipping`;
+    return `✈️ Bundle discount: ${sellerSettings.discountPercent}% off combined shipping`;
   }
   return null;
 }
