@@ -238,6 +238,7 @@ const Checkout = () => {
       publishableKey: string;
       livemode?: boolean;
       sellerAccountId?: string;
+      clientStripeAccountId?: string | null;
       merchantDisplayName?: string;
     };
   }, [validItems, totalShipping, coupon]);
