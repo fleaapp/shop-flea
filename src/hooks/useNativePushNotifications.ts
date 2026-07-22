@@ -117,7 +117,6 @@ export function useNativePushNotifications() {
   const saveNativeToken = useCallback(async (apnsToken: string, reason: string) => {
     if (!user?.id || !apnsToken) return;
 
-    const now = Date.now();
     if (saveInFlightRef.current) {
       return;
     }
