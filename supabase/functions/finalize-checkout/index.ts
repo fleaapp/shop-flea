@@ -406,11 +406,15 @@ serve(async (req) => {
     if (normalizedCode) {
       const { data: c } = await serviceClient
         .from("coupons")
-        .select("id, code, type, active")
+        .select("id, code, type, active, starts_at, expires_at, max_redemptions, redemption_count")
         .eq("code", normalizedCode)
-        .eq("active", true)
         .maybeSingle();
-      if (c && c.type === "waive_buyer_fee") {
+      const now = Date.now();
+      if (c && c.active
+        && (!c.starts_at || new Date(c.starts_at).getTime() <= now)
+        && (!c.expires_at || new Date(c.expires_at).getTime() >= now)
+        && (c.max_redemptions === null || c.redemption_count < c.max_redemptions)
+        && c.type === "waive_buyer_fee") {
         secureCheckoutFee = 0;
       }
     }
