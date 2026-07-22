@@ -10,23 +10,18 @@ const corsHeaders = {
 
 type PushPlatform = "web" | "ios";
 
-function parseVerifiedUserId(req: Request): string | null {
+async function getVerifiedUserId(req: Request, supabaseUrl: string, anonKey: string): Promise<string | null> {
   const authHeader = req.headers.get("Authorization") ?? "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
   if (!token) return null;
 
   try {
-    const [, payload] = token.split(".");
-    if (!payload) return null;
-    const claims = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/"))) as {
-      sub?: string;
-      role?: string;
-      exp?: number;
-    };
-
-    if (!claims.sub || claims.role === "anon") return null;
-    if (claims.exp && claims.exp * 1000 < Date.now()) return null;
-    return claims.sub;
+    const verifier = createClient(supabaseUrl, anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data, error } = await verifier.auth.getUser(token);
+    if (error || !data.user?.id) return null;
+    return data.user.id;
   } catch {
     return null;
   }
@@ -43,8 +38,9 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-    const userId = parseVerifiedUserId(req);
+    const userId = await getVerifiedUserId(req, supabaseUrl, anonKey);
     if (!userId) {
       console.warn("[register-push-subscription] unauthorized request");
       await logEdgeError({
