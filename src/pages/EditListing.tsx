@@ -59,8 +59,8 @@ const EditListing = () => {
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
   const [showShippingSettings, setShowShippingSettings] = useState(false);
   
-  // Tiered shipping state
-  const [tieredShippingEnabled, setTieredShippingEnabled] = useState<boolean | null>(null);
+  // Kept for back-compat; bundle shipping no longer locks the shipping price input.
+  const tieredShippingEnabled = false;
   
   // New images to upload
   const [newImageFiles, setNewImageFiles] = useState<ImageFile[]>([]);
@@ -160,26 +160,7 @@ const EditListing = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // Load tiered shipping settings
-  useEffect(() => {
-    if (!authLoading && user && profile) {
-      // Check localStorage first for shipping prefs
-      const localPrefs = loadShippingPrefs(user.id);
-      if (localPrefs) {
-        setTieredShippingEnabled(localPrefs.tieredEnabled);
-        if (localPrefs.tieredEnabled) {
-          setShippingPrice(localPrefs.tier1.toString());
-        }
-        return;
-      }
-
-      // Fall back to profile data
-      setTieredShippingEnabled(profile.tiered_shipping_enabled ?? false);
-      if (profile.tiered_shipping_enabled && profile.shipping_tier_1 != null) {
-        setShippingPrice(profile.shipping_tier_1.toString());
-      }
-    }
-  }, [user, profile, authLoading]);
+  // Bundle shipping no longer prefills the listing's shipping price; nothing to load here.
 
   // Crop queue state
   const [cropQueue, setCropQueue] = useState<string[]>([]);
@@ -706,22 +687,20 @@ const EditListing = () => {
         </div>
 
         {/* Shipping Price */}
-        <div className="relative" onClick={tieredShippingEnabled ? () => setShowShippingSettings(true) : undefined}>
-          <span className={`absolute left-4 top-1/2 -translate-y-1/2 font-medium ${tieredShippingEnabled ? 'text-muted-foreground/40' : 'text-muted-foreground/60'}`}>$</span>
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 font-medium text-muted-foreground/60">$</span>
           <Input
             type="number"
             placeholder="Shipping price"
             value={shippingPrice}
             onChange={(e) => setShippingPrice(e.target.value)}
-            disabled={tieredShippingEnabled === true}
-            className={`${inputStyles} pl-8 pr-32 ${tieredShippingEnabled ? 'opacity-60 cursor-pointer' : ''}`}
-            style={tieredShippingEnabled ? { pointerEvents: 'none' } : undefined}
+            className={`${inputStyles} pl-8 pr-32`}
           />
           <span
             className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60 cursor-pointer"
             onClick={(e) => { e.stopPropagation(); setShowShippingSettings(true); }}
           >
-            {tieredShippingEnabled ? 'Tiered shipping ›' : 'Shipping settings ›'}
+            Shipping settings ›
           </span>
         </div>
         
@@ -836,15 +815,6 @@ const EditListing = () => {
         onOpenChange={(open) => {
           setShowShippingSettings(open);
           if (!open && user) {
-            const localPrefs = loadShippingPrefs(user.id);
-            if (localPrefs) {
-              setTieredShippingEnabled(localPrefs.tieredEnabled);
-              if (localPrefs.tieredEnabled) {
-                setShippingPrice(localPrefs.tier1.toString());
-              } else {
-                setShippingPrice('');
-              }
-            }
             refreshProfile();
           }
         }}

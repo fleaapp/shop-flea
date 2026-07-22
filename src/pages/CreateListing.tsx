@@ -823,9 +823,7 @@ const CreateListing = () => {
             placeholder="Shipping price"
             value={shippingPrice}
             onChange={(e) => setShippingPrice(e.target.value)}
-            disabled={tieredShippingEnabled === true}
-            className={`${inputStyles} pl-8 pr-32 ${tieredShippingEnabled ? 'opacity-60 cursor-pointer' : ''}`}
-            style={tieredShippingEnabled ? { pointerEvents: 'none' } : undefined}
+            className={`${inputStyles} pl-8 pr-32`}
           />
           <span
             className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60 cursor-pointer"
