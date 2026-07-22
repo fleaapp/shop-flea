@@ -2,7 +2,7 @@ diff --git a/node_modules/@capacitor-community/stripe/Package.swift b/node_modul
 index 1111111..2222222 100644
 --- a/node_modules/@capacitor-community/stripe/Package.swift
 +++ b/node_modules/@capacitor-community/stripe/Package.swift
-@@ -11,7 +11,7 @@ let package = Package(
+@@ -11,6 +11,6 @@ let package = Package(
      ],
      dependencies: [
          .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "8.0.0"),
@@ -14,7 +14,7 @@ diff --git a/node_modules/@capacitor-community/stripe/ios/Sources/StripePlugin/S
 index 2222222..3333333 100644
 --- a/node_modules/@capacitor-community/stripe/ios/Sources/StripePlugin/StripePlugin.swift
 +++ b/node_modules/@capacitor-community/stripe/ios/Sources/StripePlugin/StripePlugin.swift
-@@ -44,10 +44,16 @@ public class StripePlugin: CAPPlugin, CAPBridgedPlugin {
+@@ -44,9 +44,15 @@ public class StripePlugin: CAPPlugin, CAPBridgedPlugin {
          if stripeAccount != "" {
              STPAPIClient.shared.stripeAccount = stripeAccount
 +        } else {
