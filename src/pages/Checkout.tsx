@@ -734,8 +734,6 @@ const Checkout = () => {
                   
                   return Array.from(groupedItems.entries()).map(([sellerId, sellerItems]) => {
                     const shipping = shippingBySeller.get(sellerId) || 0;
-                    const settings = sellerSettings.get(sellerId);
-                    const bundleText = getBundleBreakdownText(sellerItems.length, settings);
                     
                     return (
                       <div key={sellerId} className="space-y-4">
@@ -747,12 +745,7 @@ const Checkout = () => {
                               <div className="text-right">
                                 <p className="text-lg font-semibold">${item.price}</p>
                                 {idx === sellerItems.length - 1 && (
-                                  <>
-                                    {bundleText && (
-                                      <p className="text-xs text-accent-foreground font-medium">✈️ {bundleText}</p>
-                                    )}
-                                    <p className="text-sm text-muted-foreground">+${shipping.toFixed(2)} shipping</p>
-                                  </>
+                                  <p className="text-sm text-muted-foreground">+${shipping.toFixed(2)} shipping</p>
                                 )}
                               </div>
                             </div>
@@ -768,6 +761,33 @@ const Checkout = () => {
               <div className="px-4 py-3 border-t border-border">
                 <CouponInput value={coupon} onChange={setCoupon} />
               </div>
+
+              {/* Bundle shipping labels (one per qualifying seller) */}
+              {(() => {
+                const groupedItems = new Map<string, Listing[]>();
+                validItems.forEach(item => {
+                  const existing = groupedItems.get(item.sellerId) || [];
+                  groupedItems.set(item.sellerId, [...existing, item]);
+                });
+                const rows = Array.from(groupedItems.entries())
+                  .map(([sellerId, sellerItems]) => ({
+                    sellerId,
+                    bundleText: getBundleBreakdownText(sellerItems.length, sellerSettings.get(sellerId)),
+                  }))
+                  .filter(r => r.bundleText);
+                if (rows.length === 0) return null;
+                return (
+                  <div className="px-4 py-3 border-t border-border space-y-2">
+                    {rows.map(({ sellerId, bundleText }) => (
+                      <div key={sellerId} className="text-xs text-accent-foreground text-left">
+                        <div><span className="mr-1">✈️</span><span className="font-bold">Bundle shipping:</span></div>
+                        <div>{bundleText!.detail}</div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
 
               {/* Fee line */}
               <div className="flex justify-between text-sm px-4 py-3 border-t border-border">

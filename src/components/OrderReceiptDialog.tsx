@@ -151,7 +151,10 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
                   <span className="text-gray-900">${shippingTotal.toFixed(2)}</span>
                 </div>
                 {bundleText && (
-                  <div className="text-[10px] text-gray-500 text-right mt-0.5">✈️ {bundleText}</div>
+                  <div className="text-[10px] text-gray-500 text-left mt-0.5">
+                    <div><span className="mr-1">✈️</span><span className="font-bold">Bundle shipping:</span></div>
+                    <div>{bundleText.detail}</div>
+                  </div>
                 )}
               </div>
 

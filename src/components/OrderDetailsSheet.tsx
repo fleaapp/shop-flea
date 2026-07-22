@@ -224,16 +224,19 @@ const OrderDetailsSheet = ({
                       </div>
                     );
                   })}
-                  <div className="pt-1 flex items-center justify-between border-t border-border pt-3">
-                    <div className="text-sm text-muted-foreground">
-                      Shipping{orders.length >= 2 ? ' (combined)' : ''}
-                    </div>
-                    <div className="text-right">
-                      {bundleText && (
-                        <p className="text-xs text-accent-foreground font-medium">✈️ {bundleText}</p>
-                      )}
+                  <div className="pt-1 border-t border-border pt-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-muted-foreground">
+                        Shipping{orders.length >= 2 ? ' (combined)' : ''}
+                      </div>
                       <p className="text-sm text-foreground">+${shippingTotal.toFixed(2)}</p>
                     </div>
+                    {bundleText && (
+                      <div className="text-xs text-accent-foreground text-left">
+                        <div><span className="mr-1">✈️</span><span className="font-bold">Bundle shipping:</span></div>
+                        <div>{bundleText.detail}</div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

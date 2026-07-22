@@ -142,15 +142,16 @@ export function calculateTotalShipping(
 /**
  * Cart / Checkout bundle label. Returns null when no label should be shown.
  * Bundle labels only appear when itemCount >= 2 AND mode !== 'none'.
+ * Callers render the ✈️ and bold "Bundle shipping:" prefix themselves.
  */
 export function getBundleBreakdownText(
   itemCount: number,
   sellerSettings: SellerShippingInfo | undefined
-): string | null {
+): { detail: string } | null {
   if (!sellerSettings || itemCount < 2) return null;
-  if (sellerSettings.mode === 'free') return '✈️ Free shipping for bundles';
+  if (sellerSettings.mode === 'free') return { detail: 'Free shipping on bundles' };
   if (sellerSettings.mode === 'discounted' && sellerSettings.discountPercent) {
-    return `✈️ Bundle discount: ${sellerSettings.discountPercent}% off combined shipping`;
+    return { detail: `${sellerSettings.discountPercent}% off combined shipping` };
   }
   return null;
 }
