@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
+import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
 
 /**
  * Registers the iOS device with APNs and stores the token in push_subscriptions
@@ -15,16 +16,23 @@ import { useAuth } from '@/context/AuthContext';
 export function useNativePushNotifications() {
   const { user } = useAuth();
   const registeredRef = useRef(false);
+  const registeredUserRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (registeredUserRef.current !== user?.id) {
+      registeredRef.current = false;
+      registeredUserRef.current = user?.id ?? null;
+    }
+
     if (!user?.id || registeredRef.current) return;
     if (!Capacitor.isNativePlatform()) return;
     if (Capacitor.getPlatform() !== 'ios') return;
 
     let registrationListener: { remove: () => void } | null = null;
     let errorListener: { remove: () => void } | null = null;
+    let appStateListener: { remove: () => void } | null = null;
 
-    (async () => {
+    const registerNativePush = async () => {
       try {
         let perm = await PushNotifications.checkPermissions();
 
@@ -48,21 +56,12 @@ export function useNativePushNotifications() {
             if (!apnsToken) return;
             console.log('[NativePush] APNs token received:', apnsToken.slice(0, 12) + '…');
 
-            // Replace any prior ios subscriptions for this user
-            await (supabase as any)
-              .from('push_subscriptions')
-              .delete()
-              .eq('user_id', user.id)
-              .eq('platform', 'ios');
-
-            const { error } = await (supabase as any)
-              .from('push_subscriptions')
-              .insert({
-                user_id: user.id,
+            const { error } = await invokeCloudFunction('register-push-subscription', {
+              body: {
                 endpoint: apnsToken,
                 platform: 'ios',
-                updated_at: new Date().toISOString(),
-              });
+              },
+            });
 
             if (error) {
               console.error('[NativePush] Failed to save token:', error);
@@ -84,11 +83,21 @@ export function useNativePushNotifications() {
       } catch (err) {
         console.error('[NativePush] Setup error:', err);
       }
-    })();
+    };
+
+    void registerNativePush();
+    void CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+      if (isActive && !registeredRef.current) {
+        void registerNativePush();
+      }
+    }).then((handle) => {
+      appStateListener = handle;
+    });
 
     return () => {
       registrationListener?.remove();
       errorListener?.remove();
+      appStateListener?.remove();
     };
   }, [user?.id]);
 }

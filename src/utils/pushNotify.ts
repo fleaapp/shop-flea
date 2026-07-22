@@ -12,6 +12,7 @@ export async function sendPushNotification(
     related_listing_id?: string;
     related_order_id?: string;
     related_thread_id?: string;
+    related_user_id?: string;
   }
 ) {
   try {

@@ -1,8 +1,8 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
 
 
 const VAPID_PUBLIC_KEY = 'BOaAjWRbh4KQDJcS-Cx8XHtz7MFnI9RAfnXSW2U2J48f7gQiud-cFkT2jjSluV2tR_MQIDHYUPh-5AJucHLbmhA';
@@ -21,8 +21,14 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 export function usePushNotifications() {
   const { user } = useAuth();
   const subscribedRef = useRef(false);
+  const subscribedUserRef = useRef<string | null>(null);
 
   const subscribe = useCallback(async (opts?: { requestPermission?: boolean }) => {
+    if (subscribedUserRef.current !== user?.id) {
+      subscribedRef.current = false;
+      subscribedUserRef.current = user?.id ?? null;
+    }
+
     if (!user?.id || subscribedRef.current) return;
     // Native iOS uses APNs via useNativePushNotifications, not web push.
     if (Capacitor.isNativePlatform()) return;
@@ -91,30 +97,20 @@ export function usePushNotifications() {
         return;
       }
 
-      console.log('[Push] Upserting subscription for user:', user.id);
-      const { error } = await (supabase as any)
-        .from('push_subscriptions')
-        .upsert(
-          {
-            user_id: user.id,
-            endpoint: subJson.endpoint,
-            p256dh: subJson.keys.p256dh,
-            auth: subJson.keys.auth,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'user_id,endpoint' }
-        );
+      console.log('[Push] Saving subscription for user:', user.id);
+      const { error } = await invokeCloudFunction('register-push-subscription', {
+        body: {
+          endpoint: subJson.endpoint,
+          p256dh: subJson.keys.p256dh,
+          auth: subJson.keys.auth,
+          platform: 'web',
+        },
+      });
 
       if (error) {
-        // Duplicate-key race is harmless — the row already exists for this endpoint.
         const code = (error as any).code;
-        if (code === '23505') {
-          console.log('[Push] Subscription already saved (duplicate ignored).');
-          subscribedRef.current = true;
-        } else {
-          console.error('[Push] Failed to save subscription:', JSON.stringify(error));
-          toast.error(`Push save failed: ${error.message || code || 'Unknown error'}`);
-        }
+        console.error('[Push] Failed to save subscription:', JSON.stringify(error));
+        toast.error(`Push save failed: ${error.message || code || 'Unknown error'}`);
       } else {
         console.log('[Push] Subscription saved successfully!');
         subscribedRef.current = true;

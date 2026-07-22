@@ -80,19 +80,49 @@ serve(async (req) => {
 
     const { user_id, notification } = await req.json();
 
-    // SECURITY: non-service-role callers may only push to themselves.
-    if (!isServiceRole && user_id !== callerUserId) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     if (!user_id || !notification) {
       return new Response(JSON.stringify({ error: "Missing user_id or notification" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    // SECURITY: normal users may push to themselves. Cross-user comment/reply
+    // pushes are allowed only when a matching in-app notification row already
+    // exists for that recipient and caller, proving this app action occurred.
+    if (!isServiceRole && user_id !== callerUserId) {
+      const canSendCommentPush =
+        (notification.type === "new_comment" || notification.type === "comment_reply") &&
+        typeof notification.related_listing_id === "string" &&
+        callerUserId;
+
+      if (!canSendCommentPush) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const since = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+      const { data: matchingNotification, error: matchError } = await supabase
+        .from("notifications")
+        .select("id")
+        .eq("user_id", user_id)
+        .eq("related_user_id", callerUserId)
+        .eq("related_listing_id", notification.related_listing_id)
+        .eq("type", notification.type)
+        .gte("created_at", since)
+        .limit(1)
+        .maybeSingle();
+
+      if (matchError || !matchingNotification) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY");
@@ -110,7 +140,6 @@ serve(async (req) => {
       vapidPrivateKey
     );
 
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
     console.log("[Push] Using Supabase URL:", supabaseUrl?.slice(0, 30));
 
     // Get user's push subscriptions

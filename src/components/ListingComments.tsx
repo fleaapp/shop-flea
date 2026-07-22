@@ -27,6 +27,7 @@ import ReportDialog from '@/components/ReportDialog';
 import { useContentModeration } from '@/hooks/useContentModeration';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
+import { sendPushNotification } from '@/utils/pushNotify';
 
 
 interface Comment {
@@ -52,7 +53,7 @@ interface ListingCommentsProps {
 const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: ListingCommentsProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [newComment, setNewComment] = useState('');
-  const [replyingTo, setReplyingTo] = useState<{ id: string; username: string } | null>(null);
+  const [replyingTo, setReplyingTo] = useState<{ id: string; username: string; userId: string } | null>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
   const [cursorPosition, setCursorPosition] = useState(0);
@@ -255,9 +256,18 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
 
       if (error) throw error;
 
-      // Push notifications for comments/replies are handled server-side by the
-      // notifications DB trigger (see public.trigger_push_notification). No
-      // client-side push call needed — it would 403 targeting another user.
+      const pushRecipientId = parentId ? replyingTo?.userId : sellerId;
+      if (pushRecipientId && pushRecipientId !== user.id) {
+        void sendPushNotification(pushRecipientId, {
+          type: parentId ? 'comment_reply' : 'new_comment',
+          title: parentId ? 'Reply' : 'New Comment',
+          message: parentId
+            ? `${profile?.username || 'Someone'} replied to your comment.`
+            : `${profile?.username || 'Someone'} commented on your listing.`,
+          related_listing_id: listingId,
+          related_user_id: user.id,
+        });
+      }
 
       // Fire-and-forget @mention notifications so post feels instant.
       const mentionHandles = Array.from(
@@ -333,7 +343,7 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
 
   const handleReply = (comment: Comment) => {
     if (!requireAuth()) return;
-    setReplyingTo({ id: comment.id, username: comment.profile?.username || '@user' });
+    setReplyingTo({ id: comment.id, username: comment.profile?.username || '@user', userId: comment.user_id });
   };
 
   const CommentItem = ({ comment, isReply = false }: { comment: Comment; isReply?: boolean }) => (
