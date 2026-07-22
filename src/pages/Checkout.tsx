@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 import { Pencil, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import BlockedUserBanner from '@/components/BlockedUserBanner';
-import { fetchSellerShippingSettings, calculateTotalShipping, SellerShippingInfo } from '@/utils/shippingCalculator';
+import { fetchSellerShippingSettings, calculateTotalShipping, getBundleBreakdownText, SellerShippingInfo } from '@/utils/shippingCalculator';
 import { calculateFees } from '@/utils/feeCalculator';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import { useBuyerAddress } from '@/hooks/useBuyerAddress';
