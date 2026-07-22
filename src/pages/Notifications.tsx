@@ -67,10 +67,11 @@ const Notifications = () => {
   // bottom-nav badge (both are derived from `is_read` in the DB now).
   useEffect(() => {
     if (loadingNotifications) return;
-    if (!notifications.some(n => !n.is_read && !n.id.startsWith('fallback-'))) return;
+    if (!notifications.some(n => !n.is_read)) return;
     markAllAsRead.mutate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadingNotifications]);
+
 
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.is_read && !notification.id.startsWith('fallback-')) {
