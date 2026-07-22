@@ -1,33 +1,24 @@
-## Root cause (confirmed from logs)
+## Goal
+Restore Apple Pay to its pre-morning behaviour (which was working) without touching the manual card path or the edge-function idempotency fix (both are working now).
 
-Stripe returned:
-`Keys for idempotent requests can only be used with the same parameters they were first used with. Try using a key other than 'flea-pi-6c149349774f4267692ab0198d5e970a'`
+## What to revert (Apple Pay only)
+In `src/pages/Checkout.tsx`:
+- Remove the pre-warm plumbing: `WarmedPi` type, `stripeWarmPromiseRef`, `stripeWarmedKeyRef`, `warmedPiRef`, `warmedPiAmountCentsRef`, `warmingPiRef`, `warmStripe`, `ensureWarmedPaymentIntent`, the basket-change invalidation effect, and the pre-mint `useEffect` that fires when the wallet tile is selected.
+- Restore `handleWalletTap` to the original synchronous path on native: on tap → `createPaymentIntent(false)` → `Stripe.initialize({ publishableKey })` → `Stripe.createApplePay(...)` → `Stripe.presentApplePay()`. No cached PI, no pre-initialised Stripe.
+- Keep `handleNativeWalletConfirm` for the actual PassKit call, but have it call `Stripe.initialize` inline instead of relying on the warm cache.
 
-The Apple Pay speed-up work added:
-- pre-warmed PaymentIntent creation from `useEffect`
-- `payment_method_options: { card: { request_three_d_secure: "automatic" } }`
-- coupon recalculation flow
+## What to keep untouched
+- `supabase/functions/stripe-connect-payment-intent/index.ts` — the versioned idempotency key + one-shot retry stays. This is what unblocked manual card and is not the cause of the Apple Pay post-authorisation failure.
+- `handleCardConfirm`, `handleSavedCardConfirm`, `handleWebWalletConfirm`, coupon logic, bundle shipping copy, and every other change from today.
+- Native config (`capacitor.config.ts`, entitlements) — unchanged.
 
-The idempotency key is currently `flea-pi-sha256(user | sorted item ids | amountCents | saveCard flag)`. That key doesn't include coupon, 3DS options, or a code-version salt. When a basket was first submitted before today's deploy and then re-attempted after the deploy, Stripe sees "same key, different params" and rejects the request for 24h. Result: both Apple Pay and Add-new-card fail on that basket for that buyer.
+## Why this should fix Apple Pay
+The pre-warm path was minting the PaymentIntent and calling `Stripe.initialize` ahead of the tap, sometimes with a slightly different context than what PassKit later handed back (warm PI amount, initialise-then-createApplePay ordering). Returning to the original serial flow — create PI → initialise → createApplePay → presentApplePay on the tap itself — matches the state Apple Pay was verified working in.
 
-## Fix plan
+## Verification after the change
+1. Native build, add item to cart, tap Buy with Apple Pay → PassKit sheet → Face ID → success screen.
+2. Manual card still works (no edge-function changes).
+3. FREEFLEA coupon still zeroes the fee (no edge-function changes).
 
-1. Strengthen the idempotency key in `supabase/functions/stripe-connect-payment-intent/index.ts`
-   - Include a code-version salt (bumps whenever request params change).
-   - Include coupon code, seller stripe account id, application fee amount, and a stable hash of the full PaymentIntent request body.
-   - This guarantees any change to what we send Stripe produces a new key.
-
-2. Retry-on-idempotency-conflict
-   - Wrap `paymentIntents.create` so that if Stripe returns `type === 'idempotency_error'`, we retry once with a fresh random-suffixed key.
-   - This unblocks any buyer already stuck from today's collision without them needing to wait 24h.
-
-3. Keep Apple Pay pre-warm safe
-   - Ensure the pre-warm path and the manual card path both go through the same hardened create-PI function, so they can never collide with each other on a shared key.
-
-4. Verify
-   - Deploy the edge function.
-   - Watch `stripe-connect-payment-intent` logs for any remaining idempotency errors and confirm a fresh PI is created for both Apple Pay and manual card tests.
-
-## Not part of this fix
-
-- The screenshot's "Apple Pay Is Not Available in 'Flea'" iOS system alert is a separate native signing/provisioning issue (the archived build's provisioning profile didn't include the `merchant.com.finditonflea.app` entitlement). That needs to be handled by re-archiving with Apple Pay enabled on the App ID and provisioning profile via `scripts/setup-ios-native.sh`, not in the web code. Manual card checkout will start working immediately once the idempotency fix ships.
+## Trade-off (accepted)
+Apple Pay sheet will take ~300-600 ms longer to appear after tap than the pre-warmed version — same latency as before this morning. That's the behaviour you had working.
