@@ -31,6 +31,7 @@ const logNativePushState = (
   context: Record<string, unknown>,
   severity: 'warning' | 'error' = 'warning',
 ) => {
+  if (severity === 'warning') return;
   void logError({
     title: `Native push ${event}`,
     message: event,

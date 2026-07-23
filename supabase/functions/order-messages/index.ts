@@ -366,8 +366,12 @@ async function firePushNotification(payload: NotificationInsert) {
         },
       }),
     });
-    const text = await res.text();
-    console.log("[order-messages] Push result:", res.status, text);
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("[order-messages] Push failed:", res.status, text);
+    } else {
+      await res.text().catch(() => "");
+    }
   } catch (e) {
     console.error("[order-messages] Push fire error:", e);
   }
@@ -404,7 +408,6 @@ async function insertNotificationWithFallback(
   // as success so message sending never fails on a notif collision, and
   // still fire the push for this fresh message.
   if (error.code === "23505") {
-    console.log("[order-messages] Notification dedup hit; skipping insert but firing push");
     firePush();
     return;
   }
@@ -595,10 +598,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log("[order-messages] Request:", req.method, req.url);
     const userId = await getUserId(req);
-    console.log("[order-messages] userId:", userId);
-    console.log("[order-messages] Has service role key:", !!EXTERNAL_SERVICE_ROLE_KEY);
     if (!userId) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
