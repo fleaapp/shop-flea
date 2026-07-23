@@ -10,11 +10,14 @@ export const useUnreadOrderMessages = () => {
     queryFn: async () => {
       if (!user?.id) return { total: 0, perOrder: new Map<string, number>() };
 
-      // Get all order IDs where user is buyer or seller
+      // Only count messages on orders the user can still open — refunded /
+      // delivered-locked chats aren't reachable in the UI, so leaving them in
+      // this query traps the sales dot on forever.
       const { data: orders } = await supabase
         .from('orders')
         .select('id')
-        .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`);
+        .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+        .in('status', ['awaiting', 'shipped']);
 
       if (!orders || orders.length === 0) return { total: 0, perOrder: new Map<string, number>() };
 
