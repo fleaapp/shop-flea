@@ -31,6 +31,8 @@ const getDevice = () => {
 
 export async function logError(input: LogInput): Promise<void> {
   try {
+    if (input.severity === 'warning') return;
+
     const title = (input.title || 'Error').slice(0, 200);
     const message = (input.message || '').slice(0, 2000);
     const dedupeKey = `${input.source ?? 'client'}:${title}:${message.slice(0, 120)}`;

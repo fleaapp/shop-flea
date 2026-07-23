@@ -90,8 +90,8 @@ serve(async (req) => {
       if (action === "count24h") {
         const since = typeof body.since === "string" && body.since ? body.since : null;
         const [row] = since
-          ? await sql`SELECT COUNT(*)::int AS c FROM public.error_logs WHERE created_at > ${since}::timestamptz`
-          : await sql`SELECT COUNT(*)::int AS c FROM public.error_logs WHERE created_at > now() - interval '24 hours'`;
+          ? await sql`SELECT COUNT(*)::int AS c FROM public.error_logs WHERE created_at > ${since}::timestamptz AND severity <> 'warning'`
+          : await sql`SELECT COUNT(*)::int AS c FROM public.error_logs WHERE created_at > now() - interval '24 hours' AND severity <> 'warning'`;
         return new Response(JSON.stringify({ count: row?.c ?? 0 }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -109,6 +109,7 @@ serve(async (req) => {
         SELECT id, created_at, source, severity, user_id, username, title, message, stack, route, device, context
         FROM public.error_logs
         WHERE created_at > now() - (${sinceHours}::text || ' hours')::interval
+          AND severity <> 'warning'
           AND (${source}::text IS NULL OR source = ${source})
           AND (${severity}::text IS NULL OR severity = ${severity})
           AND (${search}::text IS NULL OR title ILIKE ${search} OR message ILIKE ${search} OR username ILIKE ${search})

@@ -366,8 +366,12 @@ async function firePushNotification(payload: NotificationInsert) {
         },
       }),
     });
-    const text = await res.text();
-    console.log("[order-messages] Push result:", res.status, text);
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("[order-messages] Push failed:", res.status, text);
+    } else {
+      await res.text().catch(() => "");
+    }
   } catch (e) {
     console.error("[order-messages] Push fire error:", e);
   }
@@ -404,7 +408,6 @@ async function insertNotificationWithFallback(
   // as success so message sending never fails on a notif collision, and
   // still fire the push for this fresh message.
   if (error.code === "23505") {
-    console.log("[order-messages] Notification dedup hit; skipping insert but firing push");
     firePush();
     return;
   }
@@ -595,10 +598,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log("[order-messages] Request:", req.method, req.url);
     const userId = await getUserId(req);
-    console.log("[order-messages] userId:", userId);
-    console.log("[order-messages] Has service role key:", !!EXTERNAL_SERVICE_ROLE_KEY);
     if (!userId) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -802,25 +802,39 @@ Deno.serve(async (req) => {
         messageType: "user",
       });
 
-      try {
-        const senderUsername = await getUsername(userId, authHeader);
-        const recipientId = isBuyer ? orderInfo.sellerId : orderInfo.buyerId;
-        const notifType = isBuyer ? "order_message_buyer" : "order_message_seller";
-        const notifMessage = isBuyer
-          ? `📩 New message from your buyer ${senderUsername.startsWith("@") ? senderUsername : `@${senderUsername}`}! Tap to view.`
-          : `💬 New message from ${senderUsername.startsWith("@") ? senderUsername : `@${senderUsername}`} about your order! Tap to view.`;
+      const notifyRecipient = async () => {
+        try {
+          const senderUsername = await getUsername(userId, authHeader);
+          const recipientId = isBuyer ? orderInfo.sellerId : orderInfo.buyerId;
+          const notifType = isBuyer ? "order_message_buyer" : "order_message_seller";
+          const notifMessage = isBuyer
+            ? `📩 New message from your buyer ${senderUsername.startsWith("@") ? senderUsername : `@${senderUsername}`}! Tap to view.`
+            : `💬 New message from ${senderUsername.startsWith("@") ? senderUsername : `@${senderUsername}`} about your order! Tap to view.`;
 
-        await insertNotificationWithFallback(external, {
-          user_id: recipientId,
-          type: notifType,
-          title: "New Message",
-          message: notifMessage,
-          related_listing_id: orderInfo.listingId,
-          related_user_id: userId,
-          related_order_id: orderInfo.matchedOrderGroupId ?? orderInfo.matchedOrderId ?? threadOrderId,
-        });
-      } catch (notifErr) {
-        console.error("[order-messages] Notification error:", notifErr);
+          await insertNotificationWithFallback(external, {
+            user_id: recipientId,
+            type: notifType,
+            title: "New Message",
+            message: notifMessage,
+            related_listing_id: orderInfo.listingId,
+            related_user_id: userId,
+            related_order_id: orderInfo.matchedOrderGroupId ?? orderInfo.matchedOrderId ?? threadOrderId,
+          });
+        } catch (notifErr) {
+          console.error("[order-messages] Notification error:", notifErr);
+        }
+      };
+
+      try {
+        // @ts-ignore Deno-only global; guarded so it also runs locally.
+        const wu = (globalThis as any).EdgeRuntime?.waitUntil;
+        if (typeof wu === "function") {
+          wu(notifyRecipient());
+        } else {
+          void notifyRecipient();
+        }
+      } catch (notifScheduleErr) {
+        console.error("[order-messages] Notification schedule error:", notifScheduleErr);
       }
 
       return new Response(JSON.stringify({ message: data }), {

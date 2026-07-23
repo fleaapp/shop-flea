@@ -77,6 +77,11 @@ serve(async (req) => {
 
     const source = ["client","edge_function","payment","auth"].includes(body.source) ? body.source : "client";
     const severity = ["warning","error","critical"].includes(body.severity) ? body.severity : "error";
+    if (severity === "warning") {
+      return new Response(JSON.stringify({ ok: true, skipped: "warning" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const title = truncate(body.title, 200) ?? "Unknown error";
     const message = truncate(body.message, 2000) ?? "";
     const stack = truncate(body.stack, 8000);

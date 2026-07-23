@@ -22,6 +22,7 @@ type LogInput = {
 
 export async function logEdgeError(input: LogInput): Promise<void> {
   try {
+    if (input.severity === "warning") return;
     if (!LOG_URL) return;
     const err = input.error as any;
     const message = err?.message ? String(err.message) : String(err ?? "Unknown error");
