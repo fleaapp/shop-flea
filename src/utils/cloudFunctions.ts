@@ -58,12 +58,14 @@ export async function invokeCloudFunction(
     const message = typeof data === 'string'
       ? data
       : data?.error || data?.message || `Function ${functionName} failed`;
+    const code = typeof data === 'object' && data ? (data as any).code : undefined;
     return {
       data: null,
-      error: Object.assign(new Error(message), { status: response.status, response }),
+      error: Object.assign(new Error(message), { status: response.status, response, code, body: data }),
       response,
     };
   }
+
 
   return { data, error: null, response };
 }
