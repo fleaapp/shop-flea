@@ -276,7 +276,7 @@ serve(async (req) => {
     // and never collide with a stale one Stripe cached for 24h.
     // PI_REQUEST_VERSION: bump whenever the paymentIntents.create body shape
     // changes so old cached keys can't collide with new params.
-    const PI_REQUEST_VERSION = "v4-2026-07-22-bundle-shipping";
+    const PI_REQUEST_VERSION = "v5-2026-07-23-no-onbehalfof";
     const idemBasis = [
       PI_REQUEST_VERSION,
       user.id,
