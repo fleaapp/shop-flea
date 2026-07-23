@@ -771,6 +771,39 @@ Deno.serve(async (req) => {
 
       if (error) throw error;
 
+      // Also mark the corresponding bell notifications as read so the footer
+      // Alerts badge (activity_unread in get_nav_badges) decrements when the
+      // user opens the chat. Without this, get_nav_badges keeps returning the
+      // pre-read count and any client-side optimistic drop snaps back.
+      try {
+        const serviceClient = getExternalServiceClient(authHeader);
+        const notificationOrderIds = Array.from(
+          new Set(
+            [
+              ...orderIds,
+              orderInfo.matchedOrderGroupId,
+              orderInfo.matchedOrderId,
+              threadOrderId,
+            ].filter((id): id is string => typeof id === "string" && id.length > 0),
+          ),
+        );
+
+        if (notificationOrderIds.length > 0) {
+          const { error: notifErr } = await serviceClient
+            .from("notifications")
+            .update({ is_read: true })
+            .eq("user_id", userId)
+            .in("type", ["order_message_buyer", "order_message_seller"])
+            .in("related_order_id", notificationOrderIds)
+            .eq("is_read", false);
+          if (notifErr) {
+            console.warn("[order-messages] mark notifications read failed:", notifErr);
+          }
+        }
+      } catch (notifErr) {
+        console.warn("[order-messages] mark notifications read threw:", notifErr);
+      }
+
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
