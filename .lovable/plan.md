@@ -1,55 +1,45 @@
-## Correction
+## Confirmed
 
-You’re right, and I read back the earlier working config.
+I checked the current code for lingering Apple Pay speed-up / prewarm changes.
 
-The setup that worked ("Apple pay is working now") was this exact order in `src/pages/Checkout.tsx` → `handleNativeWalletConfirm`:
+The native Apple Pay path is currently back to the last known working sequence:
 
 ```text
-Stripe.initialize (publishable key only)
-Stripe.createPaymentSheet (never presented — used only to register Apple Pay with the native SDK, with clientSecret + customerId + ephemeralKey)
-Stripe.createApplePay
-Stripe.presentApplePay
+Stripe.initialize({ publishableKey })
+Stripe.createPaymentSheet(...)   // init only, never presented
+Stripe.createApplePay(...)
+Stripe.presentApplePay()
 ```
 
-That pattern is still present in the code. So the fix is NOT to rip it out. The fix is to remove things that were added around it during the speed-up work and later diagnostics, which are the likely regressions.
+I also confirmed:
+- No visible PaymentSheet is presented in the Apple Pay path.
+- The `livemode` key mismatch check is now non-blocking and only logs.
+- `runApplePayPreflight(...)` is now non-blocking and only logs diagnostics.
+- Native Stripe initialization is locked to the platform publishable key only, not a seller/connected account.
+- The backend still returns `clientStripeAccountId: null`, so connected-account native init is not active.
+- The amount sent to Apple Pay is divided by 100, so the previous 100× total issue is not present in this path.
 
-## What I will actually change
+## Remaining risk I found
 
-### 1. Keep the working Apple Pay pattern intact
-- Do not remove `createPaymentSheet` (init only).
-- Do not remove `createApplePay` → `presentApplePay`.
-- Do not add or restore a visible provider/Link sheet.
-- Do not add deep links.
-- Do not touch certificates or Xcode capability.
+There is still one leftover from the diagnostic work: `runApplePayPreflight(...)` still calls `Stripe.isApplePayAvailable()` asynchronously after initialization. It no longer blocks Apple Pay, but it still touches the native Stripe Apple Pay availability API immediately before `createPaymentSheet -> createApplePay -> presentApplePay`.
 
-### 2. Remove or neutralize post-"working" additions that can silently block Apple Pay
-Audit these and remove/soften only where they can suppress the working path:
+Because the goal is to return exactly to the version that worked before the speed-up/diagnostic changes, I would remove that preflight call entirely from the live Apple Pay path rather than keep it as a background diagnostic.
 
-- `runApplePayPreflight(APPLE_PAY_MERCHANT_ID)` — if this returns `!ok` for a valid device/setup, Apple Pay never opens. Verify what it actually checks. If it can produce false negatives on real devices (for example checks that are stricter than the working build had), soften it to a non-blocking log only, or remove the block.
-- `livemode` publishable-key vs payment-intent mismatch guard — verify it isn’t rejecting a live/live pair due to a stale `pi.livemode` field. If it can’t be trusted, downgrade it from a hard toast/return to a log.
-- `Stripe.initialize({ stripeAccount: pi.clientStripeAccountId })` — backend currently returns `clientStripeAccountId: null`, so this branch stays off. Confirm this and lock it as `undefined` for native Apple Pay so a future backend change can’t silently re-enable a connected-account init that breaks Apple Pay.
-- Any residual pre-warm/prefetch of PaymentIntent, PaymentSheet, or Stripe SDK added during the speed-up — verified only one `Stripe.initialize` call remains in the Apple Pay path; confirm nothing warms it earlier from another module and pass through unchanged if it does.
+## Plan
 
-### 3. Fix the `stripe-connect-payment-intent` 500 finding
-- Keep the current idempotency retry logic.
-- Convert expected buyer/seller/cart failures from generic 500 to typed responses (400/402/409 with `errorCode` + `message`).
-- Keep true infrastructure errors as 500 but include a safe message.
+1. Remove `runApplePayPreflight(...)` from `handleNativeWalletConfirm` so nothing extra touches native Apple Pay before the working four-call sequence.
+2. Keep the non-blocking `livemode` log only; it does not interrupt checkout.
+3. Keep `Stripe.initialize({ publishableKey })` with no `stripeAccount`.
+4. Keep `createPaymentSheet` as init-only and never present it.
+5. Keep direct `createApplePay -> presentApplePay` unchanged.
+6. Leave the persistent checkout error panel in place so the next archive shows the exact failing stage if Apple Pay still fails.
+7. Re-read the final Apple Pay block after the change and verify the sequence is exactly:
 
-### 4. Make the failure visible on-screen after Apple Pay closes
-- Add a persistent checkout error panel that appears after any Apple Pay or card failure and does not depend on toasts, so we can actually see the stage and reason next time.
-- Every catch path in `handleNativeWalletConfirm` and manual card flow must set this state before returning.
+```text
+initialize
+createPaymentSheet init only
+createApplePay
+presentApplePay
+```
 
-### 5. Verification before saying it is done
-- Re-read `handleNativeWalletConfirm` end-to-end and confirm the four-call sequence (initialize → createPaymentSheet → createApplePay → presentApplePay) is intact.
-- Confirm no new blocking guard sits between those calls.
-- Confirm the persistent checkout error panel is wired to every failure path.
-- Confirm the payment intent function no longer returns 500 for expected checkout conditions.
-
-## Not doing
-
-- No certificate work.
-- No Xcode capability changes.
-- No removal of the working `createPaymentSheet` init step.
-- No deep links.
-- No visible provider/Link sheet.
-- No repeating the earlier setup loop.
+No prewarm, no preflight, no visible sheet, no deep links, no certificate work.
