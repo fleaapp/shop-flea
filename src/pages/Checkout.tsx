@@ -169,6 +169,24 @@ const Checkout = () => {
   // In-app payment state
   const [selectedMethod, setSelectedMethod] = useState<SelectedPaymentMethod | null>(null);
   const [cardSheetOpen, setCardSheetOpen] = useState(false);
+  // Persistent, on-screen checkout error. Toasts get clipped or dismissed by
+  // native payment sheets, so every failure path also writes here so the
+  // buyer (and we) can see exactly what happened after the sheet closes.
+  const [checkoutError, setCheckoutError] = useState<{
+    stage: string;
+    message: string;
+    code?: string;
+    ref?: string;
+  } | null>(null);
+  const showCheckoutError = useCallback((
+    stage: string,
+    message: string,
+    extra?: { code?: string; ref?: string },
+  ) => {
+    setCheckoutError({ stage, message, code: extra?.code, ref: extra?.ref });
+    try { toast.error(message); } catch {}
+  }, []);
+
 
   // Persist in-progress checkout selections so backgrounding the app (e.g.
   // hopping out to grab card details) doesn't reset the coupon, chosen
