@@ -158,7 +158,9 @@ export function useNativePushNotifications() {
 
       lastSavedTokenRef.current = apnsToken;
       lastSavedAtRef.current = Date.now();
+      try { localStorage.setItem('flea_native_push_endpoint', apnsToken); } catch {}
       console.log('[NativePush] APNs token saved');
+
       logNativePushState('token-save-succeeded', {
         reason,
         user_id: user.id,
