@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSnapshotDraft } from '@/hooks/useSnapshotDraft';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Capacitor } from '@capacitor/core';
-import { PaymentSheetEventsEnum, Stripe } from '@capacitor-community/stripe';
+import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
+import { PaymentSheetEventsEnum, Stripe, type CreatePaymentSheetOption } from '@capacitor-community/stripe';
 import type { CanMakePaymentResult, PaymentRequestPaymentMethodEvent } from '@stripe/stripe-js';
 
 import { Button } from '@/components/ui/button';
@@ -38,6 +38,7 @@ import { mapCardDeclineMessage, logCardDecline } from '@/lib/cardDeclineHandler'
 // so the reviewer can complete a purchase against demo listings.
 const REVIEWER_USER_ID = '5883f33c-07f3-4f6a-9a2d-a7e0ea864142';
 const APPLE_PAY_MERCHANT_ID = import.meta.env.VITE_APPLE_PAY_MERCHANT_ID || 'merchant.com.finditonflea.app';
+const NATIVE_PAYMENT_RETURN_URL = 'com.finditonflea.app://stripe-redirect';
 
 const isNative = () => Capacitor.isNativePlatform();
 
@@ -322,27 +323,86 @@ const Checkout = () => {
       showCheckoutError('config', 'Payment provider is not configured. Please contact support.', { code: 'no_publishable_key' });
       return;
     }
+    if (!pi.customerId || !pi.ephemeralKey) {
+      showCheckoutError('paymentSheet-config', 'Payment could not be started. Please try again.', {
+        code: !pi.customerId ? 'missing_customer' : 'missing_ephemeral_key',
+        ref: pi.paymentIntentId,
+      });
+      void logCardDecline({
+        where: 'payment-sheet-config',
+        error: { code: !pi.customerId ? 'missing_customer' : 'missing_ephemeral_key', message: 'PaymentSheet missing customer configuration' },
+        paymentIntentId: pi.paymentIntentId,
+        amountCents: pi.amount,
+      });
+      return;
+    }
+    const nativePlatform = Capacitor.getPlatform();
+    const isIOSNative = nativePlatform === 'ios';
+    const paymentSheetListeners: PluginListenerHandle[] = [];
+    const logPaymentSheetFailure = (stage: string, rawError: unknown) => {
+      const message = typeof rawError === 'string'
+        ? rawError
+        : (rawError as any)?.message || JSON.stringify(rawError ?? 'unknown_payment_sheet_error');
+      void logCardDecline({
+        where: stage,
+        error: { code: stage, message },
+        paymentIntentId: pi.paymentIntentId,
+        amountCents: pi.amount,
+      });
+      return message;
+    };
+
     try {
       await Stripe.initialize({ publishableKey: pi.publishableKey });
     } catch (e: any) {
       console.error('[PaymentSheet] initialize failed', e);
+      void logCardDecline({
+        where: 'payment-sheet-initialize',
+        error: { code: 'sdk_initialize_failed', message: e?.message || String(e) },
+        paymentIntentId: pi.paymentIntentId,
+        amountCents: pi.amount,
+      });
       showCheckoutError('sdk-initialize', e?.message || 'Failed to start payment. Please try again.', { code: 'sdk_initialize_failed', ref: pi.paymentIntentId });
       return;
     }
 
     try {
-      await Stripe.createPaymentSheet({
+      paymentSheetListeners.push(
+        await Stripe.addListener(PaymentSheetEventsEnum.FailedToLoad, (error) => {
+          console.error('[PaymentSheet] failed to load event', error);
+          const message = logPaymentSheetFailure('payment-sheet-failed-to-load', error);
+          showCheckoutError('paymentSheet-load', message || 'Unable to start payment. Please try again.', {
+            code: 'paymentsheet_failed_to_load',
+            ref: pi.paymentIntentId,
+          });
+        }),
+        await Stripe.addListener(PaymentSheetEventsEnum.Failed, (error) => {
+          console.error('[PaymentSheet] failed event', error);
+          const message = logPaymentSheetFailure('payment-sheet-failed', error);
+          showCheckoutError('paymentSheet-present', message || 'Payment did not complete. Please try again.', {
+            code: 'paymentsheet_failed',
+            ref: pi.paymentIntentId,
+          });
+        }),
+      );
+
+      const paymentSheetOptions: CreatePaymentSheetOption = {
         paymentIntentClientSecret: pi.clientSecret,
-        ...(pi.customerId ? { customerId: pi.customerId } : {}),
-        ...(pi.ephemeralKey ? { customerEphemeralKeySecret: pi.ephemeralKey } : {}),
+        customerId: pi.customerId,
+        customerEphemeralKeySecret: pi.ephemeralKey,
         merchantDisplayName: pi.merchantDisplayName || 'Flea',
-        enableApplePay: true,
-        applePayMerchantId: APPLE_PAY_MERCHANT_ID,
+        enableApplePay: isIOSNative,
+        ...(isIOSNative ? { applePayMerchantId: APPLE_PAY_MERCHANT_ID } : {}),
+        enableGooglePay: nativePlatform === 'android',
         countryCode: 'AU',
+        returnURL: NATIVE_PAYMENT_RETURN_URL,
         style: 'alwaysLight',
-      } as any);
+      };
+
+      await Stripe.createPaymentSheet(paymentSheetOptions);
     } catch (err: any) {
       console.error('[PaymentSheet] create failed', err);
+      const message = logPaymentSheetFailure('payment-sheet-create', err);
       showCheckoutError('paymentSheet-create', err?.message || 'Unable to start payment. Please try again.', { code: 'paymentsheet_create_failed', ref: pi.paymentIntentId });
       return;
     }
@@ -369,6 +429,8 @@ const Checkout = () => {
         paymentIntentId: pi.paymentIntentId,
       });
       showCheckoutError('paymentSheet-present', err?.message || 'Payment did not complete. Please try again.', { code: 'paymentsheet_present_failed', ref: pi.paymentIntentId });
+    } finally {
+      await Promise.allSettled(paymentSheetListeners.map((listener) => listener.remove()));
     }
   };
 
