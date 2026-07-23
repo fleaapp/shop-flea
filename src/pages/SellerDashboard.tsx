@@ -1,15 +1,43 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Loader2, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, Loader2, AlertTriangle, Info } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { useOrders } from '@/hooks/useOrders';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { SettleBalanceSheet } from '@/components/SettleBalanceSheet';
 import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
 import EnablePushBanner from '@/components/EnablePushBanner';
+
+const BalanceInfo = ({ title, body, tone = 'muted' }: { title: string; body: string; tone?: 'muted' | 'amber' | 'primary' }) => {
+  const iconClass =
+    tone === 'amber'
+      ? 'text-amber-800/70 hover:bg-amber-100'
+      : tone === 'primary'
+        ? 'text-charcoal/70 hover:bg-black/5'
+        : 'text-muted-foreground hover:bg-muted';
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={`About ${title}`}
+          onClick={(e) => e.stopPropagation()}
+          className={`inline-flex items-center justify-center h-5 w-5 rounded-full transition-colors ${iconClass}`}
+        >
+          <Info className="h-3.5 w-3.5" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-4 rounded-2xl z-[100]" side="top" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <p className="text-sm font-semibold mb-2">{title}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">{body}</p>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 import {
   AlertDialog,
@@ -375,7 +403,13 @@ const SellerDashboard = () => {
                   {unshippedRemaining > 0 && (
                     <section className="rounded-2xl bg-card border border-border mt-2 p-4">
                       <div className="flex items-center justify-between">
-                        <div className="text-[13px] font-medium text-foreground">Held for unshipped orders</div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="text-[13px] font-medium text-foreground">Held for unshipped orders</div>
+                          <BalanceInfo
+                            title="Held for unshipped orders"
+                            body="Funds from sales you haven't shipped yet. Add tracking to release these funds into Clearing (or straight to Available if the payment has already cleared)."
+                          />
+                        </div>
                         <div className="text-base font-semibold text-foreground">
                           {fmtMoney(unshippedRemaining, currency)}
                         </div>
@@ -390,7 +424,13 @@ const SellerDashboard = () => {
                   {clearing > 0 && (
                     <section className="rounded-2xl bg-card border border-border mt-3 p-4">
                       <div className="flex items-center justify-between">
-                        <div className="text-[13px] font-medium text-foreground">Clearing from recent sales</div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="text-[13px] font-medium text-foreground">Clearing from recent sales</div>
+                          <BalanceInfo
+                            title="Clearing from recent sales"
+                            body="Funds from orders you've already shipped that are still clearing with the payment provider. Card payments settle 1 to 2 business days after the buyer pays, then move to Available automatically."
+                          />
+                        </div>
                         <div className="text-base font-semibold text-foreground">
                           {fmtMoney(clearing, currency)}
                         </div>
@@ -406,8 +446,13 @@ const SellerDashboard = () => {
                   {firstHoldCents > 0 && (
                     <section className="rounded-2xl bg-amber-50 border border-amber-200 mt-3 p-4">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-[11px] font-semibold text-amber-800 uppercase tracking-wide">
-                          🕒 First payout hold
+                        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-800 uppercase tracking-wide">
+                          <span>🕒 First payout hold</span>
+                          <BalanceInfo
+                            tone="amber"
+                            title="First payout hold"
+                            body="A one-off security check applied to your very first sale. Usually clears within 7 days. After this, future sales only go through the standard 1 to 2 day clearing window."
+                          />
                         </div>
                         <div className="text-base font-semibold text-charcoal">
                           {fmtMoney(firstHoldCents, currency)}
@@ -447,8 +492,15 @@ const SellerDashboard = () => {
               </section>
             ) : (
               <section className="rounded-2xl bg-primary/60 p-5 mt-3">
-                <div className="text-xs font-medium text-charcoal/70 uppercase tracking-wide">
-                  Available to withdraw
+                <div className="flex items-center gap-1.5">
+                  <div className="text-xs font-medium text-charcoal/70 uppercase tracking-wide">
+                    Available to withdraw
+                  </div>
+                  <BalanceInfo
+                    tone="primary"
+                    title="Available to withdraw"
+                    body="Ready to pay out. Standard payout lands in your bank in about 24 hours. Instant Payout arrives in around 30 minutes for a 1.5% fee."
+                  />
                 </div>
                 <div className="text-[34px] font-bold text-charcoal leading-tight mt-1">
                   {fmtMoney(availableToWithdraw, currency)}
@@ -459,7 +511,7 @@ const SellerDashboard = () => {
 
 
             {/* Payout actions */}
-            <div className="flex flex-col gap-2 mt-3">
+            <div className="flex flex-col mt-3">
               <Button
                 onClick={() => setConfirm('standard')}
                 disabled={!canPayout || payoutLoading !== null}
@@ -471,36 +523,30 @@ const SellerDashboard = () => {
                   'Pay out to bank'
                 )}
               </Button>
+              <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed px-1">
+                Standard payout usually 24 hours.
+              </p>
+
+              <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed px-1">
+                Need the funds faster? Use Instant Payout (around 30 minutes) for a 1.5% fee. Available after the security hold clears.
+              </p>
               <Button
                 onClick={() => setConfirm('instant')}
                 disabled={!canInstant || payoutLoading !== null}
                 variant="outline"
-                className="h-11 rounded-xl border-2 border-charcoal bg-transparent text-charcoal hover:bg-charcoal/5 font-semibold disabled:opacity-50"
+                className="mt-2 h-auto py-2.5 rounded-xl border-2 border-charcoal bg-transparent text-charcoal hover:bg-charcoal/5 font-semibold disabled:opacity-50 flex-col gap-0.5"
               >
                 {payoutLoading === 'instant' ? (
                   <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Sending...</span>
                 ) : (
-                  <>Instant payout <span className="ml-1 text-[13px] font-normal">(1.5% fee)</span></>
+                  <>
+                    <span className="text-[15px] leading-tight">Instant Payout</span>
+                    <span className="text-[12px] font-normal leading-tight opacity-80">1.5% fee</span>
+                  </>
                 )}
               </Button>
-              {!canInstant && (
-                <div className="mt-3 bg-muted/60 rounded-xl px-4 py-3 text-left w-full space-y-2">
-                  <p className="text-xs font-semibold text-foreground">⏱️ Please note</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    You must add valid tracking for your funds to become available.
-                  </p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Your first payout goes through a one-off security check and usually clears within 7–14 days.
-                  </p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    After that, each sale clears on the payment processor's schedule, then <span className="font-medium text-foreground">standard payout takes 1–2 business days</span> to reach your bank.
-                  </p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Need it faster? Use <span className="font-medium text-foreground">Instant Payout (≈30 mins)</span> for a <span className="font-medium text-foreground">1.5% fee</span>.
-                  </p>
-                </div>
-              )}
             </div>
+
 
             {/* Next payout */}
             {data?.nextPayout && (
