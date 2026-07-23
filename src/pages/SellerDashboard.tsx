@@ -477,7 +477,7 @@ const SellerDashboard = () => {
                     You must add valid tracking for your funds to become available.
                   </p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Your first payout may take longer while our payment processor completes a one-off security check on new accounts. The exact release date is shown above once confirmed.
+                    Your first payout goes through a one-off security check and usually clears within 7–14 days.
                   </p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     After that, each sale clears on the payment processor's schedule, then <span className="font-medium text-foreground">standard payout takes 1–2 business days</span> to reach your bank.
