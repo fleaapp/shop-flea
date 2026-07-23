@@ -1,52 +1,48 @@
-## Concept
+## Fix
 
-Each dollar of the seller's Stripe balance lands in exactly one row:
+`src/pages/SellerDashboard.tsx` — change the allocation order so the first sale's true amount is shown before unshipped subtraction eats into it.
 
-- **Held for unshipped** — sales from orders the seller hasn't shipped yet (regardless of whether Stripe still has the money in Pending or already moved it to Available).
-- **Clearing** — shipped sales still in Stripe's Pending bucket, waiting to clear the card network.
-- **First payout hold** — the first sale, held under Stripe's one-off new-account security review (only until the first payout has ever been marked paid).
-- **Available** — shipped sales that have cleared. This is the withdrawable number.
-
-Sum of the four rows equals total Stripe balance, no double-counting.
-
-## Implementation (`src/pages/SellerDashboard.tsx`, UI-only)
-
-We already have on the client:
-- `available` (Stripe available cents)
-- `pending` (Stripe pending cents)
-- `unshippedCents` (from the orders table, total value of unshipped orders)
-- `activity[]` with per-item `status` and `available_on`
-- `payouts[]` for `hasPaidPayout`
-
-Split the unshipped dollars across the Stripe buckets with a simple deterministic rule (matches the existing `availableToWithdraw = max(available − unshipped, 0)` model, so no backend change needed):
+### New allocation
 
 ```text
-unshippedInAvailable = min(unshippedCents, available)
-unshippedInPending   = max(unshippedCents − available, 0)
+// 1. Identify the actual first sale (earliest by created timestamp) among pending payments
+pendingPayments = activity.filter(a => a.status === 'pending' && a.type === 'payment')
+                          .sort((a, b) => a.created - b.created)   // ascending by creation date
+firstSale       = !hasPaidPayout ? pendingPayments[0] : null
+firstHoldCents  = firstSale ? max(firstSale.amount, 0) : 0
 
-heldForUnshipped     = unshippedCents
-clearingRaw          = max(pending − unshippedInPending, 0)
-firstHoldCents       = (hasPaidPayout || clearingRaw === 0) ? 0
-                      : earliest pending activity item's amount, capped at clearingRaw
-clearing             = clearingRaw − firstHoldCents
-availableToWithdraw  = max(available − unshippedInAvailable, 0)   // unchanged
+// 2. Assume the first sale is also the first unshipped order (chronologically it almost always is);
+//    so subtract it from unshipped before splitting the rest across the Stripe buckets
+unshippedRemaining   = max(unshippedCents - firstHoldCents, 0)
+unshippedInAvailable = min(unshippedRemaining, available)
+unshippedInPending   = max(unshippedRemaining - available, 0)
+
+// 3. Remaining pending goes to Clearing
+clearing             = max(pending - firstHoldCents - unshippedInPending, 0)
+
+// 4. Withdrawable unchanged
+availableToWithdraw  = max(available - unshippedInAvailable, 0)
 ```
 
-Render order stays: **Held for unshipped → Clearing → First payout hold → Available.**
+### Ready-date for Clearing
 
-## Visibility rules
+Compute `earliestClearing` from the remaining pending activity (drop the first-sale item), unchanged in spirit — just sourced from the corrected list.
 
-- Held for unshipped: show whenever `unshippedCents > 0` (drop the current `available > 0` gate).
-- Clearing: show when `clearing > 0`, with `Ready {fmtDate(earliestClearing)}.` from the earliest non-first-hold pending activity item.
-- First payout hold: show when `firstHoldCents > 0`. Copy unchanged: "Usually within 7 days."
-- Available: always shown (or Balance owed if negative), unchanged styling.
+### Numbers on Sarah's account
 
-## Edge cases handled
+- First payout hold: $1.35 (was $1.00)
+- Held for unshipped: $1.85 (was $3.20)
+- Clearing from recent sales: $1.00 (was $0.00)
+- Available: $0.00
 
-- Only unshipped orders, nothing cleared → Held row shows the full amount, Clearing and First-hold hidden, Available = $0.
-- First sale still pending and unshipped → the unshipped subtraction absorbs it first, so it appears in Held (not First-hold) — which matches the model since it's not really "waiting on Stripe", the seller just hasn't shipped.
-- After first payout paid → First-hold row disappears permanently; all remaining pending shows as Clearing.
+Sum = $4.20 = Stripe pending, still reconciles.
 
-## Out of scope
+### Edge cases
 
-No backend/edge changes. No changes to payout gating, coupons, or activity list.
+- If the first sale is fully shipped and hasn't cleared yet, subtracting it from unshipped correctly leaves unshipped at its full value; clearing absorbs the remainder.
+- If `hasPaidPayout` is true, First payout hold hides and everything collapses to Held / Clearing / Available.
+- If there are no pending payments at all, first-hold is $0 and behaviour matches today.
+
+### Out of scope
+
+No backend changes, no copy changes, no reordering of rows.
