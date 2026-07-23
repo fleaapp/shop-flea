@@ -255,14 +255,22 @@ export function useNativePushNotifications() {
             console.log('[NativePush] Cloud iOS token already present:', reason);
             return;
           }
-          if (cloudStatus.checked && !cloudStatus.hasIosToken) {
-            void logError({
-              title: 'Native push permission granted but no Cloud token',
-              message: 'Permission is granted, but the backend has no iOS push token. Forcing APNs registration.',
-              severity: 'warning',
-              source: 'client',
-              context: { reason, user_id: user.id, platform: Capacitor.getPlatform() },
-            });
+          // No token registered for the CURRENT user on the backend. Before
+          // waiting on APNs (which may never re-fire the `registration`
+          // callback if permission was granted in a previous session), try to
+          // take over the cached device endpoint under this user id right
+          // away. This is what stops account A's device from continuing to
+          // receive account B's pushes after switching users.
+          try {
+            const cachedEndpoint = localStorage.getItem('flea_native_push_endpoint');
+            if (cachedEndpoint && cloudStatus.checked && !cloudStatus.hasIosToken) {
+              console.log('[NativePush] Reclaiming cached endpoint for current user:', reason);
+              await invokeCloudFunction('register-push-subscription', {
+                body: { endpoint: cachedEndpoint, platform: 'ios' },
+              });
+            }
+          } catch (reclaimErr) {
+            console.warn('[NativePush] Endpoint reclaim failed:', reclaimErr);
           }
         }
 
