@@ -169,6 +169,24 @@ const Checkout = () => {
   // In-app payment state
   const [selectedMethod, setSelectedMethod] = useState<SelectedPaymentMethod | null>(null);
   const [cardSheetOpen, setCardSheetOpen] = useState(false);
+  // Persistent, on-screen checkout error. Toasts get clipped or dismissed by
+  // native payment sheets, so every failure path also writes here so the
+  // buyer (and we) can see exactly what happened after the sheet closes.
+  const [checkoutError, setCheckoutError] = useState<{
+    stage: string;
+    message: string;
+    code?: string;
+    ref?: string;
+  } | null>(null);
+  const showCheckoutError = useCallback((
+    stage: string,
+    message: string,
+    extra?: { code?: string; ref?: string },
+  ) => {
+    setCheckoutError({ stage, message, code: extra?.code, ref: extra?.ref });
+    try { toast.error(message); } catch {}
+  }, []);
+
 
   // Persist in-progress checkout selections so backgrounding the app (e.g.
   // hopping out to grab card details) doesn't reset the coupon, chosen
@@ -219,14 +237,25 @@ const Checkout = () => {
       couponCode: coupon?.code ?? null,
       saveCard,
     });
-    if (error) throw error;
+    if (error) {
+      const code = (error as any).code as string | undefined;
+      const status = (error as any).status as number | undefined;
+      showCheckoutError('create-payment-intent', error.message, {
+        code: code || (status ? `http_${status}` : undefined),
+      });
+      throw error;
+    }
     if (data?.demo) {
       // Reviewer bypass — orders inserted server-side; short-circuit to success.
       localStorage.setItem('checkout_reference', data.checkoutReference);
       window.location.href = `/checkout/success?demo=1&order_group=${data.orderGroupId}`;
       return null;
     }
-    if (!data?.clientSecret || !data?.paymentIntentId) throw new Error('Payment initialization failed');
+    if (!data?.clientSecret || !data?.paymentIntentId) {
+      const msg = 'Payment initialization failed. Please try again.';
+      showCheckoutError('create-payment-intent', msg, { code: 'no_client_secret' });
+      throw new Error(msg);
+    }
     localStorage.setItem('checkout_reference', data.paymentIntentId);
     if (coupon?.code) {
       localStorage.setItem('checkout_coupon_code', coupon.code);
@@ -245,7 +274,8 @@ const Checkout = () => {
       customerId?: string;
       merchantDisplayName?: string;
     };
-  }, [validItems, totalShipping, shippingBySeller, total, coupon]);
+  }, [validItems, totalShipping, shippingBySeller, total, coupon, showCheckoutError]);
+
 
 
 
@@ -294,41 +324,45 @@ const Checkout = () => {
     if (!platform) return false;
 
     if (!pi.publishableKey) {
-      toast.error('Payment provider is not configured. Please contact support.');
+      showCheckoutError('config', 'Payment provider is not configured. Please contact support.', { code: 'no_publishable_key' });
       return true;
     }
     try {
-      await Stripe.initialize({
-        publishableKey: pi.publishableKey,
-        ...(pi.clientStripeAccountId ? { stripeAccount: pi.clientStripeAccountId } : {}),
-      });
-    } catch (e) {
+      // Native Apple Pay must be initialized on the PLATFORM Stripe account,
+      // NOT the seller's connected account. `clientStripeAccountId` is kept as
+      // null by the backend for destination-charge PaymentIntents — locking
+      // this branch off so a future backend change can't silently re-enable a
+      // connected-account init (which breaks native Apple Pay).
+      await Stripe.initialize({ publishableKey: pi.publishableKey });
+    } catch (e: any) {
       console.error('[ApplePay] Stripe.initialize failed', e);
-      toast.error('Failed to start payment. Please try again.');
+      showCheckoutError('sdk-initialize', e?.message || 'Failed to start payment. Please try again.', { code: 'sdk_initialize_failed', ref: pi.paymentIntentId });
       return true;
     }
 
     if (platform === 'ios') {
+      // livemode / preflight checks are non-blocking — they log for diagnostics
+      // but never gate Apple Pay. iOS/PassKit itself is the source of truth
+      // and its error surfaces below via categoriseApplePayError.
       const publishableKeyMode = pi.publishableKey.startsWith('pk_live_') ? 'live' : 'test';
       if (typeof pi.livemode === 'boolean' && pi.livemode !== (publishableKeyMode === 'live')) {
-        console.error('[ApplePay] key mode mismatch', {
+        console.warn('[ApplePay] key mode mismatch (non-blocking)', {
           merchantId: APPLE_PAY_MERCHANT_ID,
           publishableKeyMode,
           paymentIntentMode: pi.livemode ? 'live' : 'test',
         });
-        toast.error('Payment provider is misconfigured. Please choose Add new card or contact support.');
-        return true;
       }
 
-      const preflight = await runApplePayPreflight(APPLE_PAY_MERCHANT_ID);
-      if (!preflight.ok) {
-        void logApplePayDiagnostic('preflight', preflight, {
-          merchantId: APPLE_PAY_MERCHANT_ID,
-          paymentIntentId: pi.paymentIntentId,
-        });
-        toast.error(preflight.userMessage || 'Apple Pay is not available. Please choose Add new card.');
-        return true;
-      }
+      void runApplePayPreflight(APPLE_PAY_MERCHANT_ID).then((preflight) => {
+        if (!preflight.ok) {
+          void logApplePayDiagnostic('preflight', preflight, {
+            merchantId: APPLE_PAY_MERCHANT_ID,
+            paymentIntentId: pi.paymentIntentId,
+          });
+        }
+      });
+
+
 
       // Direct PassKit Apple Pay — Stripe brokers the merchant certificate
       // under the hood; no cert upload from us is required. The Stripe
@@ -349,7 +383,7 @@ const Checkout = () => {
           applePayTotalAud,
           checkoutTotalAud,
         });
-        toast.error(diag.userMessage);
+        showCheckoutError('amount-mismatch', diag.userMessage, { code: 'amount_mismatch', ref: pi.paymentIntentId });
         return true;
       }
       try {
@@ -386,7 +420,7 @@ const Checkout = () => {
           merchantId: APPLE_PAY_MERCHANT_ID,
           paymentIntentId: pi.paymentIntentId,
         });
-        toast.error(diag.userMessage || 'Unable to start Apple Pay. Please choose Add new card.');
+        showCheckoutError('createApplePay', diag.userMessage || 'Unable to start Apple Pay. Please choose Add new card.', { code: diag.code, ref: pi.paymentIntentId });
         return true;
       }
 
@@ -404,7 +438,7 @@ const Checkout = () => {
             error: errShape,
             paymentIntentId: pi.paymentIntentId,
           });
-          toast.error(msg);
+          showCheckoutError('presentApplePay', msg, { code: 'apple_pay_failed', ref: pi.paymentIntentId });
         }
       } catch (err: any) {
         const diag = categoriseApplePayError(err);
@@ -417,7 +451,7 @@ const Checkout = () => {
           error: { message: String(err?.message || err) },
           paymentIntentId: pi.paymentIntentId,
         });
-        toast.error(diag.userMessage || 'Payment did not complete. Please try again.');
+        showCheckoutError('presentApplePay', diag.userMessage || 'Payment did not complete. Please try again.', { code: diag.code, ref: pi.paymentIntentId });
       }
       return true;
     }
@@ -543,6 +577,7 @@ const Checkout = () => {
   /** Confirm with a card the user JUST entered in the Vinted-style sheet. */
   const handleCardConfirm = async ({ paymentMethodId, saveCard }: { paymentMethodId: string; cardholderName: string; saveCard: boolean }) => {
     if (!preflight()) return;
+    setCheckoutError(null);
     persistCheckoutContext();
     setIsSubmitting(true);
     try {
@@ -555,17 +590,17 @@ const Checkout = () => {
       });
       if (error) {
         void logCardDecline({ where: 'manual-card', error: error as any, paymentIntentId: pi.paymentIntentId, amountCents: pi.amount });
-        toast.error(mapCardDeclineMessage(error as any));
+        showCheckoutError('confirm-card', mapCardDeclineMessage(error as any), { code: (error as any)?.decline_code || (error as any)?.code, ref: pi.paymentIntentId });
         return;
       }
       if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
         handlePaymentSuccess(paymentIntent.id);
       } else {
-        toast.error('Payment did not complete. Please try again.');
+        showCheckoutError('confirm-card', 'Payment did not complete. Please try again.', { code: paymentIntent?.status, ref: paymentIntent?.id });
       }
     } catch (e: any) {
       console.error('card confirm error:', e);
-      toast.error(e?.message || 'Failed to process card. Please try again.');
+      showCheckoutError('confirm-card', e?.message || 'Failed to process card. Please try again.', { code: (e as any)?.code });
     } finally {
       setIsSubmitting(false);
     }
@@ -574,6 +609,7 @@ const Checkout = () => {
   /** Confirm with a saved card the user picked from the list. */
   const handleSavedCardConfirm = async (paymentMethodId: string) => {
     if (!preflight()) return;
+    setCheckoutError(null);
     persistCheckoutContext();
     setIsSubmitting(true);
     try {
@@ -586,17 +622,17 @@ const Checkout = () => {
       });
       if (error) {
         void logCardDecline({ where: 'saved-card', error: error as any, paymentIntentId: pi.paymentIntentId, amountCents: pi.amount });
-        toast.error(mapCardDeclineMessage(error as any));
+        showCheckoutError('confirm-saved-card', mapCardDeclineMessage(error as any), { code: (error as any)?.decline_code || (error as any)?.code, ref: pi.paymentIntentId });
         return;
       }
       if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
         handlePaymentSuccess(paymentIntent.id);
       } else {
-        toast.error('Payment did not complete. Please try again.');
+        showCheckoutError('confirm-saved-card', 'Payment did not complete. Please try again.', { code: paymentIntent?.status, ref: paymentIntent?.id });
       }
     } catch (e: any) {
       console.error('saved card confirm error:', e);
-      toast.error(e?.message || 'Failed to process payment. Please try again.');
+      showCheckoutError('confirm-saved-card', e?.message || 'Failed to process payment. Please try again.', { code: (e as any)?.code });
     } finally {
       setIsSubmitting(false);
     }
@@ -605,6 +641,7 @@ const Checkout = () => {
   /** Start Apple/Google Pay directly. Native uses the Capacitor sheet, web uses the browser wallet sheet. */
   const handleWalletTap = async () => {
     if (!preflight()) return;
+    setCheckoutError(null);
     persistCheckoutContext();
     setIsSubmitting(true);
     try {
@@ -618,11 +655,12 @@ const Checkout = () => {
       await handleWebWalletConfirm();
     } catch (e: any) {
       console.error('wallet init error:', e);
-      toast.error(e?.message || 'Failed to start payment. Please try again.');
+      showCheckoutError('wallet-init', e?.message || 'Failed to start payment. Please try again.', { code: (e as any)?.code });
     } finally {
       setIsSubmitting(false);
     }
   };
+
 
   /** Master Pay button — dispatches by selected method. */
   const handlePayClick = () => {
@@ -886,7 +924,31 @@ const Checkout = () => {
               amountCents={Math.round(total * 100)}
             />
 
+            {/* Persistent on-screen error panel. Toasts are hidden behind
+                native payment sheets, so failures are always surfaced here. */}
+            {checkoutError && (
+              <div
+                role="alert"
+                className="mt-4 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+              >
+                <div className="font-medium">{checkoutError.message}</div>
+                <div className="mt-1 text-[11px] text-destructive/80">
+                  Stage: {checkoutError.stage}
+                  {checkoutError.code ? ` · Code: ${checkoutError.code}` : ''}
+                  {checkoutError.ref ? ` · Ref: ${checkoutError.ref}` : ''}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCheckoutError(null)}
+                  className="mt-2 text-[11px] underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
             {/* Master Pay button */}
+
             <div className="mt-6">
               <Button
                 onClick={handlePayClick}

@@ -43,7 +43,15 @@ serve(async (req) => {
     }
 
     const { items, shipping, shippingBySeller, expectedAmountCents, couponCode, saveCard } = await req.json();
-    if (!items || !items.length) throw new Error("No items provided");
+    const jsonError = (status: number, code: string, message: string, extra: Record<string, unknown> = {}) =>
+      new Response(JSON.stringify({ error: message, code, ...extra }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status,
+      });
+    if (!items || !items.length) {
+      return jsonError(400, "no_items", "No items provided.");
+    }
+
 
     // Gate: block buying while the buyer has a negative Stripe Connect balance
     // (i.e. they owe money as a seller). They must settle before making new purchases.
@@ -72,25 +80,32 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false, autoRefreshToken: false } }
     );
+
+
     const itemIds = items.map((i: { id: string }) => i.id).filter(Boolean);
-    if (itemIds.length !== items.length) throw new Error("Invalid item ids");
+    if (itemIds.length !== items.length) {
+      return jsonError(400, "invalid_item_ids", "Invalid item ids.");
+    }
 
     const { data: listingRows, error: listingErr } = await serviceClient
       .from("listings")
       .select("id, user_id, status, price, title, images, shipping_price")
       .in("id", itemIds);
     if (listingErr || !listingRows || listingRows.length !== itemIds.length) {
-      throw new Error("Could not verify listings");
+      return jsonError(409, "listings_unavailable", "Could not verify the items in your cart. Please refresh and try again.");
     }
     if (listingRows.some((l: any) => l.status !== "active")) {
-      throw new Error("One or more items are no longer available");
+      return jsonError(409, "item_no_longer_available", "One or more items are no longer available.");
     }
     const sellerIds = Array.from(new Set(listingRows.map((l: any) => l.user_id)));
     if (sellerIds.length !== 1) {
-      throw new Error("All items in a checkout must belong to the same seller");
+      return jsonError(400, "multi_seller_checkout", "All items in a checkout must belong to the same seller.");
     }
     const sellerId = sellerIds[0];
-    if (sellerId === user.id) throw new Error("Cannot purchase your own items");
+    if (sellerId === user.id) {
+      return jsonError(400, "own_item", "You can't purchase your own items.");
+    }
+
 
     const listingById = new Map(listingRows.map((l: any) => [l.id, l]));
     const authoritativeItems = itemIds.map((id: string) => {
@@ -355,8 +370,12 @@ serve(async (req) => {
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
   } catch (error) {
     console.error("[stripe-connect-payment-intent] error:", error);
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
+    return new Response(JSON.stringify({
+      error: (error as Error)?.message || "Payment could not be started. Please try again.",
+      code: (error as any)?.code || "unexpected_error",
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500,
     });
+
   }
 });
