@@ -43,7 +43,15 @@ serve(async (req) => {
     }
 
     const { items, shipping, shippingBySeller, expectedAmountCents, couponCode, saveCard } = await req.json();
-    if (!items || !items.length) throw new Error("No items provided");
+    const jsonError = (status: number, code: string, message: string, extra: Record<string, unknown> = {}) =>
+      new Response(JSON.stringify({ error: message, code, ...extra }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status,
+      });
+    if (!items || !items.length) {
+      return jsonError(400, "no_items", "No items provided.");
+    }
+
 
     // Gate: block buying while the buyer has a negative Stripe Connect balance
     // (i.e. they owe money as a seller). They must settle before making new purchases.
