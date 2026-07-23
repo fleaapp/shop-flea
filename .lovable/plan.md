@@ -1,50 +1,26 @@
-## Goal
+## Plan
 
-In the Alerts list, tapping an order/sale notification opens the relevant details drawer inline — **except message notifications**, which continue to navigate to the chat.
+1. **Make order chat read state authoritative**
+   - Update the order-message read endpoint so it marks all real order rows in a grouped order as read.
+   - Also clear related message notifications even when `related_order_id` points to either the group id or an individual order id.
+   - Return the number of messages/notifications cleared so the app can verify the clear actually happened.
 
-## Routing rules (Notifications.tsx `handleNotificationClick`)
+2. **Clear badges immediately when opening message threads**
+   - Add a shared helper for opening order chats from Orders, Sales, Order details, Sale details, and Alerts.
+   - Before navigating, optimistically clear the visible buyer/seller chat badges for that order group, then let the backend read endpoint confirm it.
+   - Keep message alerts routing to chat, while non-message order/sale alerts continue opening the relevant details drawer.
 
-**Go to chat (unchanged):**
-- `order_message_seller`, `order_message_buyer` → `/order-chat/:id`
-- `support_message` → support thread
+3. **Fix support chat badge persistence**
+   - Make support-thread reads update both support messages and their linked support notifications.
+   - Optimistically clear the Settings/support badge when a support thread opens, then refetch `nav-badges`, `unread-support`, and notifications.
+   - Ensure the support unread hook always refetches on mount/focus so it doesn’t reuse stale cached counts after returning.
 
-**Open Sale Details drawer (seller side, `SalesDetailsSheet`):**
-- `item_sold` (already correct)
-- `shipping_reminder_3d`, `shipping_reminder_6d` (already correct)
-- `refund_request`
-- `sale_auto_refunded`
+4. **Stop admin dashboard notifications from returning after login**
+   - Move admin “seen” state from device-only localStorage to backend-backed admin preferences/metadata via the existing admin function.
+   - Keep localStorage only as an instant UI cache, but have `getBadges` use backend saved timestamps so counts stay cleared after logout/login or across devices.
+   - Mark support/reports/bans/suggestions sections as seen when opened, matching the existing users/listings/refunds behavior.
 
-**Open Order Details drawer (buyer side, `OrderDetailsSheet` — new instance on this page):**
-- `order_shipped`
-- `order_delivered`
-- `refund_initiated`
-- `refund_rejected`
-- `order_auto_refunded`
-
-**Unchanged:**
-- `payment_action_required` → seller dashboard
-- Comments / mentions / wishlist-sold / cart-sold → listing page
-
-## Matching logic
-
-Reuse the same lookup already used for `item_sold`:
-
-1. Match `notification.related_order_id` against `group.order_group_id || group.id`, then against `group.orders[].id`.
-2. Fallback: match `notification.related_listing_id` against `group.orders[].listing_id`.
-3. Try the seller-side groups first for the seller list above, buyer-side groups for the buyer list above.
-4. If no group is found (old orders paged out of the loaded set), fall back to today's `navigate(...)` target so the user never hits a dead end.
-
-## Implementation
-
-Only `src/pages/Notifications.tsx`:
-
-1. Add state + render for the buyer drawer alongside the existing seller sheet:
-   - `selectedBuyerGroup`, `orderSheetOpen`.
-   - Render `<OrderDetailsSheet orders={selectedBuyerGroup?.orders ?? null} open={orderSheetOpen} onOpenChange={...} />` using the same props shape used on the buyer Orders view.
-2. Add a small `findGroup(notification, groups)` helper implementing the matching logic above.
-3. Replace the current `navigate('/cart')` branch for `order_shipped` / `order_delivered` and the `navigate('/order-chat/...')` branches for refund types with calls that open the correct drawer, keeping the existing navigation as fallback.
-4. Leave the `markAsRead` call at the top of the handler untouched so badges keep clearing.
-
-## Out of scope
-
-Native push-notification tap handling and any drawer UI changes.
+5. **Validate against current data**
+   - Confirm `@jcsbh`’s current 4 unread buyer messages clear after opening the matching chats.
+   - Confirm support chat and admin badge counts remain cleared after a fresh login/refetch.
+   - Check that new messages still create exactly one unread badge for the recipient.
