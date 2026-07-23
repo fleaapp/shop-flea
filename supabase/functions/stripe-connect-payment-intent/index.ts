@@ -1,8 +1,8 @@
 // stripe-connect-payment-intent
-// Creates a PaymentIntent + Customer + Ephemeral Key for in-app PaymentSheet
-// (native) and Payment Element (web). Mirrors stripe-connect-checkout fee
-// math, coupon logic, and Connect direct-charge routing — but returns a
-// client_secret instead of redirecting to a hosted Checkout Session.
+// Creates a PaymentIntent + Customer + Ephemeral Key for native wallet/card
+// confirmation and web payment flows. Mirrors stripe-connect-checkout fee math,
+// coupon logic, and Connect destination-charge routing — but returns a
+// client_secret instead of redirecting to a hosted checkout session.
 //
 // Response:
 //   { clientSecret, ephemeralKey, customerId, publishableKey,
@@ -276,7 +276,7 @@ serve(async (req) => {
     // and never collide with a stale one Stripe cached for 24h.
     // PI_REQUEST_VERSION: bump whenever the paymentIntents.create body shape
     // changes so old cached keys can't collide with new params.
-    const PI_REQUEST_VERSION = "v8-2026-07-23-paymentsheet-working-connect-shape";
+    const PI_REQUEST_VERSION = "v9-2026-07-23-direct-native-wallet";
     const idemBasis = [
       PI_REQUEST_VERSION,
       user.id,
@@ -300,7 +300,7 @@ serve(async (req) => {
       statement_descriptor_suffix: "FLEA",
       application_fee_amount: applicationFeeAmount,
       // Restore the known working Connect destination-charge shape for native
-      // wallet + PaymentSheet confirmation. Funds still route to the seller;
+      // wallet confirmation. Funds still route to the seller;
       // Flea still collects only the buyer fee.
       on_behalf_of: sellerStripeAccountId,
       transfer_data: { destination: sellerStripeAccountId },
@@ -339,7 +339,7 @@ serve(async (req) => {
       });
     }
 
-    // Ephemeral key for the mobile PaymentSheet (lets the sheet list saved cards)
+    // Ephemeral key is returned for native clients that need saved-card context.
     const ephemeralKey = await stripe.ephemeralKeys.create(
       { customer: customerId },
       { apiVersion: "2025-08-27.basil" }
