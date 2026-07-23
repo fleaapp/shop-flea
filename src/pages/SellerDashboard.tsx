@@ -341,6 +341,79 @@ const SellerDashboard = () => {
               </section>
             )}
 
+            {/* Held for unshipped orders — only once funds are in Available, otherwise this double-counts Clearing */}
+            {!isNegative && available > 0 && unshippedCents > 0 && (
+              <section className="rounded-2xl bg-card border border-border mt-2 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-[13px] font-medium text-foreground">Held for unshipped orders</div>
+                  <div className="text-base font-semibold text-foreground">
+                    {fmtMoney(unshippedCents, currency)}
+                  </div>
+                </div>
+                <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                  Ship orders with tracking to release these funds.
+                </div>
+              </section>
+            )}
+
+            {/* Split Pending into Clearing (rest) then First payout hold (first sale, no paid payout yet) */}
+            {!isNegative && (() => {
+              const pendingCents = data?.pending ?? 0;
+              if (pendingCents <= 0) return null;
+              const hasPaidPayout = (data?.payouts ?? []).some((p) => p.status === 'paid');
+              const pendingActivity = (data?.activity ?? [])
+                .filter((a) => a.status === 'pending')
+                .slice()
+                .sort((a, b) => (a.available_on ?? 0) - (b.available_on ?? 0));
+
+              const firstHold = !hasPaidPayout && pendingActivity.length > 0 ? pendingActivity[0] : null;
+              const firstHoldCents = firstHold ? Math.max(firstHold.amount ?? 0, 0) : 0;
+              const clearingCents = Math.max(pendingCents - firstHoldCents, 0);
+              const clearingActivity = firstHold ? pendingActivity.slice(1) : pendingActivity;
+              const earliestClearing = clearingActivity
+                .filter((a) => a.available_on)
+                .reduce<number>((min, a) => (min === 0 ? (a.available_on as number) : Math.min(min, a.available_on as number)), 0);
+
+              return (
+                <>
+                  {clearingCents > 0 && (
+                    <section className="rounded-2xl bg-card border border-border mt-3 p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="text-[13px] font-medium text-foreground">Clearing from recent sales</div>
+                        <div className="text-base font-semibold text-foreground">
+                          {fmtMoney(clearingCents, currency)}
+                        </div>
+                      </div>
+                      {earliestClearing > 0 && (
+                        <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                          Ready {fmtDate(earliestClearing)}.
+                        </div>
+                      )}
+                    </section>
+                  )}
+
+                  {firstHold && firstHoldCents > 0 && (
+                    <section className="rounded-2xl bg-amber-50 border border-amber-200 mt-3 p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-[11px] font-semibold text-amber-800 uppercase tracking-wide">
+                          🕒 First payout hold
+                        </div>
+                        <div className="text-base font-semibold text-charcoal">
+                          {fmtMoney(firstHoldCents, currency)}
+                        </div>
+                      </div>
+                      <p className="text-[12px] text-charcoal/80 mt-1.5 leading-relaxed">
+                        Your first sale is being verified by our payment processor. This is a one-off security check on new seller accounts.
+                      </p>
+                      <div className="mt-2 text-[12px] font-medium text-charcoal">
+                        Usually within 7 days.
+                      </div>
+                    </section>
+                  )}
+                </>
+              );
+            })()}
+
             {/* Available balance or Balance owed */}
             {isNegative ? (
               <section className="rounded-2xl bg-destructive/10 border-2 border-destructive/40 p-5 mt-2">
@@ -361,7 +434,7 @@ const SellerDashboard = () => {
                 </Button>
               </section>
             ) : (
-              <section className="rounded-2xl bg-primary/60 p-5 mt-2">
+              <section className="rounded-2xl bg-primary/60 p-5 mt-3">
                 <div className="text-xs font-medium text-charcoal/70 uppercase tracking-wide">
                   Available to withdraw
                 </div>
@@ -371,78 +444,6 @@ const SellerDashboard = () => {
               </section>
             )}
 
-            {/* Split Pending into First payout hold (first sale, no paid payout yet) vs Clearing (rest) */}
-            {(() => {
-              const pendingCents = data?.pending ?? 0;
-              if (pendingCents <= 0) return null;
-              const hasPaidPayout = (data?.payouts ?? []).some((p) => p.status === 'paid');
-              const pendingActivity = (data?.activity ?? [])
-                .filter((a) => a.status === 'pending')
-                .slice()
-                .sort((a, b) => (a.available_on ?? 0) - (b.available_on ?? 0));
-
-              const firstHold = !hasPaidPayout && pendingActivity.length > 0 ? pendingActivity[0] : null;
-              const firstHoldCents = firstHold ? Math.max(firstHold.amount ?? 0, 0) : 0;
-              const clearingCents = Math.max(pendingCents - firstHoldCents, 0);
-              const clearingActivity = firstHold ? pendingActivity.slice(1) : pendingActivity;
-              const earliestClearing = clearingActivity
-                .filter((a) => a.available_on)
-                .reduce<number>((min, a) => (min === 0 ? (a.available_on as number) : Math.min(min, a.available_on as number)), 0);
-
-              return (
-                <>
-                  {firstHold && firstHoldCents > 0 && (
-                    <section className="rounded-2xl bg-amber-50 border border-amber-200 mt-3 p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-[11px] font-semibold text-amber-800 uppercase tracking-wide">
-                          🕒 First payout hold
-                        </div>
-                        <div className="text-base font-semibold text-charcoal">
-                          {fmtMoney(firstHoldCents, currency)}
-                        </div>
-                      </div>
-                      <p className="text-[12px] text-charcoal/80 mt-1.5 leading-relaxed">
-                        Your first sale is being verified by our payment processor. This is a one-off security check on new seller accounts.
-                      </p>
-                      <div className="mt-2 text-[12px] font-medium text-charcoal">
-                        Usually ready within 7–14 days.
-                      </div>
-                    </section>
-                  )}
-
-                  {clearingCents > 0 && (
-                    <section className="rounded-2xl bg-card border border-border mt-3 p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="text-[13px] font-medium text-foreground">Clearing from recent sales</div>
-                        <div className="text-base font-semibold text-foreground">
-                          {fmtMoney(clearingCents, currency)}
-                        </div>
-                      </div>
-                      {earliestClearing > 0 && (
-                        <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                          Ready {fmtDate(earliestClearing)}.
-                        </div>
-                      )}
-                    </section>
-                  )}
-                </>
-              );
-            })()}
-
-            {/* Held for unshipped orders — only once funds are in Available, otherwise this double-counts Clearing */}
-            {available > 0 && unshippedCents > 0 && (
-              <section className="rounded-2xl bg-card border border-border mt-3 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-[13px] font-medium text-foreground">Held for unshipped orders</div>
-                  <div className="text-base font-semibold text-foreground">
-                    {fmtMoney(unshippedCents, currency)}
-                  </div>
-                </div>
-                <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                  Ship orders with tracking to release these funds.
-                </div>
-              </section>
-            )}
 
 
             {/* Payout actions */}
