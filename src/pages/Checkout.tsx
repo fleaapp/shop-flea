@@ -312,8 +312,8 @@ const Checkout = () => {
     navigate(`/checkout/success?payment_intent=${paymentIntentId}`);
   };
 
-  /** Native wallet confirmation. iOS uses Stripe's direct Apple Pay bridge; it
-   * does not create/present PaymentSheet, so there is no Stripe/Link sheet UI. */
+  /** Native wallet confirmation. iOS uses Stripe's direct Apple Pay bridge, so
+   * checkout never opens the provider's combined payment sheet. */
   const handleNativeWalletConfirm = async (pi: {
     clientSecret: string;
     paymentIntentId: string;
