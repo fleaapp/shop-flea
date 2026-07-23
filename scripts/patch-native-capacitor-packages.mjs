@@ -159,8 +159,11 @@ function patchPushNotificationsPlugin() {
 }
 
 try {
-  patchStripePackageSwift();
-  patchStripePlugin();
+  // Stripe plugin patches removed — reverting to vendored @capacitor-community/stripe
+  // and its default Stripe iOS SDK resolution. The forced STPAPIClient.shared.stripeAccount
+  // reset and the exact SDK pin were introduced 2026-07-22 and coincided with native
+  // Apple Pay failing ("Apple Pay Is Not Available in Flea"). Keeping only the
+  // push-notifications APNs bridge patch, which is unrelated to payments and proven required.
   patchPushNotificationsPlugin();
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
