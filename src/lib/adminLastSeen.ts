@@ -88,9 +88,11 @@ export async function loadAdminLastSeenFromBackend(): Promise<void> {
   if (!Array.isArray(rows)) return;
 
   try {
-    rows.forEach((row: { tab?: AdminTab; seen_at?: string }) => {
-      if (row.tab && row.seen_at && KEY[row.tab]) {
-        window.localStorage.setItem(KEY[row.tab], row.seen_at);
+    rows.forEach((row) => {
+      const tab = row.tab as AdminTab;
+      const seenAt = typeof row.seen_at === 'string' ? row.seen_at : null;
+      if (seenAt && KEY[tab]) {
+        window.localStorage.setItem(KEY[tab], seenAt);
       }
     });
     backendLoadedForUser = userId;
