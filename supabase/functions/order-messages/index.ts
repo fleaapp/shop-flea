@@ -802,25 +802,39 @@ Deno.serve(async (req) => {
         messageType: "user",
       });
 
-      try {
-        const senderUsername = await getUsername(userId, authHeader);
-        const recipientId = isBuyer ? orderInfo.sellerId : orderInfo.buyerId;
-        const notifType = isBuyer ? "order_message_buyer" : "order_message_seller";
-        const notifMessage = isBuyer
-          ? `📩 New message from your buyer ${senderUsername.startsWith("@") ? senderUsername : `@${senderUsername}`}! Tap to view.`
-          : `💬 New message from ${senderUsername.startsWith("@") ? senderUsername : `@${senderUsername}`} about your order! Tap to view.`;
+      const notifyRecipient = async () => {
+        try {
+          const senderUsername = await getUsername(userId, authHeader);
+          const recipientId = isBuyer ? orderInfo.sellerId : orderInfo.buyerId;
+          const notifType = isBuyer ? "order_message_buyer" : "order_message_seller";
+          const notifMessage = isBuyer
+            ? `📩 New message from your buyer ${senderUsername.startsWith("@") ? senderUsername : `@${senderUsername}`}! Tap to view.`
+            : `💬 New message from ${senderUsername.startsWith("@") ? senderUsername : `@${senderUsername}`} about your order! Tap to view.`;
 
-        await insertNotificationWithFallback(external, {
-          user_id: recipientId,
-          type: notifType,
-          title: "New Message",
-          message: notifMessage,
-          related_listing_id: orderInfo.listingId,
-          related_user_id: userId,
-          related_order_id: orderInfo.matchedOrderGroupId ?? orderInfo.matchedOrderId ?? threadOrderId,
-        });
-      } catch (notifErr) {
-        console.error("[order-messages] Notification error:", notifErr);
+          await insertNotificationWithFallback(external, {
+            user_id: recipientId,
+            type: notifType,
+            title: "New Message",
+            message: notifMessage,
+            related_listing_id: orderInfo.listingId,
+            related_user_id: userId,
+            related_order_id: orderInfo.matchedOrderGroupId ?? orderInfo.matchedOrderId ?? threadOrderId,
+          });
+        } catch (notifErr) {
+          console.error("[order-messages] Notification error:", notifErr);
+        }
+      };
+
+      try {
+        // @ts-ignore Deno-only global; guarded so it also runs locally.
+        const wu = (globalThis as any).EdgeRuntime?.waitUntil;
+        if (typeof wu === "function") {
+          wu(notifyRecipient());
+        } else {
+          void notifyRecipient();
+        }
+      } catch (notifScheduleErr) {
+        console.error("[order-messages] Notification schedule error:", notifScheduleErr);
       }
 
       return new Response(JSON.stringify({ message: data }), {
