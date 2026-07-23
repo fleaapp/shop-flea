@@ -376,26 +376,10 @@ const Checkout = () => {
         return true;
       }
       try {
-        // Initialize Stripe's native PaymentSheet Apple Pay context. The sheet
-        // is never presented — this call is what registers Apple Pay correctly
-        // with the native SDK before we open PassKit directly below.
-        try {
-          await Stripe.createPaymentSheet({
-            paymentIntentClientSecret: pi.clientSecret,
-            ...(pi.customerId && pi.ephemeralKey
-              ? { customerId: pi.customerId, customerEphemeralKeySecret: pi.ephemeralKey }
-              : {}),
-            enableApplePay: true,
-            applePayMerchantId: APPLE_PAY_MERCHANT_ID,
-            countryCode: 'AU',
-            merchantDisplayName: pi.merchantDisplayName || 'Flea',
-            returnURL: 'flea://stripe-redirect',
-            style: 'alwaysLight',
-          });
-        } catch (initErr) {
-          console.warn('[ApplePay] createPaymentSheet init failed (continuing to direct Apple Pay)', initErr);
-        }
-
+        // Direct PassKit Apple Pay only. No hidden PaymentSheet init, no
+        // prewarm, no preflight. The signed binary carries the Apple Pay
+        // entitlement + merchant.com.finditonflea.app, so we go straight
+        // from Stripe.initialize -> createApplePay -> presentApplePay.
         await Stripe.createApplePay({
           paymentIntentClientSecret: pi.clientSecret,
           paymentSummaryItems: [{ label: pi.merchantDisplayName || 'Flea', amount: applePayTotalAud }],
