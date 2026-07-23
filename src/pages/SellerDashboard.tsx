@@ -346,34 +346,38 @@ const SellerDashboard = () => {
               const pendingCents = data?.pending ?? 0;
               const hasPaidPayout = (data?.payouts ?? []).some((p) => p.status === 'paid');
 
-              const unshippedInAvailable = Math.min(unshippedCents, available);
-              const unshippedInPending = Math.max(unshippedCents - available, 0);
-
-              const pendingActivity = (data?.activity ?? [])
-                .filter((a) => a.status === 'pending')
+              // 1. Actual first sale = earliest pending payment by created timestamp
+              const pendingPayments = (data?.activity ?? [])
+                .filter((a) => a.status === 'pending' && a.type === 'payment')
                 .slice()
-                .sort((a, b) => (a.available_on ?? 0) - (b.available_on ?? 0));
+                .sort((a, b) => (a.created ?? 0) - (b.created ?? 0));
+              const firstSale = !hasPaidPayout && pendingPayments.length > 0 ? pendingPayments[0] : null;
+              const firstHoldCents = firstSale ? Math.max(firstSale.amount ?? 0, 0) : 0;
 
-              const clearingRaw = Math.max(pendingCents - unshippedInPending, 0);
-              const firstHoldCandidate = !hasPaidPayout && pendingActivity.length > 0
-                ? Math.max(pendingActivity[0].amount ?? 0, 0)
-                : 0;
-              const firstHoldCents = Math.min(firstHoldCandidate, clearingRaw);
-              const clearing = Math.max(clearingRaw - firstHoldCents, 0);
+              // 2. First sale is almost always also the first (still-unshipped) order — subtract from unshipped first
+              const unshippedRemaining = Math.max(unshippedCents - firstHoldCents, 0);
+              const unshippedInAvailable = Math.min(unshippedRemaining, available);
+              const unshippedInPending = Math.max(unshippedRemaining - available, 0);
 
-              const earliestClearing = pendingActivity
-                .slice(firstHoldCents > 0 ? 1 : 0)
+              // 3. Clearing = remaining pending after first hold + unshipped
+              const clearing = Math.max(pendingCents - firstHoldCents - unshippedInPending, 0);
+
+              // 4. Earliest available_on among the non-first-sale pending items
+              const clearingPending = firstSale
+                ? pendingPayments.filter((a) => a.id !== firstSale.id)
+                : pendingPayments;
+              const earliestClearing = clearingPending
                 .filter((a) => a.available_on)
                 .reduce<number>((min, a) => (min === 0 ? (a.available_on as number) : Math.min(min, a.available_on as number)), 0);
 
               return (
                 <>
-                  {unshippedCents > 0 && (
+                  {unshippedRemaining > 0 && (
                     <section className="rounded-2xl bg-card border border-border mt-2 p-4">
                       <div className="flex items-center justify-between">
                         <div className="text-[13px] font-medium text-foreground">Held for unshipped orders</div>
                         <div className="text-base font-semibold text-foreground">
-                          {fmtMoney(unshippedCents, currency)}
+                          {fmtMoney(unshippedRemaining, currency)}
                         </div>
                       </div>
                       <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
@@ -381,6 +385,7 @@ const SellerDashboard = () => {
                       </div>
                     </section>
                   )}
+
 
                   {clearing > 0 && (
                     <section className="rounded-2xl bg-card border border-border mt-3 p-4">
