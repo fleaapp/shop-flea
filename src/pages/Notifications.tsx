@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
+import OrderDetailsSheet from '@/components/OrderDetailsSheet';
 import EnablePushBanner from '@/components/EnablePushBanner';
 import { OrderGroup } from '@/hooks/useOrders';
 
@@ -60,10 +61,27 @@ const Notifications = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isUnauthed = !user;
-  const { sellerOrderGroups, buyerOrderGroups, markAsShipped } = useOrders();
+  const { sellerOrderGroups, buyerOrderGroups, markAsShipped, markAsDelivered } = useOrders();
   const { notifications, isLoading: loadingNotifications, unreadCount, badgeCount, markAsRead, markAllAsRead } = useNotifications();
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
+  const [selectedBuyerGroup, setSelectedBuyerGroup] = useState<OrderGroup | null>(null);
+  const [orderSheetOpen, setOrderSheetOpen] = useState(false);
+
+  const findGroup = (n: Notification, groups: OrderGroup[]): OrderGroup | null => {
+    if (n.related_order_id) {
+      const byGroup = groups.find(
+        g => (g.order_group_id || g.id) === n.related_order_id
+          || g.orders.some(o => o.id === n.related_order_id)
+      );
+      if (byGroup) return byGroup;
+    }
+    if (n.related_listing_id) {
+      const byListing = groups.find(g => g.orders.some(o => o.listing_id === n.related_listing_id));
+      if (byListing) return byListing;
+    }
+    return null;
+  };
 
   // Mark all unread notifications as read on open — this also clears the
   // bottom-nav badge (both are derived from `is_read` in the DB now).
@@ -106,13 +124,13 @@ const Notifications = () => {
       return;
     }
 
-    // Item sold → open the specific order details sheet
-    if (notification.type === 'item_sold') {
-      const matchingGroup = notification.related_order_id
-        ? sellerOrderGroups.find(g => (g.order_group_id || g.id) === notification.related_order_id)
-        : (notification.related_listing_id
-            ? sellerOrderGroups.find(g => g.orders.some(o => o.listing_id === notification.related_listing_id))
-            : null);
+    // Sale-side alerts (seller) → open Sale Details drawer
+    if (
+      notification.type === 'item_sold' ||
+      notification.type === 'refund_request' ||
+      notification.type === 'sale_auto_refunded'
+    ) {
+      const matchingGroup = findGroup(notification, sellerOrderGroups);
       if (matchingGroup) {
         setSelectedGroup(matchingGroup);
         setSaleSheetOpen(true);
@@ -122,10 +140,26 @@ const Notifications = () => {
       return;
     }
 
-    // Order message / refund notifications → navigate to order chat using related_order_id
-    if (notification.type === 'order_message_seller' || notification.type === 'order_message_buyer' ||
-        notification.type === 'refund_request' || notification.type === 'refund_rejected' || notification.type === 'refund_initiated' ||
-        notification.type === 'order_auto_refunded' || notification.type === 'sale_auto_refunded') {
+    // Order-side alerts (buyer) → open Order Details drawer
+    if (
+      notification.type === 'order_shipped' ||
+      notification.type === 'order_delivered' ||
+      notification.type === 'refund_initiated' ||
+      notification.type === 'refund_rejected' ||
+      notification.type === 'order_auto_refunded'
+    ) {
+      const matchingGroup = findGroup(notification, buyerOrderGroups);
+      if (matchingGroup) {
+        setSelectedBuyerGroup(matchingGroup);
+        setOrderSheetOpen(true);
+        return;
+      }
+      navigate('/cart');
+      return;
+    }
+
+    // Message notifications → still go to the chat
+    if (notification.type === 'order_message_seller' || notification.type === 'order_message_buyer') {
       const threadId = notification.related_order_id;
       if (threadId) {
         navigate(`/order-chat/${threadId}`);
@@ -161,12 +195,6 @@ const Notifications = () => {
       return;
     }
 
-    // Order shipped/delivered → navigate to cart (orders tab)
-    if (notification.type === 'order_shipped' || notification.type === 'order_delivered') {
-      navigate('/cart');
-      return;
-    }
-
     // Navigate based on notification type (comments, mentions, wishlist/cart sold, etc.)
     if (notification.related_listing_id) {
       const listingIsAccessible = await canOpenListing(notification.related_listing_id);
@@ -195,6 +223,17 @@ const Notifications = () => {
     }
     setSaleSheetOpen(false);
     setSelectedGroup(null);
+  };
+
+  const handleMarkDelivered = () => {
+    if (!selectedBuyerGroup) return;
+    if (selectedBuyerGroup.order_group_id) {
+      markAsDelivered.mutate({ orderGroupId: selectedBuyerGroup.order_group_id });
+    } else {
+      markAsDelivered.mutate(selectedBuyerGroup.orders[0].id);
+    }
+    setOrderSheetOpen(false);
+    setSelectedBuyerGroup(null);
   };
 
   const formatTime = (dateString: string) => {
@@ -316,6 +355,13 @@ const Notifications = () => {
         open={saleSheetOpen}
         onOpenChange={(open) => { setSaleSheetOpen(open); if (!open) setSelectedGroup(null); }}
         onMarkShipped={handleMarkShipped}
+      />
+
+      <OrderDetailsSheet
+        orders={selectedBuyerGroup?.orders ?? null}
+        open={orderSheetOpen}
+        onOpenChange={(open) => { setOrderSheetOpen(open); if (!open) setSelectedBuyerGroup(null); }}
+        onMarkDelivered={handleMarkDelivered}
       />
       </div>
 

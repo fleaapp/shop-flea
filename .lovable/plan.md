@@ -1,44 +1,50 @@
-## Root cause (verified)
+## Goal
 
-The footer/bell badge counts unread rows in the `notifications` table (`get_nav_badges.activity_unread` = `COUNT(*) FROM notifications WHERE user_id=_ AND is_read=false`).
+In the Alerts list, tapping an order/sale notification opens the relevant details drawer inline — **except message notifications**, which continue to navigate to the chat.
 
-- Opening an `OrderChat` calls `order-messages` PATCH, which only sets `order_messages.read=true`. It never touches the corresponding `notifications` rows (`order_message_buyer` / `order_message_seller`).
-- Opening a support `ChatConversation` calls `mark_support_thread_read`, which only touches `chat_messages`. It never touches `notifications` rows of type `support_message`.
+## Routing rules (Notifications.tsx `handleNotificationClick`)
 
-Result: the optimistic `setQueryData` in `OrderChat.tsx` briefly drops the number (8 → 7), then the next `get_nav_badges` refetch returns the true DB value (8 again) because the notification row is still `is_read=false`. Same pattern for support chat and (likely) new-comment / refund notifications where the app has no "seen" step.
+**Go to chat (unchanged):**
+- `order_message_seller`, `order_message_buyer` → `/order-chat/:id`
+- `support_message` → support thread
 
-## Fix
+**Open Sale Details drawer (seller side, `SalesDetailsSheet`):**
+- `item_sold` (already correct)
+- `shipping_reminder_3d`, `shipping_reminder_6d` (already correct)
+- `refund_request`
+- `sale_auto_refunded`
 
-Make "opening a chat" authoritatively clear every notification row tied to that chat, server-side, so the RPC refetch returns the decremented count.
+**Open Order Details drawer (buyer side, `OrderDetailsSheet` — new instance on this page):**
+- `order_shipped`
+- `order_delivered`
+- `refund_initiated`
+- `refund_rejected`
+- `order_auto_refunded`
 
-### 1. `supabase/functions/order-messages/index.ts` (PATCH branch)
+**Unchanged:**
+- `payment_action_required` → seller dashboard
+- Comments / mentions / wishlist-sold / cart-sold → listing page
 
-After the existing `order_messages.update({read:true})`, also update `notifications`:
+## Matching logic
 
-- `user_id = <caller>`
-- `type IN ('order_message_buyer','order_message_seller')`
-- `related_order_id IN (<threadOrderId + related_order_ids>)`
-- `is_read = false` → `true`
+Reuse the same lookup already used for `item_sold`:
 
-Use the same external client + fallback pattern already used for inserts.
+1. Match `notification.related_order_id` against `group.order_group_id || group.id`, then against `group.orders[].id`.
+2. Fallback: match `notification.related_listing_id` against `group.orders[].listing_id`.
+3. Try the seller-side groups first for the seller list above, buyer-side groups for the buyer list above.
+4. If no group is found (old orders paged out of the loaded set), fall back to today's `navigate(...)` target so the user never hits a dead end.
 
-### 2. `mark_support_thread_read` RPC
+## Implementation
 
-Extend to also `UPDATE notifications SET is_read=true WHERE user_id=auth.uid() AND type='support_message' AND related_thread_id=_thread_id AND is_read=false`. Keep the existing `chat_messages` update.
+Only `src/pages/Notifications.tsx`:
 
-### 3. Client optimistic alignment
-
-- `src/pages/OrderChat.tsx`: in addition to the existing `unread-order-messages` / `nav-badges` writes, decrement `activity_unread` by the count of cached `notifications` rows that match the related order group + message types, and mark those notification rows `is_read=true` in the `['notifications']` cache. Then invalidate `['notifications']` and `['nav-badges']` after the PATCH resolves.
-- `src/pages/ChatConversation.tsx`: same treatment for `support_message` notifications tied to `threadId`.
-
-This removes the visible "8 → 7 → 8" flicker: the optimistic drop and the refetch both land on the same true count.
-
-### 4. Verification
-
-- Log in as @sarahhearn2, open an order chat with an unread message + matching bell notification; confirm footer alerts badge decrements and stays decremented after route change and full reload.
-- Repeat for support chat.
-- Confirm `notifications` rows for that order/thread are `is_read=true` via a quick DB read.
+1. Add state + render for the buyer drawer alongside the existing seller sheet:
+   - `selectedBuyerGroup`, `orderSheetOpen`.
+   - Render `<OrderDetailsSheet orders={selectedBuyerGroup?.orders ?? null} open={orderSheetOpen} onOpenChange={...} />` using the same props shape used on the buyer Orders view.
+2. Add a small `findGroup(notification, groups)` helper implementing the matching logic above.
+3. Replace the current `navigate('/cart')` branch for `order_shipped` / `order_delivered` and the `navigate('/order-chat/...')` branches for refund types with calls that open the correct drawer, keeping the existing navigation as fallback.
+4. Leave the `markAsRead` call at the top of the handler untouched so badges keep clearing.
 
 ## Out of scope
 
-No UI changes, no changes to how notifications are created, no changes to comment / refund notification flows (those already have their own read paths and are not part of this reported bug).
+Native push-notification tap handling and any drawer UI changes.
