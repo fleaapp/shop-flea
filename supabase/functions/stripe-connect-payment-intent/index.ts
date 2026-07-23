@@ -370,8 +370,12 @@ serve(async (req) => {
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
   } catch (error) {
     console.error("[stripe-connect-payment-intent] error:", error);
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
+    return new Response(JSON.stringify({
+      error: (error as Error)?.message || "Payment could not be started. Please try again.",
+      code: (error as any)?.code || "unexpected_error",
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500,
     });
+
   }
 });
