@@ -372,6 +372,14 @@ const EditListing = () => {
           setSupportsSubcategory(false);
         }
       }
+
+      // Thumbnails column may be missing on older environments; strip and retry.
+      if (error && (error.code === '42703' || error.code === 'PGRST204') && /thumbnails/i.test(error.message ?? '')) {
+        const { thumbnails: _dropped, ...fallbackPayload } = updatePayload;
+        const retryResult = await runListingUpdate(fallbackPayload);
+        error = retryResult.error;
+      }
+
       
       if (error) {
         console.error('Supabase update error:', error);
