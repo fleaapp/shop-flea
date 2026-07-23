@@ -451,7 +451,7 @@ const Checkout = () => {
           error: { message: String(err?.message || err) },
           paymentIntentId: pi.paymentIntentId,
         });
-        toast.error(diag.userMessage || 'Payment did not complete. Please try again.');
+        showCheckoutError('presentApplePay', diag.userMessage || 'Payment did not complete. Please try again.', { code: diag.code, ref: pi.paymentIntentId });
       }
       return true;
     }
