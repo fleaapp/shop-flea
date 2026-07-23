@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
+import OrderDetailsSheet from '@/components/OrderDetailsSheet';
 import EnablePushBanner from '@/components/EnablePushBanner';
 import { OrderGroup } from '@/hooks/useOrders';
 
