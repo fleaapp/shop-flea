@@ -13,6 +13,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { safeNavigateBack } from '@/utils/safeBack';
 import { useAuth } from '@/context/AuthContext';
 import { useGuestMode } from '@/context/GuestModeContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { clearOrderChatBadges } from '@/utils/orderChatRead';
 
 const getStatusBadge = (status: OrderGroup['status']) => {
   switch (status) {
@@ -29,6 +31,7 @@ const getStatusBadge = (status: OrderGroup['status']) => {
 
 const Sales = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const { exitGuestMode } = useGuestMode();
   const [salesStatusFilter, setSalesStatusFilter] = useState<'awaiting' | 'shipped' | 'delivered' | 'refunded'>('awaiting');
@@ -45,6 +48,20 @@ const Sales = () => {
   const handleSaleClick = (group: OrderGroup) => {
     setSelectedGroup(group);
     setSaleSheetOpen(true);
+  };
+
+  const openSaleChat = (group: OrderGroup) => {
+    const threadId = group.order_group_id || group.orders[0]?.id || group.id;
+    if (user?.id) {
+      clearOrderChatBadges({
+        queryClient,
+        userId: user.id,
+        threadId,
+        orderIds: group.orders.map((order) => order.id),
+        role: 'seller',
+      });
+    }
+    navigate(`/order-chat/${threadId}`);
   };
 
   const handleMarkShipped = (trackingDetails: { serviceProvider: string; trackingNumber: string }) => {
@@ -100,7 +117,7 @@ const Sales = () => {
           </span>
         </div>
         <button
-          onClick={(e) => { e.stopPropagation(); navigate(`/order-chat/${group.order_group_id || primaryOrder.id}`); }}
+          onClick={(e) => { e.stopPropagation(); openSaleChat(group); }}
           className="relative flex h-10 w-10 items-center justify-center flex-shrink-0"
         >
           <span className="text-xl">💬</span>
