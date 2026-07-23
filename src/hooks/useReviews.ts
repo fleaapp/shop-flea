@@ -194,6 +194,26 @@ export function useCreateReview() {
         throw new Error(error.message || 'Failed to submit review');
       }
 
+      // Fire push to the reviewed user. DB trigger `notify_on_review` creates
+      // the in-app notification row synchronously, so the send-push-notification
+      // cross-user proof check will find a matching row.
+      try {
+        const { data: orderRow } = await supabase
+          .from('orders')
+          .select('listing_id')
+          .eq('id', orderId)
+          .maybeSingle();
+        await sendPushNotification(reviewedUserId, {
+          type: 'new_review',
+          title: 'New Review',
+          message: `You just got a ${rating}-star review.`,
+          related_listing_id: orderRow?.listing_id ?? undefined,
+          related_user_id: user.id,
+        });
+      } catch (err) {
+        console.warn('Review push notify failed:', err);
+      }
+
       return data;
 
     },
