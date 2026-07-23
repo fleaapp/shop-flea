@@ -211,6 +211,39 @@ const OrderChat = () => {
       };
     });
 
+    // Optimistically clear the bell notifications tied to this order group so
+    // the Alerts badge (activity_unread) drops immediately and stays down when
+    // the refetch resolves (server-side clear happens in the PATCH below).
+    const relatedIdSet = new Set(relatedIds);
+    let clearedNotifCount = 0;
+    queryClient.setQueryData<any[]>(['notifications', user.id], (prev) => {
+      if (!Array.isArray(prev)) return prev;
+      let changed = 0;
+      const next = prev.map((n: any) => {
+        if (
+          !n?.is_read &&
+          (n?.type === 'order_message_buyer' || n?.type === 'order_message_seller') &&
+          n?.related_order_id &&
+          relatedIdSet.has(n.related_order_id)
+        ) {
+          changed += 1;
+          return { ...n, is_read: true };
+        }
+        return n;
+      });
+      clearedNotifCount = changed;
+      return changed > 0 ? next : prev;
+    });
+    if (clearedNotifCount > 0) {
+      queryClient.setQueryData<any>(['nav-badges', user.id], (prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          activity_unread: Math.max(0, (prev.activity_unread || 0) - clearedNotifCount),
+        };
+      });
+    }
+
     invokeCloudFunction('order-messages', {
       method: 'PATCH',
       query: { orderId },
@@ -225,6 +258,7 @@ const OrderChat = () => {
       console.error('[OrderChat] Failed to mark messages read:', error);
       queryClient.invalidateQueries({ queryKey: ['unread-order-messages'] });
       queryClient.invalidateQueries({ queryKey: ['nav-badges'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     });
   }, [user?.id, orderId, relatedIdsKey, orderInfo?.buyer_id, queryClient]);
 
