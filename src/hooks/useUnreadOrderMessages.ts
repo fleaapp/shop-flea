@@ -42,7 +42,9 @@ export const useUnreadOrderMessages = () => {
       return { total: messages.length, perOrder };
     },
     enabled: !!user?.id,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
     refetchInterval: 30000,
   });
 
