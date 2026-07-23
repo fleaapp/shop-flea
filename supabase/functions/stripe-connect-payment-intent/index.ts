@@ -87,18 +87,30 @@ serve(async (req) => {
       .from("listings")
       .select("id, user_id, status, price, title, images, shipping_price")
       .in("id", itemIds);
+    const itemIds = items.map((i: { id: string }) => i.id).filter(Boolean);
+    if (itemIds.length !== items.length) {
+      return jsonError(400, "invalid_item_ids", "Invalid item ids.");
+    }
+
+    const { data: listingRows, error: listingErr } = await serviceClient
+      .from("listings")
+      .select("id, user_id, status, price, title, images, shipping_price")
+      .in("id", itemIds);
     if (listingErr || !listingRows || listingRows.length !== itemIds.length) {
-      throw new Error("Could not verify listings");
+      return jsonError(409, "listings_unavailable", "Could not verify the items in your cart. Please refresh and try again.");
     }
     if (listingRows.some((l: any) => l.status !== "active")) {
-      throw new Error("One or more items are no longer available");
+      return jsonError(409, "item_no_longer_available", "One or more items are no longer available.");
     }
     const sellerIds = Array.from(new Set(listingRows.map((l: any) => l.user_id)));
     if (sellerIds.length !== 1) {
-      throw new Error("All items in a checkout must belong to the same seller");
+      return jsonError(400, "multi_seller_checkout", "All items in a checkout must belong to the same seller.");
     }
     const sellerId = sellerIds[0];
-    if (sellerId === user.id) throw new Error("Cannot purchase your own items");
+    if (sellerId === user.id) {
+      return jsonError(400, "own_item", "You can't purchase your own items.");
+    }
+
 
     const listingById = new Map(listingRows.map((l: any) => [l.id, l]));
     const authoritativeItems = itemIds.map((id: string) => {
