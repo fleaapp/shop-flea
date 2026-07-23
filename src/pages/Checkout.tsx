@@ -558,8 +558,10 @@ const Checkout = () => {
   };
 
 
-  /** Master Pay button — dispatches by selected method. */
+  /** Master Pay button — dispatches by selected method. On native, always
+   * routes through the single Stripe PaymentSheet regardless of picker state. */
   const handlePayClick = () => {
+    if (isNative()) { handleWalletTap(); return; }
     if (!selectedMethod) { toast.error('Please pick a payment method.'); return; }
     switch (selectedMethod.kind) {
       case 'wallet':   handleWalletTap(); break;
@@ -567,6 +569,7 @@ const Checkout = () => {
       case 'new_card': setCardSheetOpen(true); break;
     }
   };
+
 
   const payButtonLabel = () => {
     if (isSubmitting) return 'Processing...';
