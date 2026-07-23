@@ -1,4 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 
 type OrderChatRole = 'buyer' | 'seller' | 'unknown';
@@ -97,7 +98,16 @@ export const clearOrderChatBadges = ({
 };
 
 export const markOrderChatRead = (threadId: string) =>
-  invokeCloudFunction('order-messages', {
-    method: 'PATCH',
-    query: { orderId: threadId },
-  });
+  (supabase as any)
+    .rpc('mark_order_thread_read', { _thread_id: threadId })
+    .then(async (result: any) => {
+      if (!result?.error) return { data: result.data, error: null, response: null };
+
+      // Fallback for environments where the RPC has not propagated yet. The
+      // edge function now has explicit PATCH CORS headers, so this should also
+      // complete reliably.
+      return invokeCloudFunction('order-messages', {
+        method: 'PATCH',
+        query: { orderId: threadId },
+      });
+    });

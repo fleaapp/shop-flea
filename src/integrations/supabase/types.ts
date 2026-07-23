@@ -1686,6 +1686,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      mark_order_thread_read: { Args: { _thread_id: string }; Returns: Json }
       mark_support_thread_read: {
         Args: { _thread_id: string }
         Returns: number
