@@ -32,7 +32,7 @@ import visaLogo from '@/assets/cards/visa.svg';
 import mastercardLogo from '@/assets/cards/mastercard.svg';
 import amexLogo from '@/assets/cards/amex.svg';
 import applePayLogo from '@/assets/cards/apple-pay.svg';
-import { categoriseApplePayError, logApplePayDiagnostic } from '@/lib/applePayDiagnostics';
+import { runApplePayPreflight, categoriseApplePayError, logApplePayDiagnostic } from '@/lib/applePayDiagnostics';
 import { mapCardDeclineMessage, logCardDecline } from '@/lib/cardDeclineHandler';
 
 // Apple App Review demo account — bypasses the seller-Stripe-connected check
