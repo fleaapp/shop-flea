@@ -426,6 +426,19 @@ export function useOrders() {
         p_order_group_id: orderGroupId ?? null,
       });
       if (error) throw error;
+
+      // Delivered notification recipient is the buyer (== caller), so the
+      // self-push path allows this without cross-user proof.
+      try {
+        await sendPushNotification(user.id, {
+          type: 'order_delivered',
+          title: 'Order Delivered',
+          message: 'Your order is home safe 🏠 Tap for details.',
+          related_order_id: orderId ?? undefined,
+        });
+      } catch (err) {
+        console.warn('Delivered push notify failed:', err);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
