@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { getNotificationEmoji } from '@/hooks/useNotifications';
+
 
 const ALERT_TITLES: Record<string, string> = {
   item_sold: '🎉 Item Sold!',
@@ -53,18 +55,26 @@ const RealtimeAlerts = () => {
             message: string | null;
           };
 
-          const emoji = getNotificationEmoji(notification.type);
-          const title = ALERT_TITLES[notification.type] || `${emoji} ${notification.title}`;
-          const description = notification.message?.slice(0, 80) || undefined;
+          // On native iOS the OS shows an APNs banner for the same event —
+          // suppress the in-app toast to prevent double alerts.
+          const isNativeIOS =
+            Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios';
 
-          toast(title, {
-            description,
-            duration: 3500,
-          });
+          if (!isNativeIOS) {
+            const emoji = getNotificationEmoji(notification.type);
+            const title = ALERT_TITLES[notification.type] || `${emoji} ${notification.title}`;
+            const description = notification.message?.slice(0, 80) || undefined;
+
+            toast(title, {
+              description,
+              duration: 3500,
+            });
+          }
 
           // Refresh notifications query
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
         },
+
       )
       .subscribe();
 

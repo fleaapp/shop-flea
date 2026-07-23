@@ -73,6 +73,27 @@ serve(async (req) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
+    // CRITICAL: take over this endpoint from any other user account that
+    // previously registered it on this device. Without this, pushes destined
+    // for the previous user still hit the current device's APNs/browser token.
+    const { error: takeoverError } = await svc
+      .from("push_subscriptions")
+      .delete()
+      .eq("endpoint", endpoint)
+      .neq("user_id", userId);
+
+    if (takeoverError) {
+      console.error("[register-push-subscription] endpoint takeover failed:", takeoverError);
+      await logEdgeError({
+        functionName: "register-push-subscription",
+        title: "Push endpoint takeover failed",
+        error: takeoverError,
+        severity: "warning",
+        userId,
+        context: { platform },
+      });
+    }
+
     if (platform === "ios") {
       const { error: deleteError } = await svc
         .from("push_subscriptions")
@@ -93,6 +114,7 @@ serve(async (req) => {
         });
       }
     }
+
 
     const { error: upsertError } = await svc.from("push_subscriptions").upsert(
       {

@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS trg_notify_on_order_message ON public.order_messages;

@@ -363,6 +363,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     localStorage.removeItem('flea_stripe_connected');
     localStorage.removeItem('flea_oauth_signup');
+
+    // Unregister this device's push token BEFORE clearing the session so the
+    // authenticated delete succeeds. Without this, the next user to sign in
+    // on this device would receive the previous user's push notifications
+    // until they re-register.
+    try {
+      const { Capacitor } = await import('@capacitor/core');
+      const isNative = Capacitor.isNativePlatform();
+      if (isNative) {
+        const endpoint = localStorage.getItem('flea_native_push_endpoint');
+        if (endpoint && user?.id) {
+          await supabase
+            .from('push_subscriptions' as any)
+            .delete()
+            .eq('user_id', user.id)
+            .eq('endpoint', endpoint);
+        }
+      } else if (user?.id) {
+        // Web: unregister any subscription for this user on this device
+        const reg = await navigator.serviceWorker?.getRegistration?.();
+        const sub = await reg?.pushManager?.getSubscription?.();
+        if (sub?.endpoint) {
+          await supabase
+            .from('push_subscriptions' as any)
+            .delete()
+            .eq('user_id', user.id)
+            .eq('endpoint', sub.endpoint);
+        }
+      }
+    } catch (e) {
+      console.warn('[auth] push unregister on signOut failed:', e);
+    }
+
     // Clear local session immediately so UI reflects logout even if the
     // network call to revoke the server-side session hangs (common on iOS PWA).
     setSession(null);
@@ -382,6 +415,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .forEach((k) => localStorage.removeItem(k));
     } catch {}
   };
+
 
   return (
     <AuthContext.Provider value={{ user, session, profile, loading, profileLoaded, isBanned, signUp, signIn, signOut, refreshProfile }}>
