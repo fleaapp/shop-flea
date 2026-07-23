@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { getNotificationEmoji } from '@/hooks/useNotifications';
+
 
 const ALERT_TITLES: Record<string, string> = {
   item_sold: '🎉 Item Sold!',
