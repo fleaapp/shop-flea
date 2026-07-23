@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Send, Image, Flag, Lock } from 'lucide-react';
 import RefundSystemMessage from '@/components/RefundSystemMessage';
@@ -118,7 +118,7 @@ const OrderChat = () => {
     retry: 1,
   });
 
-  const upsertMessage = (incoming: OrderMessage) => {
+  const upsertMessage = useCallback((incoming: OrderMessage) => {
     queryClient.setQueryData<OrderMessage[]>(['order-messages', orderId], (prev = []) => {
       const next = [...prev];
       const existingIndex = next.findIndex((m) => m.id === incoming.id);
@@ -131,7 +131,7 @@ const OrderChat = () => {
 
       return next.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     });
-  };
+  }, [orderId, queryClient]);
 
   // Realtime subscription — match every underlying order id in the group,
   // because `order_messages` has no `order_group_id` column on Cloud.
@@ -161,7 +161,7 @@ const OrderChat = () => {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [realtimeKey, orderId, queryClient]);
+  }, [realtimeKey, upsertMessage]);
 
 
   // Refetch when app returns from background (e.g. push notification tap)
