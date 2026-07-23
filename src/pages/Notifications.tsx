@@ -124,13 +124,13 @@ const Notifications = () => {
       return;
     }
 
-    // Item sold → open the specific order details sheet
-    if (notification.type === 'item_sold') {
-      const matchingGroup = notification.related_order_id
-        ? sellerOrderGroups.find(g => (g.order_group_id || g.id) === notification.related_order_id)
-        : (notification.related_listing_id
-            ? sellerOrderGroups.find(g => g.orders.some(o => o.listing_id === notification.related_listing_id))
-            : null);
+    // Sale-side alerts (seller) → open Sale Details drawer
+    if (
+      notification.type === 'item_sold' ||
+      notification.type === 'refund_request' ||
+      notification.type === 'sale_auto_refunded'
+    ) {
+      const matchingGroup = findGroup(notification, sellerOrderGroups);
       if (matchingGroup) {
         setSelectedGroup(matchingGroup);
         setSaleSheetOpen(true);
@@ -140,10 +140,26 @@ const Notifications = () => {
       return;
     }
 
-    // Order message / refund notifications → navigate to order chat using related_order_id
-    if (notification.type === 'order_message_seller' || notification.type === 'order_message_buyer' ||
-        notification.type === 'refund_request' || notification.type === 'refund_rejected' || notification.type === 'refund_initiated' ||
-        notification.type === 'order_auto_refunded' || notification.type === 'sale_auto_refunded') {
+    // Order-side alerts (buyer) → open Order Details drawer
+    if (
+      notification.type === 'order_shipped' ||
+      notification.type === 'order_delivered' ||
+      notification.type === 'refund_initiated' ||
+      notification.type === 'refund_rejected' ||
+      notification.type === 'order_auto_refunded'
+    ) {
+      const matchingGroup = findGroup(notification, buyerOrderGroups);
+      if (matchingGroup) {
+        setSelectedBuyerGroup(matchingGroup);
+        setOrderSheetOpen(true);
+        return;
+      }
+      navigate('/cart');
+      return;
+    }
+
+    // Message notifications → still go to the chat
+    if (notification.type === 'order_message_seller' || notification.type === 'order_message_buyer') {
       const threadId = notification.related_order_id;
       if (threadId) {
         navigate(`/order-chat/${threadId}`);
@@ -176,12 +192,6 @@ const Notifications = () => {
     // Payment action required → open Seller Dashboard in-app
     if (notification.type === 'payment_action_required') {
       navigate('/seller-dashboard');
-      return;
-    }
-
-    // Order shipped/delivered → navigate to cart (orders tab)
-    if (notification.type === 'order_shipped' || notification.type === 'order_delivered') {
-      navigate('/cart');
       return;
     }
 
