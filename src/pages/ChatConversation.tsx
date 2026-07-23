@@ -129,6 +129,23 @@ const ChatConversation = () => {
     if (!user || !threadId || (!newMsg.trim() && !file)) return;
     setSending(true);
 
+    const messageText = newMsg.trim();
+    const optimisticId = `optimistic-${Date.now()}`;
+    const optimisticMessage: Message = {
+      id: optimisticId,
+      thread_id: threadId,
+      sender_id: user.id,
+      sender_type: 'user',
+      message: messageText || (file ? `Sent an attachment` : ''),
+      attachment_url: null,
+      read: false,
+      created_at: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, optimisticMessage]);
+    setNewMsg('');
+    scrollToBottom();
+
     try {
       let attachmentUrl: string | null = null;
       if (file) {
@@ -138,25 +155,37 @@ const ChatConversation = () => {
         if (upErr) throw upErr;
         const { data: urlData } = supabase.storage.from('listings').getPublicUrl(filePath);
         attachmentUrl = urlData.publicUrl;
+        setMessages((prev) => prev.map((msg) => (
+          msg.id === optimisticId ? { ...msg, attachment_url: attachmentUrl } : msg
+        )));
       }
 
-      await (supabase as any).from('chat_messages').insert({
+      const { data: inserted, error: insertError } = await (supabase as any).from('chat_messages').insert({
         thread_id: threadId,
         sender_id: user.id,
         sender_type: 'user',
-        message: newMsg.trim() || (file ? `Sent an attachment` : ''),
+        message: messageText || (file ? `Sent an attachment` : ''),
         attachment_url: attachmentUrl,
         read: false,
-      });
+      }).select().single();
+
+      if (insertError) throw insertError;
+
+      if (inserted) {
+        setMessages((prev) => prev.map((msg) => (
+          msg.id === optimisticId ? inserted as Message : msg
+        )));
+      }
 
       await (supabase as any)
         .from('chat_threads')
         .update({ updated_at: new Date().toISOString() })
         .eq('id', threadId);
 
-      setNewMsg('');
       setFile(null);
     } catch (err: any) {
+      setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId));
+      setNewMsg(messageText);
       toast.error(err.message || 'Failed to send message');
     } finally {
       setSending(false);
