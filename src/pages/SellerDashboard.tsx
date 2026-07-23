@@ -403,7 +403,13 @@ const SellerDashboard = () => {
                   {unshippedRemaining > 0 && (
                     <section className="rounded-2xl bg-card border border-border mt-2 p-4">
                       <div className="flex items-center justify-between">
-                        <div className="text-[13px] font-medium text-foreground">Held for unshipped orders</div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="text-[13px] font-medium text-foreground">Held for unshipped orders</div>
+                          <BalanceInfo
+                            title="Held for unshipped orders"
+                            body="Funds from sales you haven't shipped yet. Add tracking to release these funds into Clearing (or straight to Available if the payment has already cleared)."
+                          />
+                        </div>
                         <div className="text-base font-semibold text-foreground">
                           {fmtMoney(unshippedRemaining, currency)}
                         </div>
@@ -418,7 +424,13 @@ const SellerDashboard = () => {
                   {clearing > 0 && (
                     <section className="rounded-2xl bg-card border border-border mt-3 p-4">
                       <div className="flex items-center justify-between">
-                        <div className="text-[13px] font-medium text-foreground">Clearing from recent sales</div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="text-[13px] font-medium text-foreground">Clearing from recent sales</div>
+                          <BalanceInfo
+                            title="Clearing from recent sales"
+                            body="Funds from orders you've already shipped that are still clearing with the payment provider. Card payments settle 1 to 2 business days after the buyer pays, then move to Available automatically."
+                          />
+                        </div>
                         <div className="text-base font-semibold text-foreground">
                           {fmtMoney(clearing, currency)}
                         </div>
@@ -434,8 +446,13 @@ const SellerDashboard = () => {
                   {firstHoldCents > 0 && (
                     <section className="rounded-2xl bg-amber-50 border border-amber-200 mt-3 p-4">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-[11px] font-semibold text-amber-800 uppercase tracking-wide">
-                          🕒 First payout hold
+                        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-800 uppercase tracking-wide">
+                          <span>🕒 First payout hold</span>
+                          <BalanceInfo
+                            tone="amber"
+                            title="First payout hold"
+                            body="A one-off security check applied to your very first sale. Usually clears within 7 days. After this, future sales only go through the standard 1 to 2 day clearing window."
+                          />
                         </div>
                         <div className="text-base font-semibold text-charcoal">
                           {fmtMoney(firstHoldCents, currency)}
@@ -475,8 +492,15 @@ const SellerDashboard = () => {
               </section>
             ) : (
               <section className="rounded-2xl bg-primary/60 p-5 mt-3">
-                <div className="text-xs font-medium text-charcoal/70 uppercase tracking-wide">
-                  Available to withdraw
+                <div className="flex items-center gap-1.5">
+                  <div className="text-xs font-medium text-charcoal/70 uppercase tracking-wide">
+                    Available to withdraw
+                  </div>
+                  <BalanceInfo
+                    tone="primary"
+                    title="Available to withdraw"
+                    body="Ready to pay out. Standard payout lands in your bank in about 24 hours. Instant Payout arrives in around 30 minutes for a 1.5% fee."
+                  />
                 </div>
                 <div className="text-[34px] font-bold text-charcoal leading-tight mt-1">
                   {fmtMoney(availableToWithdraw, currency)}
