@@ -11,6 +11,7 @@ export type ApplePayDiagnosis = {
     | 'stripe-check-failed'
     | 'entitlement-missing'
     | 'merchant-missing'
+    | 'certificate-missing'
     | 'amount-mismatch'
     | 'no-cards'
     | 'canceled'
@@ -20,11 +21,16 @@ export type ApplePayDiagnosis = {
 };
 
 /**
- * Categorises an Apple Pay error. The iOS system alert
- * "Apple Pay Is Not Available in 'Flea' — Check the settings for this app…"
- * is emitted by PassKit when the signed build is missing the
- * `com.apple.developer.in-app-payments` entitlement or the merchant
- * identifier is not included in the entitlement / provisioning profile.
+ * Categorises an Apple Pay error.
+ *
+ * The iOS system alert "Apple Pay Is Not Available in 'Flea'" is usually
+ * emitted by PassKit when either:
+ *   - the signed build is missing the `com.apple.developer.in-app-payments`
+ *     entitlement, or
+ *   - Stripe does not have an active Apple Pay Payment Processing certificate
+ *     for the merchant ID (`merchant.com.finditonflea.app`).
+ *
+ * We separate those two cases so the user sees a useful next step.
  */
 export const categoriseApplePayError = (err: unknown): ApplePayDiagnosis => {
   const raw =
@@ -36,11 +42,30 @@ export const categoriseApplePayError = (err: unknown): ApplePayDiagnosis => {
   if (msg.includes('cancel')) {
     return { ok: false, code: 'canceled', userMessage: 'Payment was cancelled.', raw };
   }
+
+  // Certificate / Stripe processing errors appear when the merchant ID is
+  // entitled in the app but Stripe has no valid certificate for it.
+  if (
+    msg.includes('certificate') ||
+    msg.includes('payment processing') ||
+    msg.includes('csr') ||
+    msg.includes('not registered') ||
+    msg.includes('merchant identifier') ||
+    msg.includes('could not encrypt')
+  ) {
+    return {
+      ok: false,
+      code: 'certificate-missing',
+      userMessage:
+        'Apple Pay certificate is missing or not active. Please complete the Apple Pay certificate setup in Stripe Dashboard and Apple Developer, or use Add new card.',
+      raw,
+    };
+  }
+
   if (
     msg.includes('not available') ||
     msg.includes('not designed') ||
-    msg.includes('entitlement') ||
-    msg.includes('merchant')
+    msg.includes('entitlement')
   ) {
     return {
       ok: false,
@@ -50,6 +75,7 @@ export const categoriseApplePayError = (err: unknown): ApplePayDiagnosis => {
       raw,
     };
   }
+
   if (msg.includes('card') || msg.includes('wallet')) {
     return {
       ok: false,
