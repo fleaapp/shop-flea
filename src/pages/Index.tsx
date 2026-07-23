@@ -32,7 +32,7 @@ const toDisplayListing = (dbListing: DbListing): Listing => ({
   price: dbListing.price,
   shippingPrice: dbListing.shipping_price || 0,
   description: dbListing.description || '',
-  image: dbListing.images?.[0] || '',
+  image: (dbListing as any).thumbnails?.[0] || dbListing.images?.[0] || '',
   images: dbListing.images,
   category: dbListing.category,
   size: dbListing.size,
