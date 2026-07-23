@@ -573,6 +573,7 @@ const Checkout = () => {
 
   const payButtonLabel = () => {
     if (isSubmitting) return 'Processing...';
+    if (isNative()) return `Pay $${total.toFixed(2)}`;
     if (!selectedMethod) return 'Confirm order';
     switch (selectedMethod.kind) {
       case 'wallet':
@@ -581,6 +582,7 @@ const Checkout = () => {
       case 'new_card': return 'Continue to card details';
     }
   };
+
 
   return <div className="native-safe-top min-h-screen bg-background">
       <Drawer open={open} onOpenChange={isOpen => !isOpen && handleClose()} shouldScaleBackground={false}>
