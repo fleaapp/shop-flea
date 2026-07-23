@@ -383,7 +383,7 @@ const Checkout = () => {
           applePayTotalAud,
           checkoutTotalAud,
         });
-        toast.error(diag.userMessage);
+        showCheckoutError('amount-mismatch', diag.userMessage, { code: 'amount_mismatch', ref: pi.paymentIntentId });
         return true;
       }
       try {
