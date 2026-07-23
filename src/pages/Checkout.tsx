@@ -403,7 +403,8 @@ const Checkout = () => {
     } catch (err: any) {
       console.error('[PaymentSheet] create failed', err);
       const message = logPaymentSheetFailure('payment-sheet-create', err);
-      showCheckoutError('paymentSheet-create', err?.message || 'Unable to start payment. Please try again.', { code: 'paymentsheet_create_failed', ref: pi.paymentIntentId });
+      showCheckoutError('paymentSheet-create', message || 'Unable to start payment. Please try again.', { code: 'paymentsheet_create_failed', ref: pi.paymentIntentId });
+      await Promise.allSettled(paymentSheetListeners.map((listener) => listener.remove()));
       return;
     }
 
