@@ -12,6 +12,21 @@ const EXTERNAL_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "
 const CLOUD_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const CLOUD_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
+const ADMIN_LAST_SEEN_TABS = new Set([
+  "support",
+  "reports",
+  "bans",
+  "suggestions",
+  "waitlist",
+  "contact",
+  "transactions",
+  "refunds",
+  "listings",
+  "users",
+  "brands",
+  "error_logs",
+]);
+
 type AdminAction =
   | "listThreads"
   | "getThreadMessages"
@@ -35,6 +50,7 @@ type AdminAction =
   | "listWaitlist"
   | "listContactSubmissions"
   | "getBadges"
+  | "markAdminTabSeen"
   | "listBrands"
   | "updateBrand"
   | "deleteBrand"
@@ -1571,19 +1587,58 @@ async function countCloudRows(table: string, params: Record<string, string> = {}
   return Number.isFinite(total) ? total : 0;
 }
 
-async function getBadges(payload: any = {}) {
+async function getAdminLastSeen(userId: string): Promise<Record<string, string>> {
+  const rows = await safeSelect("admin_last_seen", {
+    select: "tab,seen_at",
+    user_id: `eq.${userId}`,
+    limit: 100,
+  }).catch(() => []);
+
+  const out: Record<string, string> = {};
+  for (const row of rows as Array<{ tab?: string; seen_at?: string }>) {
+    if (row.tab && row.seen_at) out[row.tab] = row.seen_at;
+  }
+  return out;
+}
+
+async function markAdminTabSeen(userId: string, payload: any = {}) {
+  const tab = typeof payload?.tab === "string" ? payload.tab : "";
+  if (!ADMIN_LAST_SEEN_TABS.has(tab)) throw new Error("Invalid admin badge section.");
+
+  const candidateSeenAt = typeof payload?.seenAt === "string" ? payload.seenAt : new Date().toISOString();
+  const seenAt = Number.isFinite(Date.parse(candidateSeenAt)) ? candidateSeenAt : new Date().toISOString();
+
+  await rest(query("admin_last_seen", { on_conflict: "user_id,tab", select: "user_id" }), {
+    method: "POST",
+    prefer: "resolution=merge-duplicates,return=minimal",
+    body: { user_id: userId, tab, seen_at: seenAt },
+  });
+
+  return { ok: true, tab, seenAt };
+}
+
+async function getBadges(userId: string, payload: any = {}) {
+  const savedLastSeen = await getAdminLastSeen(userId);
   const pickSince = (v: unknown, fallbackDays: number) =>
     typeof v === "string" && v
       ? v
       : new Date(Date.now() - fallbackDays * 24 * 60 * 60 * 1000).toISOString();
+  const pickOptionalSince = (payloadValue: unknown, savedTab: string) =>
+    typeof payloadValue === "string" && payloadValue
+      ? payloadValue
+      : savedLastSeen[savedTab] || null;
 
-  const brandsSince = pickSince(payload?.brandsSince, 30);
-  const usersSince = pickSince(payload?.usersSince, 7);
-  const listingsSince: string | null = typeof payload?.listingsSince === "string" && payload.listingsSince ? payload.listingsSince : null;
-  const refundsSince: string | null = typeof payload?.refundsSince === "string" && payload.refundsSince ? payload.refundsSince : null;
-  const transactionsSince: string | null = typeof payload?.transactionsSince === "string" && payload.transactionsSince ? payload.transactionsSince : null;
-  const contactSince: string | null = typeof payload?.contactSince === "string" && payload.contactSince ? payload.contactSince : null;
-  const waitlistSince: string | null = typeof payload?.waitlistSince === "string" && payload.waitlistSince ? payload.waitlistSince : null;
+  const brandsSince = typeof payload?.brandsSince === "string" && payload.brandsSince ? payload.brandsSince : (savedLastSeen.brands || pickSince(null, 30));
+  const usersSince = typeof payload?.usersSince === "string" && payload.usersSince ? payload.usersSince : (savedLastSeen.users || pickSince(null, 7));
+  const listingsSince = pickOptionalSince(payload?.listingsSince, "listings");
+  const refundsSince = pickOptionalSince(payload?.refundsSince, "refunds");
+  const transactionsSince = pickOptionalSince(payload?.transactionsSince, "transactions");
+  const contactSince = pickOptionalSince(payload?.contactSince, "contact");
+  const waitlistSince = pickOptionalSince(payload?.waitlistSince, "waitlist");
+  const supportSince = pickOptionalSince(payload?.supportSince, "support");
+  const reportsSince = pickOptionalSince(payload?.reportsSince, "reports");
+  const bansSince = pickOptionalSince(payload?.bansSince, "bans");
+  const suggestionsSince = pickOptionalSince(payload?.suggestionsSince, "suggestions");
 
   const listingsFilter: Record<string, string> = { status: "eq.active" };
   if (listingsSince) listingsFilter.created_at = `gte.${listingsSince}`;
@@ -1595,12 +1650,20 @@ async function getBadges(payload: any = {}) {
 
   const contactFilter: Record<string, string> = contactSince ? { created_at: `gte.${contactSince}` } : {};
   const waitlistFilter: Record<string, string> = waitlistSince ? { created_at: `gte.${waitlistSince}` } : {};
+  const supportFilter: Record<string, string> = { sender_type: "eq.user", read: "eq.false" };
+  if (supportSince) supportFilter.created_at = `gte.${supportSince}`;
+  const reportsFilter: Record<string, string> = { status: "eq.pending" };
+  if (reportsSince) reportsFilter.created_at = `gte.${reportsSince}`;
+  const bansFilter: Record<string, string> = { status: "eq.active" };
+  if (bansSince) bansFilter.created_at = `gte.${bansSince}`;
+  const suggestionsFilter: Record<string, string> = { read: "eq.false" };
+  if (suggestionsSince) suggestionsFilter.created_at = `gte.${suggestionsSince}`;
 
   const [supportUnread, reportsPending, bansActive, suggestionsUnread, waitlist, contact, awaitingOrders, refundedOrders, listingsActive, users, brands] = await Promise.all([
-    countRows("chat_messages", { sender_type: "eq.user", read: "eq.false" }),
-    countRows("reports", { status: "eq.pending" }),
-    countRows("banned_users", { status: "eq.active" }).catch(() => 0),
-    countRows("suggestions", { read: "eq.false" }).catch(() => 0),
+    countRows("chat_messages", supportFilter),
+    countRows("reports", reportsFilter),
+    countRows("banned_users", bansFilter).catch(() => 0),
+    countRows("suggestions", suggestionsFilter).catch(() => 0),
     countRows("waitlist", waitlistFilter).catch(() => 0),
     countRows("contact_submissions", contactFilter).catch(() => 0),
     countRows("orders", transactionsFilter),
@@ -1764,7 +1827,9 @@ Deno.serve(async (req) => {
         return response({ submissions: rows });
       }
       case "getBadges":
-        return response(await getBadges(payload));
+        return response(await getBadges(auth.userId, payload));
+      case "markAdminTabSeen":
+        return response(await markAdminTabSeen(auth.userId, payload));
       case "listBrands":
         return response(await listBrands(payload));
       case "updateBrand":

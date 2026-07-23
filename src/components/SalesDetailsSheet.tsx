@@ -30,6 +30,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchSellerShippingSettings, getBundleBreakdownText } from '@/utils/shippingCalculator';
 import { toast } from 'sonner';
 import { Loader2, ChevronRight } from 'lucide-react';
+import { clearOrderChatBadges } from '@/utils/orderChatRead';
 
 interface SalesDetailsSheetProps {
   orders: Order[] | null;
@@ -152,6 +153,21 @@ const SalesDetailsSheet = ({
     ? 'Refunded'
     : (effectiveStatus === 'awaiting' ? 'Awaiting shipping' : (numbers.length === 1 ? numbers[0] : 'Multiple'));
 
+  const chatThreadId = primaryOrder.order_group_id || primaryOrder.id;
+  const openSaleChat = () => {
+    if (user?.id) {
+      clearOrderChatBadges({
+        queryClient,
+        userId: user.id,
+        threadId: chatThreadId,
+        orderIds: orders.map((order) => order.id),
+        role: 'seller',
+      });
+    }
+    onOpenChange(false);
+    setTimeout(() => navigate(`/order-chat/${chatThreadId}`), 300);
+  };
+
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent>
@@ -177,10 +193,7 @@ const SalesDetailsSheet = ({
               </Button>
               <Button
                 variant="outline"
-                onClick={() => {
-                  onOpenChange(false);
-                  setTimeout(() => navigate(`/order-chat/${primaryOrder.order_group_id || primaryOrder.id}`), 300);
-                }}
+                onClick={openSaleChat}
                 className="relative h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-primary active:border-primary"
               >
                 💬

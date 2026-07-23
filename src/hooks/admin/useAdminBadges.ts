@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { callAdminData } from './useAdminData';
 import { fetchErrorCount24h } from './useAdminErrorLogs';
-import { getAllAdminLastSeen } from '@/lib/adminLastSeen';
+import { getAllAdminLastSeen, loadAdminLastSeenFromBackend } from '@/lib/adminLastSeen';
 
 export type AdminBadges = {
   support: number;
@@ -56,8 +56,13 @@ export function useAdminBadges(options: { enabled?: boolean } = {}) {
     if (!enabled) return;
     const myId = ++reqIdRef.current;
     try {
+      await loadAdminLastSeenFromBackend();
       const lastSeen = getAllAdminLastSeen();
       const payload: Record<string, string> = {};
+      if (lastSeen.support) payload.supportSince = lastSeen.support;
+      if (lastSeen.reports) payload.reportsSince = lastSeen.reports;
+      if (lastSeen.bans) payload.bansSince = lastSeen.bans;
+      if (lastSeen.suggestions) payload.suggestionsSince = lastSeen.suggestions;
       if (lastSeen.users) payload.usersSince = lastSeen.users;
       if (lastSeen.listings) payload.listingsSince = lastSeen.listings;
       if (lastSeen.refunds) payload.refundsSince = lastSeen.refunds;
@@ -100,7 +105,7 @@ export function useAdminBadges(options: { enabled?: boolean } = {}) {
     void runRefresh();
     // Notifications table intentionally excluded — it's a firehose and admin
     // categories are derived from the source tables below.
-    const tables = ['chat_messages', 'reports', 'orders', 'listings', 'contact_submissions', 'waitlist', 'profiles', 'brands'];
+    const tables = ['chat_messages', 'reports', 'banned_users', 'suggestions', 'orders', 'listings', 'contact_submissions', 'waitlist', 'profiles', 'brands'];
     // Unique suffix prevents supabase.channel() from returning an already-subscribed
     // instance on remount, which would throw "cannot add postgres_changes callbacks after subscribe()".
     const uniq = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;

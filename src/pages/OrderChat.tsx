@@ -17,6 +17,7 @@ import { compressImage } from '@/utils/imageCompression';
 import { useOrders } from '@/hooks/useOrders';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { safeNavigateBack } from '@/utils/safeBack';
+import { clearOrderChatBadges, markOrderChatRead } from '@/utils/orderChatRead';
 
 interface OrderMessage {
   id: string;
@@ -182,72 +183,10 @@ const OrderChat = () => {
     if (!user?.id || !orderId) return;
 
     const relatedIds = relatedIdsKey ? relatedIdsKey.split(',') : [orderId];
+    const role = user.id === orderInfo?.buyer_id ? 'buyer' : user.id === orderInfo?.seller_id ? 'seller' : 'unknown';
+    clearOrderChatBadges({ queryClient, userId: user.id, threadId: orderId, orderIds: relatedIds, role });
 
-    // Optimistically zero out badges for this group right away so returning
-    // to the Orders/Sales list shows the cleared state instantly.
-    queryClient.setQueryData<any>(['unread-order-messages', user.id], (prev: any) => {
-      if (!prev) return prev;
-      const perOrder = new Map(prev.perOrder || []);
-      let removed = 0;
-      for (const id of relatedIds) {
-        removed += (perOrder.get(id) as number) || 0;
-        perOrder.delete(id);
-      }
-      return { total: Math.max(0, (prev.total || 0) - removed), perOrder };
-    });
-    queryClient.setQueryData<any>(['nav-badges', user.id], (prev: any) => {
-      if (!prev) return prev;
-      const seller = { ...(prev.seller_unread_per_order || {}) };
-      let sellerRemoved = 0;
-      for (const id of relatedIds) {
-        sellerRemoved += Number(seller[id]) || 0;
-        delete seller[id];
-      }
-      return {
-        ...prev,
-        seller_unread_per_order: seller,
-        unread_seller_msgs: Math.max(0, (prev.unread_seller_msgs || 0) - sellerRemoved),
-        unread_buyer_msgs: user.id === orderInfo?.buyer_id ? 0 : (prev.unread_buyer_msgs || 0),
-      };
-    });
-
-    // Optimistically clear the bell notifications tied to this order group so
-    // the Alerts badge (activity_unread) drops immediately and stays down when
-    // the refetch resolves (server-side clear happens in the PATCH below).
-    const relatedIdSet = new Set(relatedIds);
-    let clearedNotifCount = 0;
-    queryClient.setQueryData<any[]>(['notifications', user.id], (prev) => {
-      if (!Array.isArray(prev)) return prev;
-      let changed = 0;
-      const next = prev.map((n: any) => {
-        if (
-          !n?.is_read &&
-          (n?.type === 'order_message_buyer' || n?.type === 'order_message_seller') &&
-          n?.related_order_id &&
-          relatedIdSet.has(n.related_order_id)
-        ) {
-          changed += 1;
-          return { ...n, is_read: true };
-        }
-        return n;
-      });
-      clearedNotifCount = changed;
-      return changed > 0 ? next : prev;
-    });
-    if (clearedNotifCount > 0) {
-      queryClient.setQueryData<any>(['nav-badges', user.id], (prev: any) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          activity_unread: Math.max(0, (prev.activity_unread || 0) - clearedNotifCount),
-        };
-      });
-    }
-
-    invokeCloudFunction('order-messages', {
-      method: 'PATCH',
-      query: { orderId },
-    }).then(() => {
+    markOrderChatRead(orderId).then(() => {
       queryClient.setQueryData<OrderMessage[]>(['order-messages', orderId], (prev = []) =>
         prev.map((m) => (m.sender_id !== user.id ? { ...m, read: true } : m)),
       );
@@ -260,7 +199,7 @@ const OrderChat = () => {
       queryClient.invalidateQueries({ queryKey: ['nav-badges'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     });
-  }, [user?.id, orderId, relatedIdsKey, orderInfo?.buyer_id, queryClient]);
+  }, [user?.id, orderId, relatedIdsKey, orderInfo?.buyer_id, orderInfo?.seller_id, queryClient]);
 
   // Scroll to bottom
   useEffect(() => {

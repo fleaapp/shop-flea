@@ -31,6 +31,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import SecureCheckoutInfoPopover from '@/components/SecureCheckoutInfoPopover';
 import { fetchSellerShippingSettings, getBundleBreakdownText } from '@/utils/shippingCalculator';
 import { toast } from 'sonner';
+import { clearOrderChatBadges } from '@/utils/orderChatRead';
 
 interface OrderDetailsSheetProps {
   orders: Order[] | null;
@@ -137,6 +138,20 @@ const OrderDetailsSheet = ({
   const chatThreadId = primaryOrder.order_group_id || primaryOrder.id;
   const displayId = primaryOrder.order_number || chatThreadId.slice(0, 8).toUpperCase();
 
+  const openOrderChat = () => {
+    if (user?.id) {
+      clearOrderChatBadges({
+        queryClient,
+        userId: user.id,
+        threadId: chatThreadId,
+        orderIds: orders.map((order) => order.id),
+        role: 'buyer',
+      });
+    }
+    onOpenChange(false);
+    setTimeout(() => navigate(`/order-chat/${chatThreadId}`), 300);
+  };
+
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -163,10 +178,7 @@ const OrderDetailsSheet = ({
               </Button>
               <Button
                 variant="outline"
-                  onClick={() => {
-                    onOpenChange(false);
-                    setTimeout(() => navigate(`/order-chat/${chatThreadId}`), 300);
-                  }}
+                  onClick={openOrderChat}
                   className="relative h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-primary active:border-primary"
                 >
                   💬
@@ -367,8 +379,7 @@ const OrderDetailsSheet = ({
                   <Button
                     onClick={() => {
                       if (refundStatus?.hasPending || refundStatus?.hasAnyRequest) {
-                        onOpenChange(false);
-                        setTimeout(() => navigate(`/order-chat/${chatThreadId}`), 300);
+                        openOrderChat();
                       } else {
                         setRefundDialogOpen(true);
                       }

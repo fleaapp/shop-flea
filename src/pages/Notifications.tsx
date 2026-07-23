@@ -16,6 +16,8 @@ import SalesDetailsSheet from '@/components/SalesDetailsSheet';
 import OrderDetailsSheet from '@/components/OrderDetailsSheet';
 import EnablePushBanner from '@/components/EnablePushBanner';
 import { OrderGroup } from '@/hooks/useOrders';
+import { useQueryClient } from '@tanstack/react-query';
+import { clearOrderChatBadges } from '@/utils/orderChatRead';
 
 
 const ProductThumbnail = ({
@@ -59,6 +61,7 @@ const UnreadIndicator = () => (
 
 const Notifications = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const isUnauthed = !user;
   const { sellerOrderGroups, buyerOrderGroups, markAsShipped, markAsDelivered } = useOrders();
@@ -81,6 +84,25 @@ const Notifications = () => {
       if (byListing) return byListing;
     }
     return null;
+  };
+
+  const openOrderMessageChat = (group: OrderGroup | null, fallbackThreadId: string | null) => {
+    const threadId = group?.order_group_id || group?.orders[0]?.id || fallbackThreadId;
+    if (!threadId) return false;
+    if (user?.id) {
+      const role = group
+        ? user.id === group.buyer_id ? 'buyer' : user.id === group.seller_id ? 'seller' : 'unknown'
+        : 'unknown';
+      clearOrderChatBadges({
+        queryClient,
+        userId: user.id,
+        threadId,
+        orderIds: group?.orders.map((order) => order.id) ?? (fallbackThreadId ? [fallbackThreadId] : []),
+        role,
+      });
+    }
+    navigate(`/order-chat/${threadId}`);
+    return true;
   };
 
   // Mark all unread notifications as read on open — this also clears the
@@ -160,19 +182,15 @@ const Notifications = () => {
 
     // Message notifications → still go to the chat
     if (notification.type === 'order_message_seller' || notification.type === 'order_message_buyer') {
-      const threadId = notification.related_order_id;
-      if (threadId) {
-        navigate(`/order-chat/${threadId}`);
-        return;
-      }
+      const allGroups = [...(sellerOrderGroups || []), ...(buyerOrderGroups || [])];
+      const matchingByOrder = findGroup(notification, allGroups);
+      if (openOrderMessageChat(matchingByOrder, notification.related_order_id)) return;
       if (notification.related_listing_id) {
-        const allGroups = [...(sellerOrderGroups || []), ...(buyerOrderGroups || [])];
         const matchingGroup = allGroups.find((group) =>
           group.orders.some((order) => order.listing_id === notification.related_listing_id)
         );
         if (matchingGroup) {
-          navigate(`/order-chat/${matchingGroup.order_group_id || matchingGroup.id}`);
-          return;
+          if (openOrderMessageChat(matchingGroup, null)) return;
         }
       }
       navigate('/cart');

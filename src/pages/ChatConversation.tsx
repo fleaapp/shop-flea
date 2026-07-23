@@ -43,7 +43,42 @@ const ChatConversation = () => {
   // with sender_id = the thread owner (admin acting inside the same account),
   // which the direct-UPDATE RLS policy blocks.
   useEffect(() => {
-    if (!threadId || !user) return;
+    if (!threadId || !user?.id) return;
+    const previous = queryClient.getQueryData<any>(['unread-support', user.id]);
+    const threadUnread = Array.isArray(previous?.perThread)
+      ? Number(previous.perThread.find((item: any) => item.threadId === threadId)?.count || 0)
+      : 0;
+    queryClient.setQueryData<any>(['unread-support', user.id], (prev: any) => {
+      if (!prev) return prev;
+      const perThread = Array.isArray(prev.perThread)
+        ? prev.perThread.filter((item: any) => item.threadId !== threadId)
+        : [];
+      return { ...prev, total: Math.max(0, Number(prev.total || 0) - threadUnread), perThread };
+    });
+    queryClient.setQueryData<any>(['nav-badges', user.id], (prev: any) => {
+      if (!prev) return prev;
+      return { ...prev, unread_support: Math.max(0, Number(prev.unread_support || 0) - threadUnread) };
+    });
+
+    let clearedNotifications = 0;
+    queryClient.setQueryData<any[]>(['notifications', user.id], (prev) => {
+      if (!Array.isArray(prev)) return prev;
+      const next = prev.map((notification: any) => {
+        if (!notification?.is_read && notification?.type === 'support_message' && notification?.related_thread_id === threadId) {
+          clearedNotifications += 1;
+          return { ...notification, is_read: true };
+        }
+        return notification;
+      });
+      return clearedNotifications > 0 ? next : prev;
+    });
+    if (clearedNotifications > 0) {
+      queryClient.setQueryData<any>(['nav-badges', user.id], (prev: any) => {
+        if (!prev) return prev;
+        return { ...prev, activity_unread: Math.max(0, Number(prev.activity_unread || 0) - clearedNotifications) };
+      });
+    }
+
     const markRead = async () => {
       try {
         await (supabase as any).rpc('mark_support_thread_read', { _thread_id: threadId });
@@ -55,7 +90,7 @@ const ChatConversation = () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     };
     markRead();
-  }, [threadId, user, queryClient, messages.length]);
+  }, [threadId, user?.id, queryClient]);
 
 
   const scrollToBottom = () => {

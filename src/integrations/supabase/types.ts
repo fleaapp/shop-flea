@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_last_seen: {
+        Row: {
+          created_at: string
+          seen_at: string
+          tab: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          seen_at?: string
+          tab: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          seen_at?: string
+          tab?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       banned_users: {
         Row: {
           banned_at: string

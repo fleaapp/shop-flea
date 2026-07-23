@@ -20,6 +20,8 @@ import { fetchSellerShippingSettings, SellerShippingInfo, getBundleBreakdownText
 import { getAvatarUrl } from '@/utils/optimizedImage';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
+import { useQueryClient } from '@tanstack/react-query';
+import { clearOrderChatBadges } from '@/utils/orderChatRead';
 
 
 const getOrderStatusBadge = (status: Order['status']) => {
@@ -49,6 +51,7 @@ const getOrderStatusBadge = (status: Order['status']) => {
 
 const Cart = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const location = useLocation();
   const { user } = useAuth();
   const { isGuest } = useGuestMode();
@@ -81,6 +84,20 @@ const Cart = () => {
 
   const handleOrderClick = (group: OrderGroup) => {
     setSelectedOrderGroup(group);
+  };
+
+  const openOrderChat = (group: OrderGroup) => {
+    const threadId = group.order_group_id || group.orders[0]?.id || group.id;
+    if (user?.id) {
+      clearOrderChatBadges({
+        queryClient,
+        userId: user.id,
+        threadId,
+        orderIds: group.orders.map((order) => order.id),
+        role: 'buyer',
+      });
+    }
+    navigate(`/order-chat/${threadId}`);
   };
 
   const handleMarkDelivered = () => {
@@ -247,7 +264,7 @@ const Cart = () => {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/order-chat/${group.order_group_id || primaryOrder.id}`);
+            openOrderChat(group);
           }}
           className="relative flex h-10 w-10 items-center justify-center flex-shrink-0"
         >
