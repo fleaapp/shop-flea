@@ -1,15 +1,43 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Loader2, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, Loader2, AlertTriangle, Info } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { useOrders } from '@/hooks/useOrders';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { SettleBalanceSheet } from '@/components/SettleBalanceSheet';
 import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
 import EnablePushBanner from '@/components/EnablePushBanner';
+
+const BalanceInfo = ({ title, body, tone = 'muted' }: { title: string; body: string; tone?: 'muted' | 'amber' | 'primary' }) => {
+  const iconClass =
+    tone === 'amber'
+      ? 'text-amber-800/70 hover:bg-amber-100'
+      : tone === 'primary'
+        ? 'text-charcoal/70 hover:bg-black/5'
+        : 'text-muted-foreground hover:bg-muted';
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={`About ${title}`}
+          onClick={(e) => e.stopPropagation()}
+          className={`inline-flex items-center justify-center h-5 w-5 rounded-full transition-colors ${iconClass}`}
+        >
+          <Info className="h-3.5 w-3.5" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-4 rounded-2xl z-[100]" side="top" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <p className="text-sm font-semibold mb-2">{title}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">{body}</p>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 import {
   AlertDialog,
