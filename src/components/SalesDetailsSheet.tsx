@@ -253,23 +253,26 @@ const SalesDetailsSheet = ({
                       </div>
                     );
                   })}
-                  <div className="pt-1 border-t border-border pt-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-muted-foreground">
-                        Shipping{orders.length >= 2 ? ' (combined)' : ''}
-                      </div>
-                      <p className="text-sm text-foreground">+${shippingTotal.toFixed(2)}</p>
-                    </div>
-                    {bundleText && (
-                      <div className="text-xs text-accent-foreground text-left">
-                        <div><span className="mr-1">✈️</span><span className="font-bold">Bundle shipping:</span></div>
-                        <div>{bundleText.detail}</div>
-                      </div>
-                    )}
-                  </div>
                 </div>
 
-                {/* No selling fees */}
+                <div className="border-t border-border" />
+
+                <div className="px-4 py-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      Shipping{orders.length >= 2 ? ' (combined)' : ''}
+                    </div>
+                    <p className="text-sm text-foreground">+${shippingTotal.toFixed(2)}</p>
+                  </div>
+                  {bundleText && (
+                    <div className="text-xs text-accent-foreground text-left">
+                      <div><span className="mr-1">✈️</span><span className="font-bold">Bundle shipping:</span></div>
+                      <div>{bundleText.detail}</div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t border-border" />
 
                 {/* Total */}
                 <div className="flex items-center justify-center bg-charcoal text-white py-3 px-4">
