@@ -525,13 +525,15 @@ const SellerDashboard = () => {
               </Button>
 
               <p className="text-[11px] text-muted-foreground mt-4 text-center leading-relaxed px-1">
-                <span className="font-semibold text-foreground">Need the funds faster?</span> Use <span className="font-semibold text-foreground">Instant Payout</span> (around 30 minutes) for a 1.5% fee. Available after the security hold clears.
+                <span className="font-semibold text-foreground">Need the funds faster?</span>
+                <br />
+                Use <span className="font-semibold text-foreground">Instant Payout</span> (≈30 minutes) for a 1.5% fee. Available after the security hold clears.
               </p>
               <Button
                 onClick={() => setConfirm('instant')}
                 disabled={!canInstant || payoutLoading !== null}
                 variant="outline"
-                className="mt-2 h-12 rounded-xl border-2 border-charcoal bg-transparent text-charcoal hover:bg-charcoal/5 font-semibold disabled:opacity-50"
+                className="mt-5 h-12 rounded-xl border-2 border-charcoal bg-transparent text-charcoal hover:bg-charcoal/5 font-semibold disabled:opacity-50"
               >
                 {payoutLoading === 'instant' ? (
                   <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Sending...</span>
