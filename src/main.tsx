@@ -1,5 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { SplashScreen } from '@capacitor/splash-screen';
+import { Keyboard } from '@capacitor/keyboard';
+import { Capacitor } from '@capacitor/core';
 import App from "./App.tsx";
 import "./index.css";
 import { restoreRouteAppChrome } from "./lib/appChrome.ts";
@@ -11,6 +13,14 @@ restoreRouteAppChrome();
 installIosGoogleSafariGuard();
 installStaleChunkGuard();
 installGlobalErrorHandlers();
+
+// Native keyboard: disable WebKit's automatic scroll-input-into-view so
+// tapping a text field never shifts the layout. The WebView already resizes
+// to sit above the keyboard (Keyboard.resize: Native in capacitor.config.ts),
+// so fixed footers + dvh heights handle the rest without extra scrolling.
+if (Capacitor.isNativePlatform()) {
+  Keyboard.setScroll({ isDisabled: true }).catch(() => undefined);
+}
 
 
 // Detect Android and add class to html for platform-specific CSS
