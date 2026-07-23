@@ -33,7 +33,7 @@ import mastercardLogo from '@/assets/cards/mastercard.svg';
 import amexLogo from '@/assets/cards/amex.svg';
 import applePayLogo from '@/assets/cards/apple-pay.svg';
 import { mapCardDeclineMessage, logCardDecline } from '@/lib/cardDeclineHandler';
-import { logApplePayDiagnostic, runApplePayPreflight } from '@/lib/applePayDiagnostics';
+import { categoriseApplePayError, logApplePayDiagnostic, runApplePayPreflight } from '@/lib/applePayDiagnostics';
 
 // Apple App Review demo account — bypasses the seller-Stripe-connected check
 // so the reviewer can complete a purchase against demo listings.
@@ -396,23 +396,15 @@ const Checkout = () => {
         nativeFailureMessage = typeof error === 'string'
           ? error
           : String(error?.error || error?.message || JSON.stringify(error || {}));
-        const diag = {
-          ...runApplePayPreflight,
-        };
+        const diag = categoriseApplePayError(nativeFailureMessage);
         console.error('[ApplePay] native failed event', { nativeFailureMessage, merchantId: APPLE_PAY_MERCHANT_ID });
-        void logApplePayDiagnostic('native failed event', {
-          ok: false,
-          code: nativeFailureMessage.toLowerCase().includes('cancel') ? 'canceled' : 'unknown',
-          userMessage: nativeFailureMessage || 'Apple Pay could not complete. Please try Add new card.',
-          raw: nativeFailureMessage,
-        }, {
+        void logApplePayDiagnostic('native failed event', diag, {
           merchantId: APPLE_PAY_MERCHANT_ID,
           clientStripeAccountSuffix: pi.clientStripeAccountId?.slice(-4) ?? null,
           publishableKeyMode,
           paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
           sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
         });
-        void diag;
       });
 
       try {
@@ -431,14 +423,10 @@ const Checkout = () => {
           allowedCountriesErrorDescription: 'Flea is currently available in Australia only.',
         });
       } catch (err: any) {
-        const message = err?.message || String(err || 'Apple Pay could not start. Please try Add new card.');
+        const diag = categoriseApplePayError(err);
+        const message = diag.userMessage;
         console.error('[ApplePay] createApplePay failed', err);
-        void logApplePayDiagnostic('create failed', {
-          ok: false,
-          code: message.toLowerCase().includes('merchant') || message.toLowerCase().includes('entitlement') ? 'entitlement-missing' : 'unknown',
-          userMessage: message,
-          raw: message,
-        }, {
+        void logApplePayDiagnostic('create failed', diag, {
           merchantId: APPLE_PAY_MERCHANT_ID,
           clientStripeAccountSuffix: pi.clientStripeAccountId?.slice(-4) ?? null,
           publishableKeyMode,
@@ -473,14 +461,10 @@ const Checkout = () => {
           showCheckoutError('apple-pay-present', message, { code: String(paymentResult), ref: pi.paymentIntentId });
         }
       } catch (err: any) {
-        const message = err?.message || String(err || 'Payment did not complete. Please try again.');
+        const diag = categoriseApplePayError(err);
+        const message = diag.userMessage;
         console.error('[ApplePay] presentApplePay failed', err);
-        void logApplePayDiagnostic('present threw', {
-          ok: false,
-          code: message.toLowerCase().includes('merchant') || message.toLowerCase().includes('entitlement') ? 'entitlement-missing' : 'unknown',
-          userMessage: message,
-          raw: message,
-        }, {
+        void logApplePayDiagnostic('present threw', diag, {
           merchantId: APPLE_PAY_MERCHANT_ID,
           publishableKeyMode,
           paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
