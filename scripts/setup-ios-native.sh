@@ -3,7 +3,7 @@
 # Run this AFTER `npx cap sync ios`. Do not delete ios/ and do not run `npx cap add ios`
 # unless you intentionally want to rebuild the Xcode project from scratch.
 # Applies Info.plist keys, entitlements (Push, Sign in with Apple, Associated Domains),
-# Apple Pay target capabilities, and APNs callback forwarding. It does not touch
+# Apple Pay merchant entitlement, and APNs callback forwarding. It does not touch
 # icons, splash assets, DerivedData, or Swift Package Manager caches.
 
 set -u
