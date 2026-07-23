@@ -19,7 +19,7 @@ type NotificationInsert = {
 };
 
 const EXTERNAL_PUBLIC_URL = Deno.env.get("SUPABASE_URL") ?? "https://teaicrimlqdayqpmxasc.supabase.co";
-const EXTERNAL_PUBLIC_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const EXTERNAL_PUBLIC_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 const EXTERNAL_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 function getExternalClient(authHeader?: string | null) {
