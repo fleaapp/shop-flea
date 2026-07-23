@@ -237,14 +237,25 @@ const Checkout = () => {
       couponCode: coupon?.code ?? null,
       saveCard,
     });
-    if (error) throw error;
+    if (error) {
+      const code = (error as any).code as string | undefined;
+      const status = (error as any).status as number | undefined;
+      showCheckoutError('create-payment-intent', error.message, {
+        code: code || (status ? `http_${status}` : undefined),
+      });
+      throw error;
+    }
     if (data?.demo) {
       // Reviewer bypass — orders inserted server-side; short-circuit to success.
       localStorage.setItem('checkout_reference', data.checkoutReference);
       window.location.href = `/checkout/success?demo=1&order_group=${data.orderGroupId}`;
       return null;
     }
-    if (!data?.clientSecret || !data?.paymentIntentId) throw new Error('Payment initialization failed');
+    if (!data?.clientSecret || !data?.paymentIntentId) {
+      const msg = 'Payment initialization failed. Please try again.';
+      showCheckoutError('create-payment-intent', msg, { code: 'no_client_secret' });
+      throw new Error(msg);
+    }
     localStorage.setItem('checkout_reference', data.paymentIntentId);
     if (coupon?.code) {
       localStorage.setItem('checkout_coupon_code', coupon.code);
@@ -263,7 +274,8 @@ const Checkout = () => {
       customerId?: string;
       merchantDisplayName?: string;
     };
-  }, [validItems, totalShipping, shippingBySeller, total, coupon]);
+  }, [validItems, totalShipping, shippingBySeller, total, coupon, showCheckoutError]);
+
 
 
 
