@@ -372,6 +372,34 @@ export function useOrders() {
         p_tracking_number: trackingNumber,
       });
       if (error) throw error;
+
+      // Push the buyer(s). DB trigger notify_on_order_status_change already
+      // inserted the notification row synchronously, so send-push-notification
+      // will find matching proof.
+      try {
+        let q = supabase
+          .from('orders')
+          .select('id, buyer_id, listing_id')
+          .eq('status', 'shipped');
+        if (orderId) q = q.eq('id', orderId);
+        if (orderGroupId) q = q.eq('order_group_id', orderGroupId);
+        const { data: rows } = await q;
+        const seen = new Set<string>();
+        for (const row of rows || []) {
+          if (seen.has(row.buyer_id)) continue;
+          seen.add(row.buyer_id);
+          await sendPushNotification(row.buyer_id, {
+            type: 'order_shipped',
+            title: 'Order Shipped',
+            message: 'Your order is on the way. Tap for details.',
+            related_listing_id: row.listing_id ?? undefined,
+            related_order_id: row.id,
+            related_user_id: user.id,
+          });
+        }
+      } catch (err) {
+        console.warn('Shipped push notify failed:', err);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
