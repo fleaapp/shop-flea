@@ -527,7 +527,9 @@ const SellerDashboard = () => {
               <p className="text-[11px] text-muted-foreground mt-4 text-center leading-relaxed px-1">
                 <span className="font-semibold text-foreground">Need the funds faster?</span>
                 <br />
-                Use <span className="font-semibold text-foreground">Instant Payout</span> (≈30 minutes) for a 1.5% fee. Available after the security hold clears.
+                Use <span className="font-semibold text-foreground">Instant Payout</span> (≈30 minutes) for a 1.5% fee.
+                <br />
+                Available after the security hold clears.
               </p>
               <Button
                 onClick={() => setConfirm('instant')}
