@@ -225,6 +225,17 @@ const Notifications = () => {
     setSelectedGroup(null);
   };
 
+  const handleMarkDelivered = () => {
+    if (!selectedBuyerGroup) return;
+    if (selectedBuyerGroup.order_group_id) {
+      markAsDelivered.mutate({ orderGroupId: selectedBuyerGroup.order_group_id });
+    } else {
+      markAsDelivered.mutate(selectedBuyerGroup.orders[0].id);
+    }
+    setOrderSheetOpen(false);
+    setSelectedBuyerGroup(null);
+  };
+
   const formatTime = (dateString: string) => {
     try {
       return formatDistanceToNow(new Date(dateString), { addSuffix: true });
