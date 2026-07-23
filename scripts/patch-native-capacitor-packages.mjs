@@ -159,11 +159,15 @@ function patchPushNotificationsPlugin() {
 }
 
 try {
-  // Stripe plugin patches removed — reverting to vendored @capacitor-community/stripe
-  // and its default Stripe iOS SDK resolution. The forced STPAPIClient.shared.stripeAccount
-  // reset and the exact SDK pin were introduced 2026-07-22 and coincided with native
-  // Apple Pay failing ("Apple Pay Is Not Available in Flea"). Keeping only the
-  // push-notifications APNs bridge patch, which is unrelated to payments and proven required.
+  // Re-enable Stripe native patches that keep Apple Pay stable:
+  // 1. Pin the iOS SDK so `npx cap sync ios` cannot silently upgrade Stripe
+  //    and change PassKit behaviour under us.
+  // 2. Reset STPAPIClient.shared.stripeAccount when no connected account is
+  //    passed, so Seller Dashboard / Settle Balance don't leak a stale
+  //    Stripe-Account header into platform-level Apple Pay confirmation.
+  // 3. Keep the push-notifications APNs bridge patch (unrelated, proven required).
+  patchStripePackageSwift();
+  patchStripePlugin();
   patchPushNotificationsPlugin();
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
