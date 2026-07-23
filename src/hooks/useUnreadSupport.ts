@@ -16,7 +16,7 @@ export const useUnreadSupport = () => {
       if (!user?.id) return { total: 0, perThread: [] as ThreadUnread[] };
 
       // Get all user's threads
-      const { data: threads, error: threadsError } = await (supabase as any)
+      const { data: threads } = await (supabase as any)
         .from('chat_threads')
         .select('id')
         .eq('user_id', user.id);
@@ -47,7 +47,9 @@ export const useUnreadSupport = () => {
       return { total: messages.length, perThread };
     },
     enabled: !!user?.id,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
     refetchInterval: 30000,
   });
 
