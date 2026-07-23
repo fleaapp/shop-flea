@@ -368,26 +368,54 @@ const SellerDashboard = () => {
                 <div className="text-[34px] font-bold text-charcoal leading-tight mt-1">
                   {fmtMoney(availableToWithdraw, currency)}
                 </div>
-                {unshippedCents > 0 && (
-                  <div className="mt-2 text-[12px] text-charcoal/70 leading-relaxed">
-                    {fmtMoney(unshippedCents, currency)} is held from sales awaiting shipment. Ship those orders with tracking to release these funds.
-                  </div>
-                )}
               </section>
             )}
 
-            {/* Pending row — sits directly under Available */}
-            <section className="rounded-2xl bg-card border border-border mt-3 p-4 flex items-center justify-between">
-              <div>
-                <div className="text-[13px] text-muted-foreground">Pending</div>
-                <div className="text-[11px] text-muted-foreground/80 mt-0.5">
-                  Clearing from recent sales.
+            {/* Held for unshipped orders */}
+            {unshippedCents > 0 && (
+              <section className="rounded-2xl bg-card border border-border mt-3 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-[13px] font-medium text-foreground">Held for unshipped orders</div>
+                  <div className="text-base font-semibold text-foreground">
+                    {fmtMoney(unshippedCents, currency)}
+                  </div>
                 </div>
-              </div>
-              <div className="text-base font-semibold text-foreground">
-                {fmtMoney(data?.pending ?? 0, currency)}
-              </div>
-            </section>
+                <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                  Ship orders with tracking to release these funds.
+                </div>
+              </section>
+            )}
+
+            {/* First payout hold — only until first payout clears */}
+            {(() => {
+              const hasPaidPayout = (data?.payouts ?? []).some((p) => p.status === 'paid');
+              const pendingCents = data?.pending ?? 0;
+              if (hasPaidPayout || pendingCents <= 0) return null;
+              const pendingActivity = (data?.activity ?? []).filter(
+                (a) => a.status === 'pending' && a.available_on
+              );
+              const earliest = pendingActivity.length
+                ? Math.min(...pendingActivity.map((a) => a.available_on as number))
+                : 0;
+              return (
+                <section className="rounded-2xl bg-amber-50 border border-amber-200 mt-3 p-4">
+                  <div className="flex items-center gap-2 text-[11px] font-semibold text-amber-800 uppercase tracking-wide">
+                    🕒 First payout hold
+                  </div>
+                  <p className="text-[12px] text-charcoal/80 mt-1.5 leading-relaxed">
+                    Your first sale is being verified by our payment processor. This is a one-off security check on new seller accounts.
+                  </p>
+                  {earliest > 0 && (
+                    <div className="mt-2 text-[13px] font-semibold text-charcoal">
+                      Ready {fmtDate(earliest)}
+                    </div>
+                  )}
+                  <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
+                    After the hold clears, future sales usually become available within about 24 hours.
+                  </p>
+                </section>
+              );
+            })()}
 
             {/* Payout actions */}
             <div className="flex flex-col gap-2 mt-3">
@@ -421,10 +449,13 @@ const SellerDashboard = () => {
                     You must add valid tracking for your funds to become available.
                   </p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Due to security checks and verification, your <span className="font-medium text-foreground">first payout may take up to 7 days</span>.
+                    Your <span className="font-medium text-foreground">first payout may take up to 7 days</span> while our payment processor completes a one-off security check.
                   </p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    After that, payouts usually arrive in <span className="font-medium text-foreground">1–2 business days</span>, or via <span className="font-medium text-foreground">Instant Payout (≈30 mins)</span> for a 1.5% fee.
+                    After that, funds usually become available <span className="font-medium text-foreground">around 24 hours</span> after the initial clearing hold, then arrive in your bank in <span className="font-medium text-foreground">1–2 business days</span>.
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Need it faster? Use <span className="font-medium text-foreground">Instant Payout (≈30 mins)</span> for a <span className="font-medium text-foreground">1.5% fee</span>.
                   </p>
                 </div>
               )}
