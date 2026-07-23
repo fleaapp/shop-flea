@@ -1,48 +1,50 @@
-## Fix
+## Seller Dashboard — balance & payout UI refinements
 
-`src/pages/SellerDashboard.tsx` — change the allocation order so the first sale's true amount is shown before unshipped subtraction eats into it.
+Scope: `src/pages/SellerDashboard.tsx` only. UI/copy on top of the existing four-bucket allocation (Held for unshipped → Clearing → First payout hold → Available). No backend or fee logic changes.
 
-### New allocation
+### 1. Clearing row
+
+- Only render the "Clearing from recent sales" row when there are shipped orders still clearing (`clearing > 0` after First payout hold + Held for unshipped are subtracted from Stripe pending). Otherwise hide the row entirely.
+- Add an info button (same `Info` + `Popover` pattern as `ConditionInfoPopover` / `SecureCheckoutInfoPopover`) next to the label.
+  - Title: `Clearing from recent sales`
+  - Body: `Funds from orders you've already shipped that are still clearing with the payment provider. Card payments settle 1 to 2 business days after the buyer pays, then move to Available automatically.`
+- Keep the existing per-row release date line ("Ready [date]") sourced from Stripe `available_on`.
+
+### 2. Info buttons on the other balance rows
+
+Same popover style for consistency.
+
+- **Held for unshipped orders** — `Funds from sales you haven't shipped yet. Add tracking to release these funds into Clearing (or straight to Available if the payment has already cleared).`
+- **First payout hold** — `A one-off security check applied to your very first sale. Usually clears within 7 days. After this, future sales only go through the standard 1 to 2 day clearing window.`
+- **Available to withdraw** — `Ready to pay out. Standard payout lands in your bank in about 24 hours. Instant Payout arrives in around 30 minutes for a 1.5% fee.`
+
+### 3. Payout actions — new layout
+
+Replace the current stacked payout block with:
 
 ```text
-// 1. Identify the actual first sale (earliest by created timestamp) among pending payments
-pendingPayments = activity.filter(a => a.status === 'pending' && a.type === 'payment')
-                          .sort((a, b) => a.created - b.created)   // ascending by creation date
-firstSale       = !hasPaidPayout ? pendingPayments[0] : null
-firstHoldCents  = firstSale ? max(firstSale.amount, 0) : 0
+[   $X.XX Available   ]
 
-// 2. Assume the first sale is also the first unshipped order (chronologically it almost always is);
-//    so subtract it from unshipped before splitting the rest across the Stripe buckets
-unshippedRemaining   = max(unshippedCents - firstHoldCents, 0)
-unshippedInAvailable = min(unshippedRemaining, available)
-unshippedInPending   = max(unshippedRemaining - available, 0)
+[      Pay out to bank      ]     ← full-width primary (lime), unchanged style
+Standard payout usually 24 hours.
 
-// 3. Remaining pending goes to Clearing
-clearing             = max(pending - firstHoldCents - unshippedInPending, 0)
+Need the funds faster? Use Instant Payout (around 30 minutes) for a 1.5% fee. Available after the security hold clears.
 
-// 4. Withdrawable unchanged
-availableToWithdraw  = max(available - unshippedInAvailable, 0)
+[      Instant Payout         ]   ← full-width secondary
+[      1.5% fee               ]   ← second line inside the same button, smaller/muted
 ```
 
-### Ready-date for Clearing
+- Both buttons full width, stacked. Pay out on top, Instant Payout below.
+- Helper copy sits BETWEEN the two buttons: "Standard payout usually 24 hours." immediately under Pay out; then the "Need the funds faster?" line directly ABOVE Instant Payout.
+- Instant Payout button shows two lines internally: "Instant Payout" then "1.5% fee" (smaller, muted).
+- Instant Payout stays greyed out / disabled with the current rule (First payout hold cleared AND `instantPayoutEligible`). Helper copy explains why it's locked.
+- Standard Pay out button disabled when `availableToWithdraw === 0`, unchanged behaviour.
 
-Compute `earliestClearing` from the remaining pending activity (drop the first-sale item), unchanged in spirit — just sourced from the corrected list.
+### 4. Remove "Please note" box
 
-### Numbers on Sarah's account
-
-- First payout hold: $1.35 (was $1.00)
-- Held for unshipped: $1.85 (was $3.20)
-- Clearing from recent sales: $1.00 (was $0.00)
-- Available: $0.00
-
-Sum = $4.20 = Stripe pending, still reconciles.
-
-### Edge cases
-
-- If the first sale is fully shipped and hasn't cleared yet, subtracting it from unshipped correctly leaves unshipped at its full value; clearing absorbs the remainder.
-- If `hasPaidPayout` is true, First payout hold hides and everything collapses to Held / Clearing / Available.
-- If there are no pending payments at all, first-hold is $0 and behaviour matches today.
+Delete the "Please note" card entirely — its content is now covered by the three info popovers and the two helper lines around the payout buttons.
 
 ### Out of scope
 
-No backend changes, no copy changes, no reordering of rows.
+- No changes to allocation math, edge functions, Stripe calls, or fee percentages.
+- No changes to payout history, activity list, or other dashboard sections.
