@@ -511,7 +511,7 @@ const SellerDashboard = () => {
 
 
             {/* Payout actions */}
-            <div className="flex flex-col gap-2 mt-3">
+            <div className="flex flex-col mt-3">
               <Button
                 onClick={() => setConfirm('standard')}
                 disabled={!canPayout || payoutLoading !== null}
@@ -523,36 +523,30 @@ const SellerDashboard = () => {
                   'Pay out to bank'
                 )}
               </Button>
+              <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed px-1">
+                Standard payout usually 24 hours.
+              </p>
+
+              <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed px-1">
+                Need the funds faster? Use Instant Payout (around 30 minutes) for a 1.5% fee. Available after the security hold clears.
+              </p>
               <Button
                 onClick={() => setConfirm('instant')}
                 disabled={!canInstant || payoutLoading !== null}
                 variant="outline"
-                className="h-11 rounded-xl border-2 border-charcoal bg-transparent text-charcoal hover:bg-charcoal/5 font-semibold disabled:opacity-50"
+                className="mt-2 h-auto py-2.5 rounded-xl border-2 border-charcoal bg-transparent text-charcoal hover:bg-charcoal/5 font-semibold disabled:opacity-50 flex-col gap-0.5"
               >
                 {payoutLoading === 'instant' ? (
                   <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Sending...</span>
                 ) : (
-                  <>Instant payout <span className="ml-1 text-[13px] font-normal">(1.5% fee)</span></>
+                  <>
+                    <span className="text-[15px] leading-tight">Instant Payout</span>
+                    <span className="text-[12px] font-normal leading-tight opacity-80">1.5% fee</span>
+                  </>
                 )}
               </Button>
-              {!canInstant && (
-                <div className="mt-3 bg-muted/60 rounded-xl px-4 py-3 text-left w-full space-y-2">
-                  <p className="text-xs font-semibold text-foreground">⏱️ Please note</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    You must add valid tracking for your funds to become available.
-                  </p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Your first payout goes through a one-off security check and usually clears within 7–14 days.
-                  </p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    After that, each sale clears on the payment processor's schedule, then <span className="font-medium text-foreground">standard payout takes 1–2 business days</span> to reach your bank.
-                  </p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Need it faster? Use <span className="font-medium text-foreground">Instant Payout (≈30 mins)</span> for a <span className="font-medium text-foreground">1.5% fee</span>.
-                  </p>
-                </div>
-              )}
             </div>
+
 
             {/* Next payout */}
             {data?.nextPayout && (
