@@ -371,8 +371,33 @@ const SellerDashboard = () => {
               </section>
             )}
 
-            {/* Held for unshipped orders */}
-            {unshippedCents > 0 && (
+            {/* Clearing from recent sales — shown while funds are still in Stripe's Pending bucket */}
+            {(data?.pending ?? 0) > 0 && (() => {
+              const pendingActivity = (data?.activity ?? []).filter(
+                (a) => a.status === 'pending' && a.available_on
+              );
+              const earliest = pendingActivity.length
+                ? Math.min(...pendingActivity.map((a) => a.available_on as number))
+                : 0;
+              return (
+                <section className="rounded-2xl bg-card border border-border mt-3 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[13px] font-medium text-foreground">Clearing from recent sales</div>
+                    <div className="text-base font-semibold text-foreground">
+                      {fmtMoney(data?.pending ?? 0, currency)}
+                    </div>
+                  </div>
+                  {earliest > 0 && (
+                    <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                      Ready {fmtDate(earliest)}.
+                    </div>
+                  )}
+                </section>
+              );
+            })()}
+
+            {/* Held for unshipped orders — only once funds are in Available, otherwise this double-counts Clearing */}
+            {available > 0 && unshippedCents > 0 && (
               <section className="rounded-2xl bg-card border border-border mt-3 p-4">
                 <div className="flex items-center justify-between">
                   <div className="text-[13px] font-medium text-foreground">Held for unshipped orders</div>
@@ -410,9 +435,6 @@ const SellerDashboard = () => {
                       Ready {fmtDate(earliest)}
                     </div>
                   )}
-                  <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
-                    After the hold clears, future sales usually become available within about 24 hours.
-                  </p>
                 </section>
               );
             })()}
@@ -449,10 +471,10 @@ const SellerDashboard = () => {
                     You must add valid tracking for your funds to become available.
                   </p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Your <span className="font-medium text-foreground">first payout may take up to 7 days</span> while our payment processor completes a one-off security check.
+                    Your first payout may take longer while our payment processor completes a one-off security check on new accounts. The exact release date is shown above once confirmed.
                   </p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    After that, funds usually become available <span className="font-medium text-foreground">around 24 hours</span> after the initial clearing hold, then arrive in your bank in <span className="font-medium text-foreground">1–2 business days</span>.
+                    After that, each sale clears on the payment processor's schedule, then <span className="font-medium text-foreground">standard payout takes 1–2 business days</span> to reach your bank.
                   </p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     Need it faster? Use <span className="font-medium text-foreground">Instant Payout (≈30 mins)</span> for a <span className="font-medium text-foreground">1.5% fee</span>.
