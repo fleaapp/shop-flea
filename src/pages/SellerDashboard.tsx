@@ -341,47 +341,53 @@ const SellerDashboard = () => {
               </section>
             )}
 
-            {/* Held for unshipped orders — only once funds are in Available, otherwise this double-counts Clearing */}
-            {!isNegative && available > 0 && unshippedCents > 0 && (
-              <section className="rounded-2xl bg-card border border-border mt-2 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-[13px] font-medium text-foreground">Held for unshipped orders</div>
-                  <div className="text-base font-semibold text-foreground">
-                    {fmtMoney(unshippedCents, currency)}
-                  </div>
-                </div>
-                <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                  Ship orders with tracking to release these funds.
-                </div>
-              </section>
-            )}
-
-            {/* Split Pending into Clearing (rest) then First payout hold (first sale, no paid payout yet) */}
+            {/* Balance breakdown: Held for unshipped → Clearing → First payout hold */}
             {!isNegative && (() => {
               const pendingCents = data?.pending ?? 0;
-              if (pendingCents <= 0) return null;
               const hasPaidPayout = (data?.payouts ?? []).some((p) => p.status === 'paid');
+
+              const unshippedInAvailable = Math.min(unshippedCents, available);
+              const unshippedInPending = Math.max(unshippedCents - available, 0);
+
               const pendingActivity = (data?.activity ?? [])
                 .filter((a) => a.status === 'pending')
                 .slice()
                 .sort((a, b) => (a.available_on ?? 0) - (b.available_on ?? 0));
 
-              const firstHold = !hasPaidPayout && pendingActivity.length > 0 ? pendingActivity[0] : null;
-              const firstHoldCents = firstHold ? Math.max(firstHold.amount ?? 0, 0) : 0;
-              const clearingCents = Math.max(pendingCents - firstHoldCents, 0);
-              const clearingActivity = firstHold ? pendingActivity.slice(1) : pendingActivity;
-              const earliestClearing = clearingActivity
+              const clearingRaw = Math.max(pendingCents - unshippedInPending, 0);
+              const firstHoldCandidate = !hasPaidPayout && pendingActivity.length > 0
+                ? Math.max(pendingActivity[0].amount ?? 0, 0)
+                : 0;
+              const firstHoldCents = Math.min(firstHoldCandidate, clearingRaw);
+              const clearing = Math.max(clearingRaw - firstHoldCents, 0);
+
+              const earliestClearing = pendingActivity
+                .slice(firstHoldCents > 0 ? 1 : 0)
                 .filter((a) => a.available_on)
                 .reduce<number>((min, a) => (min === 0 ? (a.available_on as number) : Math.min(min, a.available_on as number)), 0);
 
               return (
                 <>
-                  {clearingCents > 0 && (
+                  {unshippedCents > 0 && (
+                    <section className="rounded-2xl bg-card border border-border mt-2 p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="text-[13px] font-medium text-foreground">Held for unshipped orders</div>
+                        <div className="text-base font-semibold text-foreground">
+                          {fmtMoney(unshippedCents, currency)}
+                        </div>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                        Ship orders with tracking to release these funds.
+                      </div>
+                    </section>
+                  )}
+
+                  {clearing > 0 && (
                     <section className="rounded-2xl bg-card border border-border mt-3 p-4">
                       <div className="flex items-center justify-between">
                         <div className="text-[13px] font-medium text-foreground">Clearing from recent sales</div>
                         <div className="text-base font-semibold text-foreground">
-                          {fmtMoney(clearingCents, currency)}
+                          {fmtMoney(clearing, currency)}
                         </div>
                       </div>
                       {earliestClearing > 0 && (
@@ -392,7 +398,7 @@ const SellerDashboard = () => {
                     </section>
                   )}
 
-                  {firstHold && firstHoldCents > 0 && (
+                  {firstHoldCents > 0 && (
                     <section className="rounded-2xl bg-amber-50 border border-amber-200 mt-3 p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-[11px] font-semibold text-amber-800 uppercase tracking-wide">
@@ -413,6 +419,7 @@ const SellerDashboard = () => {
                 </>
               );
             })()}
+
 
             {/* Available balance or Balance owed */}
             {isNegative ? (
