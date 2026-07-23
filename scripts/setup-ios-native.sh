@@ -131,7 +131,9 @@ echo "   pbxproj wired:     $(test "$WIRED_COUNT" -gt 0 && echo yes || echo NO) 
 echo "   Apple Pay entitlement: $(grep -q "com.apple.developer.in-app-payments" "$ENTITLEMENTS_DEST" && echo yes || echo NO)"
 echo "   Apple Pay merchant:    $(grep -q "merchant.com.finditonflea.app" "$ENTITLEMENTS_DEST" && echo yes || echo NO)"
 echo "   APNs delegate bridge:  $(grep -q "capacitorDidRegisterForRemoteNotifications" "$APP_DELEGATE" && echo yes || echo NO)"
-echo "   Stripe iOS SDK pin:    default @capacitor-community/stripe resolution"
+STRIPE_SDK_PINNED=$(grep -q 'exact: "25.9.0"' "$ROOT/node_modules/@capacitor-community/stripe/Package.swift" 2>/dev/null && echo yes || echo NO)
+echo "   Stripe iOS SDK pin:    $STRIPE_SDK_PINNED (exact 25.9.0)"
+echo "   Stripe account reset:  $(grep -q 'STPAPIClient.shared.stripeAccount = nil' "$ROOT/node_modules/@capacitor-community/stripe/ios/Sources/StripePlugin/StripePlugin.swift" 2>/dev/null && echo yes || echo NO)"
 echo "   entitlement checker:   skipped (using Stripe's isApplePayAvailable)"
 echo "   Google leftovers:  $(grep -R 'REVERSED_IOS_CLIENT_ID\|@codetrix-studio/capacitor-google-auth' "$ROOT/ios" "$ROOT/package.json" "$ROOT/capacitor.config.ts" 2>/dev/null | wc -l | tr -d ' ')"
 echo
