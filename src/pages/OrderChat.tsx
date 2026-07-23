@@ -194,7 +194,7 @@ const OrderChat = () => {
     }).catch((error) => {
       console.error('[OrderChat] Failed to mark messages read:', error);
     });
-  }, [messages, user?.id, orderId]);
+  }, [messages, user?.id, orderId, queryClient]);
 
   // Scroll to bottom
   useEffect(() => {
@@ -253,25 +253,6 @@ const OrderChat = () => {
         queryClient.setQueryData(['order-messages', orderId], context.previousMessages);
       }
       setNewMessage(variables.message);
-      console.error('Failed to send message:', err);
-      toast.error('Failed to send message');
-    },
-  });
-
-  const handleSend = () => {
-    const trimmed = newMessage.trim();
-    if (!trimmed || sending) return;
-    setSending(true);
-    sendMessage.mutate({ message: trimmed }, { onSettled: () => setSending(false) });
-  };
-          if (prev.some((m) => m.id === inserted.id)) return prev;
-          return [...prev, inserted];
-        });
-      }
-      queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
-      setNewMessage('');
-    },
-    onError: (err) => {
       console.error('Failed to send message:', err);
       toast.error('Failed to send message');
     },
