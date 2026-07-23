@@ -84,6 +84,17 @@ const SalesDetailsSheet = ({
   const primaryOrder = orders?.[0];
   const { data: existingReview } = useExistingReview(primaryOrder?.id);
 
+  const { data: sellerShippingSettings } = useQuery({
+    queryKey: ['seller-shipping-settings', primaryOrder?.seller_id],
+    queryFn: async () => {
+      if (!primaryOrder?.seller_id) return null;
+      const map = await fetchSellerShippingSettings([primaryOrder.seller_id]);
+      return map.get(primaryOrder.seller_id) || null;
+    },
+    enabled: !!primaryOrder?.seller_id && (orders?.length ?? 0) >= 2,
+    staleTime: 60_000,
+  });
+
   // Reset form when order changes
   useEffect(() => {
     if (!orders || orders.length === 0) return;
@@ -100,7 +111,7 @@ const SalesDetailsSheet = ({
     setValidationError('');
   }, [orders]);
 
-  if (!orders || orders.length === 0) return null;
+  if (!orders || orders.length === 0 || !primaryOrder) return null;
 
   const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
   const shippingTotal = orders.reduce((sum, o) => sum + Number(o.shipping_price || 0), 0);
@@ -109,16 +120,8 @@ const SalesDetailsSheet = ({
   const statusBadge = getDisplayStatusBadge(primaryOrder);
   const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
 
-  const { data: sellerShippingSettings } = useQuery({
-    queryKey: ['seller-shipping-settings', primaryOrder.seller_id],
-    queryFn: async () => {
-      const map = await fetchSellerShippingSettings([primaryOrder.seller_id]);
-      return map.get(primaryOrder.seller_id) || null;
-    },
-    enabled: !!primaryOrder.seller_id && orders.length >= 2,
-    staleTime: 60_000,
-  });
   const bundleText = orders.length >= 2 ? getBundleBreakdownText(orders.length, sellerShippingSettings || undefined) : null;
+
 
   const handleMarkShipped = () => {
     // Validate tracking details
