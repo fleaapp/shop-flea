@@ -32,7 +32,7 @@ import visaLogo from '@/assets/cards/visa.svg';
 import mastercardLogo from '@/assets/cards/mastercard.svg';
 import amexLogo from '@/assets/cards/amex.svg';
 import applePayLogo from '@/assets/cards/apple-pay.svg';
-import { runApplePayPreflight, categoriseApplePayError, logApplePayDiagnostic } from '@/lib/applePayDiagnostics';
+import { categoriseApplePayError, logApplePayDiagnostic } from '@/lib/applePayDiagnostics';
 import { mapCardDeclineMessage, logCardDecline } from '@/lib/cardDeclineHandler';
 
 // Apple App Review demo account — bypasses the seller-Stripe-connected check
@@ -341,9 +341,9 @@ const Checkout = () => {
     }
 
     if (platform === 'ios') {
-      // livemode / preflight checks are non-blocking — they log for diagnostics
-      // but never gate Apple Pay. iOS/PassKit itself is the source of truth
-      // and its error surfaces below via categoriseApplePayError.
+      // livemode checks are non-blocking — they log for diagnostics but never
+      // gate Apple Pay. iOS/PassKit itself is the source of truth and its
+      // error surfaces below via categoriseApplePayError.
       const publishableKeyMode = pi.publishableKey.startsWith('pk_live_') ? 'live' : 'test';
       if (typeof pi.livemode === 'boolean' && pi.livemode !== (publishableKeyMode === 'live')) {
         console.warn('[ApplePay] key mode mismatch (non-blocking)', {
@@ -352,17 +352,6 @@ const Checkout = () => {
           paymentIntentMode: pi.livemode ? 'live' : 'test',
         });
       }
-
-      void runApplePayPreflight(APPLE_PAY_MERCHANT_ID).then((preflight) => {
-        if (!preflight.ok) {
-          void logApplePayDiagnostic('preflight', preflight, {
-            merchantId: APPLE_PAY_MERCHANT_ID,
-            paymentIntentId: pi.paymentIntentId,
-          });
-        }
-      });
-
-
 
       // Direct PassKit Apple Pay — Stripe brokers the merchant certificate
       // under the hood; no cert upload from us is required. The Stripe
