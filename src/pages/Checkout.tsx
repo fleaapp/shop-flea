@@ -924,7 +924,31 @@ const Checkout = () => {
               amountCents={Math.round(total * 100)}
             />
 
+            {/* Persistent on-screen error panel. Toasts are hidden behind
+                native payment sheets, so failures are always surfaced here. */}
+            {checkoutError && (
+              <div
+                role="alert"
+                className="mt-4 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+              >
+                <div className="font-medium">{checkoutError.message}</div>
+                <div className="mt-1 text-[11px] text-destructive/80">
+                  Stage: {checkoutError.stage}
+                  {checkoutError.code ? ` · Code: ${checkoutError.code}` : ''}
+                  {checkoutError.ref ? ` · Ref: ${checkoutError.ref}` : ''}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCheckoutError(null)}
+                  className="mt-2 text-[11px] underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
             {/* Master Pay button */}
+
             <div className="mt-6">
               <Button
                 onClick={handlePayClick}
