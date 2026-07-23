@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { loadShippingPrefs } from '@/utils/shippingPrefs';
 import { supabase } from '@/lib/supabase';
-import { compressImage } from '@/utils/imageCompression';
+import { compressImage, createThumbnail } from '@/utils/imageCompression';
 import { useContentModeration } from '@/hooks/useContentModeration';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import {
@@ -35,8 +35,10 @@ import { safeNavigateBack } from '@/utils/safeBack';
 
 interface ImageFile {
   file: File;
+  thumb?: File;
   preview: string;
 }
+
 
 const isMissingSubcategoryColumnError = (error: { code?: string; message?: string } | null | undefined) => {
   if (!error) return false;
@@ -66,6 +68,7 @@ const EditListing = () => {
   const [newImageFiles, setNewImageFiles] = useState<ImageFile[]>([]);
   // Existing image URLs from the listing
   const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [existingThumbnails, setExistingThumbnails] = useState<Array<string | null>>([]);
   const [expandedImageSrc, setExpandedImageSrc] = useState<string | null>(null);
   const [supportsSubcategory, setSupportsSubcategory] = useState(true);
   
@@ -144,6 +147,9 @@ const EditListing = () => {
       setShippingPrice(data.shipping_price?.toString() || '');
       setDescription(data.description || '');
       setExistingImages(data.images || []);
+      // Align existing thumbnails to existing images by index (fallback: null).
+      const dbThumbs: string[] = Array.isArray((data as any).thumbnails) ? (data as any).thumbnails : [];
+      setExistingThumbnails((data.images || []).map((_: string, i: number) => dbThumbs[i] ?? null));
       setIsFetching(false);
     };
     
