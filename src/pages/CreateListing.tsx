@@ -19,7 +19,7 @@ import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { compressImage } from '@/utils/imageCompression';
+import { compressImage, createThumbnail } from '@/utils/imageCompression';
 import { loadShippingPrefs } from '@/utils/shippingPrefs';
 import { useContentModeration } from '@/hooks/useContentModeration';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
@@ -41,8 +41,10 @@ import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
 
 interface ImageFile {
   file: File;
+  thumb?: File;
   preview: string;
 }
+
 
 const CreateListing = () => {
   const navigate = useNavigate();
@@ -295,16 +297,18 @@ const CreateListing = () => {
   };
 
   const handleCropComplete = useCallback(async (croppedBlob: Blob) => {
-    // Compress cropped blob
+    // Compress cropped blob (main ~1200px) and derive a small thumbnail (~600px).
     const croppedFile = new File([croppedBlob], `cropped-${Date.now()}.jpg`, { type: 'image/jpeg' });
     try {
       const compressedFile = await compressImage(croppedFile);
+      const thumbFile = await createThumbnail(compressedFile).catch(() => undefined);
       const preview = URL.createObjectURL(compressedFile);
-      setImageFiles((prev) => [...prev, { file: compressedFile, preview }]);
+      setImageFiles((prev) => [...prev, { file: compressedFile, thumb: thumbFile, preview }]);
     } catch {
       const preview = URL.createObjectURL(croppedFile);
       setImageFiles((prev) => [...prev, { file: croppedFile, preview }]);
     }
+
 
     // Revoke current crop src and advance queue
     if (currentCropSrc) URL.revokeObjectURL(currentCropSrc);
@@ -337,33 +341,46 @@ const CreateListing = () => {
     });
   };
 
-  const uploadImages = async (): Promise<string[]> => {
-    if (!user) return [];
-    
-    const uploadedUrls: string[] = [];
-    
+  const uploadImages = async (): Promise<{ images: string[]; thumbnails: string[] }> => {
+    if (!user) return { images: [], thumbnails: [] };
+
+    const images: string[] = [];
+    const thumbnails: string[] = [];
+
     for (const imageFile of imageFiles) {
       const fileExt = imageFile.file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      
+      const stem = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      const fileName = `${stem}.${fileExt}`;
+
       const { error } = await supabase.storage
         .from('listings')
         .upload(fileName, imageFile.file);
-      
+
       if (error) {
         console.error('Upload error:', error);
         throw new Error('Failed to upload image');
       }
-      
-      const { data: { publicUrl } } = supabase.storage
-        .from('listings')
-        .getPublicUrl(fileName);
-      
-      uploadedUrls.push(publicUrl);
+
+      const { data: { publicUrl } } = supabase.storage.from('listings').getPublicUrl(fileName);
+      images.push(publicUrl);
+
+      // Thumbnail is best-effort: any failure falls back to the main URL so cards still render.
+      let thumbUrl = publicUrl;
+      if (imageFile.thumb) {
+        const thumbName = `${stem}.thumb.jpg`;
+        const { error: thumbErr } = await supabase.storage
+          .from('listings')
+          .upload(thumbName, imageFile.thumb, { contentType: 'image/jpeg' });
+        if (!thumbErr) {
+          thumbUrl = supabase.storage.from('listings').getPublicUrl(thumbName).data.publicUrl;
+        }
+      }
+      thumbnails.push(thumbUrl);
     }
-    
-    return uploadedUrls;
+
+    return { images, thumbnails };
   };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -414,7 +431,7 @@ const CreateListing = () => {
       }
 
       // Upload images to storage
-      const imageUrls = await uploadImages();
+      const { images: imageUrls, thumbnails: thumbUrls } = await uploadImages();
       
       // Create the listing with region from user's profile
       const listingData: Record<string, any> = {
@@ -432,6 +449,7 @@ const CreateListing = () => {
           price: parseFloat(itemPrice),
           shipping_price: shippingPrice ? parseFloat(shippingPrice) : 0,
           images: imageUrls,
+          thumbnails: thumbUrls,
           tags: [brand, category].filter(Boolean),
           status: 'active',
           region_id: profile?.region_id || null,
@@ -441,11 +459,14 @@ const CreateListing = () => {
       let { error } = await supabase.from('listings').insert(listingData);
 
       // Retry without the column that triggered a 42703 / PGRST204 cache miss
-      if (error && (error.code === '42703' || error.code === 'PGRST204') && error.message?.includes('subcategory')) {
-        const { subcategory: _dropped, ...withoutSubcat } = listingData;
-        const retry = await supabase.from('listings').insert(withoutSubcat);
+      if (error && (error.code === '42703' || error.code === 'PGRST204')) {
+        const retryPayload: Record<string, any> = { ...listingData };
+        if (error.message?.includes('subcategory')) delete retryPayload.subcategory;
+        if (error.message?.includes('thumbnails')) delete retryPayload.thumbnails;
+        const retry = await supabase.from('listings').insert(retryPayload);
         error = retry.error;
       }
+
 
       if (error) {
         throw error;

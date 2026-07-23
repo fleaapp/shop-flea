@@ -10,6 +10,7 @@ interface ProfileGridCardProps {
     price: number;
     shipping_price: number | null;
     images: string[];
+    thumbnails?: string[] | null;
     source_listing_id?: string;
     order_id?: string;
   };
@@ -19,6 +20,7 @@ interface ProfileGridCardProps {
 
 const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton }: ProfileGridCardProps) => {
   const navigate = useNavigate();
+  const thumb = listing.thumbnails?.[0] || listing.images[0];
 
   return (
     <div className="w-full cursor-pointer" onClick={() => {
@@ -30,7 +32,7 @@ const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton }: ProfileGr
         {/* Image */}
         <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-muted">
           <img
-            src={listing.images[0]}
+            src={thumb}
             alt={listing.title}
             className="h-full w-full object-cover block rounded-xl"
             loading="lazy"

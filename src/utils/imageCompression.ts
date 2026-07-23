@@ -124,3 +124,18 @@ export const compressImages = async (
 ): Promise<File[]> => {
   return Promise.all(files.map((file) => compressImage(file, options)));
 };
+
+/**
+ * Creates a small thumbnail variant (~600px max, JPEG q=0.72) for grid cards
+ * and order thumbnails. Falls back to the original if compression fails or
+ * doesn't reduce size.
+ */
+export const createThumbnail = (file: File): Promise<File> =>
+  compressImage(file, { maxWidth: 600, maxHeight: 750, quality: 0.72 }).then((thumb) => {
+    // Rename to make it obvious in storage.
+    return new File([thumb], file.name.replace(/(\.[^./\\]+)?$/, '.thumb.jpg'), {
+      type: 'image/jpeg',
+      lastModified: Date.now(),
+    });
+  });
+

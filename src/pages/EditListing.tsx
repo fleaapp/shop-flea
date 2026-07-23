@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { loadShippingPrefs } from '@/utils/shippingPrefs';
 import { supabase } from '@/lib/supabase';
-import { compressImage } from '@/utils/imageCompression';
+import { compressImage, createThumbnail } from '@/utils/imageCompression';
 import { useContentModeration } from '@/hooks/useContentModeration';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import {
@@ -35,8 +35,10 @@ import { safeNavigateBack } from '@/utils/safeBack';
 
 interface ImageFile {
   file: File;
+  thumb?: File;
   preview: string;
 }
+
 
 const isMissingSubcategoryColumnError = (error: { code?: string; message?: string } | null | undefined) => {
   if (!error) return false;
@@ -66,6 +68,7 @@ const EditListing = () => {
   const [newImageFiles, setNewImageFiles] = useState<ImageFile[]>([]);
   // Existing image URLs from the listing
   const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [existingThumbnails, setExistingThumbnails] = useState<Array<string | null>>([]);
   const [expandedImageSrc, setExpandedImageSrc] = useState<string | null>(null);
   const [supportsSubcategory, setSupportsSubcategory] = useState(true);
   
@@ -144,6 +147,9 @@ const EditListing = () => {
       setShippingPrice(data.shipping_price?.toString() || '');
       setDescription(data.description || '');
       setExistingImages(data.images || []);
+      // Align existing thumbnails to existing images by index (fallback: null).
+      const dbThumbs: string[] = Array.isArray((data as any).thumbnails) ? (data as any).thumbnails : [];
+      setExistingThumbnails((data.images || []).map((_: string, i: number) => dbThumbs[i] ?? null));
       setIsFetching(false);
     };
     
@@ -187,12 +193,14 @@ const EditListing = () => {
     const croppedFile = new File([croppedBlob], `cropped-${Date.now()}.jpg`, { type: 'image/jpeg' });
     try {
       const compressedFile = await compressImage(croppedFile);
+      const thumbFile = await createThumbnail(compressedFile).catch(() => undefined);
       const preview = URL.createObjectURL(compressedFile);
-      setNewImageFiles((prev) => [...prev, { file: compressedFile, preview }]);
+      setNewImageFiles((prev) => [...prev, { file: compressedFile, thumb: thumbFile, preview }]);
     } catch {
       const preview = URL.createObjectURL(croppedFile);
       setNewImageFiles((prev) => [...prev, { file: croppedFile, preview }]);
     }
+
 
     if (currentCropSrc) URL.revokeObjectURL(currentCropSrc);
     setCropQueue((prev) => {
@@ -217,7 +225,9 @@ const EditListing = () => {
 
   const removeExistingImage = (index: number) => {
     setExistingImages((prev) => prev.filter((_, i) => i !== index));
+    setExistingThumbnails((prev) => prev.filter((_, i) => i !== index));
   };
+
 
   const removeNewImage = (index: number) => {
     setNewImageFiles((prev) => {
@@ -227,33 +237,39 @@ const EditListing = () => {
     });
   };
 
-  const uploadImages = async (): Promise<string[]> => {
-    if (!user) return [];
-    
-    const uploadedUrls: string[] = [];
-    
+  const uploadImages = async (): Promise<{ images: string[]; thumbnails: string[] }> => {
+    if (!user) return { images: [], thumbnails: [] };
+    const images: string[] = [];
+    const thumbnails: string[] = [];
+
     for (const imageFile of newImageFiles) {
       const fileExt = imageFile.file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      
-      const { error } = await supabase.storage
-        .from('listings')
-        .upload(fileName, imageFile.file);
-      
+      const stem = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      const fileName = `${stem}.${fileExt}`;
+
+      const { error } = await supabase.storage.from('listings').upload(fileName, imageFile.file);
       if (error) {
         console.error('Upload error:', error);
         throw new Error('Failed to upload image');
       }
-      
-      const { data: { publicUrl } } = supabase.storage
-        .from('listings')
-        .getPublicUrl(fileName);
-      
-      uploadedUrls.push(publicUrl);
+
+      const publicUrl = supabase.storage.from('listings').getPublicUrl(fileName).data.publicUrl;
+      images.push(publicUrl);
+
+      let thumbUrl = publicUrl;
+      if (imageFile.thumb) {
+        const thumbName = `${stem}.thumb.jpg`;
+        const { error: thumbErr } = await supabase.storage
+          .from('listings')
+          .upload(thumbName, imageFile.thumb, { contentType: 'image/jpeg' });
+        if (!thumbErr) thumbUrl = supabase.storage.from('listings').getPublicUrl(thumbName).data.publicUrl;
+      }
+      thumbnails.push(thumbUrl);
     }
-    
-    return uploadedUrls;
+
+    return { images, thumbnails };
   };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -295,9 +311,13 @@ const EditListing = () => {
         return;
       }
 
-      // Upload new images
-      const newImageUrls = await uploadImages();
+      // Upload new images (with thumbnails), then preserve existing image/thumbnail pairs.
+      const { images: newImageUrls, thumbnails: newThumbUrls } = await uploadImages();
       const allImages = [...existingImages, ...newImageUrls];
+      const allThumbs = [
+        ...existingThumbnails.map((t, i) => t ?? existingImages[i]),
+        ...newThumbUrls,
+      ];
       
       // Build update payload
       const parsedPrice = parseFloat(itemPrice);
@@ -322,6 +342,7 @@ const EditListing = () => {
         price: parsedPrice,
         shipping_price: isNaN(parsedShipping) ? 0 : parsedShipping,
         images: allImages,
+        thumbnails: allThumbs,
         tags: [brand, category].filter(Boolean),
         updated_at: new Date().toISOString(),
       };
@@ -329,6 +350,7 @@ const EditListing = () => {
       if (supportsSubcategory) {
         updatePayload.subcategory = subcategory || null;
       }
+
 
       const runListingUpdate = (payload: Record<string, unknown>) => {
         return supabase
@@ -350,6 +372,14 @@ const EditListing = () => {
           setSupportsSubcategory(false);
         }
       }
+
+      // Thumbnails column may be missing on older environments; strip and retry.
+      if (error && (error.code === '42703' || error.code === 'PGRST204') && /thumbnails/i.test(error.message ?? '')) {
+        const { thumbnails: _dropped, ...fallbackPayload } = updatePayload;
+        const retryResult = await runListingUpdate(fallbackPayload);
+        error = retryResult.error;
+      }
+
       
       if (error) {
         console.error('Supabase update error:', error);

@@ -24,6 +24,7 @@ export interface DbListing {
   price: number;
   shipping_price: number;
   images: string[];
+  thumbnails?: string[] | null;
   tags: string[];
   status: string;
   created_at: string;
