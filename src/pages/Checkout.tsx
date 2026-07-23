@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSnapshotDraft } from '@/hooks/useSnapshotDraft';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
-import { ApplePayEventsEnum, GooglePayEventsEnum, PaymentSheetEventsEnum, Stripe } from '@capacitor-community/stripe';
+import { PaymentSheetEventsEnum, Stripe } from '@capacitor-community/stripe';
 import type { CanMakePaymentResult, PaymentRequestPaymentMethodEvent } from '@stripe/stripe-js';
 
 import { Button } from '@/components/ui/button';
@@ -32,7 +32,6 @@ import visaLogo from '@/assets/cards/visa.svg';
 import mastercardLogo from '@/assets/cards/mastercard.svg';
 import amexLogo from '@/assets/cards/amex.svg';
 import applePayLogo from '@/assets/cards/apple-pay.svg';
-import { runApplePayPreflight, categoriseApplePayError, logApplePayDiagnostic } from '@/lib/applePayDiagnostics';
 import { mapCardDeclineMessage, logCardDecline } from '@/lib/cardDeclineHandler';
 
 // Apple App Review demo account — bypasses the seller-Stripe-connected check
@@ -40,12 +39,9 @@ import { mapCardDeclineMessage, logCardDecline } from '@/lib/cardDeclineHandler'
 const REVIEWER_USER_ID = '5883f33c-07f3-4f6a-9a2d-a7e0ea864142';
 const APPLE_PAY_MERCHANT_ID = import.meta.env.VITE_APPLE_PAY_MERCHANT_ID || 'merchant.com.finditonflea.app';
 
-const getNativeWalletPlatform = (): 'ios' | 'android' | null => {
-  if (!Capacitor.isNativePlatform()) return null;
-  const platform = Capacitor.getPlatform();
-  if (platform === 'ios' || platform === 'android') return platform;
-  return null;
-};
+const isNative = () => Capacitor.isNativePlatform();
+
+
 
 
 
