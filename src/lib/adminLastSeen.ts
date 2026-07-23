@@ -1,8 +1,14 @@
+import { supabase } from '@/lib/supabase';
+
 // Shared "last seen" bookkeeping for admin badges. Each admin tab stores an
-// ISO timestamp in localStorage; getBadges only counts rows newer than that
-// timestamp, so opening a tab clears its badge until new rows arrive.
+// ISO timestamp locally for instant UI updates and in the backend so opening a
+// tab clears its badge across logout/login and other devices.
 
 export type AdminTab =
+  | 'support'
+  | 'reports'
+  | 'bans'
+  | 'suggestions'
   | 'users'
   | 'listings'
   | 'refunds'
@@ -13,6 +19,10 @@ export type AdminTab =
   | 'error_logs';
 
 const KEY: Record<AdminTab, string> = {
+  support: 'admin_support_last_seen',
+  reports: 'admin_reports_last_seen',
+  bans: 'admin_bans_last_seen',
+  suggestions: 'admin_suggestions_last_seen',
   users: 'admin_users_last_seen',
   listings: 'admin_listings_last_seen',
   refunds: 'admin_refunds_last_seen',
@@ -22,6 +32,8 @@ const KEY: Record<AdminTab, string> = {
   brands: 'admin_brands_last_seen',
   error_logs: 'admin_error_logs_last_seen',
 };
+
+let backendLoadedForUser: string | null = null;
 
 export function getAdminLastSeen(tab: AdminTab): string | null {
   if (typeof window === 'undefined') return null;
@@ -41,15 +53,52 @@ export function getAllAdminLastSeen(): Partial<Record<AdminTab, string>> {
   return out;
 }
 
+export async function loadAdminLastSeenFromBackend(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  const { data } = await supabase.auth.getUser().catch(() => ({ data: { user: null } } as any));
+  const userId = data?.user?.id;
+  if (!userId || backendLoadedForUser === userId) return;
+
+  const { data: rows, error } = await (supabase as any)
+    .from('admin_last_seen')
+    .select('tab, seen_at')
+    .eq('user_id', userId);
+
+  if (error || !Array.isArray(rows)) return;
+
+  try {
+    rows.forEach((row: { tab?: AdminTab; seen_at?: string }) => {
+      if (row.tab && row.seen_at && KEY[row.tab]) {
+        window.localStorage.setItem(KEY[row.tab], row.seen_at);
+      }
+    });
+    backendLoadedForUser = userId;
+  } catch {
+    // ignore storage failures
+  }
+}
+
+async function persistAdminTabSeen(tab: AdminTab, seenAt: string): Promise<void> {
+  const { data } = await supabase.auth.getUser().catch(() => ({ data: { user: null } } as any));
+  const userId = data?.user?.id;
+  if (!userId) return;
+
+  await (supabase as any)
+    .from('admin_last_seen')
+    .upsert({ user_id: userId, tab, seen_at: seenAt }, { onConflict: 'user_id,tab' });
+}
+
 /**
  * Marks an admin tab as "seen now". Dispatches a `admin-last-seen-updated`
  * event so any mounted `useAdminBadges` hook can refresh instantly.
  */
 export function markAdminTabSeen(tab: AdminTab): void {
   if (typeof window === 'undefined') return;
+  const seenAt = new Date().toISOString();
   try {
-    window.localStorage.setItem(KEY[tab], new Date().toISOString());
+    window.localStorage.setItem(KEY[tab], seenAt);
     window.dispatchEvent(new CustomEvent('admin-last-seen-updated', { detail: { tab } }));
+    void persistAdminTabSeen(tab, seenAt).catch(() => undefined);
   } catch {
     // ignore storage failures
   }

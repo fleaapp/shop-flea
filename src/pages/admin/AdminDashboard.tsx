@@ -137,6 +137,10 @@ function SectionView({ section, onBack }: { section: Section; onBack: () => void
   const { submissions: contactSubs, loading: cLoading, error: cError, refresh: refreshContact } = useAdminContactSubmissions();
 
   useEffect(() => {
+    if (section === 'support') markAdminTabSeen('support');
+    if (section === 'reports') markAdminTabSeen('reports');
+    if (section === 'bans') markAdminTabSeen('bans');
+    if (section === 'suggestions') markAdminTabSeen('suggestions');
     if (section === 'waitlist') markAdminTabSeen('waitlist');
     if (section === 'contact') markAdminTabSeen('contact');
   }, [section]);
