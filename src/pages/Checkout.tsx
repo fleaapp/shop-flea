@@ -577,6 +577,7 @@ const Checkout = () => {
   /** Confirm with a card the user JUST entered in the Vinted-style sheet. */
   const handleCardConfirm = async ({ paymentMethodId, saveCard }: { paymentMethodId: string; cardholderName: string; saveCard: boolean }) => {
     if (!preflight()) return;
+    setCheckoutError(null);
     persistCheckoutContext();
     setIsSubmitting(true);
     try {
@@ -589,17 +590,17 @@ const Checkout = () => {
       });
       if (error) {
         void logCardDecline({ where: 'manual-card', error: error as any, paymentIntentId: pi.paymentIntentId, amountCents: pi.amount });
-        toast.error(mapCardDeclineMessage(error as any));
+        showCheckoutError('confirm-card', mapCardDeclineMessage(error as any), { code: (error as any)?.decline_code || (error as any)?.code, ref: pi.paymentIntentId });
         return;
       }
       if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
         handlePaymentSuccess(paymentIntent.id);
       } else {
-        toast.error('Payment did not complete. Please try again.');
+        showCheckoutError('confirm-card', 'Payment did not complete. Please try again.', { code: paymentIntent?.status, ref: paymentIntent?.id });
       }
     } catch (e: any) {
       console.error('card confirm error:', e);
-      toast.error(e?.message || 'Failed to process card. Please try again.');
+      showCheckoutError('confirm-card', e?.message || 'Failed to process card. Please try again.', { code: (e as any)?.code });
     } finally {
       setIsSubmitting(false);
     }
@@ -608,6 +609,7 @@ const Checkout = () => {
   /** Confirm with a saved card the user picked from the list. */
   const handleSavedCardConfirm = async (paymentMethodId: string) => {
     if (!preflight()) return;
+    setCheckoutError(null);
     persistCheckoutContext();
     setIsSubmitting(true);
     try {
@@ -620,17 +622,17 @@ const Checkout = () => {
       });
       if (error) {
         void logCardDecline({ where: 'saved-card', error: error as any, paymentIntentId: pi.paymentIntentId, amountCents: pi.amount });
-        toast.error(mapCardDeclineMessage(error as any));
+        showCheckoutError('confirm-saved-card', mapCardDeclineMessage(error as any), { code: (error as any)?.decline_code || (error as any)?.code, ref: pi.paymentIntentId });
         return;
       }
       if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
         handlePaymentSuccess(paymentIntent.id);
       } else {
-        toast.error('Payment did not complete. Please try again.');
+        showCheckoutError('confirm-saved-card', 'Payment did not complete. Please try again.', { code: paymentIntent?.status, ref: paymentIntent?.id });
       }
     } catch (e: any) {
       console.error('saved card confirm error:', e);
-      toast.error(e?.message || 'Failed to process payment. Please try again.');
+      showCheckoutError('confirm-saved-card', e?.message || 'Failed to process payment. Please try again.', { code: (e as any)?.code });
     } finally {
       setIsSubmitting(false);
     }
@@ -639,6 +641,7 @@ const Checkout = () => {
   /** Start Apple/Google Pay directly. Native uses the Capacitor sheet, web uses the browser wallet sheet. */
   const handleWalletTap = async () => {
     if (!preflight()) return;
+    setCheckoutError(null);
     persistCheckoutContext();
     setIsSubmitting(true);
     try {
@@ -652,11 +655,12 @@ const Checkout = () => {
       await handleWebWalletConfirm();
     } catch (e: any) {
       console.error('wallet init error:', e);
-      toast.error(e?.message || 'Failed to start payment. Please try again.');
+      showCheckoutError('wallet-init', e?.message || 'Failed to start payment. Please try again.', { code: (e as any)?.code });
     } finally {
       setIsSubmitting(false);
     }
   };
+
 
   /** Master Pay button — dispatches by selected method. */
   const handlePayClick = () => {
