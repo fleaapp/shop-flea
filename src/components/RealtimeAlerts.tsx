@@ -32,6 +32,7 @@ const RealtimeAlerts = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const subscribedRef = useRef(false);
+  const toastedIdsRef = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
     if (!user?.id || subscribedRef.current) return;
@@ -50,10 +51,25 @@ const RealtimeAlerts = () => {
         },
         (payload) => {
           const notification = payload.new as {
+            id: string;
             type: string;
             title: string;
             message: string | null;
           };
+
+          // Dedupe: some flows insert a notification twice (edge fn + trigger)
+          // or realtime resends the same INSERT. Ignore any id we've already
+          // toasted in the last 10s.
+          const now = Date.now();
+          const seenAt = toastedIdsRef.current.get(notification.id);
+          if (seenAt && now - seenAt < 10_000) return;
+          toastedIdsRef.current.set(notification.id, now);
+          // Bound map size
+          if (toastedIdsRef.current.size > 200) {
+            for (const [k, t] of toastedIdsRef.current) {
+              if (now - t > 60_000) toastedIdsRef.current.delete(k);
+            }
+          }
 
           // On native iOS the OS shows an APNs banner for the same event —
           // suppress the in-app toast to prevent double alerts.

@@ -1662,6 +1662,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      mark_support_thread_read: {
+        Args: { _thread_id: string }
+        Returns: number
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string

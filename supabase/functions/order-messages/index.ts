@@ -377,10 +377,26 @@ async function insertNotificationWithFallback(
   extClient: ExternalClient,
   payload: NotificationInsert,
 ) {
+  // Fire-and-forget the push notification so the HTTP response returns as
+  // soon as the DB write lands. Awaiting APNs/webpush added ~500-1500ms to
+  // every send.
+  const firePush = () => {
+    try {
+      // @ts-ignore Deno-only global; guarded so it also runs locally.
+      const wu = (globalThis as any).EdgeRuntime?.waitUntil;
+      if (typeof wu === 'function') {
+        wu(firePushNotification(payload));
+      } else {
+        void firePushNotification(payload);
+      }
+    } catch (e) {
+      console.warn('[order-messages] firePush schedule failed:', e);
+    }
+  };
+
   const { error } = await extClient.from("notifications").insert(payload);
   if (!error) {
-    // Fire push notification directly since external DB triggers can't call our edge functions
-    await firePushNotification(payload);
+    firePush();
     return;
   }
 
@@ -389,7 +405,7 @@ async function insertNotificationWithFallback(
   // still fire the push for this fresh message.
   if (error.code === "23505") {
     console.log("[order-messages] Notification dedup hit; skipping insert but firing push");
-    await firePushNotification(payload);
+    firePush();
     return;
   }
 
@@ -416,8 +432,7 @@ async function insertNotificationWithFallback(
 
   if (fallbackError) throw fallbackError;
 
-  // Fire push even on fallback path
-  await firePushNotification(payload);
+  firePush();
 }
 
 async function insertOrderMessage(

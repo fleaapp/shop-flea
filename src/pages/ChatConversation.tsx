@@ -38,23 +38,18 @@ const ChatConversation = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Mark non-user messages as read when opening conversation
+  // Mark non-user messages as read when opening conversation.
+  // Uses a SECURITY DEFINER RPC because support replies are sometimes stored
+  // with sender_id = the thread owner (admin acting inside the same account),
+  // which the direct-UPDATE RLS policy blocks.
   useEffect(() => {
     if (!threadId || !user) return;
     const markRead = async () => {
-      await (supabase as any)
-        .from('chat_messages')
-        .update({ read: true })
-        .eq('thread_id', threadId)
-        .neq('sender_type', 'user')
-        .eq('read', false);
-      await (supabase as any)
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('user_id', user.id)
-        .eq('related_thread_id', threadId)
-        .eq('type', 'support_message')
-        .eq('is_read', false);
+      try {
+        await (supabase as any).rpc('mark_support_thread_read', { _thread_id: threadId });
+      } catch (err) {
+        console.warn('[ChatConversation] mark_support_thread_read failed:', err);
+      }
       queryClient.invalidateQueries({ queryKey: ['unread-support'] });
       queryClient.invalidateQueries({ queryKey: ['nav-badges'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });

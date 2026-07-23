@@ -395,6 +395,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (e) {
       console.warn('[auth] push unregister on signOut failed:', e);
     }
+    // Clear the cached device endpoint so the next account that signs in on
+    // this device reclaims it cleanly (see useNativePushNotifications).
+    try { localStorage.removeItem('flea_native_push_endpoint'); } catch {}
 
     // Clear local session immediately so UI reflects logout even if the
     // network call to revoke the server-side session hangs (common on iOS PWA).

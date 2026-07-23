@@ -112,7 +112,9 @@ const OrderChat = () => {
       return (((data as { messages?: OrderMessage[] } | null)?.messages) || []) as OrderMessage[];
     },
     enabled: !!orderId,
-    refetchInterval: 5000,
+    // Realtime channel below invalidates on new rows; polling every 5s
+    // added latency and made sends feel sluggish. Kept a slow safety poll.
+    refetchInterval: 30000,
     retry: 1,
   });
 
@@ -189,7 +191,15 @@ const OrderChat = () => {
       if (error) throw error;
       return (data as { message?: OrderMessage } | null)?.message ?? null;
     },
-    onSuccess: () => {
+    onSuccess: (inserted) => {
+      // Optimistically append so the sender sees their message instantly
+      // without waiting for the realtime round-trip.
+      if (inserted) {
+        queryClient.setQueryData<OrderMessage[]>(['order-messages', orderId], (prev = []) => {
+          if (prev.some((m) => m.id === inserted.id)) return prev;
+          return [...prev, inserted];
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
       setNewMessage('');
     },
