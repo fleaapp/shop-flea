@@ -1,97 +1,65 @@
-# Plan: Use your own Apple Pay merchant ID with Stripe (Option B)
 
-## What this means
+## Problem summary
 
-- We keep `merchant.com.finditonflea.app` hardcoded in the app.
-- You register that merchant ID in your Apple Developer account.
-- Stripe generates a Certificate Signing Request (CSR), Apple issues an Apple Pay Payment Processing certificate, and Stripe uses that certificate to encrypt Apple Pay tokens for your app.
-- Bank statement text stays as "Flea" (that is set separately in Stripe).
-- New ongoing responsibility: the Apple Pay certificate must be renewed once a year. If it expires, Apple Pay will stop working.
+Confirmed from the code, not assumed:
 
-## Why this should fix the current failure
+1. **@jcsbh push arrives on @sarahhearn2's device / sarahhearn2 gets nothing.** `useNativePushNotifications` only saves an APNs token on registration. `signOut` in `AuthContext` never removes the previous user's `push_subscriptions` row, and `register-push-subscription` only clears *other tokens for the same user_id* (`user_id = X AND platform = ios AND endpoint != new`). The APNs token for this device stays attached to whichever user first registered it (jcsbh), so `send-push-notification` still finds jcsbh's row for that endpoint and sarahhearn2 never gets one saved (registration is skipped when the OS-cached token equals a token already stored for *some* user, and even if it saves, jcsbh's row still exists).
+2. **In-app double alerts on new order/support messages.** `RealtimeAlerts` subscribes to `notifications` INSERTs and fires a sonner toast for every type including `order_message_*` / `support_message`. When the OS delivers the push while the app is foregrounded, the user also sees an OS banner. Both paths trigger for the same event.
+3. **Support-chat badge doesn't clear after opening a thread.** `ChatConversation` runs the "mark read" effect with `messages.length` in the deps and invalidates `nav-badges`, but the update happens *before* `messages` is populated (initial length is 0, then again after fetch — but on Cloud the client `chat_messages` UPDATE is silently blocked because the RLS UPDATE policy was rewritten in `20260707041454...` after `20260715001455...` dropped it, leaving no client-side UPDATE policy for `chat_messages` on the active migration state). Needs verification of live policy state, but the badge symptom matches "update returns 0 rows".
+4. **Order-chat unread badges persist.** `OrderChat` calls the `order-messages` edge function to mark-read, but the function writes to the external Supabase (`EXTERNAL_SERVICE_ROLE_KEY` path in `order-messages/index.ts`), while `useNavBadges` reads `order_messages.read` from Cloud. Reads and writes hit different databases, so `read` never flips in Cloud.
+5. **Messages slow to send/load.** Same split-brain: `OrderChat` fetches via edge function (external DB) then subscribes to Cloud realtime for the *same* table; edge function cold-starts every open, and the realtime channel never receives events because inserts land in the external DB. UI waits for the edge function round-trip on every send.
 
-Your signed iOS build already contains the correct entitlement (`merchant.com.finditonflea.app`), so PassKit recognises the merchant ID. The missing piece is the Stripe-side payment-processing certificate that pairs that merchant ID with your Stripe account. Without it, PassKit/Stripe cannot complete the Apple Pay flow, which matches the "Apple Pay Is Not Available" / "Payment Not Completed" behaviour you are seeing.
+Root causes 4 and 5 need a live DB spot-check before we commit to the fix — the current `order-messages` edge function still points at an external Supabase, which contradicts the "Lovable Cloud is the ONLY database" project rule. Step 1 of the plan verifies this against the live function env before rewriting.
 
-## Part 1 — Apple Developer (you do this)
+## Plan
 
-1. Register the merchant ID
-  - Go to [https://developer.apple.com/account/resources/identifiers/add/merchant](https://developer.apple.com/account/resources/identifiers/add/merchant)
-  - Description: `Flea`
-  - Identifier: `merchant.com.finditonflea.app`
-  - Continue → Register
-2. Enable Apple Pay on the App ID
-  - Go to [https://developer.apple.com/account/resources/identifiers/list/bundleId](https://developer.apple.com/account/resources/identifiers/list/bundleId)
-  - Click `com.finditonflea.app`
-  - Under Capabilities, check **Apple Pay** is enabled.
-  - If it asks you to select merchant IDs, select `merchant.com.finditonflea.app`.
-3. Create the Apple Pay Payment Processing certificate (using Stripe's CSR)
-  - Go to Stripe Dashboard → Settings → Payments → Apple Pay → **iOS Certificate Settings** (direct link: [c](https://dashboard.stripe.com/settings/ios_certificates))
-  - Click **Add new application**.
-  - Enter `merchant.com.finditonflea.app` and download the CSR file Stripe gives you.
-  - Go to [https://developer.apple.com/account/resources/certificates/add](https://developer.apple.com/account/resources/certificates/add)
-  - Certificate Type: **Apple Pay Payment Processing Certificate**
-  - Select `merchant.com.finditonflea.app`
-  - Upload the CSR you downloaded from Stripe.
-  - Download the resulting `.cer` file from Apple.
-4. Upload the certificate to Stripe
-  - Back in Stripe Dashboard → iOS Certificate Settings, upload the `.cer` file you just downloaded.
-  - Wait for the status to show active/verified.
-5. Install the certificate locally (so Xcode can use it when signing)
-  - Double-click the `.cer` file; it should appear in Keychain Access under "My Certificates" or "Certificates".
-  - If you build on a different Mac (e.g. CI), the certificate does **not** need to be on that machine for the app to run Apple Pay; the certificate lives in Stripe's dashboard. It only needs to be in your Keychain if you are testing Apple Pay on a physical device from that Mac.
+### 1. Verify current backend split (read-only, first step in build mode)
 
-## Part 2 — Stripe Dashboard (you do this)
+- Query `push_subscriptions` for the two usernames' user_ids to confirm which user owns the device's APNs token.
+- Query `chat_messages` RLS policies and `pg_policies` for current UPDATE policy state.
+- Inspect the deployed `order-messages` function config to confirm whether `EXTERNAL_SUPABASE_URL` / `EXTERNAL_SERVICE_ROLE_KEY` are still set. If yes, order messages really are landing on the wrong DB.
+- Report findings before changing code so we don't guess.
 
-1. Confirm the merchant ID is listed at [https://dashboard.stripe.com/settings/ios_certificates](https://dashboard.stripe.com/settings/ios_certificates) and shows as active.
-2. No changes are needed to Payment Method Configurations or Apple Pay domain settings.
+### 2. Fix APNs token / account mixup
 
-## Part 3 — Code changes (I will do this)
+- In `AuthContext.signOut`: before `supabase.auth.signOut`, best-effort delete the current user's `push_subscriptions` rows for `platform='ios'` on this device (call a new lightweight edge function `unregister-push-subscription` with the current endpoint, or delete via authenticated client). Guard against network failure so sign-out still proceeds.
+- On native, capture the current APNs token on sign-in via `PushNotifications.checkPermissions` + a cached `lastKnownToken` in localStorage so we can pass it to the unregister call.
+- In `register-push-subscription`: when platform is `ios`, additionally delete rows with the same `endpoint` belonging to *other* `user_id`s (device changed hands). This makes registration idempotent per device, not per user+device.
+- In `useNativePushNotifications`: force re-registration when `user.id` changes (currently gated by `checkCloudTokenStatus` which returns true for jcsbh's leftover row and skips saving sarahhearn2's).
 
-1. Re-enable the native Stripe patches in `scripts/patch-native-capacitor-packages.mjs`
-  - Pin the Stripe iOS SDK to an exact version (`25.9.0`) so future `npx cap sync ios` does not silently upgrade it.
-  - Patch `StripePlugin.swift` to reset `STPAPIClient.shared.stripeAccount = nil` when no connected account is passed. This fixes the stale-account context that breaks platform-level Apple Pay after visiting Seller Dashboard / Settle Balance.
-2. Update `scripts/setup-ios-native.sh`
-  - Add a verification line that prints the pinned SDK state.
-  - Keep the existing entitlement and APNs checks.
-3. Tighten `src/lib/applePayDiagnostics.ts`
-  - Keep the preflight but improve the error messages so a missing certificate shows a clear "Apple Pay certificate is not active" message instead of the generic system alert.
-4. No changes to `capacitor.config.ts`, status bar, footer, splash, or safe-area styling.
+### 3. Kill duplicate in-app toasts
 
-## Part 4 — Build and verify (you do this)
+- In `RealtimeAlerts`: skip sonner toasts for notification types that also fire an OS push while the app is foregrounded (`order_message_seller`, `order_message_buyer`, `support_message`, `new_comment`, `comment_reply`, `mention`). The OS banner is the single source of truth for these; keep sonner only for events without a matching push path or when the app is on the exact screen the notification points to.
+- Alternatively (chosen): keep sonner as the in-app surface and suppress the OS banner while the app is foregrounded by adding a `pushNotificationReceived` listener that calls `PushNotifications.removeDeliveredNotifications` for the matching tag. Pick one; plan defaults to the first (suppress sonner) since it needs zero native changes.
 
-1. Pull the updated code.
-2. Run:
-  ```bash
-   npm install
-   npm run build
-   npx cap sync ios
-   ./scripts/setup-ios-native.sh
-   npx cap open ios
-  ```
-3. In Xcode:
-  - Select the App target → Signing & Capabilities.
-  - Confirm **Apple Pay** is listed and `merchant.com.finditonflea.app` is selected.
-  - Bump the build number.
-  - Archive and upload to TestFlight/App Store.
-4. After archiving, verify the signed entitlements:
-  ```bash
-   APP="$(ls -td ~/Library/Developer/Xcode/Archives/*/*.xcarchive | head -1)/Products/Applications/App.app"
-   codesign -d --entitlements :- "$APP" | grep -A6 'com.apple.developer.in-app-payments'
-  ```
-   Output must include `merchant.com.finditonflea.app`.
-5. Install the TestFlight build on a device with a card in Wallet and attempt checkout with Apple Pay.
+### 4. Fix support-chat unread badge
 
-## What I will not change
+- After step 1 confirms the live UPDATE policy on `chat_messages`, either re-add the "user can mark their own thread messages read" UPDATE policy (if it was dropped) or move the mark-read call into a `mark-chat-thread-read` edge function using the service role. Preferred: edge function, so the client can't be blocked by RLS drift again.
+- Have `ChatConversation` await the mark-read call before invalidating `['nav-badges']` and `['unread-support']`, and invalidate again on unmount so the badge clears even if the last message arrived after the initial mount.
 
-- Status bar, footer, splash, or safe-area styling.
-- The direct Stripe `createApplePay` / `presentApplePay` checkout path.
-- Any other checkout logic (fees, coupons, shipping bundles).
+### 5. Fix order-message send/load latency and unread badges
 
-## Risks / fallback
+- Point `order-messages` edge function at Cloud (`SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`) so writes hit the same DB the client reads. Remove the `EXTERNAL_*` branch entirely.
+- In `OrderChat`:
+  - Send messages via a direct authenticated `supabase.from('order_messages').insert(...)` (RLS scoped to participants) instead of round-tripping through the edge function for the hot path. Keep the edge function only for the mark-read + notification fanout.
+  - Fetch initial messages via `supabase.from('order_messages').select(...)` directly and let the existing realtime channel handle live updates. This removes the cold-start latency on open.
+  - Mark-read: call a slim `order-messages-mark-read` action (or reuse the existing edge function once it targets Cloud), then invalidate `nav-badges` and `unread-order-messages`.
+- Add a Cloud `notifications` dedupe / short-circuit for `order_message_*` when the recipient already has an unread notification for the same `related_order_id` in the last 60s so a burst of messages doesn't trigger repeat pushes.
 
-- If Apple does not let you create the certificate, or Stripe rejects the upload, we can switch back to Option A (remove the hardcoded merchant ID and let Stripe use its umbrella merchant ID).
-- You must renew the certificate annually; I will add a reminder note in the project memory.
+### 6. Verify
 
-## Approval needed
+- Sign in as jcsbh on device, register push, sign out, sign in as sarahhearn2, confirm only sarahhearn2's row exists for that endpoint. Send a test push to each user and confirm only the signed-in user receives it.
+- Open a support thread with unread messages: badge on Contact Support button clears within 1s of open and stays cleared on background/foreground.
+- Open an order chat: initial paint < 300 ms after cache hit, messages send without waiting on edge function, badge clears on open.
+- Send a single order/support message from another account: exactly one alert surfaces (either OS banner or sonner, not both).
 
-Please confirm you want to proceed with Part 1 (Apple Developer + Stripe certificate steps) and Part 3 (code changes).
+## Technical notes
+
+- New edge function: `unregister-push-subscription` (POST `{ endpoint }`, auth required, deletes matching `push_subscriptions` row for the caller's user_id).
+- `register-push-subscription`: extend the iOS cleanup query to also `.delete().eq('endpoint', endpoint).neq('user_id', userId).eq('platform','ios')`.
+- `order-messages/index.ts`: replace `EXTERNAL_PUBLIC_URL` / `EXTERNAL_SERVICE_ROLE_KEY` usage with Cloud env; delete the fallback branch; keep the schema-resilient insert retry.
+- `ChatConversation.tsx`: switch mark-read to `invokeCloudFunction('mark-chat-thread-read', { body: { thread_id } })`; add unmount invalidation.
+- `RealtimeAlerts.tsx`: add a `SUPPRESSED_ON_NATIVE` set for push-backed types and early-return for those when `Capacitor.isNativePlatform()`.
+- `AuthContext.signOut`: fire-and-forget `invokeCloudFunction('unregister-push-subscription', { body: { endpoint: lastToken } })` before `supabase.auth.signOut`, with a 1.5s timeout so sign-out is never blocked.
+
+No changes to `capacitor.config.ts`, status bar, footer, splash, or Apple Pay code.
