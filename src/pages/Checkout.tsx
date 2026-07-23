@@ -324,41 +324,45 @@ const Checkout = () => {
     if (!platform) return false;
 
     if (!pi.publishableKey) {
-      toast.error('Payment provider is not configured. Please contact support.');
+      showCheckoutError('config', 'Payment provider is not configured. Please contact support.', { code: 'no_publishable_key' });
       return true;
     }
     try {
-      await Stripe.initialize({
-        publishableKey: pi.publishableKey,
-        ...(pi.clientStripeAccountId ? { stripeAccount: pi.clientStripeAccountId } : {}),
-      });
-    } catch (e) {
+      // Native Apple Pay must be initialized on the PLATFORM Stripe account,
+      // NOT the seller's connected account. `clientStripeAccountId` is kept as
+      // null by the backend for destination-charge PaymentIntents — locking
+      // this branch off so a future backend change can't silently re-enable a
+      // connected-account init (which breaks native Apple Pay).
+      await Stripe.initialize({ publishableKey: pi.publishableKey });
+    } catch (e: any) {
       console.error('[ApplePay] Stripe.initialize failed', e);
-      toast.error('Failed to start payment. Please try again.');
+      showCheckoutError('sdk-initialize', e?.message || 'Failed to start payment. Please try again.', { code: 'sdk_initialize_failed', ref: pi.paymentIntentId });
       return true;
     }
 
     if (platform === 'ios') {
+      // livemode / preflight checks are non-blocking — they log for diagnostics
+      // but never gate Apple Pay. iOS/PassKit itself is the source of truth
+      // and its error surfaces below via categoriseApplePayError.
       const publishableKeyMode = pi.publishableKey.startsWith('pk_live_') ? 'live' : 'test';
       if (typeof pi.livemode === 'boolean' && pi.livemode !== (publishableKeyMode === 'live')) {
-        console.error('[ApplePay] key mode mismatch', {
+        console.warn('[ApplePay] key mode mismatch (non-blocking)', {
           merchantId: APPLE_PAY_MERCHANT_ID,
           publishableKeyMode,
           paymentIntentMode: pi.livemode ? 'live' : 'test',
         });
-        toast.error('Payment provider is misconfigured. Please choose Add new card or contact support.');
-        return true;
       }
 
-      const preflight = await runApplePayPreflight(APPLE_PAY_MERCHANT_ID);
-      if (!preflight.ok) {
-        void logApplePayDiagnostic('preflight', preflight, {
-          merchantId: APPLE_PAY_MERCHANT_ID,
-          paymentIntentId: pi.paymentIntentId,
-        });
-        toast.error(preflight.userMessage || 'Apple Pay is not available. Please choose Add new card.');
-        return true;
-      }
+      void runApplePayPreflight(APPLE_PAY_MERCHANT_ID).then((preflight) => {
+        if (!preflight.ok) {
+          void logApplePayDiagnostic('preflight', preflight, {
+            merchantId: APPLE_PAY_MERCHANT_ID,
+            paymentIntentId: pi.paymentIntentId,
+          });
+        }
+      });
+
+
 
       // Direct PassKit Apple Pay — Stripe brokers the merchant certificate
       // under the hood; no cert upload from us is required. The Stripe
