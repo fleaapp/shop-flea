@@ -342,7 +342,7 @@ const Checkout = () => {
     const logPaymentSheetFailure = (stage: string, rawError: unknown) => {
       const message = typeof rawError === 'string'
         ? rawError
-        : (rawError as any)?.message || JSON.stringify(rawError ?? 'unknown_payment_sheet_error');
+        : (rawError as any)?.message || String(rawError ?? 'unknown_payment_sheet_error');
       void logCardDecline({
         where: stage,
         error: { code: stage, message },
@@ -367,24 +367,22 @@ const Checkout = () => {
     }
 
     try {
-      paymentSheetListeners.push(
-        await Stripe.addListener(PaymentSheetEventsEnum.FailedToLoad, (error) => {
-          console.error('[PaymentSheet] failed to load event', error);
-          const message = logPaymentSheetFailure('payment-sheet-failed-to-load', error);
-          showCheckoutError('paymentSheet-load', message || 'Unable to start payment. Please try again.', {
-            code: 'paymentsheet_failed_to_load',
-            ref: pi.paymentIntentId,
-          });
-        }),
-        await Stripe.addListener(PaymentSheetEventsEnum.Failed, (error) => {
-          console.error('[PaymentSheet] failed event', error);
-          const message = logPaymentSheetFailure('payment-sheet-failed', error);
-          showCheckoutError('paymentSheet-present', message || 'Payment did not complete. Please try again.', {
-            code: 'paymentsheet_failed',
-            ref: pi.paymentIntentId,
-          });
-        }),
-      );
+      paymentSheetListeners.push(await Stripe.addListener(PaymentSheetEventsEnum.FailedToLoad, (error) => {
+        console.error('[PaymentSheet] failed to load event', error);
+        const message = logPaymentSheetFailure('payment-sheet-failed-to-load', error);
+        showCheckoutError('paymentSheet-load', message || 'Unable to start payment. Please try again.', {
+          code: 'paymentsheet_failed_to_load',
+          ref: pi.paymentIntentId,
+        });
+      }));
+      paymentSheetListeners.push(await Stripe.addListener(PaymentSheetEventsEnum.Failed, (error) => {
+        console.error('[PaymentSheet] failed event', error);
+        const message = logPaymentSheetFailure('payment-sheet-failed', error);
+        showCheckoutError('paymentSheet-present', message || 'Payment did not complete. Please try again.', {
+          code: 'paymentsheet_failed',
+          ref: pi.paymentIntentId,
+        });
+      }));
 
       const paymentSheetOptions: CreatePaymentSheetOption = {
         paymentIntentClientSecret: pi.clientSecret,
