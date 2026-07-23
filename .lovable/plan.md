@@ -1,21 +1,39 @@
-## Plan
+## Problem
 
-1. **Make chat read actions reliable**
-   - Replace the failing order-chat read request path with a robust helper that can clear all rows for an order group and does not depend on one flaky `PATCH /order-messages` call succeeding before the user taps back.
-   - When a buyer/seller chat opens, mark both the underlying `order_messages` rows and matching bell notifications as read using every known identifier: group id, individual order ids, and listing id fallback.
+On native iOS, when the keyboard opens:
+1. A black strip appears between the input bar and the keyboard (visible in the screenshot).
+2. Text fields sometimes jerk upward when tapped.
 
-2. **Stop badges snapping back after refetch**
-   - Update the buyer/seller unread hooks and bottom-nav badge logic so grouped orders are counted and cleared consistently.
-   - Invalidate/refetch the exact query keys after read completion, and keep the optimistic UI clear while the backend read action finishes.
+**Root cause:** The `@capacitor/keyboard` plugin isn't installed. Combined with `contentInset: 'never'` and a transparent iOS `backgroundColor` in `capacitor.config.ts`, the WebView doesn't resize when the keyboard appears — so the native layer (black) shows through beneath our input, and WebKit's default "scroll input into view" behavior kicks in and shifts fields.
 
-3. **Fix support chat badge persistence**
-   - Route support read clearing through the existing backend read function consistently.
-   - Ensure support notifications and support message rows are both cleared when opening the support chat, including fallback notification rows generated from unread support messages.
+## Fix
 
-4. **Fix admin dashboard badges returning after login**
-   - Use the admin backend function as the single persistence path for “last seen” timestamps instead of relying on direct client table writes/localStorage.
-   - Mark admin sections as seen from every admin entry route, then reload backend-backed timestamps before badge calculation so logout/login does not restore the old counts.
+1. **Add the Capacitor Keyboard plugin** to `package.json` and configure it in `capacitor.config.ts`:
+   - `resize: KeyboardResize.Native` — WebView shrinks to match keyboard height, eliminating the black gap.
+   - `resizeOnFullScreen: true`.
+   - `style: KeyboardStyle.Light` — matches our cream/charcoal palette (no dark accessory bar mismatch).
+   - Set iOS `backgroundColor` to the app cream (`#F4F2EB`) instead of transparent so any 1-frame gap during keyboard animation blends in rather than flashing black.
 
-5. **Validate the failing paths**
-   - Confirm the current network failure around `order-messages` read is gone.
-   - Verify opening an order chat, sale chat, support chat, and admin section clears the visible badge and keeps it cleared after refetch/navigation.
+2. **Stop inputs from jumping** by opting out of WebKit's automatic input scroll:
+   - In `ios-native` (Info.plist patch) set `KeyboardScroll` / plugin `scroll: false` (the plugin exposes `Keyboard.setScroll({ isDisabled: true })` at runtime).
+   - Call it once at app boot in `src/main.tsx` behind a `Capacitor.isNativePlatform()` guard.
+   - Our layouts already use `100dvh` / `--keyboard-safe-height`, so once the WebView itself resizes, footers stay pinned above the keyboard without any manual scrolling.
+
+3. **User steps after this ships** (native rebuild required):
+   - `git pull`
+   - `npm install`
+   - `npx cap sync ios`
+   - Rebuild in Xcode / push to TestFlight.
+
+## Files to change
+
+- `package.json` — add `@capacitor/keyboard`.
+- `capacitor.config.ts` — add `Keyboard` plugin block (`resize`, `style`, `resizeOnFullScreen`), change `ios.backgroundColor` from `#00000000` to `#F4F2EB`.
+- `src/main.tsx` — on native boot: `Keyboard.setScroll({ isDisabled: true })` and `Keyboard.setAccessoryBarVisible({ isVisible: true })` (keeps the Done bar the user already sees).
+
+No screen/component layout changes — the existing `dvh` heights and drawer/footer logic already handle a resizing WebView correctly.
+
+## Out of scope
+
+- Web/PWA keyboard behavior (unaffected — this is native-only config).
+- The `Done`/chevrons accessory bar styling (native iOS system UI, not themeable).

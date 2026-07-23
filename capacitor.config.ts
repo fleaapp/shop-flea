@@ -1,4 +1,5 @@
 import type { CapacitorConfig } from '@capacitor/cli';
+import { KeyboardResize, KeyboardStyle } from '@capacitor/keyboard';
 
 // The iOS app ALWAYS loads the bundled `dist/` folder. We deliberately do
 // NOT support a remote `server.url` here — Apple rejects App Store builds
@@ -15,6 +16,16 @@ const config: CapacitorConfig = {
     StatusBar: {
       overlaysWebView: true,
       style: 'DARK',
+    },
+    Keyboard: {
+      // `Native` resizes the WebView itself to sit exactly above the keyboard
+      // so no native (black) strip is ever visible between our input bar and
+      // the keyboard. `resizeOnFullScreen` keeps this behavior when Android
+      // apps run in immersive mode.
+      resize: KeyboardResize.Native,
+      resizeOnFullScreen: true,
+      // Light chrome for the accessory bar matches the app's cream palette.
+      style: KeyboardStyle.Light,
     },
     SplashScreen: {
       launchShowDuration: 0,
@@ -35,9 +46,9 @@ const config: CapacitorConfig = {
     // positions change — only the native strip beneath the WebView goes away.
     contentInset: 'never',
     limitsNavigationsToAppBoundDomains: false,
-    // Transparent so the native layer behind the WebView never paints its own
-    // color into the safe-area regions.
-    backgroundColor: '#00000000',
+    // Cream so any 1-frame gap during keyboard animation blends with the app
+    // background instead of flashing the WebView's default black.
+    backgroundColor: '#F4F2EB',
   },
   android: {
     allowMixedContent: false,
