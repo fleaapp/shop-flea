@@ -1,50 +1,44 @@
-## Seller Dashboard — balance & payout UI refinements
+## Root cause (verified)
 
-Scope: `src/pages/SellerDashboard.tsx` only. UI/copy on top of the existing four-bucket allocation (Held for unshipped → Clearing → First payout hold → Available). No backend or fee logic changes.
+The footer/bell badge counts unread rows in the `notifications` table (`get_nav_badges.activity_unread` = `COUNT(*) FROM notifications WHERE user_id=_ AND is_read=false`).
 
-### 1. Clearing row
+- Opening an `OrderChat` calls `order-messages` PATCH, which only sets `order_messages.read=true`. It never touches the corresponding `notifications` rows (`order_message_buyer` / `order_message_seller`).
+- Opening a support `ChatConversation` calls `mark_support_thread_read`, which only touches `chat_messages`. It never touches `notifications` rows of type `support_message`.
 
-- Only render the "Clearing from recent sales" row when there are shipped orders still clearing (`clearing > 0` after First payout hold + Held for unshipped are subtracted from Stripe pending). Otherwise hide the row entirely.
-- Add an info button (same `Info` + `Popover` pattern as `ConditionInfoPopover` / `SecureCheckoutInfoPopover`) next to the label.
-  - Title: `Clearing from recent sales`
-  - Body: `Funds from orders you've already shipped that are still clearing with the payment provider. Card payments settle 1 to 2 business days after the buyer pays, then move to Available automatically.`
-- Keep the existing per-row release date line ("Ready [date]") sourced from Stripe `available_on`.
+Result: the optimistic `setQueryData` in `OrderChat.tsx` briefly drops the number (8 → 7), then the next `get_nav_badges` refetch returns the true DB value (8 again) because the notification row is still `is_read=false`. Same pattern for support chat and (likely) new-comment / refund notifications where the app has no "seen" step.
 
-### 2. Info buttons on the other balance rows
+## Fix
 
-Same popover style for consistency.
+Make "opening a chat" authoritatively clear every notification row tied to that chat, server-side, so the RPC refetch returns the decremented count.
 
-- **Held for unshipped orders** — `Funds from sales you haven't shipped yet. Add tracking to release these funds into Clearing (or straight to Available if the payment has already cleared).`
-- **First payout hold** — `A one-off security check applied to your very first sale. Usually clears within 7 days. After this, future sales only go through the standard 1 to 2 day clearing window.`
-- **Available to withdraw** — `Ready to pay out. Standard payout lands in your bank in about 24 hours. Instant Payout arrives in around 30 minutes for a 1.5% fee.`
+### 1. `supabase/functions/order-messages/index.ts` (PATCH branch)
 
-### 3. Payout actions — new layout
+After the existing `order_messages.update({read:true})`, also update `notifications`:
 
-Replace the current stacked payout block with:
+- `user_id = <caller>`
+- `type IN ('order_message_buyer','order_message_seller')`
+- `related_order_id IN (<threadOrderId + related_order_ids>)`
+- `is_read = false` → `true`
 
-```text
-[   $X.XX Available   ]
+Use the same external client + fallback pattern already used for inserts.
 
-[      Pay out to bank      ]     ← full-width primary (lime), unchanged style
-Standard payout usually 24 hours.
+### 2. `mark_support_thread_read` RPC
 
-Need the funds faster? Use Instant Payout (around 30 minutes) for a 1.5% fee. Available after the security hold clears.
+Extend to also `UPDATE notifications SET is_read=true WHERE user_id=auth.uid() AND type='support_message' AND related_thread_id=_thread_id AND is_read=false`. Keep the existing `chat_messages` update.
 
-[      Instant Payout         ]   ← full-width secondary
-[      1.5% fee               ]   ← second line inside the same button, smaller/muted
-```
+### 3. Client optimistic alignment
 
-- Both buttons full width, stacked. Pay out on top, Instant Payout below.
-- Helper copy sits BETWEEN the two buttons: "Standard payout usually 24 hours." immediately under Pay out; then the "Need the funds faster?" line directly ABOVE Instant Payout.
-- Instant Payout button shows two lines internally: "Instant Payout" then "1.5% fee" (smaller, muted).
-- Instant Payout stays greyed out / disabled with the current rule (First payout hold cleared AND `instantPayoutEligible`). Helper copy explains why it's locked.
-- Standard Pay out button disabled when `availableToWithdraw === 0`, unchanged behaviour.
+- `src/pages/OrderChat.tsx`: in addition to the existing `unread-order-messages` / `nav-badges` writes, decrement `activity_unread` by the count of cached `notifications` rows that match the related order group + message types, and mark those notification rows `is_read=true` in the `['notifications']` cache. Then invalidate `['notifications']` and `['nav-badges']` after the PATCH resolves.
+- `src/pages/ChatConversation.tsx`: same treatment for `support_message` notifications tied to `threadId`.
 
-### 4. Remove "Please note" box
+This removes the visible "8 → 7 → 8" flicker: the optimistic drop and the refetch both land on the same true count.
 
-Delete the "Please note" card entirely — its content is now covered by the three info popovers and the two helper lines around the payout buttons.
+### 4. Verification
 
-### Out of scope
+- Log in as @sarahhearn2, open an order chat with an unread message + matching bell notification; confirm footer alerts badge decrements and stays decremented after route change and full reload.
+- Repeat for support chat.
+- Confirm `notifications` rows for that order/thread are `is_read=true` via a quick DB read.
 
-- No changes to allocation math, edge functions, Stripe calls, or fee percentages.
-- No changes to payout history, activity list, or other dashboard sections.
+## Out of scope
+
+No UI changes, no changes to how notifications are created, no changes to comment / refund notification flows (those already have their own read paths and are not part of this reported bug).
