@@ -540,12 +540,13 @@ const Checkout = () => {
     persistCheckoutContext();
     setIsSubmitting(true);
     try {
-      if (getNativeWalletPlatform()) {
+      if (isNative()) {
         const pi = await createPaymentIntent(false);
         if (!pi) return;
-        await handleNativeWalletConfirm(pi);
+        await presentNativePaymentSheet(pi);
         return;
       }
+
 
       await handleWebWalletConfirm();
     } catch (e: any) {
