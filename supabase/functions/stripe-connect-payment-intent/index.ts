@@ -80,13 +80,8 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false, autoRefreshToken: false } }
     );
-    const itemIds = items.map((i: { id: string }) => i.id).filter(Boolean);
-    if (itemIds.length !== items.length) throw new Error("Invalid item ids");
 
-    const { data: listingRows, error: listingErr } = await serviceClient
-      .from("listings")
-      .select("id, user_id, status, price, title, images, shipping_price")
-      .in("id", itemIds);
+
     const itemIds = items.map((i: { id: string }) => i.id).filter(Boolean);
     if (itemIds.length !== items.length) {
       return jsonError(400, "invalid_item_ids", "Invalid item ids.");
