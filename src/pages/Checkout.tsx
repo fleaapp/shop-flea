@@ -858,7 +858,7 @@ const Checkout = () => {
             <div className="mt-6">
               <Button
                 onClick={handlePayClick}
-                disabled={isSubmitting || !isShippingComplete || !sellerHasStripe || !selectedMethod || buyerOwesCents > 0}
+                disabled={isSubmitting || !isShippingComplete || !sellerHasStripe || (!isNative() && !selectedMethod) || buyerOwesCents > 0}
                 className="w-full h-12 rounded-full bg-charcoal text-white hover:bg-charcoal-light font-medium disabled:opacity-50"
               >
                 {buyerOwesCents > 0 ? 'Settle balance to buy' : payButtonLabel()}
