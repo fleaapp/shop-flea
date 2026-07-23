@@ -422,7 +422,7 @@ const SellerDashboard = () => {
 
 
                   {clearing > 0 && (
-                    <section className="rounded-2xl bg-card border border-border mt-3 p-4">
+                    <section className="rounded-2xl bg-muted/60 border border-border mt-3 p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
                           <div className="text-[13px] font-medium text-foreground">Clearing from recent sales</div>
