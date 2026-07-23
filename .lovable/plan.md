@@ -1,41 +1,47 @@
+## Goal
 
-## Problem
+Fix two problems on the Seller Dashboard without double-counting balances or promising timing windows we can't guarantee.
 
-After tapping an order chat and reading the messages, the red unread number on the order card (Orders/Sales tabs) and the corresponding count in the bottom-nav badge persist until a long delay or manual refresh.
+1. The $1 shipped sale looks missing because it's silently inside Stripe's Pending bucket with no row of its own.
+2. The current copy invents "24 hours" / "7 days" timing instead of using the real release date Stripe already tells us.
 
-Root cause is a combination of client cache freshness and a fire-and-forget mark-read call:
+## What the user will see
 
-1. `useUnreadOrderMessages` (source of the per-order red pill on order cards) has `staleTime: 30_000` and no `refetchOnMount: 'always'`. If the user returns to the Orders tab within 30s of opening the chat, the cached `perOrder` Map is still considered fresh, so no refetch happens.
-2. `useNavBadges` (source of the bottom-nav Sales/Cart badge) also has `staleTime: 30_000`. Same freshness trap.
-3. In `OrderChat.tsx` the read-marking effect only fires the PATCH when the *client's local* `messages` array contains items with `read === false`. When the user opens the chat and the GET response already returns messages as unread, PATCH fires — but the invalidation of `['unread-order-messages']` and `['nav-badges']` is inside a `.then()` on a fire-and-forget promise. If the user taps back before the PATCH resolves, the badge queries stay unchanged and there is no optimistic local update to compensate.
-4. The mark-read PATCH updates rows using the group id, but the two badge caches (`unread-order-messages`, `nav-badges`) are not optimistically updated for that group, so even a successful invalidate has to wait for the network round-trip on next mount.
+**Available to withdraw** stays as the headline number (unchanged math).
 
-## Fix
+Under it, rows appear conditionally so the numbers always add up to what's actually in the account:
 
-Make reading a chat clear the badges instantly on-device, and guarantee a truthful refetch on the next visit to the Orders/Sales list.
+- **Clearing from recent sales** — shown when Stripe's `pending > 0`. Amount = `pending` (e.g. $4.20). Underneath: "Ready [date]" pulled from the earliest `available_on` in the pending balance transactions Stripe already returns. This is the row that surfaces the $1 (and every future in-flight sale). No mention of shipped vs unshipped.
+- **Held for unshipped orders** — shown only when `available > 0 AND unshippedCents > 0`, i.e. once Stripe has released funds and Flea is now the one ring-fencing them. This prevents the row from being added on top of Clearing (which would look like $7.40 when the account only holds $4.20). Copy unchanged: "Ship orders with tracking to release these funds."
+- **First payout hold** banner — same visibility rule as today (`!hasPaidPayout && pending > 0`), using the same real `available_on` date. No invented 7-day copy.
 
-### 1. `src/pages/OrderChat.tsx`
-- On chat mount (when `orderId` and `user.id` are known), fire the PATCH `order-messages` request unconditionally in a dedicated effect (not gated by "local messages currently look unread"). This avoids the race where GET is still loading.
-- Immediately after opening the chat, optimistically zero out the entry for every id in `orderInfo.related_order_ids` inside the `['unread-order-messages', user.id]` cache and set `unread_buyer_msgs` / `unread_seller_msgs` / `seller_unread_per_order[id]` to 0 in `['nav-badges', user.id]`.
-- After the PATCH resolves (success or failure), invalidate `['unread-order-messages']`, `['nav-badges']`, and `['notifications']` as today. On failure, roll back the optimistic update.
+Under the payout buttons, the "Please note" panel is rewritten so nothing states a fixed hour or day window:
 
-### 2. `src/hooks/useUnreadOrderMessages.ts`
-- Add `refetchOnMount: 'always'` and `refetchOnWindowFocus: true`.
-- Reduce `staleTime` to `0` (badge freshness matters more than a few extra reads; the query is cheap — two small selects filtered by user).
-- Subscribe (via `useEffect`) to a scoped realtime channel on `order_messages` filtered by the buyer's/seller's order ids and invalidate the query on any `UPDATE` where `read` changes, so a device that receives the mark-read broadcast updates without waiting for a manual refetch.
+- You must add valid tracking for your funds to become available. (unchanged)
+- Your first payout may take longer while our payment processor completes a one-off security check on new accounts. The exact release date is shown above once Stripe confirms it.
+- After that, each sale clears on the payment processor's schedule, then standard payout takes 1 to 2 business days to reach your bank.
+- Need it faster? Instant Payout (about 30 minutes) for a 1.5% fee.
 
-### 3. `src/hooks/useNavBadges.ts`
-- Add `refetchOnMount: 'always'`.
-- Reduce `staleTime` to `0` for the same reason.
-- Also subscribe to `order_messages` updates scoped to the user's active order ids and invalidate on `read` transitions.
+No "24 hours", no "48 hours", no "7 to 14 days" hard promise anywhere. The concrete date is always the real `available_on` from Stripe.
 
-### 4. `supabase/functions/order-messages/index.ts` (PATCH branch)
-- After the update, return `{ success: true, updated: <count> }` so the client can log/verify. No behavioral change to the update itself.
+## Why this stops looking like $7.40
 
-## Verification
+Stripe returns one truth: `available + pending = total funds in the account`. The unshipped ring-fence only reduces what's withdrawable from `available`, not from `pending`. So:
 
-1. From the buyer account, open Orders tab: confirm the red per-card unread count matches DB `order_messages` where `sender_id != me and read=false`.
-2. Tap the chat: the per-card red pill and the bottom-nav Sales/Cart badge must drop immediately (optimistic).
-3. Navigate back within 3 seconds: pill and badge must remain at the new lower value (no flash back to the old count).
-4. Repeat on the seller side (Sales tab) with an incoming buyer message.
-5. Query `order_messages` in the DB to confirm `read=true` was persisted for the target order group.
+- While balance is $0 available / $4.20 pending → show only Clearing $4.20. Total reads correctly as $4.20.
+- Once Stripe moves it → $4.20 available / $0 pending → Clearing row disappears, Held-for-unshipped $3.20 appears, Available to withdraw shows $1.00. Total still reads correctly as $4.20.
+
+## Technical details
+
+- **Data source:** `stripe-connect-dashboard` already returns everything needed (`available`, `pending`, `unshippedCents`, `activity[]` with `status` and `available_on`, `payouts[]`). No backend change.
+- **Clearing row:** render when `pending > 0`. Date = `min(activity[].available_on)` filtered to `status === 'pending' && available_on`. If no `available_on` is available, omit the date line and show amount only.
+- **Held-for-unshipped row:** change visibility from `unshippedCents > 0` to `available > 0 && unshippedCents > 0`.
+- **First payout hold banner:** keep as-is from the last plan, using the same earliest `available_on`.
+- **Please note panel:** rewrite bullets per copy above.
+- **Files touched:** `src/pages/SellerDashboard.tsx` only. No SQL, no edge functions.
+
+## Out of scope
+
+- Any change to how `availableToWithdraw` is computed (still `max(available − unshippedCents, 0)`).
+- Any change to Stripe payout schedule settings.
+- Backend edits to `stripe-connect-dashboard`.
