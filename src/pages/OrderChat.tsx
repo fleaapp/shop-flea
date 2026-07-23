@@ -175,11 +175,41 @@ const OrderChat = () => {
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, [orderId, queryClient]);
 
-  // Mark messages as read
+  // Mark messages as read — fires unconditionally on chat open so badges
+  // clear even when the GET is still loading or the user taps back quickly.
+  const relatedIdsKey = (orderInfo?.related_order_ids ?? []).slice().sort().join(',');
   useEffect(() => {
-    if (!messages.length || !user?.id || !orderId) return;
-    const unread = messages.filter(m => !m.read && m.sender_id !== user.id);
-    if (!unread.length) return;
+    if (!user?.id || !orderId) return;
+
+    const relatedIds = relatedIdsKey ? relatedIdsKey.split(',') : [orderId];
+
+    // Optimistically zero out badges for this group right away so returning
+    // to the Orders/Sales list shows the cleared state instantly.
+    queryClient.setQueryData<any>(['unread-order-messages', user.id], (prev: any) => {
+      if (!prev) return prev;
+      const perOrder = new Map(prev.perOrder || []);
+      let removed = 0;
+      for (const id of relatedIds) {
+        removed += (perOrder.get(id) as number) || 0;
+        perOrder.delete(id);
+      }
+      return { total: Math.max(0, (prev.total || 0) - removed), perOrder };
+    });
+    queryClient.setQueryData<any>(['nav-badges', user.id], (prev: any) => {
+      if (!prev) return prev;
+      const seller = { ...(prev.seller_unread_per_order || {}) };
+      let sellerRemoved = 0;
+      for (const id of relatedIds) {
+        sellerRemoved += Number(seller[id]) || 0;
+        delete seller[id];
+      }
+      return {
+        ...prev,
+        seller_unread_per_order: seller,
+        unread_seller_msgs: Math.max(0, (prev.unread_seller_msgs || 0) - sellerRemoved),
+        unread_buyer_msgs: user.id === orderInfo?.buyer_id ? 0 : (prev.unread_buyer_msgs || 0),
+      };
+    });
 
     invokeCloudFunction('order-messages', {
       method: 'PATCH',
@@ -193,8 +223,10 @@ const OrderChat = () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     }).catch((error) => {
       console.error('[OrderChat] Failed to mark messages read:', error);
+      queryClient.invalidateQueries({ queryKey: ['unread-order-messages'] });
+      queryClient.invalidateQueries({ queryKey: ['nav-badges'] });
     });
-  }, [messages, user?.id, orderId, queryClient]);
+  }, [user?.id, orderId, relatedIdsKey, orderInfo?.buyer_id, queryClient]);
 
   // Scroll to bottom
   useEffect(() => {
