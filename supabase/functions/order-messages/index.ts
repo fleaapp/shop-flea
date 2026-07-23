@@ -763,8 +763,9 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === "PATCH") {
-      const { error } = await buildMessageFilter(
-        external.from("order_messages").update({ read: true }),
+      let notificationCount = 0;
+      const { data: readRows, error } = await buildMessageFilter(
+        external.from("order_messages").update({ read: true }).select("id"),
       )
         .neq("sender_id", userId)
         .eq("read", false);
@@ -789,22 +790,27 @@ Deno.serve(async (req) => {
         );
 
         if (notificationOrderIds.length > 0) {
-          const { error: notifErr } = await serviceClient
+          const { data: notificationRows, error: notifErr } = await serviceClient
             .from("notifications")
             .update({ is_read: true })
+            .select("id")
             .eq("user_id", userId)
             .in("type", ["order_message_buyer", "order_message_seller"])
             .in("related_order_id", notificationOrderIds)
             .eq("is_read", false);
           if (notifErr) {
             console.warn("[order-messages] mark notifications read failed:", notifErr);
+          } else {
+            notificationCount = Array.isArray(notificationRows) ? notificationRows.length : 0;
           }
         }
       } catch (notifErr) {
         console.warn("[order-messages] mark notifications read threw:", notifErr);
       }
 
-      return new Response(JSON.stringify({ success: true }), {
+      const messageCount = Array.isArray(readRows) ? readRows.length : 0;
+
+      return new Response(JSON.stringify({ success: true, messageCount, notificationCount }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
