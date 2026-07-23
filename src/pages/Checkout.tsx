@@ -818,12 +818,17 @@ const Checkout = () => {
               </div>
             </div>
 
-            {/* Payment method picker (Depop-style) */}
-            <PaymentMethodPicker
-              value={selectedMethod}
-              onChange={setSelectedMethod}
-              amountCents={Math.round(total * 100)}
-            />
+            {/* Payment method picker — web only. On native, Stripe's
+                PaymentSheet shows Apple Pay + saved cards + new card in a
+                single native bottom sheet. */}
+            {!isNative() && (
+              <PaymentMethodPicker
+                value={selectedMethod}
+                onChange={setSelectedMethod}
+                amountCents={Math.round(total * 100)}
+              />
+            )}
+
 
             {/* Persistent on-screen error panel. Toasts are hidden behind
                 native payment sheets, so failures are always surfaced here. */}
