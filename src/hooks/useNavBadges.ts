@@ -58,13 +58,13 @@ export const useNavBadges = () => {
       const fetchActiveOrders = async (column: 'buyer_id' | 'seller_id') => {
         let res: any = await supabase
           .from('orders')
-          .select('id, status, payment_method, checkout_reference')
+          .select('id, order_group_id, status, payment_method, checkout_reference')
           .eq(column, user.id)
           .in('status', [...ACTIVE_ORDER_STATUSES]);
         if (res.error && isMissingPaymentMethod(res.error)) {
           res = await supabase
             .from('orders')
-            .select('id, status, checkout_reference')
+            .select('id, order_group_id, status, checkout_reference')
             .eq(column, user.id)
             .in('status', [...ACTIVE_ORDER_STATUSES]);
         }
@@ -101,9 +101,15 @@ export const useNavBadges = () => {
       ]);
 
       const sellerUnreadPerOrder: Record<string, number> = {};
+      const sellerOrderToGroup = new Map<string, string>();
+      for (const order of sellerOrders as any[]) {
+        if (order.id && order.order_group_id) sellerOrderToGroup.set(order.id, order.order_group_id);
+      }
       for (const message of ((sellerMessagesRes.data ?? []) as any[])) {
         if (!message.order_id) continue;
         sellerUnreadPerOrder[message.order_id] = (sellerUnreadPerOrder[message.order_id] || 0) + 1;
+        const groupId = sellerOrderToGroup.get(message.order_id);
+        if (groupId) sellerUnreadPerOrder[groupId] = (sellerUnreadPerOrder[groupId] || 0) + 1;
       }
 
       return {

@@ -15,7 +15,7 @@ export const useUnreadOrderMessages = () => {
       // this query traps the sales dot on forever.
       const { data: orders } = await supabase
         .from('orders')
-        .select('id')
+        .select('id, order_group_id')
         .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
         .in('status', ['awaiting', 'shipped']);
 
@@ -34,9 +34,15 @@ export const useUnreadOrderMessages = () => {
       if (!messages || messages.length === 0) return { total: 0, perOrder: new Map<string, number>() };
 
       const perOrder = new Map<string, number>();
+      const orderToGroup = new Map<string, string>();
+      for (const order of orders as Array<{ id: string; order_group_id?: string | null }>) {
+        if (order.order_group_id) orderToGroup.set(order.id, order.order_group_id);
+      }
       for (const msg of messages) {
         const oid = msg.order_id;
         perOrder.set(oid, (perOrder.get(oid) || 0) + 1);
+        const gid = orderToGroup.get(oid);
+        if (gid) perOrder.set(gid, (perOrder.get(gid) || 0) + 1);
       }
 
       return { total: messages.length, perOrder };

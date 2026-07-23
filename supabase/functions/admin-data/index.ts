@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
@@ -50,6 +51,7 @@ type AdminAction =
   | "listWaitlist"
   | "listContactSubmissions"
   | "getBadges"
+  | "getAdminLastSeen"
   | "markAdminTabSeen"
   | "listBrands"
   | "updateBrand"
@@ -1828,6 +1830,8 @@ Deno.serve(async (req) => {
       }
       case "getBadges":
         return response(await getBadges(auth.userId, payload));
+      case "getAdminLastSeen":
+        return response({ lastSeen: await getAdminLastSeen(auth.userId) });
       case "markAdminTabSeen":
         return response(await markAdminTabSeen(auth.userId, payload));
       case "listBrands":

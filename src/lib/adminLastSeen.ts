@@ -35,6 +35,30 @@ const KEY: Record<AdminTab, string> = {
 
 let backendLoadedForUser: string | null = null;
 
+async function callAdminData<T>(action: string, payload: Record<string, unknown> = {}): Promise<T> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  if (!token) throw new Error('No active session.');
+
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID as string;
+  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+  const res = await fetch(`https://${projectId}.supabase.co/functions/v1/admin-data`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: anonKey,
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ action, payload }),
+  });
+
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error || `Admin request failed: ${res.status}`);
+  return json as T;
+}
+
 export function getAdminLastSeen(tab: AdminTab): string | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -59,12 +83,9 @@ export async function loadAdminLastSeenFromBackend(): Promise<void> {
   const userId = data?.user?.id;
   if (!userId || backendLoadedForUser === userId) return;
 
-  const { data: rows, error } = await (supabase as any)
-    .from('admin_last_seen')
-    .select('tab, seen_at')
-    .eq('user_id', userId);
-
-  if (error || !Array.isArray(rows)) return;
+  const { lastSeen } = await callAdminData<{ lastSeen?: Record<string, string> }>('getAdminLastSeen').catch(() => ({ lastSeen: {} }));
+  const rows = Object.entries(lastSeen || {}).map(([tab, seen_at]) => ({ tab, seen_at }));
+  if (!Array.isArray(rows)) return;
 
   try {
     rows.forEach((row: { tab?: AdminTab; seen_at?: string }) => {
@@ -83,9 +104,7 @@ async function persistAdminTabSeen(tab: AdminTab, seenAt: string): Promise<void>
   const userId = data?.user?.id;
   if (!userId) return;
 
-  await (supabase as any)
-    .from('admin_last_seen')
-    .upsert({ user_id: userId, tab, seen_at: seenAt }, { onConflict: 'user_id,tab' });
+  await callAdminData('markAdminTabSeen', { tab, seenAt });
 }
 
 /**

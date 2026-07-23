@@ -280,12 +280,13 @@ export const useNotifications = () => {
 
       const threadIds = (threads || []).map((t: { id: string }) => t.id);
       if (threadIds.length > 0) {
-        await (supabase as any)
-          .from('chat_messages')
-          .update({ read: true })
-          .in('thread_id', threadIds)
-          .neq('sender_type', 'user')
-          .eq('read', false);
+        await Promise.all(
+          threadIds.map((threadId: string) =>
+            (supabase as any)
+              .rpc('mark_support_thread_read', { _thread_id: threadId })
+              .catch(() => undefined)
+          )
+        );
       }
     },
     onSuccess: () => {
