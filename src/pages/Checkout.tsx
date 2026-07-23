@@ -33,6 +33,7 @@ import mastercardLogo from '@/assets/cards/mastercard.svg';
 import amexLogo from '@/assets/cards/amex.svg';
 import applePayLogo from '@/assets/cards/apple-pay.svg';
 import { mapCardDeclineMessage, logCardDecline } from '@/lib/cardDeclineHandler';
+import { logApplePayDiagnostic, runApplePayPreflight } from '@/lib/applePayDiagnostics';
 
 // Apple App Review demo account — bypasses the seller-Stripe-connected check
 // so the reviewer can complete a purchase against demo listings.
@@ -339,6 +340,7 @@ const Checkout = () => {
     const nativePlatform = Capacitor.getPlatform();
     const isIOSNative = nativePlatform === 'ios';
     const paymentSheetListeners: PluginListenerHandle[] = [];
+    let applePayEnabledForThisAttempt = false;
     const logPaymentSheetFailure = (stage: string, rawError: unknown) => {
       const message = typeof rawError === 'string'
         ? rawError
@@ -366,6 +368,28 @@ const Checkout = () => {
       return;
     }
 
+    if (isIOSNative) {
+      const applePayPreflight = await runApplePayPreflight(APPLE_PAY_MERCHANT_ID);
+      applePayEnabledForThisAttempt = applePayPreflight.ok;
+
+      if (!applePayPreflight.ok) {
+        console.error('[PaymentSheet] Apple Pay preflight failed', {
+          applePayPreflight,
+          merchantId: APPLE_PAY_MERCHANT_ID,
+          paymentIntentId: pi.paymentIntentId,
+        });
+        void logApplePayDiagnostic('PaymentSheet preflight failed', applePayPreflight, {
+          merchantId: APPLE_PAY_MERCHANT_ID,
+          paymentIntentId: pi.paymentIntentId,
+          amountCents: pi.amount,
+        });
+        showCheckoutError('apple-pay-preflight', 'Apple Pay is not enabled on this build. You can still pay by card below.', {
+          code: applePayPreflight.code,
+          ref: pi.paymentIntentId,
+        });
+      }
+    }
+
     try {
       paymentSheetListeners.push(await Stripe.addListener(PaymentSheetEventsEnum.FailedToLoad, (error) => {
         console.error('[PaymentSheet] failed to load event', error);
@@ -389,8 +413,8 @@ const Checkout = () => {
         customerId: pi.customerId,
         customerEphemeralKeySecret: pi.ephemeralKey,
         merchantDisplayName: pi.merchantDisplayName || 'Flea',
-        enableApplePay: isIOSNative,
-        ...(isIOSNative ? { applePayMerchantId: APPLE_PAY_MERCHANT_ID } : {}),
+        enableApplePay: applePayEnabledForThisAttempt,
+        ...(applePayEnabledForThisAttempt ? { applePayMerchantId: APPLE_PAY_MERCHANT_ID } : {}),
         enableGooglePay: nativePlatform === 'android',
         countryCode: 'AU',
         returnURL: NATIVE_PAYMENT_RETURN_URL,
