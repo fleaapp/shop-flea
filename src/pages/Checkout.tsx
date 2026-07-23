@@ -304,195 +304,79 @@ const Checkout = () => {
     navigate(`/checkout/success?payment_intent=${paymentIntentId}`);
   };
 
-  const handleNativeWalletConfirm = async (pi: {
+  /**
+   * Native Stripe PaymentSheet — one native bottom sheet that shows Apple Pay,
+   * saved cards, and manual card entry. Replaces the custom Apple-Pay-only
+   * flow. No Safari, no in-app browser: fully native iOS/Android SDK UI.
+   */
+  const presentNativePaymentSheet = async (pi: {
     clientSecret: string;
     paymentIntentId: string;
     amount: number;
     publishableKey: string;
     ephemeralKey?: string;
     customerId?: string;
-    livemode?: boolean;
-    sellerAccountId?: string;
-    clientStripeAccountId?: string | null;
     merchantDisplayName?: string;
   }) => {
-    const platform = getNativeWalletPlatform();
-    if (!platform) return false;
-
     if (!pi.publishableKey) {
       showCheckoutError('config', 'Payment provider is not configured. Please contact support.', { code: 'no_publishable_key' });
-      return true;
+      return;
     }
     try {
-      // Restored to the last known working shape (a30ec32d): initialize with
-      // stripeAccount when the backend provides one. Backend keeps
-      // clientStripeAccountId=null for destination charges, so this is a no-op
-      // for the platform Apple Pay flow.
-      await Stripe.initialize({
-        publishableKey: pi.publishableKey,
-        ...(pi.clientStripeAccountId ? { stripeAccount: pi.clientStripeAccountId } : {}),
-      });
+      await Stripe.initialize({ publishableKey: pi.publishableKey });
     } catch (e: any) {
-      console.error('[ApplePay] Stripe.initialize failed', e);
+      console.error('[PaymentSheet] initialize failed', e);
       showCheckoutError('sdk-initialize', e?.message || 'Failed to start payment. Please try again.', { code: 'sdk_initialize_failed', ref: pi.paymentIntentId });
-      return true;
+      return;
     }
 
-    if (platform === 'ios') {
-      const publishableKeyMode = pi.publishableKey.startsWith('pk_live_') ? 'live' : 'test';
-      if (typeof pi.livemode === 'boolean' && pi.livemode !== (publishableKeyMode === 'live')) {
-        const diag = {
-          ok: false as const,
-          code: 'unknown' as const,
-          userMessage: 'Payment provider is misconfigured. Please choose Add new card or contact support.',
-          raw: `PaymentIntent mode ${pi.livemode ? 'live' : 'test'} does not match publishable key mode ${publishableKeyMode}.`,
-        };
-        console.error('[ApplePay] key mode mismatch', { diag, merchantId: APPLE_PAY_MERCHANT_ID });
-        void logApplePayDiagnostic('key mode mismatch', diag, {
-          merchantId: APPLE_PAY_MERCHANT_ID,
-          publishableKeyMode,
-          paymentIntentMode: pi.livemode ? 'live' : 'test',
-          sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
-        });
-        showCheckoutError('key-mode-mismatch', diag.userMessage, { code: 'key_mode_mismatch', ref: pi.paymentIntentId });
-        return true;
-      }
+    try {
+      await Stripe.createPaymentSheet({
+        paymentIntentClientSecret: pi.clientSecret,
+        ...(pi.customerId ? { customerId: pi.customerId } : {}),
+        ...(pi.ephemeralKey ? { customerEphemeralKeySecret: pi.ephemeralKey } : {}),
+        merchantDisplayName: pi.merchantDisplayName || 'Flea',
+        enableApplePay: true,
+        applePayMerchantId: APPLE_PAY_MERCHANT_ID,
+        countryCode: 'AU',
+        style: 'alwaysLight',
+      } as any);
+    } catch (err: any) {
+      console.error('[PaymentSheet] create failed', err);
+      showCheckoutError('paymentSheet-create', err?.message || 'Unable to start payment. Please try again.', { code: 'paymentsheet_create_failed', ref: pi.paymentIntentId });
+      return;
+    }
 
-      const preflight = await runApplePayPreflight(APPLE_PAY_MERCHANT_ID);
-      console.info('[ApplePay] preflight', {
-        preflight,
-        merchantId: APPLE_PAY_MERCHANT_ID,
-        clientStripeAccountSuffix: pi.clientStripeAccountId?.slice(-4) ?? null,
-        publishableKeyMode,
-        paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
-        sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
-      });
-      if (!preflight.ok) {
-        void logApplePayDiagnostic('preflight failed', preflight, {
-          merchantId: APPLE_PAY_MERCHANT_ID,
-          clientStripeAccountSuffix: pi.clientStripeAccountId?.slice(-4) ?? null,
-          publishableKeyMode,
-          paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
-          sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
-        });
-        showCheckoutError('preflight', preflight.userMessage, { code: preflight.code, ref: pi.paymentIntentId });
-        return true;
-      }
-
-      let nativeFailureMessage = '';
-      const failedHandle = await Stripe.addListener(ApplePayEventsEnum.Failed, (error: any) => {
-        nativeFailureMessage = typeof error === 'string' ? error : String(error?.error || error?.message || JSON.stringify(error || {}));
-        const diag = categoriseApplePayError(nativeFailureMessage);
-        console.error('[ApplePay] native failed event', { diag, nativeFailureMessage, merchantId: APPLE_PAY_MERCHANT_ID });
-        void logApplePayDiagnostic('native failed event', diag, {
-          merchantId: APPLE_PAY_MERCHANT_ID,
-          clientStripeAccountSuffix: pi.clientStripeAccountId?.slice(-4) ?? null,
-          publishableKeyMode,
-          paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
-          sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
-        });
-      });
-
-      try {
-        await Stripe.createApplePay({
-          paymentIntentClientSecret: pi.clientSecret,
-          merchantIdentifier: APPLE_PAY_MERCHANT_ID,
-          countryCode: 'AU',
-          currency: 'AUD',
-          paymentSummaryItems: [
-            {
-              label: pi.merchantDisplayName || 'Flea',
-              amount: Number((pi.amount / 100).toFixed(2)),
-            },
-          ],
-          allowedCountries: ['au'],
-          allowedCountriesErrorDescription: 'Flea is currently available in Australia only.',
-        });
-      } catch (err: any) {
-        const diag = categoriseApplePayError(err);
-        console.error('[ApplePay] createApplePay failed', { diag, err });
-        void logApplePayDiagnostic('create failed', diag, {
-          merchantId: APPLE_PAY_MERCHANT_ID,
-          clientStripeAccountSuffix: pi.clientStripeAccountId?.slice(-4) ?? null,
-          publishableKeyMode,
-          paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
-          sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
-        });
-        void failedHandle.remove();
-        showCheckoutError('createApplePay', diag.userMessage || 'Unable to start Apple Pay. Please choose Add new card.', { code: diag.code, ref: pi.paymentIntentId });
-        return true;
-      }
-
-      try {
-        const { paymentResult } = await Stripe.presentApplePay();
-        if (paymentResult === ApplePayEventsEnum.Completed) {
-          handlePaymentSuccess(pi.paymentIntentId);
-        } else if (paymentResult === ApplePayEventsEnum.Canceled) {
-          toast.message('Payment was cancelled.');
-        } else {
-          const diag = categoriseApplePayError(nativeFailureMessage || paymentResult);
-          void logApplePayDiagnostic('present returned failed', diag, {
-            merchantId: APPLE_PAY_MERCHANT_ID,
-            paymentResult,
-            publishableKeyMode,
-            paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
-            sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
-          });
-          void logCardDecline({
-            where: 'apple-pay',
-            error: { message: String(nativeFailureMessage || paymentResult) },
-            paymentIntentId: pi.paymentIntentId,
-          });
-          showCheckoutError('presentApplePay', diag.userMessage, { code: diag.code, ref: pi.paymentIntentId });
-        }
-      } catch (err: any) {
-        const diag = categoriseApplePayError(err);
-        console.error('[ApplePay] presentApplePay failed', { diag, err, merchantId: APPLE_PAY_MERCHANT_ID });
-        void logApplePayDiagnostic('present threw', diag, {
-          merchantId: APPLE_PAY_MERCHANT_ID,
-          publishableKeyMode,
-          paymentIntentMode: typeof pi.livemode === 'boolean' ? (pi.livemode ? 'live' : 'test') : 'unknown',
-          sellerAccountSuffix: pi.sellerAccountId?.slice(-4) ?? null,
-        });
+    try {
+      const { paymentResult } = await Stripe.presentPaymentSheet();
+      if (paymentResult === PaymentSheetEventsEnum.Completed) {
+        handlePaymentSuccess(pi.paymentIntentId);
+      } else if (paymentResult === PaymentSheetEventsEnum.Canceled) {
+        // Silent — user closed the sheet.
+      } else {
         void logCardDecline({
-          where: 'apple-pay',
-          error: { message: String(err?.message || err) },
+          where: 'payment-sheet',
+          error: { message: String(paymentResult) },
           paymentIntentId: pi.paymentIntentId,
         });
-        showCheckoutError('presentApplePay', diag.userMessage, { code: diag.code, ref: pi.paymentIntentId });
-      } finally {
-        void failedHandle.remove();
+        showCheckoutError('paymentSheet-present', 'Payment did not complete. Please try again.', { code: String(paymentResult), ref: pi.paymentIntentId });
       }
-      return true;
+    } catch (err: any) {
+      console.error('[PaymentSheet] present failed', err);
+      void logCardDecline({
+        where: 'payment-sheet',
+        error: { message: String(err?.message || err) },
+        paymentIntentId: pi.paymentIntentId,
+      });
+      showCheckoutError('paymentSheet-present', err?.message || 'Payment did not complete. Please try again.', { code: 'paymentsheet_present_failed', ref: pi.paymentIntentId });
     }
-
-
-    try {
-      await Stripe.isGooglePayAvailable();
-    } catch {
-      toast.error('Google Pay is not available on this device. Please choose Add new card.');
-      return true;
-    }
-
-    await Stripe.createGooglePay({
-      paymentIntentClientSecret: pi.clientSecret,
-    });
-
-    const { paymentResult } = await Stripe.presentGooglePay();
-    if (paymentResult === GooglePayEventsEnum.Completed) {
-      handlePaymentSuccess(pi.paymentIntentId);
-    } else if (paymentResult === GooglePayEventsEnum.Canceled) {
-      toast.message('Payment was cancelled.');
-    } else {
-      toast.error('Payment did not complete. Please try again.');
-    }
-    return true;
   };
 
   const walletIsAvailable = (result: CanMakePaymentResult | null, wallet: 'apple' | 'google') => {
     if (!result) return false;
     return wallet === 'apple' ? Boolean(result.applePay) : Boolean(result.googlePay);
   };
+
 
   const handleWebWalletConfirm = async () => {
     if (selectedMethod?.kind !== 'wallet') return false;
