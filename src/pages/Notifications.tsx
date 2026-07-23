@@ -356,6 +356,13 @@ const Notifications = () => {
         onOpenChange={(open) => { setSaleSheetOpen(open); if (!open) setSelectedGroup(null); }}
         onMarkShipped={handleMarkShipped}
       />
+
+      <OrderDetailsSheet
+        orders={selectedBuyerGroup?.orders ?? null}
+        open={orderSheetOpen}
+        onOpenChange={(open) => { setOrderSheetOpen(open); if (!open) setSelectedBuyerGroup(null); }}
+        onMarkDelivered={handleMarkDelivered}
+      />
       </div>
 
       <BottomNav />
