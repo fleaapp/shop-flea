@@ -276,7 +276,7 @@ serve(async (req) => {
     // and never collide with a stale one Stripe cached for 24h.
     // PI_REQUEST_VERSION: bump whenever the paymentIntents.create body shape
     // changes so old cached keys can't collide with new params.
-    const PI_REQUEST_VERSION = "v7-2026-07-23-paymentsheet-destination-charge";
+    const PI_REQUEST_VERSION = "v8-2026-07-23-paymentsheet-working-connect-shape";
     const idemBasis = [
       PI_REQUEST_VERSION,
       user.id,
@@ -299,9 +299,10 @@ serve(async (req) => {
       description,
       statement_descriptor_suffix: "FLEA",
       application_fee_amount: applicationFeeAmount,
-      // PaymentSheet + Apple Pay is most reliable with a platform-owned
-      // destination charge. Funds still route to the seller through
-      // transfer_data.destination; Flea still collects only the buyer fee.
+      // Restore the known working Connect destination-charge shape for native
+      // wallet + PaymentSheet confirmation. Funds still route to the seller;
+      // Flea still collects only the buyer fee.
+      on_behalf_of: sellerStripeAccountId,
       transfer_data: { destination: sellerStripeAccountId },
       automatic_payment_methods: { enabled: true },
       // Let issuers challenge with 3DS instead of hard-declining a first-time
