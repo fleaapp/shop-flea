@@ -139,6 +139,13 @@ async function createCheckoutNotifications(
   insertedOrders: Array<{ id: string; listing_id: string; seller_id: string }>,
   listingMap: Map<string, ListingRow>,
 ) {
+  // CRITICAL: The canonical DB trigger `trg_notify_users_on_listing_sold` on
+  // public.orders inserts item_sold / cart_item_sold / wishlist_item_sold /
+  // cart_wishlist_item_sold notification rows exactly once per new order.
+  // Do NOT re-insert them here or every checkout produces duplicate alerts.
+  // This function is push-only — it fans out APNs/web push using the same
+  // data the trigger used to build the in-app rows.
+
   const listingIds = insertedOrders.map((order) => order.listing_id);
 
   const [{ data: cartRows }, { data: favoriteRows }] = await Promise.all([
@@ -166,20 +173,23 @@ async function createCheckoutNotifications(
     favoriteUsersByListing.set(row.listing_id, set);
   }
 
-  const notifications: NotificationRow[] = [];
+  const pushes: Array<{ userId: string; notification: NotificationRow }> = [];
 
   for (const order of insertedOrders) {
     const listing = listingMap.get(order.listing_id);
     const title = listing?.title ?? "your item";
 
-    notifications.push({
-      user_id: order.seller_id,
-      type: "item_sold",
-      title: "Item Sold",
-      message: `🎉🤑 Cha-ching! Your item ${title} has just sold. Tap to view the order.`,
-      related_listing_id: order.listing_id,
-      related_user_id: buyerId,
-      related_order_id: order.id,
+    pushes.push({
+      userId: order.seller_id,
+      notification: {
+        user_id: order.seller_id,
+        type: "item_sold",
+        title: "Item Sold",
+        message: `🎉🤑 Cha-ching! Your item ${title} has just sold. Tap to view the order.`,
+        related_listing_id: order.listing_id,
+        related_user_id: buyerId,
+        related_order_id: order.id,
+      },
     });
 
     const cartUsers = cartUsersByListing.get(order.listing_id) ?? new Set<string>();
@@ -196,28 +206,25 @@ async function createCheckoutNotifications(
           ? "cart_item_sold"
           : "wishlist_item_sold";
 
-      notifications.push({
-        user_id: userId,
-        type,
-        title: type === "cart_item_sold" ? "Cart Item Sold" : type === "wishlist_item_sold" ? "Wishlist Item Sold" : "Item Sold",
-        message: title,
-        related_listing_id: order.listing_id,
-        related_user_id: order.seller_id,
-        related_order_id: order.id,
+      pushes.push({
+        userId,
+        notification: {
+          user_id: userId,
+          type,
+          title: type === "cart_item_sold" ? "Cart Item Sold" : type === "wishlist_item_sold" ? "Wishlist Item Sold" : "Item Sold",
+          message: title,
+          related_listing_id: order.listing_id,
+          related_user_id: order.seller_id,
+          related_order_id: order.id,
+        },
       });
     }
   }
 
-  if (!notifications.length) return;
-
-  const { error } = await client.from("notifications").insert(notifications);
-  if (error) {
-    console.error("[finalize-checkout] notification insert failed:", error);
-    return;
-  }
+  if (!pushes.length) return;
 
   await Promise.allSettled(
-    notifications.map((notification) => sendPush(serviceUrl, serviceKey, notification.user_id, notification)),
+    pushes.map((entry) => sendPush(serviceUrl, serviceKey, entry.userId, entry.notification)),
   );
 }
 

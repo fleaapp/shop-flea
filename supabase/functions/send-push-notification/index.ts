@@ -90,16 +90,21 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // SECURITY: normal users may push to themselves. Cross-user comment/reply
-    // pushes are allowed only when a matching in-app notification row already
-    // exists for that recipient and caller, proving this app action occurred.
+    // SECURITY: normal users may push to themselves. Cross-user pushes are
+    // allowed only when a matching in-app notification row already exists for
+    // that recipient and caller, proving this app action occurred. Applies to
+    // comment/reply/mention, review, and order shipped/delivered flows.
     if (!isServiceRole && user_id !== callerUserId) {
-      const canSendCommentPush =
-        (notification.type === "new_comment" || notification.type === "comment_reply") &&
-        typeof notification.related_listing_id === "string" &&
-        callerUserId;
+      const CROSS_USER_TYPES = new Set([
+        "new_comment",
+        "comment_reply",
+        "mention",
+        "new_review",
+        "order_shipped",
+        "order_delivered",
+      ]);
 
-      if (!canSendCommentPush) {
+      if (!callerUserId || !CROSS_USER_TYPES.has(notification.type)) {
         return new Response(JSON.stringify({ error: "Forbidden" }), {
           status: 403,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -107,16 +112,31 @@ serve(async (req) => {
       }
 
       const since = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-      const { data: matchingNotification, error: matchError } = await supabase
+      let query = supabase
         .from("notifications")
         .select("id")
         .eq("user_id", user_id)
-        .eq("related_user_id", callerUserId)
-        .eq("related_listing_id", notification.related_listing_id)
         .eq("type", notification.type)
         .gte("created_at", since)
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
+
+      if (typeof notification.related_listing_id === "string") {
+        query = query.eq("related_listing_id", notification.related_listing_id);
+      }
+      if (typeof notification.related_order_id === "string") {
+        query = query.eq("related_order_id", notification.related_order_id);
+      }
+      // Comment/review flows: related_user_id is the actor (caller).
+      if (
+        notification.type === "new_review" ||
+        notification.type === "new_comment" ||
+        notification.type === "comment_reply" ||
+        notification.type === "mention"
+      ) {
+        query = query.eq("related_user_id", callerUserId);
+      }
+
+      const { data: matchingNotification, error: matchError } = await query.maybeSingle();
 
       if (matchError || !matchingNotification) {
         return new Response(JSON.stringify({ error: "Forbidden" }), {
