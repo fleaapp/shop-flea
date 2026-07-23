@@ -438,7 +438,7 @@ const Checkout = () => {
             error: errShape,
             paymentIntentId: pi.paymentIntentId,
           });
-          toast.error(msg);
+          showCheckoutError('presentApplePay', msg, { code: 'apple_pay_failed', ref: pi.paymentIntentId });
         }
       } catch (err: any) {
         const diag = categoriseApplePayError(err);
