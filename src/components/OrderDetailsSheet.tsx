@@ -228,7 +228,7 @@ const OrderDetailsSheet = ({
                   })}
                 </div>
 
-                <div className="border-t border-border" />
+                <div className="h-px w-full bg-border" />
 
                 <div className="px-4 py-3 space-y-2">
                   <div className="flex items-center justify-between">
@@ -245,7 +245,7 @@ const OrderDetailsSheet = ({
                   )}
                 </div>
 
-                <div className="border-t border-border" />
+                <div className="h-px w-full bg-border" />
 
                 {/* Fee line */}
                 <div className="flex justify-between text-sm px-4 py-3">
