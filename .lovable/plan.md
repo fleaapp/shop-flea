@@ -1,47 +1,43 @@
-## Honest reset
+## What the screenshot proves
 
-I checked `error_logs` for the Apple Pay diagnostic writes we added. There are **zero** entries from your failed taps — the log-and-see strategy is not working, so I'm dropping it. No more "let's capture the error on the next tap."
+The Apple Pay sheet **opens**, shows your card, then PassKit fires "Apple Pay Is Not Available in Flea" at present time — with "Payment Not Completed" underneath. This is not an entitlement/merchant-ID problem (those would fail before the sheet opens). Your codesign dump already proved the entitlement is correct. The sheet opening confirms PassKit accepts `merchant.com.finditonflea.app`.
 
-## What the git history actually says
+Failure at present-time on a Stripe-brokered Apple Pay sheet has one dominant cause: the PaymentIntent is created with `on_behalf_of: <seller connected account>`, which makes Stripe validate the Apple Pay token against the **seller's** connected account. Your merchant `merchant.com.finditonflea.app` is registered on the **platform** Stripe account (Flea), not on each seller. Stripe rejects the token, and PassKit surfaces the generic "Not Available" alert.
 
-Since the last working native build (`a30ec32d`, 2026-07-21 05:21 UTC), only two native-surface changes landed:
+This is the exact behavior Stripe documents for destination charges + wallet payments: keep `transfer_data.destination` (so the seller gets paid), but do NOT set `on_behalf_of` when the platform's own merchant identifier is brokering the wallet.
 
-1. **2026-07-21 10:46** (`28a6b72f`) — `capacitor.config.ts`: `StatusBar.overlaysWebView` false→true, removed `StatusBar.backgroundColor '#DDFED7'`, `ios.backgroundColor '#DDFED7'`→transparent `#00000000`, `contentInset: 'never'`.
-2. **2026-07-22 23:37** (`0057656c`) — added `scripts/patch-native-capacitor-packages.mjs`. It rewrites `node_modules/@capacitor-community/stripe/ios/.../StripePlugin.swift` to force `STPAPIClient.shared.stripeAccount = nil` on every init, and pins Stripe iOS SDK to `exact: "25.9.0"`.
+## Why this matches "it worked yesterday"
 
-**`on_behalf_of` is not a suspect** — it's been in `stripe-connect-payment-intent` since 2026-07-15, i.e. present in yesterday's working build. I was wrong to target it last round.
+`on_behalf_of` was added to the payment-intent function as part of the Connect hardening pass. Before that, the same code path shipped destination charges without it — Apple Pay worked. Removing it restores the working configuration without touching entitlements, plugin patches, or the native flow.
 
-## Plan — binary revert, one change at a time
+## The fix (one file, backend only)
 
-### Step 1 — Remove the Stripe plugin native patch
-Edit `scripts/patch-native-capacitor-packages.mjs`:
-- Keep `patchPushNotificationsPlugin()` (proven-required, unrelated to payments).
-- Remove `patchStripePluginSwift()` and `patchStripePackageSwift()` calls and their functions.
+**`supabase/functions/stripe-connect-payment-intent/index.ts`**
+- Delete the line `on_behalf_of: sellerStripeAccountId,` from `piParams`.
+- Keep `transfer_data: { destination: sellerStripeAccountId }` unchanged — this is what routes funds to the seller.
+- Keep `application_fee_amount` unchanged — Flea still collects the buyer fee.
+- Bump `PI_REQUEST_VERSION` so Stripe issues a fresh idempotency key instead of returning a cached PI from the broken shape.
 
-That reverts the Stripe Capacitor plugin and iOS SDK to vendored defaults — the same binary shape as yesterday.
+No frontend changes. No plugin patches. No capacitor.config changes. No Xcode changes.
 
-**You run:** `git pull` → `npm install` → `npx cap sync ios` → bump Build → Archive.
+## What happens after the change
 
-**Test Apple Pay.** If it works, stop — the patch was the regression.
+- Web Apple Pay: unchanged (still works).
+- Native Apple Pay: the presented sheet is now validated against the platform account where `merchant.com.finditonflea.app` is registered → PassKit accepts → payment completes.
+- Manual card: unchanged (destination charge still routes correctly).
+- Seller payouts: unchanged — `transfer_data.destination` continues to move funds to the connected account minus the application fee.
 
-### Step 2 — Only if Step 1 fails: revert capacitor.config
-Restore `capacitor.config.ts` to the `a30ec32d` values:
-- `StatusBar.overlaysWebView: false`
-- `StatusBar.backgroundColor: '#DDFED7'`
-- `ios.backgroundColor: '#DDFED7'`
-- Remove `contentInset: 'never'`
+## Push checklist after the change
 
-This brings back the lime footer strip. That's a UI regression we solve differently after payments are green — not before.
+Only the edge function changes; no native rebuild needed.
 
-**Test Apple Pay.** By construction, after Steps 1+2 the native surface is byte-identical to the working build (minus the neutral removals of preflight/diagnostic JS).
+```bash
+git pull
+# no npm install / no cap sync / no Xcode archive required
+```
 
-### Step 3 — Only if Steps 1+2 both fail
-Something outside git changed (Apple Developer portal, provisioning profile, Xcode toolchain). At that point I stop guessing at code and we investigate the signing chain directly.
+The function auto-deploys. Retry Apple Pay in the existing TestFlight build.
 
-## What I will NOT touch
-- `on_behalf_of` or anything in `stripe-connect-payment-intent`
-- Merchant ID, entitlements, App.entitlements
-- The idempotency retry / typed error responses (working correctly)
-- Push notifications native patch (proven required)
+## If this doesn't fix it
 
-Approve and I'll execute Step 1 only.
+The next remaining hypothesis is that the connected account's `settings.payments.statement_descriptor` or capabilities are missing `card_payments`/`transfers` in a way that only surfaces at PassKit token validation. If Apple Pay still fails after the `on_behalf_of` removal, capture the exact PaymentIntent id from the failed tap so we can inspect the Stripe API log directly for the rejection reason — that is definitive and doesn't rely on the client logging path that hasn't been producing rows.
