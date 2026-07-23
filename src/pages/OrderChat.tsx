@@ -118,6 +118,21 @@ const OrderChat = () => {
     retry: 1,
   });
 
+  const upsertMessage = (incoming: OrderMessage) => {
+    queryClient.setQueryData<OrderMessage[]>(['order-messages', orderId], (prev = []) => {
+      const next = [...prev];
+      const existingIndex = next.findIndex((m) => m.id === incoming.id);
+
+      if (existingIndex >= 0) {
+        next[existingIndex] = { ...next[existingIndex], ...incoming };
+      } else {
+        next.push(incoming);
+      }
+
+      return next.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    });
+  };
+
   // Realtime subscription — match every underlying order id in the group,
   // because `order_messages` has no `order_group_id` column on Cloud.
   const realtimeOrderIds = orderInfo?.related_order_ids?.length
@@ -139,8 +154,10 @@ const OrderChat = () => {
         schema: 'public',
         table: 'order_messages',
         filter,
-      }, () => {
-        queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
+      }, (payload: any) => {
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+          upsertMessage(payload.new as OrderMessage);
+        }
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -167,8 +184,15 @@ const OrderChat = () => {
     invokeCloudFunction('order-messages', {
       method: 'PATCH',
       query: { orderId },
+    }).then(() => {
+      queryClient.setQueryData<OrderMessage[]>(['order-messages', orderId], (prev = []) =>
+        prev.map((m) => (m.sender_id !== user.id ? { ...m, read: true } : m)),
+      );
+      queryClient.invalidateQueries({ queryKey: ['unread-order-messages'] });
+      queryClient.invalidateQueries({ queryKey: ['nav-badges'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     }).catch((error) => {
-      console.warn('[OrderChat] Failed to mark messages read:', error);
+      console.error('[OrderChat] Failed to mark messages read:', error);
     });
   }, [messages, user?.id, orderId]);
 
@@ -178,6 +202,28 @@ const OrderChat = () => {
   }, [messages.length]);
 
   const sendMessage = useMutation({
+    onMutate: async ({ message, attachmentUrl }) => {
+      if (!user?.id || !orderId) return undefined;
+
+      await queryClient.cancelQueries({ queryKey: ['order-messages', orderId] });
+      const previousMessages = queryClient.getQueryData<OrderMessage[]>(['order-messages', orderId]);
+      const tempId = `optimistic-${Date.now()}`;
+      const optimisticMessage: OrderMessage = {
+        id: tempId,
+        order_id: orderInfo?.primary_order_id || orderId,
+        sender_id: user.id,
+        message,
+        attachment_url: attachmentUrl || null,
+        created_at: new Date().toISOString(),
+        read: true,
+        message_type: 'user',
+      };
+
+      queryClient.setQueryData<OrderMessage[]>(['order-messages', orderId], (prev = []) => [...prev, optimisticMessage]);
+      setNewMessage('');
+
+      return { previousMessages, tempId };
+    },
     mutationFn: async ({ message, attachmentUrl }: { message: string; attachmentUrl?: string }) => {
       if (!user?.id || !orderId) throw new Error('Not ready');
       const { data, error } = await invokeCloudFunction('order-messages', {
@@ -191,11 +237,33 @@ const OrderChat = () => {
       if (error) throw error;
       return (data as { message?: OrderMessage } | null)?.message ?? null;
     },
-    onSuccess: (inserted) => {
-      // Optimistically append so the sender sees their message instantly
-      // without waiting for the realtime round-trip.
+    onSuccess: (inserted, _variables, context) => {
       if (inserted) {
         queryClient.setQueryData<OrderMessage[]>(['order-messages', orderId], (prev = []) => {
+          const withoutOptimistic = context?.tempId ? prev.filter((m) => m.id !== context.tempId) : prev;
+          if (withoutOptimistic.some((m) => m.id === inserted.id)) return withoutOptimistic;
+          return [...withoutOptimistic, inserted].sort(
+            (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+          );
+        });
+      }
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousMessages) {
+        queryClient.setQueryData(['order-messages', orderId], context.previousMessages);
+      }
+      setNewMessage(variables.message);
+      console.error('Failed to send message:', err);
+      toast.error('Failed to send message');
+    },
+  });
+
+  const handleSend = () => {
+    const trimmed = newMessage.trim();
+    if (!trimmed || sending) return;
+    setSending(true);
+    sendMessage.mutate({ message: trimmed }, { onSettled: () => setSending(false) });
+  };
           if (prev.some((m) => m.id === inserted.id)) return prev;
           return [...prev, inserted];
         });
