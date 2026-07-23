@@ -1,54 +1,47 @@
-Rip out the custom native Apple Pay path and replace it with Stripe's standard native PaymentSheet — a native iOS pop-up sheet (not Safari, not an in-app browser) that shows Apple Pay, card, and Link in one Stripe-managed UI.
+## Plan: make native PaymentSheet checkout reliable
 
-## What gets removed
+1. **Stop treating this as a status/footer issue**
+   - No changes to `capacitor.config.ts`, status bar setup, footer/safe-area styling, splash, or native shell colours.
+   - Keep the current native UI shell exactly as-is.
 
-- Custom native Apple Pay call sequence in `src/pages/Checkout.tsx` (preflight, `createApplePay`, `presentApplePay`, native failed-event listener).
-- Custom wallet picker path that routes to Apple Pay directly (`WalletPaySheet`, Apple-Pay-only branches in `PaymentMethodPicker`).
-- Diagnostics/prewarm/hidden sheet code: `src/lib/applePayDiagnostics.ts` usage, any Stripe prewarm.
-- Custom `stripeAccount = nil` / SDK pin patch residue in `scripts/patch-native-capacitor-packages.mjs` (keep only the push-notifications APNs bridge patch).
+2. **Fix the PaymentSheet Apple Pay configuration path**
+   - Update native PaymentSheet setup in `src/pages/Checkout.tsx` so it passes the full required Stripe PaymentSheet options cleanly:
+     - `paymentIntentClientSecret`
+     - `customerId`
+     - `customerEphemeralKeySecret`
+     - `merchantDisplayName`
+     - `enableApplePay: true` only on iOS
+     - `applePayMerchantId`
+     - `countryCode: 'AU'`
+     - `returnURL`
+   - Add PaymentSheet failed/failed-to-load listeners so the app records the exact native error instead of only showing “not working”.
+   - Keep native checkout as one Stripe sheet: Apple Pay, saved cards, and card entry in the same native bottom sheet.
 
-## What gets added
+3. **Remove likely incompatible PaymentIntent fields for PaymentSheet Apple Pay**
+   - In `supabase/functions/stripe-connect-payment-intent/index.ts`, switch the PaymentIntent for mobile PaymentSheet back to a platform destination-charge shape that is simpler for Apple Pay:
+     - keep `transfer_data.destination`
+     - keep `application_fee_amount`
+     - remove `on_behalf_of`
+   - Bump the PaymentIntent idempotency version so old cached PaymentIntent shapes cannot be reused.
+   - Keep buyer fee, FREEFLEA coupon logic, seller routing, and order metadata unchanged.
 
-A single native Stripe PaymentSheet flow in `src/pages/Checkout.tsx`:
+4. **Make failure visible and traceable**
+   - If PaymentSheet creation or presentation fails, show the checkout error on-screen with the stage and payment reference.
+   - Log the raw native PaymentSheet failure through the existing decline/error logging path so future reports have usable evidence.
 
-1. Call `stripe-connect-payment-intent` edge function to get `paymentIntentClientSecret`, `ephemeralKey`, `customer`.
-2. `Stripe.initialize({ publishableKey })`.
-3. `Stripe.createPaymentSheet({ paymentIntentClientSecret, customerId, customerEphemeralKeySecret, merchantDisplayName: 'Flea', applePay: { merchantId: 'merchant.com.finditonflea.app', merchantCountryCode: 'AU' }, style: 'alwaysLight' })`.
-4. `Stripe.presentPaymentSheet()` → native bottom sheet appears.
-5. On success → call `finalize-checkout`.
-6. On cancel → close silently. On failure → single Flea-branded toast.
+5. **Deploy only the payment function after code changes**
+   - Deploy `stripe-connect-payment-intent` after the backend edit.
+   - Do not deploy or change unrelated functions.
 
-## Backend
+6. **Validation**
+   - Run a frontend typecheck/build validation after edits.
+   - Verify the code no longer uses the old direct Apple Pay preflight/present flow on native.
 
-- `stripe-connect-payment-intent`: keep `on_behalf_of` + `transfer_data.destination` intact (matches working build). Add ephemeral key creation for the buyer customer so PaymentSheet can save/reuse cards.
-- No changes to fees, coupons, `finalize-checkout` totals, or seller transfer logic.
+## What this does not change
 
-## What stays untouched
-
-- `capacitor.config.ts` (status bar overlay, transparent background, safe areas).
-- `ios-native/App.entitlements` (Apple Pay merchant id already present).
-- Status bar, footer colour, drawer, app shell, safe-area code.
-- Push notifications pipeline.
-
-## UI change in checkout
-
-- Remove the "Apple Pay / Google Pay / Card" picker on native.
-- Replace with a single "Pay" button that opens the native Stripe PaymentSheet — Apple Pay, card, and Link appear inside the sheet, chosen by the user there.
-- Web checkout unchanged.
-
-## Verification
-
-- Frontend typecheck.
-- Confirm removed files/code no longer referenced.
-- TestFlight rebuild steps:
-  ```bash
-  git pull
-  npm run build
-  npx cap sync ios
-  npx cap open ios
-  ```
-  Bump Build number → Archive → upload.
-
-## Honest limitation
-
-PaymentSheet's Apple Pay row only shows on a real device signed into iCloud with a card in Wallet, on a build signed with the Apple Pay entitlement. That entitlement is already in `App.entitlements`, so no cert/portal work is needed — but final confirmation has to be on TestFlight, not preview.
+- No status bar changes.
+- No footer colour changes.
+- No safe-area/layout changes.
+- No full rollback.
+- No certificate-focused native PassKit implementation.
+- No Safari or browser checkout.
