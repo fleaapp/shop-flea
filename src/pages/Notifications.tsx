@@ -61,10 +61,27 @@ const Notifications = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isUnauthed = !user;
-  const { sellerOrderGroups, buyerOrderGroups, markAsShipped } = useOrders();
+  const { sellerOrderGroups, buyerOrderGroups, markAsShipped, markAsDelivered } = useOrders();
   const { notifications, isLoading: loadingNotifications, unreadCount, badgeCount, markAsRead, markAllAsRead } = useNotifications();
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
+  const [selectedBuyerGroup, setSelectedBuyerGroup] = useState<OrderGroup | null>(null);
+  const [orderSheetOpen, setOrderSheetOpen] = useState(false);
+
+  const findGroup = (n: Notification, groups: OrderGroup[]): OrderGroup | null => {
+    if (n.related_order_id) {
+      const byGroup = groups.find(
+        g => (g.order_group_id || g.id) === n.related_order_id
+          || g.orders.some(o => o.id === n.related_order_id)
+      );
+      if (byGroup) return byGroup;
+    }
+    if (n.related_listing_id) {
+      const byListing = groups.find(g => g.orders.some(o => o.listing_id === n.related_listing_id));
+      if (byListing) return byListing;
+    }
+    return null;
+  };
 
   // Mark all unread notifications as read on open — this also clears the
   // bottom-nav badge (both are derived from `is_read` in the DB now).
