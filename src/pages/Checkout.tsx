@@ -420,7 +420,7 @@ const Checkout = () => {
           merchantId: APPLE_PAY_MERCHANT_ID,
           paymentIntentId: pi.paymentIntentId,
         });
-        toast.error(diag.userMessage || 'Unable to start Apple Pay. Please choose Add new card.');
+        showCheckoutError('createApplePay', diag.userMessage || 'Unable to start Apple Pay. Please choose Add new card.', { code: diag.code, ref: pi.paymentIntentId });
         return true;
       }
 
