@@ -1,22 +1,19 @@
 ## Problem
 
-Opening Sale details renders the app's error boundary ("Something went wrong"). The crash is a Rules of Hooks violation in `src/components/SalesDetailsSheet.tsx`:
-
-- `useState`, `useEffect`, `useAuth`, `useQueryClient`, `useUnreadOrderMessages`, `useExistingReview` all run at the top.
-- Then there's an early `return null` at line 103 when `orders` is empty.
-- **After** that early return, `useQuery(['seller-shipping-settings', …])` is called (line 112).
-
-When the sheet first mounts with `orders` still null/empty and then receives orders (or vice versa), the hook count changes between renders → React throws → error boundary shows "A small hiccup. Try again, or head home."
+The divider above "Shipping" in `src/components/OrderDetailsSheet.tsx` renders full-width in the browser preview, but on native iOS (WebKit inside Capacitor) it appears inset from the card edges. The divider below it (above "Secure Checkout Fee") renders correctly on both. Both dividers use identical markup (`<div className="border-t border-border" />`), so this is a native WebKit rendering quirk — likely related to a zero-height div's `border-top` being clipped or subpixel-rounded differently when the preceding sibling is a flex/image row versus a plain text row.
 
 ## Fix
 
-In `src/components/SalesDetailsSheet.tsx`:
+In `src/components/OrderDetailsSheet.tsx`, replace both zero-height `border-t` divider divs inside the Order Summary card with an explicit 1px full-width element that renders identically on iOS WebKit:
 
-1. Move the `useQuery` for `seller-shipping-settings` up above the `if (!orders || orders.length === 0) return null;` guard, alongside the other hooks. Guard its `enabled` and `queryFn` against a missing `primaryOrder` (use `primaryOrder?.seller_id` and skip when absent — already partially there via `enabled`).
-2. Move any derived values it depends on (`primaryOrder`) so they're computed before the hook but the early return stays below all hooks.
-3. Keep behavior identical otherwise — no logic/UX changes.
+```tsx
+<div className="h-px w-full bg-border" />
+```
 
-## Verification
+This gives the separator a real box (not just a border on a collapsed div), which WebKit lays out consistently regardless of the preceding sibling's content. Apply the same swap to both separators so they stay visually matched.
 
-- Reopen Sale details on an order (single item and bundled) — drawer opens without hitting the error boundary.
-- Bundle text still renders for 2+ item orders.
+## Scope
+
+- Only `src/components/OrderDetailsSheet.tsx`, presentation only.
+- No changes to `SalesDetailsSheet.tsx`, totals, bundle text, or any logic.
+- User verifies on native after the next `npx cap sync` + rebuild.
