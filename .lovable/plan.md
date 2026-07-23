@@ -1,43 +1,39 @@
-## What the screenshot proves
+Understood — status bar and footer stay exactly as they are. Dropping Step 3 entirely.
 
-The Apple Pay sheet **opens**, shows your card, then PassKit fires "Apple Pay Is Not Available in Flea" at present time — with "Payment Not Completed" underneath. This is not an entitlement/merchant-ID problem (those would fail before the sheet opens). Your codesign dump already proved the entitlement is correct. The sheet opening confirms PassKit accepts `merchant.com.finditonflea.app`.
+## What is actually different from the last working Apple Pay build (`a30ec32d`)
 
-Failure at present-time on a Stripe-brokered Apple Pay sheet has one dominant cause: the PaymentIntent is created with `on_behalf_of: <seller connected account>`, which makes Stripe validate the Apple Pay token against the **seller's** connected account. Your merchant `merchant.com.finditonflea.app` is registered on the **platform** Stripe account (Flea), not on each seller. Stripe rejects the token, and PassKit surfaces the generic "Not Available" alert.
+Compared line-by-line against the working commit, only two Apple Pay-related things are still different (ignoring the status bar/footer, which we are not touching):
 
-This is the exact behavior Stripe documents for destination charges + wallet payments: keep `transfer_data.destination` (so the seller gets paid), but do NOT set `on_behalf_of` when the platform's own merchant identifier is brokering the wallet.
+1. **Native Apple Pay frontend flow** — the working build called Apple Pay with the preflight, native failed-event listener, and AU allowed-country fields. The current build removed those and calls a simplified direct Apple Pay.
+2. **Backend PaymentIntent shape** — the working build set the seller-routing field on the PaymentIntent. The current build removed it. Removing it did not fix Apple Pay, so keeping it removed means we are still not matching the working shape.
 
-## Why this matches "it worked yesterday"
+## Plan
 
-`on_behalf_of` was added to the payment-intent function as part of the Connect hardening pass. Before that, the same code path shipped destination charges without it — Apple Pay worked. Removing it restores the working configuration without touching entitlements, plugin patches, or the native flow.
+1. **Restore the native Apple Pay code block to the exact working shape**
+   - Restore the Apple Pay call, options, preflight, and native failed-event listener as they were in `a30ec32d`.
+   - Keep it direct-to-Apple-Pay only (no payment provider sheet, no prewarm, no hidden sheet init).
+   - Keep the newer typed on-screen error panel so failures are still visible.
 
-## The fix (one file, backend only)
+2. **Restore the backend PaymentIntent parameters to the working shape**
+   - Put the seller-routing parameter back on the PaymentIntent.
+   - Keep destination routing and buyer fee handling unchanged.
+   - Keep the newer safer idempotency versioning so stale attempts do not get reused.
+   - Bump the request version so the next tap creates a fresh intent.
 
-**`supabase/functions/stripe-connect-payment-intent/index.ts`**
-- Delete the line `on_behalf_of: sellerStripeAccountId,` from `piParams`.
-- Keep `transfer_data: { destination: sellerStripeAccountId }` unchanged — this is what routes funds to the seller.
-- Keep `application_fee_amount` unchanged — Flea still collects the buyer fee.
-- Bump `PI_REQUEST_VERSION` so Stripe issues a fresh idempotency key instead of returning a cached PI from the broken shape.
+3. **Clean up the native patch script**
+   - Remove the dead payment-provider patch functions from `scripts/patch-native-capacitor-packages.mjs` so they cannot silently come back.
+   - Keep only the push notification bridge patch (which is unrelated and proven required).
 
-No frontend changes. No plugin patches. No capacitor.config changes. No Xcode changes.
+4. **Do NOT touch**
+   - `capacitor.config.ts` (status bar, footer, safe area — all left alone).
+   - Any status bar / overlay / native background code.
+   - Any Xcode signing, entitlements, merchant, or certificate setup.
 
-## What happens after the change
+5. **Push block after implementation**
+   - Backend PaymentIntent change deploys immediately.
+   - Frontend change only needs your normal build + sync + archive (no clean, no dependency reset).
+   - I’ll give you one exact copy-paste block after the code changes land.
 
-- Web Apple Pay: unchanged (still works).
-- Native Apple Pay: the presented sheet is now validated against the platform account where `merchant.com.finditonflea.app` is registered → PassKit accepts → payment completes.
-- Manual card: unchanged (destination charge still routes correctly).
-- Seller payouts: unchanged — `transfer_data.destination` continues to move funds to the connected account minus the application fee.
+## Why this is different from previous "reverts"
 
-## Push checklist after the change
-
-Only the edge function changes; no native rebuild needed.
-
-```bash
-git pull
-# no npm install / no cap sync / no Xcode archive required
-```
-
-The function auto-deploys. Retry Apple Pay in the existing TestFlight build.
-
-## If this doesn't fix it
-
-The next remaining hypothesis is that the connected account's `settings.payments.statement_descriptor` or capabilities are missing `card_payments`/`transfers` in a way that only surfaces at PassKit token validation. If Apple Pay still fails after the `on_behalf_of` removal, capture the exact PaymentIntent id from the failed tap so we can inspect the Stripe API log directly for the rejection reason — that is definitive and doesn't rely on the client logging path that hasn't been producing rows.
+Previous attempts changed one suspected thing at a time based on a theory. This change puts both the native Apple Pay call and the PaymentIntent shape back to exactly what `a30ec32d` sent — the build you confirmed worked — without touching anything else you have already fixed (status bar, footer, safe area).

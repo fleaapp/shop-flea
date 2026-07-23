@@ -276,7 +276,7 @@ serve(async (req) => {
     // and never collide with a stale one Stripe cached for 24h.
     // PI_REQUEST_VERSION: bump whenever the paymentIntents.create body shape
     // changes so old cached keys can't collide with new params.
-    const PI_REQUEST_VERSION = "v5-2026-07-23-no-onbehalfof";
+    const PI_REQUEST_VERSION = "v6-2026-07-23-restore-onbehalfof";
     const idemBasis = [
       PI_REQUEST_VERSION,
       user.id,
@@ -299,13 +299,12 @@ serve(async (req) => {
       description,
       statement_descriptor_suffix: "FLEA",
       application_fee_amount: applicationFeeAmount,
-      // NOTE: on_behalf_of is intentionally omitted. The Apple Pay merchant
-      // `merchant.com.finditonflea.app` is registered on the PLATFORM Stripe
-      // account, not on each seller's connected account. Setting on_behalf_of
-      // makes Stripe validate the Apple Pay token against the seller account
-      // and PassKit surfaces "Apple Pay Is Not Available in Flea" at present
-      // time. transfer_data.destination still routes funds to the seller and
-      // application_fee_amount still collects Flea's buyer fee.
+      // Restored to the last known working shape (a30ec32d). Removing
+      // on_behalf_of did not fix native Apple Pay, so put it back to match
+      // the working build's PaymentIntent exactly. transfer_data.destination
+      // still routes funds to the seller; application_fee_amount still
+      // collects Flea's buyer fee.
+      on_behalf_of: sellerStripeAccountId,
       transfer_data: { destination: sellerStripeAccountId },
       automatic_payment_methods: { enabled: true },
       // Let issuers challenge with 3DS instead of hard-declining a first-time
