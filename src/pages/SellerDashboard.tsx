@@ -523,26 +523,20 @@ const SellerDashboard = () => {
                   'Pay out to bank'
                 )}
               </Button>
-              <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed px-1">
-                Standard payout usually 24 hours.
-              </p>
 
-              <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed px-1">
-                Need the funds faster? Use Instant Payout (around 30 minutes) for a 1.5% fee. Available after the security hold clears.
+              <p className="text-[11px] text-muted-foreground mt-4 text-center leading-relaxed px-1">
+                <span className="font-semibold text-foreground">Need the funds faster?</span> Use <span className="font-semibold text-foreground">Instant Payout</span> (around 30 minutes) for a 1.5% fee. Available after the security hold clears.
               </p>
               <Button
                 onClick={() => setConfirm('instant')}
                 disabled={!canInstant || payoutLoading !== null}
                 variant="outline"
-                className="mt-2 h-auto py-2.5 rounded-xl border-2 border-charcoal bg-transparent text-charcoal hover:bg-charcoal/5 font-semibold disabled:opacity-50 flex-col gap-0.5"
+                className="mt-2 h-12 rounded-xl border-2 border-charcoal bg-transparent text-charcoal hover:bg-charcoal/5 font-semibold disabled:opacity-50"
               >
                 {payoutLoading === 'instant' ? (
                   <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Sending...</span>
                 ) : (
-                  <>
-                    <span className="text-[15px] leading-tight">Instant Payout</span>
-                    <span className="text-[12px] font-normal leading-tight opacity-80">1.5% fee</span>
-                  </>
+                  'Instant Payout 1.5% fee'
                 )}
               </Button>
             </div>
