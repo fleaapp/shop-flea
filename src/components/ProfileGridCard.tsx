@@ -1,5 +1,19 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { formatTagLabel } from '@/components/ListingTag';
+import { supabase } from '@/lib/supabase';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ProfileGridCardProps {
   listing: {
@@ -20,7 +34,30 @@ interface ProfileGridCardProps {
 
 const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton }: ProfileGridCardProps) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const thumb = listing.thumbnails?.[0] || listing.images[0];
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .update({ status: 'removed' })
+        .eq('id', listing.id);
+      if (error) throw error;
+      toast.success('🗑️ Listing removed');
+      queryClient.invalidateQueries({ queryKey: ['user-listings'] });
+      queryClient.invalidateQueries({ queryKey: ['listings'] });
+    } catch (e) {
+      console.error('Error removing listing:', e);
+      toast.error('Failed to remove listing');
+    } finally {
+      setIsDeleting(false);
+      setConfirmOpen(false);
+    }
+  };
 
   return (
     <div className="w-full cursor-pointer" onClick={() => {
@@ -39,17 +76,30 @@ const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton }: ProfileGr
             decoding="async"
           />
 
-          {/* Edit button - only for active listings */}
+          {/* Action buttons - only for active listings */}
           {activeTab === 'listings' && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/listing/${listing.id}/edit`);
-              }}
-              className="absolute top-1.5 right-1.5 h-7 w-7 flex items-center justify-center rounded-full bg-card/90 backdrop-blur-sm hover:bg-card z-10 text-xs"
-            >
-              ✏️
-            </button>
+            <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-10">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setConfirmOpen(true);
+                }}
+                className="h-7 w-7 flex items-center justify-center rounded-full bg-card/90 backdrop-blur-sm hover:bg-card text-xs"
+                aria-label="Remove listing"
+              >
+                🗑️
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/listing/${listing.id}/edit`);
+                }}
+                className="h-7 w-7 flex items-center justify-center rounded-full bg-card/90 backdrop-blur-sm hover:bg-card text-xs"
+                aria-label="Edit listing"
+              >
+                ✏️
+              </button>
+            </div>
           )}
 
           {/* Order status for sold items */}
@@ -80,6 +130,30 @@ const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton }: ProfileGr
           </div>
         </div>
       </div>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent
+          className="max-w-[280px] rounded-2xl p-5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <AlertDialogHeader className="space-y-2">
+            <AlertDialogTitle className="text-base text-center">Remove listing?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-center leading-relaxed">
+              This will hide your listing&nbsp;and<br />mark it as removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 sm:flex-row">
+            <AlertDialogCancel className="flex-1 mt-0 h-9 rounded-lg text-sm">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.stopPropagation(); handleDelete(); }}
+              disabled={isDeleting}
+              className="flex-1 h-9 rounded-lg text-sm bg-destructive text-white hover:bg-destructive/90"
+            >
+              {isDeleting ? 'Removing...' : 'Remove'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
