@@ -472,7 +472,7 @@ const SellerDashboard = () => {
                             </button>
                             {pendingOpen && (
                               <ul className="mt-2 divide-y divide-border">
-                                {activeGroups.map((g) => {
+                                {activeGroups.map((g, idx) => {
                                   const isBundle = g.orders.length > 1;
                                   const title = isBundle
                                     ? 'Bundle'
@@ -482,10 +482,9 @@ const SellerDashboard = () => {
                                     0,
                                   );
                                   const shipped = !!g.shipped_at || g.status === 'shipped';
-                                  // Cleared if there is no pending Stripe row still clearing.
-                                  // We can't perfectly match per-order, so treat as cleared
-                                  // when the overall pending clearing bucket is empty.
-                                  const cleared = !anyStillClearing;
+                                  // Oldest groups clear first: first `clearedCount` are cleared.
+                                  const cleared = idx < clearedCount;
+
                                   return (
                                     <li key={g.id} className="py-2 flex items-center gap-2">
                                       <div className="flex-1 min-w-0 text-[13px] text-foreground truncate">
