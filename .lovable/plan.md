@@ -1,25 +1,31 @@
-## Goal
-Close the two inactive-seller (10+ days since `last_sign_in_at`) gaps so their listings don't appear in the home feed and can't be checked out.
+## Problem
 
-## Changes
+On native, tapping the Pause Selling toggle in Settings flips on visually then instantly reverts to off. The DB write appears to silently fail (or return zero rows) while the toast success/error path masks the outcome, and the controlled `Switch` re-reads `profile.pause_selling` (still `false`) after `refreshProfile()`.
 
-### 1. Home feed SQL — exclude inactive sellers
-Update the `get_home_feed(p_limit, p_offset)` DB function via migration:
-- In the `candidates` CTE, extend the seller filter (currently excludes `status = 'blocked'` and `pause_selling = true`) to also exclude sellers where `p.last_sign_in_at IS NOT NULL AND p.last_sign_in_at < now() - interval '10 days'`.
-- Also apply the same inactive exclusion to the unauthenticated branch that returns newest active in-region listings (currently no seller filter at all — add a `LEFT JOIN profiles` there for parity with paused/blocked/inactive).
-- No signature or return-type change; keep all other logic (scoring, interleave, fallback) identical.
+Code review confirmed the wiring is otherwise sound: RLS `UPDATE` policy on `profiles` allows `auth.uid() = user_id`, `pause_selling` column exists (boolean, default false), `profiles_update_guard` does not block `pause_selling`, and the Switch is fully controlled by `profile.pause_selling` fetched via `refreshProfile()`.
 
-### 2. Checkout — block inactive-seller items
-In `src/pages/Checkout.tsx` (line ~142), update the `validItems` memo:
-- Change from `items.filter((item: any) => !item.isPaused && item.status !== 'sold')`
-- To `items.filter((item: any) => !item.isPaused && !item.isInactive && !item.isRemoved && item.status !== 'sold')`
-- This mirrors how Cart already filters and prevents an inactive-seller item that slipped through from being charged.
+## Fix
 
-## Out of scope
-- No UI copy changes — overlays and toasts already exist.
-- No changes to Cart, Favorites, WishlistCard, SellerProfile (already gated).
-- No change to the 10-day threshold or `last_sign_in_at` trigger.
+Update `handleTogglePauseSelling` in `src/pages/Settings.tsx` to:
 
-## Verification
-- Run the migration; spot-check `get_home_feed` output does not include a seller with `last_sign_in_at` older than 10 days.
-- Confirm Checkout page skips inactive items in the totals/PaymentIntent payload.
+1. Chain `.select('pause_selling').single()` onto the update so we can detect a silent zero-row response (RLS/session mismatch) and surface a real error.
+2. Optimistically update local `profile` state via a new `setProfile` exposed from `AuthContext` (or via a targeted `refreshProfile` that awaits and returns the row) so the Switch reflects the persisted value immediately, without a flash of the stale value.
+3. On error (including zero-row response), revert and toast the actual error message so we can see what's happening on native.
+
+## Technical details
+
+- `src/pages/Settings.tsx` — replace update call with:
+  ```ts
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ pause_selling: checked })
+    .eq('user_id', user.id)
+    .select('pause_selling')
+    .single();
+  if (error || !data) throw error ?? new Error('No row updated');
+  await refreshProfile();
+  ```
+- `src/context/AuthContext.tsx` — no schema change; already awaits `fetchProfile`. If the diagnostic reveals a session/auth-uid mismatch on native, add a `supabase.auth.getSession()` refresh before the update.
+- Keep the Switch controlled by `profile.pause_selling`; no optimistic-only local state.
+
+Once the diagnostic toast confirms whether the failure is RLS (zero rows) vs. a thrown error vs. a stale-profile read, apply the targeted fix in the same pass.
