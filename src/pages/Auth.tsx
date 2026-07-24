@@ -403,7 +403,7 @@ const Auth = () => {
       </div>
       
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 max-[375px]:px-4 pt-16 pb-10 max-[375px]:pt-12 max-[375px]:pb-8">
+      <div className="absolute left-0 right-0 top-56 max-[375px]:top-44 flex flex-col items-center px-6 max-[375px]:px-4">
         
         {/* Tab Toggle */}
         <div className="flex bg-[#423D3D] rounded-full p-1 mb-6 max-[375px]:mb-4 h-9">
