@@ -187,7 +187,7 @@ const PaymentMethodsSection = () => {
       try {
         const { data } = await invokeCloudFunction('stripe-connect-dashboard', {});
         if (!active || !data) return;
-        const availableCents = (data as any).available ?? 0;
+        const availableCents = (data as any).availableToWithdraw ?? (data as any).available ?? 0;
         const pendingCents = (data as any).pending ?? 0;
         const currency = ((data as any).currency ?? 'aud').toUpperCase();
         const fmt = new Intl.NumberFormat('en-AU', {
