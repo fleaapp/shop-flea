@@ -27,6 +27,7 @@ import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
 
 const Profile = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
