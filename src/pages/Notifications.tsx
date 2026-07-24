@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import BottomNav from '@/components/BottomNav';
 import GuestPromptInline from '@/components/GuestPromptInline';
 import { useAuth } from '@/context/AuthContext';
