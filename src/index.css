@@ -223,6 +223,7 @@
 /* Global keyboard-safe height: use dvh so the viewport shrinks when the keyboard opens */
 :root {
   --keyboard-safe-height: 100dvh;
+  --native-keyboard-height: 0px;
 
   /* Admin Support Hub design tokens (used inside .admin-scope) */
   --status-active: 142 76% 36%;
@@ -354,6 +355,12 @@ html.is-installed nav[data-onboarding="bottom-nav"] {
 }
 html.is-installed [data-listing-footer] {
   padding-bottom: 3rem; /* pb-12 */
+}
+
+html.is-installed .native-keyboard-lift {
+  transform: translateY(calc(-1 * var(--native-keyboard-height, 0px)));
+  transition: transform 180ms ease;
+  will-change: transform;
 }
 
 /* Native only: reserve the Dynamic Island / notch height on every screen

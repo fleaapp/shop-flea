@@ -389,21 +389,22 @@ const Auth = () => {
   // navigate away once a session resolves.
 
   return (
-    <div className="auth-screen native-safe-top fixed inset-0 bg-primary flex flex-col items-center overflow-hidden pt-20 max-[375px]:pt-14 pb-8">
-      {/* Logo — sits above form in normal flow so it moves with it */}
-      <div className="auth-logo flex justify-center mb-10 max-[375px]:mb-8">
-        <img
-          src={fleaLogoAuth}
-          alt="FLEA"
-          width={232}
-          height={84}
-          loading="eager"
-          className="h-12 max-[375px]:h-10 object-contain"
-        />
-      </div>
+    <div className="auth-screen native-safe-top fixed inset-0 bg-primary flex flex-col items-center overflow-hidden px-6 max-[375px]:px-4 pb-8">
+      <div className="auth-stack flex w-full flex-1 flex-col items-center justify-start pt-[clamp(64px,13svh,112px)] max-[375px]:pt-[clamp(48px,10svh,84px)]">
+        {/* Logo — stays in the same stack as the form so it moves with it */}
+        <div className="auth-logo flex justify-center mb-10 max-[375px]:mb-7">
+          <img
+            src={fleaLogoAuth}
+            alt="FLEA"
+            width={232}
+            height={84}
+            loading="eager"
+            className="h-12 max-[375px]:h-10 object-contain"
+          />
+        </div>
 
-      {/* Main Content */}
-      <div className="flex flex-col items-center px-6 max-[375px]:px-4 w-full">
+        {/* Main Content */}
+        <div className="flex flex-col items-center w-full">
         
 
         

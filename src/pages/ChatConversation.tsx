@@ -264,7 +264,7 @@ const ChatConversation = () => {
       </div>
 
       {/* Input */}
-      <div className="sticky bottom-0 bg-background border-t border-border px-4 pt-3 pb-8">
+      <div className="native-keyboard-lift sticky bottom-0 bg-background border-t border-border px-4 pt-3 pb-8">
         {isResolved ? (
           <p className="text-center text-sm text-muted-foreground py-2">This conversation is resolved.</p>
         ) : (

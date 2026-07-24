@@ -1,6 +1,5 @@
 import { createRoot } from "react-dom/client";
 import { SplashScreen } from '@capacitor/splash-screen';
-import { Keyboard } from '@capacitor/keyboard';
 import { Capacitor } from '@capacitor/core';
 import App from "./App.tsx";
 import "./index.css";
@@ -14,12 +13,24 @@ installIosGoogleSafariGuard();
 installStaleChunkGuard();
 installGlobalErrorHandlers();
 
-// Native keyboard: disable WebKit's automatic scroll-input-into-view so
-// tapping a text field never shifts the layout. The WebView already resizes
-// to sit above the keyboard (Keyboard.resize: Native in capacitor.config.ts),
-// so fixed footers + dvh heights handle the rest without extra scrolling.
+// Native keyboard: keep iOS' normal focused-input visibility, but expose the
+// keyboard height so only fixed chat composers lift above it. Do not globally
+// disable WebKit scroll-to-focused-input — that can leave fields hidden behind
+// the keyboard on native.
 if (Capacitor.isNativePlatform()) {
-  Keyboard.setScroll({ isDisabled: true }).catch(() => undefined);
+  void import('@capacitor/keyboard')
+    .then(({ Keyboard }) => {
+      const resetKeyboardHeight = () => {
+        document.documentElement.style.setProperty('--native-keyboard-height', '0px');
+      };
+      void Keyboard.addListener('keyboardWillShow', (info) => {
+        const keyboardHeight = Math.max(0, Number(info.keyboardHeight) || 0);
+        document.documentElement.style.setProperty('--native-keyboard-height', `${keyboardHeight}px`);
+      });
+      void Keyboard.addListener('keyboardDidHide', resetKeyboardHeight);
+      void Keyboard.addListener('keyboardWillHide', resetKeyboardHeight);
+    })
+    .catch(() => undefined);
 }
 
 
