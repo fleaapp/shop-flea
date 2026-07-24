@@ -9,7 +9,7 @@ import OrderItemThumbnailStack from '@/components/OrderItemThumbnailStack';
 import { useOrders, Order, OrderGroup } from '@/hooks/useOrders';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
+
 import { safeNavigateBack } from '@/utils/safeBack';
 import { useAuth } from '@/context/AuthContext';
 import { useGuestMode } from '@/context/GuestModeContext';
