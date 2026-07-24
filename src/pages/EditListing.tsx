@@ -286,7 +286,8 @@ const EditListing = () => {
       return;
     }
     
-    if (!productName || !fit || !category || !size || !brand || !condition || !itemPrice) {
+    const sizeRequired = requiresSize(category);
+    if (!productName || !fit || !category || (sizeRequired && !size) || !brand || !condition || !itemPrice) {
       toast.error('Please fill in all required fields');
       return;
     }
