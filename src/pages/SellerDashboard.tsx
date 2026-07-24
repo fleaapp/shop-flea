@@ -166,6 +166,7 @@ const SellerDashboard = () => {
   const [confirm, setConfirm] = useState<null | 'standard' | 'instant'>(null);
   const [settleOpen, setSettleOpen] = useState(false);
   const [actionRequiredOpen, setActionRequiredOpen] = useState(false);
+  const [pendingOpen, setPendingOpen] = useState(false);
   const [verificationError, setVerificationError] = useState<any>(null);
   const [needsIdDocument, setNeedsIdDocument] = useState(false);
   const [stripeStatus, setStripeStatus] = useState<{
