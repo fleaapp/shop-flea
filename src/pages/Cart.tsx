@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import CartItemRow from '@/components/CartItemRow';
 import OrderDetailsSheet from '@/components/OrderDetailsSheet';
 import OrderItemThumbnailStack from '@/components/OrderItemThumbnailStack';
-import { formatDistanceToNow } from 'date-fns';
+
 import { Listing } from '@/types/listing';
 import { fetchSellerShippingSettings, SellerShippingInfo, getBundleBreakdownText } from '@/utils/shippingCalculator';
 import { getAvatarUrl } from '@/utils/optimizedImage';
