@@ -140,11 +140,6 @@ const activityMeta = (type: string): { emoji: string; label: string } => {
     case 'refund':
     case 'payment_refund':
       return { emoji: '↩️', label: 'Refund' };
-    case 'application_fee':
-    case 'application_fee_refund':
-      return { emoji: '🧾', label: 'Platform fee' };
-    case 'stripe_fee':
-      return { emoji: '🧾', label: 'Processing fee' };
     case 'adjustment':
       return { emoji: '⚖️', label: 'Adjustment' };
     case 'transfer':
@@ -674,9 +669,9 @@ const SellerDashboard = () => {
               // their fee reversals looks tidy but silently combines unrelated
               // events (Stripe does not link them in the ledger payload), so we
               // now render every row and let the amounts speak for themselves.
-              const visible = [...data.activity].sort(
-                (a, b) => (b.created ?? 0) - (a.created ?? 0),
-              );
+              const visible = [...data.activity]
+                .filter((a) => !['application_fee', 'application_fee_refund', 'stripe_fee'].includes(a.type))
+                .sort((a, b) => (b.created ?? 0) - (a.created ?? 0));
               if (visible.length === 0) return null;
 
               return (
@@ -686,7 +681,8 @@ const SellerDashboard = () => {
                   </h2>
                   <ul className="rounded-2xl bg-card border border-border overflow-hidden divide-y divide-border">
                     {visible.map((a) => {
-                      const isOut = a.amount < 0;
+                      const displayAmount = a.net ?? (a.amount - (a.fee || 0));
+                      const isOut = displayAmount < 0;
                       const meta = activityMeta(a.type);
                       return (
                         <li key={a.id} className="flex items-center justify-between px-4 py-3">
@@ -698,11 +694,10 @@ const SellerDashboard = () => {
                             <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
                               {fmtDate(a.created)}
                               {a.status === 'pending' && a.available_on ? ` · Available ${fmtDate(a.available_on)}` : ''}
-                              {a.fee ? ` · Fee ${fmtMoney(a.fee, currency)}` : ''}
                             </div>
                           </div>
                           <div className={`text-[14px] font-semibold ${isOut ? 'text-destructive' : 'text-foreground'}`}>
-                            {isOut ? '−' : '+'}{fmtMoney(Math.abs(a.amount), currency)}
+                            {isOut ? '−' : '+'}{fmtMoney(Math.abs(displayAmount), currency)}
                           </div>
                         </li>
                       );
