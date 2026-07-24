@@ -1,24 +1,36 @@
-# Speed up posting comments
-
 ## Problem
-Posting a comment currently calls the `add-listing-comment` edge function. A cold start adds a multi-second delay before the input clears and the new comment appears, so users assume the button didn't work and often tap again.
 
-## Fix
-Same approach used for chat messages: post directly to the database and give the composer instant feedback.
+The native focus-scroll handler in `src/main.tsx` only nudges the focused input when its scroll parent is *already* taller than its viewport (`scrollHeight > clientHeight`). On pages like Create Listing / Edit Listing / Sale Details / Shipping tracking, the inner `overflow-y-auto` container's content often fits within the visible area, so:
 
-### `src/components/ListingComments.tsx`
-- Replace the `invokeCloudFunction('add-listing-comment', …)` call inside the `addComment` mutation with a direct `supabase.from('listing_comments').insert({ listing_id, user_id, parent_id, content })`. RLS already allows this (`INSERT` policy: `auth.uid() = user_id`), and the existing update guard, report trigger, and mention notifier all run on the DB side.
-- Keep the client-side `checkCommentContent` moderation and the `isBlocked` gate exactly as-is (both run before the insert).
-- Keep the fire-and-forget `comment-mentions` edge call for @mention notifications.
-- Move the composer reset (`setNewComment('')`, `setReplyingTo(null)`) to fire the moment the mutation starts (via `onMutate`) so the input clears immediately — the user sees the button "worked" even while the insert round-trips.
-- On error, restore the draft text so nothing is lost, and surface the toast as today.
-- After `onSuccess`, keep the existing `invalidateQueries` for `listing-comments` and `listing-comments-count`.
+- `findScrollParent` skips it (fails the `scrollHeight > clientHeight` check) and falls back to `window`.
+- The shell is `fixed inset-0`, so `window.scrollBy` does nothing.
+- Even when it is picked, there's no extra room below the last field to scroll it above the keyboard.
 
-### Not changing
-- The `add-listing-comment` edge function itself (leave deployed; nothing else calls it, but removing it is out of scope for this UX fix).
-- Query/threading logic, moderation, reporting, deletion, or notifications.
-- Comment ordering — the refetch after insert will place the new row correctly.
+Comments and message chats work because their composers use `.native-keyboard-lift` (translated up via CSS var) — not the scroll handler.
 
-## Validation
-- Typecheck.
-- Manually: post a top-level comment and a reply; confirm the composer clears instantly and the comment appears within a moment; confirm mention notifications still fire; confirm blocked users still see the restriction toast.
+## Fix (frontend only, `src/main.tsx`)
+
+Update the native keyboard handling so the scroll-into-view path works on every screen without touching layouts, chrome, or the keyboard background:
+
+1. **Relax scroll-parent detection.** In `findScrollParent`, accept any ancestor whose computed `overflow-y` is `auto`/`scroll` — drop the `scrollHeight > clientHeight` gate. We'll add the room ourselves in step 2.
+
+2. **Add temporary bottom padding equal to the keyboard height** to the chosen scroll parent while the keyboard is up, so a field near the bottom can actually be scrolled above it. Store the original `paddingBottom` on the element, set `paddingBottom: originalPx + keyboardPx + MARGIN` on `keyboardWillShow` / re-focus, and restore it on `keyboardWillHide` / `focusout`.
+
+3. **Recompute on keyboard height change.** The existing `keyboardWillShow` / `keyboardDidShow` listeners already re-run visibility — extend them to also update the padding on the current scroll parent.
+
+4. **Skip when composer opts out.** Keep the existing `.native-keyboard-lift` short-circuit so message/comment composers keep their current CSS-translate behavior untouched.
+
+5. **No changes elsewhere.** Do NOT touch `capacitor.config.ts` (keyboard stays `Body` + transparent, no black background), `src/pages/Auth.tsx` (logo/form stay put), status bar, or footer chrome.
+
+## Verification
+
+- Native TestFlight: tap the Description and Price fields on Create Listing, tracking-number field in Sale Details, address fields in Checkout — each should scroll above the keyboard.
+- Comments and chat composers should continue to lift via CSS translate, unchanged.
+- Keyboard background should remain transparent (unchanged config).
+- Auth screen layout should be identical to now.
+
+## Technical notes
+
+- All logic lives in the existing `if (Capacitor.isNativePlatform())` block in `src/main.tsx`.
+- Padding restore must be idempotent (guard against double-apply on repeated `keyboardWillShow` events).
+- Use `dataset.fleaKbPadRestore` to stash the original inline `paddingBottom` so we can restore it exactly.
