@@ -33,7 +33,7 @@ const BalanceInfo = ({ title, body, tone = 'muted' }: { title: string; body: str
       </PopoverTrigger>
       <PopoverContent className="w-72 p-4 rounded-2xl z-[100]" side="top" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
         <p className="text-sm font-semibold mb-2">{title}</p>
-        <p className="text-xs text-muted-foreground leading-relaxed">{body}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line">{body}</p>
       </PopoverContent>
     </Popover>
   );
