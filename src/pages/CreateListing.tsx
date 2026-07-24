@@ -441,7 +441,7 @@ const CreateListing = () => {
           title: productName,
           description: description || null,
           brand,
-          size: size || null,
+          size: size || 'one size',
           category,
           subcategory: subcategory || null,
           condition,
