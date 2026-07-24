@@ -335,7 +335,7 @@ const EditListing = () => {
         title: productName,
         description: description || null,
         brand,
-        size,
+        size: size || 'one size',
         category,
         condition,
         colour: colours.length > 0 ? colours.join(', ') : null,
