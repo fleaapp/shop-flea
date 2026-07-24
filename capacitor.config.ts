@@ -47,9 +47,11 @@ const config: CapacitorConfig = {
     // positions change — only the native strip beneath the WebView goes away.
     contentInset: 'never',
     limitsNavigationsToAppBoundDomains: false,
-    // Cream so any 1-frame gap during keyboard animation blends with the app
-    // background instead of flashing the WebView's default black.
-    backgroundColor: '#F4F2EB',
+    // Fully transparent so the page's own background shows through in any
+    // area the WebView temporarily exposes (e.g. around the keyboard). A
+    // fixed colour here would show as a mismatched strip against non-cream
+    // routes (lime auth, dark drawer backdrops).
+    backgroundColor: '#00000000',
   },
   android: {
     allowMixedContent: false,
