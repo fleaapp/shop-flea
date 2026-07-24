@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Loader2, AlertTriangle, Info } from 'lucide-react';
+import { ChevronLeft, Loader2, AlertTriangle, Info, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
-import { useOrders } from '@/hooks/useOrders';
+import { useOrders, isGroupRefunded } from '@/hooks/useOrders';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -33,7 +33,7 @@ const BalanceInfo = ({ title, body, tone = 'muted' }: { title: string; body: str
       </PopoverTrigger>
       <PopoverContent className="w-72 p-4 rounded-2xl z-[100]" side="top" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
         <p className="text-sm font-semibold mb-2">{title}</p>
-        <p className="text-xs text-muted-foreground leading-relaxed">{body}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line">{body}</p>
       </PopoverContent>
     </Popover>
   );
@@ -166,6 +166,7 @@ const SellerDashboard = () => {
   const [confirm, setConfirm] = useState<null | 'standard' | 'instant'>(null);
   const [settleOpen, setSettleOpen] = useState(false);
   const [actionRequiredOpen, setActionRequiredOpen] = useState(false);
+  const [pendingOpen, setPendingOpen] = useState(false);
   const [verificationError, setVerificationError] = useState<any>(null);
   const [needsIdDocument, setNeedsIdDocument] = useState(false);
   const [stripeStatus, setStripeStatus] = useState<{
@@ -400,48 +401,102 @@ const SellerDashboard = () => {
 
               return (
                 <>
-                  {unshippedRemaining > 0 && (
-                    <section className="rounded-2xl bg-card border border-border mt-2 p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <div className="text-[13px] font-medium text-foreground">Held for unshipped orders</div>
-                          <BalanceInfo
-                            title="Held for unshipped orders"
-                            body="Funds from sales you haven't shipped yet. Add tracking to release these funds into Clearing (or straight to Available if the payment has already cleared)."
-                          />
-                        </div>
-                        <div className="text-base font-semibold text-foreground">
-                          {fmtMoney(unshippedRemaining, currency)}
-                        </div>
-                      </div>
-                      <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                        Ship orders with tracking to release these funds.
-                      </div>
-                    </section>
-                  )}
+                  {(unshippedRemaining > 0 || clearing > 0) && (() => {
+                    const pendingTotal = unshippedRemaining + clearing;
+                    // Build the list of sales still generating pending funds.
+                    const activeGroups = sellerOrderGroups.filter((g) => {
+                      if (isGroupRefunded(g)) return false;
+                      return g.status === 'awaiting' || g.status === 'shipped';
+                    });
+                    // Cleared cutoff: pending payments whose available_on has passed
+                    // count as cleared. Anything else with a matching pending Stripe
+                    // row is still clearing.
+                    const nowSec = Math.floor(Date.now() / 1000);
+                    const stillClearingAmountCents = clearingPending
+                      .filter((a) => !a.available_on || a.available_on > nowSec)
+                      .reduce((s, a) => s + Math.max(a.amount ?? 0, 0), 0);
+                    const anyStillClearing = stillClearingAmountCents > 0;
 
+                    return (
+                      <section className="rounded-2xl bg-card border border-border mt-2 p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <div className="text-[13px] font-medium text-foreground">Pending</div>
+                            <BalanceInfo
+                              title="Pending"
+                              body={
+                                'Funds waiting to be released.\n\n• Valid tracking must be added before funds from a sale can be released.\n• An item may already be shipped but funds can still stay Pending while they complete the clearing period, usually around 24 hours.'
+                              }
+                            />
+                          </div>
+                          <div className="text-base font-semibold text-foreground">
+                            {fmtMoney(pendingTotal, currency)}
+                          </div>
+                        </div>
+                        {earliestClearing > 0 && (
+                          <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                            Next release {fmtDate(earliestClearing)}.
+                          </div>
+                        )}
+                        {activeGroups.length > 0 && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => setPendingOpen((v) => !v)}
+                              className="mt-3 w-full flex items-center justify-between text-[12px] font-medium text-charcoal/80"
+                            >
+                              <span>Sales in progress ({activeGroups.length})</span>
+                              <ChevronDown
+                                className={`h-4 w-4 transition-transform ${pendingOpen ? 'rotate-180' : ''}`}
+                              />
+                            </button>
+                            {pendingOpen && (
+                              <ul className="mt-2 divide-y divide-border">
+                                {activeGroups.map((g) => {
+                                  const isBundle = g.orders.length > 1;
+                                  const title = isBundle
+                                    ? 'Bundle'
+                                    : g.orders[0]?.listing?.title ?? 'Item';
+                                  const amountCents = g.orders.reduce(
+                                    (s, o) => s + Math.round(((o.price ?? 0) + (o.shipping_price ?? 0)) * 100),
+                                    0,
+                                  );
+                                  const shipped = !!g.shipped_at || g.status === 'shipped';
+                                  // Cleared if there is no pending Stripe row still clearing.
+                                  // We can't perfectly match per-order, so treat as cleared
+                                  // when the overall pending clearing bucket is empty.
+                                  const cleared = !anyStillClearing;
+                                  return (
+                                    <li key={g.id} className="py-2 flex items-center gap-2">
+                                      <div className="flex-1 min-w-0 text-[13px] text-foreground truncate">
+                                        {title}
+                                      </div>
+                                      <div className="text-[13px] font-medium text-foreground tabular-nums">
+                                        {fmtMoney(amountCents, currency)}
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <span
+                                          className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${shipped ? 'bg-primary/60 text-charcoal' : 'bg-muted text-charcoal/70'}`}
+                                        >
+                                          Shipped
+                                        </span>
+                                        <span
+                                          className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${cleared ? 'bg-primary/60 text-charcoal' : 'bg-muted text-charcoal/70'}`}
+                                        >
+                                          Cleared
+                                        </span>
+                                      </div>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            )}
+                          </>
+                        )}
+                      </section>
+                    );
+                  })()}
 
-                  {clearing > 0 && (
-                    <section className="rounded-2xl bg-muted/60 border border-border mt-3 p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <div className="text-[13px] font-medium text-foreground">Clearing from recent sales</div>
-                          <BalanceInfo
-                            title="Clearing from recent sales"
-                            body="Funds from orders you've already shipped that are still clearing with the payment provider. Card payments settle 1 to 2 business days after the buyer pays, then move to Available automatically."
-                          />
-                        </div>
-                        <div className="text-base font-semibold text-foreground">
-                          {fmtMoney(clearing, currency)}
-                        </div>
-                      </div>
-                      {earliestClearing > 0 && (
-                        <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                          Ready {fmtDate(earliestClearing)}.
-                        </div>
-                      )}
-                    </section>
-                  )}
 
                   {firstHoldCents > 0 && (
                     <section className="rounded-2xl bg-amber-50 border border-amber-200 mt-3 p-4">
@@ -534,8 +589,7 @@ const SellerDashboard = () => {
               <Button
                 onClick={() => setConfirm('instant')}
                 disabled={!canInstant || payoutLoading !== null}
-                variant="outline"
-                className="mt-5 h-12 rounded-xl border-2 border-charcoal bg-transparent text-charcoal hover:bg-charcoal/5 font-semibold disabled:opacity-50"
+                className="mt-5 h-12 rounded-xl bg-muted/60 border border-border text-charcoal hover:bg-muted font-semibold disabled:opacity-50"
               >
                 {payoutLoading === 'instant' ? (
                   <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Sending...</span>
