@@ -144,6 +144,7 @@ if (Capacitor.isNativePlatform()) {
     .then(({ Keyboard }) => {
       const resetKeyboardHeight = () => {
         document.documentElement.style.setProperty('--native-keyboard-height', '0px');
+        restoreKeyboardPadding();
       };
       void Keyboard.addListener('keyboardWillShow', (info) => {
         const keyboardHeight = Math.max(0, Number(info.keyboardHeight) || 0);
