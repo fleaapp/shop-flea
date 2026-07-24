@@ -194,8 +194,8 @@ const CardForm = ({
           className="mt-0.5"
         />
         <span className="text-sm text-muted-foreground leading-snug">
-          Save these card details for faster checkout. You can remove the card
-          anytime in Settings, under Payments.
+          Save these card details for faster checkout. You can remove saved
+          cards anytime from the payment picker at checkout.
         </span>
       </label>
 
