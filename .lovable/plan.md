@@ -1,23 +1,33 @@
-## Goal
-Tapping a push notification (native iOS or web) should open the same destination as tapping the notification inside the Alerts page — sale/order details drawer for sales/orders/refunds/shipping, chat for messages, listing page for listing-only alerts.
+## 1. Checkbox visibility (global)
 
-## Approach
-Route every push tap through the Alerts page with a query param that tells it which notification to auto-open. The existing click handler in `src/pages/Notifications.tsx` already knows how to open the right drawer, chat, or listing for every notification type — we just replay it.
+`src/components/ui/checkbox.tsx`
+- Bump size `h-4 w-4` → `h-5 w-5`
+- Border `border-primary` → `border-charcoal/50`
+- Checked state `bg-primary` / `text-primary-foreground` → `bg-charcoal` / `text-white`
+- Check icon `h-4 w-4` → `h-3.5 w-3.5`
 
-## Changes
+## 2. Save-card copy
 
-**1. `src/pages/Notifications.tsx`** — auto-open a notification on mount when the URL carries `?open=<type>&order=<id>&listing=<id>&thread=<id>` (any subset). Match the first notification in the list whose type + related ids line up, run the existing click handler, and strip the params via `history.replaceState` so refresh doesn't re-trigger.
+`src/components/checkout/CardDetailsSheet.tsx`
+- Current helper text references managing cards from "Edit profile in Settings", which is wrong now that saved cards will be managed inside checkout.
+- Update to: **"Save these card details"** with sub-copy **"You can remove saved cards anytime from the payment picker at checkout."**
 
-**2. `public/push-sw.js`** (web push) — replace the current per-type navigation with a single `/notifications?...` route built from the payload's `type`, `related_order_id`, `related_listing_id`, `related_thread_id`. Keep the existing focus/openWindow behaviour.
+## 3. Saved-card management inside checkout
 
-**3. `src/hooks/useNativePushNotifications.ts`** (iOS) — add a `pushNotificationActionPerformed` listener. Read `notification.data`, build the same `/notifications?...` URL, and navigate to it via a small event → React Router bridge (dispatch a `CustomEvent('flea-open-notification', { detail: url })` that a listener mounted in `App.tsx` translates into `navigate(url)`). Also handle a foreground `pushNotificationReceived` tap fallback where relevant.
+`src/components/checkout/PaymentMethodPicker.tsx`
+- Each saved-card row gets a trailing trash/✕ button (icon only, muted colour, right-aligned, does not trigger row selection).
+- Tapping it opens a small confirm AlertDialog ("Remove this card?" / Cancel / Remove).
+- On confirm, invoke a new edge function `stripe-detach-saved-card` with `{ payment_method_id }`, then refetch the saved-cards query and clear selection if the removed card was selected.
+- Show inline spinner on the row while the detach request is in flight.
 
-**4. `src/App.tsx`** — mount a one-line effect that listens for `flea-open-notification` and calls `navigate(detail)` inside the Router context.
+`supabase/functions/stripe-detach-saved-card/index.ts` (new)
+- Auth: manual JWT parse (project pattern), resolve user → Stripe customer by email.
+- Verify the `payment_method` belongs to that customer before calling `stripe.paymentMethods.detach(id)`.
+- Return `{ ok: true }`; 403 if ownership check fails.
+- Register in `supabase/config.toml` with `verify_jwt = false` (matches sibling stripe functions).
 
-No backend changes: `send-push-notification` already includes `type`, `related_listing_id`, `related_order_id`, `related_thread_id` in both APNs and web payloads.
+No schema changes. No changes to checkout logic beyond the picker UI and the new detach function.
 
-## Edge cases
-- If the target notification isn't in the current page's list yet (e.g. cold start before fetch), retry once after the notifications query settles.
-- Message-type alerts still land on the chat because that's what the Alerts page click handler does for them.
-- Refund/shipping/sale/order alerts open the corresponding SalesDetailsSheet or OrderDetailsSheet inline, exactly as they do when tapped in the Alerts list.
-- Cold-start on native: the listener fires after React mounts because Capacitor queues the event; the Alerts page's mount-time auto-open handles it.
+## Out of scope
+- Any changes to the Settings/Edit-profile saved-cards section (kept as-is).
+- Payment intent, Apple Pay, coupon, or pricing logic.
