@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Loader2, AlertTriangle, Info, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
-import { useOrders } from '@/hooks/useOrders';
+import { useOrders, isGroupRefunded } from '@/hooks/useOrders';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
