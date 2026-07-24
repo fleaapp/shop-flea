@@ -110,6 +110,7 @@ const ListingDetails = () => {
   const [showRemoveFromCartDialog, setShowRemoveFromCartDialog] = useState(false);
   const [showRemoveFromWishlistDialog, setShowRemoveFromWishlistDialog] = useState(false);
   const [showMarkAsSoldDialog, setShowMarkAsSoldDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [salesSheetOpen, setSalesSheetOpen] = useState(false);
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
