@@ -1,50 +1,32 @@
-## Goal
+## 1. Review notifications open the Reviews drawer
 
-Restructure sizing in `src/config/sizeConfig.ts` so:
+Today `new_review` notifications fall through to the generic branch in `src/pages/Notifications.tsx` (line ~263) and navigate to `/listing/:id`, so the user has to hunt for their new review.
 
-- **Bottoms** (jeans, pants, skirts, shorts): Alpha + Numeric + Inches + ONE SIZE + OTHER
-- **All other clothing** (tops, dresses, outerwear, sleepwear, underwear, activewear, swimwear, playsuits/jumpsuits): Alpha + Numeric only (+ ONE SIZE / OTHER extras)
-- **Shoes**: unchanged (own set per fit)
-- **Accessories**: size is optional — drawer offers only `ONE SIZE` and `OTHER`, and the size field on the listing form is non-required for the Accessories category
-- **Men's**: add a numeric size set so men's non-bottoms also get Alpha + Numeric
+Change:
+- In `handleNotificationClick`, add an explicit branch for `notification.type === 'new_review'` that navigates to `/profile` with router state `{ openReviews: true }` (own profile — the reviewed user is always the current user).
+- In `src/pages/Profile.tsx`, on mount read `useLocation().state?.openReviews` and, when true, `setReviewsOpen(true)` then clear the state via `navigate('.', { replace: true, state: {} })` so it doesn't re-trigger on back navigation.
 
-## Fit isolation (confirmed)
+No copy or design changes; the existing `ReviewsDrawer` is what opens.
 
-Sizes are already stored as 3-part keys `fit:category:size` via `src/utils/sizeKeys.ts`, so filtering Women's XS never matches Men's XS. This restructure keeps that scoping — each fit has its own alpha/numeric/inches sets, and both listings and filter selections stay fit-scoped.
+## 2. Make chat feel instant
 
-## Changes
+Sending is already optimistic (the bubble appears immediately on tap), so the perceived 5-second delay is the *load* of the chat: `OrderChat` fetches the full message list through the `order-messages` edge function, which pays a cold-start + network round-trip every time the chat opens. Same story for `ChatConversation` (support).
 
-### 1. `src/config/sizeConfig.ts`
-- Split clothing into two sub-buckets: `bottoms` and `general`.
-- Add helpers `isBottomsCategory(category)` (covers `bottoms` + subcategories `jeans`, `skirt`, `shorts`, `pants`) and `isAccessoryCategory(category)`.
-- Add `MENS_CLOTHING_NUMERIC` — proposed range `28, 30, 32, 34, 36, 38, 40, 42, 44, 46` (AU menswear inches). Say the word if you'd rather use another scale.
-- Rebuild `LISTING_SIZE_SECTIONS` and `SIZE_CONFIG`:
-  - Women's bottoms → Alpha + Numeric + Inches + Extras
-  - Women's general → Alpha + Numeric + Extras
-  - Men's bottoms → Alpha + Numeric (waist) + Inches + Extras
-  - Men's general → Alpha + Numeric + Extras
-  - Unisex bottoms → Alpha + Inches + Extras
-  - Unisex general → Alpha + Extras
-  - Kids clothing → unchanged
-  - Accessories (any fit) → `{ 'Size': ['ONE SIZE', 'OTHER'] }`
-- Update `getSizeSectionsForListing` / `getSizesForFitAndCategory` to branch on `bottoms` / `general` / `accessories` / `shoes`.
-- Update `FILTER_SIZES` to mirror the same structure so the filter sheet stays in sync — men's now shows a numeric column, women's/men's general clothing drops inches, bottoms keep all three.
+Change:
+- Replace the initial GET-through-edge-function with a direct `supabase.from('order_messages').select(...)` (RLS already restricts to buyer/seller). This removes the edge-function cold start from the open-chat path — typically 200–800 ms instead of 3–5 s.
+- Keep the existing Realtime channel and the 30 s safety refetch. Keep POST-through-edge-function for sends (it does auth checks + push fan-out).
+- Mark-as-read stays on the existing RPC (`mark_order_thread_read`), fired in the background — not awaited before rendering.
+- Apply the same swap in `src/pages/ChatConversation.tsx` for support threads, reading `chat_messages` directly.
+- Warm the message cache when the chat card is tapped: in the Orders/Sales list, on tap prefetch `['order-messages', orderId]` via `queryClient.prefetchQuery` so by the time the chat route mounts the data is usually already there. Small, isolated change in the two list pages that navigate into chat.
 
-### 2. Listing form (`src/pages/CreateListing.tsx` and `src/pages/EditListing.tsx`)
-- When the selected top-level category is `accessories`, mark the Size field as optional and skip the "size required" validation.
-- All other listing/filter behaviour stays the same.
+### Technical notes
+- `order_messages` RLS: confirm buyer/seller SELECT policy exists before switching (schema shows 3 policies on the table). If a policy is missing for the reader, add it in a follow-up migration — not part of this plan unless the check fails.
+- No schema changes.
+- No UI/design changes to the chat itself; only the data source changes.
 
-### 3. Database CHECK constraint (blocker from earlier screenshot)
-The current `listings_category_valid` CHECK only allows `tops, bottoms, dresses, outerwear, shoes, accessories, bags, other`, which is why Activewear/Swimwear/Sleepwear/etc. currently error. Migration replaces it with the full app category list:
-
-`tops, outerwear, bottoms, dresses, playsuits-jumpsuits, sleepwear, underwear, activewear, swimwear, shoes, accessories, other` (keeping `bags` allowed for any legacy rows).
-
-## Verification
-
-- Create a listing in Bottoms → drawer shows Alpha + Numeric + Inches + Extras.
-- Create a listing in Tops / Dresses / Activewear / Swimwear → drawer shows Alpha + Numeric + Extras, no inches.
-- Create a listing in Accessories → size field is optional; drawer offers ONE SIZE / OTHER only; can post without picking a size.
-- Create a listing in Shoes → unchanged.
-- Men's Tops now show numeric sizes alongside alpha.
-- Previously-blocked categories (Activewear, Swimwear, Sleepwear, Underwear, Playsuit/Jumpsuit) post successfully.
-- In the filter sheet, picking Women's XS returns only women's listings — men's XS listings do not match, and vice versa.
+## Files touched
+- `src/pages/Notifications.tsx` — add `new_review` branch.
+- `src/pages/Profile.tsx` — open Reviews drawer from router state.
+- `src/pages/OrderChat.tsx` — direct DB read for initial load + prefetch key export.
+- `src/pages/ChatConversation.tsx` — direct DB read for initial load.
+- `src/pages/Sales.tsx`, `src/pages/Cart.tsx` (order list) — prefetch on tap.
