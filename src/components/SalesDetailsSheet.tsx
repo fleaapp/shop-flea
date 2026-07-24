@@ -386,7 +386,7 @@ const SalesDetailsSheet = ({
                 onOpenChange(false);
                 setTimeout(() => navigate('/seller-dashboard'), 250);
               }}
-              className="flex items-center justify-between w-full rounded-2xl bg-muted-foreground/20 p-4 pl-6 card-shadow cursor-pointer"
+              className="flex items-center justify-between w-full rounded-2xl bg-card p-4 pl-6 card-shadow cursor-pointer"
             >
               <div className="flex flex-col items-start">
                 <span className="text-base font-semibold text-foreground">📈 Seller dashboard</span>
