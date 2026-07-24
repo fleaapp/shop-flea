@@ -159,6 +159,26 @@ const NativeDeepLinkHandler = () => {
   return null;
 };
 
+// Bridges push-tap events (native `pushNotificationActionPerformed` and web
+// service-worker `notificationclick` postMessage) into React Router
+// navigation. Kept inside <BrowserRouter> so it has access to `navigate`.
+const PushOpenHandler = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<string>).detail;
+      if (typeof detail === 'string' && detail.startsWith('/')) {
+        navigate(detail);
+      }
+    };
+    window.addEventListener('flea-open-notification', handler);
+    return () => window.removeEventListener('flea-open-notification', handler);
+  }, [navigate]);
+
+  return null;
+};
+
 const AppContent = () => {
   const location = useLocation();
   const isStandaloneSite = false;
@@ -289,6 +309,7 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <NativeDeepLinkHandler />
+        <PushOpenHandler />
         <AuthProvider>
           <TooltipProvider>
             <PushNotificationSubscriber />
