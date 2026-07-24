@@ -18,12 +18,12 @@ const config: CapacitorConfig = {
       style: 'DARK',
     },
     Keyboard: {
-      // `None` keeps the WebView at full height and lets the keyboard float
-      // above it. Resizing the WebView caused a black strip to briefly show
-      // between the page and the keyboard, and also shifted absolutely
-      // positioned elements (logo/form) upward. With `None` the page never
-      // moves and no native background is ever revealed.
-      resize: KeyboardResize.None,
+      // `Body` pads the <body> so WebKit's built-in scroll-to-focused-input
+      // keeps the focused field visible above the keyboard, without
+      // shrinking the WebView itself (which was previously exposing a black
+      // strip). The WebView stays full height; only the body gains a bottom
+      // inset equal to the keyboard height.
+      resize: KeyboardResize.Body,
       resizeOnFullScreen: true,
       // Light chrome for the accessory bar matches the app's cream palette.
       style: KeyboardStyle.Light,
