@@ -375,13 +375,21 @@ const SellerDashboard = () => {
               const pendingCents = data?.pending ?? 0;
               const hasPaidPayout = (data?.payouts ?? []).some((p) => p.status === 'paid');
 
+              // Seller-net for a pending Stripe balance transaction (gross minus
+              // the Secure Checkout Fee that Flea collects as application_fee).
+              const netCents = (a: ActivityRow) =>
+                Math.max(
+                  typeof a.net === 'number' ? a.net : (a.amount ?? 0) - (a.fee ?? 0),
+                  0,
+                );
+
               // 1. Actual first sale = earliest pending payment by created timestamp
               const pendingPayments = (data?.activity ?? [])
                 .filter((a) => a.status === 'pending' && a.type === 'payment')
                 .slice()
                 .sort((a, b) => (a.created ?? 0) - (b.created ?? 0));
               const firstSale = !hasPaidPayout && pendingPayments.length > 0 ? pendingPayments[0] : null;
-              const firstHoldCents = firstSale ? Math.max(firstSale.amount ?? 0, 0) : 0;
+              const firstHoldCents = firstSale ? netCents(firstSale) : 0;
 
               // 2. First sale is almost always also the first (still-unshipped) order — subtract from unshipped first
               const unshippedRemaining = Math.max(unshippedCents - firstHoldCents, 0);
@@ -399,13 +407,23 @@ const SellerDashboard = () => {
                 .filter((a) => a.available_on)
                 .reduce<number>((min, a) => (min === 0 ? (a.available_on as number) : Math.min(min, a.available_on as number)), 0);
 
+              // Identify the sellerOrderGroup that corresponds to the first
+              // payout hold so we don't double-count it in Sales in progress.
+              const firstHoldGroupId = firstHoldCents > 0
+                ? [...sellerOrderGroups]
+                    .filter((g) => !isGroupRefunded(g) && (g.status === 'awaiting' || g.status === 'shipped'))
+                    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0]?.id ?? null
+                : null;
+
               return (
                 <>
                   {(unshippedRemaining > 0 || clearing > 0) && (() => {
                     const pendingTotal = unshippedRemaining + clearing;
                     // Build the list of sales still generating pending funds.
+                    // Exclude the group already shown in the First payout hold card.
                     const activeGroups = sellerOrderGroups.filter((g) => {
                       if (isGroupRefunded(g)) return false;
+                      if (firstHoldGroupId && g.id === firstHoldGroupId) return false;
                       return g.status === 'awaiting' || g.status === 'shipped';
                     });
                     // Cleared cutoff: pending payments whose available_on has passed
@@ -414,8 +432,9 @@ const SellerDashboard = () => {
                     const nowSec = Math.floor(Date.now() / 1000);
                     const stillClearingAmountCents = clearingPending
                       .filter((a) => !a.available_on || a.available_on > nowSec)
-                      .reduce((s, a) => s + Math.max(a.amount ?? 0, 0), 0);
+                      .reduce((s, a) => s + netCents(a), 0);
                     const anyStillClearing = stillClearingAmountCents > 0;
+
 
                     return (
                       <section className="rounded-2xl bg-card border border-border mt-2 p-4">
