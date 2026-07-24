@@ -890,7 +890,7 @@ const CreateListing = () => {
         open={sizeDrawerOpen}
         onOpenChange={setSizeDrawerOpen}
         fit={fit}
-        category={isShoeCategory(category) ? 'shoes' : 'clothing'}
+        category={category}
         selectedSize={size}
         onSelectSize={setSize}
       />
