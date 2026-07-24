@@ -440,7 +440,7 @@ const OrderChat = () => {
       </div>
 
       {!isReadOnly && !messagesError && (
-        <div className="sticky bottom-0 bg-background border-t border-border px-4 pt-3 pb-8 flex items-center gap-2">
+        <div className="native-keyboard-lift sticky bottom-0 bg-background border-t border-border px-4 pt-3 pb-8 flex items-center gap-2">
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
           <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-muted transition-colors shrink-0" disabled={sending}>
             <Image className="h-5 w-5 text-muted-foreground" />
