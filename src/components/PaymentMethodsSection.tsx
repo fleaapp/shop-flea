@@ -210,8 +210,17 @@ const PaymentMethodsSection = () => {
         const firstHoldCents = !hasPaidPayout && pendingPayments.length > 0
           ? netCents(pendingPayments[0])
           : 0;
-        const dashboardPendingCents = Math.max(rawPending - firstHoldCents, 0);
+
+        // Mirror SellerDashboard's exact Pending-header math so Settings shows
+        // dashboard Pending + first-payout hold. Raw Stripe pending alone is
+        // wrong once funds clear into `available` while still ring-fenced by
+        // unshipped orders (Flea's ring-fence, not Stripe's).
+        const unshippedRemaining = Math.max(unshipped - firstHoldCents, 0);
+        const unshippedInPending = Math.max(unshippedRemaining - rawAvailable, 0);
+        const clearing = Math.max(rawPending - firstHoldCents - unshippedInPending, 0);
+        const dashboardPendingCents = unshippedRemaining + clearing;
         const settingsPendingCents = dashboardPendingCents + firstHoldCents;
+
 
         const currency = (d.currency ?? 'aud').toUpperCase();
         const fmt = new Intl.NumberFormat('en-AU', {

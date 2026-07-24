@@ -1,58 +1,23 @@
-## Goal
+## Why it shows $2.00
 
-Make the Settings "Seller Dashboard" button show a `Pending` value that equals the Seller Dashboard `Pending` header + `First payout hold`, and confirm the underlying math + fee flow are correct.
+Stripe's raw `pending` balance is only $2.00 right now because 4 of the 6 unshipped orders' funds already cleared through Stripe's 2-day rolling window and moved into Stripe's `available` bucket — even though the seller hasn't shipped them yet. Those "cleared but unshipped" funds are ring-fenced by Flea (`unshippedCents`), not by Stripe, so they don't appear in Stripe's `pending`.
 
-## What I found
+Verified from the live edge response for @sarahhearn2:
+`available=320, pending=200, unshippedCents=420, activity firstHold(net)=100`
 
-Verified against `@sarahhearn2`'s live orders:
+My previous fix reduced to raw Stripe pending, which gives $2.00 — wrong.
 
-- 6 awaiting orders totalling **$4.20** gross (item + shipping)
-- 1 shipped-not-yet-delivered order totalling **$1.00** gross
-- Refunded orders excluded
+## The right formula (matches Seller Dashboard exactly)
 
-That matches your report: Pending header $4.20, First-payout hold $1.00.
+```
+firstHold           = net of earliest pending payment (only until first payout) = 100
+unshippedRemaining  = max(unshipped − firstHold, 0)                             = 320
+unshippedInPending  = max(unshippedRemaining − available, 0)                    = 0
+clearing            = max(pending − firstHold − unshippedInPending, 0)          = 100
+dashboardPending    = unshippedRemaining + clearing                             = 420  ($4.20 ✓)
+settingsPending     = dashboardPending + firstHold                              = 520  ($5.20 ✓)
+```
 
-### Where the numbers come from today
+## Fix
 
-`supabase/functions/stripe-connect-dashboard/index.ts` returns:
-- `available`  = raw Stripe `balance.available`
-- `pending`   = raw Stripe `balance.pending` (this **already includes** the first-payout-hold sale, because that sale is a Stripe pending payment)
-- `unshippedCents` = sum of `orders.status='awaiting'` gross totals
-- `availableToWithdraw` = `max(available − unshippedCents, 0)`
-
-`src/pages/SellerDashboard.tsx` then splits `pending` into two visible buckets:
-- **First payout hold** = net of the earliest pending Stripe payment (only while `hasPaidPayout` is false)
-- **Pending header** = `unshippedRemaining + clearing` (excludes the first-payout-hold amount)
-
-`src/components/PaymentMethodsSection.tsx` currently shows:
-- `Available:` = `availableToWithdraw ?? available`
-- `Pending:`  = raw `pending` (which does include the hold, but only because hold funds happen to still be in Stripe's pending bucket — it's not the same definition the dashboard header uses, so the number won't always match "dashboard Pending + hold")
-
-### Fee flow (verified, working)
-
-`stripe-connect-payment-intent`:
-- Buyer is charged `items + shipping + secureCheckoutFee` (4% + $0.70, waived by `FREEFLEA`).
-- Destination charge: `transfer_data.destination = seller`, `on_behalf_of = seller`, `application_fee_amount = secureCheckoutFee`.
-- Result: seller nets `items + shipping`; Flea keeps the Secure Checkout Fee; Stripe processing fees are debited from Flea's platform balance out of that fee (destination-charge default). No fee is ever taken from the seller's payout.
-
-This matches the intended model — no change needed.
-
-## Plan
-
-Single-file edit to `src/components/PaymentMethodsSection.tsx` so the button reflects the Seller Dashboard math exactly.
-
-1. In the same `useEffect` that calls `stripe-connect-dashboard`, use the response fields to compute:
-   - `availableCents` = `data.availableToWithdraw ?? max(data.available − data.unshippedCents, 0)` (unchanged behaviour, but always derive from `unshippedCents` so the label can't fall back to raw available).
-   - `firstHoldCents` = net of the earliest `activity` row where `status='pending'` and `type='payment'`, **only when** `hasPaidPayout` is false — mirrors the dashboard.
-   - `dashboardPendingCents` = `data.pending − firstHoldCents` clamped at 0 (the dashboard's Pending header).
-   - `settingsPendingCents` = `dashboardPendingCents + firstHoldCents` = effectively `data.pending`, but computed via the same two components so the label is provably "Pending + hold".
-2. Render `Available: $X` / `Pending: $Y` using those values.
-3. Keep the existing focus refresh so the button stays live.
-
-No backend or fee-flow changes.
-
-## Answering your questions directly
-
-- **Does the math add up?** Yes — for your account: unshipped gross = $4.20, shipped-clearing gross = $1.00, Stripe pending = $5.20. Dashboard splits that into Pending $4.20 + Hold $1.00. After this fix, Settings will show `Pending: $5.20`.
-- **Available $3.20 on Settings vs $0 you expect:** that will resolve once the label always derives from `availableToWithdraw` (available − unshipped). If Stripe's `available` legitimately has $3.20 but $4.20 is unshipped, the ring-fence pushes it to $0, which is what you want.
-- **Fee flow:** correct as-is. Buyer pays the fee on top, seller nets item + shipping, Flea absorbs Stripe processing fees out of the Secure Checkout Fee.
+Update the balance computation in `src/components/PaymentMethodsSection.tsx` to use the full dashboard formula above instead of `rawPending − firstHold`. Available stays as `availableToWithdraw`. No backend or fee changes.
