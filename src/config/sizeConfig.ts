@@ -13,8 +13,8 @@ export const FIT_OPTIONS = [
 
 // Hierarchical category structure with subcategories
 export const CATEGORY_OPTIONS = [
-  { 
-    value: 'tops', 
+  {
+    value: 'tops',
     label: 'Tops',
     subcategories: [
       { value: 'tshirt', label: 'T-shirt' },
@@ -26,16 +26,16 @@ export const CATEGORY_OPTIONS = [
       { value: 'vest', label: 'Vest' },
     ],
   },
-  { 
-    value: 'outerwear', 
+  {
+    value: 'outerwear',
     label: 'Outerwear',
     subcategories: [
       { value: 'jacket', label: 'Jacket' },
       { value: 'coat', label: 'Coat' },
     ],
   },
-  { 
-    value: 'bottoms', 
+  {
+    value: 'bottoms',
     label: 'Bottoms',
     subcategories: [
       { value: 'jeans', label: 'Jeans' },
@@ -50,8 +50,8 @@ export const CATEGORY_OPTIONS = [
   { value: 'underwear', label: 'Underwear', subcategories: [] },
   { value: 'activewear', label: 'Activewear', subcategories: [] },
   { value: 'swimwear', label: 'Swimwear', subcategories: [] },
-  { 
-    value: 'shoes', 
+  {
+    value: 'shoes',
     label: 'Shoes',
     subcategories: [
       { value: 'boots', label: 'Boots' },
@@ -61,8 +61,8 @@ export const CATEGORY_OPTIONS = [
       { value: 'heels-dress-shoes', label: 'Heels / dress shoes' },
     ],
   },
-  { 
-    value: 'accessories', 
+  {
+    value: 'accessories',
     label: 'Accessories',
     subcategories: [
       { value: 'hats', label: 'Hats' },
@@ -77,15 +77,30 @@ export const CATEGORY_OPTIONS = [
 // Flat list for simple category dropdown (value only)
 export const FLAT_CATEGORY_OPTIONS = CATEGORY_OPTIONS.map(c => ({ value: c.value, label: c.label }));
 
-// Check if a category is a shoe category
+// Category type detection helpers
 export const isShoeCategory = (category: string): boolean => {
-  return category.toLowerCase() === 'shoes';
+  const cat = (category ?? '').toLowerCase();
+  return cat === 'shoes' || cat.includes('shoes');
+};
+
+export const isBottomsCategory = (category: string): boolean => {
+  const cat = (category ?? '').toLowerCase();
+  return cat === 'bottoms' || cat === 'jeans' || cat === 'skirt' || cat === 'shorts' || cat === 'pants';
+};
+
+export const isAccessoryCategory = (category: string): boolean => {
+  const cat = (category ?? '').toLowerCase();
+  return cat === 'accessories' || cat === 'hats' || cat === 'bags' || cat === 'scarves-gloves' || cat === 'jewellery';
 };
 
 // Check if category supports ONE SIZE (clothing categories except shoes)
 export const supportsOneSize = (category: string): boolean => {
-  const cat = category.toLowerCase();
-  return cat !== 'shoes' && !cat.includes('shoes');
+  return !isShoeCategory(category);
+};
+
+// Accessories don't require a size to be selected
+export const requiresSize = (category: string): boolean => {
+  return !isAccessoryCategory(category);
 };
 
 // ===== WOMEN'S SIZES =====
@@ -96,7 +111,6 @@ const WOMENS_BOTTOMS_INCHES = [
   '30"', '31"', '32"', '34"', '35"', '36"', '37"', '38"', '39"', '40"'
 ];
 const WOMENS_EXTRAS = ['ONE SIZE', 'OTHER'];
-const WOMENS_CLOTHING = [...WOMENS_CLOTHING_ALPHA, ...WOMENS_CLOTHING_NUMERIC, ...WOMENS_BOTTOMS_INCHES, ...WOMENS_EXTRAS];
 
 // Women's shoes: AU 3-14 including half sizes
 const WOMENS_SHOES = [
@@ -106,11 +120,12 @@ const WOMENS_SHOES = [
 
 // ===== MEN'S SIZES =====
 const MENS_CLOTHING_ALPHA = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
+// Men's numeric clothing sizes (AU/US menswear — chest/waist inches)
+const MENS_CLOTHING_NUMERIC = ['28', '30', '32', '34', '36', '38', '40', '42', '44', '46'];
 const MENS_BOTTOMS_INCHES = [
   '25"', '26"', '28"', '30"', '32"', '34"', '36"', '38"', '40"', '42"', '44"'
 ];
 const MENS_EXTRAS = ['ONE SIZE', 'OTHER'];
-const MENS_CLOTHING = [...MENS_CLOTHING_ALPHA, ...MENS_BOTTOMS_INCHES, ...MENS_EXTRAS];
 
 // Men's shoes: AU 5-17.5 including half sizes
 const MENS_SHOES = [
@@ -124,7 +139,7 @@ const UNISEX_CLOTHING_ALPHA = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '
 const UNISEX_BOTTOMS_INCHES = [
   '21"', '22"', '23"', '24"', '25"', '26"', '28"', '30"', '32"', '34"', '36"', '38"', '40"', '42"', '44"'
 ];
-const UNISEX_CLOTHING = [...UNISEX_CLOTHING_ALPHA, ...UNISEX_BOTTOMS_INCHES];
+const UNISEX_EXTRAS = ['ONE SIZE', 'OTHER'];
 
 // Unisex shoes with F/M equivalents
 const UNISEX_SHOES = [
@@ -147,18 +162,22 @@ const KIDS_SHOES = [
   '1Y', '2Y', '3Y', '4Y', '5Y', '6Y', '7Y'
 ];
 
-// Size configuration map for listings (single select by fit)
+// Accessories — optional size
+const ACCESSORY_SIZES = ['ONE SIZE', 'OTHER'];
+
+// Flat size set for a fit + category (accepts real category values like
+// 'tops', 'bottoms', 'shoes', 'accessories', etc.)
 export const SIZE_CONFIG: Record<FitType, Record<CategoryType, string[]>> = {
   women: {
-    clothing: WOMENS_CLOTHING,
+    clothing: [...WOMENS_CLOTHING_ALPHA, ...WOMENS_CLOTHING_NUMERIC, ...WOMENS_BOTTOMS_INCHES, ...WOMENS_EXTRAS],
     shoes: WOMENS_SHOES,
   },
   men: {
-    clothing: MENS_CLOTHING,
+    clothing: [...MENS_CLOTHING_ALPHA, ...MENS_CLOTHING_NUMERIC, ...MENS_BOTTOMS_INCHES, ...MENS_EXTRAS],
     shoes: MENS_SHOES,
   },
   unisex: {
-    clothing: UNISEX_CLOTHING,
+    clothing: [...UNISEX_CLOTHING_ALPHA, ...UNISEX_BOTTOMS_INCHES, ...UNISEX_EXTRAS],
     shoes: UNISEX_SHOES,
   },
   kids: {
@@ -167,10 +186,16 @@ export const SIZE_CONFIG: Record<FitType, Record<CategoryType, string[]>> = {
   },
 };
 
-// Sectioned size configuration for listings drawer (3 sections for clothing)
+// Sectioned size configuration for listings drawer.
+// Structure: fit -> bucket (general | bottoms | shoes | accessories) -> sections
 export const LISTING_SIZE_SECTIONS = {
   women: {
-    clothing: {
+    general: {
+      'Alpha (AU sizing)': WOMENS_CLOTHING_ALPHA,
+      'Numeric (AU sizing)': WOMENS_CLOTHING_NUMERIC,
+      'Extras': WOMENS_EXTRAS,
+    },
+    bottoms: {
       'Alpha (AU sizing)': WOMENS_CLOTHING_ALPHA,
       'Numeric (AU sizing)': WOMENS_CLOTHING_NUMERIC,
       'Bottoms (Inches)': WOMENS_BOTTOMS_INCHES,
@@ -179,59 +204,99 @@ export const LISTING_SIZE_SECTIONS = {
     shoes: {
       'Shoes (AU)': WOMENS_SHOES,
     },
+    accessories: {
+      'Size': ACCESSORY_SIZES,
+    },
   },
   men: {
-    clothing: {
+    general: {
       'Alpha (AU sizing)': MENS_CLOTHING_ALPHA,
+      'Numeric (AU sizing)': MENS_CLOTHING_NUMERIC,
+      'Extras': MENS_EXTRAS,
+    },
+    bottoms: {
+      'Alpha (AU sizing)': MENS_CLOTHING_ALPHA,
+      'Numeric (AU sizing)': MENS_CLOTHING_NUMERIC,
       'Bottoms (Inches)': MENS_BOTTOMS_INCHES,
       'Extras': MENS_EXTRAS,
     },
     shoes: {
       'Shoes (AU)': MENS_SHOES,
     },
+    accessories: {
+      'Size': ACCESSORY_SIZES,
+    },
   },
   unisex: {
-    clothing: {
+    general: {
+      'Alpha (AU sizing)': UNISEX_CLOTHING_ALPHA,
+      'Extras': UNISEX_EXTRAS,
+    },
+    bottoms: {
       'Alpha (AU sizing)': UNISEX_CLOTHING_ALPHA,
       'Bottoms (Inches)': UNISEX_BOTTOMS_INCHES,
+      'Extras': UNISEX_EXTRAS,
     },
     shoes: {
       'Shoes (AU F / M)': UNISEX_SHOES,
     },
+    accessories: {
+      'Size': ACCESSORY_SIZES,
+    },
   },
   kids: {
-    clothing: {
+    general: {
+      'Clothing': KIDS_CLOTHING,
+    },
+    bottoms: {
       'Clothing': KIDS_CLOTHING,
     },
     shoes: {
       'Shoes (AU)': KIDS_SHOES,
     },
+    accessories: {
+      'Size': ACCESSORY_SIZES,
+    },
   },
 } as const;
 
-// Get sectioned sizes for listing drawer
+type ListingBucket = 'general' | 'bottoms' | 'shoes' | 'accessories';
+
+const resolveBucket = (category: string): ListingBucket => {
+  if (isShoeCategory(category)) return 'shoes';
+  if (isAccessoryCategory(category)) return 'accessories';
+  if (isBottomsCategory(category)) return 'bottoms';
+  return 'general';
+};
+
+// Get sectioned sizes for listing drawer. Accepts the raw category value.
 export const getSizeSectionsForListing = (fit: string, category: string): Record<string, string[]> => {
-  const normalizedFit = fit.toLowerCase() as FitType;
-  const isShoes = isShoeCategory(category);
-  const categoryKey: CategoryType = isShoes ? 'shoes' : 'clothing';
-  
+  const normalizedFit = (fit ?? '').toLowerCase() as FitType;
   if (!LISTING_SIZE_SECTIONS[normalizedFit]) return {};
-  return LISTING_SIZE_SECTIONS[normalizedFit][categoryKey] || {};
+  const bucket = resolveBucket(category);
+  const sections = LISTING_SIZE_SECTIONS[normalizedFit][bucket];
+  return (sections as unknown as Record<string, string[]>) || {};
 };
 
-// Get sizes based on fit and category (for listings - flat array)
+// Get sizes based on fit and category (flat array — for filters/callers that
+// don't need the sectioned structure). Accepts raw category value.
 export const getSizesForFitAndCategory = (fit: string, category: string): string[] => {
-  const normalizedFit = fit.toLowerCase() as FitType;
-  const isShoes = isShoeCategory(category);
-  const categoryKey: CategoryType = isShoes ? 'shoes' : 'clothing';
-  
-  if (!SIZE_CONFIG[normalizedFit]) return [];
-  if (!SIZE_CONFIG[normalizedFit][categoryKey]) return [];
-  
-  return SIZE_CONFIG[normalizedFit][categoryKey];
+  const sections = getSizeSectionsForListing(fit, category);
+  const seen = new Set<string>();
+  const flat: string[] = [];
+  Object.values(sections).forEach((sizes) => {
+    sizes.forEach((s) => {
+      if (!seen.has(s)) {
+        seen.add(s);
+        flat.push(s);
+      }
+    });
+  });
+  return flat;
 };
 
-// Filter size definitions - organized by gender for the accordion structure
+// Filter size definitions — organised by gender for the accordion structure.
+// Consumers destructure `alpha`, `numeric`, `inches`, `shoes`, so keep shape stable.
 export const FILTER_SIZES = {
   women: {
     clothing: {
@@ -244,6 +309,7 @@ export const FILTER_SIZES = {
   men: {
     clothing: {
       alpha: MENS_CLOTHING_ALPHA,
+      numeric: MENS_CLOTHING_NUMERIC,
       inches: MENS_BOTTOMS_INCHES,
     },
     shoes: MENS_SHOES,
@@ -266,13 +332,11 @@ export const FILTER_SIZES = {
 // Get all possible sizes (for display purposes when no filter is applied)
 export const getAllSizes = (): string[] => {
   const allSizes = new Set<string>();
-  
   Object.values(SIZE_CONFIG).forEach(categories => {
     Object.values(categories).forEach(sizes => {
       sizes.forEach(size => allSizes.add(size));
     });
   });
-  
   return Array.from(allSizes);
 };
 
@@ -280,12 +344,12 @@ export const getAllSizes = (): string[] => {
 export const CONDITIONS = ['New', 'Like new', 'Good', 'Fair'];
 
 export const COLOURS = [
-  'Black', 'White', 'Grey', 'Navy', 'Blue', 'Green', 'Khaki', 
-  'Beige / Cream', 'Brown', 'Red', 'Pink', 'Purple', 'Yellow', 
+  'Black', 'White', 'Grey', 'Navy', 'Blue', 'Green', 'Khaki',
+  'Beige / Cream', 'Brown', 'Red', 'Pink', 'Purple', 'Yellow',
   'Orange', 'Silver', 'Gold', 'Tan', 'Multi / Patterned'
 ];
 
 export const STYLES = [
-  'Active', 'Casual', 'Vintage', 'Y2K', 'Boho', 'Surf', 
+  'Active', 'Casual', 'Vintage', 'Y2K', 'Boho', 'Surf',
   'Summer', 'Winter', 'Streetwear', 'Lounge', 'Formal', 'Office', 'Festival', 'Other'
 ];

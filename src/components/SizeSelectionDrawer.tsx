@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
-import { getSizeSectionsForListing, isShoeCategory } from '@/config/sizeConfig';
+import { getSizeSectionsForListing } from '@/config/sizeConfig';
 
 interface SizeSelectionDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   fit: string;
+  /** Raw category value — e.g. 'tops', 'bottoms', 'shoes', 'accessories'. */
   category: string;
   selectedSize: string;
   onSelectSize: (size: string) => void;
@@ -21,7 +22,7 @@ const SizeSelectionDrawer = ({
 }: SizeSelectionDrawerProps) => {
   const sizeSections = useMemo(() => {
     if (!fit || !category) return {};
-    return getSizeSectionsForListing(fit, isShoeCategory(category) ? 'shoes' : category);
+    return getSizeSectionsForListing(fit, category);
   }, [fit, category]);
 
   const handleSizeSelect = (size: string) => {

@@ -26,7 +26,7 @@ import {
   CONDITIONS,
   COLOURS,
   STYLES,
-  isShoeCategory,
+  requiresSize,
 } from '@/config/sizeConfig';
 import { COLOUR_SWATCHES } from '@/utils/colourSwatches';
 import ConditionInfoPopover from '@/components/ConditionInfoPopover';
@@ -285,7 +285,8 @@ const EditListing = () => {
       return;
     }
     
-    if (!productName || !fit || !category || !size || !brand || !condition || !itemPrice) {
+    const sizeRequired = requiresSize(category);
+    if (!productName || !fit || !category || (sizeRequired && !size) || !brand || !condition || !itemPrice) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -333,7 +334,7 @@ const EditListing = () => {
         title: productName,
         description: description || null,
         brand,
-        size,
+        size: size || 'one size',
         category,
         condition,
         colour: colours.length > 0 ? colours.join(', ') : null,
@@ -827,7 +828,7 @@ const EditListing = () => {
         open={sizeDrawerOpen}
         onOpenChange={setSizeDrawerOpen}
         fit={fit}
-        category={isShoeCategory(category) ? 'shoes' : 'clothing'}
+        category={category}
         selectedSize={size}
         onSelectSize={setSize}
       />
