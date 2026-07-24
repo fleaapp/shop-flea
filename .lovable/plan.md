@@ -1,33 +1,20 @@
-## 1. Checkbox visibility (global)
+## Fix auth keyboard behavior
 
-`src/components/ui/checkbox.tsx`
-- Bump size `h-4 w-4` → `h-5 w-5`
-- Border `border-primary` → `border-charcoal/50`
-- Checked state `bg-primary` / `text-primary-foreground` → `bg-charcoal` / `text-white`
-- Check icon `h-4 w-4` → `h-3.5 w-3.5`
+### Problem
+On the Auth screen, tapping the email/password inputs triggers the WebView resize (from `KeyboardResize.Native`). Because the form is inside a `flex-1 … justify-center` column, its content re-centers within the now-shorter viewport, sliding the whole form upward until the tab toggle disappears behind the absolutely-positioned logo (`absolute top-32`). The user wants nothing to move.
 
-## 2. Save-card copy
+### Fix (Auth.tsx only)
+Replace the vertical-centered flex layout with a **fixed anchor from the top** so the form's on-screen position is independent of viewport height:
 
-`src/components/checkout/CardDetailsSheet.tsx`
-- Current helper text references managing cards from "Edit profile in Settings", which is wrong now that saved cards will be managed inside checkout.
-- Update to: **"Save these card details"** with sub-copy **"You can remove saved cards anytime from the payment picker at checkout."**
+- Change the inner content wrapper from `flex-1 flex flex-col items-center justify-center px-6 … pt-16 pb-10` to a top-anchored layout: `absolute left-0 right-0 top-56 max-[375px]:top-44 flex flex-col items-center px-6 max-[375px]:px-4` (offset chosen to sit just below the current logo position).
+- Remove `pb-10` / `pt-16` padding that only mattered for the centered flex.
+- Keep the logo's existing `absolute top-32` position untouched.
+- Result: when the keyboard opens and the WebView shrinks, the logo and the form both stay pinned to their original top offsets. The keyboard simply overlays the "Or login with / Browse as guest" area at the bottom. Nothing shifts.
 
-## 3. Saved-card management inside checkout
+No changes to bottom nav, guest gate, or any other screen.
 
-`src/components/checkout/PaymentMethodPicker.tsx`
-- Each saved-card row gets a trailing trash/✕ button (icon only, muted colour, right-aligned, does not trigger row selection).
-- Tapping it opens a small confirm AlertDialog ("Remove this card?" / Cancel / Remove).
-- On confirm, invoke a new edge function `stripe-detach-saved-card` with `{ payment_method_id }`, then refetch the saved-cards query and clear selection if the removed card was selected.
-- Show inline spinner on the row while the detach request is in flight.
+### Black keyboard background
+User has only observed the black strip on Auth so far. The Auth fix above keeps the lime `bg-primary` filling the full WebView (which itself sits flush above the keyboard via `KeyboardResize.Native`), so the black strip on Auth is resolved as a side effect. If it shows up on a specific other screen later, we'll address that screen individually — no speculative changes elsewhere.
 
-`supabase/functions/stripe-detach-saved-card/index.ts` (new)
-- Auth: manual JWT parse (project pattern), resolve user → Stripe customer by email.
-- Verify the `payment_method` belongs to that customer before calling `stripe.paymentMethods.detach(id)`.
-- Return `{ ok: true }`; 403 if ownership check fails.
-- Register in `supabase/config.toml` with `verify_jwt = false` (matches sibling stripe functions).
-
-No schema changes. No changes to checkout logic beyond the picker UI and the new detach function.
-
-## Out of scope
-- Any changes to the Settings/Edit-profile saved-cards section (kept as-is).
-- Payment intent, Apple Pay, coupon, or pricing logic.
+### Files touched
+- `src/pages/Auth.tsx` — swap the main content wrapper's classes as described above.
