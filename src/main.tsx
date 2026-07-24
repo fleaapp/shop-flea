@@ -90,6 +90,14 @@ if (Capacitor.isNativePlatform()) {
     if (el.closest('.native-keyboard-lift')) return;
 
     const kb = getKeyboardHeight();
+    const parent = findScrollParent(el);
+
+    // Give the scroll container room to lift the field above the keyboard,
+    // even when its content otherwise fits within the viewport.
+    if (kb > 0 && parent !== window) {
+      applyKeyboardPadding(parent as HTMLElement, kb);
+    }
+
     const rect = el.getBoundingClientRect();
     const viewportH = window.innerHeight;
     const safeBottom = viewportH - kb - MARGIN_ABOVE_KEYBOARD;
@@ -99,7 +107,6 @@ if (Capacitor.isNativePlatform()) {
     const delta = rect.bottom - safeBottom;
     if (delta <= 0 && rect.top >= 0) return;
 
-    const parent = findScrollParent(el);
     if (parent === window) {
       window.scrollBy({ top: delta, behavior: 'smooth' });
     } else {
