@@ -40,12 +40,36 @@ if (Capacitor.isNativePlatform()) {
     while (node && node !== document.body) {
       const style = getComputedStyle(node);
       const oy = style.overflowY;
-      if ((oy === 'auto' || oy === 'scroll') && node.scrollHeight > node.clientHeight) {
+      if (oy === 'auto' || oy === 'scroll') {
         return node;
       }
       node = node.parentElement;
     }
     return window;
+  };
+
+  // Track the scroll parent we've padded so we can restore it on hide.
+  let paddedScrollParent: HTMLElement | null = null;
+
+  const applyKeyboardPadding = (parent: HTMLElement, kb: number) => {
+    if (kb <= 0) return;
+    if (paddedScrollParent && paddedScrollParent !== parent) {
+      restoreKeyboardPadding();
+    }
+    if (!('fleaKbPadRestore' in parent.dataset)) {
+      parent.dataset.fleaKbPadRestore = parent.style.paddingBottom || '';
+    }
+    const base = parseFloat(parent.dataset.fleaKbPadRestore || '0') || 0;
+    parent.style.paddingBottom = `${base + kb + MARGIN_ABOVE_KEYBOARD}px`;
+    paddedScrollParent = parent;
+  };
+
+  const restoreKeyboardPadding = () => {
+    if (!paddedScrollParent) return;
+    const original = paddedScrollParent.dataset.fleaKbPadRestore ?? '';
+    paddedScrollParent.style.paddingBottom = original;
+    delete paddedScrollParent.dataset.fleaKbPadRestore;
+    paddedScrollParent = null;
   };
 
   const isEditable = (el: EventTarget | null): el is HTMLElement => {
@@ -66,6 +90,14 @@ if (Capacitor.isNativePlatform()) {
     if (el.closest('.native-keyboard-lift')) return;
 
     const kb = getKeyboardHeight();
+    const parent = findScrollParent(el);
+
+    // Give the scroll container room to lift the field above the keyboard,
+    // even when its content otherwise fits within the viewport.
+    if (kb > 0 && parent !== window) {
+      applyKeyboardPadding(parent as HTMLElement, kb);
+    }
+
     const rect = el.getBoundingClientRect();
     const viewportH = window.innerHeight;
     const safeBottom = viewportH - kb - MARGIN_ABOVE_KEYBOARD;
@@ -75,7 +107,6 @@ if (Capacitor.isNativePlatform()) {
     const delta = rect.bottom - safeBottom;
     if (delta <= 0 && rect.top >= 0) return;
 
-    const parent = findScrollParent(el);
     if (parent === window) {
       window.scrollBy({ top: delta, behavior: 'smooth' });
     } else {
@@ -113,6 +144,7 @@ if (Capacitor.isNativePlatform()) {
     .then(({ Keyboard }) => {
       const resetKeyboardHeight = () => {
         document.documentElement.style.setProperty('--native-keyboard-height', '0px');
+        restoreKeyboardPadding();
       };
       void Keyboard.addListener('keyboardWillShow', (info) => {
         const keyboardHeight = Math.max(0, Number(info.keyboardHeight) || 0);
