@@ -1,17 +1,14 @@
 ## Fix
-Settings "Seller Dashboard" button balances are wrong because they use Stripe's raw `available`, which ignores funds ring-fenced for unshipped orders.
+"Cleared" bubble in Sales in progress is currently all-or-nothing (uses one shared `anyStillClearing` flag). If Stripe shows $3.20 available (meaning at least one sale has cleared into the account and is only being held back by unshipped ring-fencing), those specific rows should read Cleared.
 
 ## File
-`src/components/PaymentMethodsSection.tsx` (~lines 190–199)
+`src/pages/SellerDashboard.tsx` — inside the `activeGroups` render (~lines 468–500), replace the shared `cleared` flag with per-row logic.
 
-## Edit
-- Replace `available` with `availableToWithdraw` (already returned by `stripe-connect-dashboard` = raw available − unshipped, floored at 0). This makes the button show $0 Available when everything is held for unshipped orders.
-- Leave `pending` as-is: Stripe's raw pending balance already includes the first-payout-hold funds, which is exactly the "pending + hold" the user asked for on the button.
-
-```ts
-const availableCents = (data as any).availableToWithdraw ?? (data as any).available ?? 0;
-const pendingCents   = (data as any).pending ?? 0;
-```
+## Logic
+- `stillClearingCount = clearingPending.filter(a => !a.available_on || a.available_on > nowSec).length` (pending rows still inside the clearing window).
+- Rank `activeGroups` by `created_at` ascending. The **oldest `activeGroups.length − stillClearingCount`** are treated as cleared; the newest `stillClearingCount` are still clearing.
+- Per row: `cleared = orderIndex < activeGroups.length − stillClearingCount`.
+- This makes rows flip to Cleared as soon as Stripe moves their funds out of `pending` into `available`, even if the money is still ring-fenced for unshipped orders.
 
 ## Out of scope
-- No change to Seller Dashboard cards, checkout, receipts, or backend — those already use the correct net figures.
+- No changes to Pending/Available totals, backend, or Settings button — Available on the button correctly stays at $0 when funds are ring-fenced; this only fixes the per-row bubble.

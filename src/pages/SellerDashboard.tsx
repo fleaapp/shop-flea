@@ -416,19 +416,25 @@ const SellerDashboard = () => {
                     const pendingTotal = unshippedRemaining + clearing;
                     // Build the list of sales still generating pending funds.
                     // Exclude the group already shown in the First payout hold card.
-                    const activeGroups = sellerOrderGroups.filter((g) => {
-                      if (isGroupRefunded(g)) return false;
-                      if (firstHoldGroupId && g.id === firstHoldGroupId) return false;
-                      return g.status === 'awaiting' || g.status === 'shipped';
-                    });
+                    const activeGroups = sellerOrderGroups
+                      .filter((g) => {
+                        if (isGroupRefunded(g)) return false;
+                        if (firstHoldGroupId && g.id === firstHoldGroupId) return false;
+                        return g.status === 'awaiting' || g.status === 'shipped';
+                      })
+                      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
                     // Cleared cutoff: pending payments whose available_on has passed
                     // count as cleared. Anything else with a matching pending Stripe
                     // row is still clearing.
                     const nowSec = Math.floor(Date.now() / 1000);
-                    const stillClearingAmountCents = clearingPending
-                      .filter((a) => !a.available_on || a.available_on > nowSec)
-                      .reduce((s, a) => s + netCents(a), 0);
-                    const anyStillClearing = stillClearingAmountCents > 0;
+                    const stillClearingRows = clearingPending.filter(
+                      (a) => !a.available_on || a.available_on > nowSec,
+                    );
+                    const stillClearingAmountCents = stillClearingRows.reduce((s, a) => s + netCents(a), 0);
+                    const stillClearingCount = stillClearingRows.length;
+                    // Oldest groups clear first — mark the last N as still clearing.
+                    const clearedCount = Math.max(activeGroups.length - stillClearingCount, 0);
+
 
 
                     return (
@@ -466,7 +472,7 @@ const SellerDashboard = () => {
                             </button>
                             {pendingOpen && (
                               <ul className="mt-2 divide-y divide-border">
-                                {activeGroups.map((g) => {
+                                {activeGroups.map((g, idx) => {
                                   const isBundle = g.orders.length > 1;
                                   const title = isBundle
                                     ? 'Bundle'
@@ -476,10 +482,9 @@ const SellerDashboard = () => {
                                     0,
                                   );
                                   const shipped = !!g.shipped_at || g.status === 'shipped';
-                                  // Cleared if there is no pending Stripe row still clearing.
-                                  // We can't perfectly match per-order, so treat as cleared
-                                  // when the overall pending clearing bucket is empty.
-                                  const cleared = !anyStillClearing;
+                                  // Oldest groups clear first: first `clearedCount` are cleared.
+                                  const cleared = idx < clearedCount;
+
                                   return (
                                     <li key={g.id} className="py-2 flex items-center gap-2">
                                       <div className="flex-1 min-w-0 text-[13px] text-foreground truncate">
