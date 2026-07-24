@@ -107,21 +107,61 @@ methods = """
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
         NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
     }
+
+    // Make the WebView + host view transparent so the page's own background
+    // (lime on auth, cream in-app, dimmed backdrops behind drawers) fills any
+    // area the WebView temporarily exposes around the keyboard, instead of
+    // showing UIKit's default black window background.
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        DispatchQueue.main.async {
+            self.clearWebViewBackgrounds()
+        }
+    }
+
+    private func clearWebViewBackgrounds() {
+        guard let window = UIApplication.shared.windows.first else { return }
+        window.backgroundColor = .clear
+        self.clearBackgroundsRecursively(view: window)
+    }
+
+    private func clearBackgroundsRecursively(view: UIView) {
+        if String(describing: type(of: view)).contains("WKWebView") ||
+           String(describing: type(of: view)).contains("CAPBridgeView") {
+            view.isOpaque = false
+            view.backgroundColor = .clear
+        }
+        if let scroll = view as? UIScrollView {
+            scroll.backgroundColor = .clear
+        }
+        for sub in view.subviews {
+            self.clearBackgroundsRecursively(view: sub)
+        }
+    }
 """
 
-if "capacitorDidRegisterForRemoteNotifications" not in text:
+if "capacitorDidRegisterForRemoteNotifications" not in text or "clearWebViewBackgrounds" not in text:
+    # Strip any previous partial patch so we insert a clean, up-to-date block.
+    import re
+    text = re.sub(
+        r"\n\s*func application\(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken.*?(?=\n\}\s*$)",
+        "",
+        text,
+        count=1,
+        flags=re.DOTALL,
+    )
     insert_at = text.rfind("}")
     if insert_at == -1:
         print("ERROR: Could not patch AppDelegate.swift", file=sys.stderr)
         sys.exit(1)
-    text = text[:insert_at].rstrip() + methods + text[insert_at:]
-    print("   APNs delegate callbacks added")
+    text = text[:insert_at].rstrip() + methods + "\n" + text[insert_at:]
+    print("   APNs delegate callbacks + WebView transparency added")
 else:
-    print("   APNs delegate callbacks already present")
+    print("   APNs delegate + WebView transparency already present")
 
 with open(path, "w", encoding="utf-8") as f:
     f.write(text)
 PY
+
 
 echo
 echo "==> Verification"
