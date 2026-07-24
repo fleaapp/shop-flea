@@ -1,59 +1,22 @@
-## Goal
+## Root cause
+Stripe's pending balance transactions report **gross** amounts (item + shipping + Secure Checkout Fee). Flea takes the Secure Checkout Fee via `application_fee_amount`, so the seller's actual pending payout is `amount − fee`, i.e. the `net` field on each balance transaction.
 
-Simplify the Seller Dashboard payout section into Available + Pending (plus the existing First payout hold card, kept as-is), with an expandable dropdown under Pending that lists each active sale with two status bubbles — Shipped and Cleared — coloured lime when done and grey when still waiting.
+Today the Seller Dashboard uses the gross `amount` for:
+- `firstHoldCents` (First payout hold card)
+- `pendingCents` derivation via Stripe's raw pending balance (which is also gross for destination-charge flows on the platform view? — no, `balance.pending` on the connected account IS already net of application fees; but the per-row `activity.amount` we display and subtract from is gross)
 
-## Changes (all in `src/pages/SellerDashboard.tsx`)
+That mismatch is what makes the amber card read $1.22 when the seller only receives $0.50, and cascades into the Pending header math.
 
-### 1. Collapse "Held for unshipped" + "Clearing" into one Pending card
+## Fix (single file: `src/pages/SellerDashboard.tsx`, Pending IIFE ~lines 373–498)
 
-Remove the "Held for unshipped orders" and "Clearing from recent sales" sections (lines ~403–444). Keep the "First payout hold" amber card (lines ~446–468) exactly as-is.
+Switch every per-transaction figure the UI derives to the **net** field:
 
-Add one new Pending card in their place:
-
-- Style: `rounded-2xl bg-card border border-border p-4 mt-2`.
-- Header: label "Pending" + `BalanceInfo` popover on the left, total on the right.
-- Amount = `unshippedRemaining + clearing` (the previous two figures added together, first-hold stays in its own card).
-- Sub-line: earliest `available_on` from pending payments → "Next release: 12 Nov" (only if present).
-
-### 2. Info popover copy (Pending)
-
-Reuse existing `BalanceInfo`. Body:
-
-> Funds waiting to be released.
->
-> - Valid tracking must be added before funds from a sale can be released.
-> - An item may already be shipped but funds can still stay Pending while they complete the clearing period, usually around 24 hours.
-
-### 3. Expandable "Sales in progress" dropdown inside the Pending card
-
-Below the amount, a chevron toggle: "View sales in progress ({count})", collapsed by default. When open, render one row per active sale.
-
-Data source: `useOrders()` sales feed, filtered to orders where funds are still pending (status `awaiting` or `shipped`, not `delivered` / `refunded`, not part of a paid payout).
-
-Each row shows, on a single line:
-
-- Left: item name — or the literal string `Bundle` when the order/group contains multiple listings.
-- Middle: amount `$X.XX`.
-- Right: two small status bubbles side-by-side:
-  - `Shipped` — lime (`bg-primary/60 text-charcoal`) if the order has valid tracking / `shipped_at`, otherwise grey (`bg-muted text-charcoal/70`).
-  - `Cleared` — lime if the matching Stripe activity row is no longer pending (or `available_on` has passed), otherwise grey.
-
-Bubble style: `text-[11px] font-medium px-2 py-0.5 rounded-full`.
-
-Hide the dropdown entirely when there are no active pending sales.
-
-### 4. Payout summary reads as
-
-- Pending card (new, combined unshipped + clearing) — grey/white.
-- First payout hold card (unchanged) — amber, only when applicable.
-- Available to withdraw card (unchanged) — lime.
-
-### 5. Instant Payout button restyle
-
-Change the Instant Payout button (lines ~534–545) to the muted grey previously used by the Clearing card: replace `variant="outline"` + charcoal border classes with `bg-muted/60 border border-border text-charcoal hover:bg-muted`. Keep size, disabled state, and label unchanged.
+1. In the `pendingPayments` mapping, use `a.net` (fallback `a.amount − a.fee`) instead of `a.amount`.
+2. `firstHoldCents = firstSale ? Math.max(firstSaleNet, 0) : 0` — amber card now shows the seller-net first payout hold.
+3. `stillClearingAmountCents` sums `net` (same fallback) instead of `amount`.
+4. Keep `pendingTotal = unshippedRemaining + clearing` as-is — `pendingCents` from `data.pending` is already net, and both subtractions are now in net terms, so the header stays consistent.
+5. Combined with the previous plan step, exclude the first-hold group from the "Sales in progress" dropdown so the visible rows sum to the Pending header.
 
 ## Out of scope
-
-- No edge-function or Stripe balance-math changes — all figures come from existing `data.pending`, `data.unshippedCents`, `data.activity`, and `useOrders()`.
-- No change to the negative-balance ("Balance owed") flow.
-- First payout hold card and copy stay exactly as they are today.
+- No changes to Available card, Instant Payout math, checkout, sale details, or backend. Those already correctly show seller-net (item + shipping).
+- No schema or edge-function changes — `net` and `fee` are already returned by `stripe-connect-dashboard`.
