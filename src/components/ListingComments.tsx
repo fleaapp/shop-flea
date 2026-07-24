@@ -235,7 +235,7 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
       if (isBlocked) {
         throw new Error('Your account is restricted. You cannot post comments.');
       }
-      
+
       // Check content moderation
       const moderationResult = await checkCommentContent(content);
       if (moderationResult.isBlocked) {
@@ -243,14 +243,16 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
       }
 
       const trimmedContent = content.trim();
-      
-      const { error } = await invokeCloudFunction('add-listing-comment', {
-        body: {
-          listingId,
+
+      // Direct insert — RLS allows auth.uid() = user_id. Bypasses edge cold start.
+      const { error } = await supabase
+        .from('listing_comments')
+        .insert({
+          listing_id: listingId,
+          user_id: user.id,
+          parent_id: parentId || null,
           content: trimmedContent,
-          parentId: parentId || null,
-        },
-      });
+        });
 
       if (error) throw error;
 
@@ -272,20 +274,27 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
         });
       }
     },
+    onMutate: ({ content }) => {
+      // Clear composer immediately so the user sees the tap worked.
+      const previousDraft = content;
+      setNewComment('');
+      setReplyingTo(null);
+      return { previousDraft };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['listing-comments', listingId] });
       queryClient.invalidateQueries({ queryKey: ['listing-comments-count', listingId] });
-      setNewComment('');
-      setReplyingTo(null);
-      toast.success(replyingTo ? 'Reply added!' : 'Comment added!');
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _vars, context) => {
+      // Restore the draft so nothing is lost.
+      if (context?.previousDraft) setNewComment(context.previousDraft);
       // Don't show duplicate toast if moderation already showed one
       if (!error.message.includes('Content blocked')) {
         toast.error(error.message || 'Failed to add comment');
       }
     },
   });
+
 
   const deleteComment = useMutation({
     mutationFn: async (commentId: string) => {
