@@ -116,6 +116,50 @@ const Notifications = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadingNotifications]);
 
+  // Auto-open the target notification when arriving from a push tap
+  // (`/notifications?open=<type>&order=<id>&listing=<id>&thread=<id>`). We wait
+  // until notifications and order groups have loaded, then replay the same
+  // click handler the user would fire by tapping the row — so the correct
+  // drawer/chat/listing opens. The params are stripped afterwards so a
+  // refresh doesn't re-trigger.
+  useEffect(() => {
+    if (loadingNotifications) return;
+    const params = new URLSearchParams(location.search);
+    const openType = params.get('open');
+    if (!openType) return;
+    const orderId = params.get('order');
+    const listingId = params.get('listing');
+    const threadId = params.get('thread');
+    const key = `${openType}|${orderId ?? ''}|${listingId ?? ''}|${threadId ?? ''}`;
+    if (autoOpenedRef.current === key) return;
+
+    const match = notifications.find((n) => {
+      if (n.type !== openType) return false;
+      if (orderId && n.related_order_id !== orderId) return false;
+      if (listingId && n.related_listing_id !== listingId) return false;
+      if (threadId && n.related_thread_id !== threadId) return false;
+      return true;
+    });
+
+    if (!match) {
+      // Order groups may not be ready yet on cold start; retry after they load
+      // by leaving the params in place. Only mark as handled once matched.
+      return;
+    }
+
+    autoOpenedRef.current = key;
+    void handleNotificationClick(match);
+    // Strip the query params without a new history entry.
+    try {
+      window.history.replaceState(null, '', '/notifications');
+    } catch {
+      // no-op
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingNotifications, notifications, sellerOrderGroups, buyerOrderGroups, location.search]);
+
+
+
 
   const handleNotificationClick = async (notification: Notification) => {
     if (notification.id.startsWith('fallback-')) {
