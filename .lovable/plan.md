@@ -1,32 +1,24 @@
-## 1. Review notifications open the Reviews drawer
+# Speed up posting comments
 
-Today `new_review` notifications fall through to the generic branch in `src/pages/Notifications.tsx` (line ~263) and navigate to `/listing/:id`, so the user has to hunt for their new review.
+## Problem
+Posting a comment currently calls the `add-listing-comment` edge function. A cold start adds a multi-second delay before the input clears and the new comment appears, so users assume the button didn't work and often tap again.
 
-Change:
-- In `handleNotificationClick`, add an explicit branch for `notification.type === 'new_review'` that navigates to `/profile` with router state `{ openReviews: true }` (own profile — the reviewed user is always the current user).
-- In `src/pages/Profile.tsx`, on mount read `useLocation().state?.openReviews` and, when true, `setReviewsOpen(true)` then clear the state via `navigate('.', { replace: true, state: {} })` so it doesn't re-trigger on back navigation.
+## Fix
+Same approach used for chat messages: post directly to the database and give the composer instant feedback.
 
-No copy or design changes; the existing `ReviewsDrawer` is what opens.
+### `src/components/ListingComments.tsx`
+- Replace the `invokeCloudFunction('add-listing-comment', …)` call inside the `addComment` mutation with a direct `supabase.from('listing_comments').insert({ listing_id, user_id, parent_id, content })`. RLS already allows this (`INSERT` policy: `auth.uid() = user_id`), and the existing update guard, report trigger, and mention notifier all run on the DB side.
+- Keep the client-side `checkCommentContent` moderation and the `isBlocked` gate exactly as-is (both run before the insert).
+- Keep the fire-and-forget `comment-mentions` edge call for @mention notifications.
+- Move the composer reset (`setNewComment('')`, `setReplyingTo(null)`) to fire the moment the mutation starts (via `onMutate`) so the input clears immediately — the user sees the button "worked" even while the insert round-trips.
+- On error, restore the draft text so nothing is lost, and surface the toast as today.
+- After `onSuccess`, keep the existing `invalidateQueries` for `listing-comments` and `listing-comments-count`.
 
-## 2. Make chat feel instant
+### Not changing
+- The `add-listing-comment` edge function itself (leave deployed; nothing else calls it, but removing it is out of scope for this UX fix).
+- Query/threading logic, moderation, reporting, deletion, or notifications.
+- Comment ordering — the refetch after insert will place the new row correctly.
 
-Sending is already optimistic (the bubble appears immediately on tap), so the perceived 5-second delay is the *load* of the chat: `OrderChat` fetches the full message list through the `order-messages` edge function, which pays a cold-start + network round-trip every time the chat opens. Same story for `ChatConversation` (support).
-
-Change:
-- Replace the initial GET-through-edge-function with a direct `supabase.from('order_messages').select(...)` (RLS already restricts to buyer/seller). This removes the edge-function cold start from the open-chat path — typically 200–800 ms instead of 3–5 s.
-- Keep the existing Realtime channel and the 30 s safety refetch. Keep POST-through-edge-function for sends (it does auth checks + push fan-out).
-- Mark-as-read stays on the existing RPC (`mark_order_thread_read`), fired in the background — not awaited before rendering.
-- Apply the same swap in `src/pages/ChatConversation.tsx` for support threads, reading `chat_messages` directly.
-- Warm the message cache when the chat card is tapped: in the Orders/Sales list, on tap prefetch `['order-messages', orderId]` via `queryClient.prefetchQuery` so by the time the chat route mounts the data is usually already there. Small, isolated change in the two list pages that navigate into chat.
-
-### Technical notes
-- `order_messages` RLS: confirm buyer/seller SELECT policy exists before switching (schema shows 3 policies on the table). If a policy is missing for the reader, add it in a follow-up migration — not part of this plan unless the check fails.
-- No schema changes.
-- No UI/design changes to the chat itself; only the data source changes.
-
-## Files touched
-- `src/pages/Notifications.tsx` — add `new_review` branch.
-- `src/pages/Profile.tsx` — open Reviews drawer from router state.
-- `src/pages/OrderChat.tsx` — direct DB read for initial load + prefetch key export.
-- `src/pages/ChatConversation.tsx` — direct DB read for initial load.
-- `src/pages/Sales.tsx`, `src/pages/Cart.tsx` (order list) — prefetch on tap.
+## Validation
+- Typecheck.
+- Manually: post a top-level comment and a reply; confirm the composer clears instantly and the comment appears within a moment; confirm mention notifications still fire; confirm blocked users still see the restriction toast.
