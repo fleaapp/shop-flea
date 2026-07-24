@@ -309,6 +309,7 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <NativeDeepLinkHandler />
+        <PushOpenHandler />
         <AuthProvider>
           <TooltipProvider>
             <PushNotificationSubscriber />
