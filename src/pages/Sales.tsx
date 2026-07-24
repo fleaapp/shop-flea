@@ -52,17 +52,31 @@ const Sales = () => {
 
   const openSaleChat = (group: OrderGroup) => {
     const threadId = group.order_group_id || group.orders[0]?.id || group.id;
+    const relatedIds = group.orders.map((order) => order.id);
     if (user?.id) {
       clearOrderChatBadges({
         queryClient,
         userId: user.id,
         threadId,
-        orderIds: group.orders.map((order) => order.id),
+        orderIds: relatedIds,
         role: 'seller',
       });
     }
+    // Warm the message cache so the chat feels instant.
+    queryClient.prefetchQuery({
+      queryKey: ['order-messages', threadId],
+      queryFn: async () => {
+        const { data } = await (supabase as any)
+          .from('order_messages')
+          .select('id, order_id, sender_id, message, attachment_url, created_at, read, message_type')
+          .in('order_id', relatedIds)
+          .order('created_at', { ascending: true });
+        return data || [];
+      },
+    });
     navigate(`/order-chat/${threadId}`);
   };
+
 
   const handleMarkShipped = (trackingDetails: { serviceProvider: string; trackingNumber: string }) => {
     if (!selectedGroup) return;
