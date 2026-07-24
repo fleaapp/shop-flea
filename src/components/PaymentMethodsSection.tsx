@@ -183,30 +183,38 @@ const PaymentMethodsSection = () => {
   useEffect(() => {
     let active = true;
     const fetchBalance = async () => {
-      if (!stripeFullyConnected) { setBalanceLabel(null); return; }
+      if (!stripeFullyConnected) { setBalanceLabel(null); setPendingLabel(null); return; }
       try {
         const { data } = await invokeCloudFunction('stripe-connect-dashboard', {});
         if (!active || !data) return;
-        const cents = (data as any).available ?? 0;
+        const availableCents = (data as any).available ?? 0;
+        const pendingCents = (data as any).pending ?? 0;
         const currency = ((data as any).currency ?? 'aud').toUpperCase();
-        setBalanceLabel(
-          new Intl.NumberFormat('en-AU', {
-            style: 'currency',
-            currency,
-            minimumFractionDigits: 2,
-          }).format(cents / 100)
-        );
+        const fmt = new Intl.NumberFormat('en-AU', {
+          style: 'currency',
+          currency,
+          minimumFractionDigits: 2,
+        });
+        setBalanceLabel(fmt.format(availableCents / 100));
+        setPendingLabel(fmt.format(pendingCents / 100));
       } catch {
-        if (active) setBalanceLabel(null);
+        if (active) { setBalanceLabel(null); setPendingLabel(null); }
       }
     };
     fetchBalance();
-    return () => { active = false; };
+    const onFocus = () => fetchBalance();
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      active = false;
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
   }, [stripeFullyConnected]);
 
   const getStripeStatus = () => {
     if (stripeFullyConnected) {
-      return { label: balanceLabel ? `Balance: ${balanceLabel}` : 'Balance loading...', color: 'text-foreground' };
+      return { label: null, color: 'text-foreground' as const };
     }
     if (stripeActionRequired) return { label: '⚠️ Action required', color: 'text-orange-600' };
     if (stripeSetupUnfinished) return { label: '✏️ Continue set up', color: 'text-orange-600' };
