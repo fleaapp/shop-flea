@@ -15,6 +15,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useGuestMode } from '@/context/GuestModeContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { clearOrderChatBadges } from '@/utils/orderChatRead';
+import { supabase } from '@/lib/supabase';
 
 const getStatusBadge = (status: OrderGroup['status']) => {
   switch (status) {
