@@ -301,6 +301,7 @@ export function useNativePushNotifications() {
     };
 
     let cancelled = false;
+    let actionListener: { remove: () => void } | null = null;
 
     const setup = async () => {
       registrationListener = await PushNotifications.addListener('registration', (token) => {
@@ -330,6 +331,27 @@ export function useNativePushNotifications() {
           },
         });
       });
+
+      // Tap-to-open: when the user taps a push in the tray (or a delivered
+      // banner), route them to /notifications with query params so the Alerts
+      // page can auto-open the right drawer/chat/listing for that alert.
+      actionListener = await PushNotifications.addListener(
+        'pushNotificationActionPerformed',
+        (action) => {
+          try {
+            const data = (action?.notification?.data ?? {}) as Record<string, unknown>;
+            const params = new URLSearchParams();
+            if (data.type) params.set('open', String(data.type));
+            if (data.related_order_id) params.set('order', String(data.related_order_id));
+            if (data.related_listing_id) params.set('listing', String(data.related_listing_id));
+            if (data.related_thread_id) params.set('thread', String(data.related_thread_id));
+            const url = params.toString() ? `/notifications?${params.toString()}` : '/notifications';
+            window.dispatchEvent(new CustomEvent('flea-open-notification', { detail: url }));
+          } catch (err) {
+            console.warn('[NativePush] Failed to route tapped notification:', err);
+          }
+        },
+      );
 
       if (cancelled) return;
       await registerNativePush('mount');
