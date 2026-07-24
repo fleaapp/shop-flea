@@ -156,16 +156,19 @@ const Settings = () => {
   const handleTogglePauseSelling = async (checked: boolean) => {
     if (!user) return;
     try {
-      const {
-        error
-      } = await supabase.from('profiles').update({
-        pause_selling: checked
-      } as any).eq('user_id', user.id);
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ pause_selling: checked } as any)
+        .eq('user_id', user.id)
+        .select('pause_selling')
+        .maybeSingle();
       if (error) throw error;
+      if (!data) throw new Error('No profile row updated (session mismatch)');
       await refreshProfile();
       toast.success(checked ? 'Selling paused' : 'Selling resumed');
-    } catch (error) {
-      toast.error('Failed to update pause selling status');
+    } catch (error: any) {
+      console.error('[pause_selling] update failed:', error);
+      toast.error(`Failed to update: ${error?.message ?? 'unknown error'}`);
     }
   };
 
