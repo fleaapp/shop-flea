@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Loader2, AlertTriangle, Info } from 'lucide-react';
+import { ChevronLeft, Loader2, AlertTriangle, Info, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { useOrders } from '@/hooks/useOrders';
