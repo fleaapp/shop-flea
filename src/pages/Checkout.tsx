@@ -137,9 +137,9 @@ const Checkout = () => {
     }
   };
 
-  // Check if any items are from paused sellers (should have been filtered at Cart, but double-check)
-  const validItems = useMemo(() => 
-    items.filter((item: any) => !item.isPaused && item.status !== 'sold'),
+  // Check if any items are from paused/inactive/removed sellers (should have been filtered at Cart, but double-check)
+  const validItems = useMemo(() =>
+    items.filter((item: any) => !item.isPaused && !item.isInactive && !item.isRemoved && item.status !== 'sold'),
     [items]
   );
   
