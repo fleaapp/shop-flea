@@ -416,19 +416,25 @@ const SellerDashboard = () => {
                     const pendingTotal = unshippedRemaining + clearing;
                     // Build the list of sales still generating pending funds.
                     // Exclude the group already shown in the First payout hold card.
-                    const activeGroups = sellerOrderGroups.filter((g) => {
-                      if (isGroupRefunded(g)) return false;
-                      if (firstHoldGroupId && g.id === firstHoldGroupId) return false;
-                      return g.status === 'awaiting' || g.status === 'shipped';
-                    });
+                    const activeGroups = sellerOrderGroups
+                      .filter((g) => {
+                        if (isGroupRefunded(g)) return false;
+                        if (firstHoldGroupId && g.id === firstHoldGroupId) return false;
+                        return g.status === 'awaiting' || g.status === 'shipped';
+                      })
+                      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
                     // Cleared cutoff: pending payments whose available_on has passed
                     // count as cleared. Anything else with a matching pending Stripe
                     // row is still clearing.
                     const nowSec = Math.floor(Date.now() / 1000);
-                    const stillClearingAmountCents = clearingPending
-                      .filter((a) => !a.available_on || a.available_on > nowSec)
-                      .reduce((s, a) => s + netCents(a), 0);
-                    const anyStillClearing = stillClearingAmountCents > 0;
+                    const stillClearingRows = clearingPending.filter(
+                      (a) => !a.available_on || a.available_on > nowSec,
+                    );
+                    const stillClearingAmountCents = stillClearingRows.reduce((s, a) => s + netCents(a), 0);
+                    const stillClearingCount = stillClearingRows.length;
+                    // Oldest groups clear first — mark the last N as still clearing.
+                    const clearedCount = Math.max(activeGroups.length - stillClearingCount, 0);
+
 
 
                     return (
