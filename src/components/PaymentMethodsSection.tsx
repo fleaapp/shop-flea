@@ -259,9 +259,16 @@ const PaymentMethodsSection = () => {
               <span className="text-base max-[375px]:text-sm font-medium text-foreground">
                 {stripeFullyConnected ? 'Seller Dashboard' : 'Become a Seller'}
               </span>
-              <p className={`text-xs mt-0.5 ${stripeStatus.color}`}>
-                {stripeStatus.label}
-              </p>
+              {stripeFullyConnected ? (
+                <div className="mt-0.5 space-y-0.5">
+                  <p className="text-xs text-foreground">Available: {balanceLabel ?? '—'}</p>
+                  <p className="text-xs text-muted-foreground">Pending: {pendingLabel ?? '—'}</p>
+                </div>
+              ) : (
+                <p className={`text-xs mt-0.5 ${stripeStatus.color}`}>
+                  {stripeStatus.label}
+                </p>
+              )}
             </div>
           </div>
           <ChevronRight className="h-5 w-5 text-muted-foreground" />
