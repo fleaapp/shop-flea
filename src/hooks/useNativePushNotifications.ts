@@ -389,6 +389,7 @@ export function useNativePushNotifications() {
       registrationListener?.remove();
       errorListener?.remove();
       appStateListener?.remove();
+      actionListener?.remove();
       if (manualRegisterListener) window.removeEventListener(NATIVE_PUSH_REGISTER_EVENT, manualRegisterListener);
       clearRegistrationTimeout();
     };
