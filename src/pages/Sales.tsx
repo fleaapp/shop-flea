@@ -91,6 +91,7 @@ const Sales = () => {
     const productImages = group.orders.slice(0, 2).map((order) => order.listing?.images?.[0]);
     const itemCount = group.orders.length;
     const unread = group.orders.reduce((sum, o) => sum + getGroupUnread(o.id), 0);
+    const groupTotal = group.orders.reduce((sum, o) => sum + Number(o.price || 0) + Number(o.shipping_price || 0), 0);
 
     return (
       <div
@@ -101,10 +102,12 @@ const Sales = () => {
         <div className="flex-1 min-w-0">
           <p className="text-sm text-foreground">
             Sold to <span className="font-semibold">@{buyerUsername}</span>
-            {itemCount > 1 ? <span className="text-muted-foreground"> • {itemCount} items</span> : null}.
+            {itemCount > 1 ? <span className="text-muted-foreground"> • x{itemCount}</span> : null}.
           </p>
-          <p className="text-xs text-muted-foreground">{formatTime(group.created_at)}</p>
-          <span className={cn('mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium', getStatusBadge(group.status).className)}>
+          <span className="mt-1 inline-block rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
+            ${groupTotal.toFixed(2)}
+          </span>
+          <span className={cn('mt-2 ml-2 inline-block rounded-full px-3 py-1 text-xs font-medium', getStatusBadge(group.status).className)}>
             {getStatusBadge(group.status).label}
           </span>
         </div>
