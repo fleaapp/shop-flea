@@ -110,6 +110,7 @@ const ListingDetails = () => {
   const [showRemoveFromCartDialog, setShowRemoveFromCartDialog] = useState(false);
   const [showRemoveFromWishlistDialog, setShowRemoveFromWishlistDialog] = useState(false);
   const [showMarkAsSoldDialog, setShowMarkAsSoldDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [salesSheetOpen, setSalesSheetOpen] = useState(false);
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
@@ -809,21 +810,29 @@ const ListingDetails = () => {
               ) : (
                 // Active listing owner footer
                 <>
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 justify-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowDeleteDialog(true)}
+                      aria-label="Remove listing"
+                      className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent shrink-0"
+                    >
+                      🗑️
+                    </Button>
                     <Button
                       variant="outline"
                       onClick={() => {
                         setOpen(false);
                         setTimeout(() => navigate(`/listing/${listing.id}/edit`), 300);
                       }}
-                      className="h-14 rounded-2xl border-2 text-sm font-medium bg-transparent w-36"
+                      className="h-14 rounded-2xl border-2 text-sm font-medium bg-transparent flex-1"
                     >
                       <span className="mr-0.5">✏️</span>
                       Edit Listing
                     </Button>
                     <Button
                       onClick={() => setShowMarkAsSoldDialog(true)}
-                      className="h-14 rounded-2xl text-sm font-medium bg-charcoal text-white hover:bg-charcoal/90 border-2 border-charcoal w-36"
+                      className="h-14 rounded-2xl text-sm font-medium bg-charcoal text-white hover:bg-charcoal/90 border-2 border-charcoal flex-1"
                     >
                       Mark as sold
                     </Button>
@@ -938,6 +947,40 @@ const ListingDetails = () => {
                   className="flex-1 h-9 rounded-lg text-sm"
                 >
                   Mark as sold
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Delete Listing Confirmation */}
+          <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <AlertDialogContent className="max-w-[280px] rounded-2xl p-5">
+              <AlertDialogHeader className="space-y-2">
+                <AlertDialogTitle className="text-base text-center">Remove listing?</AlertDialogTitle>
+                <AlertDialogDescription className="text-sm text-center leading-relaxed">
+                  This will hide your listing&nbsp;and<br />mark it as removed.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-row gap-2 sm:flex-row">
+                <AlertDialogCancel className="flex-1 mt-0 h-9 rounded-lg text-sm">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={async () => {
+                    const { error } = await supabase
+                      .from('listings')
+                      .update({ status: 'removed' })
+                      .eq('id', listing.id)
+                      .eq('user_id', user!.id);
+                    if (error) {
+                      toast.error('Failed to remove listing');
+                    } else {
+                      toast.success('🗑️ Listing removed');
+                      setShowDeleteDialog(false);
+                      handleClose();
+                    }
+                  }}
+                  className="flex-1 h-9 rounded-lg text-sm bg-destructive text-white hover:bg-destructive/90"
+                >
+                  Remove
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
