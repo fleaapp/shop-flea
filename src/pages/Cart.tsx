@@ -22,6 +22,7 @@ import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import { useQueryClient } from '@tanstack/react-query';
 import { clearOrderChatBadges } from '@/utils/orderChatRead';
+import { supabase } from '@/lib/supabase';
 
 
 const getOrderStatusBadge = (status: Order['status']) => {
@@ -88,17 +89,30 @@ const Cart = () => {
 
   const openOrderChat = (group: OrderGroup) => {
     const threadId = group.order_group_id || group.orders[0]?.id || group.id;
+    const relatedIds = group.orders.map((order) => order.id);
     if (user?.id) {
       clearOrderChatBadges({
         queryClient,
         userId: user.id,
         threadId,
-        orderIds: group.orders.map((order) => order.id),
+        orderIds: relatedIds,
         role: 'buyer',
       });
     }
+    queryClient.prefetchQuery({
+      queryKey: ['order-messages', threadId],
+      queryFn: async () => {
+        const { data } = await (supabase as any)
+          .from('order_messages')
+          .select('id, order_id, sender_id, message, attachment_url, created_at, read, message_type')
+          .in('order_id', relatedIds)
+          .order('created_at', { ascending: true });
+        return data || [];
+      },
+    });
     navigate(`/order-chat/${threadId}`);
   };
+
 
   const handleMarkDelivered = () => {
     if (!selectedOrderGroup) return;

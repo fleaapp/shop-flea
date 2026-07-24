@@ -1,5 +1,5 @@
 import { Plus, Camera, LayoutGrid, Rows3 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import BottomNav from '@/components/BottomNav';
@@ -27,6 +27,7 @@ import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
 
 const Profile = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -39,6 +40,16 @@ const Profile = () => {
   useEffect(() => {
     try { sessionStorage.setItem('own_profile_tab', activeTab); } catch {}
   }, [activeTab]);
+
+  // Open Reviews drawer when navigated here from a "new_review" notification.
+  useEffect(() => {
+    const state = location.state as { openReviews?: boolean } | null;
+    if (state?.openReviews) {
+      setReviewsOpen(true);
+      navigate('.', { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
+
   const [viewMode, setViewMode] = useState<'single' | 'grid'>('single');
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [salesSheetOpen, setSalesSheetOpen] = useState(false);

@@ -92,32 +92,40 @@ const OrderChat = () => {
       : orderInfo.buyer_avatar || getDefaultAvatar(orderInfo.buyer_id)
     : '';
 
-  // Fetch messages
+  // Fetch messages — direct DB read (RLS scoped to buyer/seller) to skip the
+  // edge-function cold start on chat open.
+  const relatedIdsForFetch = orderInfo?.related_order_ids?.length
+    ? orderInfo.related_order_ids
+    : orderId
+      ? [orderId]
+      : [];
+  const fetchKey = relatedIdsForFetch.slice().sort().join(',');
   const { data: messages = [], error: messagesError } = useQuery({
     queryKey: ['order-messages', orderId],
     queryFn: async () => {
-      if (!orderId) return [];
-      const { data, error } = await invokeCloudFunction('order-messages', {
-        method: 'GET',
-        query: { orderId },
-      });
+      if (!orderId || relatedIdsForFetch.length === 0) return [];
+      const { data, error } = await (supabase as any)
+        .from('order_messages')
+        .select('id, order_id, sender_id, message, attachment_url, created_at, read, message_type')
+        .in('order_id', relatedIdsForFetch)
+        .order('created_at', { ascending: true });
       if (error) {
         console.error('[OrderChat] Failed to load messages:', error);
-        throw new Error(typeof error === 'object' && error.message ? error.message : 'Failed to load messages');
+        throw error;
       }
-      // Check for error in response body (e.g. 401/403 returned as JSON)
-      if (data && typeof data === 'object' && 'error' in data) {
-        console.error('[OrderChat] Server error:', (data as { error: string }).error);
-        throw new Error((data as { error: string }).error);
-      }
-      return (((data as { messages?: OrderMessage[] } | null)?.messages) || []) as OrderMessage[];
+      return (data || []) as OrderMessage[];
     },
-    enabled: !!orderId,
-    // Realtime channel below invalidates on new rows; polling every 5s
-    // added latency and made sends feel sluggish. Kept a slow safety poll.
+    enabled: !!orderId && relatedIdsForFetch.length > 0,
     refetchInterval: 30000,
     retry: 1,
   });
+  // Re-run when the resolved related ids change (group hydrates after mount).
+  useEffect(() => {
+    if (!orderId || !fetchKey) return;
+    queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
+  }, [orderId, fetchKey, queryClient]);
+
+
 
   const upsertMessage = useCallback((incoming: OrderMessage) => {
     queryClient.setQueryData<OrderMessage[]>(['order-messages', orderId], (prev = []) => {
