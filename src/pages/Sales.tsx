@@ -96,24 +96,26 @@ const Sales = () => {
     return (
       <div
         onClick={() => handleSaleClick(group)}
-        className={cn("flex items-center gap-4 rounded-2xl bg-card p-4 cursor-pointer", showShadow && "card-shadow")}
+        className={cn("relative flex items-start gap-4 rounded-2xl bg-card p-4 pb-6 cursor-pointer", showShadow && "card-shadow")}
       >
         <OrderItemThumbnailStack imageUrls={productImages} itemCount={itemCount} avatarUrl={buyerAvatar} />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm text-foreground">
-            Sold to <span className="font-semibold">@{buyerUsername}</span>
-            {itemCount > 1 ? <span className="text-muted-foreground"> • x{itemCount}</span> : null}.
-          </p>
-          <span className="mt-1 inline-block rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
-            ${groupTotal.toFixed(2)}
-          </span>
-          <span className={cn('mt-2 ml-2 inline-block rounded-full px-3 py-1 text-xs font-medium', getStatusBadge(group.status).className)}>
+        <div className="flex-1 min-w-0 pr-16">
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm text-foreground flex-1 min-w-0">
+              Sold to <span className="font-semibold">@{buyerUsername}</span>
+              {itemCount > 1 ? <span className="text-muted-foreground"> • x{itemCount}</span> : null}.
+            </p>
+            <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
+              ${groupTotal.toFixed(2)}
+            </span>
+          </div>
+          <span className={cn('mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium', getStatusBadge(group.status).className)}>
             {getStatusBadge(group.status).label}
           </span>
         </div>
         <button
           onClick={(e) => { e.stopPropagation(); openSaleChat(group); }}
-          className="relative flex h-10 w-10 items-center justify-center flex-shrink-0"
+          className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center"
         >
           <span className="text-xl">💬</span>
           {unread > 0 && (
