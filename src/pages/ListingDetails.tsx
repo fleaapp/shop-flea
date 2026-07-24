@@ -951,6 +951,40 @@ const ListingDetails = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+
+          {/* Delete Listing Confirmation */}
+          <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <AlertDialogContent className="max-w-[280px] rounded-2xl p-5">
+              <AlertDialogHeader className="space-y-2">
+                <AlertDialogTitle className="text-base text-center">Remove listing?</AlertDialogTitle>
+                <AlertDialogDescription className="text-sm text-center leading-relaxed">
+                  This will hide your listing&nbsp;and<br />mark it as removed.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-row gap-2 sm:flex-row">
+                <AlertDialogCancel className="flex-1 mt-0 h-9 rounded-lg text-sm">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={async () => {
+                    const { error } = await supabase
+                      .from('listings')
+                      .update({ status: 'removed' })
+                      .eq('id', listing.id)
+                      .eq('user_id', user!.id);
+                    if (error) {
+                      toast.error('Failed to remove listing');
+                    } else {
+                      toast.success('🗑️ Listing removed');
+                      setShowDeleteDialog(false);
+                      handleClose();
+                    }
+                  }}
+                  className="flex-1 h-9 rounded-lg text-sm bg-destructive text-white hover:bg-destructive/90"
+                >
+                  Remove
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           {/* Remove from Cart/Wishlist for removed listings */}
           <AlertDialog open={showRemoveFromBothDialog} onOpenChange={setShowRemoveFromBothDialog}>
             <AlertDialogContent className="max-w-[340px] rounded-2xl px-7 py-6">
