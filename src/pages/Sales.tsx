@@ -83,14 +83,6 @@ const Sales = () => {
     setSelectedGroup(null);
   };
 
-  const formatTime = (dateString: string) => {
-    try {
-      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
-    } catch {
-      return dateString;
-    }
-  };
-
   const SaleCard = ({ group, showShadow = false }: { group: OrderGroup; showShadow?: boolean }) => {
     const primaryOrder = group.orders[0];
     const rawBuyerUsername = primaryOrder.buyer_profile?.username || 'Unknown';
