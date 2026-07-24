@@ -31,7 +31,6 @@ import {
   CONDITIONS,
   COLOURS,
   STYLES,
-  isShoeCategory,
   requiresSize
 } from '@/config/sizeConfig';
 import { COLOUR_SWATCHES } from '@/utils/colourSwatches';
