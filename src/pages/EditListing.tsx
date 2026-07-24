@@ -27,6 +27,7 @@ import {
   COLOURS,
   STYLES,
   isShoeCategory,
+  requiresSize,
 } from '@/config/sizeConfig';
 import { COLOUR_SWATCHES } from '@/utils/colourSwatches';
 import ConditionInfoPopover from '@/components/ConditionInfoPopover';
