@@ -390,7 +390,7 @@ const Auth = () => {
 
   return (
     <div className="auth-screen native-safe-top fixed inset-0 bg-primary flex flex-col items-center overflow-hidden px-6 max-[375px]:px-4 pb-8">
-      <div className="auth-stack flex w-full flex-1 flex-col items-center justify-start pt-[clamp(64px,13svh,112px)] max-[375px]:pt-[clamp(48px,10svh,84px)]">
+      <div className="auth-stack flex w-full flex-1 flex-col items-center justify-start pt-[clamp(112px,20svh,180px)] max-[375px]:pt-[clamp(88px,16svh,140px)]">
         {/* Logo — stays in the same stack as the form so it moves with it */}
         <div className="auth-logo flex justify-center mb-10 max-[375px]:mb-7">
           <img
