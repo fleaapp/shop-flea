@@ -187,19 +187,44 @@ const PaymentMethodsSection = () => {
       try {
         const { data } = await invokeCloudFunction('stripe-connect-dashboard', {});
         if (!active || !data) return;
-        const availableCents = (data as any).availableToWithdraw ?? (data as any).available ?? 0;
-        const pendingCents = (data as any).pending ?? 0;
-        const currency = ((data as any).currency ?? 'aud').toUpperCase();
+        const d = data as any;
+        const rawAvailable = Number(d.available ?? 0);
+        const rawPending = Number(d.pending ?? 0);
+        const unshipped = Number(d.unshippedCents ?? 0);
+        const availableCents = Number(
+          d.availableToWithdraw ?? Math.max(rawAvailable - unshipped, 0),
+        );
+
+        // Mirror SellerDashboard: first-payout hold = net of earliest pending
+        // payment while no payout has been made yet. Settings pending must equal
+        // dashboard Pending header + hold, which reduces to raw Stripe pending.
+        const hasPaidPayout = !!d.hasPaidPayout;
+        const activity: any[] = Array.isArray(d.activity) ? d.activity : [];
+        const pendingPayments = activity
+          .filter((a) => a?.status === 'pending' && a?.type === 'payment')
+          .sort((a, b) => (a.created ?? 0) - (b.created ?? 0));
+        const netCents = (a: any) =>
+          typeof a?.net === 'number'
+            ? a.net
+            : Math.max(Number(a?.amount ?? 0) - Number(a?.fee ?? 0), 0);
+        const firstHoldCents = !hasPaidPayout && pendingPayments.length > 0
+          ? netCents(pendingPayments[0])
+          : 0;
+        const dashboardPendingCents = Math.max(rawPending - firstHoldCents, 0);
+        const settingsPendingCents = dashboardPendingCents + firstHoldCents;
+
+        const currency = (d.currency ?? 'aud').toUpperCase();
         const fmt = new Intl.NumberFormat('en-AU', {
           style: 'currency',
           currency,
           minimumFractionDigits: 2,
         });
         setBalanceLabel(fmt.format(availableCents / 100));
-        setPendingLabel(fmt.format(pendingCents / 100));
+        setPendingLabel(fmt.format(settingsPendingCents / 100));
       } catch {
         if (active) { setBalanceLabel(null); setPendingLabel(null); }
       }
+
     };
     fetchBalance();
     const onFocus = () => fetchBalance();
