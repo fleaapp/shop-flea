@@ -120,7 +120,11 @@ const OrderChat = () => {
     retry: 1,
   });
   // Re-run when the resolved related ids change (group hydrates after mount).
-  void fetchKey;
+  useEffect(() => {
+    if (!orderId || !fetchKey) return;
+    queryClient.invalidateQueries({ queryKey: ['order-messages', orderId] });
+  }, [orderId, fetchKey, queryClient]);
+
 
 
   const upsertMessage = useCallback((incoming: OrderMessage) => {
