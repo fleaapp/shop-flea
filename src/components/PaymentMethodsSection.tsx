@@ -18,6 +18,7 @@ const PaymentMethodsSection = () => {
   const [needsIdDocument, setNeedsIdDocument] = useState(false);
   const [verificationError, setVerificationError] = useState<{ code: string | null; reason: string | null; nameMismatch: boolean } | null>(null);
   const [balanceLabel, setBalanceLabel] = useState<string | null>(null);
+  const [pendingLabel, setPendingLabel] = useState<string | null>(null);
   const [postOnboardResult, setPostOnboardResult] = useState<null | 'verified' | 'action_required' | 'pending' | 'incomplete'>(null);
 
   const clearLocalStripeState = useCallback(() => {
@@ -182,30 +183,38 @@ const PaymentMethodsSection = () => {
   useEffect(() => {
     let active = true;
     const fetchBalance = async () => {
-      if (!stripeFullyConnected) { setBalanceLabel(null); return; }
+      if (!stripeFullyConnected) { setBalanceLabel(null); setPendingLabel(null); return; }
       try {
         const { data } = await invokeCloudFunction('stripe-connect-dashboard', {});
         if (!active || !data) return;
-        const cents = (data as any).available ?? 0;
+        const availableCents = (data as any).available ?? 0;
+        const pendingCents = (data as any).pending ?? 0;
         const currency = ((data as any).currency ?? 'aud').toUpperCase();
-        setBalanceLabel(
-          new Intl.NumberFormat('en-AU', {
-            style: 'currency',
-            currency,
-            minimumFractionDigits: 2,
-          }).format(cents / 100)
-        );
+        const fmt = new Intl.NumberFormat('en-AU', {
+          style: 'currency',
+          currency,
+          minimumFractionDigits: 2,
+        });
+        setBalanceLabel(fmt.format(availableCents / 100));
+        setPendingLabel(fmt.format(pendingCents / 100));
       } catch {
-        if (active) setBalanceLabel(null);
+        if (active) { setBalanceLabel(null); setPendingLabel(null); }
       }
     };
     fetchBalance();
-    return () => { active = false; };
+    const onFocus = () => fetchBalance();
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      active = false;
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
   }, [stripeFullyConnected]);
 
   const getStripeStatus = () => {
     if (stripeFullyConnected) {
-      return { label: balanceLabel ? `Balance: ${balanceLabel}` : 'Balance loading...', color: 'text-foreground' };
+      return { label: null, color: 'text-foreground' as const };
     }
     if (stripeActionRequired) return { label: '⚠️ Action required', color: 'text-orange-600' };
     if (stripeSetupUnfinished) return { label: '✏️ Continue set up', color: 'text-orange-600' };
@@ -250,9 +259,16 @@ const PaymentMethodsSection = () => {
               <span className="text-base max-[375px]:text-sm font-medium text-foreground">
                 {stripeFullyConnected ? 'Seller Dashboard' : 'Become a Seller'}
               </span>
-              <p className={`text-xs mt-0.5 ${stripeStatus.color}`}>
-                {stripeStatus.label}
-              </p>
+              {stripeFullyConnected ? (
+                <div className="mt-0.5 space-y-0.5">
+                  <p className="text-xs text-foreground">Available: {balanceLabel ?? '—'}</p>
+                  <p className="text-xs text-muted-foreground">Pending: {pendingLabel ?? '—'}</p>
+                </div>
+              ) : (
+                <p className={`text-xs mt-0.5 ${stripeStatus.color}`}>
+                  {stripeStatus.label}
+                </p>
+              )}
             </div>
           </div>
           <ChevronRight className="h-5 w-5 text-muted-foreground" />
