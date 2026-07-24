@@ -101,7 +101,7 @@ const OrderChat = () => {
       : [];
   const fetchKey = relatedIdsForFetch.slice().sort().join(',');
   const { data: messages = [], error: messagesError } = useQuery({
-    queryKey: ['order-messages', orderId],
+    queryKey: ['order-messages', orderId, fetchKey],
     queryFn: async () => {
       if (!orderId || relatedIdsForFetch.length === 0) return [];
       const { data, error } = await (supabase as any)
