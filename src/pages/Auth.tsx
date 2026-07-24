@@ -631,6 +631,7 @@ const Auth = () => {
           </div>
         </div>
       </div>
+      </div>
 
       <ProviderConflictDialog
         open={!!conflictProvider}
