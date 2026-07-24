@@ -1,23 +1,42 @@
-## Why it shows $2.00
+## Changes
 
-Stripe's raw `pending` balance is only $2.00 right now because 4 of the 6 unshipped orders' funds already cleared through Stripe's 2-day rolling window and moved into Stripe's `available` bucket — even though the seller hasn't shipped them yet. Those "cleared but unshipped" funds are ring-fenced by Flea (`unshippedCents`), not by Stripe, so they don't appear in Stripe's `pending`.
+Update the two order-group card renderers used on the Sales screen (`src/pages/Sales.tsx`, `SaleCard`) and Orders screen (`src/pages/Cart.tsx`, `renderOrderCard`).
 
-Verified from the live edge response for @sarahhearn2:
-`available=320, pending=200, unshippedCents=420, activity firstHold(net)=100`
+**1. Replace the timestamp with a total bubble (all cards, single or bundle)**
 
-My previous fix reduced to raw Stripe pending, which gives $2.00 — wrong.
+Remove the line that renders `formatTime(group.created_at)` / `formatOrderTime(group.created_at)`.
 
-## The right formula (matches Seller Dashboard exactly)
+In its place, always render a small light-grey pill showing the group total, matching the amount displayed in the corresponding details drawer:
 
+- **Orders card (buyer view, `Cart.tsx`)** — must equal the "Total amount paid" in `OrderDetailsSheet.tsx`:
+  ```
+  subtotal = Σ (price + shipping_price)
+  processingFee = round((subtotal * 0.04 + 0.70) * 100) / 100
+  total = subtotal + processingFee
+  ```
+- **Sales card (seller view, `Sales.tsx`)** — must equal `youReceived` in `SalesDetailsSheet.tsx`:
+  ```
+  total = Σ (price + shipping_price)
+  ```
+- Formatted as `$X.XX`.
+- Style: `inline-block rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground` (same light-grey pill look). Placed where the timestamp used to sit, above the existing status pill.
+
+**2. Bundle copy: `• N items` → `• xN`**
+
+In both cards, change:
+```tsx
+{itemCount > 1 ? <span> • {itemCount} items</span> : null}.
 ```
-firstHold           = net of earliest pending payment (only until first payout) = 100
-unshippedRemaining  = max(unshipped − firstHold, 0)                             = 320
-unshippedInPending  = max(unshippedRemaining − available, 0)                    = 0
-clearing            = max(pending − firstHold − unshippedInPending, 0)          = 100
-dashboardPending    = unshippedRemaining + clearing                             = 420  ($4.20 ✓)
-settingsPending     = dashboardPending + firstHold                              = 520  ($5.20 ✓)
+to:
+```tsx
+{itemCount > 1 ? <span> • x{itemCount}</span> : null}.
 ```
+Shorter label so the sentence stops wrapping.
 
-## Fix
+**3. Cleanup**
 
-Update the balance computation in `src/components/PaymentMethodsSection.tsx` to use the full dashboard formula above instead of `rawPending − firstHold`. Available stays as `availableToWithdraw`. No backend or fee changes.
+Remove the now-unused `formatTime` / `formatOrderTime` helpers if nothing else references them.
+
+## Scope
+
+Frontend/presentation only. No changes to hooks, edge functions, DB, details drawers, admin, notifications, or receipts.

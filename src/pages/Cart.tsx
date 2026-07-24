@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import CartItemRow from '@/components/CartItemRow';
 import OrderDetailsSheet from '@/components/OrderDetailsSheet';
 import OrderItemThumbnailStack from '@/components/OrderItemThumbnailStack';
-import { formatDistanceToNow } from 'date-fns';
+
 import { Listing } from '@/types/listing';
 import { fetchSellerShippingSettings, SellerShippingInfo, getBundleBreakdownText } from '@/utils/shippingCalculator';
 import { getAvatarUrl } from '@/utils/optimizedImage';
@@ -219,14 +219,6 @@ const Cart = () => {
     0
   );
 
-  const formatOrderTime = (dateString: string) => {
-    try {
-      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
-    } catch {
-      return dateString;
-    }
-  };
-
   const renderOrderCard = (group: OrderGroup, showShadow = false) => {
     const primaryOrder = group.orders[0];
     const rawUsername = primaryOrder.seller_profile?.username || 'Unknown';
@@ -235,6 +227,9 @@ const Cart = () => {
     const productImages = group.orders.slice(0, 2).map((order) => order.listing?.images?.[0]);
     const itemCount = group.orders.length;
     const unread = group.orders.reduce((sum, o) => sum + getGroupUnread(o.id), 0);
+    const subtotal = group.orders.reduce((sum, o) => sum + Number(o.price || 0) + Number(o.shipping_price || 0), 0);
+    const processingFee = Math.round((subtotal * 0.04 + 0.70) * 100) / 100;
+    const groupTotal = subtotal + processingFee;
 
     return (
       <div
@@ -249,12 +244,14 @@ const Cart = () => {
         <div className="flex-1 min-w-0">
           <p className="text-sm text-foreground">
             From <span className="font-semibold">@{sellerUsername}</span>
-            {itemCount > 1 ? <span className="text-muted-foreground"> • {itemCount} items</span> : null}.
+            {itemCount > 1 ? <span className="text-muted-foreground"> • x{itemCount}</span> : null}.
           </p>
-          <p className="text-xs text-muted-foreground">{formatOrderTime(group.created_at)}</p>
+          <span className="mt-1 inline-block rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
+            ${groupTotal.toFixed(2)}
+          </span>
           <span
             className={cn(
-              'mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium',
+              'mt-2 ml-2 inline-block rounded-full px-3 py-1 text-xs font-medium',
               getOrderStatusBadge(group.status).className
             )}
           >
