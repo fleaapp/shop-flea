@@ -40,6 +40,16 @@ const Profile = () => {
   useEffect(() => {
     try { sessionStorage.setItem('own_profile_tab', activeTab); } catch {}
   }, [activeTab]);
+
+  // Open Reviews drawer when navigated here from a "new_review" notification.
+  useEffect(() => {
+    const state = location.state as { openReviews?: boolean } | null;
+    if (state?.openReviews) {
+      setReviewsOpen(true);
+      navigate('.', { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
+
   const [viewMode, setViewMode] = useState<'single' | 'grid'>('single');
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [salesSheetOpen, setSalesSheetOpen] = useState(false);
