@@ -259,6 +259,13 @@ const Notifications = () => {
       return;
     }
 
+    // New review → open own profile with the Reviews drawer open
+    if (notification.type === 'new_review') {
+      navigate('/profile', { state: { openReviews: true } });
+      return;
+    }
+
+
     // Navigate based on notification type (comments, mentions, wishlist/cart sold, etc.)
     if (notification.related_listing_id) {
       const listingIsAccessible = await canOpenListing(notification.related_listing_id);
