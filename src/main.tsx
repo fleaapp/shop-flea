@@ -18,6 +18,97 @@ installGlobalErrorHandlers();
 // disable WebKit scroll-to-focused-input — that can leave fields hidden behind
 // the keyboard on native.
 if (Capacitor.isNativePlatform()) {
+  // App-wide: keep the focused input visible above the native keyboard.
+  // Most screens use `fixed inset-0` shells with an inner `overflow-y-auto`
+  // scroll container. WebKit's built-in scroll-to-focused-input only walks
+  // the document scroller — it doesn't scroll inner containers, so a focused
+  // field inside them can stay behind the keyboard. This handler finds the
+  // nearest scrollable ancestor and nudges the focused element into view
+  // above the current --native-keyboard-height.
+  const MARGIN_ABOVE_KEYBOARD = 24;
+
+  const getKeyboardHeight = (): number => {
+    const raw = getComputedStyle(document.documentElement)
+      .getPropertyValue('--native-keyboard-height')
+      .trim();
+    const n = parseFloat(raw);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const findScrollParent = (el: HTMLElement | null): HTMLElement | Window => {
+    let node: HTMLElement | null = el?.parentElement ?? null;
+    while (node && node !== document.body) {
+      const style = getComputedStyle(node);
+      const oy = style.overflowY;
+      if ((oy === 'auto' || oy === 'scroll') && node.scrollHeight > node.clientHeight) {
+        return node;
+      }
+      node = node.parentElement;
+    }
+    return window;
+  };
+
+  const isEditable = (el: EventTarget | null): el is HTMLElement => {
+    if (!(el instanceof HTMLElement)) return false;
+    if (el instanceof HTMLInputElement) {
+      const t = (el.type || '').toLowerCase();
+      // Skip inputs that don't open a keyboard.
+      if (['checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'color', 'file'].includes(t)) return false;
+      return true;
+    }
+    if (el instanceof HTMLTextAreaElement) return true;
+    if (el.isContentEditable) return true;
+    return false;
+  };
+
+  const ensureFocusedVisible = (el: HTMLElement) => {
+    // Chat composers translate themselves above the keyboard already.
+    if (el.closest('.native-keyboard-lift')) return;
+
+    const kb = getKeyboardHeight();
+    const rect = el.getBoundingClientRect();
+    const viewportH = window.innerHeight;
+    const safeBottom = viewportH - kb - MARGIN_ABOVE_KEYBOARD;
+
+    if (rect.bottom <= safeBottom && rect.top >= 0) return; // already visible
+
+    const delta = rect.bottom - safeBottom;
+    if (delta <= 0 && rect.top >= 0) return;
+
+    const parent = findScrollParent(el);
+    if (parent === window) {
+      window.scrollBy({ top: delta, behavior: 'smooth' });
+    } else {
+      (parent as HTMLElement).scrollBy({ top: delta, behavior: 'smooth' });
+    }
+  };
+
+  let lastFocused: HTMLElement | null = null;
+
+  document.addEventListener(
+    'focusin',
+    (e) => {
+      if (!isEditable(e.target)) return;
+      lastFocused = e.target as HTMLElement;
+      // First pass immediately, then again after keyboard height is reported.
+      requestAnimationFrame(() => ensureFocusedVisible(lastFocused!));
+      window.setTimeout(() => {
+        if (lastFocused && document.activeElement === lastFocused) {
+          ensureFocusedVisible(lastFocused);
+        }
+      }, 300);
+    },
+    true,
+  );
+
+  document.addEventListener(
+    'focusout',
+    () => {
+      lastFocused = null;
+    },
+    true,
+  );
+
   void import('@capacitor/keyboard')
     .then(({ Keyboard }) => {
       const resetKeyboardHeight = () => {
@@ -26,6 +117,15 @@ if (Capacitor.isNativePlatform()) {
       void Keyboard.addListener('keyboardWillShow', (info) => {
         const keyboardHeight = Math.max(0, Number(info.keyboardHeight) || 0);
         document.documentElement.style.setProperty('--native-keyboard-height', `${keyboardHeight}px`);
+        // Re-run visibility after the OS reports the real keyboard height.
+        if (lastFocused && document.activeElement === lastFocused) {
+          requestAnimationFrame(() => ensureFocusedVisible(lastFocused!));
+        }
+      });
+      void Keyboard.addListener('keyboardDidShow', () => {
+        if (lastFocused && document.activeElement === lastFocused) {
+          ensureFocusedVisible(lastFocused);
+        }
       });
       void Keyboard.addListener('keyboardDidHide', resetKeyboardHeight);
       void Keyboard.addListener('keyboardWillHide', resetKeyboardHeight);
