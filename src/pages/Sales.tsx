@@ -104,12 +104,14 @@ const Sales = () => {
             Sold to <span className="font-semibold">@{buyerUsername}</span>
             {itemCount > 1 ? <span className="text-muted-foreground"> • x{itemCount}</span> : null}.
           </p>
-          <span className="mt-1 inline-block rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
-            ${groupTotal.toFixed(2)}
-          </span>
-          <span className={cn('mt-2 ml-2 inline-block rounded-full px-3 py-1 text-xs font-medium', getStatusBadge(group.status).className)}>
-            {getStatusBadge(group.status).label}
-          </span>
+          <div className="mt-1 flex flex-col items-start gap-1.5">
+            <span className="inline-block rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
+              ${groupTotal.toFixed(2)}
+            </span>
+            <span className={cn('inline-block rounded-full px-3 py-1 text-xs font-medium', getStatusBadge(group.status).className)}>
+              {getStatusBadge(group.status).label}
+            </span>
+          </div>
         </div>
         <button
           onClick={(e) => { e.stopPropagation(); openSaleChat(group); }}
