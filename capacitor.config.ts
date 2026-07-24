@@ -18,11 +18,12 @@ const config: CapacitorConfig = {
       style: 'DARK',
     },
     Keyboard: {
-      // `Native` resizes the WebView itself to sit exactly above the keyboard
-      // so no native (black) strip is ever visible between our input bar and
-      // the keyboard. `resizeOnFullScreen` keeps this behavior when Android
-      // apps run in immersive mode.
-      resize: KeyboardResize.Native,
+      // `None` keeps the WebView at full height and lets the keyboard float
+      // above it. Resizing the WebView caused a black strip to briefly show
+      // between the page and the keyboard, and also shifted absolutely
+      // positioned elements (logo/form) upward. With `None` the page never
+      // moves and no native background is ever revealed.
+      resize: KeyboardResize.None,
       resizeOnFullScreen: true,
       // Light chrome for the accessory bar matches the app's cream palette.
       style: KeyboardStyle.Light,

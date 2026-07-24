@@ -389,21 +389,23 @@ const Auth = () => {
   // navigate away once a session resolves.
 
   return (
-    <div className="auth-screen native-safe-top fixed inset-0 bg-primary flex flex-col overflow-hidden">
-      {/* Logo - positioned at top */}
-      <div className="auth-logo absolute top-32 max-[375px]:top-24 left-0 right-0 flex justify-center">
-        <img 
-          src={fleaLogoAuth} 
-          alt="FLEA" 
+    <div className="auth-screen native-safe-top fixed inset-0 bg-primary flex flex-col items-center overflow-hidden pt-20 max-[375px]:pt-14 pb-8">
+      {/* Logo — sits above form in normal flow so it moves with it */}
+      <div className="auth-logo flex justify-center mb-10 max-[375px]:mb-8">
+        <img
+          src={fleaLogoAuth}
+          alt="FLEA"
           width={232}
           height={84}
           loading="eager"
           className="h-12 max-[375px]:h-10 object-contain"
         />
       </div>
-      
+
       {/* Main Content */}
-      <div className="absolute left-0 right-0 top-56 max-[375px]:top-44 flex flex-col items-center px-6 max-[375px]:px-4">
+      <div className="flex flex-col items-center px-6 max-[375px]:px-4 w-full">
+        
+
         
         {/* Tab Toggle */}
         <div className="flex bg-[#423D3D] rounded-full p-1 mb-6 max-[375px]:mb-4 h-9">
