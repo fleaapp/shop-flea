@@ -222,10 +222,18 @@ const FilterPreferencesSheet = ({ open, onOpenChange }: FilterPreferencesSheetPr
                     </div>
                   </div>
                   <div>
+                    <p className="text-xs text-muted-foreground mb-2">Clothing (Numeric)</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {FILTER_SIZES.men.clothing.numeric.map(size => (
+                        <SizeChip key={`m-clothing-num-${size}`} size={size} selected={isSizeSelected(size, 'clothing', 'men')} category="clothing" fit="men" />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
                     <p className="text-xs text-muted-foreground mb-2">Bottoms (Inches)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_SIZES.men.clothing.inches.map(size => (
-                        <SizeChip key={`m-clothing-${size}`} size={size} selected={isSizeSelected(size, 'clothing', 'men')} category="clothing" fit="men" />
+                        <SizeChip key={`m-clothing-in-${size}`} size={size} selected={isSizeSelected(size, 'clothing', 'men')} category="clothing" fit="men" />
                       ))}
                     </div>
                   </div>
