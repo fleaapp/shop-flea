@@ -40,12 +40,36 @@ if (Capacitor.isNativePlatform()) {
     while (node && node !== document.body) {
       const style = getComputedStyle(node);
       const oy = style.overflowY;
-      if ((oy === 'auto' || oy === 'scroll') && node.scrollHeight > node.clientHeight) {
+      if (oy === 'auto' || oy === 'scroll') {
         return node;
       }
       node = node.parentElement;
     }
     return window;
+  };
+
+  // Track the scroll parent we've padded so we can restore it on hide.
+  let paddedScrollParent: HTMLElement | null = null;
+
+  const applyKeyboardPadding = (parent: HTMLElement, kb: number) => {
+    if (kb <= 0) return;
+    if (paddedScrollParent && paddedScrollParent !== parent) {
+      restoreKeyboardPadding();
+    }
+    if (!('fleaKbPadRestore' in parent.dataset)) {
+      parent.dataset.fleaKbPadRestore = parent.style.paddingBottom || '';
+    }
+    const base = parseFloat(parent.dataset.fleaKbPadRestore || '0') || 0;
+    parent.style.paddingBottom = `${base + kb + MARGIN_ABOVE_KEYBOARD}px`;
+    paddedScrollParent = parent;
+  };
+
+  const restoreKeyboardPadding = () => {
+    if (!paddedScrollParent) return;
+    const original = paddedScrollParent.dataset.fleaKbPadRestore ?? '';
+    paddedScrollParent.style.paddingBottom = original;
+    delete paddedScrollParent.dataset.fleaKbPadRestore;
+    paddedScrollParent = null;
   };
 
   const isEditable = (el: EventTarget | null): el is HTMLElement => {
