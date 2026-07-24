@@ -589,8 +589,7 @@ const SellerDashboard = () => {
               <Button
                 onClick={() => setConfirm('instant')}
                 disabled={!canInstant || payoutLoading !== null}
-                variant="outline"
-                className="mt-5 h-12 rounded-xl border-2 border-charcoal bg-transparent text-charcoal hover:bg-charcoal/5 font-semibold disabled:opacity-50"
+                className="mt-5 h-12 rounded-xl bg-muted/60 border border-border text-charcoal hover:bg-muted font-semibold disabled:opacity-50"
               >
                 {payoutLoading === 'instant' ? (
                   <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Sending...</span>
