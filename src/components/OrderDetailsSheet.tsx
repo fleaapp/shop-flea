@@ -491,7 +491,41 @@ const OrderDetailsSheet = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={completeConfirmOpen} onOpenChange={setCompleteConfirmOpen}>
+        <AlertDialogContent className="max-w-[320px] rounded-2xl p-6">
+          <AlertDialogHeader className="text-center">
+            <AlertDialogTitle className="text-balance">
+              Confirm your order?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="leading-relaxed text-pretty">
+              Happy with your order, or is there an issue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 sm:justify-center">
+            <AlertDialogAction
+              onClick={() => {
+                setCompleteConfirmOpen(false);
+                setRefundDialogOpen(true);
+              }}
+              className="flex-1 h-9 rounded-lg text-sm bg-muted-foreground/60 text-white hover:bg-muted-foreground/70"
+            >
+              Report Issue
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={() => {
+                setCompleteConfirmOpen(false);
+                onCompleteOrder?.();
+              }}
+              className="flex-1 h-9 rounded-lg text-sm bg-charcoal text-white hover:bg-charcoal-light"
+            >
+              Confirm Complete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Drawer>
+
   );
 };
 
