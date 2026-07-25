@@ -26,6 +26,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import ShippingStatusTracker from '@/components/ShippingStatusTracker';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
+import { supabase } from '@/lib/supabase';
 import { openTrackingUrl } from '@/lib/tracking';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import SecureCheckoutInfoPopover from '@/components/SecureCheckoutInfoPopover';
@@ -455,14 +456,24 @@ const OrderDetailsSheet = ({
               console.error('[RefundRequest] Error:', error);
               throw new Error(typeof error === 'object' && error.message ? error.message : 'Failed to submit refund request');
             }
-            // Also check if the response body contains an error
             if (data && typeof data === 'object' && 'error' in data) {
               console.error('[RefundRequest] Server error:', (data as { error: string }).error);
               throw new Error((data as { error: string }).error);
             }
+            // Open the 72h seller-approval window on the order (and its group)
+            try {
+              await (supabase as any).rpc('request_refund', {
+                p_order_id: primaryOrder.id,
+                p_order_group_id: primaryOrder.order_group_id ?? null,
+                p_reason: [reason, details].filter(Boolean).join(' - ').slice(0, 500),
+              });
+            } catch (rpcErr) {
+              console.warn('[RefundRequest] request_refund RPC failed:', rpcErr);
+            }
             queryClient.invalidateQueries({ queryKey: ['refund-status', primaryOrder.id] });
             queryClient.invalidateQueries({ queryKey: ['order-messages', primaryOrder.id] });
-            toast.success('Refund request submitted');
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+            toast.success('Refund request submitted. Seller has 72 hours to respond.');
           }}
         />
       )}

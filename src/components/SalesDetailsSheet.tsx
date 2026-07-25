@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Order, OrderStatus } from '@/hooks/useOrders';
+import { Order, OrderStatus, useOrders } from '@/hooks/useOrders';
 import { format } from 'date-fns';
 import { useExistingReview } from '@/hooks/useReviews';
 import WriteReviewDrawer from '@/components/WriteReviewDrawer';
@@ -84,6 +84,9 @@ const SalesDetailsSheet = ({
   const [refundConfirmOpen, setRefundConfirmOpen] = useState(false);
   const [refunding, setRefunding] = useState(false);
   const { getGroupUnread } = useUnreadOrderMessages();
+  const { requestRefund, respondToRefund } = useOrders();
+  const [refundDeclineReason, setRefundDeclineReason] = useState('');
+  const [refundDeclineOpen, setRefundDeclineOpen] = useState(false);
   
   const primaryOrder = orders?.[0];
   const { data: existingReview } = useExistingReview(primaryOrder?.id);
@@ -408,6 +411,47 @@ const SalesDetailsSheet = ({
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </button>
 
+            {/* Pending refund request from buyer */}
+            {!isRefunded && primaryOrder.refund_requested_at && !primaryOrder.refund_declined_at && primaryOrder.refund_requested_by === primaryOrder.buyer_id && (
+              <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Buyer requested a refund</p>
+                  {primaryOrder.refund_request_reason && (
+                    <p className="text-xs text-muted-foreground mt-1">"{primaryOrder.refund_request_reason}"</p>
+                  )}
+                  {primaryOrder.refund_request_deadline_at && (
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Auto-approves {format(new Date(primaryOrder.refund_request_deadline_at), 'MMM d, h:mma')}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 rounded-full h-10"
+                    onClick={() => setRefundDeclineOpen(true)}
+                    disabled={respondToRefund.isPending}
+                  >
+                    Decline
+                  </Button>
+                  <Button
+                    className="flex-1 rounded-full h-10 bg-charcoal text-white hover:bg-charcoal-light"
+                    onClick={async () => {
+                      await respondToRefund.mutateAsync({
+                        orderGroupId: primaryOrder.order_group_id ?? undefined,
+                        orderId: primaryOrder.order_group_id ? undefined : primaryOrder.id,
+                        decision: 'approve',
+                      });
+                      onOpenChange(false);
+                    }}
+                    disabled={respondToRefund.isPending}
+                  >
+                    {respondToRefund.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Approve refund'}
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex flex-col items-center space-y-3 pt-4">
               <div className="flex items-center justify-center gap-3 w-full px-4">
@@ -499,6 +543,46 @@ const SalesDetailsSheet = ({
               className="flex-1 h-9 rounded-lg bg-charcoal text-white hover:bg-charcoal-light"
             >
               {refunding ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Refund'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={refundDeclineOpen} onOpenChange={(o) => !respondToRefund.isPending && setRefundDeclineOpen(o)}>
+        <AlertDialogContent className="max-w-[320px] rounded-2xl p-6">
+          <AlertDialogHeader className="text-center">
+            <AlertDialogTitle>Decline refund request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Add a short reason. The buyer can still escalate to Flea admin for review.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Input
+            value={refundDeclineReason}
+            onChange={(e) => setRefundDeclineReason(e.target.value)}
+            placeholder="Reason (optional)"
+            maxLength={200}
+            className="mt-2"
+          />
+          <AlertDialogFooter className="flex-row gap-2 mt-3">
+            <AlertDialogCancel disabled={respondToRefund.isPending} className="flex-1 h-9 rounded-lg mt-0">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={respondToRefund.isPending}
+              onClick={async (e) => {
+                e.preventDefault();
+                await respondToRefund.mutateAsync({
+                  orderGroupId: primaryOrder.order_group_id ?? undefined,
+                  orderId: primaryOrder.order_group_id ? undefined : primaryOrder.id,
+                  decision: 'decline',
+                  reason: refundDeclineReason,
+                });
+                setRefundDeclineReason('');
+                setRefundDeclineOpen(false);
+              }}
+              className="flex-1 h-9 rounded-lg bg-charcoal text-white hover:bg-charcoal-light"
+            >
+              {respondToRefund.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Decline'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

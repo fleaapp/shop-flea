@@ -71,7 +71,7 @@ const Cart = () => {
   const { buyerOrderGroups, loadingBuyerOrders, markAsDelivered, completeOrder } = useOrders();
   const { getGroupUnread } = useUnreadOrderMessages();
   const [activeTab, setActiveTab] = useState<'cart' | 'orders'>(routeState?.initialTab === 'orders' ? 'orders' : 'cart');
-  const [orderStatusFilter, setOrderStatusFilter] = useState<'awaiting' | 'shipped' | 'completed'>('awaiting');
+  const [orderStatusFilter, setOrderStatusFilter] = useState<'awaiting' | 'shipped' | 'delivered' | 'completed'>('awaiting');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [sellerSettings, setSellerSettings] = useState<Map<string, SellerShippingInfo>>(new Map());
@@ -369,6 +369,7 @@ const Cart = () => {
             {([
               { key: 'awaiting' as const, label: 'Ordered' },
               { key: 'shipped' as const, label: 'Shipped' },
+              { key: 'delivered' as const, label: 'Delivered' },
               { key: 'completed' as const, label: 'Completed' },
             ]).map(({ key, label }) => (
 
@@ -376,7 +377,7 @@ const Cart = () => {
                 key={key}
                 onClick={() => setOrderStatusFilter(key)}
                 className={cn(
-                  'rounded-full w-20 py-2 text-xs font-medium transition-all',
+                  'rounded-full px-3 py-2 text-xs font-medium transition-all whitespace-nowrap',
                   orderStatusFilter === key
                     ? 'bg-card text-foreground shadow-sm'
                     : 'text-muted-foreground'
@@ -507,7 +508,8 @@ const Cart = () => {
           ) : (() => {
             const filteredOrders = buyerOrderGroups.filter((g) => {
               if (orderStatusFilter === 'completed') return g.status === 'completed' || g.status === 'refunded';
-              if (orderStatusFilter === 'shipped') return g.status === 'shipped' || g.status === 'delivered';
+              if (orderStatusFilter === 'delivered') return g.status === 'delivered';
+              if (orderStatusFilter === 'shipped') return g.status === 'shipped';
               return g.status === orderStatusFilter;
             });
             if (filteredOrders.length === 0) {
@@ -515,7 +517,7 @@ const Cart = () => {
                 <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
                   <span className="text-6xl opacity-50 mb-4">🧾</span>
                   <p className="text-lg font-medium text-muted-foreground">
-                    {orderStatusFilter === 'shipped' ? 'No shipped orders.' : orderStatusFilter === 'completed' ? 'No completed orders.' : 'No orders yet.'}
+                    {orderStatusFilter === 'shipped' ? 'No shipped orders.' : orderStatusFilter === 'delivered' ? 'No delivered orders.' : orderStatusFilter === 'completed' ? 'No completed orders.' : 'No orders yet.'}
                   </p>
                 </div>
               );

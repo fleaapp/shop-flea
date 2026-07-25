@@ -38,7 +38,7 @@ const Sales = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { exitGuestMode } = useGuestMode();
-  const [salesStatusFilter, setSalesStatusFilter] = useState<'awaiting' | 'shipped' | 'completed'>('awaiting');
+  const [salesStatusFilter, setSalesStatusFilter] = useState<'awaiting' | 'shipped' | 'delivered' | 'completed'>('awaiting');
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
   const { sellerOrderGroups, loadingSellerOrders, markAsShipped } = useOrders();
@@ -163,6 +163,7 @@ const Sales = () => {
             {([
               { key: 'awaiting' as const, label: 'To Ship' },
               { key: 'shipped' as const, label: 'Shipped' },
+              { key: 'delivered' as const, label: 'Delivered' },
               { key: 'completed' as const, label: 'Completed' },
             ]).map(({ key, label }) => (
 
@@ -170,7 +171,7 @@ const Sales = () => {
                 key={key}
                 onClick={() => setSalesStatusFilter(key)}
                 className={cn(
-                  'rounded-full w-20 py-2 text-sm font-medium transition-all',
+                  'rounded-full px-3 py-2 text-xs font-medium transition-all whitespace-nowrap',
                   salesStatusFilter === key ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
                 )}
               >
@@ -206,7 +207,8 @@ const Sales = () => {
         ) : (() => {
           const filteredSales = sellerOrderGroups.filter(g => {
             if (salesStatusFilter === 'completed') return g.status === 'completed' || g.status === 'refunded';
-            if (salesStatusFilter === 'shipped') return g.status === 'shipped' || g.status === 'delivered';
+            if (salesStatusFilter === 'delivered') return g.status === 'delivered';
+            if (salesStatusFilter === 'shipped') return g.status === 'shipped';
             return g.status === salesStatusFilter;
           });
 
