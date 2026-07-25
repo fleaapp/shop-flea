@@ -402,27 +402,18 @@ const SellerDashboard = () => {
                 .filter((a) => a.available_on)
                 .reduce<number>((min, a) => (min === 0 ? (a.available_on as number) : Math.min(min, a.available_on as number)), 0);
 
-              // Identify the sellerOrderGroup that corresponds to the first
-              // payout hold so we don't double-count it in Sales in progress.
-              const firstHoldGroupId = firstHoldCents > 0
-                ? [...sellerOrderGroups]
-                    .filter((g) => !isGroupRefunded(g) && (g.status === 'awaiting' || g.status === 'shipped'))
-                    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0]?.id ?? null
-                : null;
-
               return (
                 <>
                   {(unshippedRemaining > 0 || clearing > 0) && (() => {
                     const pendingTotal = unshippedRemaining + clearing;
                     // Build the list of sales still generating pending funds.
-                    // Exclude the group already shown in the First payout hold card.
                     const activeGroups = sellerOrderGroups
                       .filter((g) => {
                         if (isGroupRefunded(g)) return false;
-                        if (firstHoldGroupId && g.id === firstHoldGroupId) return false;
                         return g.status === 'awaiting' || g.status === 'shipped';
                       })
                       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
                     // Cleared cutoff: pending payments whose available_on has passed
                     // count as cleared. Anything else with a matching pending Stripe
                     // row is still clearing.
