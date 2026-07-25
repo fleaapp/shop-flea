@@ -836,6 +836,7 @@ export type Database = {
           status: string
           tracking_number: string | null
           tracking_provider: string | null
+          transaction_fee: number
           updated_at: string
         }
         Insert: {
@@ -865,6 +866,7 @@ export type Database = {
           status?: string
           tracking_number?: string | null
           tracking_provider?: string | null
+          transaction_fee?: number
           updated_at?: string
         }
         Update: {
@@ -894,6 +896,7 @@ export type Database = {
           status?: string
           tracking_number?: string | null
           tracking_provider?: string | null
+          transaction_fee?: number
           updated_at?: string
         }
         Relationships: [
@@ -1638,6 +1641,7 @@ export type Database = {
           status: string
           tracking_number: string | null
           tracking_provider: string | null
+          transaction_fee: number
           updated_at: string
         }[]
         SetofOptions: {
@@ -1681,6 +1685,7 @@ export type Database = {
           status: string
           tracking_number: string | null
           tracking_provider: string | null
+          transaction_fee: number
           updated_at: string
         }[]
         SetofOptions: {
