@@ -358,9 +358,9 @@ const Cart = () => {
             {([
               { key: 'awaiting' as const, label: 'Ordered' },
               { key: 'shipped' as const, label: 'Shipped' },
-              { key: 'delivered' as const, label: 'Delivered' },
-              { key: 'refunded' as const, label: 'Refunded' },
+              { key: 'completed' as const, label: 'Completed' },
             ]).map(({ key, label }) => (
+
               <button
                 key={key}
                 onClick={() => setOrderStatusFilter(key)}
