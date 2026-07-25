@@ -406,7 +406,11 @@ serve(async (req) => {
     const dbShippingTotal = Array.from(shippingMap.values()).reduce((s, v) => s + Number(v || 0), 0);
     const subtotalForFee = dbItemsTotal + dbShippingTotal;
     const SECURE_CHECKOUT_RATE = 0.04, SECURE_CHECKOUT_FIXED = 0.70;
+    const TRANSACTION_FEE_RATE = 0.02, TRANSACTION_FEE_FIXED = 0.50;
     let secureCheckoutFee = Math.round((subtotalForFee * SECURE_CHECKOUT_RATE + SECURE_CHECKOUT_FIXED) * 100) / 100;
+    const transactionFeeTotal = subtotalForFee > 0
+      ? Math.round((subtotalForFee * TRANSACTION_FEE_RATE + TRANSACTION_FEE_FIXED) * 100) / 100
+      : 0;
 
     // Re-validate coupon server-side (same logic as stripe-connect-payment-intent).
     const normalizedCode = String(couponCode || "").trim().toUpperCase();
@@ -446,6 +450,8 @@ serve(async (req) => {
     const inserts: Record<string, unknown>[] = [];
     for (const [sellerId, sellerItems] of itemsBySeller.entries()) {
       const sellerShipping = shippingMap.get(sellerId) || 0;
+      // Allocate the whole checkout's transaction fee onto this seller's first row
+      // (mirrors the shipping_price allocation pattern).
       sellerItems.forEach((item, index) => {
         inserts.push({
           order_group_id: orderGroupId,
@@ -454,6 +460,7 @@ serve(async (req) => {
           seller_id: sellerId,
           price: Number(item.price),
           shipping_price: index === 0 ? sellerShipping : 0,
+          transaction_fee: index === 0 ? transactionFeeTotal : 0,
           status: "awaiting",
           payment_method: "stripe",
           shipping_first_name: shipping.shippingFirstName,
