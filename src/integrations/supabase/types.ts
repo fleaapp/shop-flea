@@ -810,12 +810,15 @@ export type Database = {
       }
       orders: {
         Row: {
+          admin_marked_delivered: boolean
           buyer_id: string
           checkout_reference: string | null
+          completed_at: string | null
           coupon_code: string | null
           coupon_id: string | null
           created_at: string
           delivered_at: string | null
+          dispute_window_ends_at: string | null
           id: string
           listing_id: string
           order_group_id: string | null
@@ -834,18 +837,25 @@ export type Database = {
           shipping_price: number
           shipping_state: string | null
           status: string
+          tracking_approved_at: string | null
+          tracking_approved_by: string | null
           tracking_number: string | null
           tracking_provider: string | null
+          tracking_rejected_at: string | null
+          tracking_rejection_reason: string | null
           transaction_fee: number
           updated_at: string
         }
         Insert: {
+          admin_marked_delivered?: boolean
           buyer_id: string
           checkout_reference?: string | null
+          completed_at?: string | null
           coupon_code?: string | null
           coupon_id?: string | null
           created_at?: string
           delivered_at?: string | null
+          dispute_window_ends_at?: string | null
           id?: string
           listing_id: string
           order_group_id?: string | null
@@ -864,18 +874,25 @@ export type Database = {
           shipping_price?: number
           shipping_state?: string | null
           status?: string
+          tracking_approved_at?: string | null
+          tracking_approved_by?: string | null
           tracking_number?: string | null
           tracking_provider?: string | null
+          tracking_rejected_at?: string | null
+          tracking_rejection_reason?: string | null
           transaction_fee?: number
           updated_at?: string
         }
         Update: {
+          admin_marked_delivered?: boolean
           buyer_id?: string
           checkout_reference?: string | null
+          completed_at?: string | null
           coupon_code?: string | null
           coupon_id?: string | null
           created_at?: string
           delivered_at?: string | null
+          dispute_window_ends_at?: string | null
           id?: string
           listing_id?: string
           order_group_id?: string | null
@@ -894,8 +911,12 @@ export type Database = {
           shipping_price?: number
           shipping_state?: string | null
           status?: string
+          tracking_approved_at?: string | null
+          tracking_approved_by?: string | null
           tracking_number?: string | null
           tracking_provider?: string | null
+          tracking_rejected_at?: string | null
+          tracking_rejection_reason?: string | null
           transaction_fee?: number
           updated_at?: string
         }
@@ -995,9 +1016,11 @@ export type Database = {
           stripe_onboarding_step: string | null
           tiered_shipping_enabled: boolean | null
           total_reviews: number | null
+          tracking_flagged: boolean
           updated_at: string
           user_id: string
           username: string
+          wrong_tracking_count: number
         }
         Insert: {
           auth_provider?: string | null
@@ -1038,9 +1061,11 @@ export type Database = {
           stripe_onboarding_step?: string | null
           tiered_shipping_enabled?: boolean | null
           total_reviews?: number | null
+          tracking_flagged?: boolean
           updated_at?: string
           user_id: string
           username: string
+          wrong_tracking_count?: number
         }
         Update: {
           auth_provider?: string | null
@@ -1081,9 +1106,11 @@ export type Database = {
           stripe_onboarding_step?: string | null
           tiered_shipping_enabled?: boolean | null
           total_reviews?: number | null
+          tracking_flagged?: boolean
           updated_at?: string
           user_id?: string
           username?: string
+          wrong_tracking_count?: number
         }
         Relationships: [
           {
@@ -1500,9 +1527,149 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_approve_tracking: {
+        Args: { p_order_id: string }
+        Returns: {
+          admin_marked_delivered: boolean
+          buyer_id: string
+          checkout_reference: string | null
+          completed_at: string | null
+          coupon_code: string | null
+          coupon_id: string | null
+          created_at: string
+          delivered_at: string | null
+          dispute_window_ends_at: string | null
+          id: string
+          listing_id: string
+          order_group_id: string | null
+          order_number: string | null
+          payment_method: string
+          price: number
+          refund_reason: string | null
+          refunded_at: string | null
+          seller_id: string
+          shipped_at: string | null
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_first_name: string | null
+          shipping_last_name: string | null
+          shipping_postcode: string | null
+          shipping_price: number
+          shipping_state: string | null
+          status: string
+          tracking_approved_at: string | null
+          tracking_approved_by: string | null
+          tracking_number: string | null
+          tracking_provider: string | null
+          tracking_rejected_at: string | null
+          tracking_rejection_reason: string | null
+          transaction_fee: number
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_reject_tracking: {
+        Args: { p_order_id: string; p_reason: string }
+        Returns: {
+          admin_marked_delivered: boolean
+          buyer_id: string
+          checkout_reference: string | null
+          completed_at: string | null
+          coupon_code: string | null
+          coupon_id: string | null
+          created_at: string
+          delivered_at: string | null
+          dispute_window_ends_at: string | null
+          id: string
+          listing_id: string
+          order_group_id: string | null
+          order_number: string | null
+          payment_method: string
+          price: number
+          refund_reason: string | null
+          refunded_at: string | null
+          seller_id: string
+          shipped_at: string | null
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_first_name: string | null
+          shipping_last_name: string | null
+          shipping_postcode: string | null
+          shipping_price: number
+          shipping_state: string | null
+          status: string
+          tracking_approved_at: string | null
+          tracking_approved_by: string | null
+          tracking_number: string | null
+          tracking_provider: string | null
+          tracking_rejected_at: string | null
+          tracking_rejection_reason: string | null
+          transaction_fee: number
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      auto_complete_delivered_orders: { Args: never; Returns: number }
+      auto_deliver_shipped_orders: { Args: never; Returns: number }
       check_and_record_rate_limit: {
         Args: { _key: string; _max: number; _window_seconds: number }
         Returns: boolean
+      }
+      complete_order: {
+        Args: { p_order_group_id?: string; p_order_id?: string }
+        Returns: {
+          admin_marked_delivered: boolean
+          buyer_id: string
+          checkout_reference: string | null
+          completed_at: string | null
+          coupon_code: string | null
+          coupon_id: string | null
+          created_at: string
+          delivered_at: string | null
+          dispute_window_ends_at: string | null
+          id: string
+          listing_id: string
+          order_group_id: string | null
+          order_number: string | null
+          payment_method: string
+          price: number
+          refund_reason: string | null
+          refunded_at: string | null
+          seller_id: string
+          shipped_at: string | null
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_first_name: string | null
+          shipping_last_name: string | null
+          shipping_postcode: string | null
+          shipping_price: number
+          shipping_state: string | null
+          status: string
+          tracking_approved_at: string | null
+          tracking_approved_by: string | null
+          tracking_number: string | null
+          tracking_provider: string | null
+          tracking_rejected_at: string | null
+          tracking_rejection_reason: string | null
+          transaction_fee: number
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       create_mention_notifications: {
         Args: {
@@ -1612,45 +1779,103 @@ export type Database = {
       increment_brand_usage: { Args: { _brand_id: string }; Returns: undefined }
       is_region_active: { Args: { region: string }; Returns: boolean }
       is_user_blocked: { Args: { user_uuid: string }; Returns: boolean }
-      mark_order_delivered: {
-        Args: { p_order_group_id?: string; p_order_id?: string }
-        Returns: {
-          buyer_id: string
-          checkout_reference: string | null
-          coupon_code: string | null
-          coupon_id: string | null
-          created_at: string
-          delivered_at: string | null
-          id: string
-          listing_id: string
-          order_group_id: string | null
-          order_number: string | null
-          payment_method: string
-          price: number
-          refund_reason: string | null
-          refunded_at: string | null
-          seller_id: string
-          shipped_at: string | null
-          shipping_address: string | null
-          shipping_city: string | null
-          shipping_first_name: string | null
-          shipping_last_name: string | null
-          shipping_postcode: string | null
-          shipping_price: number
-          shipping_state: string | null
-          status: string
-          tracking_number: string | null
-          tracking_provider: string | null
-          transaction_fee: number
-          updated_at: string
-        }[]
-        SetofOptions: {
-          from: "*"
-          to: "orders"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
+      mark_order_delivered:
+        | {
+            Args: { p_order_group_id?: string; p_order_id?: string }
+            Returns: {
+              admin_marked_delivered: boolean
+              buyer_id: string
+              checkout_reference: string | null
+              completed_at: string | null
+              coupon_code: string | null
+              coupon_id: string | null
+              created_at: string
+              delivered_at: string | null
+              dispute_window_ends_at: string | null
+              id: string
+              listing_id: string
+              order_group_id: string | null
+              order_number: string | null
+              payment_method: string
+              price: number
+              refund_reason: string | null
+              refunded_at: string | null
+              seller_id: string
+              shipped_at: string | null
+              shipping_address: string | null
+              shipping_city: string | null
+              shipping_first_name: string | null
+              shipping_last_name: string | null
+              shipping_postcode: string | null
+              shipping_price: number
+              shipping_state: string | null
+              status: string
+              tracking_approved_at: string | null
+              tracking_approved_by: string | null
+              tracking_number: string | null
+              tracking_provider: string | null
+              tracking_rejected_at: string | null
+              tracking_rejection_reason: string | null
+              transaction_fee: number
+              updated_at: string
+            }[]
+            SetofOptions: {
+              from: "*"
+              to: "orders"
+              isOneToOne: false
+              isSetofReturn: true
+            }
+          }
+        | {
+            Args: {
+              p_order_group_id?: string
+              p_order_id?: string
+              p_source?: string
+            }
+            Returns: {
+              admin_marked_delivered: boolean
+              buyer_id: string
+              checkout_reference: string | null
+              completed_at: string | null
+              coupon_code: string | null
+              coupon_id: string | null
+              created_at: string
+              delivered_at: string | null
+              dispute_window_ends_at: string | null
+              id: string
+              listing_id: string
+              order_group_id: string | null
+              order_number: string | null
+              payment_method: string
+              price: number
+              refund_reason: string | null
+              refunded_at: string | null
+              seller_id: string
+              shipped_at: string | null
+              shipping_address: string | null
+              shipping_city: string | null
+              shipping_first_name: string | null
+              shipping_last_name: string | null
+              shipping_postcode: string | null
+              shipping_price: number
+              shipping_state: string | null
+              status: string
+              tracking_approved_at: string | null
+              tracking_approved_by: string | null
+              tracking_number: string | null
+              tracking_provider: string | null
+              tracking_rejected_at: string | null
+              tracking_rejection_reason: string | null
+              transaction_fee: number
+              updated_at: string
+            }[]
+            SetofOptions: {
+              from: "*"
+              to: "orders"
+              isOneToOne: false
+              isSetofReturn: true
+            }
+          }
       mark_order_shipped: {
         Args: {
           p_order_group_id?: string
@@ -1659,12 +1884,15 @@ export type Database = {
           p_tracking_provider?: string
         }
         Returns: {
+          admin_marked_delivered: boolean
           buyer_id: string
           checkout_reference: string | null
+          completed_at: string | null
           coupon_code: string | null
           coupon_id: string | null
           created_at: string
           delivered_at: string | null
+          dispute_window_ends_at: string | null
           id: string
           listing_id: string
           order_group_id: string | null
@@ -1683,8 +1911,12 @@ export type Database = {
           shipping_price: number
           shipping_state: string | null
           status: string
+          tracking_approved_at: string | null
+          tracking_approved_by: string | null
           tracking_number: string | null
           tracking_provider: string | null
+          tracking_rejected_at: string | null
+          tracking_rejection_reason: string | null
           transaction_fee: number
           updated_at: string
         }[]

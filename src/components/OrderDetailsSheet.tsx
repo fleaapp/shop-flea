@@ -38,6 +38,7 @@ interface OrderDetailsSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onMarkDelivered?: () => void;
+  onCompleteOrder?: () => void;
 }
 
 const getStatusBadge = (status: OrderStatus) => {
@@ -48,10 +49,13 @@ const getStatusBadge = (status: OrderStatus) => {
       return { label: 'Shipped', variant: 'secondary' as const };
     case 'delivered':
       return { label: 'Delivered', variant: 'secondary' as const };
+    case 'completed':
+      return { label: 'Completed', variant: 'secondary' as const };
     case 'refunded':
       return { label: 'Refunded', variant: 'secondary' as const };
   }
 };
+
 
 const SectionHeader = ({ children }: { children: React.ReactNode }) => (
   <div className="bg-muted-foreground/20 px-4 py-2 text-sm font-medium text-muted-foreground">
@@ -64,15 +68,19 @@ const OrderDetailsSheet = ({
   open,
   onOpenChange,
   onMarkDelivered,
+  onCompleteOrder,
 }: OrderDetailsSheetProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
+
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [refundDialogOpen, setRefundDialogOpen] = useState(false);
   const [deliveredConfirmOpen, setDeliveredConfirmOpen] = useState(false);
+  const [completeConfirmOpen, setCompleteConfirmOpen] = useState(false);
   const { getGroupUnread } = useUnreadOrderMessages();
   const queryClient = useQueryClient();
+
   
   const primaryOrder = orders?.[0];
   const { data: existingReview } = useExistingReview(primaryOrder?.id);
@@ -343,7 +351,7 @@ const OrderDetailsSheet = ({
             </div>
 
             {/* Shipping Status Tracker */}
-            {!isRefunded && (
+            {!isRefunded && effectiveStatus !== 'completed' && (
               <ShippingStatusTracker
                 createdAt={primaryOrder.created_at}
                 shippedAt={primaryOrder.shipped_at}
@@ -364,10 +372,18 @@ const OrderDetailsSheet = ({
                     }}
                     className="flex-1 rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12"
                   >
-                    Mark as delivered
+                    {primaryOrder.admin_marked_delivered ? 'Complete' : 'Mark as delivered'}
                   </Button>
                 )}
-                {!isRefunded && effectiveStatus === 'delivered' && !existingReview && (
+                {!isRefunded && effectiveStatus === 'delivered' && isBuyer && (
+                  <Button
+                    onClick={() => setCompleteConfirmOpen(true)}
+                    className="flex-1 rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12"
+                  >
+                    Complete
+                  </Button>
+                )}
+                {!isRefunded && effectiveStatus === 'completed' && !existingReview && (
                   <Button
                     onClick={() => setReviewDrawerOpen(true)}
                     className="flex-1 rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12"
@@ -375,7 +391,7 @@ const OrderDetailsSheet = ({
                     Review Seller
                   </Button>
                 )}
-                {!isRefunded && canShowRefundButton && (
+                {!isRefunded && canShowRefundButton && effectiveStatus !== 'completed' && effectiveStatus !== 'delivered' && (
                   <Button
                     onClick={() => {
                       if (refundStatus?.hasPending || refundStatus?.hasAnyRequest) {
@@ -392,6 +408,7 @@ const OrderDetailsSheet = ({
                   </Button>
                 )}
               </div>
+
               <button
                 className="text-center text-sm text-foreground underline mt-2"
                 onClick={() => {
@@ -474,7 +491,41 @@ const OrderDetailsSheet = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={completeConfirmOpen} onOpenChange={setCompleteConfirmOpen}>
+        <AlertDialogContent className="max-w-[320px] rounded-2xl p-6">
+          <AlertDialogHeader className="text-center">
+            <AlertDialogTitle className="text-balance">
+              Confirm your order?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="leading-relaxed text-pretty">
+              Happy with your order, or is there an issue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 sm:justify-center">
+            <AlertDialogAction
+              onClick={() => {
+                setCompleteConfirmOpen(false);
+                setRefundDialogOpen(true);
+              }}
+              className="flex-1 h-9 rounded-lg text-sm bg-muted-foreground/60 text-white hover:bg-muted-foreground/70"
+            >
+              Report Issue
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={() => {
+                setCompleteConfirmOpen(false);
+                onCompleteOrder?.();
+              }}
+              className="flex-1 h-9 rounded-lg text-sm bg-charcoal text-white hover:bg-charcoal-light"
+            >
+              Confirm Complete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Drawer>
+
   );
 };
 

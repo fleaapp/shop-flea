@@ -6,12 +6,15 @@ import { preloadImages } from '@/utils/preloadAssets';
 import { toast } from 'sonner';
 import { sendPushNotification } from '@/utils/pushNotify';
 
-export type OrderStatus = 'awaiting' | 'shipped' | 'delivered' | 'refunded';
+export type OrderStatus = 'awaiting' | 'shipped' | 'delivered' | 'completed' | 'refunded';
 
 export const isOrderRefunded = (order: Pick<Order, 'status' | 'refunded_at'>) =>
   order.status === 'refunded' || !!order.refunded_at;
+export const isOrderCompleted = (order: Pick<Order, 'status' | 'refunded_at'>) =>
+  !isOrderRefunded(order) && order.status === 'completed';
 export const isGroupRefunded = (group: { orders: Order[] }) =>
   group.orders.length > 0 && group.orders.every(isOrderRefunded);
+
 
 export interface Order {
   id: string;
@@ -33,6 +36,13 @@ export interface Order {
   refund_reason?: string | null;
   payment_method?: string | null;
   checkout_reference?: string | null;
+  // Buyer-protection lifecycle
+  tracking_approved_at?: string | null;
+  tracking_rejected_at?: string | null;
+  tracking_rejection_reason?: string | null;
+  admin_marked_delivered?: boolean | null;
+  completed_at?: string | null;
+  dispute_window_ends_at?: string | null;
   // Shipping address fields
   shipping_first_name: string | null;
   shipping_last_name: string | null;
@@ -40,6 +50,7 @@ export interface Order {
   shipping_city: string | null;
   shipping_state: string | null;
   shipping_postcode: string | null;
+
   // Joined data
   listing?: {
     id: string;
@@ -109,6 +120,12 @@ const ORDER_OPTIONAL_COLUMNS = [
   'refund_reason',
   'payment_method',
   'checkout_reference',
+  'tracking_approved_at',
+  'tracking_rejected_at',
+  'tracking_rejection_reason',
+  'admin_marked_delivered',
+  'completed_at',
+  'dispute_window_ends_at',
   'shipping_first_name',
   'shipping_last_name',
   'shipping_address',
@@ -116,6 +133,7 @@ const ORDER_OPTIONAL_COLUMNS = [
   'shipping_state',
   'shipping_postcode',
 ] as const;
+
 
 const buildOrderSelectFields = (omitted = new Set<string>()) =>
   [...ORDER_REQUIRED_COLUMNS, ...ORDER_OPTIONAL_COLUMNS]
@@ -148,6 +166,12 @@ const normalizeOrderRows = (rows: unknown[]): RawOrderRow[] => {
       refund_reason: typedRow.refund_reason ?? null,
       payment_method: typedRow.payment_method ?? null,
       checkout_reference: typedRow.checkout_reference ?? null,
+      tracking_approved_at: typedRow.tracking_approved_at ?? null,
+      tracking_rejected_at: typedRow.tracking_rejected_at ?? null,
+      tracking_rejection_reason: typedRow.tracking_rejection_reason ?? null,
+      admin_marked_delivered: typedRow.admin_marked_delivered ?? false,
+      completed_at: typedRow.completed_at ?? null,
+      dispute_window_ends_at: typedRow.dispute_window_ends_at ?? null,
       shipping_first_name: typedRow.shipping_first_name ?? null,
       shipping_last_name: typedRow.shipping_last_name ?? null,
       shipping_address: typedRow.shipping_address ?? null,
@@ -155,6 +179,7 @@ const normalizeOrderRows = (rows: unknown[]): RawOrderRow[] => {
       shipping_state: typedRow.shipping_state ?? null,
       shipping_postcode: typedRow.shipping_postcode ?? null,
     };
+
   });
 };
 
@@ -168,6 +193,7 @@ const getEffectiveOrderStatus = (order: Pick<RawOrderRow, 'status' | 'refunded_a
   if (order.status === 'refunded' || !!order.refunded_at) return 'refunded';
   if (order.status === 'shipped') return 'shipped';
   if (order.status === 'delivered') return 'delivered';
+  if (order.status === 'completed') return 'completed';
   return 'awaiting';
 };
 
@@ -175,8 +201,10 @@ const getGroupStatus = (orders: Order[]): OrderStatus => {
   if (orders.length > 0 && orders.every(isOrderRefunded)) return 'refunded';
   if (orders.some((o) => o.status === 'awaiting' && !isOrderRefunded(o))) return 'awaiting';
   if (orders.some((o) => o.status === 'shipped' && !isOrderRefunded(o))) return 'shipped';
-  return 'delivered';
+  if (orders.some((o) => o.status === 'delivered' && !isOrderRefunded(o))) return 'delivered';
+  return 'completed';
 };
+
 
 const groupOrders = (orders: Order[]): OrderGroup[] => {
   const groups = new Map<string, OrderGroup>();
@@ -450,6 +478,28 @@ export function useOrders() {
     },
   });
 
+  // Buyer/admin: mark order completed (releases funds)
+  const completeOrder = useMutation({
+    mutationFn: async (input: { orderId?: string; orderGroupId?: string }) => {
+      if (!user?.id) throw new Error('Not authenticated');
+      const { orderId, orderGroupId } = input;
+      if (!orderId && !orderGroupId) throw new Error('orderId or orderGroupId is required');
+      const { error } = await (supabase as any).rpc('complete_order', {
+        p_order_id: orderId ?? null,
+        p_order_group_id: orderGroupId ?? null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast.success('Order completed');
+    },
+    onError: (error) => {
+      console.error('Error completing order:', error);
+      toast.error('Failed to complete order');
+    },
+  });
+
   return {
     buyerOrders,
     sellerOrders,
@@ -459,5 +509,7 @@ export function useOrders() {
     loadingSellerOrders,
     markAsShipped,
     markAsDelivered,
+    completeOrder,
   };
 }
+

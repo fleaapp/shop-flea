@@ -42,6 +42,11 @@ const getOrderStatusBadge = (status: Order['status']) => {
         label: 'Delivered',
         className: 'bg-muted text-muted-foreground',
       };
+    case 'completed':
+      return {
+        label: 'Completed',
+        className: 'bg-muted text-muted-foreground',
+      };
     case 'refunded':
       return {
         label: 'Refunded',
@@ -49,6 +54,7 @@ const getOrderStatusBadge = (status: Order['status']) => {
       };
   }
 };
+
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -62,10 +68,10 @@ const Cart = () => {
   const { cartItems, removeFromCart } = useCart();
   const { addFavorite } = useFavorites();
   const { removeDiscarded } = useDiscardedListings();
-  const { buyerOrderGroups, loadingBuyerOrders, markAsDelivered } = useOrders();
+  const { buyerOrderGroups, loadingBuyerOrders, markAsDelivered, completeOrder } = useOrders();
   const { getGroupUnread } = useUnreadOrderMessages();
   const [activeTab, setActiveTab] = useState<'cart' | 'orders'>(routeState?.initialTab === 'orders' ? 'orders' : 'cart');
-  const [orderStatusFilter, setOrderStatusFilter] = useState<'awaiting' | 'shipped' | 'delivered' | 'refunded'>('awaiting');
+  const [orderStatusFilter, setOrderStatusFilter] = useState<'awaiting' | 'shipped' | 'completed'>('awaiting');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [sellerSettings, setSellerSettings] = useState<Map<string, SellerShippingInfo>>(new Map());
@@ -125,6 +131,17 @@ const Cart = () => {
 
     setSelectedOrderGroup(null);
   };
+
+  const handleCompleteOrder = () => {
+    if (!selectedOrderGroup) return;
+    if (selectedOrderGroup.order_group_id) {
+      completeOrder.mutate({ orderGroupId: selectedOrderGroup.order_group_id });
+    } else {
+      completeOrder.mutate({ orderId: selectedOrderGroup.orders[0].id });
+    }
+    setSelectedOrderGroup(null);
+  };
+
 
   // Use actual listing status from database including isPaused, isInactive, and isRemoved
   const cartItemsWithStatus = cartItems.map((item) => ({
@@ -352,9 +369,9 @@ const Cart = () => {
             {([
               { key: 'awaiting' as const, label: 'Ordered' },
               { key: 'shipped' as const, label: 'Shipped' },
-              { key: 'delivered' as const, label: 'Delivered' },
-              { key: 'refunded' as const, label: 'Refunded' },
+              { key: 'completed' as const, label: 'Completed' },
             ]).map(({ key, label }) => (
+
               <button
                 key={key}
                 onClick={() => setOrderStatusFilter(key)}
@@ -488,17 +505,20 @@ const Cart = () => {
               <span className="text-5xl mb-4">⏳</span>
             </div>
           ) : (() => {
-            const filteredOrders = buyerOrderGroups.filter((g) => g.status === orderStatusFilter);
+            const filteredOrders = buyerOrderGroups.filter((g) => orderStatusFilter === 'completed'
+              ? (g.status === 'completed' || g.status === 'delivered' || g.status === 'refunded')
+              : g.status === orderStatusFilter);
             if (filteredOrders.length === 0) {
               return (
                 <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
                   <span className="text-6xl opacity-50 mb-4">🧾</span>
                   <p className="text-lg font-medium text-muted-foreground">
-                    {orderStatusFilter === 'shipped' ? 'No shipped orders.' : orderStatusFilter === 'delivered' ? 'No delivered orders.' : orderStatusFilter === 'refunded' ? 'No refunded orders.' : 'No orders yet.'}
+                    {orderStatusFilter === 'shipped' ? 'No shipped orders.' : orderStatusFilter === 'completed' ? 'No completed orders.' : 'No orders yet.'}
                   </p>
                 </div>
               );
             }
+
 
             if (orderStatusFilter === 'awaiting') {
               const now = Date.now();
@@ -545,6 +565,8 @@ const Cart = () => {
         open={!!selectedOrderGroup}
         onOpenChange={(open) => !open && setSelectedOrderGroup(null)}
         onMarkDelivered={handleMarkDelivered}
+        onCompleteOrder={handleCompleteOrder}
+
       />
       </div>
 

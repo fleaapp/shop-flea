@@ -47,8 +47,11 @@ const getStatusBadge = (status: OrderStatus) => {
       return { label: 'Shipped', variant: 'secondary' as const };
     case 'delivered':
       return { label: 'Delivered', variant: 'secondary' as const };
+    case 'completed':
+      return { label: 'Completed', variant: 'secondary' as const };
     case 'refunded':
       return { label: 'Refunded', variant: 'secondary' as const };
+
   }
 };
 

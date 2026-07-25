@@ -65,7 +65,7 @@ const Notifications = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isUnauthed = !user;
-  const { sellerOrderGroups, buyerOrderGroups, markAsShipped, markAsDelivered } = useOrders();
+  const { sellerOrderGroups, buyerOrderGroups, markAsShipped, markAsDelivered, completeOrder } = useOrders();
   const { notifications, isLoading: loadingNotifications, unreadCount, badgeCount, markAsRead, markAllAsRead } = useNotifications();
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
@@ -307,6 +307,18 @@ const Notifications = () => {
     setSelectedBuyerGroup(null);
   };
 
+  const handleCompleteOrder = () => {
+    if (!selectedBuyerGroup) return;
+    if (selectedBuyerGroup.order_group_id) {
+      completeOrder.mutate({ orderGroupId: selectedBuyerGroup.order_group_id });
+    } else {
+      completeOrder.mutate({ orderId: selectedBuyerGroup.orders[0].id });
+    }
+    setOrderSheetOpen(false);
+    setSelectedBuyerGroup(null);
+  };
+
+
   const formatTime = (dateString: string) => {
     try {
       return formatDistanceToNow(new Date(dateString), { addSuffix: true });
@@ -433,6 +445,8 @@ const Notifications = () => {
         open={orderSheetOpen}
         onOpenChange={(open) => { setOrderSheetOpen(open); if (!open) setSelectedBuyerGroup(null); }}
         onMarkDelivered={handleMarkDelivered}
+        onCompleteOrder={handleCompleteOrder}
+
       />
       </div>
 

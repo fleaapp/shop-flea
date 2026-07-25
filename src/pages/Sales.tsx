@@ -25,17 +25,20 @@ const getStatusBadge = (status: OrderGroup['status']) => {
       return { label: 'Shipped', className: 'bg-muted text-muted-foreground' };
     case 'delivered':
       return { label: 'Delivered', className: 'bg-muted text-muted-foreground' };
+    case 'completed':
+      return { label: 'Completed', className: 'bg-muted text-muted-foreground' };
     case 'refunded':
       return { label: 'Refunded', className: 'bg-muted text-muted-foreground' };
   }
 };
+
 
 const Sales = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { exitGuestMode } = useGuestMode();
-  const [salesStatusFilter, setSalesStatusFilter] = useState<'awaiting' | 'shipped' | 'delivered' | 'refunded'>('awaiting');
+  const [salesStatusFilter, setSalesStatusFilter] = useState<'awaiting' | 'shipped' | 'completed'>('awaiting');
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
   const { sellerOrderGroups, loadingSellerOrders, markAsShipped } = useOrders();
@@ -160,9 +163,9 @@ const Sales = () => {
             {([
               { key: 'awaiting' as const, label: 'To Ship' },
               { key: 'shipped' as const, label: 'Shipped' },
-              { key: 'delivered' as const, label: 'Delivered' },
-              { key: 'refunded' as const, label: 'Refunded' },
+              { key: 'completed' as const, label: 'Completed' },
             ]).map(({ key, label }) => (
+
               <button
                 key={key}
                 onClick={() => setSalesStatusFilter(key)}
@@ -201,7 +204,10 @@ const Sales = () => {
             <span className="text-5xl mb-4">⏳</span>
           </div>
         ) : (() => {
-          const filteredSales = sellerOrderGroups.filter(g => g.status === salesStatusFilter);
+          const filteredSales = sellerOrderGroups.filter(g => salesStatusFilter === 'completed'
+            ? (g.status === 'completed' || g.status === 'delivered' || g.status === 'refunded')
+            : g.status === salesStatusFilter);
+
           if (filteredSales.length === 0) {
             return (
               <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
