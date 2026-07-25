@@ -66,9 +66,12 @@ serve(async (req) => {
     const listingId = typeof body.listingId === "string" ? body.listingId.trim() : "";
     const content = typeof body.content === "string" ? body.content.trim() : "";
     const parentId = typeof body.parentId === "string" && body.parentId.trim() ? body.parentId.trim() : null;
+    // Notify-only mode: the client has already inserted the comment directly
+    // via RLS (for latency) and only wants us to fan out notifications + push.
+    const existingCommentId =
+      typeof body.commentId === "string" && body.commentId.trim() ? body.commentId.trim() : null;
 
     if (!listingId) return json({ error: "listingId is required." }, 400);
-    if (!content || content.length > 1000) return json({ error: "Comment must be 1–1000 characters." }, 400);
 
     const svc = createClient(supabaseUrl, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -85,24 +88,45 @@ serve(async (req) => {
     if (profile?.status === "blocked") return json({ error: "Your account is restricted. You cannot post comments." }, 403);
 
     let parentAuthorId: string | null = null;
-    if (parentId) {
+    let resolvedParentId: string | null = parentId;
+    let comment: { id: string; listing_id: string; user_id: string; content: string; parent_id: string | null; created_at: string } | null = null;
+
+    if (existingCommentId) {
+      // Verify the comment exists, belongs to this listing, and was authored by the caller.
+      const { data: existing, error: existingErr } = await svc
+        .from("listing_comments")
+        .select("id, user_id, listing_id, parent_id, content, created_at")
+        .eq("id", existingCommentId)
+        .maybeSingle();
+      if (existingErr) throw existingErr;
+      if (!existing || existing.listing_id !== listingId) return json({ error: "Comment not found." }, 404);
+      if (existing.user_id !== userId) return json({ error: "Unauthorized" }, 403);
+      comment = existing as typeof comment;
+      resolvedParentId = existing.parent_id;
+    } else {
+      if (!content || content.length > 1000) return json({ error: "Comment must be 1–1000 characters." }, 400);
+    }
+
+    if (resolvedParentId) {
       const { data: parent, error: parentError } = await svc
         .from("listing_comments")
         .select("id, user_id, listing_id")
-        .eq("id", parentId)
+        .eq("id", resolvedParentId)
         .maybeSingle();
       if (parentError) throw parentError;
       if (!parent || parent.listing_id !== listingId) return json({ error: "Parent comment not found." }, 404);
       parentAuthorId = parent.user_id;
     }
 
-    const { data: comment, error: commentError } = await svc
-      .from("listing_comments")
-      .insert({ listing_id: listingId, user_id: userId, content, parent_id: parentId })
-      .select("id, listing_id, user_id, content, parent_id, created_at")
-      .single();
-
-    if (commentError) throw commentError;
+    if (!comment) {
+      const { data: inserted, error: commentError } = await svc
+        .from("listing_comments")
+        .insert({ listing_id: listingId, user_id: userId, content, parent_id: resolvedParentId })
+        .select("id, listing_id, user_id, content, parent_id, created_at")
+        .single();
+      if (commentError) throw commentError;
+      comment = inserted;
+    }
 
     const username = profile?.username || "@user";
     const listingTitle = String(listing.title || "item").slice(0, 30);
