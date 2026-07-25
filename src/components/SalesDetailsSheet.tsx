@@ -547,6 +547,46 @@ const SalesDetailsSheet = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={refundDeclineOpen} onOpenChange={(o) => !respondToRefund.isPending && setRefundDeclineOpen(o)}>
+        <AlertDialogContent className="max-w-[320px] rounded-2xl p-6">
+          <AlertDialogHeader className="text-center">
+            <AlertDialogTitle>Decline refund request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Add a short reason. The buyer can still escalate to Flea admin for review.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Input
+            value={refundDeclineReason}
+            onChange={(e) => setRefundDeclineReason(e.target.value)}
+            placeholder="Reason (optional)"
+            maxLength={200}
+            className="mt-2"
+          />
+          <AlertDialogFooter className="flex-row gap-2 mt-3">
+            <AlertDialogCancel disabled={respondToRefund.isPending} className="flex-1 h-9 rounded-lg mt-0">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={respondToRefund.isPending}
+              onClick={async (e) => {
+                e.preventDefault();
+                await respondToRefund.mutateAsync({
+                  orderGroupId: primaryOrder.order_group_id ?? undefined,
+                  orderId: primaryOrder.order_group_id ? undefined : primaryOrder.id,
+                  decision: 'decline',
+                  reason: refundDeclineReason,
+                });
+                setRefundDeclineReason('');
+                setRefundDeclineOpen(false);
+              }}
+              className="flex-1 h-9 rounded-lg bg-charcoal text-white hover:bg-charcoal-light"
+            >
+              {respondToRefund.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Decline'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Drawer>
   );
 };
