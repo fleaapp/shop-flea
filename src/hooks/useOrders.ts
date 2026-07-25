@@ -519,6 +519,74 @@ export function useOrders() {
     },
   });
 
+  // Request a refund (buyer requests, or seller offers). Opens a 72h approval window.
+  const requestRefund = useMutation({
+    mutationFn: async (input: { orderId?: string; orderGroupId?: string; reason?: string }) => {
+      if (!user?.id) throw new Error('Not authenticated');
+      const { orderId, orderGroupId, reason } = input;
+      if (!orderId && !orderGroupId) throw new Error('orderId or orderGroupId is required');
+      const { error } = await (supabase as any).rpc('request_refund', {
+        p_order_id: orderId ?? null,
+        p_order_group_id: orderGroupId ?? null,
+        p_reason: reason ?? null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+    },
+    onError: (error: any) => {
+      console.error('Error requesting refund:', error);
+      toast.error(error?.message || 'Failed to submit refund request');
+    },
+  });
+
+  // Respond to a refund request (the OTHER party approves or declines).
+  // On approve, we call the stripe-connect-refund edge function to actually refund.
+  const respondToRefund = useMutation({
+    mutationFn: async (input: {
+      orderId?: string;
+      orderGroupId?: string;
+      decision: 'approve' | 'decline';
+      reason?: string;
+    }) => {
+      if (!user?.id) throw new Error('Not authenticated');
+      const { orderId, orderGroupId, decision, reason } = input;
+      if (!orderId && !orderGroupId) throw new Error('orderId or orderGroupId is required');
+
+      const { data, error } = await (supabase as any).rpc('respond_to_refund_request', {
+        p_order_id: orderId ?? null,
+        p_order_group_id: orderGroupId ?? null,
+        p_decision: decision,
+        p_reason: reason ?? null,
+      });
+      if (error) throw error;
+
+      if (decision === 'approve') {
+        const rows = (data as any[]) || [];
+        const targetIds = rows.length
+          ? [...new Set(rows.map((r) => r.id as string))]
+          : orderId
+          ? [orderId]
+          : [];
+        for (const id of targetIds) {
+          const { error: refundError } = await supabase.functions.invoke('stripe-connect-refund', {
+            body: { order_id: id, reason: reason || 'refund_approved', initiator: 'party_approval' },
+          });
+          if (refundError) throw refundError;
+        }
+      }
+    },
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast.success(vars.decision === 'approve' ? 'Refund approved and issued' : 'Refund declined');
+    },
+    onError: (error: any) => {
+      console.error('Error responding to refund:', error);
+      toast.error(error?.message || 'Failed to respond to refund');
+    },
+  });
+
   return {
     buyerOrders,
     sellerOrders,
@@ -529,6 +597,8 @@ export function useOrders() {
     markAsShipped,
     markAsDelivered,
     completeOrder,
+    requestRefund,
+    respondToRefund,
   };
 }
 
