@@ -478,6 +478,28 @@ export function useOrders() {
     },
   });
 
+  // Buyer/admin: mark order completed (releases funds)
+  const completeOrder = useMutation({
+    mutationFn: async (input: { orderId?: string; orderGroupId?: string }) => {
+      if (!user?.id) throw new Error('Not authenticated');
+      const { orderId, orderGroupId } = input;
+      if (!orderId && !orderGroupId) throw new Error('orderId or orderGroupId is required');
+      const { error } = await (supabase as any).rpc('complete_order', {
+        p_order_id: orderId ?? null,
+        p_order_group_id: orderGroupId ?? null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast.success('Order completed');
+    },
+    onError: (error) => {
+      console.error('Error completing order:', error);
+      toast.error('Failed to complete order');
+    },
+  });
+
   return {
     buyerOrders,
     sellerOrders,
@@ -486,6 +508,11 @@ export function useOrders() {
     loadingBuyerOrders,
     loadingSellerOrders,
     markAsShipped,
+    markAsDelivered,
+    completeOrder,
+  };
+}
+
     markAsDelivered,
   };
 }
