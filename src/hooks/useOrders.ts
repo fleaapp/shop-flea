@@ -513,6 +513,3 @@ export function useOrders() {
   };
 }
 
-    markAsDelivered,
-  };
-}
