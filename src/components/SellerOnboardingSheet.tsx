@@ -377,7 +377,7 @@ const SellerOnboardingSheet = ({
                     Set up your seller account in just a few minutes. We'll ask for a few details to verify your identity and enable payouts. Make sure the information you provide matches your government-issued ID.
                   </p>
                   <p className="font-semibold text-foreground">
-                    Listing on Flea is free.
+                    Listing on Flea is free. A 2% + $0.50 transaction fee applies per sale.
                   </p>
                   <p>
                     By continuing you agree to our{' '}

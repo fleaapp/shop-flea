@@ -116,8 +116,9 @@ const SalesDetailsSheet = ({
 
   const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
   const shippingTotal = orders.reduce((sum, o) => sum + Number(o.shipping_price || 0), 0);
-  // Sellers pay no selling fees — you keep the full items + shipping.
-  const youReceived = subtotal;
+  // Sellers pay a Transaction Fee (2% + $0.50) deducted from payout.
+  const transactionFee = subtotal > 0 ? Math.round((subtotal * 0.02 + 0.50) * 100) / 100 : 0;
+  const youReceived = Math.round((subtotal - transactionFee) * 100) / 100;
   const statusBadge = getDisplayStatusBadge(primaryOrder);
   const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
 
@@ -283,6 +284,15 @@ const SalesDetailsSheet = ({
                       <div>{bundleText.detail}</div>
                     </div>
                   )}
+                </div>
+
+                <div className="border-t border-border" />
+
+                <div className="px-4 py-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">Transaction Fee (2% + $0.50)</div>
+                    <p className="text-sm text-foreground">−${transactionFee.toFixed(2)}</p>
+                  </div>
                 </div>
 
                 <div className="border-t border-border" />

@@ -1,0 +1,1 @@
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS transaction_fee NUMERIC(10,2) NOT NULL DEFAULT 0;

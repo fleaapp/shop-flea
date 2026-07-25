@@ -77,8 +77,9 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
   // Secure Checkout Fee: 4% + $0.70 of items + shipping, paid by buyer.
   const secureCheckoutFee = Math.round((subtotal * 0.04 + 0.70) * 100) / 100;
   const buyerTotal = subtotal + secureCheckoutFee;
-  // Sellers keep the full items + shipping — no platform fee.
-  const sellerReceives = subtotal;
+  // Seller-paid Transaction Fee (2% + $0.50) deducted from payout.
+  const transactionFee = subtotal > 0 ? Math.round((subtotal * 0.02 + 0.50) * 100) / 100 : 0;
+  const sellerReceives = Math.round((subtotal - transactionFee) * 100) / 100;
 
   const { data: sellerShippingSettings } = useQuery({
     queryKey: ['seller-shipping-settings', primaryOrder.seller_id],
@@ -172,6 +173,10 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
                   </>
                 ) : (
                   <>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-500">Transaction Fee (2% + $0.50)</span>
+                      <span className="text-gray-900">−${transactionFee.toFixed(2)}</span>
+                    </div>
                     <div className="flex justify-between text-xs font-bold pt-1">
                       <span className="text-gray-900">You received</span>
                       <span className="text-gray-900">${sellerReceives.toFixed(2)}</span>
