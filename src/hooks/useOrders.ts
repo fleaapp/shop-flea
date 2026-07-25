@@ -166,6 +166,12 @@ const normalizeOrderRows = (rows: unknown[]): RawOrderRow[] => {
       refund_reason: typedRow.refund_reason ?? null,
       payment_method: typedRow.payment_method ?? null,
       checkout_reference: typedRow.checkout_reference ?? null,
+      tracking_approved_at: typedRow.tracking_approved_at ?? null,
+      tracking_rejected_at: typedRow.tracking_rejected_at ?? null,
+      tracking_rejection_reason: typedRow.tracking_rejection_reason ?? null,
+      admin_marked_delivered: typedRow.admin_marked_delivered ?? false,
+      completed_at: typedRow.completed_at ?? null,
+      dispute_window_ends_at: typedRow.dispute_window_ends_at ?? null,
       shipping_first_name: typedRow.shipping_first_name ?? null,
       shipping_last_name: typedRow.shipping_last_name ?? null,
       shipping_address: typedRow.shipping_address ?? null,
@@ -173,6 +179,7 @@ const normalizeOrderRows = (rows: unknown[]): RawOrderRow[] => {
       shipping_state: typedRow.shipping_state ?? null,
       shipping_postcode: typedRow.shipping_postcode ?? null,
     };
+
   });
 };
 
