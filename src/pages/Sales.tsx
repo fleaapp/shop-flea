@@ -38,7 +38,7 @@ const Sales = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { exitGuestMode } = useGuestMode();
-  const [salesStatusFilter, setSalesStatusFilter] = useState<'awaiting' | 'shipped' | 'completed'>('awaiting');
+  const [salesStatusFilter, setSalesStatusFilter] = useState<'awaiting' | 'shipped' | 'delivered' | 'completed'>('awaiting');
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
   const { sellerOrderGroups, loadingSellerOrders, markAsShipped } = useOrders();
