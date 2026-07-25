@@ -132,6 +132,17 @@ const Cart = () => {
     setSelectedOrderGroup(null);
   };
 
+  const handleCompleteOrder = () => {
+    if (!selectedOrderGroup) return;
+    if (selectedOrderGroup.order_group_id) {
+      completeOrder.mutate({ orderGroupId: selectedOrderGroup.order_group_id });
+    } else {
+      completeOrder.mutate({ orderId: selectedOrderGroup.orders[0].id });
+    }
+    setSelectedOrderGroup(null);
+  };
+
+
   // Use actual listing status from database including isPaused, isInactive, and isRemoved
   const cartItemsWithStatus = cartItems.map((item) => ({
     ...item,
