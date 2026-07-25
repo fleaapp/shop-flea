@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Order, OrderStatus } from '@/hooks/useOrders';
+import { Order, OrderStatus, useOrders } from '@/hooks/useOrders';
 import { format } from 'date-fns';
 import { useExistingReview } from '@/hooks/useReviews';
 import WriteReviewDrawer from '@/components/WriteReviewDrawer';
@@ -84,6 +84,9 @@ const SalesDetailsSheet = ({
   const [refundConfirmOpen, setRefundConfirmOpen] = useState(false);
   const [refunding, setRefunding] = useState(false);
   const { getGroupUnread } = useUnreadOrderMessages();
+  const { requestRefund, respondToRefund } = useOrders();
+  const [refundDeclineReason, setRefundDeclineReason] = useState('');
+  const [refundDeclineOpen, setRefundDeclineOpen] = useState(false);
   
   const primaryOrder = orders?.[0];
   const { data: existingReview } = useExistingReview(primaryOrder?.id);
