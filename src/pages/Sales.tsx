@@ -163,6 +163,7 @@ const Sales = () => {
             {([
               { key: 'awaiting' as const, label: 'To Ship' },
               { key: 'shipped' as const, label: 'Shipped' },
+              { key: 'delivered' as const, label: 'Delivered' },
               { key: 'completed' as const, label: 'Completed' },
             ]).map(({ key, label }) => (
 
@@ -170,7 +171,7 @@ const Sales = () => {
                 key={key}
                 onClick={() => setSalesStatusFilter(key)}
                 className={cn(
-                  'rounded-full w-20 py-2 text-sm font-medium transition-all',
+                  'rounded-full px-3 py-2 text-xs font-medium transition-all whitespace-nowrap',
                   salesStatusFilter === key ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
                 )}
               >
