@@ -77,8 +77,10 @@ const OrderDetailsSheet = ({
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [refundDialogOpen, setRefundDialogOpen] = useState(false);
   const [deliveredConfirmOpen, setDeliveredConfirmOpen] = useState(false);
+  const [completeConfirmOpen, setCompleteConfirmOpen] = useState(false);
   const { getGroupUnread } = useUnreadOrderMessages();
   const queryClient = useQueryClient();
+
   
   const primaryOrder = orders?.[0];
   const { data: existingReview } = useExistingReview(primaryOrder?.id);
