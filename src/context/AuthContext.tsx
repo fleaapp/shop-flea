@@ -232,10 +232,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 
     // Then get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      // Validate the stored token against the auth server. If the token was
+      // signed with a JWT key ID (kid) the server no longer recognises — e.g.
+      // after a signing-key rotation — every subsequent authed request would
+      // 401 with "token is unverifiable". Clear the local session so the user
+      // is cleanly signed out instead of stuck in a broken auth state.
+      if (session?.access_token) {
+        try {
+          const { error: verifyError } = await supabase.auth.getUser();
+          const msg = (verifyError as any)?.message?.toLowerCase?.() ?? '';
+          const code = (verifyError as any)?.code ?? '';
+          const status = (verifyError as any)?.status ?? 0;
+          const isBadJwt =
+            code === 'bad_jwt' ||
+            status === 401 ||
+            status === 403 ||
+            msg.includes('unverifiable') ||
+            msg.includes('invalid jwt') ||
+            msg.includes('jwt') && msg.includes('kid');
+          if (verifyError && isBadJwt) {
+            console.warn('[auth] stored token rejected by server — clearing local session:', verifyError);
+            try {
+              await supabase.auth.signOut({ scope: 'local' });
+            } catch { /* ignore */ }
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+            setProfileLoaded(true);
+            clearTimeout(safetyTimer);
+            setLoading(false);
+            return;
+          }
+        } catch (err) {
+          console.warn('[auth] getUser() validation failed:', err);
+        }
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
         fetchProfile(session.user.id).finally(() => {
           clearTimeout(safetyTimer);

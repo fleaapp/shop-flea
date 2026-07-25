@@ -245,16 +245,30 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
       const trimmedContent = content.trim();
 
       // Direct insert — RLS allows auth.uid() = user_id. Bypasses edge cold start.
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from('listing_comments')
         .insert({
           listing_id: listingId,
           user_id: user.id,
           parent_id: parentId || null,
           content: trimmedContent,
-        });
+        })
+        .select('id')
+        .single();
 
       if (error) throw error;
+
+      // Fire-and-forget: fan out notifications (seller of listing + parent
+      // comment author) and push notifications via the edge function. Runs
+      // in notify-only mode so it does NOT re-insert the comment.
+      if (inserted?.id) {
+        void invokeCloudFunction('add-listing-comment', {
+          listingId,
+          commentId: inserted.id,
+        }).catch((notifError) => {
+          console.error('Failed to fan out comment notifications:', notifError);
+        });
+      }
 
       // Fire-and-forget @mention notifications so post feels instant.
       const mentionHandles = Array.from(
