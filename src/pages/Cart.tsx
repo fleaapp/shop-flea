@@ -42,6 +42,11 @@ const getOrderStatusBadge = (status: Order['status']) => {
         label: 'Delivered',
         className: 'bg-muted text-muted-foreground',
       };
+    case 'completed':
+      return {
+        label: 'Completed',
+        className: 'bg-muted text-muted-foreground',
+      };
     case 'refunded':
       return {
         label: 'Refunded',
@@ -49,6 +54,7 @@ const getOrderStatusBadge = (status: Order['status']) => {
       };
   }
 };
+
 
 const Cart = () => {
   const navigate = useNavigate();
