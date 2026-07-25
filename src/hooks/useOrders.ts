@@ -43,6 +43,13 @@ export interface Order {
   admin_marked_delivered?: boolean | null;
   completed_at?: string | null;
   dispute_window_ends_at?: string | null;
+  // Refund approval workflow
+  refund_requested_at?: string | null;
+  refund_requested_by?: string | null;
+  refund_request_reason?: string | null;
+  refund_request_deadline_at?: string | null;
+  refund_declined_at?: string | null;
+  refund_declined_reason?: string | null;
   // Shipping address fields
   shipping_first_name: string | null;
   shipping_last_name: string | null;
@@ -126,6 +133,12 @@ const ORDER_OPTIONAL_COLUMNS = [
   'admin_marked_delivered',
   'completed_at',
   'dispute_window_ends_at',
+  'refund_requested_at',
+  'refund_requested_by',
+  'refund_request_reason',
+  'refund_request_deadline_at',
+  'refund_declined_at',
+  'refund_declined_reason',
   'shipping_first_name',
   'shipping_last_name',
   'shipping_address',
@@ -172,6 +185,12 @@ const normalizeOrderRows = (rows: unknown[]): RawOrderRow[] => {
       admin_marked_delivered: typedRow.admin_marked_delivered ?? false,
       completed_at: typedRow.completed_at ?? null,
       dispute_window_ends_at: typedRow.dispute_window_ends_at ?? null,
+      refund_requested_at: typedRow.refund_requested_at ?? null,
+      refund_requested_by: typedRow.refund_requested_by ?? null,
+      refund_request_reason: typedRow.refund_request_reason ?? null,
+      refund_request_deadline_at: typedRow.refund_request_deadline_at ?? null,
+      refund_declined_at: typedRow.refund_declined_at ?? null,
+      refund_declined_reason: typedRow.refund_declined_reason ?? null,
       shipping_first_name: typedRow.shipping_first_name ?? null,
       shipping_last_name: typedRow.shipping_last_name ?? null,
       shipping_address: typedRow.shipping_address ?? null,
