@@ -45,16 +45,25 @@ export interface TransactionFilters {
 export type TransactionSortField = 'created_at' | 'price' | 'status' | 'buyer' | 'seller';
 export type SortDirection = 'asc' | 'desc';
 
-// Flea revenue = Secure Checkout Fee = 4% + $0.70 of items + shipping.
-// (Stripe's actual processing cost is deducted from this by Stripe.)
+// Flea revenue per sale = Secure Checkout Fee (buyer) + Transaction Fee (seller).
 export const SECURE_CHECKOUT_RATE = 0.04;
 export const SECURE_CHECKOUT_FIXED = 0.70;
-// Kept for legacy display code that reads a percent constant.
+export const TRANSACTION_FEE_RATE = 0.02;
+export const TRANSACTION_FEE_FIXED = 0.50;
 export const PLATFORM_FEE_PERCENT = SECURE_CHECKOUT_RATE;
 
-/** Flea's gross revenue on a sale (Secure Checkout Fee). Pass items + shipping. */
-export function calcPlatformFee(subtotal: number): number {
+/** Buyer-paid Secure Checkout Fee. Pass items + shipping. */
+export function calcSecureCheckoutFee(subtotal: number): number {
   return Math.round((subtotal * SECURE_CHECKOUT_RATE + SECURE_CHECKOUT_FIXED) * 100) / 100;
+}
+/** Seller-paid Transaction Fee. Pass items + shipping. */
+export function calcTransactionFee(subtotal: number): number {
+  if (subtotal <= 0) return 0;
+  return Math.round((subtotal * TRANSACTION_FEE_RATE + TRANSACTION_FEE_FIXED) * 100) / 100;
+}
+/** Total Flea revenue (Secure Checkout Fee + Transaction Fee) per sale. */
+export function calcPlatformFee(subtotal: number): number {
+  return Math.round((calcSecureCheckoutFee(subtotal) + calcTransactionFee(subtotal)) * 100) / 100;
 }
 /** Est. Stripe processing cost on a charge total (buyer-facing). */
 export function calcProcessingFee(total: number): number {

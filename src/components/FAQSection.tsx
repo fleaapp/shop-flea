@@ -57,7 +57,7 @@ const faqItems = [
       },
       {
         q: 'What fees do I pay as a seller?',
-        a: 'Nothing. Flea charges no selling fees - you receive the full item price plus shipping. Payment processing and marketplace costs are covered by the buyer\'s Secure Checkout Fee at checkout.',
+        a: 'Listing on Flea is always free. When you make a sale, a 2% + $0.50 Transaction Fee is deducted from your payout to cover payment processing. There are no listing, monthly or hidden fees.',
       },
       {
         q: 'How do I get paid?',
