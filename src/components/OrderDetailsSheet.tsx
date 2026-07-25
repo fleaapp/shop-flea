@@ -38,6 +38,7 @@ interface OrderDetailsSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onMarkDelivered?: () => void;
+  onCompleteOrder?: () => void;
 }
 
 const getStatusBadge = (status: OrderStatus) => {
@@ -48,10 +49,13 @@ const getStatusBadge = (status: OrderStatus) => {
       return { label: 'Shipped', variant: 'secondary' as const };
     case 'delivered':
       return { label: 'Delivered', variant: 'secondary' as const };
+    case 'completed':
+      return { label: 'Completed', variant: 'secondary' as const };
     case 'refunded':
       return { label: 'Refunded', variant: 'secondary' as const };
   }
 };
+
 
 const SectionHeader = ({ children }: { children: React.ReactNode }) => (
   <div className="bg-muted-foreground/20 px-4 py-2 text-sm font-medium text-muted-foreground">
