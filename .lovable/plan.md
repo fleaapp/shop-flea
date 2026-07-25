@@ -1,46 +1,70 @@
-## Problem
+# Vinted-style Buyer Protection with Manual Admin Approval
 
-For `@sarahhearn2`, the Seller Dashboard shows:
+Replace the current auto-release payout model with a manually gated flow. Funds are only released after admin approves tracking, delivery is confirmed (by buyer, admin, or 10-day fallback), and a 2-day buyer dispute window elapses. Copy uses short dashes (-) only, never em dashes.
 
-- **Pending: $4.20** (correct — matches Stripe pending net)
-- **Sales in progress (3):** Bundle $1.35 + Test $0.50 + Test $1.00 = **$2.85**
-- **First payout hold: $1.00**
+## New order lifecycle
 
-The DB actually has **4 active (awaiting/shipped, non-refunded) order groups** totalling **$4.20 gross**:
+```text
+awaiting -> shipped (seller inputs tracking)
+        -> tracking_approved (admin verifies tracking is real/valid)
+        -> delivered (buyer taps, OR admin marks, OR 10-day fallback)
+        -> completed (buyer confirms after delivery, OR 2-day auto-complete)
+                     -> funds released to seller balance
+        -> refunded (buyer reports issue within 2 days, admin resolves)
+```
 
-| Group | Title | Gross |
-| --- | --- | --- |
-| 51760309 | Bundle (Test 5 + Test 2) | $1.35 |
-| 4f47a4a9 | Bundle (Denim + Jacket) | $1.35 |
-| 44753b5d | Test | $0.50 |
-| d3f66e20 | Test | $1.00 |
+## Changes
 
-So one bundle ($1.35) is missing from the list.
+### 1. Database (orders table)
+- Add `tracking_approved_at`, `tracking_approved_by` (admin uuid), `tracking_rejected_count` (int), `admin_marked_delivered` (bool), `completed_at`, `dispute_window_ends_at`.
+- Add `profiles.wrong_tracking_count` (int) and `profiles.tracking_flagged` (bool). At 3 rejected tracking submissions, seller is auto-flagged for admin review and blocked from listing until cleared.
 
-## Root cause
+### 2. Seller flow
+- Seller ships and inputs tracking as today.
+- Status becomes `shipped` but funds stay locked (not eligible for payout) until `tracking_approved_at` is set.
+- If admin rejects tracking, `tracking_rejected_count` increments; seller gets a notification to re-submit. At 3, seller is flagged.
 
-In `src/pages/SellerDashboard.tsx` (~lines 405–423), `firstHoldGroupId` is computed as *"the oldest awaiting/shipped seller order group"* whenever `firstHoldCents > 0`, and that group is then filtered out of `activeGroups` to avoid double-counting against the First payout hold card.
+### 3. Admin flow (new admin section: "Tracking review")
+- Queue of `shipped` orders where `tracking_approved_at IS NULL`.
+- Admin sees tracking number + carrier link, can Approve or Reject (with reason).
+- Admin can also mark an order as Delivered manually (sets `admin_marked_delivered = true`, status -> `delivered`).
 
-But the Stripe first-hold payment doesn't necessarily correspond to an awaiting/shipped group at all. In this account the $1.00 first-hold actually maps to the already-**delivered** order `597d2f19` ($0.50 + $0.50). The code still picks the oldest awaiting bundle (`51760309`, $1.35) and hides it, leaving 3 rows summing $2.85 instead of 4 rows summing $4.20.
+### 4. Buyer flow (Order details drawer)
+- Delivered button behaviour:
+  - If `admin_marked_delivered = true` and buyer hasn't confirmed: button label is **Complete** (not Delivered).
+  - Otherwise: button label is **Delivered**.
+- Tapping the button opens a confirmation dialog with two actions:
+  - **Confirm complete** -> sets status `completed`, releases funds.
+  - **Report issue / Request refund** -> opens existing RefundRequestDialog.
+- After delivery is confirmed (by any path), buyer has a 2-day dispute window. If no action, order auto-completes and funds release.
 
-There is no `payment_intent_id`/metadata link in the dashboard payload today, so we can't reliably match the Stripe first-sale payment back to a specific order group from the client.
+### 5. Payout gating (stripe-connect-payout)
+- Replace current "awaiting shipment" gate with: block funds tied to orders where `status != 'completed'` OR `completed_at > now() - interval '0 seconds'` (i.e. only completed orders count toward available balance).
+- Sellers never go negative: refunds can only happen on orders still in the locked pool.
 
-## Fix
+### 6. UI label swap ("Refunded" -> "Completed")
+- Sales page toggle: `Ordered | Shipped | Completed` (was `... | Delivered | Refunded`).
+- Cart/Orders page toggle: same rename.
+- Refunded orders appear under Completed as a sub-state (grey badge "Refunded").
 
-Stop hiding any group from "Sales in progress" based on the fragile "oldest awaiting" heuristic. Show **all** non-refunded awaiting/shipped groups.
+### 7. 10-day fallback
+- Existing cron: if `shipped` + `tracking_approved` + 10 days elapsed with no delivery confirmation, auto-mark `delivered` (opens buyer's 2-day dispute window).
+- After 2 more days with no dispute: auto `completed`, funds released.
 
-Concretely in `src/pages/SellerDashboard.tsx`:
+### 8. Copy rules
+- All new/edited strings use short dash `-` only. No em dashes anywhere in new copy.
 
-1. Remove the `firstHoldGroupId` computation block (lines ~405–411).
-2. Remove the `if (firstHoldGroupId && g.id === firstHoldGroupId) return false;` line from the `activeGroups` filter (~line 422).
-3. Keep the header total (`pendingTotal = unshippedRemaining + clearing`) unchanged — it already correctly subtracts `firstHoldCents` from Stripe pending, so it stays at $4.20 net when the first-hold sale is already delivered, and stays consistent when the first-hold sale is still awaiting (the per-row list is gross-per-order, header is net-of-fees; a small visual mismatch between the two is expected and preferable to hiding real orders).
+## Technical section
 
-## Verification
-
-After the change, `@sarahhearn2`'s dashboard should show:
-
-- Pending: **$4.20** (unchanged)
-- Sales in progress **(4)**: Bundle $1.35, Bundle $1.35, Test $0.50, Test $1.00
-- First payout hold: $1.00 (unchanged)
-
-No backend or schema changes required. Scope is limited to `src/pages/SellerDashboard.tsx`.
+- Migration: add columns to `orders` and `profiles`; add `notify_on_tracking_action` trigger for seller notifications; add admin RLS policy for tracking approval fields.
+- Edge functions:
+  - New: `admin-tracking-review` (approve/reject).
+  - Update: `stripe-connect-payout` (new gate query).
+  - Update: `mark_order_delivered` RPC (accept `source` = buyer|admin|auto; set `admin_marked_delivered` appropriately).
+  - New cron branch in shipping-reminders (or new function): auto-complete after 2-day dispute window.
+- Frontend:
+  - `OrderDetailsSheet.tsx` - dynamic Delivered/Complete button + confirm dialog with two options.
+  - `Sales.tsx`, `Cart.tsx` - rename toggle to `Completed`, group refunded under it.
+  - `SellerDashboard.tsx` - "Pending" now includes shipped + delivered awaiting completion; copy update.
+  - New admin page `src/pages/admin/AdminTrackingReview.tsx` + hook + entry in AdminDashboard "Moderation" group.
+  - Seller flagged state: block listing creation when `profiles.tracking_flagged = true`, surface banner.
