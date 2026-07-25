@@ -120,6 +120,12 @@ const ORDER_OPTIONAL_COLUMNS = [
   'refund_reason',
   'payment_method',
   'checkout_reference',
+  'tracking_approved_at',
+  'tracking_rejected_at',
+  'tracking_rejection_reason',
+  'admin_marked_delivered',
+  'completed_at',
+  'dispute_window_ends_at',
   'shipping_first_name',
   'shipping_last_name',
   'shipping_address',
@@ -127,6 +133,7 @@ const ORDER_OPTIONAL_COLUMNS = [
   'shipping_state',
   'shipping_postcode',
 ] as const;
+
 
 const buildOrderSelectFields = (omitted = new Set<string>()) =>
   [...ORDER_REQUIRED_COLUMNS, ...ORDER_OPTIONAL_COLUMNS]
