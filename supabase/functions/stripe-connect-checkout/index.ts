@@ -157,11 +157,16 @@ serve(async (req) => {
     const subtotal = itemsTotal + shippingAmount;
 
     // Secure Checkout Fee — flat 4% + $0.70 of items + shipping, paid by buyer.
-    // This is Flea's revenue line; Stripe's actual processing cost is deducted
-    // from it (funded out of application_fee_amount).
     const SECURE_CHECKOUT_RATE = 0.04;
     const SECURE_CHECKOUT_FIXED = 0.70;
     let secureCheckoutFee = Math.round((subtotal * SECURE_CHECKOUT_RATE + SECURE_CHECKOUT_FIXED) * 100) / 100;
+
+    // Transaction Fee — 2% + $0.50 of items + shipping, paid by seller (deducted from payout).
+    const TRANSACTION_FEE_RATE = 0.02;
+    const TRANSACTION_FEE_FIXED = 0.50;
+    const transactionFee = subtotal > 0
+      ? Math.round((subtotal * TRANSACTION_FEE_RATE + TRANSACTION_FEE_FIXED) * 100) / 100
+      : 0;
 
     // Coupon: waive buyer fee if valid.
     let appliedCoupon: { id: string; code: string; type: string } | null = null;
@@ -189,9 +194,9 @@ serve(async (req) => {
 
     const buyerTotalDollars = subtotal + secureCheckoutFee;
 
-    // No seller-side platform fee. Flea's take = the full Secure Checkout Fee
-    // (Stripe deducts its actual ~1.75% + $0.30 from this via on_behalf_of).
-    const applicationFeeAmount = Math.round(secureCheckoutFee * 100);
+    // Flea's application fee = Secure Checkout Fee (buyer) + Transaction Fee (seller).
+    // Stripe deducts its actual processing cost from this via on_behalf_of.
+    const applicationFeeAmount = Math.round((secureCheckoutFee + transactionFee) * 100);
 
     // Build line items from DB-authoritative items.
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = authoritativeItems.map(
@@ -319,6 +324,7 @@ serve(async (req) => {
       metadata: {
         item_ids: items.map((i: { id: string }) => i.id).join(","),
         secure_checkout_fee_aud: secureCheckoutFee.toFixed(2),
+        transaction_fee_aud: transactionFee.toFixed(2),
         buyer_total_aud: buyerTotalDollars.toFixed(2),
         flea_buyer_id: user.id,
         ...(appliedCoupon ? { coupon_code: appliedCoupon.code, coupon_id: appliedCoupon.id } : {}),
