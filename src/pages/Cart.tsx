@@ -565,6 +565,8 @@ const Cart = () => {
         open={!!selectedOrderGroup}
         onOpenChange={(open) => !open && setSelectedOrderGroup(null)}
         onMarkDelivered={handleMarkDelivered}
+        onCompleteOrder={handleCompleteOrder}
+
       />
       </div>
 
