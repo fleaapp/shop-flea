@@ -71,7 +71,7 @@ const Cart = () => {
   const { buyerOrderGroups, loadingBuyerOrders, markAsDelivered, completeOrder } = useOrders();
   const { getGroupUnread } = useUnreadOrderMessages();
   const [activeTab, setActiveTab] = useState<'cart' | 'orders'>(routeState?.initialTab === 'orders' ? 'orders' : 'cart');
-  const [orderStatusFilter, setOrderStatusFilter] = useState<'awaiting' | 'shipped' | 'completed'>('awaiting');
+  const [orderStatusFilter, setOrderStatusFilter] = useState<'awaiting' | 'shipped' | 'delivered' | 'completed'>('awaiting');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [sellerSettings, setSellerSettings] = useState<Map<string, SellerShippingInfo>>(new Map());
