@@ -351,7 +351,7 @@ const OrderDetailsSheet = ({
             </div>
 
             {/* Shipping Status Tracker */}
-            {!isRefunded && (
+            {!isRefunded && effectiveStatus !== 'completed' && (
               <ShippingStatusTracker
                 createdAt={primaryOrder.created_at}
                 shippedAt={primaryOrder.shipped_at}
@@ -372,10 +372,18 @@ const OrderDetailsSheet = ({
                     }}
                     className="flex-1 rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12"
                   >
-                    Mark as delivered
+                    {primaryOrder.admin_marked_delivered ? 'Complete' : 'Mark as delivered'}
                   </Button>
                 )}
-                {!isRefunded && effectiveStatus === 'delivered' && !existingReview && (
+                {!isRefunded && effectiveStatus === 'delivered' && isBuyer && (
+                  <Button
+                    onClick={() => setCompleteConfirmOpen(true)}
+                    className="flex-1 rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12"
+                  >
+                    Complete
+                  </Button>
+                )}
+                {!isRefunded && effectiveStatus === 'completed' && !existingReview && (
                   <Button
                     onClick={() => setReviewDrawerOpen(true)}
                     className="flex-1 rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12"
@@ -383,7 +391,7 @@ const OrderDetailsSheet = ({
                     Review Seller
                   </Button>
                 )}
-                {!isRefunded && canShowRefundButton && (
+                {!isRefunded && canShowRefundButton && effectiveStatus !== 'completed' && effectiveStatus !== 'delivered' && (
                   <Button
                     onClick={() => {
                       if (refundStatus?.hasPending || refundStatus?.hasAnyRequest) {
@@ -400,6 +408,7 @@ const OrderDetailsSheet = ({
                   </Button>
                 )}
               </div>
+
               <button
                 className="text-center text-sm text-foreground underline mt-2"
                 onClick={() => {
