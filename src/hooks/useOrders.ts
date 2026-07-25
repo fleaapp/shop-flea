@@ -193,6 +193,7 @@ const getEffectiveOrderStatus = (order: Pick<RawOrderRow, 'status' | 'refunded_a
   if (order.status === 'refunded' || !!order.refunded_at) return 'refunded';
   if (order.status === 'shipped') return 'shipped';
   if (order.status === 'delivered') return 'delivered';
+  if (order.status === 'completed') return 'completed';
   return 'awaiting';
 };
 
@@ -200,8 +201,10 @@ const getGroupStatus = (orders: Order[]): OrderStatus => {
   if (orders.length > 0 && orders.every(isOrderRefunded)) return 'refunded';
   if (orders.some((o) => o.status === 'awaiting' && !isOrderRefunded(o))) return 'awaiting';
   if (orders.some((o) => o.status === 'shipped' && !isOrderRefunded(o))) return 'shipped';
-  return 'delivered';
+  if (orders.some((o) => o.status === 'delivered' && !isOrderRefunded(o))) return 'delivered';
+  return 'completed';
 };
+
 
 const groupOrders = (orders: Order[]): OrderGroup[] => {
   const groups = new Map<string, OrderGroup>();
