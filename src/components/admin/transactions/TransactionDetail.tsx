@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TransactionOrder, getOrderCode, getShippingStatus, getDaysOverdue, calcPlatformFee, calcProcessingFee, getTransactionStatus } from '@/types/admin/transactions';
+import { TransactionOrder, getOrderCode, getShippingStatus, getDaysOverdue, calcPlatformFee, calcSecureCheckoutFee, calcTransactionFee, calcProcessingFee, getTransactionStatus } from '@/types/admin/transactions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -58,8 +58,11 @@ export function TransactionDetail({ order, onBack }: Props) {
   const ss = getShippingStatus(order);
   const overdue = getDaysOverdue(order);
   const total = order.price + order.shipping_price;
-  const pf = calcPlatformFee(order.price + order.shipping_price);
-  const proc = calcProcessingFee(total + pf);
+  const scf = calcSecureCheckoutFee(total);
+  const tfee = calcTransactionFee(total);
+  const pf = calcPlatformFee(total);
+  const proc = calcProcessingFee(total + scf);
+  const sellerNet = Math.max(0, Math.round((total - tfee) * 100) / 100);
   const displayStatus = getTransactionStatus(order);
   
 
@@ -135,10 +138,11 @@ export function TransactionDetail({ order, onBack }: Props) {
             <Separator className="my-2" />
             <Row label="Order Total" value={`$${total.toFixed(2)}`} className="font-bold" />
             <Separator className="my-2" />
-            <Row label="Secure Checkout Fee (4% + $0.70)" value={`+$${pf.toFixed(2)}`} className="text-muted-foreground" />
+            <Row label="Secure Checkout Fee (4% + $0.70)" value={`+$${scf.toFixed(2)}`} className="text-muted-foreground" />
+            <Row label="Transaction Fee (2% + $0.50)" value={`-$${tfee.toFixed(2)}`} className="text-muted-foreground" />
             <Row label="Stripe cost (est.)" value={`-$${proc.toFixed(2)}`} className="text-muted-foreground" />
             <Separator className="my-2" />
-            <Row label="Net to Seller" value={`$${total.toFixed(2)}`} className="font-bold text-emerald-600" />
+            <Row label="Net to Seller" value={`$${sellerNet.toFixed(2)}`} className="font-bold text-emerald-600" />
             <Row label="Flea revenue (est.)" value={`$${Math.max(0, pf - proc).toFixed(2)}`} className="font-bold text-blue-600" />
           </div>
         </Section>
