@@ -68,10 +68,12 @@ const OrderDetailsSheet = ({
   open,
   onOpenChange,
   onMarkDelivered,
+  onCompleteOrder,
 }: OrderDetailsSheetProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
+
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [refundDialogOpen, setRefundDialogOpen] = useState(false);
   const [deliveredConfirmOpen, setDeliveredConfirmOpen] = useState(false);
