@@ -307,6 +307,18 @@ const Notifications = () => {
     setSelectedBuyerGroup(null);
   };
 
+  const handleCompleteOrder = () => {
+    if (!selectedBuyerGroup) return;
+    if (selectedBuyerGroup.order_group_id) {
+      completeOrder.mutate({ orderGroupId: selectedBuyerGroup.order_group_id });
+    } else {
+      completeOrder.mutate({ orderId: selectedBuyerGroup.orders[0].id });
+    }
+    setOrderSheetOpen(false);
+    setSelectedBuyerGroup(null);
+  };
+
+
   const formatTime = (dateString: string) => {
     try {
       return formatDistanceToNow(new Date(dateString), { addSuffix: true });
