@@ -494,17 +494,20 @@ const Cart = () => {
               <span className="text-5xl mb-4">⏳</span>
             </div>
           ) : (() => {
-            const filteredOrders = buyerOrderGroups.filter((g) => g.status === orderStatusFilter);
+            const filteredOrders = buyerOrderGroups.filter((g) => orderStatusFilter === 'completed'
+              ? (g.status === 'completed' || g.status === 'delivered' || g.status === 'refunded')
+              : g.status === orderStatusFilter);
             if (filteredOrders.length === 0) {
               return (
                 <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
                   <span className="text-6xl opacity-50 mb-4">🧾</span>
                   <p className="text-lg font-medium text-muted-foreground">
-                    {orderStatusFilter === 'shipped' ? 'No shipped orders.' : orderStatusFilter === 'delivered' ? 'No delivered orders.' : orderStatusFilter === 'refunded' ? 'No refunded orders.' : 'No orders yet.'}
+                    {orderStatusFilter === 'shipped' ? 'No shipped orders.' : orderStatusFilter === 'completed' ? 'No completed orders.' : 'No orders yet.'}
                   </p>
                 </div>
               );
             }
+
 
             if (orderStatusFilter === 'awaiting') {
               const now = Date.now();
