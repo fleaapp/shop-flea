@@ -315,6 +315,13 @@ serve(async (req) => {
         buyer_total_aud: buyerTotalDollars.toFixed(2),
         flea_buyer_id: user.id,
         flea_seller_id: sellerId,
+      metadata: {
+        item_ids: itemIds.join(","),
+        secure_checkout_fee_aud: secureCheckoutFee.toFixed(2),
+        transaction_fee_aud: transactionFee.toFixed(2),
+        buyer_total_aud: buyerTotalDollars.toFixed(2),
+        flea_buyer_id: user.id,
+        flea_seller_id: sellerId,
         ...(appliedCoupon ? { coupon_code: appliedCoupon.code, coupon_id: appliedCoupon.id } : {}),
       },
     };
