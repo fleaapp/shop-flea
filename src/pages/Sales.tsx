@@ -25,10 +25,13 @@ const getStatusBadge = (status: OrderGroup['status']) => {
       return { label: 'Shipped', className: 'bg-muted text-muted-foreground' };
     case 'delivered':
       return { label: 'Delivered', className: 'bg-muted text-muted-foreground' };
+    case 'completed':
+      return { label: 'Completed', className: 'bg-muted text-muted-foreground' };
     case 'refunded':
       return { label: 'Refunded', className: 'bg-muted text-muted-foreground' };
   }
 };
+
 
 const Sales = () => {
   const navigate = useNavigate();
