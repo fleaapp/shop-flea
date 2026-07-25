@@ -36,6 +36,13 @@ export interface Order {
   refund_reason?: string | null;
   payment_method?: string | null;
   checkout_reference?: string | null;
+  // Buyer-protection lifecycle
+  tracking_approved_at?: string | null;
+  tracking_rejected_at?: string | null;
+  tracking_rejection_reason?: string | null;
+  admin_marked_delivered?: boolean | null;
+  completed_at?: string | null;
+  dispute_window_ends_at?: string | null;
   // Shipping address fields
   shipping_first_name: string | null;
   shipping_last_name: string | null;
@@ -43,6 +50,7 @@ export interface Order {
   shipping_city: string | null;
   shipping_state: string | null;
   shipping_postcode: string | null;
+
   // Joined data
   listing?: {
     id: string;
