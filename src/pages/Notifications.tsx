@@ -445,6 +445,8 @@ const Notifications = () => {
         open={orderSheetOpen}
         onOpenChange={(open) => { setOrderSheetOpen(open); if (!open) setSelectedBuyerGroup(null); }}
         onMarkDelivered={handleMarkDelivered}
+        onCompleteOrder={handleCompleteOrder}
+
       />
       </div>
 
