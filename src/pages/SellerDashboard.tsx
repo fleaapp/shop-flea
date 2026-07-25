@@ -436,7 +436,7 @@ const SellerDashboard = () => {
                             <BalanceInfo
                               title="Pending"
                               body={
-                                'Funds waiting to be released.\n\n• Valid tracking must be added before funds from a sale can be released.\n• An item may already be shipped but funds can still stay Pending while they complete the clearing period, usually around 24 hours.'
+                                'Funds waiting to be released.\n\n• Add a valid tracking number - it must be approved by Flea before it counts.\n• Once the parcel is marked delivered, a 48-hour buyer protection window starts.\n• Funds move to Available once that window closes with no issues raised.'
                               }
                             />
                           </div>
