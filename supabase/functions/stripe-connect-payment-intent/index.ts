@@ -211,6 +211,13 @@ serve(async (req) => {
     const SECURE_CHECKOUT_FIXED = 0.70;
     let secureCheckoutFee = Math.round((subtotal * SECURE_CHECKOUT_RATE + SECURE_CHECKOUT_FIXED) * 100) / 100;
 
+    // Seller-paid Transaction Fee: 2% + $0.50, deducted from payout.
+    const TRANSACTION_FEE_RATE = 0.02;
+    const TRANSACTION_FEE_FIXED = 0.50;
+    const transactionFee = subtotal > 0
+      ? Math.round((subtotal * TRANSACTION_FEE_RATE + TRANSACTION_FEE_FIXED) * 100) / 100
+      : 0;
+
     let appliedCoupon: { id: string; code: string; type: string } | null = null;
     const normalizedCode = String(couponCode || "").trim().toUpperCase();
     if (normalizedCode) {
@@ -231,7 +238,8 @@ serve(async (req) => {
 
     const buyerTotalDollars = subtotal + secureCheckoutFee;
     const amountCents = Math.round(buyerTotalDollars * 100);
-    const applicationFeeAmount = Math.round(secureCheckoutFee * 100);
+    // Application fee collects both the buyer Secure Checkout Fee and the seller Transaction Fee.
+    const applicationFeeAmount = Math.round((secureCheckoutFee + transactionFee) * 100);
 
     const clientExpectedAmountCents = Number(expectedAmountCents);
     if (Number.isFinite(clientExpectedAmountCents) && Math.round(clientExpectedAmountCents) !== amountCents) {
