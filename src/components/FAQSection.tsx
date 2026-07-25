@@ -116,7 +116,15 @@ const faqItems = [
       },
       {
         q: 'How is tracking handled?',
-        a: 'Sellers enter a tracking number and carrier when they mark an order as shipped. We support Australian carriers and automatically update the order status as the parcel moves. You can also tap Track Parcel to see the latest scan.',
+        a: 'Sellers enter a tracking number and carrier when they mark an order as shipped. Every tracking number is reviewed and approved by Flea before payouts can release. You can tap Track Parcel to see the latest scan.',
+      },
+      {
+        q: 'How does buyer protection work?',
+        a: 'Once your parcel is marked delivered - either by you tapping Mark as Delivered, or by Flea confirming it - you have 48 hours to check the item and raise any issues. If nothing is reported in that window, the order auto-completes and funds release to the seller. If you tap Report Issue, funds stay held while it is reviewed.',
+      },
+      {
+        q: 'What happens if the seller enters the wrong tracking?',
+        a: 'Flea reviews every tracking number before payouts release. If it is invalid, the seller is asked to update it. Sellers who submit 3 invalid tracking numbers are flagged for extra checks.',
       },
     ],
   },

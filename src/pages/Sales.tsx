@@ -24,7 +24,7 @@ const getStatusBadge = (status: OrderGroup['status']) => {
     case 'shipped':
       return { label: 'Shipped', className: 'bg-muted text-muted-foreground' };
     case 'delivered':
-      return { label: 'Delivered', className: 'bg-muted text-muted-foreground' };
+      return { label: 'Delivered - awaiting release', className: 'bg-muted text-muted-foreground' };
     case 'completed':
       return { label: 'Completed', className: 'bg-muted text-muted-foreground' };
     case 'refunded':
@@ -204,9 +204,11 @@ const Sales = () => {
             <span className="text-5xl mb-4">⏳</span>
           </div>
         ) : (() => {
-          const filteredSales = sellerOrderGroups.filter(g => salesStatusFilter === 'completed'
-            ? (g.status === 'completed' || g.status === 'delivered' || g.status === 'refunded')
-            : g.status === salesStatusFilter);
+          const filteredSales = sellerOrderGroups.filter(g => {
+            if (salesStatusFilter === 'completed') return g.status === 'completed' || g.status === 'refunded';
+            if (salesStatusFilter === 'shipped') return g.status === 'shipped' || g.status === 'delivered';
+            return g.status === salesStatusFilter;
+          });
 
           if (filteredSales.length === 0) {
             return (

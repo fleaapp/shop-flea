@@ -50,6 +50,7 @@ export default function AdminDashboard() {
         { key: 'support', icon: '💬', label: 'Support chats', section: 'support', badge: badges.support },
         { key: 'reports', icon: '🚩', label: 'Reports', section: 'reports', badge: badges.reports },
         { key: 'bans', icon: '⛔️', label: 'Banned users', section: 'bans', badge: badges.bans },
+        { key: 'approvals', icon: '✅', label: 'Approvals', route: '/admin/approvals' },
         { key: 'refunds', icon: '↩️', label: 'Refunds & disputes', route: '/admin/refunds', badge: badges.refunds },
       ],
     },

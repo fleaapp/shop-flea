@@ -39,7 +39,7 @@ const getOrderStatusBadge = (status: Order['status']) => {
       };
     case 'delivered':
       return {
-        label: 'Delivered',
+        label: 'Delivered - awaiting release',
         className: 'bg-muted text-muted-foreground',
       };
     case 'completed':
@@ -505,9 +505,11 @@ const Cart = () => {
               <span className="text-5xl mb-4">⏳</span>
             </div>
           ) : (() => {
-            const filteredOrders = buyerOrderGroups.filter((g) => orderStatusFilter === 'completed'
-              ? (g.status === 'completed' || g.status === 'delivered' || g.status === 'refunded')
-              : g.status === orderStatusFilter);
+            const filteredOrders = buyerOrderGroups.filter((g) => {
+              if (orderStatusFilter === 'completed') return g.status === 'completed' || g.status === 'refunded';
+              if (orderStatusFilter === 'shipped') return g.status === 'shipped' || g.status === 'delivered';
+              return g.status === orderStatusFilter;
+            });
             if (filteredOrders.length === 0) {
               return (
                 <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
