@@ -65,7 +65,7 @@ const Notifications = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isUnauthed = !user;
-  const { sellerOrderGroups, buyerOrderGroups, markAsShipped, markAsDelivered } = useOrders();
+  const { sellerOrderGroups, buyerOrderGroups, markAsShipped, markAsDelivered, completeOrder } = useOrders();
   const { notifications, isLoading: loadingNotifications, unreadCount, badgeCount, markAsRead, markAllAsRead } = useNotifications();
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
