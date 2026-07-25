@@ -204,7 +204,10 @@ const Sales = () => {
             <span className="text-5xl mb-4">⏳</span>
           </div>
         ) : (() => {
-          const filteredSales = sellerOrderGroups.filter(g => g.status === salesStatusFilter);
+          const filteredSales = sellerOrderGroups.filter(g => salesStatusFilter === 'completed'
+            ? (g.status === 'completed' || g.status === 'delivered' || g.status === 'refunded')
+            : g.status === salesStatusFilter);
+
           if (filteredSales.length === 0) {
             return (
               <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
