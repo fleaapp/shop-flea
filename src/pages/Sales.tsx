@@ -207,7 +207,8 @@ const Sales = () => {
         ) : (() => {
           const filteredSales = sellerOrderGroups.filter(g => {
             if (salesStatusFilter === 'completed') return g.status === 'completed' || g.status === 'refunded';
-            if (salesStatusFilter === 'shipped') return g.status === 'shipped' || g.status === 'delivered';
+            if (salesStatusFilter === 'delivered') return g.status === 'delivered';
+            if (salesStatusFilter === 'shipped') return g.status === 'shipped';
             return g.status === salesStatusFilter;
           });
 
