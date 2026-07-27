@@ -74,13 +74,14 @@ export function useAdminBadges(options: { enabled?: boolean } = {}) {
       if (lastSeen.waitlist) payload.waitlistSince = lastSeen.waitlist;
       if (lastSeen.brands) payload.brandsSince = lastSeen.brands;
 
-      const [data, errorLogs] = await Promise.all([
-        callAdminData<Omit<AdminBadges, 'errorLogs'>>('getBadges', payload),
+      const [data, errorLogs, approvals] = await Promise.all([
+        callAdminData<Omit<AdminBadges, 'errorLogs' | 'approvals'>>('getBadges', payload),
         fetchErrorCount24h(lastSeen.error_logs).catch(() => 0),
+        fetchApprovalsCount().catch(() => 0),
       ]);
       // Drop stale responses.
       if (myId !== reqIdRef.current) return;
-      const nextBadges = { ...EMPTY, ...data, errorLogs };
+      const nextBadges = { ...EMPTY, ...data, errorLogs, approvals };
       cachedBadges = nextBadges;
       hasCachedBadges = true;
       setBadges(nextBadges);
