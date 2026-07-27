@@ -16,7 +16,7 @@ import {
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Order, OrderStatus, useOrders } from '@/hooks/useOrders';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { useExistingReview } from '@/hooks/useReviews';
 import WriteReviewDrawer from '@/components/WriteReviewDrawer';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
@@ -151,6 +151,8 @@ const SalesDetailsSheet = ({
 
   const isRefunded = primaryOrder.status === 'refunded' || !!primaryOrder.refunded_at;
   const effectiveStatus: OrderStatus = isRefunded ? 'refunded' : primaryOrder.status;
+  const refundWindowExpired = !primaryOrder?.delivered_at || differenceInDays(new Date(), new Date(primaryOrder.delivered_at)) >= 2;
+  const canRefundSale = effectiveStatus === 'delivered' && !refundWindowExpired;
   const providers = Array.from(new Set(orders.map((o) => o.tracking_provider).filter(Boolean) as string[]));
   const numbers = Array.from(new Set(orders.map((o) => o.tracking_number).filter(Boolean) as string[]));
   const trackingProviderDisplay = isRefunded
@@ -455,7 +457,7 @@ const SalesDetailsSheet = ({
             {/* Actions */}
             <div className="flex flex-col items-center space-y-3 pt-4">
               <div className="flex items-center justify-center gap-3 w-full px-4">
-                {!isRefunded && (
+                {!isRefunded && canRefundSale && (
                   <Button
                     onClick={() => setRefundConfirmOpen(true)}
                     variant="outline"

@@ -87,11 +87,6 @@ const OrderDetailsSheet = ({
   const { data: existingReview } = useExistingReview(primaryOrder?.id);
 
   const isBuyer = !!user?.id && user.id === primaryOrder?.buyer_id;
-  const refundWindowExpired = useMemo(() => {
-    if (!primaryOrder?.delivered_at) return false;
-    return differenceInDays(new Date(), new Date(primaryOrder.delivered_at)) > 10;
-  }, [primaryOrder?.delivered_at]);
-  const canShowRefundButton = isBuyer && !refundWindowExpired;
 
   // Check if there's a pending refund request (no seller response yet)
   const { data: refundStatus } = useQuery({
@@ -137,6 +132,11 @@ const OrderDetailsSheet = ({
   const total = subtotal + processingFee;
   const isRefunded = primaryOrder.status === 'refunded' || !!primaryOrder.refunded_at;
   const effectiveStatus: OrderStatus = isRefunded ? 'refunded' : primaryOrder.status;
+  const refundWindowExpired = useMemo(() => {
+    if (!primaryOrder?.delivered_at) return true;
+    return differenceInDays(new Date(), new Date(primaryOrder.delivered_at)) >= 2;
+  }, [primaryOrder?.delivered_at]);
+  const canShowRefundButton = isBuyer && effectiveStatus === 'delivered' && !refundWindowExpired;
   const statusBadge = getStatusBadge(effectiveStatus);
   const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
 
@@ -392,7 +392,7 @@ const OrderDetailsSheet = ({
                     Review Seller
                   </Button>
                 )}
-                {!isRefunded && canShowRefundButton && effectiveStatus !== 'completed' && effectiveStatus !== 'delivered' && (
+                {!isRefunded && canShowRefundButton && (
                   <Button
                     onClick={() => {
                       if (refundStatus?.hasPending || refundStatus?.hasAnyRequest) {
@@ -401,11 +401,10 @@ const OrderDetailsSheet = ({
                         setRefundDialogOpen(true);
                       }
                     }}
-                    disabled={refundWindowExpired}
                     variant="outline"
-                    className="flex-1 rounded-full h-12 bg-muted-foreground/60 text-white hover:bg-muted-foreground/70 border-none disabled:opacity-60"
+                    className="flex-1 rounded-full h-12 bg-muted-foreground/60 text-white hover:bg-muted-foreground/70 border-none"
                   >
-                    {refundStatus?.hasPending || refundStatus?.hasAnyRequest ? 'Refund Requested' : refundWindowExpired ? 'Refund Window Closed' : 'Request Refund'}
+                    {refundStatus?.hasPending || refundStatus?.hasAnyRequest ? 'Refund Requested' : 'Request Refund'}
                   </Button>
                 )}
               </div>
