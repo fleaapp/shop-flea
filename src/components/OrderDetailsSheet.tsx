@@ -88,10 +88,10 @@ const OrderDetailsSheet = ({
 
   const isBuyer = !!user?.id && user.id === primaryOrder?.buyer_id;
   const refundWindowExpired = useMemo(() => {
-    if (!primaryOrder?.delivered_at) return false;
-    return differenceInDays(new Date(), new Date(primaryOrder.delivered_at)) > 10;
+    if (!primaryOrder?.delivered_at) return true;
+    return differenceInDays(new Date(), new Date(primaryOrder.delivered_at)) >= 2;
   }, [primaryOrder?.delivered_at]);
-  const canShowRefundButton = isBuyer && !refundWindowExpired;
+  const canShowRefundButton = isBuyer && effectiveStatus === 'delivered' && !refundWindowExpired;
 
   // Check if there's a pending refund request (no seller response yet)
   const { data: refundStatus } = useQuery({
