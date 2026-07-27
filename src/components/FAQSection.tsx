@@ -36,7 +36,7 @@ const faqItems = [
       },
       {
         q: 'Can I get a refund?',
-        a: 'If there\'s an issue with your order, start by messaging the seller through the order chat. You can request a refund directly in the chat up to 10 days after the order is marked as delivered. If the order never arrives, the window is 30 days from purchase.',
+        a: 'If there\'s an issue with your order, start by messaging the seller through the order chat. You can request a refund directly in the chat up to 10 days after the order is marked as delivered, or up to 30 days from purchase if the order never arrives. Once a request is submitted, the seller has 72 hours to approve or decline. If they don\'t respond in time, the refund is issued automatically. If the seller declines, Flea reviews the request and may still issue the refund at our discretion.',
       },
       {
         q: 'How do I confirm I\'ve received an order?',
