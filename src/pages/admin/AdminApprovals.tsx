@@ -76,6 +76,8 @@ function ApprovalRow({
   onRejectTracking,
   onMarkDelivered,
   onComplete,
+  onForceRefund,
+  onDismissDispute,
 }: {
   order: AdminApprovalOrder;
   kind: ApprovalKind;
@@ -83,6 +85,8 @@ function ApprovalRow({
   onRejectTracking: (reason: string) => void;
   onMarkDelivered: () => void;
   onComplete: () => void;
+  onForceRefund: () => void;
+  onDismissDispute: () => void;
 }) {
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState('');
@@ -93,6 +97,7 @@ function ApprovalRow({
     if (t <= Date.now()) return 'Window elapsed';
     return `Releases ${formatDistanceToNow(new Date(order.dispute_window_ends_at), { addSuffix: true })}`;
   }, [order.dispute_window_ends_at]);
+
 
   return (
     <div className="rounded-2xl bg-card p-3 card-shadow">
