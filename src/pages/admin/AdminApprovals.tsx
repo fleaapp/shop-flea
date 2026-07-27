@@ -15,7 +15,7 @@ const initials = (s?: string | null) => (s ?? '?').replace('@', '').slice(0, 2).
 
 export default function AdminApprovals() {
   const [tab, setTab] = useState<ApprovalKind>('tracking');
-  const { orders, loading, approveTracking, rejectTracking, markDelivered, completeOrder } = useAdminApprovals(tab);
+  const { orders, loading, approveTracking, rejectTracking, markDelivered, completeOrder, forceRefund, dismissDispute } = useAdminApprovals(tab);
 
   const options = [
     { key: 'tracking' as const, label: 'Tracking', emoji: '📮' },
@@ -57,6 +57,8 @@ export default function AdminApprovals() {
                 onRejectTracking={(reason) => rejectTracking(o.id, reason)}
                 onMarkDelivered={() => markDelivered(o.id, o.order_group_id)}
                 onComplete={() => completeOrder(o.id, o.order_group_id)}
+                onForceRefund={() => forceRefund(o.id)}
+                onDismissDispute={() => dismissDispute(o.id)}
               />
             ))}
           </div>
@@ -65,6 +67,7 @@ export default function AdminApprovals() {
     </div>
   );
 }
+
 
 function ApprovalRow({
   order,
