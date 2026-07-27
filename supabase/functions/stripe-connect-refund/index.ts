@@ -591,19 +591,20 @@ serve(async (req) => {
 
 
 
-    // Refund window — server-side enforcement. Up to 10 days after delivery,
-    // or up to 30 days after order if undelivered. Beyond that, only support
-    // can refund (out of band — not via this endpoint).
-    const now = Date.now();
-    if (order.delivered_at) {
-      const deliveredMs = new Date(order.delivered_at).getTime();
-      if (now - deliveredMs > 10 * 86400_000) {
-        throw new Error("Refund window has closed (10 days after delivery).");
-      }
-    } else if (order.created_at) {
-      const createdMs = new Date(order.created_at).getTime();
-      if (now - createdMs > 30 * 86400_000) {
-        throw new Error("Refund window has closed (30 days after order).");
+    // Refund window — server-side enforcement for seller-initiated refunds.
+    // Admin dispute overrides and system 72h auto-approvals bypass this.
+    if (!isSystemCaller && !isAdminCaller) {
+      const now = Date.now();
+      if (order.delivered_at) {
+        const deliveredMs = new Date(order.delivered_at).getTime();
+        if (now - deliveredMs > 10 * 86400_000) {
+          throw new Error("Refund window has closed (10 days after delivery).");
+        }
+      } else if (order.created_at) {
+        const createdMs = new Date(order.created_at).getTime();
+        if (now - createdMs > 30 * 86400_000) {
+          throw new Error("Refund window has closed (30 days after order).");
+        }
       }
     }
 
