@@ -209,14 +209,46 @@ function ApprovalRow({
       )}
 
       {kind === 'dispute' && (
-        <div className="mt-3 flex gap-2">
-          <Button
-            size="sm"
-            className="flex-1 bg-primary text-charcoal hover:bg-primary/90"
-            onClick={onComplete}
-          >
-            Release now
-          </Button>
+        <div className="mt-3 space-y-2">
+          {order.refund_request_reason && (
+            <div className="rounded-lg bg-muted/60 px-2 py-1.5 text-xs">
+              <p className="font-semibold text-foreground">Buyer reason</p>
+              <p className="mt-0.5 text-muted-foreground">{order.refund_request_reason}</p>
+              {order.refund_requested_at && (
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  Requested {formatDistanceToNow(new Date(order.refund_requested_at), { addSuffix: true })}
+                </p>
+              )}
+            </div>
+          )}
+          {order.refund_declined_reason && (
+            <div className="rounded-lg bg-destructive/10 px-2 py-1.5 text-xs">
+              <p className="font-semibold text-destructive">Seller declined</p>
+              <p className="mt-0.5 text-muted-foreground">{order.refund_declined_reason}</p>
+              {order.refund_declined_at && (
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  Declined {formatDistanceToNow(new Date(order.refund_declined_at), { addSuffix: true })}
+                </p>
+              )}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1"
+              onClick={onDismissDispute}
+            >
+              Dismiss (side with seller)
+            </Button>
+            <Button
+              size="sm"
+              className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={onForceRefund}
+            >
+              Refund buyer
+            </Button>
+          </div>
         </div>
       )}
     </div>
