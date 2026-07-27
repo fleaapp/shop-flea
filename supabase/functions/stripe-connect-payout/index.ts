@@ -112,8 +112,8 @@ Deno.serve(async (req) => {
       }
       if (instantAvailable <= 0) {
         return json({
-          error: `You have $${(unshippedCents / 100).toFixed(2)} in sales awaiting shipment. Ship those orders with tracking before you can withdraw.`,
-          reason: "awaiting_shipment",
+          error: `You have $${(unshippedCents / 100).toFixed(2)} in sales still in buyer protection (awaiting shipment, delivery, or the 48h release window). Those funds unlock once the orders complete.`,
+          reason: "funds_held",
           unshippedCents,
         }, 409);
       }
@@ -159,8 +159,8 @@ Deno.serve(async (req) => {
     if (availableRaw <= 0) return json({ error: "No available balance to pay out." }, 400);
     if (available <= 0) {
       return json({
-        error: `You have $${(unshippedCents / 100).toFixed(2)} in sales awaiting shipment. Ship those orders with tracking before you can withdraw.`,
-        reason: "awaiting_shipment",
+        error: `You have $${(unshippedCents / 100).toFixed(2)} in sales still in buyer protection (awaiting shipment, delivery, or the 48h release window). Those funds unlock once the orders complete.`,
+        reason: "funds_held",
         unshippedCents,
       }, 409);
     }
