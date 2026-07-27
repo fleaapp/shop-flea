@@ -65,21 +65,43 @@ Deno.serve(async (req) => {
     const sum = (arr: any[] | undefined) =>
       (arr || []).filter((b) => b.currency === currency).reduce((s, b) => s + (b.amount || 0), 0);
 
-    // ── Awaiting-shipment guard ─────────────────────────────────────────────
-    // Sellers cannot withdraw funds that correspond to orders they haven't
-    // shipped yet with eligible tracking. This protects buyers and gives us
-    // headroom to auto-refund at day 9 without pulling debits from a bank.
-    const { data: unshippedRows } = await supabase
+    // ── Held-funds guard ────────────────────────────────────────────────────
+    // Sellers cannot withdraw funds that correspond to orders whose money is
+    // not yet released. This protects buyers and keeps the seller's balance
+    // from going negative if tracking is rejected, a refund is granted, or
+    // the buyer disputes within the 48h post-delivery window.
+    //
+    // Held = any order that is NOT completed/refunded AND belongs to this seller.
+    // Specifically:
+    //   • status IN ('awaiting','shipped')         → not yet delivered
+    //   • status = 'delivered' AND still in dispute window (funds unreleased)
+    //   • any status with a pending refund request (not yet declined or refunded)
+    const nowIso = new Date().toISOString();
+    const { data: heldRows } = await supabase
       .from("orders")
-      .select("price, shipping_price")
+      .select("price, shipping_price, status, dispute_window_ends_at, refund_requested_at, refund_declined_at, refunded_at, completed_at")
       .eq("seller_id", userId)
-      .eq("status", "awaiting")
-      .is("refunded_at", null);
+      .is("refunded_at", null)
+      .is("completed_at", null);
 
-    const unshippedCents = (unshippedRows || []).reduce((s: number, o: any) => {
+    const isHeld = (o: any): boolean => {
+      if (o.refunded_at || o.completed_at) return false;
+      // Pending refund request awaiting seller response → hold
+      if (o.refund_requested_at && !o.refund_declined_at) return true;
+      if (o.status === "awaiting" || o.status === "shipped") return true;
+      if (o.status === "delivered") {
+        if (!o.dispute_window_ends_at) return true;
+        return o.dispute_window_ends_at > nowIso;
+      }
+      return false;
+    };
+
+    const heldCents = (heldRows || []).filter(isHeld).reduce((s: number, o: any) => {
       const total = (Number(o.price) || 0) + (Number(o.shipping_price) || 0);
       return s + Math.round(total * 100);
     }, 0);
+    const unshippedCents = heldCents; // preserve variable name used below
+
 
 
     if (method === "instant") {
