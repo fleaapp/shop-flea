@@ -17,11 +17,13 @@ export type AdminBadges = {
   users: number;
   brands: number;
   errorLogs: number;
+  approvals: number;
 };
 
 const EMPTY: AdminBadges = {
   support: 0, reports: 0, bans: 0, suggestions: 0, waitlist: 0, contact: 0,
   transactions: 0, refunds: 0, listings: 0, users: 0, brands: 0, errorLogs: 0,
+  approvals: 0,
 };
 
 let cachedBadges: AdminBadges = EMPTY;
@@ -39,7 +41,8 @@ export const getAdminBadgeTotal = (badges: AdminBadges) =>
   (badges.listings || 0) +
   (badges.users || 0) +
   (badges.brands || 0) +
-  (badges.errorLogs || 0);
+  (badges.errorLogs || 0) +
+  (badges.approvals || 0);
 
 export const formatAdminBadgeCount = (count: number) => (count > 99 ? '99+' : String(count));
 
