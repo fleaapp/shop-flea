@@ -457,7 +457,7 @@ const SalesDetailsSheet = ({
             {/* Actions */}
             <div className="flex flex-col items-center space-y-3 pt-4">
               <div className="flex items-center justify-center gap-3 w-full px-4">
-                {!isRefunded && (
+                {!isRefunded && canRefundSale && (
                   <Button
                     onClick={() => setRefundConfirmOpen(true)}
                     variant="outline"
