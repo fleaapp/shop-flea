@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { invokeCloudFunction } from '@/utils/cloudFunctions';
 
 export type ApprovalKind = 'tracking' | 'delivery' | 'dispute';
 
@@ -24,6 +25,12 @@ export type AdminApprovalOrder = {
   admin_marked_delivered: boolean;
   dispute_window_ends_at: string | null;
   refunded_at: string | null;
+  refund_requested_at: string | null;
+  refund_requested_by: string | null;
+  refund_request_reason: string | null;
+  refund_request_deadline_at: string | null;
+  refund_declined_at: string | null;
+  refund_declined_reason: string | null;
   created_at: string;
   updated_at: string;
   listing: { title: string; images: string[] } | null;
@@ -36,6 +43,8 @@ const BASE_SELECT = `
   price, shipping_price, status,
   tracking_provider, tracking_number, tracking_approved_at, tracking_rejected_at, tracking_rejection_reason,
   shipped_at, delivered_at, admin_marked_delivered, dispute_window_ends_at, refunded_at,
+  refund_requested_at, refund_requested_by, refund_request_reason, refund_request_deadline_at,
+  refund_declined_at, refund_declined_reason,
   created_at, updated_at
 `;
 
@@ -74,7 +83,8 @@ export function useAdminApprovals(kind: ApprovalKind) {
       } else if (kind === 'delivery') {
         q = q.eq('status', 'shipped').not('tracking_approved_at', 'is', null).is('delivered_at', null);
       } else {
-        q = q.eq('status', 'delivered').is('refunded_at', null);
+        // Dispute queue: refund requests the seller has declined, awaiting Flea arbitration.
+        q = q.not('refund_declined_at', 'is', null).is('refunded_at', null);
       }
       const { data, error } = await q;
       if (error) throw error;
@@ -125,5 +135,35 @@ export function useAdminApprovals(kind: ApprovalKind) {
     load();
   };
 
-  return { orders, loading, refresh: load, approveTracking, rejectTracking, markDelivered, completeOrder };
+  const forceRefund = async (orderId: string) => {
+    const { data, error } = await invokeCloudFunction('stripe-connect-refund', {
+      orderId,
+      reason: 'requested_by_customer',
+    });
+    if (error || (data as any)?.error) {
+      return toast.error(error?.message || (data as any)?.error || 'Refund failed.');
+    }
+    toast.success('Refund issued to buyer.');
+    load();
+  };
+
+  const dismissDispute = async (orderId: string) => {
+    const { error } = await (supabase as any).rpc('admin_dismiss_refund_dispute', { p_order_id: orderId });
+    if (error) return toast.error(error.message);
+    toast.success('Dispute dismissed. Sale continues.');
+    load();
+  };
+
+  return {
+    orders,
+    loading,
+    refresh: load,
+    approveTracking,
+    rejectTracking,
+    markDelivered,
+    completeOrder,
+    forceRefund,
+    dismissDispute,
+  };
 }
+
