@@ -270,21 +270,35 @@ serve(async (req) => {
       const total = balanceAvailableCents + balancePendingCents;
       negativeBalanceCents = total < 0 ? Math.abs(total) : 0;
 
-      // Sum of sales awaiting shipment — these funds are ring-fenced.
+      // Sum of held funds — matches stripe-connect-payout guard so the
+      // dashboard "available to withdraw" mirrors what the payout endpoint
+      // will actually allow. Held = awaiting/shipped, delivered within
+      // dispute window, or pending refund request.
       try {
         const svc = createClient(externalUrl, serviceKey);
-        const { data: unshipped } = await svc
+        const nowIso = new Date().toISOString();
+        const { data: heldRows } = await svc
           .from("orders")
-          .select("price, shipping_price")
+          .select("price, shipping_price, status, dispute_window_ends_at, refund_requested_at, refund_declined_at, refunded_at, completed_at")
           .eq("seller_id", lookupUserId)
-          .eq("status", "awaiting")
-          .is("refunded_at", null);
-        unshippedCents = (unshipped || []).reduce((s: number, o: any) => {
+          .is("refunded_at", null)
+          .is("completed_at", null);
+        const isHeld = (o: any): boolean => {
+          if (o.refunded_at || o.completed_at) return false;
+          if (o.refund_requested_at && !o.refund_declined_at) return true;
+          if (o.status === "awaiting" || o.status === "shipped") return true;
+          if (o.status === "delivered") {
+            if (!o.dispute_window_ends_at) return true;
+            return o.dispute_window_ends_at > nowIso;
+          }
+          return false;
+        };
+        unshippedCents = (heldRows || []).filter(isHeld).reduce((s: number, o: any) => {
           const t = (Number(o.price) || 0) + (Number(o.shipping_price) || 0);
           return s + Math.round(t * 100);
         }, 0);
       } catch (e) {
-        console.warn("[stripe-connect-status] unshipped calc failed", e);
+        console.warn("[stripe-connect-status] held calc failed", e);
       }
 
 
