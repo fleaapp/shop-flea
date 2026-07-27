@@ -151,6 +151,8 @@ const SalesDetailsSheet = ({
 
   const isRefunded = primaryOrder.status === 'refunded' || !!primaryOrder.refunded_at;
   const effectiveStatus: OrderStatus = isRefunded ? 'refunded' : primaryOrder.status;
+  const refundWindowExpired = !primaryOrder?.delivered_at || differenceInDays(new Date(), new Date(primaryOrder.delivered_at)) >= 2;
+  const canRefundSale = effectiveStatus === 'delivered' && !refundWindowExpired;
   const providers = Array.from(new Set(orders.map((o) => o.tracking_provider).filter(Boolean) as string[]));
   const numbers = Array.from(new Set(orders.map((o) => o.tracking_number).filter(Boolean) as string[]));
   const trackingProviderDisplay = isRefunded
