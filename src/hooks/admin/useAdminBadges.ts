@@ -46,6 +46,33 @@ export const getAdminBadgeTotal = (badges: AdminBadges) =>
 
 export const formatAdminBadgeCount = (count: number) => (count > 99 ? '99+' : String(count));
 
+// Count orders needing admin action across the three approval queues:
+//  - tracking review: status='shipped' with tracking not yet approved
+//  - delivery review: shipped + tracking approved but no delivered_at
+//  - dispute: refund declined by seller, buyer awaiting Flea arbitration
+async function fetchApprovalsCount(): Promise<number> {
+  const [tracking, delivery, dispute] = await Promise.all([
+    (supabase as any)
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'shipped')
+      .not('tracking_number', 'is', null)
+      .is('tracking_approved_at', null),
+    (supabase as any)
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'shipped')
+      .not('tracking_approved_at', 'is', null)
+      .is('delivered_at', null),
+    (supabase as any)
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .not('refund_declined_at', 'is', null)
+      .is('refunded_at', null),
+  ]);
+  return (tracking.count || 0) + (delivery.count || 0) + (dispute.count || 0);
+}
+
 export function useAdminBadges(options: { enabled?: boolean } = {}) {
   const enabled = options.enabled ?? true;
   const [badges, setBadges] = useState<AdminBadges>(() => cachedBadges);
