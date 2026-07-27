@@ -132,6 +132,11 @@ const OrderDetailsSheet = ({
   const total = subtotal + processingFee;
   const isRefunded = primaryOrder.status === 'refunded' || !!primaryOrder.refunded_at;
   const effectiveStatus: OrderStatus = isRefunded ? 'refunded' : primaryOrder.status;
+  const refundWindowExpired = useMemo(() => {
+    if (!primaryOrder?.delivered_at) return true;
+    return differenceInDays(new Date(), new Date(primaryOrder.delivered_at)) >= 2;
+  }, [primaryOrder?.delivered_at]);
+  const canShowRefundButton = isBuyer && effectiveStatus === 'delivered' && !refundWindowExpired;
   const statusBadge = getStatusBadge(effectiveStatus);
   const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
 
