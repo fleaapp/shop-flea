@@ -401,11 +401,10 @@ const OrderDetailsSheet = ({
                         setRefundDialogOpen(true);
                       }
                     }}
-                    disabled={refundWindowExpired}
                     variant="outline"
-                    className="flex-1 rounded-full h-12 bg-muted-foreground/60 text-white hover:bg-muted-foreground/70 border-none disabled:opacity-60"
+                    className="flex-1 rounded-full h-12 bg-muted-foreground/60 text-white hover:bg-muted-foreground/70 border-none"
                   >
-                    {refundStatus?.hasPending || refundStatus?.hasAnyRequest ? 'Refund Requested' : refundWindowExpired ? 'Refund Window Closed' : 'Request Refund'}
+                    {refundStatus?.hasPending || refundStatus?.hasAnyRequest ? 'Refund Requested' : 'Request Refund'}
                   </Button>
                 )}
               </div>
