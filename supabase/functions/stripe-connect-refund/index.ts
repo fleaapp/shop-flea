@@ -624,9 +624,11 @@ serve(async (req) => {
       reason: reason === "fraudulent" || reason === "duplicate" ? reason : "requested_by_customer",
       metadata: {
         flea_order_id: orderId,
-        flea_seller_id: user.id,
+        flea_seller_id: order.seller_id,
         flea_buyer_id: order.buyer_id,
+        flea_actor: isSystemCaller ? "system" : isAdminCaller ? "admin" : "seller",
       },
+
     }, { idempotencyKey: `flea-refund-${orderId}` });
 
     await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
