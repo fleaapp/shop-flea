@@ -529,29 +529,51 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: req.headers.get("Authorization")! } } },
-    );
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) {
-      return jsonResponse({ error: "Unauthorized" }, 401);
-    }
+    const externalUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    if (!externalUrl || !serviceKey) throw new Error("Payment service is not configured.");
 
-    if (!(await checkRateLimit(`stripe-refund:${user.id}`, 10, 3600))) {
-      return jsonResponse({ error: "Too many refund attempts. Please try again later." }, 429);
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    // System caller: cron / internal edge function using service role.
+    const isSystemCaller = bearer && bearer === serviceKey;
+
+    let userId: string | null = null;
+    let isAdminCaller = false;
+
+    if (!isSystemCaller) {
+      const supabaseClient = createClient(
+        externalUrl,
+        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+        { global: { headers: { Authorization: authHeader } } },
+      );
+      const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+      if (authError || !user) {
+        return jsonResponse({ error: "Unauthorized" }, 401);
+      }
+      userId = user.id;
+
+      // Admins can force-refund from the dispute queue.
+      const { data: adminRow } = await supabaseClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      isAdminCaller = !!adminRow;
+
+      if (!(await checkRateLimit(`stripe-refund:${user.id}`, 10, 3600))) {
+        return jsonResponse({ error: "Too many refund attempts. Please try again later." }, 429);
+      }
     }
 
     const { orderId, amount, reason } = await req.json();
     if (!orderId) throw new Error("orderId required");
 
-    const externalUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-    if (!externalUrl || !serviceKey) throw new Error("Payment service is not configured.");
-
     const order = await fetchOrderWithFallback(externalUrl, serviceKey, orderId);
-    if (order.seller_id !== user.id) throw new Error("Only the seller can initiate this refund");
+    if (!isSystemCaller && !isAdminCaller && order.seller_id !== userId) {
+      throw new Error("Only the seller can initiate this refund");
+    }
     if (order.refunded_at) throw new Error("Order already refunded");
 
     // Demo orders (Apple App Review bypass) have no payment intent —
@@ -568,19 +590,21 @@ serve(async (req) => {
     }
 
 
-    // Refund window — server-side enforcement. Up to 10 days after delivery,
-    // or up to 30 days after order if undelivered. Beyond that, only support
-    // can refund (out of band — not via this endpoint).
-    const now = Date.now();
-    if (order.delivered_at) {
-      const deliveredMs = new Date(order.delivered_at).getTime();
-      if (now - deliveredMs > 10 * 86400_000) {
-        throw new Error("Refund window has closed (10 days after delivery).");
-      }
-    } else if (order.created_at) {
-      const createdMs = new Date(order.created_at).getTime();
-      if (now - createdMs > 30 * 86400_000) {
-        throw new Error("Refund window has closed (30 days after order).");
+
+    // Refund window — server-side enforcement for seller-initiated refunds.
+    // Admin dispute overrides and system 72h auto-approvals bypass this.
+    if (!isSystemCaller && !isAdminCaller) {
+      const now = Date.now();
+      if (order.delivered_at) {
+        const deliveredMs = new Date(order.delivered_at).getTime();
+        if (now - deliveredMs > 10 * 86400_000) {
+          throw new Error("Refund window has closed (10 days after delivery).");
+        }
+      } else if (order.created_at) {
+        const createdMs = new Date(order.created_at).getTime();
+        if (now - createdMs > 30 * 86400_000) {
+          throw new Error("Refund window has closed (30 days after order).");
+        }
       }
     }
 
@@ -601,9 +625,11 @@ serve(async (req) => {
       reason: reason === "fraudulent" || reason === "duplicate" ? reason : "requested_by_customer",
       metadata: {
         flea_order_id: orderId,
-        flea_seller_id: user.id,
+        flea_seller_id: order.seller_id,
         flea_buyer_id: order.buyer_id,
+        flea_actor: isSystemCaller ? "system" : isAdminCaller ? "admin" : "seller",
       },
+
     }, { idempotencyKey: `flea-refund-${orderId}` });
 
     await markRelatedOrdersRefunded(externalUrl, serviceKey, order);

@@ -1597,6 +1597,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      admin_dismiss_refund_dispute: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
       admin_reject_tracking: {
         Args: { p_order_id: string; p_reason: string }
         Returns: {

@@ -15,7 +15,7 @@ const initials = (s?: string | null) => (s ?? '?').replace('@', '').slice(0, 2).
 
 export default function AdminApprovals() {
   const [tab, setTab] = useState<ApprovalKind>('tracking');
-  const { orders, loading, approveTracking, rejectTracking, markDelivered, completeOrder } = useAdminApprovals(tab);
+  const { orders, loading, approveTracking, rejectTracking, markDelivered, completeOrder, forceRefund, dismissDispute } = useAdminApprovals(tab);
 
   const options = [
     { key: 'tracking' as const, label: 'Tracking', emoji: '📮' },
@@ -57,6 +57,8 @@ export default function AdminApprovals() {
                 onRejectTracking={(reason) => rejectTracking(o.id, reason)}
                 onMarkDelivered={() => markDelivered(o.id, o.order_group_id)}
                 onComplete={() => completeOrder(o.id, o.order_group_id)}
+                onForceRefund={() => forceRefund(o.id)}
+                onDismissDispute={() => dismissDispute(o.id)}
               />
             ))}
           </div>
@@ -66,6 +68,7 @@ export default function AdminApprovals() {
   );
 }
 
+
 function ApprovalRow({
   order,
   kind,
@@ -73,6 +76,8 @@ function ApprovalRow({
   onRejectTracking,
   onMarkDelivered,
   onComplete,
+  onForceRefund,
+  onDismissDispute,
 }: {
   order: AdminApprovalOrder;
   kind: ApprovalKind;
@@ -80,6 +85,8 @@ function ApprovalRow({
   onRejectTracking: (reason: string) => void;
   onMarkDelivered: () => void;
   onComplete: () => void;
+  onForceRefund: () => void;
+  onDismissDispute: () => void;
 }) {
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState('');
@@ -90,6 +97,7 @@ function ApprovalRow({
     if (t <= Date.now()) return 'Window elapsed';
     return `Releases ${formatDistanceToNow(new Date(order.dispute_window_ends_at), { addSuffix: true })}`;
   }, [order.dispute_window_ends_at]);
+
 
   return (
     <div className="rounded-2xl bg-card p-3 card-shadow">
@@ -201,14 +209,46 @@ function ApprovalRow({
       )}
 
       {kind === 'dispute' && (
-        <div className="mt-3 flex gap-2">
-          <Button
-            size="sm"
-            className="flex-1 bg-primary text-charcoal hover:bg-primary/90"
-            onClick={onComplete}
-          >
-            Release now
-          </Button>
+        <div className="mt-3 space-y-2">
+          {order.refund_request_reason && (
+            <div className="rounded-lg bg-muted/60 px-2 py-1.5 text-xs">
+              <p className="font-semibold text-foreground">Buyer reason</p>
+              <p className="mt-0.5 text-muted-foreground">{order.refund_request_reason}</p>
+              {order.refund_requested_at && (
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  Requested {formatDistanceToNow(new Date(order.refund_requested_at), { addSuffix: true })}
+                </p>
+              )}
+            </div>
+          )}
+          {order.refund_declined_reason && (
+            <div className="rounded-lg bg-destructive/10 px-2 py-1.5 text-xs">
+              <p className="font-semibold text-destructive">Seller declined</p>
+              <p className="mt-0.5 text-muted-foreground">{order.refund_declined_reason}</p>
+              {order.refund_declined_at && (
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  Declined {formatDistanceToNow(new Date(order.refund_declined_at), { addSuffix: true })}
+                </p>
+              )}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1"
+              onClick={onDismissDispute}
+            >
+              Dismiss (side with seller)
+            </Button>
+            <Button
+              size="sm"
+              className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={onForceRefund}
+            >
+              Refund buyer
+            </Button>
+          </div>
         </div>
       )}
     </div>

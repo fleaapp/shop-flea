@@ -59,3 +59,5 @@ project_id = "teaicrimlqdayqpmxasc"
     verify_jwt = false
   [functions.resolve-oauth-conflict]
     verify_jwt = false
+  [functions.auto-approve-refund-requests]
+    verify_jwt = false
