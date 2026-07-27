@@ -104,22 +104,35 @@ serve(async (req) => {
     const total = available + pending;
     const negativeBalanceCents = total < 0 ? Math.abs(total) : 0;
 
-    // Compute unshipped (sales awaiting shipment) — ring-fenced funds.
+    // Compute held funds — orders whose money is not yet released to the seller.
+    // Held = awaiting/shipped, delivered within dispute window, or a pending
+    // refund request. Matches the guard in stripe-connect-payout.
     let unshippedCents = 0;
     try {
       const svc = createClient(EXTERNAL_URL, SERVICE);
-      const { data: unshipped } = await svc
+      const nowIso = new Date().toISOString();
+      const { data: heldRows } = await svc
         .from("orders")
-        .select("price, shipping_price")
+        .select("price, shipping_price, status, dispute_window_ends_at, refund_requested_at, refund_declined_at, refunded_at, completed_at")
         .eq("seller_id", userId)
-        .eq("status", "awaiting")
-        .is("refunded_at", null);
-      unshippedCents = (unshipped || []).reduce((s: number, o: any) => {
+        .is("refunded_at", null)
+        .is("completed_at", null);
+      const isHeld = (o: any): boolean => {
+        if (o.refunded_at || o.completed_at) return false;
+        if (o.refund_requested_at && !o.refund_declined_at) return true;
+        if (o.status === "awaiting" || o.status === "shipped") return true;
+        if (o.status === "delivered") {
+          if (!o.dispute_window_ends_at) return true;
+          return o.dispute_window_ends_at > nowIso;
+        }
+        return false;
+      };
+      unshippedCents = (heldRows || []).filter(isHeld).reduce((s: number, o: any) => {
         const t = (Number(o.price) || 0) + (Number(o.shipping_price) || 0);
         return s + Math.round(t * 100);
       }, 0);
     } catch (e) {
-      console.warn("[stripe-connect-dashboard] unshipped calc failed", e);
+      console.warn("[stripe-connect-dashboard] held calc failed", e);
     }
 
     const availableToWithdraw = Math.max(available - unshippedCents, 0);
