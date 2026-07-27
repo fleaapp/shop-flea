@@ -392,7 +392,7 @@ const OrderDetailsSheet = ({
                     Review Seller
                   </Button>
                 )}
-                {!isRefunded && canShowRefundButton && effectiveStatus !== 'completed' && effectiveStatus !== 'delivered' && (
+                {!isRefunded && canShowRefundButton && (
                   <Button
                     onClick={() => {
                       if (refundStatus?.hasPending || refundStatus?.hasAnyRequest) {
