@@ -166,10 +166,10 @@ const Terms = () => {
           <section className={SECTION}>
             <h2 className="text-base font-bold mb-2">11. Refunds, returns and disputes</h2>
             <p>
-              Buyers may request a refund through the order chat within <strong>10 days of delivery</strong> if the item is significantly not as described, damaged in transit, or never arrived. Once a refund request is submitted, the seller has <strong>72 hours</strong> to approve or decline it. If the seller does not respond within 72 hours, Flea will automatically issue the refund to the buyer. If the seller declines the request, it is escalated to Flea for review and we may still issue the refund at our discretion.
+              Buyers may request a refund through the order chat within <strong>48 hours of delivery</strong> if the item is significantly not as described, damaged in transit, or never arrived. Once a refund request is submitted, the seller has <strong>72 hours</strong> to approve or decline it. If the seller does not respond within 72 hours, Flea will automatically issue the refund to the buyer. If the seller declines the request, it is escalated to Flea for review and we may still issue the refund at our discretion.
             </p>
             <p>
-              If you believe the seller was acting in trade or commerce and you have a claim under the Australian Consumer Law that falls outside the 10-day in-app window, contact Flea support and we will assist you to enforce those rights.
+              If you believe the seller was acting in trade or commerce and you have a claim under the Australian Consumer Law that falls outside the 48-hour in-app window, contact Flea support and we will assist you to enforce those rights.
             </p>
             <p>
               Nothing in these Terms excludes, restricts or modifies any consumer guarantee, right or remedy that cannot lawfully be excluded under the Australian Consumer Law.
