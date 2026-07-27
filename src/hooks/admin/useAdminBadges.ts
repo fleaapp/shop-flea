@@ -17,11 +17,13 @@ export type AdminBadges = {
   users: number;
   brands: number;
   errorLogs: number;
+  approvals: number;
 };
 
 const EMPTY: AdminBadges = {
   support: 0, reports: 0, bans: 0, suggestions: 0, waitlist: 0, contact: 0,
   transactions: 0, refunds: 0, listings: 0, users: 0, brands: 0, errorLogs: 0,
+  approvals: 0,
 };
 
 let cachedBadges: AdminBadges = EMPTY;
@@ -39,9 +41,37 @@ export const getAdminBadgeTotal = (badges: AdminBadges) =>
   (badges.listings || 0) +
   (badges.users || 0) +
   (badges.brands || 0) +
-  (badges.errorLogs || 0);
+  (badges.errorLogs || 0) +
+  (badges.approvals || 0);
 
 export const formatAdminBadgeCount = (count: number) => (count > 99 ? '99+' : String(count));
+
+// Count orders needing admin action across the three approval queues:
+//  - tracking review: status='shipped' with tracking not yet approved
+//  - delivery review: shipped + tracking approved but no delivered_at
+//  - dispute: refund declined by seller, buyer awaiting Flea arbitration
+async function fetchApprovalsCount(): Promise<number> {
+  const [tracking, delivery, dispute] = await Promise.all([
+    (supabase as any)
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'shipped')
+      .not('tracking_number', 'is', null)
+      .is('tracking_approved_at', null),
+    (supabase as any)
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'shipped')
+      .not('tracking_approved_at', 'is', null)
+      .is('delivered_at', null),
+    (supabase as any)
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .not('refund_declined_at', 'is', null)
+      .is('refunded_at', null),
+  ]);
+  return (tracking.count || 0) + (delivery.count || 0) + (dispute.count || 0);
+}
 
 export function useAdminBadges(options: { enabled?: boolean } = {}) {
   const enabled = options.enabled ?? true;
@@ -71,13 +101,14 @@ export function useAdminBadges(options: { enabled?: boolean } = {}) {
       if (lastSeen.waitlist) payload.waitlistSince = lastSeen.waitlist;
       if (lastSeen.brands) payload.brandsSince = lastSeen.brands;
 
-      const [data, errorLogs] = await Promise.all([
-        callAdminData<Omit<AdminBadges, 'errorLogs'>>('getBadges', payload),
+      const [data, errorLogs, approvals] = await Promise.all([
+        callAdminData<Omit<AdminBadges, 'errorLogs' | 'approvals'>>('getBadges', payload),
         fetchErrorCount24h(lastSeen.error_logs).catch(() => 0),
+        fetchApprovalsCount().catch(() => 0),
       ]);
       // Drop stale responses.
       if (myId !== reqIdRef.current) return;
-      const nextBadges = { ...EMPTY, ...data, errorLogs };
+      const nextBadges = { ...EMPTY, ...data, errorLogs, approvals };
       cachedBadges = nextBadges;
       hasCachedBadges = true;
       setBadges(nextBadges);
