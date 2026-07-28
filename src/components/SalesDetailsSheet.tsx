@@ -73,6 +73,7 @@ const SalesDetailsSheet = ({
   open,
   onOpenChange,
   onMarkShipped,
+  highlightOrderId,
 }: SalesDetailsSheetProps) => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
@@ -90,8 +91,18 @@ const SalesDetailsSheet = ({
   const [refundDeclineReason, setRefundDeclineReason] = useState('');
   const [refundDeclineOpen, setRefundDeclineOpen] = useState(false);
   const [refundActionOrderId, setRefundActionOrderId] = useState<string | null>(null);
-  
+  const highlightRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    if (!open || !highlightOrderId) return;
+    const el = highlightRefs.current[highlightOrderId];
+    if (el) {
+      setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200);
+    }
+  }, [open, highlightOrderId, orders]);
+
   const primaryOrder = orders?.[0];
+
   const { data: existingReview } = useExistingReview(primaryOrder?.id);
 
   const { data: sellerShippingSettings } = useQuery({
