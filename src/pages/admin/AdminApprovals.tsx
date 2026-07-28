@@ -94,6 +94,8 @@ function ApprovalRow({
   onComplete,
   onForceRefund,
   onDismissDispute,
+  onApproveUntracked,
+  onRejectUntracked,
 }: {
   order: AdminApprovalOrder;
   kind: ApprovalKind;
@@ -103,6 +105,8 @@ function ApprovalRow({
   onComplete: () => void;
   onForceRefund: () => void;
   onDismissDispute: () => void;
+  onApproveUntracked: () => void;
+  onRejectUntracked: (reason: string) => void;
 }) {
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState('');
