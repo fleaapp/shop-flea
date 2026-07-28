@@ -228,6 +228,60 @@ function ApprovalRow({
         </div>
       )}
 
+      {kind === 'untracked' && (
+        <div className="mt-3 space-y-2">
+          <div className="rounded-lg bg-muted/60 px-2 py-1.5 text-xs">
+            <p className="font-semibold text-foreground">Buyer confirmed delivery</p>
+            <p className="mt-0.5 text-muted-foreground">
+              No tracking was provided. Approve to start the 48h release window, or reject to send the order back to awaiting.
+              {order.delivered_at && (
+                <> Confirmed {formatDistanceToNow(new Date(order.delivered_at), { addSuffix: true })}.</>
+              )}
+            </p>
+          </div>
+          {!rejecting ? (
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="flex-1" onClick={() => setRejecting(true)}>
+                Reject
+              </Button>
+              <Button
+                size="sm"
+                className="flex-1 bg-primary text-charcoal hover:bg-primary/90"
+                onClick={onApproveUntracked}
+              >
+                Approve
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Input
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Reason (shown to buyer)"
+                className="h-9 text-xs"
+              />
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="flex-1" onClick={() => { setRejecting(false); setReason(''); }}>
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  disabled={reason.trim().length < 3}
+                  onClick={() => {
+                    onRejectUntracked(reason.trim());
+                    setRejecting(false);
+                    setReason('');
+                  }}
+                >
+                  Confirm reject
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {kind === 'dispute' && (
         <div className="mt-3 space-y-2">
           {order.refund_request_reason && (
