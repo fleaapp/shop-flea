@@ -71,7 +71,9 @@ const Notifications = () => {
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
   const [selectedBuyerGroup, setSelectedBuyerGroup] = useState<OrderGroup | null>(null);
   const [orderSheetOpen, setOrderSheetOpen] = useState(false);
+  const [highlightOrderId, setHighlightOrderId] = useState<string | null>(null);
   const autoOpenedRef = useRef<string | null>(null);
+
 
   const findGroup = (n: Notification, groups: OrderGroup[]): OrderGroup | null => {
     if (n.related_order_id) {
