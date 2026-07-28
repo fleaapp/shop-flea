@@ -1,5 +1,6 @@
-import Stripe from "https://esm.sh/stripe@17.7.0?target=denonext";
+import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { logEdgeError } from "../_shared/logError.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -171,6 +172,17 @@ Deno.serve(async (req) => {
     );
     return json({ ok: true, payout: { id: payout.id, amount: payout.amount, method: "standard" } });
   } catch (e: any) {
+    await logEdgeError({
+      functionName: "stripe-connect-payout",
+      error: e,
+      severity: "error",
+      source: "payment",
+      context: {
+        stripe_type: e?.type ?? null,
+        stripe_code: e?.code ?? null,
+        stripe_status: e?.statusCode ?? null,
+      },
+    });
     return json({ error: e?.message || "Payout failed." }, 400);
   }
 });
