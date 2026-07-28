@@ -132,11 +132,27 @@ const OrderDetailsSheet = ({
   const total = subtotal + processingFee;
   const isRefunded = primaryOrder.status === 'refunded' || !!primaryOrder.refunded_at;
   const effectiveStatus: OrderStatus = isRefunded ? 'refunded' : primaryOrder.status;
+  const refundItemOptions = useMemo(
+    () =>
+      orders.map((o) => ({
+        orderId: o.id,
+        title: o.listing?.title || 'Item',
+        image: o.listing?.images?.[0] || '',
+        price: Number(o.price || 0),
+        shipping: Number(o.shipping_price || 0),
+        alreadyRequested:
+          !!o.refunded_at ||
+          o.status === 'refunded' ||
+          (!!o.refund_requested_at && !o.refund_declined_at),
+      })),
+    [orders],
+  );
+  const hasEligibleRefundItem = refundItemOptions.some((i) => !i.alreadyRequested);
   const refundWindowExpired = useMemo(() => {
     if (!primaryOrder?.delivered_at) return true;
     return differenceInDays(new Date(), new Date(primaryOrder.delivered_at)) >= 2;
   }, [primaryOrder?.delivered_at]);
-  const canShowRefundButton = isBuyer && effectiveStatus === 'delivered' && !refundWindowExpired;
+  const canShowRefundButton = isBuyer && effectiveStatus === 'delivered' && !refundWindowExpired && hasEligibleRefundItem;
   const statusBadge = getStatusBadge(effectiveStatus);
   const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
 
