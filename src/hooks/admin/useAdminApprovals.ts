@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 
-export type ApprovalKind = 'tracking' | 'delivery' | 'dispute';
+export type ApprovalKind = 'tracking' | 'delivery' | 'untracked' | 'dispute';
 
 export type AdminApprovalOrder = {
   id: string;
@@ -24,6 +24,7 @@ export type AdminApprovalOrder = {
   delivered_at: string | null;
   admin_marked_delivered: boolean;
   dispute_window_ends_at: string | null;
+  pending_admin_delivery_review: boolean;
   refunded_at: string | null;
   refund_requested_at: string | null;
   refund_requested_by: string | null;
@@ -42,7 +43,7 @@ const BASE_SELECT = `
   id, order_number, order_group_id, buyer_id, seller_id, listing_id,
   price, shipping_price, status,
   tracking_provider, tracking_number, tracking_approved_at, tracking_rejected_at, tracking_rejection_reason,
-  shipped_at, delivered_at, admin_marked_delivered, dispute_window_ends_at, refunded_at,
+  shipped_at, delivered_at, admin_marked_delivered, dispute_window_ends_at, pending_admin_delivery_review, refunded_at,
   refund_requested_at, refund_requested_by, refund_request_reason, refund_request_deadline_at,
   refund_declined_at, refund_declined_reason,
   created_at, updated_at
@@ -82,6 +83,9 @@ export function useAdminApprovals(kind: ApprovalKind) {
         q = q.eq('status', 'shipped').not('tracking_number', 'is', null).is('tracking_approved_at', null);
       } else if (kind === 'delivery') {
         q = q.eq('status', 'shipped').not('tracking_approved_at', 'is', null).is('delivered_at', null);
+      } else if (kind === 'untracked') {
+        // Buyer marked an untracked order as delivered — held pending admin review.
+        q = q.eq('pending_admin_delivery_review', true);
       } else {
         // Dispute queue: refund requests the seller has declined, awaiting Flea arbitration.
         q = q.not('refund_declined_at', 'is', null).is('refunded_at', null);
@@ -153,6 +157,23 @@ export function useAdminApprovals(kind: ApprovalKind) {
     load();
   };
 
+  const approveUntrackedDelivery = async (orderId: string) => {
+    const { error } = await (supabase as any).rpc('admin_approve_untracked_delivery', { p_order_id: orderId });
+    if (error) return toast.error(error.message);
+    toast.success('Delivery approved. 48h dispute window started.');
+    load();
+  };
+
+  const rejectUntrackedDelivery = async (orderId: string, reason: string) => {
+    const { error } = await (supabase as any).rpc('admin_reject_untracked_delivery', {
+      p_order_id: orderId,
+      p_reason: reason,
+    });
+    if (error) return toast.error(error.message);
+    toast.success('Delivery reverted to awaiting.');
+    load();
+  };
+
   return {
     orders,
     loading,
@@ -163,6 +184,8 @@ export function useAdminApprovals(kind: ApprovalKind) {
     completeOrder,
     forceRefund,
     dismissDispute,
+    approveUntrackedDelivery,
+    rejectUntrackedDelivery,
   };
 }
 

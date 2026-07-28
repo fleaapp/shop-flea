@@ -15,11 +15,23 @@ const initials = (s?: string | null) => (s ?? '?').replace('@', '').slice(0, 2).
 
 export default function AdminApprovals() {
   const [tab, setTab] = useState<ApprovalKind>('tracking');
-  const { orders, loading, approveTracking, rejectTracking, markDelivered, completeOrder, forceRefund, dismissDispute } = useAdminApprovals(tab);
+  const {
+    orders,
+    loading,
+    approveTracking,
+    rejectTracking,
+    markDelivered,
+    completeOrder,
+    forceRefund,
+    dismissDispute,
+    approveUntrackedDelivery,
+    rejectUntrackedDelivery,
+  } = useAdminApprovals(tab);
 
   const options = [
     { key: 'tracking' as const, label: 'Tracking', emoji: '📮' },
     { key: 'delivery' as const, label: 'Delivery', emoji: '📬' },
+    { key: 'untracked' as const, label: 'Untracked', emoji: '📦' },
     { key: 'dispute' as const, label: 'Dispute', emoji: '⚖️' },
   ];
 
@@ -42,7 +54,9 @@ export default function AdminApprovals() {
                 ? 'No tracking to approve'
                 : tab === 'delivery'
                   ? 'No deliveries to review'
-                  : 'No disputes open'
+                  : tab === 'untracked'
+                    ? 'No untracked deliveries'
+                    : 'No disputes open'
             }
             description="Nothing pending right now."
           />
@@ -59,6 +73,8 @@ export default function AdminApprovals() {
                 onComplete={() => completeOrder(o.id, o.order_group_id)}
                 onForceRefund={() => forceRefund(o.id)}
                 onDismissDispute={() => dismissDispute(o.id)}
+                onApproveUntracked={() => approveUntrackedDelivery(o.id)}
+                onRejectUntracked={(reason) => rejectUntrackedDelivery(o.id, reason)}
               />
             ))}
           </div>
@@ -78,6 +94,8 @@ function ApprovalRow({
   onComplete,
   onForceRefund,
   onDismissDispute,
+  onApproveUntracked,
+  onRejectUntracked,
 }: {
   order: AdminApprovalOrder;
   kind: ApprovalKind;
@@ -87,6 +105,8 @@ function ApprovalRow({
   onComplete: () => void;
   onForceRefund: () => void;
   onDismissDispute: () => void;
+  onApproveUntracked: () => void;
+  onRejectUntracked: (reason: string) => void;
 }) {
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState('');
@@ -205,6 +225,60 @@ function ApprovalRow({
           <Button size="sm" className="w-full bg-charcoal text-white hover:bg-charcoal/90" onClick={onMarkDelivered}>
             Mark delivered (start 48h window)
           </Button>
+        </div>
+      )}
+
+      {kind === 'untracked' && (
+        <div className="mt-3 space-y-2">
+          <div className="rounded-lg bg-muted/60 px-2 py-1.5 text-xs">
+            <p className="font-semibold text-foreground">Buyer confirmed delivery</p>
+            <p className="mt-0.5 text-muted-foreground">
+              No tracking was provided. Approve to start the 48h release window, or reject to send the order back to awaiting.
+              {order.delivered_at && (
+                <> Confirmed {formatDistanceToNow(new Date(order.delivered_at), { addSuffix: true })}.</>
+              )}
+            </p>
+          </div>
+          {!rejecting ? (
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="flex-1" onClick={() => setRejecting(true)}>
+                Reject
+              </Button>
+              <Button
+                size="sm"
+                className="flex-1 bg-primary text-charcoal hover:bg-primary/90"
+                onClick={onApproveUntracked}
+              >
+                Approve
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Input
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Reason (shown to buyer)"
+                className="h-9 text-xs"
+              />
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="flex-1" onClick={() => { setRejecting(false); setReason(''); }}>
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  disabled={reason.trim().length < 3}
+                  onClick={() => {
+                    onRejectUntracked(reason.trim());
+                    setRejecting(false);
+                    setReason('');
+                  }}
+                >
+                  Confirm reject
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -824,6 +824,7 @@ export type Database = {
           order_group_id: string | null
           order_number: string | null
           payment_method: string
+          pending_admin_delivery_review: boolean
           price: number
           refund_declined_at: string | null
           refund_declined_reason: string | null
@@ -867,6 +868,7 @@ export type Database = {
           order_group_id?: string | null
           order_number?: string | null
           payment_method?: string
+          pending_admin_delivery_review?: boolean
           price: number
           refund_declined_at?: string | null
           refund_declined_reason?: string | null
@@ -910,6 +912,7 @@ export type Database = {
           order_group_id?: string | null
           order_number?: string | null
           payment_method?: string
+          pending_admin_delivery_review?: boolean
           price?: number
           refund_declined_at?: string | null
           refund_declined_reason?: string | null
@@ -1562,6 +1565,60 @@ export type Database = {
           order_group_id: string | null
           order_number: string | null
           payment_method: string
+          pending_admin_delivery_review: boolean
+          price: number
+          refund_declined_at: string | null
+          refund_declined_reason: string | null
+          refund_reason: string | null
+          refund_request_deadline_at: string | null
+          refund_request_reason: string | null
+          refund_requested_at: string | null
+          refund_requested_by: string | null
+          refunded_at: string | null
+          seller_id: string
+          shipped_at: string | null
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_first_name: string | null
+          shipping_last_name: string | null
+          shipping_postcode: string | null
+          shipping_price: number
+          shipping_state: string | null
+          status: string
+          tracking_approved_at: string | null
+          tracking_approved_by: string | null
+          tracking_number: string | null
+          tracking_provider: string | null
+          tracking_rejected_at: string | null
+          tracking_rejection_reason: string | null
+          transaction_fee: number
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_approve_untracked_delivery: {
+        Args: { p_order_id: string }
+        Returns: {
+          admin_marked_delivered: boolean
+          buyer_id: string
+          checkout_reference: string | null
+          completed_at: string | null
+          coupon_code: string | null
+          coupon_id: string | null
+          created_at: string
+          delivered_at: string | null
+          dispute_window_ends_at: string | null
+          id: string
+          listing_id: string
+          order_group_id: string | null
+          order_number: string | null
+          payment_method: string
+          pending_admin_delivery_review: boolean
           price: number
           refund_declined_at: string | null
           refund_declined_reason: string | null
@@ -1618,6 +1675,60 @@ export type Database = {
           order_group_id: string | null
           order_number: string | null
           payment_method: string
+          pending_admin_delivery_review: boolean
+          price: number
+          refund_declined_at: string | null
+          refund_declined_reason: string | null
+          refund_reason: string | null
+          refund_request_deadline_at: string | null
+          refund_request_reason: string | null
+          refund_requested_at: string | null
+          refund_requested_by: string | null
+          refunded_at: string | null
+          seller_id: string
+          shipped_at: string | null
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_first_name: string | null
+          shipping_last_name: string | null
+          shipping_postcode: string | null
+          shipping_price: number
+          shipping_state: string | null
+          status: string
+          tracking_approved_at: string | null
+          tracking_approved_by: string | null
+          tracking_number: string | null
+          tracking_provider: string | null
+          tracking_rejected_at: string | null
+          tracking_rejection_reason: string | null
+          transaction_fee: number
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_reject_untracked_delivery: {
+        Args: { p_order_id: string; p_reason?: string }
+        Returns: {
+          admin_marked_delivered: boolean
+          buyer_id: string
+          checkout_reference: string | null
+          completed_at: string | null
+          coupon_code: string | null
+          coupon_id: string | null
+          created_at: string
+          delivered_at: string | null
+          dispute_window_ends_at: string | null
+          id: string
+          listing_id: string
+          order_group_id: string | null
+          order_number: string | null
+          payment_method: string
+          pending_admin_delivery_review: boolean
           price: number
           refund_declined_at: string | null
           refund_declined_reason: string | null
@@ -1676,6 +1787,7 @@ export type Database = {
           order_group_id: string | null
           order_number: string | null
           payment_method: string
+          pending_admin_delivery_review: boolean
           price: number
           refund_declined_at: string | null
           refund_declined_reason: string | null
@@ -1840,6 +1952,7 @@ export type Database = {
           order_group_id: string | null
           order_number: string | null
           payment_method: string
+          pending_admin_delivery_review: boolean
           price: number
           refund_declined_at: string | null
           refund_declined_reason: string | null
@@ -1897,6 +2010,7 @@ export type Database = {
           order_group_id: string | null
           order_number: string | null
           payment_method: string
+          pending_admin_delivery_review: boolean
           price: number
           refund_declined_at: string | null
           refund_declined_reason: string | null
@@ -1975,6 +2089,7 @@ export type Database = {
           order_group_id: string | null
           order_number: string | null
           payment_method: string
+          pending_admin_delivery_review: boolean
           price: number
           refund_declined_at: string | null
           refund_declined_reason: string | null
@@ -2032,6 +2147,7 @@ export type Database = {
           order_group_id: string | null
           order_number: string | null
           payment_method: string
+          pending_admin_delivery_review: boolean
           price: number
           refund_declined_at: string | null
           refund_declined_reason: string | null
