@@ -15,11 +15,23 @@ const initials = (s?: string | null) => (s ?? '?').replace('@', '').slice(0, 2).
 
 export default function AdminApprovals() {
   const [tab, setTab] = useState<ApprovalKind>('tracking');
-  const { orders, loading, approveTracking, rejectTracking, markDelivered, completeOrder, forceRefund, dismissDispute } = useAdminApprovals(tab);
+  const {
+    orders,
+    loading,
+    approveTracking,
+    rejectTracking,
+    markDelivered,
+    completeOrder,
+    forceRefund,
+    dismissDispute,
+    approveUntrackedDelivery,
+    rejectUntrackedDelivery,
+  } = useAdminApprovals(tab);
 
   const options = [
     { key: 'tracking' as const, label: 'Tracking', emoji: '📮' },
     { key: 'delivery' as const, label: 'Delivery', emoji: '📬' },
+    { key: 'untracked' as const, label: 'Untracked', emoji: '📦' },
     { key: 'dispute' as const, label: 'Dispute', emoji: '⚖️' },
   ];
 
