@@ -1,62 +1,60 @@
-## Fixes for Refund + Tracking-Approval System
+# Multi-item Refund Requests
 
-Address the 4 gaps identified in the audit, ordered by money-at-risk.
+Currently a bundled order (multiple items from the same seller under one `order_group_id`) can only refund the whole bundle via `primaryOrder.id`. This adds per-item selection.
 
-### 1. Payout guard: hold funds through delivery + dispute window
+## Behaviour
 
-File: `supabase/functions/stripe-connect-payout/index.ts`
+- Buyer opens **Request Refund** from Order Details.
+- If the order group has only one refund-eligible item, the flow stays as it is today (no picker).
+- If it has 2+ items, a **Select items** step appears first:
+  - Checkbox list of every item in the group that is still eligible (delivered, within 48h window, not already refunded/requested).
+  - Each selected item gets its own **reason** dropdown (same 6 REFUND_REASONS as today) + optional per-item note.
+  - Continue is disabled until every selected item has a reason.
+- Next step is the existing shared proof capture (1–5 live photos/videos, camera-only). One proof set covers the whole request.
+- Optional "Additional details" textarea remains, shared across the request.
+- Submit fires one refund request per selected item (loop), all sharing the same proof set.
 
-Expand the "held funds" query so available balance excludes any order whose funds aren't yet released:
-- `status = 'awaiting'` (already excluded)
-- `status = 'shipped'` (tracking may still be rejected)
-- `status = 'delivered'` AND `now() < dispute_window_ends_at` (buyer can still refund)
-- Any order with `refund_requested_at IS NOT NULL AND refunded_at IS NULL AND refund_declined_at IS NULL` (pending refund)
+## Refund maths
 
-Only orders in `completed` (released) or truly finalized should count toward payout.
+Per-item refund amount = item `price` + that item's share of shipping.
+Shipping share = `order.shipping_price` for that order row (each order row already stores its own shipping portion from checkout bundle math, so no re-splitting needed). Seller keeps shipping only for unrefunded items — matches current per-order model.
 
-### 2. Schedule `auto-approve-refund-requests` cron
+## Data / backend
 
-New migration adds a pg_cron entry (via `supabase--insert`, not migration, since it embeds the project URL + anon key per project rules) running hourly:
+No schema changes. Uses existing per-order refund pipeline:
 
-```
-select cron.schedule(
-  'flea-auto-approve-refunds',
-  '0 * * * *',
-  $$ select net.http_post(
-       url:='https://<project>.supabase.co/functions/v1/auto-approve-refund-requests',
-       headers:='{"Content-Type":"application/json","apikey":"<anon>"}'::jsonb,
-       body:='{}'::jsonb
-     ); $$
-);
-```
+- `order-messages` edge function `action=refund_request` — called once per selected item with the shared proof `image_uploads` and that item's `reason` + `details`.
+- `request_refund` RPC — called per item with `p_order_id = <item>`, `p_order_group_id = group`, `p_reason = "<reason> - <note>"`.
+- Seller sees each item as its own refund request in Sales / chat / admin dispute queue (already supported — the queue is per-order row).
+- Auto-approval cron and 72h window already run per order row, so per-item requests inherit that behaviour.
 
-Verify `pg_cron` + `pg_net` are enabled (they are, per existing `flea-auto-order-progress` job).
+Proof upload: to avoid re-uploading N times, `order-messages` is called with the same `image_uploads` payload for each item. (Storage cost is negligible: proof set capped at 5 files.) A later optimisation could upload once and pass URLs, but that's out of scope.
 
-### 3. Fix `admin_dismiss_refund_dispute` precedence bug
+## UI changes
 
-Migration recreates the function with parenthesized WHERE:
+`src/components/RefundRequestDialog.tsx`
+- Accept new props: `items: { orderId, title, image, price, shipping }[]` and `onSubmit({ selections: { orderId, reason, note }[], details, imageUploads })`.
+- New first step "Select items" when `items.length > 1`: checkbox rows with thumbnail, title, price, inline `Select` for reason, small note input.
+- Existing proof + details step becomes step 2 (single-item case skips straight to it with the sole item preselected).
+- Header shows step indicator ("1 of 2 • Select items" / "2 of 2 • Add proof").
+- Submit button disabled until: ≥1 item selected, every selected item has a reason, ≥1 proof captured.
 
-```sql
-WHERE (id = p_order_id OR (v_group IS NOT NULL AND order_group_id = v_group))
-  AND refunded_at IS NULL
-```
+`src/components/OrderDetailsSheet.tsx`
+- Build the eligible items list from `orders` (filter out already refunded / already-requested rows).
+- Replace the current `onSubmit` with a loop: for each selection, invoke `order-messages` refund_request + `request_refund` RPC. Aggregate errors; toast success only if all succeed, otherwise toast partial-failure with count.
+- Invalidate the same query keys once at the end.
 
-So `refunded_at IS NULL` applies to both branches and can't clear an already-refunded row.
+## Edge cases
 
-### 4. Admin badge for pending approvals
+- Single eligible item → picker is skipped; current UX preserved.
+- Item already has a pending refund request → shown disabled in picker with "Requested" badge.
+- Item already refunded → hidden from picker.
+- All items already refunded/requested → Request Refund button is hidden (existing `canShowRefundButton` extended to require ≥1 eligible item).
+- Partial submission failure → items that succeeded stay requested; toast reports "X of N submitted, please retry the rest".
+- 48h window is evaluated per `delivered_at` (already per-order today) — the picker uses the same rule per item.
 
-- `src/hooks/useAdminBadges.ts`: add a count query for pending tracking reviews + pending delivery reviews + open disputes (same filters `useAdminApprovals` uses).
-- Surface count on the "Approvals" menu row in `AdminDashboard.tsx` using the existing badge style.
-- Realtime subscription on `orders` (filter: rows entering `shipped` or refund-request states) to refresh count without polling.
+## Out of scope
 
-### Verification
-
-- `tsgo` typecheck + production build.
-- Manual: create a test order, mark shipped, attempt instant payout → should show reduced available balance.
-- Confirm cron entry exists: `select jobname from cron.job where jobname = 'flea-auto-approve-refunds'`.
-- Force a refund request older than 72h via SQL, wait for cron (or manually invoke edge fn) → status flips to refunded.
-
-### Out of scope
-
-- AfterShip / automated delivery detection (still manual per prior decision).
-- Verifying live cron execution health (needs runtime access).
+- Splitting a single item's shipping across partial refunds.
+- Uploading proof once and reusing URLs (future optimisation).
+- Admin UI changes — the dispute queue already lists per-order rows.
