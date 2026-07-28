@@ -1,60 +1,57 @@
-# Multi-item Refund Requests
+## Multi-item refund — remaining gaps to close
 
-Currently a bundled order (multiple items from the same seller under one `order_group_id`) can only refund the whole bundle via `primaryOrder.id`. This adds per-item selection.
+The buyer-side wizard ships selections + shared proof, but the surrounding surfaces still treat refunds as whole-order events. Here's what's left to make the flow complete end-to-end.
 
-## Behaviour
+### 1. Seller side (SalesDetailsSheet)
+- Show which specific items in a bundle have a pending refund request (badge on each line, not just one banner for the whole group).
+- "Approve refund" / "Decline refund" buttons must act per-item — currently the accept/decline path assumes one order row per group.
+- Surface the buyer's per-item reason + note under each item, and the shared proof gallery once at the bottom.
+- Update the seller's 72h countdown copy to say "X of Y items" when partial.
 
-- Buyer opens **Request Refund** from Order Details.
-- If the order group has only one refund-eligible item, the flow stays as it is today (no picker).
-- If it has 2+ items, a **Select items** step appears first:
-  - Checkbox list of every item in the group that is still eligible (delivered, within 48h window, not already refunded/requested).
-  - Each selected item gets its own **reason** dropdown (same 6 REFUND_REASONS as today) + optional per-item note.
-  - Continue is disabled until every selected item has a reason.
-- Next step is the existing shared proof capture (1–5 live photos/videos, camera-only). One proof set covers the whole request.
-- Optional "Additional details" textarea remains, shared across the request.
-- Submit fires one refund request per selected item (loop), all sharing the same proof set.
+### 2. Buyer side (OrderDetailsSheet)
+- Per-item status pills: `Refund requested`, `Refund approved`, `Refund declined`, `Refunded` next to each line.
+- Hide the "Request refund" button on items already in a refund lifecycle; keep it visible for still-eligible siblings.
+- Show the buyer their submitted reason/note per item and let them view (not edit) the proof they uploaded.
 
-## Refund maths
+### 3. Proof storage
+- Confirm the shared proof set is uploaded once and referenced by every per-item `order_messages` row (right now the loop may re-upload or only attach to the first item). Store proof URLs on each refund message so admin/seller can see them per item.
 
-Per-item refund amount = item `price` + that item's share of shipping.
-Shipping share = `order.shipping_price` for that order row (each order row already stores its own shipping portion from checkout bundle math, so no re-splitting needed). Seller keeps shipping only for unrefunded items — matches current per-order model.
+### 4. Admin approvals queue
+- `AdminApprovals.tsx` dispute + refund tabs need to group per-order-group and render each contested item as its own row (or a collapsible group) so the admin can force-refund individual items.
+- Force-refund action must target a single `order_id` (already the case) but the queue currently lists them as flat orders — add the group context (order number + item index).
 
-## Data / backend
+### 5. Notifications & emails
+- Order status change notifications (`refund_requested`, `refund_approved`, `refund_declined`, `refunded`) fire per order row today — verify the copy reads naturally for one item of a bundle ("Refund requested for *Nike Dunks* in order #1234") instead of implying the whole order.
+- Buyer + seller receipt / refund confirmation emails need a partial-refund template showing which items were refunded, remaining items, and updated totals.
 
-No schema changes. Uses existing per-order refund pipeline:
+### 6. Receipts & payout ledger
+- `OrderReceiptDialog` and the seller payout activity list must render partial refunds correctly: show original bundle total, refunded item(s), and net kept.
+- Seller dashboard "Available / Pending" math: confirm a partial refund only claws back the refunded item's net (price + its share of bundle shipping + its transaction fee), not the whole group.
 
-- `order-messages` edge function `action=refund_request` — called once per selected item with the shared proof `image_uploads` and that item's `reason` + `details`.
-- `request_refund` RPC — called per item with `p_order_id = <item>`, `p_order_group_id = group`, `p_reason = "<reason> - <note>"`.
-- Seller sees each item as its own refund request in Sales / chat / admin dispute queue (already supported — the queue is per-order row).
-- Auto-approval cron and 72h window already run per order row, so per-item requests inherit that behaviour.
+### 7. Bundle shipping on partial refunds
+- Decide + implement: when 1 of 3 bundled items is refunded, does the buyer get that item's shipping share back? Current bundle discount logic assumes all-or-nothing. Recommend: refund item's *pro-rata* shipping share, seller keeps shipping for items still delivered.
 
-Proof upload: to avoid re-uploading N times, `order-messages` is called with the same `image_uploads` payload for each item. (Storage cost is negligible: proof set capped at 5 files.) A later optimisation could upload once and pass URLs, but that's out of scope.
+### 8. Auto-approve cron
+- `auto-approve-refund-requests` already runs per order row — verify it logs the group context and doesn't double-fire when multiple sibling items expire in the same run.
 
-## UI changes
+### 9. Guardrails
+- Prevent re-opening the wizard for items already requested (filter eligible list to exclude `refund_requested_at IS NOT NULL`).
+- Cap total refund requests per order group per 48h window to stop spam re-submissions after a decline.
+- Enforce that at least one item is selected before advancing to step 2 (belt-and-braces on top of the UI disable).
 
-`src/components/RefundRequestDialog.tsx`
-- Accept new props: `items: { orderId, title, image, price, shipping }[]` and `onSubmit({ selections: { orderId, reason, note }[], details, imageUploads })`.
-- New first step "Select items" when `items.length > 1`: checkbox rows with thumbnail, title, price, inline `Select` for reason, small note input.
-- Existing proof + details step becomes step 2 (single-item case skips straight to it with the sole item preselected).
-- Header shows step indicator ("1 of 2 • Select items" / "2 of 2 • Add proof").
-- Submit button disabled until: ≥1 item selected, every selected item has a reason, ≥1 proof captured.
+### 10. Copy updates
+- FAQ + Terms: add a short line clarifying refunds can be requested per item on bundle orders, and that shipping refunds follow pro-rata rules.
+- Refund request dialog step 2 header: "Proof applies to all selected items."
 
-`src/components/OrderDetailsSheet.tsx`
-- Build the eligible items list from `orders` (filter out already refunded / already-requested rows).
-- Replace the current `onSubmit` with a loop: for each selection, invoke `order-messages` refund_request + `request_refund` RPC. Aggregate errors; toast success only if all succeed, otherwise toast partial-failure with count.
-- Invalidate the same query keys once at the end.
+---
 
-## Edge cases
+### Suggested build order
+1. Storage + per-item message attachment (foundation for everything downstream).
+2. Seller SalesDetailsSheet per-item accept/decline UI.
+3. Buyer OrderDetailsSheet per-item status pills + guardrails.
+4. Admin queue grouping + force-refund per item.
+5. Bundle shipping pro-rata refund math + payout ledger updates.
+6. Notification copy + partial-refund receipt template.
+7. FAQ/Terms copy.
 
-- Single eligible item → picker is skipped; current UX preserved.
-- Item already has a pending refund request → shown disabled in picker with "Requested" badge.
-- Item already refunded → hidden from picker.
-- All items already refunded/requested → Request Refund button is hidden (existing `canShowRefundButton` extended to require ≥1 eligible item).
-- Partial submission failure → items that succeeded stay requested; toast reports "X of N submitted, please retry the rest".
-- 48h window is evaluated per `delivered_at` (already per-order today) — the picker uses the same rule per item.
-
-## Out of scope
-
-- Splitting a single item's shipping across partial refunds.
-- Uploading proof once and reusing URLs (future optimisation).
-- Admin UI changes — the dispute queue already lists per-order rows.
+Want me to tackle all of this in one pass, or start with 1–3 (the user-visible core) and follow up with admin/ledger/copy after?
