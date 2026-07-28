@@ -7,6 +7,12 @@ import fleaLogo from '@/assets/flea-logo-receipt.jpeg';
 import stripeLogo from '@/assets/logo-stripe.png';
 import { useQuery } from '@tanstack/react-query';
 import { fetchSellerShippingSettings, getBundleBreakdownText } from '@/utils/shippingCalculator';
+import {
+  calculateProRataRefund,
+  calculateSecureCheckoutFee,
+  calculateTransactionFee,
+} from '@/utils/feeCalculator';
+import { supabase } from '@/lib/supabase';
 
 
 interface OrderReceiptDialogProps {
