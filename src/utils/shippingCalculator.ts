@@ -95,19 +95,42 @@ export function calculateSellerShipping(
   const subtotal = items.reduce((sum, i) => sum + (Number(i.shippingPrice) || 0), 0);
   if (!sellerSettings) return round2(subtotal);
 
-  const isBundle = items.length >= 2;
-
-  if (sellerSettings.mode === 'free' && isBundle) return 0;
-
-  if (sellerSettings.mode === 'discounted' && isBundle && sellerSettings.discountPercent) {
-    const pct = Math.max(0, Math.min(100, sellerSettings.discountPercent));
-    return round2(subtotal * (1 - pct / 100));
-  }
-
-  return round2(subtotal);
+  return calculateBundleShippingTotal(
+    items.map((i) => Number(i.shippingPrice) || 0),
+    sellerSettings.mode,
+    sellerSettings.discountPercent
+  );
 }
 
 export const calculateSellerBundleShipping = calculateSellerShipping;
+
+/**
+ * Raw bundle-shipping math used by both cart and refund calculations.
+ *
+ * Rules:
+ *  - none: sum of raw shippings.
+ *  - discounted: if 2+ items -> sum * (1 - discount%).
+ *  - free: if 2+ items -> 0.
+ *  Single items always pay their own raw shipping.
+ */
+export function calculateBundleShippingTotal(
+  rawShippings: number[],
+  mode: BundleShippingMode,
+  discountPercent: number | null
+): number {
+  if (!rawShippings.length) return 0;
+  const subtotal = round2(rawShippings.reduce((sum, s) => sum + (Number(s) || 0), 0));
+  if (rawShippings.length < 2) return subtotal;
+
+  if (mode === 'free') return 0;
+
+  if (mode === 'discounted' && discountPercent) {
+    const pct = Math.max(0, Math.min(100, Number(discountPercent) || 0));
+    return round2(subtotal * (1 - pct / 100));
+  }
+
+  return subtotal;
+}
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
