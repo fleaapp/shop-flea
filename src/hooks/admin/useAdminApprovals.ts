@@ -24,6 +24,7 @@ export type AdminApprovalOrder = {
   delivered_at: string | null;
   admin_marked_delivered: boolean;
   dispute_window_ends_at: string | null;
+  pending_admin_delivery_review: boolean;
   refunded_at: string | null;
   refund_requested_at: string | null;
   refund_requested_by: string | null;
