@@ -246,6 +246,16 @@ const OrderDetailsSheet = ({
                   {orders.map((o) => {
                     const listingTitle = o.listing?.title || 'Item';
                     const listingImage = o.listing?.images?.[0] || '';
+                    const itemRefunded = o.status === 'refunded' || !!o.refunded_at;
+                    const itemDeclined = !itemRefunded && !!o.refund_declined_at && !o.refund_requested_at;
+                    const itemPending = !itemRefunded && !!o.refund_requested_at && !o.refund_declined_at;
+                    const itemPill = itemRefunded
+                      ? { label: 'Refunded', className: 'bg-muted text-muted-foreground' }
+                      : itemPending
+                        ? { label: 'Refund requested', className: 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300' }
+                        : itemDeclined
+                          ? { label: 'Refund declined', className: 'bg-muted text-muted-foreground' }
+                          : null;
 
                     return (
                       <div key={o.id} className="flex gap-4">
@@ -255,7 +265,14 @@ const OrderDetailsSheet = ({
                           className="h-20 w-20 rounded-xl object-cover bg-muted"
                         />
                         <div className="flex-1 flex flex-col justify-between">
-                          <h3 className="font-semibold text-foreground">{listingTitle}</h3>
+                          <div>
+                            <h3 className="font-semibold text-foreground">{listingTitle}</h3>
+                            {itemPill && (
+                              <span className={`inline-block mt-1 text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 ${itemPill.className}`}>
+                                {itemPill.label}
+                              </span>
+                            )}
+                          </div>
                           <div className="text-right">
                             <p className="text-lg font-semibold">${o.price}</p>
                           </div>
