@@ -54,7 +54,9 @@ export default function AdminApprovals() {
                 ? 'No tracking to approve'
                 : tab === 'delivery'
                   ? 'No deliveries to review'
-                  : 'No disputes open'
+                  : tab === 'untracked'
+                    ? 'No untracked deliveries'
+                    : 'No disputes open'
             }
             description="Nothing pending right now."
           />
@@ -71,6 +73,8 @@ export default function AdminApprovals() {
                 onComplete={() => completeOrder(o.id, o.order_group_id)}
                 onForceRefund={() => forceRefund(o.id)}
                 onDismissDispute={() => dismissDispute(o.id)}
+                onApproveUntracked={() => approveUntrackedDelivery(o.id)}
+                onRejectUntracked={(reason) => rejectUntrackedDelivery(o.id, reason)}
               />
             ))}
           </div>
