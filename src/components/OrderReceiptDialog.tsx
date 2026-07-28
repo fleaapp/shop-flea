@@ -82,16 +82,6 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
   const rawSellerUsername = primaryOrder.seller_profile?.username || 'Seller';
   const sellerUsername = rawSellerUsername.startsWith('@') ? rawSellerUsername.slice(1) : rawSellerUsername;
 
-  const itemsSubtotal = orders.reduce((sum, o) => sum + o.price, 0);
-  const shippingTotal = orders.reduce((sum, o) => sum + o.shipping_price, 0);
-  const subtotal = itemsSubtotal + shippingTotal;
-  // Secure Checkout Fee: 4% + $0.70 of items + shipping, paid by buyer.
-  const secureCheckoutFee = Math.round((subtotal * 0.04 + 0.70) * 100) / 100;
-  const buyerTotal = subtotal + secureCheckoutFee;
-  // Seller-paid Transaction Fee (2% + $0.50) deducted from payout.
-  const transactionFee = subtotal > 0 ? Math.round((subtotal * 0.02 + 0.50) * 100) / 100 : 0;
-  const sellerReceives = Math.round((subtotal - transactionFee) * 100) / 100;
-
   const { data: sellerShippingSettings } = useQuery({
     queryKey: ['seller-shipping-settings', primaryOrder.seller_id],
     queryFn: async () => {
@@ -101,7 +91,61 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
     enabled: open && !!primaryOrder.seller_id && orders.length >= 2,
     staleTime: 60_000,
   });
+
+  const listingIds = [...new Set(orders.map((o) => o.listing_id).filter(Boolean))];
+  const { data: listingsData } = useQuery({
+    queryKey: ['receipt-listings', primaryOrder.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('listings')
+        .select('id, shipping_price')
+        .in('id', listingIds);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: open && listingIds.length > 0,
+    staleTime: 60_000,
+  });
+  const listingsMap = new Map((listingsData ?? []).map((l: any) => [l.id, l]));
+
+  const bundleMode = (sellerShippingSettings?.mode || 'none') as BundleShippingMode;
+  const discountPercent = sellerShippingSettings?.discountPercent ?? null;
+  const rawShippings = orders.map((o) => Number(listingsMap.get(o.listing_id)?.shipping_price) || 0);
+  const bundleShippingTotal = calculateBundleShippingTotal(rawShippings, bundleMode, discountPercent);
+
+  const rawShippingTotal = Math.round(rawShippings.reduce((a, b) => a + b, 0) * 100) / 100;
+  const itemSubtotals = orders.map((o, idx) => {
+    const share = rawShippingTotal > 0
+      ? Math.round(bundleShippingTotal * (rawShippings[idx] / rawShippingTotal) * 100) / 100
+      : 0;
+    return Math.round((o.price + share) * 100) / 100;
+  });
+  const subtotal = Math.round(itemSubtotals.reduce((a, b) => a + b, 0) * 100) / 100;
+
+  // Secure Checkout Fee: 4% + $0.70 of items + shipping, paid by buyer.
+  const secureCheckoutFee = calculateSecureCheckoutFee(subtotal);
+  const buyerTotal = Math.round((subtotal + secureCheckoutFee) * 100) / 100;
+  // Seller-paid Transaction Fee (2% + $0.50) deducted from payout.
+  const transactionFee = calculateTransactionFee(subtotal);
+  const sellerReceives = Math.round((subtotal - transactionFee) * 100) / 100;
+
   const bundleText = orders.length >= 2 ? getBundleBreakdownText(orders.length, sellerShippingSettings || undefined) : null;
+
+  // Partial refund breakdown (per-item, pro-rata shipping and fees).
+  const refundItems = orders
+    .map((o, idx) => ({ order: o, idx }))
+    .filter(({ order }) => order.status === 'refunded' || !!order.refunded_at);
+  const refundBreakdowns = refundItems.map(({ order, idx }) => ({
+    order,
+    ...calculateProRataRefund(
+      idx,
+      orders.map((o, i) => ({ price: o.price, rawShipping: rawShippings[i] })),
+      bundleMode,
+      discountPercent,
+    ),
+  }));
+  const buyerRefundTotal = refundBreakdowns.reduce((s, r) => s + r.buyerRefund, 0);
+  const sellerRefundTotal = refundBreakdowns.reduce((s, r) => s + r.sellerNet, 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
