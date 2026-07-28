@@ -185,6 +185,7 @@ const Notifications = () => {
           g.orders.some(o => o.listing_id === notification.related_listing_id)
         );
         if (matchingGroup) {
+          setHighlightOrderId(matchingGroup.orders.find(o => o.listing_id === notification.related_listing_id)?.id ?? null);
           setSelectedGroup(matchingGroup);
           setSaleSheetOpen(true);
           return;
@@ -203,12 +204,14 @@ const Notifications = () => {
       const matchingGroup = findGroup(notification, sellerOrderGroups);
       if (matchingGroup) {
         setSelectedGroup(matchingGroup);
+        setHighlightOrderId(notification.related_order_id ?? null);
         setSaleSheetOpen(true);
         return;
       }
       navigate('/sales');
       return;
     }
+
 
     // Order-side alerts (buyer) → open Order Details drawer
     if (
