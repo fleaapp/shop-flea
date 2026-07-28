@@ -409,8 +409,8 @@ const SellerDashboard = () => {
                     // Build the list of sales still generating pending funds.
                     const activeGroups = sellerOrderGroups
                       .filter((g) => {
-                        if (isGroupRefunded(g)) return false;
-                        return g.status === 'awaiting' || g.status === 'shipped';
+                        const remaining = g.orders.filter((o) => !isOrderRefunded(o));
+                        return remaining.length > 0 && (g.status === 'awaiting' || g.status === 'shipped');
                       })
                       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
