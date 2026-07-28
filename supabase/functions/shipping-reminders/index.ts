@@ -185,13 +185,63 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── 4-day buyer OVERDUE alert (matches UI "Overdue" threshold) ─────────
+    const { data: orders4d, error: err4d } = await supabaseAdmin
+      .from('orders')
+      .select('id, seller_id, buyer_id, listing_id, created_at')
+      .eq('status', 'awaiting')
+      .is('refunded_at', null)
+      .lte('created_at', new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000).toISOString());
+
+    if (err4d) throw err4d;
+
+    let sentOverdue = 0;
+    for (const order of (orders4d ?? [])) {
+      const { data: existing } = await supabaseAdmin
+        .from('notifications')
+        .select('id')
+        .eq('user_id', order.buyer_id)
+        .eq('type', 'order_overdue_buyer')
+        .eq('related_order_id', order.id)
+        .maybeSingle();
+
+      if (existing) continue;
+
+      const { error: insertErr } = await supabaseAdmin
+        .from('notifications')
+        .insert({
+          user_id: order.buyer_id,
+          type: 'order_overdue_buyer',
+          title: 'Order overdue',
+          message: "⏰ Your order is overdue — the seller hasn't shipped yet. Tap for options.",
+          related_listing_id: order.listing_id,
+          related_user_id: order.seller_id,
+          related_order_id: order.id,
+        });
+
+      if (insertErr) {
+        console.error(`[overdue] Failed for order ${order.id}:`, insertErr);
+      } else {
+        sentOverdue++;
+        await firePushNotification(order.buyer_id, {
+          type: 'order_overdue_buyer',
+          title: 'Order overdue',
+          message: "Your order is overdue — the seller hasn't shipped yet. Tap for options.",
+          related_listing_id: order.listing_id,
+          related_order_id: order.id,
+        });
+      }
+    }
+
     const result = {
       ok: true,
       sent3d,
       sent6d,
       sent8d,
+      sentOverdue,
       timestamp: now.toISOString(),
     };
+
 
     console.log('[shipping-reminders] Done:', result);
     return new Response(JSON.stringify(result), {
