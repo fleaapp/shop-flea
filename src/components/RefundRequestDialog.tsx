@@ -388,8 +388,8 @@ const RefundRequestDialog = ({ open, onOpenChange, items, onSubmit }: RefundRequ
             )}
 
             {multi && (
-              <div className="rounded-xl bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-                Refunding {selectedList.length} item{selectedList.length === 1 ? '' : 's'}
+              <div className="rounded-xl bg-muted/50 px-3 py-2 text-xs text-muted-foreground leading-snug">
+                Refunding {selectedList.length} item{selectedList.length === 1 ? '' : 's'}. Proof and details below apply to every selected item.
               </div>
             )}
 
