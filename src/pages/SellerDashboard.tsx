@@ -159,33 +159,38 @@ const isTransportError = (error: unknown) => {
 };
 
 const invokePayoutWithRetry = async (method: 'standard' | 'instant') => {
+  let firstResult: Awaited<ReturnType<typeof invokeCloudFunction>> | null = null;
   try {
-    const first = await invokeCloudFunction('stripe-connect-payout', { method });
-    if (first.error && isTransportError(first.error)) throw first.error;
-    return first;
+    firstResult = await invokeCloudFunction('stripe-connect-payout', { method });
+    if (!firstResult.error || !isTransportError(firstResult.error)) return firstResult;
   } catch (firstError) {
     if (!isTransportError(firstError)) throw firstError;
+    firstResult = {
+      data: null,
+      error: firstError as Error,
+      response: undefined as any,
+    };
+  }
 
-    try {
-      const retry = await supabase.functions.invoke('stripe-connect-payout', {
-        body: { method },
-      });
-      if (retry.error && isTransportError(retry.error)) throw retry.error;
-      return retry;
-    } catch (retryError) {
-      void logError({
-        title: 'Payout transport failed',
-        message: (retryError as any)?.message || (firstError as any)?.message || 'Payout request could not reach the function',
-        route: '/seller-dashboard',
-        context: {
-          function_name: 'stripe-connect-payout',
-          payout_method: method,
-          first_error: (firstError as any)?.message || String(firstError),
-          retry_error: (retryError as any)?.message || String(retryError),
-        },
-      });
-      throw retryError;
-    }
+  try {
+    const retry = await supabase.functions.invoke('stripe-connect-payout', {
+      body: { method },
+    });
+    if (!retry.error || !isTransportError(retry.error)) return retry;
+    throw retry.error;
+  } catch (retryError) {
+    void logError({
+      title: 'Payout transport failed',
+      message: (retryError as any)?.message || firstResult?.error?.message || 'Payout request could not reach the function',
+      route: '/seller-dashboard',
+      context: {
+        function_name: 'stripe-connect-payout',
+        payout_method: method,
+        first_error: firstResult?.error?.message || 'Unknown transport error',
+        retry_error: (retryError as any)?.message || String(retryError),
+      },
+    });
+    throw retryError;
   }
 };
 
