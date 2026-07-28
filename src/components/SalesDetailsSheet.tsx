@@ -283,8 +283,13 @@ const SalesDetailsSheet = ({
                           ? { label: 'Refund declined', className: 'bg-muted text-muted-foreground' }
                           : null;
 
+                    const isHighlighted = highlightOrderId === o.id;
                     return (
-                      <div key={o.id} className="flex gap-4">
+                      <div
+                        key={o.id}
+                        ref={(el) => { highlightRefs.current[o.id] = el; }}
+                        className={`flex gap-4 p-2 -m-2 rounded-xl transition-all ${isHighlighted ? 'ring-2 ring-primary bg-primary/10' : ''}`}
+                      >
                         <img
                           src={listingImage}
                           alt={listingTitle}
@@ -305,6 +310,7 @@ const SalesDetailsSheet = ({
                         </div>
                       </div>
                     );
+
                   })}
                 </div>
 
