@@ -87,6 +87,7 @@ const SalesDetailsSheet = ({
   const { requestRefund, respondToRefund } = useOrders();
   const [refundDeclineReason, setRefundDeclineReason] = useState('');
   const [refundDeclineOpen, setRefundDeclineOpen] = useState(false);
+  const [refundActionOrderId, setRefundActionOrderId] = useState<string | null>(null);
   
   const primaryOrder = orders?.[0];
   const { data: existingReview } = useExistingReview(primaryOrder?.id);
@@ -258,6 +259,16 @@ const SalesDetailsSheet = ({
                   {orders.map((o) => {
                     const listingTitle = o.listing?.title || 'Item';
                     const listingImage = o.listing?.images?.[0] || '';
+                    const itemRefunded = o.status === 'refunded' || !!o.refunded_at;
+                    const itemDeclined = !itemRefunded && !!o.refund_declined_at && !o.refund_requested_at;
+                    const itemPending = !itemRefunded && !!o.refund_requested_at && !o.refund_declined_at;
+                    const itemPill = itemRefunded
+                      ? { label: 'Refunded', className: 'bg-muted text-muted-foreground' }
+                      : itemPending
+                        ? { label: 'Refund requested', className: 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300' }
+                        : itemDeclined
+                          ? { label: 'Refund declined', className: 'bg-muted text-muted-foreground' }
+                          : null;
 
                     return (
                       <div key={o.id} className="flex gap-4">
@@ -267,7 +278,14 @@ const SalesDetailsSheet = ({
                           className="h-20 w-20 rounded-xl object-cover bg-muted"
                         />
                         <div className="flex-1 flex flex-col justify-between">
-                          <h3 className="font-semibold text-foreground">{listingTitle}</h3>
+                          <div>
+                            <h3 className="font-semibold text-foreground">{listingTitle}</h3>
+                            {itemPill && (
+                              <span className={`inline-block mt-1 text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 ${itemPill.className}`}>
+                                {itemPill.label}
+                              </span>
+                            )}
+                          </div>
                           <div className="text-right">
                             <p className="text-lg font-semibold">${o.price}</p>
                           </div>
@@ -413,46 +431,76 @@ const SalesDetailsSheet = ({
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </button>
 
-            {/* Pending refund request from buyer */}
-            {!isRefunded && primaryOrder.refund_requested_at && !primaryOrder.refund_declined_at && primaryOrder.refund_requested_by === primaryOrder.buyer_id && (
-              <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Buyer requested a refund</p>
-                  {primaryOrder.refund_request_reason && (
-                    <p className="text-xs text-muted-foreground mt-1">"{primaryOrder.refund_request_reason}"</p>
-                  )}
-                  {primaryOrder.refund_request_deadline_at && (
-                    <p className="text-[11px] text-muted-foreground mt-1">
-                      Auto-approves {format(new Date(primaryOrder.refund_request_deadline_at), 'MMM d, h:mma')}
-                    </p>
-                  )}
+            {/* Pending refund requests from buyer — per item */}
+            {(() => {
+              const pending = orders.filter(
+                (o) =>
+                  o.refund_requested_at &&
+                  !o.refund_declined_at &&
+                  !o.refunded_at &&
+                  o.status !== 'refunded' &&
+                  o.refund_requested_by === o.buyer_id,
+              );
+              if (pending.length === 0) return null;
+              const multi = orders.length > 1;
+              return (
+                <div className="space-y-3">
+                  {pending.map((o) => (
+                    <div key={o.id} className="rounded-2xl bg-card border border-border p-4 space-y-3">
+                      <div className="flex gap-3">
+                        {multi && o.listing?.images?.[0] && (
+                          <img
+                            src={o.listing.images[0]}
+                            alt=""
+                            className="h-12 w-12 rounded-lg object-cover bg-muted shrink-0"
+                          />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-foreground">
+                            {multi ? `Refund requested — ${o.listing?.title || 'Item'}` : 'Buyer requested a refund'}
+                          </p>
+                          {o.refund_request_reason && (
+                            <p className="text-xs text-muted-foreground mt-1">"{o.refund_request_reason}"</p>
+                          )}
+                          {o.refund_request_deadline_at && (
+                            <p className="text-[11px] text-muted-foreground mt-1">
+                              Auto-approves {format(new Date(o.refund_request_deadline_at), 'MMM d, h:mma')}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          className="flex-1 rounded-full h-10"
+                          onClick={() => {
+                            setRefundActionOrderId(o.id);
+                            setRefundDeclineOpen(true);
+                          }}
+                          disabled={respondToRefund.isPending}
+                        >
+                          Decline
+                        </Button>
+                        <Button
+                          className="flex-1 rounded-full h-10 bg-charcoal text-white hover:bg-charcoal-light"
+                          onClick={async () => {
+                            setRefundActionOrderId(o.id);
+                            await respondToRefund.mutateAsync({
+                              orderId: o.id,
+                              decision: 'approve',
+                            });
+                            setRefundActionOrderId(null);
+                          }}
+                          disabled={respondToRefund.isPending}
+                        >
+                          {respondToRefund.isPending && refundActionOrderId === o.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Approve refund'}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1 rounded-full h-10"
-                    onClick={() => setRefundDeclineOpen(true)}
-                    disabled={respondToRefund.isPending}
-                  >
-                    Decline
-                  </Button>
-                  <Button
-                    className="flex-1 rounded-full h-10 bg-charcoal text-white hover:bg-charcoal-light"
-                    onClick={async () => {
-                      await respondToRefund.mutateAsync({
-                        orderGroupId: primaryOrder.order_group_id ?? undefined,
-                        orderId: primaryOrder.order_group_id ? undefined : primaryOrder.id,
-                        decision: 'approve',
-                      });
-                      onOpenChange(false);
-                    }}
-                    disabled={respondToRefund.isPending}
-                  >
-                    {respondToRefund.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Approve refund'}
-                  </Button>
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Actions */}
             <div className="flex flex-col items-center space-y-3 pt-4">
@@ -573,14 +621,15 @@ const SalesDetailsSheet = ({
               disabled={respondToRefund.isPending}
               onClick={async (e) => {
                 e.preventDefault();
+                const targetOrderId = refundActionOrderId ?? primaryOrder.id;
                 await respondToRefund.mutateAsync({
-                  orderGroupId: primaryOrder.order_group_id ?? undefined,
-                  orderId: primaryOrder.order_group_id ? undefined : primaryOrder.id,
+                  orderId: targetOrderId,
                   decision: 'decline',
                   reason: refundDeclineReason,
                 });
                 setRefundDeclineReason('');
                 setRefundDeclineOpen(false);
+                setRefundActionOrderId(null);
               }}
               className="flex-1 h-9 rounded-lg bg-charcoal text-white hover:bg-charcoal-light"
             >

@@ -666,12 +666,27 @@ Deno.serve(async (req) => {
 
         await insertSystemMessage(external, orderMessageKey, threadOrderId, userId, "refund_request", systemContent);
 
+        // Fetch listing title so the seller sees which item was requested (matters for bundles).
+        let itemTitle = "";
+        try {
+          const { data: listingRow } = await external
+            .from("listings")
+            .select("title")
+            .eq("id", orderInfo.listingId)
+            .maybeSingle();
+          itemTitle = (listingRow?.title || "").trim();
+        } catch (_) {
+          itemTitle = "";
+        }
+
         try {
           await insertNotificationWithFallback(external, {
             user_id: orderInfo.sellerId,
             type: "refund_request",
-            title: "Refund Requested",
-            message: `${formattedUsername} has requested a refund. Tap to review.`,
+            title: itemTitle ? `Refund requested — ${itemTitle}` : "Refund Requested",
+            message: itemTitle
+              ? `${formattedUsername} requested a refund for ${itemTitle}. Tap to review.`
+              : `${formattedUsername} has requested a refund. Tap to review.`,
             related_listing_id: orderInfo.listingId,
             related_user_id: userId,
             related_order_id: orderInfo.matchedOrderGroupId ?? orderInfo.matchedOrderId ?? threadOrderId,
