@@ -464,11 +464,13 @@ const SellerDashboard = () => {
                             {pendingOpen && (
                               <ul className="mt-2 divide-y divide-border">
                                 {activeGroups.map((g, idx) => {
+                                  const activeOrders = g.orders.filter((o) => !isOrderRefunded(o));
+                                  const refundedCount = g.orders.length - activeOrders.length;
                                   const isBundle = g.orders.length > 1;
                                   const title = isBundle
-                                    ? 'Bundle'
+                                    ? `Bundle${refundedCount > 0 ? ` (${refundedCount} refunded)` : ''}`
                                     : g.orders[0]?.listing?.title ?? 'Item';
-                                  const amountCents = g.orders.reduce(
+                                  const amountCents = activeOrders.reduce(
                                     (s, o) => s + Math.round(((o.price ?? 0) + (o.shipping_price ?? 0)) * 100),
                                     0,
                                   );
