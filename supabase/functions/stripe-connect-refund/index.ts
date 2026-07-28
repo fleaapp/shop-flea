@@ -1,11 +1,16 @@
 // stripe-connect-refund
-// Seller-approved refund execution. Called from the in-app refund flow AFTER
-// the seller has explicitly approved a buyer's refund request (or after
-// policy-based escalation). Stripe handles only the financial execution —
-// approval/decision logic happens in the app.
+// Refund execution for Flea. Supports two modes:
+//  - "cascade" (default): full order-group refund. Used by the "Refund sale"
+//    button and legacy callers. Reverses the seller transfer and unwinds the
+//    buyer's Secure Checkout Fee in one Stripe refund.
+//  - "single": per-item partial refund. Used by per-item buyer requests, seller
+//    approvals of individual items, admin dispute force-refunds, and the 72h
+//    auto-approval cron. Computes pro-rata shipping and fees, refunds only the
+//    buyer's share, and reverses only the seller's net share from the Connect
+//    transfer.
 //
-// Uses reverse_transfer + refund_application_fee so the seller payout AND the
-// buyer's Secure Checkout Fee (4% + $0.70) are unwound cleanly through Connect.
+// Approval/decision logic lives in the app and RPCs; this function only handles
+// financial execution.
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
@@ -46,7 +51,7 @@ const ORDER_UPDATE_FALLBACK_COLUMNS = [
 async function reloadExternalSchemaCache() {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     if (!supabaseUrl || !serviceKey) return;
     await fetch(`${supabaseUrl}/functions/v1/reload-schema`, {
       method: "POST",
@@ -94,9 +99,6 @@ function buildOrderSelect(omitted: Set<string>) {
 
 async function fetchOrderWithFallback(externalUrl: string, serviceKey: string, orderId: string) {
   const omitted = new Set<string>();
-  // Route param is sometimes the order_group_id (OrderChat uses the group id in
-  // the URL). If the direct id lookup misses, retry once against order_group_id
-  // so callers don't have to know which they hold.
   const filters = [`id=eq.${orderId}`, `order_group_id=eq.${orderId}&order=created_at.asc&limit=1`];
   let filterIdx = 0;
 
@@ -188,8 +190,18 @@ async function patchOrdersWithFallback(
   }
 }
 
+async function markOrderRefunded(externalUrl: string, serviceKey: string, orderId: string) {
+  const body = {
+    refunded_at: new Date().toISOString(),
+    status: "refunded",
+    updated_at: new Date().toISOString(),
+    refund_reason: "seller_refund",
+  };
+  await patchOrdersWithFallback(externalUrl, serviceKey, `id=eq.${orderId}`, body);
+}
+
 async function markRelatedOrdersRefunded(externalUrl: string, serviceKey: string, order: any) {
-  const dbUrl = Deno.env.get("SUPABASE_DB_URL") ?? Deno.env.get("SUPABASE_DB_URL") ?? "";
+  const dbUrl = Deno.env.get("SUPABASE_DB_URL") ?? "";
   const refundedAt = new Date();
   const refundReason = "seller_refund";
 
@@ -289,7 +301,6 @@ function isDemoOrder(order: any) {
   return order.payment_method === "demo" || (typeof order.checkout_reference === "string" && order.checkout_reference.startsWith("demo-"));
 }
 
-
 async function resolvePaymentIntentId(stripe: Stripe, order: any) {
   const reference = typeof order.checkout_reference === "string" ? order.checkout_reference.trim() : "";
 
@@ -381,11 +392,200 @@ async function checkRateLimit(key: string, max: number, windowSeconds: number): 
   } catch { return true; }
 }
 
+// -------------------- Per-item refund helpers --------------------
+
+type BundleMode = "none" | "discounted" | "free";
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function calculateSecureCheckoutFee(subtotal: number): number {
+  if (subtotal <= 0) return 0;
+  return round2(subtotal * 0.04 + 0.7);
+}
+
+function calculateTransactionFee(subtotal: number): number {
+  if (subtotal <= 0) return 0;
+  return round2(subtotal * 0.02 + 0.5);
+}
+
+function calculateBundleShippingTotal(
+  rawShippings: number[],
+  mode: BundleMode,
+  discountPercent: number | null,
+): number {
+  if (!rawShippings.length) return 0;
+  const subtotal = round2(rawShippings.reduce((sum, s) => sum + (Number(s) || 0), 0));
+  if (rawShippings.length < 2) return subtotal;
+
+  if (mode === "free") return 0;
+  if (mode === "discounted" && discountPercent) {
+    const pct = Math.max(0, Math.min(100, Number(discountPercent) || 0));
+    return round2(subtotal * (1 - pct / 100));
+  }
+  return subtotal;
+}
+
+interface RefundBreakdown {
+  itemSubtotal: number;
+  secureFeeShare: number;
+  transactionFeeShare: number;
+  buyerRefund: number;
+  sellerNet: number;
+}
+
+function computeRefundBreakdown(
+  targetOrder: any,
+  groupRows: any[],
+  listings: Map<string, any>,
+  bundleMode: BundleMode,
+  discountPercent: number | null,
+): RefundBreakdown {
+  const items = groupRows.map((o) => ({
+    orderId: o.id,
+    price: Number(o.price) || 0,
+    rawShipping: Number(listings.get(o.listing_id)?.shipping_price) || 0,
+  }));
+
+  const targetIndex = Math.max(
+    0,
+    items.findIndex((i) => i.orderId === targetOrder.id),
+  );
+
+  const rawShippingTotal = round2(items.reduce((sum, i) => sum + i.rawShipping, 0));
+  const bundleShippingTotal = calculateBundleShippingTotal(
+    items.map((i) => i.rawShipping),
+    bundleMode,
+    discountPercent,
+  );
+
+  const itemSubtotals = items.map((i) => {
+    const share = rawShippingTotal > 0
+      ? round2(bundleShippingTotal * (i.rawShipping / rawShippingTotal))
+      : 0;
+    return round2(i.price + share);
+  });
+
+  const groupSubtotal = round2(itemSubtotals.reduce((sum, s) => sum + s, 0));
+  const itemSubtotal = itemSubtotals[targetIndex];
+
+  const secureFee = calculateSecureCheckoutFee(groupSubtotal);
+  const transactionFee = calculateTransactionFee(groupSubtotal);
+
+  const secureFeeShare = groupSubtotal > 0 ? round2(secureFee * (itemSubtotal / groupSubtotal)) : 0;
+  const transactionFeeShare = groupSubtotal > 0 ? round2(transactionFee * (itemSubtotal / groupSubtotal)) : 0;
+
+  const buyerRefund = round2(itemSubtotal + secureFeeShare);
+  const sellerNet = Math.max(0, round2(itemSubtotal - transactionFeeShare));
+
+  return { itemSubtotal, secureFeeShare, transactionFeeShare, buyerRefund, sellerNet };
+}
+
+async function fetchGroupRows(externalUrl: string, serviceKey: string, order: any) {
+  if (!order.order_group_id) return [order];
+  const res = await fetch(
+    `${externalUrl}/rest/v1/orders?order_group_id=eq.${order.order_group_id}&select=id,listing_id,price,shipping_price,buyer_id,seller_id,status,refunded_at,created_at,order_group_id`,
+    { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+  );
+  if (!res.ok) return [order];
+  const body = await safeJson(res);
+  return Array.isArray(body) && body.length ? body : [order];
+}
+
+async function fetchListings(externalUrl: string, serviceKey: string, listingIds: string[]) {
+  const map = new Map<string, any>();
+  if (!listingIds.length) return map;
+  const quoted = listingIds.map((id) => `"${String(id).replace(/"/g, "")}"`).join(",");
+  const res = await fetch(`${externalUrl}/rest/v1/listings?id=in.(${quoted})&select=id,shipping_price`, {
+    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+  });
+  if (!res.ok) return map;
+  const body = await safeJson(res);
+  if (!Array.isArray(body)) return map;
+  body.forEach((l: any) => map.set(l.id, l));
+  return map;
+}
+
+async function fetchSellerBundleSettings(externalUrl: string, serviceKey: string, sellerId: string) {
+  const res = await fetch(
+    `${externalUrl}/rest/v1/profiles?user_id=eq.${sellerId}&select=bundle_shipping_mode,bundle_shipping_discount_percent`,
+    { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+  );
+  if (!res.ok) return { mode: "none" as BundleMode, discountPercent: null as number | null };
+  const body = await safeJson(res);
+  const row = Array.isArray(body) ? body[0] : null;
+  return {
+    mode: (row?.bundle_shipping_mode as BundleMode) || "none",
+    discountPercent: row?.bundle_shipping_discount_percent != null ? Number(row.bundle_shipping_discount_percent) : null,
+  };
+}
+
+async function createSingleItemRefund(
+  stripe: Stripe,
+  order: any,
+  breakdown: RefundBreakdown,
+  actor: string,
+): Promise<{ refund: Stripe.Refund; transferReversal?: Stripe.TransferReversal }> {
+  const paymentIntentId = await resolvePaymentIntentId(stripe, order);
+  const amountCents = Math.round(breakdown.buyerRefund * 100);
+  const sellerNetCents = Math.round(breakdown.sellerNet * 100);
+
+  const refund = await stripe.refunds.create(
+    {
+      payment_intent: paymentIntentId,
+      amount: amountCents,
+      reverse_transfer: false,
+      refund_application_fee: false,
+      reason: "requested_by_customer",
+      metadata: {
+        flea_order_id: order.id,
+        flea_seller_id: order.seller_id,
+        flea_buyer_id: order.buyer_id,
+        flea_actor: actor,
+        flea_mode: "single",
+        flea_buyer_refund_cents: String(amountCents),
+        flea_seller_net_cents: String(sellerNetCents),
+      },
+    },
+    { idempotencyKey: `flea-refund-single-${order.id}-${amountCents}` },
+  );
+
+  // Reverse only the seller's net share from the Connect transfer.
+  try {
+    const pi = await stripe.paymentIntents.retrieve(paymentIntentId, { expand: ["latest_charge"] });
+    const charge = pi.latest_charge as Stripe.Charge | null;
+    const transferId = typeof charge?.transfer === "string" ? charge.transfer : charge?.transfer?.id;
+    if (transferId && sellerNetCents > 0) {
+      const transfer = await stripe.transfers.retrieve(transferId);
+      const availableCents = (transfer.amount ?? 0) - (transfer.amount_reversed ?? 0);
+      if (availableCents >= sellerNetCents) {
+        const reversal = await stripe.transferReversals.create(transferId, {
+          amount: sellerNetCents,
+          metadata: {
+            flea_order_id: order.id,
+            flea_refund_id: refund.id,
+          },
+        });
+        return { refund, transferReversal: reversal };
+      }
+      console.warn(
+        `[stripe-connect-refund] transfer ${transferId} only has ${availableCents}c available; needed ${sellerNetCents}c`,
+      );
+    }
+  } catch (transferError) {
+    console.error("[stripe-connect-refund] transfer reversal failed:", transferError);
+    // Continue: the buyer refund succeeded. The seller balance will be handled
+    // by the platform ledger and can be settled if needed.
+  }
+
+  return { refund };
+}
+
+// -------------------- Notifications & chat --------------------
+
 async function insertRefundNotifications(externalUrl: string, serviceKey: string, order: any) {
   try {
-    // Idempotency guard: if a refund_initiated notification for this order
-    // already exists in the last 5 minutes, skip. Prevents duplicates when
-    // this function is retried after a partial failure.
     if (order.id) {
       const since = new Date(Date.now() - 5 * 60 * 1000).toISOString();
       const dupRes = await fetch(
@@ -395,13 +595,13 @@ async function insertRefundNotifications(externalUrl: string, serviceKey: string
       if (dupRes.ok) {
         const dupRows = await dupRes.json();
         if (Array.isArray(dupRows) && dupRows.length > 0) {
-          console.log('[stripe-connect-refund] refund_initiated already sent for order', order.id);
+          console.log("[stripe-connect-refund] refund_initiated already sent for order", order.id);
           return;
         }
       }
     }
 
-    let listingTitle = 'your order';
+    let listingTitle = "your order";
     if (order.listing_id) {
       const res = await fetch(`${externalUrl}/rest/v1/listings?id=eq.${order.listing_id}&select=title`, {
         headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
@@ -415,8 +615,8 @@ async function insertRefundNotifications(externalUrl: string, serviceKey: string
     const rows = [
       {
         user_id: order.buyer_id,
-        type: 'refund_initiated',
-        title: 'Refund issued',
+        type: "refund_initiated",
+        title: "Refund issued",
         message: `↩️ Your refund for ${listingTitle} has been processed. Funds will return to your original payment method within a few business days.`,
         related_listing_id: order.listing_id ?? null,
         related_user_id: order.seller_id ?? null,
@@ -424,8 +624,8 @@ async function insertRefundNotifications(externalUrl: string, serviceKey: string
       },
       {
         user_id: order.seller_id,
-        type: 'refund_initiated',
-        title: 'Refund issued',
+        type: "refund_initiated",
+        title: "Refund issued",
         message: `↩️ You refunded the buyer for ${listingTitle}. The sale has been reversed.`,
         related_listing_id: order.listing_id ?? null,
         related_user_id: order.buyer_id ?? null,
@@ -434,27 +634,27 @@ async function insertRefundNotifications(externalUrl: string, serviceKey: string
     ];
 
     const insertRes = await fetch(`${externalUrl}/rest/v1/notifications`, {
-      method: 'POST',
+      method: "POST",
       headers: {
         apikey: serviceKey,
         Authorization: `Bearer ${serviceKey}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal',
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
       },
       body: JSON.stringify(rows),
     });
     await insertRes.text().catch(() => "");
 
     if (!insertRes.ok) {
-      console.error('[stripe-connect-refund] notification insert failed:', insertRes.status);
+      console.error("[stripe-connect-refund] notification insert failed:", insertRes.status);
       return;
     }
 
     await Promise.allSettled(rows.map(async (row) => {
       const pushRes = await fetch(`${externalUrl}/functions/v1/send-push-notification`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           Authorization: `Bearer ${serviceKey}`,
         },
         body: JSON.stringify({ user_id: row.user_id, notification: row }),
@@ -462,13 +662,12 @@ async function insertRefundNotifications(externalUrl: string, serviceKey: string
       await pushRes.text().catch(() => "");
     }));
   } catch (error) {
-    console.error('[stripe-connect-refund] notification insert failed:', error);
+    console.error("[stripe-connect-refund] notification insert failed:", error);
   }
 }
 
 async function insertRefundInitiatedChatMessage(externalUrl: string, serviceKey: string, order: any) {
   try {
-    // Fetch seller username for the system message payload (RefundSystemMessage renders this).
     let sellerUsername: string | null = null;
     if (order.seller_id) {
       const res = await fetch(
@@ -481,47 +680,32 @@ async function insertRefundInitiatedChatMessage(externalUrl: string, serviceKey:
       }
     }
 
-    // Post one system message per underlying order in the group so both single
-    // and grouped-order chats surface the "Refund Initiated" card.
-    const orderIds: string[] = [];
-    if (order.order_group_id) {
-      const res = await fetch(
-        `${externalUrl}/rest/v1/orders?order_group_id=eq.${order.order_group_id}&select=id`,
-        { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
-      );
-      if (res.ok) {
-        const rows = await res.json();
-        if (Array.isArray(rows)) rows.forEach((r: any) => r?.id && orderIds.push(r.id));
-      }
-    }
-    if (orderIds.length === 0 && order.id) orderIds.push(order.id);
-
     const payload = JSON.stringify({
-      type: 'refund_initiated',
+      type: "refund_initiated",
       seller_username: sellerUsername,
-      payment_method: 'stripe',
+      payment_method: "stripe",
       initiated_at: new Date().toISOString(),
     });
 
-    const rows = orderIds.map((oid) => ({
-      order_id: oid,
+    const rows = [{
+      order_id: order.id,
       sender_id: order.seller_id,
       message: payload,
-      message_type: 'refund_initiated',
-    }));
+      message_type: "refund_initiated",
+    }];
 
     await fetch(`${externalUrl}/rest/v1/order_messages`, {
-      method: 'POST',
+      method: "POST",
       headers: {
         apikey: serviceKey,
         Authorization: `Bearer ${serviceKey}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal',
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
       },
       body: JSON.stringify(rows),
     });
   } catch (error) {
-    console.error('[stripe-connect-refund] chat system message insert failed:', error);
+    console.error("[stripe-connect-refund] chat system message insert failed:", error);
   }
 }
 
@@ -535,7 +719,6 @@ serve(async (req) => {
 
     const authHeader = req.headers.get("Authorization") ?? "";
     const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-    // System caller: cron / internal edge function using service role.
     const isSystemCaller = bearer && bearer === serviceKey;
 
     let userId: string | null = null;
@@ -553,7 +736,6 @@ serve(async (req) => {
       }
       userId = user.id;
 
-      // Admins can force-refund from the dispute queue.
       const { data: adminRow } = await supabaseClient
         .from("user_roles")
         .select("role")
@@ -567,7 +749,8 @@ serve(async (req) => {
       }
     }
 
-    const { orderId, amount, reason } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const { orderId, reason, mode } = body as { orderId?: string; reason?: string; mode?: "single" | "cascade" };
     if (!orderId) throw new Error("orderId required");
 
     const order = await fetchOrderWithFallback(externalUrl, serviceKey, orderId);
@@ -576,24 +759,31 @@ serve(async (req) => {
     }
     if (order.refunded_at) throw new Error("Order already refunded");
 
+    const refundMode = mode === "single" ? "single" : "cascade";
+
     // Demo orders (Apple App Review bypass) have no payment intent —
     // just mark refunded directly so reviewers can exercise the refund flow.
     if (isDemoOrder(order)) {
-      await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
-      const demoListingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
-      await markListingsRefunded(externalUrl, serviceKey, demoListingIds);
-      return jsonResponse({ success: true, demo: true });
+      if (refundMode === "single") {
+        await markOrderRefunded(externalUrl, serviceKey, order.id);
+        if (order.listing_id) await markListingsRefunded(externalUrl, serviceKey, [order.listing_id]);
+      } else {
+        await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
+        const demoListingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
+        await markListingsRefunded(externalUrl, serviceKey, demoListingIds);
+      }
+      await insertRefundNotifications(externalUrl, serviceKey, order);
+      await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order);
+      return jsonResponse({ success: true, demo: true, mode: refundMode });
     }
 
     if (order.payment_method && order.payment_method !== "stripe") {
       throw new Error("Refund only supported for payment processor orders here");
     }
 
-
-
     // Refund window — server-side enforcement for seller-initiated refunds.
     // Admin dispute overrides and system 72h auto-approvals bypass this.
-    if (!isSystemCaller && !isAdminCaller) {
+    if (!isSystemCaller && !isAdminCaller && refundMode !== "cascade") {
       const now = Date.now();
       if (order.delivered_at) {
         const deliveredMs = new Date(order.delivered_at).getTime();
@@ -612,14 +802,44 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    const paymentIntentId = await resolvePaymentIntentId(stripe, order);
+    const actor = isSystemCaller ? "system" : isAdminCaller ? "admin" : "seller";
 
-    // Idempotency key prevents double-refunds on retry/double-click.
+    if (refundMode === "single") {
+      const [groupRows, sellerSettings] = await Promise.all([
+        fetchGroupRows(externalUrl, serviceKey, order),
+        fetchSellerBundleSettings(externalUrl, serviceKey, order.seller_id),
+      ]);
+      const listingIds = [...new Set(groupRows.map((r) => r.listing_id).filter(Boolean))];
+      const listings = await fetchListings(externalUrl, serviceKey, listingIds);
+      const breakdown = computeRefundBreakdown(order, groupRows, listings, sellerSettings.mode, sellerSettings.discountPercent);
+
+      const { refund, transferReversal } = await createSingleItemRefund(stripe, order, breakdown, actor);
+
+      await markOrderRefunded(externalUrl, serviceKey, order.id);
+      if (order.listing_id) await markListingsRefunded(externalUrl, serviceKey, [order.listing_id]);
+      await insertRefundNotifications(externalUrl, serviceKey, order);
+      await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order);
+
+      return jsonResponse({
+        success: true,
+        refundId: refund.id,
+        status: refund.status,
+        transferReversalId: transferReversal?.id ?? null,
+        mode: "single",
+        breakdown: {
+          itemSubtotal: breakdown.itemSubtotal,
+          secureFeeShare: breakdown.secureFeeShare,
+          transactionFeeShare: breakdown.transactionFeeShare,
+          buyerRefund: breakdown.buyerRefund,
+          sellerNet: breakdown.sellerNet,
+        },
+      });
+    }
+
+    // Cascade / full order-group refund.
+    const paymentIntentId = await resolvePaymentIntentId(stripe, order);
     const refund = await stripe.refunds.create({
       payment_intent: paymentIntentId,
-      ...(typeof amount === "number" && amount > 0
-        ? { amount: Math.round(amount * 100) }
-        : {}),
       reverse_transfer: true,
       refund_application_fee: true,
       reason: reason === "fraudulent" || reason === "duplicate" ? reason : "requested_by_customer",
@@ -627,9 +847,9 @@ serve(async (req) => {
         flea_order_id: orderId,
         flea_seller_id: order.seller_id,
         flea_buyer_id: order.buyer_id,
-        flea_actor: isSystemCaller ? "system" : isAdminCaller ? "admin" : "seller",
+        flea_actor: actor,
+        flea_mode: "cascade",
       },
-
     }, { idempotencyKey: `flea-refund-${orderId}` });
 
     await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
@@ -638,7 +858,7 @@ serve(async (req) => {
     await insertRefundNotifications(externalUrl, serviceKey, order);
     await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order);
 
-    return jsonResponse({ success: true, refundId: refund.id, status: refund.status });
+    return jsonResponse({ success: true, refundId: refund.id, status: refund.status, mode: "cascade" });
   } catch (error: any) {
     console.error("[stripe-connect-refund] error:", error);
     return jsonResponse({ error: error?.message ?? "Refund failed" }, error?.statusCode || error?.status || 400);
