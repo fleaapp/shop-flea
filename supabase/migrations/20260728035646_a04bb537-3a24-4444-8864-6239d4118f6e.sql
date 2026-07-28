@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.mark_order_delivered(uuid, uuid);
