@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { SettleBalanceSheet } from '@/components/SettleBalanceSheet';
 import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
 import EnablePushBanner from '@/components/EnablePushBanner';
+import { supabase } from '@/lib/supabase';
+import { logError } from '@/lib/errorLogger';
 
 const BalanceInfo = ({ title, body, tone = 'muted' }: { title: string; body: string; tone?: 'muted' | 'amber' | 'primary' }) => {
   const iconClass =
@@ -151,6 +153,42 @@ const activityMeta = (type: string): { emoji: string; label: string } => {
   }
 };
 
+const isTransportError = (error: unknown) => {
+  const message = String((error as any)?.message || error || '').toLowerCase();
+  return message.includes('load failed') || message.includes('failed to fetch') || message.includes('networkerror');
+};
+
+const invokePayoutWithRetry = async (method: 'standard' | 'instant') => {
+  try {
+    const first = await invokeCloudFunction('stripe-connect-payout', { method });
+    if (first.error && isTransportError(first.error)) throw first.error;
+    return first;
+  } catch (firstError) {
+    if (!isTransportError(firstError)) throw firstError;
+
+    try {
+      const retry = await supabase.functions.invoke('stripe-connect-payout', {
+        body: { method },
+      });
+      if (retry.error && isTransportError(retry.error)) throw retry.error;
+      return retry;
+    } catch (retryError) {
+      void logError({
+        title: 'Payout transport failed',
+        message: (retryError as any)?.message || (firstError as any)?.message || 'Payout request could not reach the function',
+        route: '/seller-dashboard',
+        context: {
+          function_name: 'stripe-connect-payout',
+          payout_method: method,
+          first_error: (firstError as any)?.message || String(firstError),
+          retry_error: (retryError as any)?.message || String(retryError),
+        },
+      });
+      throw retryError;
+    }
+  }
+};
+
 const SellerDashboard = () => {
   const navigate = useNavigate();
   const { profile, refreshProfile } = useAuth() as any;
@@ -288,10 +326,7 @@ const SellerDashboard = () => {
     setConfirm(null);
     setPayoutLoading(method);
     try {
-      const { data: res, error: err } = await invokeCloudFunction(
-        'stripe-connect-payout',
-        { method }
-      );
+      const { data: res, error: err } = await invokePayoutWithRetry(method);
       if (err) throw new Error(err.message || 'Payout failed');
       if ((res as any)?.error) throw new Error((res as any).error);
       toast.success(
@@ -301,9 +336,8 @@ const SellerDashboard = () => {
       );
       await load();
     } catch (e: any) {
-      const message = String(e?.message || '').toLowerCase();
       toast.error(
-        message.includes('load failed') || message.includes('failed to fetch')
+        isTransportError(e)
           ? 'Payout request could not reach the payment provider. Please try again.'
           : e?.message || 'Payout failed. Please try again.'
       );
