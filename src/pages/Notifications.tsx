@@ -443,18 +443,20 @@ const Notifications = () => {
       <SalesDetailsSheet
         orders={selectedGroup?.orders ?? null}
         open={saleSheetOpen}
-        onOpenChange={(open) => { setSaleSheetOpen(open); if (!open) setSelectedGroup(null); }}
+        onOpenChange={(open) => { setSaleSheetOpen(open); if (!open) { setSelectedGroup(null); setHighlightOrderId(null); } }}
         onMarkShipped={handleMarkShipped}
+        highlightOrderId={highlightOrderId}
       />
 
       <OrderDetailsSheet
         orders={selectedBuyerGroup?.orders ?? null}
         open={orderSheetOpen}
-        onOpenChange={(open) => { setOrderSheetOpen(open); if (!open) setSelectedBuyerGroup(null); }}
+        onOpenChange={(open) => { setOrderSheetOpen(open); if (!open) { setSelectedBuyerGroup(null); setHighlightOrderId(null); } }}
         onMarkDelivered={handleMarkDelivered}
         onCompleteOrder={handleCompleteOrder}
-
+        highlightOrderId={highlightOrderId}
       />
+
       </div>
 
       <BottomNav />
