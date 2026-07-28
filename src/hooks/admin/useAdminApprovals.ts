@@ -157,6 +157,23 @@ export function useAdminApprovals(kind: ApprovalKind) {
     load();
   };
 
+  const approveUntrackedDelivery = async (orderId: string) => {
+    const { error } = await (supabase as any).rpc('admin_approve_untracked_delivery', { p_order_id: orderId });
+    if (error) return toast.error(error.message);
+    toast.success('Delivery approved. 48h dispute window started.');
+    load();
+  };
+
+  const rejectUntrackedDelivery = async (orderId: string, reason: string) => {
+    const { error } = await (supabase as any).rpc('admin_reject_untracked_delivery', {
+      p_order_id: orderId,
+      p_reason: reason,
+    });
+    if (error) return toast.error(error.message);
+    toast.success('Delivery reverted to awaiting.');
+    load();
+  };
+
   return {
     orders,
     loading,
@@ -167,6 +184,8 @@ export function useAdminApprovals(kind: ApprovalKind) {
     completeOrder,
     forceRefund,
     dismissDispute,
+    approveUntrackedDelivery,
+    rejectUntrackedDelivery,
   };
 }
 
