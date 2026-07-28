@@ -301,7 +301,12 @@ const SellerDashboard = () => {
       );
       await load();
     } catch (e: any) {
-      toast.error(e?.message || 'Payout failed. Please try again.');
+      const message = String(e?.message || '').toLowerCase();
+      toast.error(
+        message.includes('load failed') || message.includes('failed to fetch')
+          ? 'Payout request could not reach the payment provider. Please try again.'
+          : e?.message || 'Payout failed. Please try again.'
+      );
     } finally {
       setPayoutLoading(null);
     }
