@@ -105,7 +105,7 @@ const PrivacyPolicy = () => {
             <ul className="list-disc pl-5 space-y-1.5">
               <li>Create and manage your account and authenticate you;</li>
               <li>Operate the marketplace — show listings to the right region, route messages, process orders, calculate shipping and platform fees;</li>
-              <li>Process payments, payouts, refunds, chargebacks and disputes through our payment partners;</li>
+              <li>Process payments, payouts, refunds (including partial refunds on multi-item orders), chargebacks and disputes through our payment partners;</li>
               <li>Send transactional communications (order updates, shipping reminders, refund notices, security alerts, replies to your support requests);</li>
               <li>Send you marketing about Flea (with your consent, which you can withdraw at any time);</li>
               <li>Detect, prevent and respond to fraud, abuse, spam, prohibited listings, infringement, account takeover and other security threats;</li>
