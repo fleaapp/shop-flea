@@ -43,7 +43,7 @@ const BASE_SELECT = `
   id, order_number, order_group_id, buyer_id, seller_id, listing_id,
   price, shipping_price, status,
   tracking_provider, tracking_number, tracking_approved_at, tracking_rejected_at, tracking_rejection_reason,
-  shipped_at, delivered_at, admin_marked_delivered, dispute_window_ends_at, refunded_at,
+  shipped_at, delivered_at, admin_marked_delivered, dispute_window_ends_at, pending_admin_delivery_review, refunded_at,
   refund_requested_at, refund_requested_by, refund_request_reason, refund_request_deadline_at,
   refund_declined_at, refund_declined_reason,
   created_at, updated_at
