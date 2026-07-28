@@ -137,17 +137,9 @@ const OrderDetailsSheet = ({
   });
   const bundleText = (orders?.length ?? 0) >= 2 ? getBundleBreakdownText(orders!.length, sellerShippingSettings || undefined) : null;
 
-  if (!orders || orders.length === 0) return null;
-
-  const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
-  // Buyer pays a flat Secure Checkout Fee of 4% + $0.70. Sellers pay no selling fees.
-  const processingFee = Math.round((subtotal * 0.04 + 0.70) * 100) / 100;
-  const total = subtotal + processingFee;
-  const isRefunded = primaryOrder.status === 'refunded' || !!primaryOrder.refunded_at;
-  const effectiveStatus: OrderStatus = isRefunded ? 'refunded' : primaryOrder.status;
   const refundItemOptions = useMemo(
     () =>
-      orders.map((o) => ({
+      (orders ?? []).map((o) => ({
         orderId: o.id,
         title: o.listing?.title || 'Item',
         image: o.listing?.images?.[0] || '',
@@ -160,11 +152,20 @@ const OrderDetailsSheet = ({
       })),
     [orders],
   );
-  const hasEligibleRefundItem = refundItemOptions.some((i) => !i.alreadyRequested);
   const refundWindowExpired = useMemo(() => {
     if (!primaryOrder?.delivered_at) return true;
     return differenceInDays(new Date(), new Date(primaryOrder.delivered_at)) >= 2;
   }, [primaryOrder?.delivered_at]);
+
+  if (!orders || orders.length === 0) return null;
+
+  const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
+  // Buyer pays a flat Secure Checkout Fee of 4% + $0.70. Sellers pay no selling fees.
+  const processingFee = Math.round((subtotal * 0.04 + 0.70) * 100) / 100;
+  const total = subtotal + processingFee;
+  const isRefunded = primaryOrder!.status === 'refunded' || !!primaryOrder!.refunded_at;
+  const effectiveStatus: OrderStatus = isRefunded ? 'refunded' : primaryOrder!.status;
+  const hasEligibleRefundItem = refundItemOptions.some((i) => !i.alreadyRequested);
   const canShowRefundButton = isBuyer && effectiveStatus === 'delivered' && !refundWindowExpired && hasEligibleRefundItem;
   const statusBadge = getStatusBadge(effectiveStatus);
   const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
