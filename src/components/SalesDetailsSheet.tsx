@@ -621,14 +621,15 @@ const SalesDetailsSheet = ({
               disabled={respondToRefund.isPending}
               onClick={async (e) => {
                 e.preventDefault();
+                const targetOrderId = refundActionOrderId ?? primaryOrder.id;
                 await respondToRefund.mutateAsync({
-                  orderGroupId: primaryOrder.order_group_id ?? undefined,
-                  orderId: primaryOrder.order_group_id ? undefined : primaryOrder.id,
+                  orderId: targetOrderId,
                   decision: 'decline',
                   reason: refundDeclineReason,
                 });
                 setRefundDeclineReason('');
                 setRefundDeclineOpen(false);
+                setRefundActionOrderId(null);
               }}
               className="flex-1 h-9 rounded-lg bg-charcoal text-white hover:bg-charcoal-light"
             >
