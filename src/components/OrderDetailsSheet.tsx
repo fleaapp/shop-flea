@@ -72,10 +72,21 @@ const OrderDetailsSheet = ({
   onOpenChange,
   onMarkDelivered,
   onCompleteOrder,
+  highlightOrderId,
 }: OrderDetailsSheetProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
+  const highlightRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    if (!open || !highlightOrderId) return;
+    const el = highlightRefs.current[highlightOrderId];
+    if (el) {
+      setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200);
+    }
+  }, [open, highlightOrderId, orders]);
+
 
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [refundDialogOpen, setRefundDialogOpen] = useState(false);
