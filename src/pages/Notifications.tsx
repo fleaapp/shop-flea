@@ -224,12 +224,14 @@ const Notifications = () => {
       const matchingGroup = findGroup(notification, buyerOrderGroups);
       if (matchingGroup) {
         setSelectedBuyerGroup(matchingGroup);
+        setHighlightOrderId(notification.related_order_id ?? null);
         setOrderSheetOpen(true);
         return;
       }
       navigate('/cart');
       return;
     }
+
 
     // Message notifications → still go to the chat
     if (notification.type === 'order_message_seller' || notification.type === 'order_message_buyer') {
