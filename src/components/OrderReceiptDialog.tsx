@@ -251,9 +251,15 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
                       <span className="text-gray-500">Transaction Fee (2% + $0.50)</span>
                       <span className="text-gray-900">−${transactionFee.toFixed(2)}</span>
                     </div>
+                    {refundBreakdowns.length > 0 && (
+                      <div className="flex justify-between text-xs text-destructive">
+                        <span>Refund reversal</span>
+                        <span>−${sellerRefundTotal.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-xs font-bold pt-1">
-                      <span className="text-gray-900">You received</span>
-                      <span className="text-gray-900">${sellerReceives.toFixed(2)}</span>
+                      <span className="text-gray-900">{refundBreakdowns.length > 0 ? 'Net received' : 'You received'}</span>
+                      <span className="text-gray-900">${(sellerReceives - sellerRefundTotal).toFixed(2)}</span>
                     </div>
                   </>
                 )}
