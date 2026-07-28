@@ -137,8 +137,7 @@ export function useAdminApprovals(kind: ApprovalKind) {
 
   const forceRefund = async (orderId: string) => {
     const { data, error } = await invokeCloudFunction('stripe-connect-refund', {
-      orderId,
-      reason: 'requested_by_customer',
+      body: { orderId, reason: 'requested_by_customer', mode: 'single' },
     });
     if (error || (data as any)?.error) {
       return toast.error(error?.message || (data as any)?.error || 'Refund failed.');
