@@ -7,6 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
 };
 
 function getStripeSecretKey() {
@@ -16,7 +17,16 @@ function getStripeSecretKey() {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  console.log(`[stripe-connect-payout] ${req.method} request received`);
+  if (req.method === "OPTIONS") {
+    console.log("[stripe-connect-payout] OPTIONS preflight allowed");
+    return new Response("ok", { headers: corsHeaders });
+  }
+  if (req.method !== "POST") {
+    console.warn(`[stripe-connect-payout] Unsupported method: ${req.method}`);
+    return json({ error: "Method not allowed" }, 405);
+  }
+  console.log("[stripe-connect-payout] POST entered handler");
   try {
     const authHeader = req.headers.get("Authorization") || "";
     const jwt = authHeader.replace("Bearer ", "").trim();
@@ -29,6 +39,7 @@ Deno.serve(async (req) => {
     if (!userId) return json({ error: "Invalid token" }, 401);
 
     const { method } = await req.json();
+    console.log(`[stripe-connect-payout] payout method=${method === "instant" ? "instant" : method === "standard" ? "standard" : "invalid"}`);
     if (method !== "standard" && method !== "instant") {
       return json({ error: "Invalid payout method" }, 400);
     }
