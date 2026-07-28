@@ -431,46 +431,76 @@ const SalesDetailsSheet = ({
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </button>
 
-            {/* Pending refund request from buyer */}
-            {!isRefunded && primaryOrder.refund_requested_at && !primaryOrder.refund_declined_at && primaryOrder.refund_requested_by === primaryOrder.buyer_id && (
-              <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Buyer requested a refund</p>
-                  {primaryOrder.refund_request_reason && (
-                    <p className="text-xs text-muted-foreground mt-1">"{primaryOrder.refund_request_reason}"</p>
-                  )}
-                  {primaryOrder.refund_request_deadline_at && (
-                    <p className="text-[11px] text-muted-foreground mt-1">
-                      Auto-approves {format(new Date(primaryOrder.refund_request_deadline_at), 'MMM d, h:mma')}
-                    </p>
-                  )}
+            {/* Pending refund requests from buyer — per item */}
+            {(() => {
+              const pending = orders.filter(
+                (o) =>
+                  o.refund_requested_at &&
+                  !o.refund_declined_at &&
+                  !o.refunded_at &&
+                  o.status !== 'refunded' &&
+                  o.refund_requested_by === o.buyer_id,
+              );
+              if (pending.length === 0) return null;
+              const multi = orders.length > 1;
+              return (
+                <div className="space-y-3">
+                  {pending.map((o) => (
+                    <div key={o.id} className="rounded-2xl bg-card border border-border p-4 space-y-3">
+                      <div className="flex gap-3">
+                        {multi && o.listing?.images?.[0] && (
+                          <img
+                            src={o.listing.images[0]}
+                            alt=""
+                            className="h-12 w-12 rounded-lg object-cover bg-muted shrink-0"
+                          />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-foreground">
+                            {multi ? `Refund requested — ${o.listing?.title || 'Item'}` : 'Buyer requested a refund'}
+                          </p>
+                          {o.refund_request_reason && (
+                            <p className="text-xs text-muted-foreground mt-1">"{o.refund_request_reason}"</p>
+                          )}
+                          {o.refund_request_deadline_at && (
+                            <p className="text-[11px] text-muted-foreground mt-1">
+                              Auto-approves {format(new Date(o.refund_request_deadline_at), 'MMM d, h:mma')}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          className="flex-1 rounded-full h-10"
+                          onClick={() => {
+                            setRefundActionOrderId(o.id);
+                            setRefundDeclineOpen(true);
+                          }}
+                          disabled={respondToRefund.isPending}
+                        >
+                          Decline
+                        </Button>
+                        <Button
+                          className="flex-1 rounded-full h-10 bg-charcoal text-white hover:bg-charcoal-light"
+                          onClick={async () => {
+                            setRefundActionOrderId(o.id);
+                            await respondToRefund.mutateAsync({
+                              orderId: o.id,
+                              decision: 'approve',
+                            });
+                            setRefundActionOrderId(null);
+                          }}
+                          disabled={respondToRefund.isPending}
+                        >
+                          {respondToRefund.isPending && refundActionOrderId === o.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Approve refund'}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1 rounded-full h-10"
-                    onClick={() => setRefundDeclineOpen(true)}
-                    disabled={respondToRefund.isPending}
-                  >
-                    Decline
-                  </Button>
-                  <Button
-                    className="flex-1 rounded-full h-10 bg-charcoal text-white hover:bg-charcoal-light"
-                    onClick={async () => {
-                      await respondToRefund.mutateAsync({
-                        orderGroupId: primaryOrder.order_group_id ?? undefined,
-                        orderId: primaryOrder.order_group_id ? undefined : primaryOrder.id,
-                        decision: 'approve',
-                      });
-                      onOpenChange(false);
-                    }}
-                    disabled={respondToRefund.isPending}
-                  >
-                    {respondToRefund.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Approve refund'}
-                  </Button>
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Actions */}
             <div className="flex flex-col items-center space-y-3 pt-4">
