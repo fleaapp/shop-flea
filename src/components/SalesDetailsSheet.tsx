@@ -87,6 +87,7 @@ const SalesDetailsSheet = ({
   const { requestRefund, respondToRefund } = useOrders();
   const [refundDeclineReason, setRefundDeclineReason] = useState('');
   const [refundDeclineOpen, setRefundDeclineOpen] = useState(false);
+  const [refundActionOrderId, setRefundActionOrderId] = useState<string | null>(null);
   
   const primaryOrder = orders?.[0];
   const { data: existingReview } = useExistingReview(primaryOrder?.id);
