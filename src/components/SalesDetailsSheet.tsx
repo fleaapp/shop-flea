@@ -13,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Order, OrderStatus, useOrders } from '@/hooks/useOrders';
 import { format, differenceInDays } from 'date-fns';
@@ -37,7 +37,9 @@ interface SalesDetailsSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onMarkShipped?: (trackingDetails: { serviceProvider: string; trackingNumber: string }) => void;
+  highlightOrderId?: string | null;
 }
+
 
 const getStatusBadge = (status: OrderStatus) => {
   switch (status) {
@@ -71,6 +73,7 @@ const SalesDetailsSheet = ({
   open,
   onOpenChange,
   onMarkShipped,
+  highlightOrderId,
 }: SalesDetailsSheetProps) => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
@@ -88,8 +91,18 @@ const SalesDetailsSheet = ({
   const [refundDeclineReason, setRefundDeclineReason] = useState('');
   const [refundDeclineOpen, setRefundDeclineOpen] = useState(false);
   const [refundActionOrderId, setRefundActionOrderId] = useState<string | null>(null);
-  
+  const highlightRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    if (!open || !highlightOrderId) return;
+    const el = highlightRefs.current[highlightOrderId];
+    if (el) {
+      setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200);
+    }
+  }, [open, highlightOrderId, orders]);
+
   const primaryOrder = orders?.[0];
+
   const { data: existingReview } = useExistingReview(primaryOrder?.id);
 
   const { data: sellerShippingSettings } = useQuery({
@@ -270,8 +283,13 @@ const SalesDetailsSheet = ({
                           ? { label: 'Refund declined', className: 'bg-muted text-muted-foreground' }
                           : null;
 
+                    const isHighlighted = highlightOrderId === o.id;
                     return (
-                      <div key={o.id} className="flex gap-4">
+                      <div
+                        key={o.id}
+                        ref={(el) => { highlightRefs.current[o.id] = el; }}
+                        className={`flex gap-4 p-2 -m-2 rounded-xl transition-all ${isHighlighted ? 'ring-2 ring-primary bg-primary/10' : ''}`}
+                      >
                         <img
                           src={listingImage}
                           alt={listingTitle}
@@ -292,6 +310,7 @@ const SalesDetailsSheet = ({
                         </div>
                       </div>
                     );
+
                   })}
                 </div>
 

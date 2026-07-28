@@ -1,3 +1,6 @@
+import type { BundleShippingMode } from './shippingCalculator';
+import { calculateBundleShippingTotal } from './shippingCalculator';
+
 /**
  * Single source of truth for Flea's fee model.
  *
@@ -44,6 +47,11 @@ export function calculateTransactionFee(subtotal: number): number {
   return r2(subtotal * TRANSACTION_FEE_RATE + TRANSACTION_FEE_FIXED);
 }
 
+export function calculateSecureCheckoutFee(subtotal: number): number {
+  if (subtotal <= 0) return 0;
+  return r2(subtotal * SECURE_CHECKOUT_RATE + SECURE_CHECKOUT_FIXED);
+}
+
 export function calculateFees(
   itemsTotal: number,
   shipping: number,
@@ -51,7 +59,7 @@ export function calculateFees(
 ): FeeBreakdown {
   const subtotal = itemsTotal + shipping;
 
-  const secureCheckoutFee = r2(subtotal * SECURE_CHECKOUT_RATE + SECURE_CHECKOUT_FIXED);
+  const secureCheckoutFee = calculateSecureCheckoutFee(subtotal);
   const transactionFee = calculateTransactionFee(subtotal);
   const rateLabel = `${(SECURE_CHECKOUT_RATE * 100).toFixed(0)}% + $${SECURE_CHECKOUT_FIXED.toFixed(2)}`;
   const transactionFeeLabel = `${(TRANSACTION_FEE_RATE * 100).toFixed(0)}% + $${TRANSACTION_FEE_FIXED.toFixed(2)}`;
@@ -79,4 +87,60 @@ export function calculateFees(
 export function sellerEarningsPreview(price: number, shipping = 0): number {
   const subtotal = price + shipping;
   return r2(subtotal - calculateTransactionFee(subtotal));
+}
+
+export interface ProRataRefundShare {
+  itemSubtotal: number;       // price + this item's share of bundle shipping
+  secureFeeShare: number;     // buyer-paid fee returned to buyer
+  transactionFeeShare: number;// seller-paid fee clawed back from seller
+  buyerRefund: number;        // total returned to buyer (itemSubtotal + secureFeeShare)
+  sellerNet: number;          // amount reversed from seller transfer (itemSubtotal - transactionFeeShare)
+}
+
+/**
+ * Calculates the buyer refund and seller transfer reversal for a single item
+ * within a bundle. Shipping is split pro-rata by each item's raw listing
+ * shipping, then bundle discounts/free-shipping rules are applied to the total.
+ * Fees are split proportionally by each item's share of the post-shipping subtotal.
+ */
+export function calculateProRataRefund(
+  itemIndex: number,
+  items: { price: number; rawShipping: number }[],
+  bundleMode: BundleShippingMode,
+  discountPercent: number | null
+): ProRataRefundShare {
+  if (!items.length) {
+    return { itemSubtotal: 0, secureFeeShare: 0, transactionFeeShare: 0, buyerRefund: 0, sellerNet: 0 };
+  }
+
+  const rawShippingTotal = r2(items.reduce((sum, i) => sum + (Number(i.rawShipping) || 0), 0));
+  const bundleShippingTotal = calculateBundleShippingTotal(
+    items.map((i) => Number(i.rawShipping) || 0),
+    bundleMode,
+    discountPercent
+  );
+
+  const itemShippingShare = rawShippingTotal > 0
+    ? r2(bundleShippingTotal * ((items[itemIndex].rawShipping || 0) / rawShippingTotal))
+    : 0;
+
+  const itemSubtotals = items.map((i) =>
+    r2((Number(i.price) || 0) + (rawShippingTotal > 0
+      ? r2(bundleShippingTotal * ((Number(i.rawShipping) || 0) / rawShippingTotal))
+      : 0))
+  );
+
+  const itemSubtotal = itemSubtotals[itemIndex];
+  const groupSubtotal = r2(itemSubtotals.reduce((sum, s) => sum + s, 0));
+
+  const secureFee = calculateSecureCheckoutFee(groupSubtotal);
+  const transactionFee = calculateTransactionFee(groupSubtotal);
+
+  const secureFeeShare = groupSubtotal > 0 ? r2(secureFee * (itemSubtotal / groupSubtotal)) : 0;
+  const transactionFeeShare = groupSubtotal > 0 ? r2(transactionFee * (itemSubtotal / groupSubtotal)) : 0;
+
+  const buyerRefund = r2(itemSubtotal + secureFeeShare);
+  const sellerNet = Math.max(0, r2(itemSubtotal - transactionFeeShare));
+
+  return { itemSubtotal, secureFeeShare, transactionFeeShare, buyerRefund, sellerNet };
 }

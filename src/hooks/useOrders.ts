@@ -542,7 +542,9 @@ export function useOrders() {
   });
 
   // Respond to a refund request (the OTHER party approves or declines).
-  // On approve, we call the stripe-connect-refund edge function to actually refund.
+  // On approve, we call the stripe-connect-refund edge function in single-item
+  // mode so only the requested item is refunded and only its share of the
+  // seller transfer is reversed.
   const respondToRefund = useMutation({
     mutationFn: async (input: {
       orderId?: string;
@@ -571,7 +573,7 @@ export function useOrders() {
           : [];
         for (const id of targetIds) {
           const { error: refundError } = await supabase.functions.invoke('stripe-connect-refund', {
-            body: { order_id: id, reason: reason || 'refund_approved', initiator: 'party_approval' },
+            body: { orderId: id, reason: reason || 'refund_approved', mode: 'single' },
           });
           if (refundError) throw refundError;
         }

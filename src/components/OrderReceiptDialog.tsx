@@ -6,7 +6,18 @@ import { X, Download } from 'lucide-react';
 import fleaLogo from '@/assets/flea-logo-receipt.jpeg';
 import stripeLogo from '@/assets/logo-stripe.png';
 import { useQuery } from '@tanstack/react-query';
-import { fetchSellerShippingSettings, getBundleBreakdownText } from '@/utils/shippingCalculator';
+import {
+  fetchSellerShippingSettings,
+  getBundleBreakdownText,
+  calculateBundleShippingTotal,
+  type BundleShippingMode,
+} from '@/utils/shippingCalculator';
+import {
+  calculateProRataRefund,
+  calculateSecureCheckoutFee,
+  calculateTransactionFee,
+} from '@/utils/feeCalculator';
+import { supabase } from '@/lib/supabase';
 
 
 interface OrderReceiptDialogProps {
@@ -71,16 +82,6 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
   const rawSellerUsername = primaryOrder.seller_profile?.username || 'Seller';
   const sellerUsername = rawSellerUsername.startsWith('@') ? rawSellerUsername.slice(1) : rawSellerUsername;
 
-  const itemsSubtotal = orders.reduce((sum, o) => sum + o.price, 0);
-  const shippingTotal = orders.reduce((sum, o) => sum + o.shipping_price, 0);
-  const subtotal = itemsSubtotal + shippingTotal;
-  // Secure Checkout Fee: 4% + $0.70 of items + shipping, paid by buyer.
-  const secureCheckoutFee = Math.round((subtotal * 0.04 + 0.70) * 100) / 100;
-  const buyerTotal = subtotal + secureCheckoutFee;
-  // Seller-paid Transaction Fee (2% + $0.50) deducted from payout.
-  const transactionFee = subtotal > 0 ? Math.round((subtotal * 0.02 + 0.50) * 100) / 100 : 0;
-  const sellerReceives = Math.round((subtotal - transactionFee) * 100) / 100;
-
   const { data: sellerShippingSettings } = useQuery({
     queryKey: ['seller-shipping-settings', primaryOrder.seller_id],
     queryFn: async () => {
@@ -90,7 +91,61 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
     enabled: open && !!primaryOrder.seller_id && orders.length >= 2,
     staleTime: 60_000,
   });
+
+  const listingIds = [...new Set(orders.map((o) => o.listing_id).filter(Boolean))];
+  const { data: listingsData } = useQuery({
+    queryKey: ['receipt-listings', primaryOrder.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('listings')
+        .select('id, shipping_price')
+        .in('id', listingIds);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: open && listingIds.length > 0,
+    staleTime: 60_000,
+  });
+  const listingsMap = new Map((listingsData ?? []).map((l: any) => [l.id, l]));
+
+  const bundleMode = (sellerShippingSettings?.mode || 'none') as BundleShippingMode;
+  const discountPercent = sellerShippingSettings?.discountPercent ?? null;
+  const rawShippings = orders.map((o) => Number(listingsMap.get(o.listing_id)?.shipping_price) || 0);
+  const bundleShippingTotal = calculateBundleShippingTotal(rawShippings, bundleMode, discountPercent);
+
+  const rawShippingTotal = Math.round(rawShippings.reduce((a, b) => a + b, 0) * 100) / 100;
+  const itemSubtotals = orders.map((o, idx) => {
+    const share = rawShippingTotal > 0
+      ? Math.round(bundleShippingTotal * (rawShippings[idx] / rawShippingTotal) * 100) / 100
+      : 0;
+    return Math.round((o.price + share) * 100) / 100;
+  });
+  const subtotal = Math.round(itemSubtotals.reduce((a, b) => a + b, 0) * 100) / 100;
+
+  // Secure Checkout Fee: 4% + $0.70 of items + shipping, paid by buyer.
+  const secureCheckoutFee = calculateSecureCheckoutFee(subtotal);
+  const buyerTotal = Math.round((subtotal + secureCheckoutFee) * 100) / 100;
+  // Seller-paid Transaction Fee (2% + $0.50) deducted from payout.
+  const transactionFee = calculateTransactionFee(subtotal);
+  const sellerReceives = Math.round((subtotal - transactionFee) * 100) / 100;
+
   const bundleText = orders.length >= 2 ? getBundleBreakdownText(orders.length, sellerShippingSettings || undefined) : null;
+
+  // Partial refund breakdown (per-item, pro-rata shipping and fees).
+  const refundItems = orders
+    .map((o, idx) => ({ order: o, idx }))
+    .filter(({ order }) => order.status === 'refunded' || !!order.refunded_at);
+  const refundBreakdowns = refundItems.map(({ order, idx }) => ({
+    order,
+    ...calculateProRataRefund(
+      idx,
+      orders.map((o, i) => ({ price: o.price, rawShipping: rawShippings[i] })),
+      bundleMode,
+      discountPercent,
+    ),
+  }));
+  const buyerRefundTotal = refundBreakdowns.reduce((s, r) => s + r.buyerRefund, 0);
+  const sellerRefundTotal = refundBreakdowns.reduce((s, r) => s + r.sellerNet, 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -135,21 +190,34 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
 
             {/* Items breakdown */}
             <div className="border-t border-dotted border-gray-300 pt-4 pb-1 space-y-4">
-              {orders.map((o) => (
-                <div key={o.id}>
-                  <p className="font-semibold text-gray-900 text-xs">
-                    {o.listing?.title || 'Item'}
-                  </p>
-                  <div className="flex justify-between text-xs mt-0.5">
-                    <span className="text-gray-500">Item price</span>
-                    <span className="text-gray-900">${o.price.toFixed(2)}</span>
+              {orders.map((o, idx) => {
+                const isRefunded = o.status === 'refunded' || !!o.refunded_at;
+                const itemSubtotal = itemSubtotals[idx];
+                return (
+                  <div key={o.id}>
+                    <p className={`font-semibold text-xs ${isRefunded ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
+                      {o.listing?.title || 'Item'}
+                    </p>
+                    <div className="flex justify-between text-xs mt-0.5">
+                      <span className="text-gray-500">Item price</span>
+                      <span className={isRefunded ? 'text-gray-500 line-through' : 'text-gray-900'}>${o.price.toFixed(2)}</span>
+                    </div>
+                    {orders.length >= 2 && (
+                      <div className="flex justify-between text-xs mt-0.5">
+                        <span className="text-gray-500">Shipping share</span>
+                        <span className={isRefunded ? 'text-gray-500 line-through' : 'text-gray-900'}>${(itemSubtotal - o.price).toFixed(2)}</span>
+                      </div>
+                    )}
+                    {isRefunded && (
+                      <div className="text-[10px] font-semibold text-destructive mt-0.5">Refunded</div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <div>
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-500">Shipping{orders.length >= 2 ? ' (combined)' : ''}</span>
-                  <span className="text-gray-900">${shippingTotal.toFixed(2)}</span>
+                  <span className="text-gray-900">${bundleShippingTotal.toFixed(2)}</span>
                 </div>
                 {bundleText && (
                   <div className="text-[10px] text-gray-500 text-left mt-0.5">
@@ -166,9 +234,15 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
                       <span className="text-gray-500">Secure Checkout Fee (4% + $0.70)</span>
                       <span className="text-gray-900">+${secureCheckoutFee.toFixed(2)}</span>
                     </div>
+                    {refundBreakdowns.length > 0 && (
+                      <div className="flex justify-between text-xs text-destructive">
+                        <span>Refund</span>
+                        <span>−${buyerRefundTotal.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-xs font-bold pt-1">
-                      <span className="text-gray-900">Total paid</span>
-                      <span className="text-gray-900">${buyerTotal.toFixed(2)}</span>
+                      <span className="text-gray-900">{refundBreakdowns.length > 0 ? 'Net paid' : 'Total paid'}</span>
+                      <span className="text-gray-900">${(buyerTotal - buyerRefundTotal).toFixed(2)}</span>
                     </div>
                   </>
                 ) : (
@@ -177,9 +251,15 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
                       <span className="text-gray-500">Transaction Fee (2% + $0.50)</span>
                       <span className="text-gray-900">−${transactionFee.toFixed(2)}</span>
                     </div>
+                    {refundBreakdowns.length > 0 && (
+                      <div className="flex justify-between text-xs text-destructive">
+                        <span>Refund reversal</span>
+                        <span>−${sellerRefundTotal.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-xs font-bold pt-1">
-                      <span className="text-gray-900">You received</span>
-                      <span className="text-gray-900">${sellerReceives.toFixed(2)}</span>
+                      <span className="text-gray-900">{refundBreakdowns.length > 0 ? 'Net received' : 'You received'}</span>
+                      <span className="text-gray-900">${(sellerReceives - sellerRefundTotal).toFixed(2)}</span>
                     </div>
                   </>
                 )}

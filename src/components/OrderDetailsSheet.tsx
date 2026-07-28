@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,7 +40,9 @@ interface OrderDetailsSheetProps {
   onOpenChange: (open: boolean) => void;
   onMarkDelivered?: () => void;
   onCompleteOrder?: () => void;
+  highlightOrderId?: string | null;
 }
+
 
 const getStatusBadge = (status: OrderStatus) => {
   switch (status) {
@@ -70,10 +72,21 @@ const OrderDetailsSheet = ({
   onOpenChange,
   onMarkDelivered,
   onCompleteOrder,
+  highlightOrderId,
 }: OrderDetailsSheetProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
+  const highlightRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    if (!open || !highlightOrderId) return;
+    const el = highlightRefs.current[highlightOrderId];
+    if (el) {
+      setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200);
+    }
+  }, [open, highlightOrderId, orders]);
+
 
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [refundDialogOpen, setRefundDialogOpen] = useState(false);
@@ -257,8 +270,13 @@ const OrderDetailsSheet = ({
                           ? { label: 'Refund declined', className: 'bg-muted text-muted-foreground' }
                           : null;
 
+                    const isHighlighted = highlightOrderId === o.id;
                     return (
-                      <div key={o.id} className="flex gap-4">
+                      <div
+                        key={o.id}
+                        ref={(el) => { highlightRefs.current[o.id] = el; }}
+                        className={`flex gap-4 p-2 -m-2 rounded-xl transition-all ${isHighlighted ? 'ring-2 ring-primary bg-primary/10' : ''}`}
+                      >
                         <img
                           src={listingImage}
                           alt={listingTitle}
@@ -279,6 +297,7 @@ const OrderDetailsSheet = ({
                         </div>
                       </div>
                     );
+
                   })}
                 </div>
 

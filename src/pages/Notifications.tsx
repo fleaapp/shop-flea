@@ -71,7 +71,9 @@ const Notifications = () => {
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
   const [selectedBuyerGroup, setSelectedBuyerGroup] = useState<OrderGroup | null>(null);
   const [orderSheetOpen, setOrderSheetOpen] = useState(false);
+  const [highlightOrderId, setHighlightOrderId] = useState<string | null>(null);
   const autoOpenedRef = useRef<string | null>(null);
+
 
   const findGroup = (n: Notification, groups: OrderGroup[]): OrderGroup | null => {
     if (n.related_order_id) {
@@ -183,6 +185,7 @@ const Notifications = () => {
           g.orders.some(o => o.listing_id === notification.related_listing_id)
         );
         if (matchingGroup) {
+          setHighlightOrderId(matchingGroup.orders.find(o => o.listing_id === notification.related_listing_id)?.id ?? null);
           setSelectedGroup(matchingGroup);
           setSaleSheetOpen(true);
           return;
@@ -201,12 +204,14 @@ const Notifications = () => {
       const matchingGroup = findGroup(notification, sellerOrderGroups);
       if (matchingGroup) {
         setSelectedGroup(matchingGroup);
+        setHighlightOrderId(notification.related_order_id ?? null);
         setSaleSheetOpen(true);
         return;
       }
       navigate('/sales');
       return;
     }
+
 
     // Order-side alerts (buyer) → open Order Details drawer
     if (
@@ -219,12 +224,14 @@ const Notifications = () => {
       const matchingGroup = findGroup(notification, buyerOrderGroups);
       if (matchingGroup) {
         setSelectedBuyerGroup(matchingGroup);
+        setHighlightOrderId(notification.related_order_id ?? null);
         setOrderSheetOpen(true);
         return;
       }
       navigate('/cart');
       return;
     }
+
 
     // Message notifications → still go to the chat
     if (notification.type === 'order_message_seller' || notification.type === 'order_message_buyer') {
@@ -436,18 +443,20 @@ const Notifications = () => {
       <SalesDetailsSheet
         orders={selectedGroup?.orders ?? null}
         open={saleSheetOpen}
-        onOpenChange={(open) => { setSaleSheetOpen(open); if (!open) setSelectedGroup(null); }}
+        onOpenChange={(open) => { setSaleSheetOpen(open); if (!open) { setSelectedGroup(null); setHighlightOrderId(null); } }}
         onMarkShipped={handleMarkShipped}
+        highlightOrderId={highlightOrderId}
       />
 
       <OrderDetailsSheet
         orders={selectedBuyerGroup?.orders ?? null}
         open={orderSheetOpen}
-        onOpenChange={(open) => { setOrderSheetOpen(open); if (!open) setSelectedBuyerGroup(null); }}
+        onOpenChange={(open) => { setOrderSheetOpen(open); if (!open) { setSelectedBuyerGroup(null); setHighlightOrderId(null); } }}
         onMarkDelivered={handleMarkDelivered}
         onCompleteOrder={handleCompleteOrder}
-
+        highlightOrderId={highlightOrderId}
       />
+
       </div>
 
       <BottomNav />
