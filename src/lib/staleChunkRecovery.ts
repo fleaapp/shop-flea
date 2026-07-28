@@ -1,7 +1,10 @@
 // Detects benign "stale chunk" dynamic-import failures that happen when a
 // user has an old bundle hash cached after a redeploy. These are not real
 // crashes — the fix is a one-shot reload to fetch the fresh index.html.
-const PATTERN = /Importing a module script failed|Failed to fetch dynamically imported module|error loading dynamically imported module|ChunkLoadError/i;
+// Also matches Safari's "Can't find variable: X" and "undefined is not an
+// object (evaluating '...')" which are how iOS/Safari surface a stale bundle
+// referencing symbols removed in the current deploy.
+const PATTERN = /Importing a module script failed|Failed to fetch dynamically imported module|error loading dynamically imported module|ChunkLoadError|Can't find variable|undefined is not an object \(evaluating|Unexpected token '<'/i;
 const GUARD_KEY = 'flea:chunk-reload';
 
 export function isStaleChunkError(err: unknown): boolean {
