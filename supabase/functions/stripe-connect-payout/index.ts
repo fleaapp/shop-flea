@@ -172,6 +172,17 @@ Deno.serve(async (req) => {
     );
     return json({ ok: true, payout: { id: payout.id, amount: payout.amount, method: "standard" } });
   } catch (e: any) {
+    await logEdgeError({
+      functionName: "stripe-connect-payout",
+      error: e,
+      severity: "error",
+      source: "payment",
+      context: {
+        stripe_type: e?.type ?? null,
+        stripe_code: e?.code ?? null,
+        stripe_status: e?.statusCode ?? null,
+      },
+    });
     return json({ error: e?.message || "Payout failed." }, 400);
   }
 });
