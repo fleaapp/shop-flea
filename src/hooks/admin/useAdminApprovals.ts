@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 
-export type ApprovalKind = 'tracking' | 'delivery' | 'dispute';
+export type ApprovalKind = 'tracking' | 'delivery' | 'untracked' | 'dispute';
 
 export type AdminApprovalOrder = {
   id: string;
