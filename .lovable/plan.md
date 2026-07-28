@@ -1,21 +1,23 @@
-## Plan
+## Problem
 
-1. **Fix the payout edge function CORS response**
-   - Update `stripe-connect-payout` to use the same native-safe CORS header coverage as the working seller dashboard function.
-   - Include the extra headers native/WebView requests can send, so the browser is allowed to continue from `OPTIONS` to the real `POST`.
+The last "CORS fix" to `supabase/functions/stripe-connect-payout/index.ts` imported `corsHeaders` from `npm:@supabase/supabase-js@2/cors`, but that subpath export doesn't exist. The import resolves to `undefined`, so the spread `{ ...baseCorsHeaders, ... }` silently drops `Access-Control-Allow-Origin: *`. The OPTIONS preflight returns 200 but without an allowed origin, so the browser/WebView blocks the follow-up POST — which is why edge function logs still show boots but zero POST requests, and the client shows the "could not reach the payment provider" toast.
 
-2. **Keep the payout logic unchanged**
-   - Do not change available-funds math, buyer-protection holds, instant payout fee, or verification rules.
-   - This is a transport/preflight fix only.
+Every other working Stripe Connect function (`stripe-connect-status`, `stripe-connect-topup`, etc.) uses a plain inline `corsHeaders` object with `Access-Control-Allow-Origin: *` — the payout function is the odd one out.
 
-3. **Improve the client error message for network-level failures**
-   - If the payout call fails before a JSON response is returned, show a clearer payout-specific retry message instead of the generic `Load failed`.
+## Fix
 
-4. **Deploy and verify the payout function**
-   - Deploy `stripe-connect-payout`.
-   - Test the deployed function with a preflight-style request and a protected POST.
-   - Re-check function logs/HTTP logs to confirm the actual `POST` reaches the function, not just `OPTIONS`.
+Replace the broken CORS setup in `supabase/functions/stripe-connect-payout/index.ts` with the same inline plain object used across the other Stripe Connect functions:
 
-## Technical details
+- Remove the `import { corsHeaders as baseCorsHeaders } from "npm:@supabase/supabase-js@2/cors"` line.
+- Define `corsHeaders` inline with:
+  - `Access-Control-Allow-Origin: *`
+  - `Access-Control-Allow-Headers: authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version`
+  - `Access-Control-Allow-Methods: POST, OPTIONS`
+- Leave the rest of the payout logic (held-funds guard, instant vs standard, fee capture, error logging) untouched.
 
-The latest backend logs show the user’s payout attempts reaching `stripe-connect-payout` as `OPTIONS | 200`, but no following `POST`. That pattern points to the browser/native WebView blocking the request after preflight, most likely because `stripe-connect-payout` has narrower `Access-Control-Allow-Headers` than nearby working payment functions such as `stripe-connect-dashboard`.
+## Verify
+
+After the edit deploys:
+1. Trigger a payout from Seller Dashboard.
+2. Check `stripe-connect-payout` edge function logs — a POST entry should now appear alongside the boot.
+3. Expect either a success toast or a real business-logic error (e.g. "No available balance"), not "could not reach the payment provider".
