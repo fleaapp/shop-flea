@@ -1,50 +1,21 @@
-The per-item refund UI is in place, but the backend/admin/ledger/legal layers still treat refunds as whole-order. These are the remaining pieces to make per-item refunds coherent end-to-end.
+## Goal
+Allow a buyer to mark an order as delivered even when the seller hasn't entered shipping/tracking yet. The order should jump straight from `awaiting` → `delivered` (skipping the `shipped` step), starting the normal 48h dispute window.
 
-### 1. Admin dispute queue — per-item force refund
-**What:** In `AdminApprovals.tsx` the dispute tab currently lists one row per `orders` record, but the underlying `stripe-connect-refund` edge function still marks an entire `order_group_id` as refunded. For bundles, force-refunding one item must refund only that item.
+## Current state (verified)
+- The UI in `src/components/OrderDetailsSheet.tsx` already shows the "Mark as delivered" button when `effectiveStatus === 'awaiting' || 'shipped'`, with a confirmation dialog for the awaiting case. So the UI path already exists.
+- The blocker is the DB RPC `public.mark_order_delivered` (migration `20260725052413_...sql`), whose `UPDATE` filters `WHERE o.status = 'shipped'`. A buyer call on an `awaiting` order silently updates 0 rows, and the order stays put.
 
-**How:**
-- Update `stripe-connect-refund` to accept an optional `amount` and a `mode` flag (`single` vs `cascade`).
-- When `amount` is provided, refund only the requested `orderId` and update only that row’s `refunded_at`/`status`.
-- Update `useAdminApprovals.ts` `forceRefund` to pass the individual order ID and computed refund amount.
-- Update `AdminApprovals.tsx` dispute rows to show each disputed item separately with its title/price and a "Force refund item" action.
+## Change
 
-### 2. Partial refund receipts & seller ledger
-**What:** `OrderReceiptDialog.tsx` and `SellerDashboard.tsx` assume a group is either fully refunded or not. They need to show itemised partial refunds, returned shipping, and clawed-back seller transaction fees.
+Add a new migration that replaces `public.mark_order_delivered(p_order_id, p_order_group_id, p_source)` so it also accepts orders currently in `awaiting`:
 
-**How:**
-- Add `calculateProRataRefund` helper in `src/utils/feeCalculator.ts`.
-- Update `OrderReceiptDialog.tsx` to render a per-item breakdown: item price, pro-rata shipping, pro-rata Secure Checkout Fee, pro-rata Transaction Fee, net refund/earnings.
-- Update `SellerDashboard.tsx` "Sales in progress" / ledger math so partially-refunded bundle items reduce the seller’s expected payout correctly.
+- Widen the status filter to `o.status IN ('awaiting', 'shipped')`.
+- When transitioning from `awaiting`, backfill `shipped_at = COALESCE(o.shipped_at, now())` so the shipping tracker and downstream logic (payout eligibility, receipts) still have a shipped timestamp.
+- Keep all other behaviour identical: `delivered_at` set, `dispute_window_ends_at = now() + 2 days`, `admin_marked_delivered` only flipped when `p_source = 'admin'`, buyer/admin auth check unchanged, `SECURITY DEFINER` + `search_path` unchanged, same grants.
 
-### 3. Pro-rata bundle shipping on refunds
-**What:** When a buyer refunds 1 item from a 3-item bundle, the returned shipping must be `total shipping ÷ item count` (or based on the seller’s bundle settings), not the full shipping cost.
+No frontend changes required — `useOrders.markAsDelivered` and the OrderDetailsSheet button already handle both statuses; the confirmation dialog copy for the awaiting case is already in place.
 
-**How:**
-- In `stripe-connect-refund`, fetch the seller’s `bundle_shipping_mode`/`bundle_shipping_discount_percent` and each listing’s raw `shipping_price`.
-- Compute each item’s share of the charged shipping and refund that share.
-- Store the refunded shipping share on the order row (or in metadata) so receipts and ledger can display it.
-
-### 4. FAQ / Terms / Privacy copy
-**What:** Buyers and sellers need clear copy explaining the new refund rules.
-
-**How:**
-- Update `src/components/FAQSection.tsx`, `src/pages/Terms.tsx`, and `src/pages/PrivacyPolicy.tsx` to explain:
-  - 48-hour buyer protection refund-request window.
-  - 72-hour seller response window before auto-approval.
-  - Pro-rata shipping refunds on multi-item orders.
-  - Per-item refund eligibility.
-
-### 5. Notification deep-link polish
-**What:** Admin, seller, and buyer notifications about refunds/approvals/disputes should open the correct screen with the right order/item pre-selected.
-
-**How:**
-- Update `src/pages/Notifications.tsx` routing for `refund_request`, `refund_declined`, `refund_initiated`, and `dispute_escalated` types.
-- Ensure bundle notifications carry `related_order_id` and, where possible, the specific item ID.
-- Make `OrderDetailsSheet.tsx` and `SalesDetailsSheet.tsx` accept an optional `highlightOrderId` prop to scroll to / expand the relevant item.
-
-### Out of scope for this plan
-- Changing the overall buyer-protection / 48h/72h windows (already implemented).
-- New UI for refund selection (already implemented in `RefundRequestDialog.tsx`).
-
-Want me to implement all of these now, or focus on a specific slice first?
+## Out of scope
+- No change to `complete_order` (already accepts `shipped`/`delivered`).
+- No change to admin approval flows or seller-side tracking gates.
+- No change to notifications — the existing "order delivered" push already fires from `markAsDelivered`.
