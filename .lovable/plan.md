@@ -1,23 +1,32 @@
-## Problem
+## Goal
+Stop the seller payout action from failing with “Payout request could not reach the payment provider” and make the failure mode observable if anything else blocks it.
 
-The last "CORS fix" to `supabase/functions/stripe-connect-payout/index.ts` imported `corsHeaders` from `npm:@supabase/supabase-js@2/cors`, but that subpath export doesn't exist. The import resolves to `undefined`, so the spread `{ ...baseCorsHeaders, ... }` silently drops `Access-Control-Allow-Origin: *`. The OPTIONS preflight returns 200 but without an allowed origin, so the browser/WebView blocks the follow-up POST — which is why edge function logs still show boots but zero POST requests, and the client shows the "could not reach the payment provider" toast.
+## What I confirmed
+- The payout button calls `invokeCloudFunction('stripe-connect-payout', { method })` from `SellerDashboard`.
+- Recent `stripe-connect-payout` logs only show cold starts/boots and no POST log entries, so the browser/native WebView is still not reaching the function handler with the payout POST.
+- The shared `invokeCloudFunction` helper constructs a direct backend function URL and uses `fetch`, so any preflight/CORS or native WebView transport issue appears to the UI as `Load failed` / `failed to fetch`.
+- The current payout function source now has inline CORS headers, but there is no request-level logging before auth/body parsing, making it hard to distinguish “preflight failed” from “wrong deployed version” or “POST reached but failed before logs”.
 
-Every other working Stripe Connect function (`stripe-connect-status`, `stripe-connect-topup`, etc.) uses a plain inline `corsHeaders` object with `Access-Control-Allow-Origin: *` — the payout function is the odd one out.
+## Plan
+1. Add minimal request diagnostics to `stripe-connect-payout`:
+   - Log every incoming method at the very top of the handler.
+   - Log OPTIONS responses and POST entry before parsing auth/body.
+   - Keep logs free of tokens, account IDs, and secrets.
 
-## Fix
+2. Make the payout function’s CORS response more robust:
+   - Include the same full allowed headers already used by working payment functions.
+   - Add explicit `Access-Control-Allow-Methods: POST, OPTIONS`.
+   - Add `Access-Control-Max-Age` to reduce repeated native preflight friction.
+   - Ensure every error and success response includes the same headers.
 
-Replace the broken CORS setup in `supabase/functions/stripe-connect-payout/index.ts` with the same inline plain object used across the other Stripe Connect functions:
+3. Add a dedicated client fallback for payout only:
+   - If `invokeCloudFunction` throws before receiving an HTTP response, retry once using the official backend client invocation path instead of raw `fetch`.
+   - Keep the existing toast copy, but only show the “could not reach” message after both attempts fail.
 
-- Remove the `import { corsHeaders as baseCorsHeaders } from "npm:@supabase/supabase-js@2/cors"` line.
-- Define `corsHeaders` inline with:
-  - `Access-Control-Allow-Origin: *`
-  - `Access-Control-Allow-Headers: authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version`
-  - `Access-Control-Allow-Methods: POST, OPTIONS`
-- Leave the rest of the payout logic (held-funds guard, instant vs standard, fee capture, error logging) untouched.
+4. Improve payout error visibility in Admin error logs:
+   - When the POST reaches the function and business logic fails, keep structured `logEdgeError` context.
+   - Add a client-side error log for true transport failures so the Admin Dashboard can show when a device never reached the function.
 
-## Verify
-
-After the edit deploys:
-1. Trigger a payout from Seller Dashboard.
-2. Check `stripe-connect-payout` edge function logs — a POST entry should now appear alongside the boot.
-3. Expect either a success toast or a real business-logic error (e.g. "No available balance"), not "could not reach the payment provider".
+5. Validate after implementation:
+   - Check the source compiles structurally.
+   - Re-check `stripe-connect-payout` logs after the user retries: expected signal is either a POST entry or a client transport error entry, rather than silent boots only.
