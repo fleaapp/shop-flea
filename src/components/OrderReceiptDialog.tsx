@@ -6,7 +6,12 @@ import { X, Download } from 'lucide-react';
 import fleaLogo from '@/assets/flea-logo-receipt.jpeg';
 import stripeLogo from '@/assets/logo-stripe.png';
 import { useQuery } from '@tanstack/react-query';
-import { fetchSellerShippingSettings, getBundleBreakdownText } from '@/utils/shippingCalculator';
+import {
+  fetchSellerShippingSettings,
+  getBundleBreakdownText,
+  calculateBundleShippingTotal,
+  type BundleShippingMode,
+} from '@/utils/shippingCalculator';
 import {
   calculateProRataRefund,
   calculateSecureCheckoutFee,
