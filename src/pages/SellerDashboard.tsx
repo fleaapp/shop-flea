@@ -182,6 +182,16 @@ const SellerDashboard = () => {
     return count || undefined;
   }, [sellerOrderGroups, perOrder]);
 
+  // Overdue: any awaiting order more than 3 days old — matches the buyer-side
+  // "Overdue" threshold. Surfaced as a red banner because push notifications
+  // aren't a reliable channel for this class of user.
+  const overdueGroups = useMemo(() => {
+    const threshold = Date.now() - 3 * 24 * 60 * 60 * 1000;
+    return sellerOrderGroups.filter(
+      (g) => g.status === 'awaiting' && new Date(g.created_at).getTime() < threshold,
+    );
+  }, [sellerOrderGroups]);
+
   const hasAccountId = !!(profile as any)?.stripe_account_id;
   const dbOnboardingComplete = (profile as any)?.stripe_onboarding_complete === true;
   // Never gate the dashboard purely on the DB flag — Stripe can reopen
@@ -334,6 +344,21 @@ const SellerDashboard = () => {
         <div className="pt-3">
           <EnablePushBanner />
         </div>
+
+        {overdueGroups.length > 0 && (
+          <button
+            type="button"
+            onClick={() => navigate('/sales')}
+            className="w-full mt-2 rounded-2xl bg-destructive/10 border-2 border-destructive/40 p-4 text-left active:opacity-80 transition-opacity"
+          >
+            <div className="flex items-center gap-2 text-[11px] font-semibold text-destructive uppercase tracking-wide">
+              <AlertTriangle className="h-3.5 w-3.5" /> Overdue shipments
+            </div>
+            <p className="text-[13px] text-charcoal mt-1.5 leading-relaxed">
+              You have <span className="font-bold">{overdueGroups.length}</span> order{overdueGroups.length === 1 ? '' : 's'} that {overdueGroups.length === 1 ? 'is' : 'are'} more than 3 days old and still awaiting shipment. Ship them now to avoid auto-refunds and keep your seller rating.
+            </p>
+          </button>
+        )}
         {notOnboarded ? (
           <div className="pt-24 text-center text-sm text-muted-foreground max-w-[280px] mx-auto">
             Finish your seller setup to see your balance and payouts here.
