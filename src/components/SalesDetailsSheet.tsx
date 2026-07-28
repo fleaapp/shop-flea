@@ -37,7 +37,9 @@ interface SalesDetailsSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onMarkShipped?: (trackingDetails: { serviceProvider: string; trackingNumber: string }) => void;
+  highlightOrderId?: string | null;
 }
+
 
 const getStatusBadge = (status: OrderStatus) => {
   switch (status) {
