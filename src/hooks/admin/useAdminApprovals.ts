@@ -83,6 +83,9 @@ export function useAdminApprovals(kind: ApprovalKind) {
         q = q.eq('status', 'shipped').not('tracking_number', 'is', null).is('tracking_approved_at', null);
       } else if (kind === 'delivery') {
         q = q.eq('status', 'shipped').not('tracking_approved_at', 'is', null).is('delivered_at', null);
+      } else if (kind === 'untracked') {
+        // Buyer marked an untracked order as delivered — held pending admin review.
+        q = q.eq('pending_admin_delivery_review', true);
       } else {
         // Dispute queue: refund requests the seller has declined, awaiting Flea arbitration.
         q = q.not('refund_declined_at', 'is', null).is('refunded_at', null);
