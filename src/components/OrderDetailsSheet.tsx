@@ -40,7 +40,9 @@ interface OrderDetailsSheetProps {
   onOpenChange: (open: boolean) => void;
   onMarkDelivered?: () => void;
   onCompleteOrder?: () => void;
+  highlightOrderId?: string | null;
 }
+
 
 const getStatusBadge = (status: OrderStatus) => {
   switch (status) {
