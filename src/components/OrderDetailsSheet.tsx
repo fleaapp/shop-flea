@@ -443,36 +443,53 @@ const OrderDetailsSheet = ({
         <RefundRequestDialog
           open={refundDialogOpen}
           onOpenChange={setRefundDialogOpen}
-          orderId={primaryOrder.id}
-          userId={user.id}
-          onSubmit={async ({ reason, details, imageUploads }) => {
-            const { data, error } = await invokeCloudFunction('order-messages', {
-              method: 'POST',
-              query: { orderId: primaryOrder.id, action: 'refund_request' },
-              body: { reason, details, image_uploads: imageUploads },
-            });
-            if (error) {
-              console.error('[RefundRequest] Error:', error);
-              throw new Error(typeof error === 'object' && error.message ? error.message : 'Failed to submit refund request');
+          items={refundItemOptions}
+          onSubmit={async ({ selections, details, imageUploads }) => {
+            let succeeded = 0;
+            const failures: string[] = [];
+            for (const sel of selections) {
+              const order = orders.find((o) => o.id === sel.orderId);
+              const combinedReason = [sel.reason, sel.note].filter(Boolean).join(' - ');
+              const messageDetails = [details, sel.note].filter(Boolean).join(' — ');
+              try {
+                const { data, error } = await invokeCloudFunction('order-messages', {
+                  method: 'POST',
+                  query: { orderId: sel.orderId, action: 'refund_request' },
+                  body: { reason: sel.reason, details: messageDetails, image_uploads: imageUploads },
+                });
+                if (error) throw new Error(typeof error === 'object' && error.message ? error.message : 'Failed to submit refund request');
+                if (data && typeof data === 'object' && 'error' in data) {
+                  throw new Error((data as { error: string }).error);
+                }
+                try {
+                  await (supabase as any).rpc('request_refund', {
+                    p_order_id: sel.orderId,
+                    p_order_group_id: order?.order_group_id ?? primaryOrder.order_group_id ?? null,
+                    p_reason: combinedReason.slice(0, 500),
+                  });
+                } catch (rpcErr) {
+                  console.warn('[RefundRequest] request_refund RPC failed:', rpcErr);
+                }
+                succeeded++;
+              } catch (err) {
+                console.error('[RefundRequest] Item failed:', sel.orderId, err);
+                failures.push(order?.listing?.title || 'Item');
+              }
+              queryClient.invalidateQueries({ queryKey: ['refund-status', sel.orderId] });
+              queryClient.invalidateQueries({ queryKey: ['order-messages', sel.orderId] });
             }
-            if (data && typeof data === 'object' && 'error' in data) {
-              console.error('[RefundRequest] Server error:', (data as { error: string }).error);
-              throw new Error((data as { error: string }).error);
-            }
-            // Open the 72h seller-approval window on the order (and its group)
-            try {
-              await (supabase as any).rpc('request_refund', {
-                p_order_id: primaryOrder.id,
-                p_order_group_id: primaryOrder.order_group_id ?? null,
-                p_reason: [reason, details].filter(Boolean).join(' - ').slice(0, 500),
-              });
-            } catch (rpcErr) {
-              console.warn('[RefundRequest] request_refund RPC failed:', rpcErr);
-            }
-            queryClient.invalidateQueries({ queryKey: ['refund-status', primaryOrder.id] });
-            queryClient.invalidateQueries({ queryKey: ['order-messages', primaryOrder.id] });
             queryClient.invalidateQueries({ queryKey: ['orders'] });
-            toast.success('Refund request submitted. Seller has 72 hours to respond.');
+            if (failures.length === 0) {
+              toast.success(
+                selections.length === 1
+                  ? 'Refund request submitted. Seller has 72 hours to respond.'
+                  : `${succeeded} refund requests submitted. Seller has 72 hours to respond.`,
+              );
+            } else if (succeeded > 0) {
+              toast.warning(`${succeeded} of ${selections.length} refund requests submitted. Please retry: ${failures.join(', ')}`);
+            } else {
+              throw new Error('Failed to submit refund request');
+            }
           }}
         />
       )}
