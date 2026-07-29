@@ -17,7 +17,7 @@ import {
   calculateSecureCheckoutFee,
   calculateTransactionFee,
 } from '@/utils/feeCalculator';
-import { supabase } from '@/lib/supabase';
+
 
 
 interface OrderReceiptDialogProps {
