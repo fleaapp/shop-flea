@@ -92,25 +92,12 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
     staleTime: 60_000,
   });
 
-  const listingIds = [...new Set(orders.map((o) => o.listing_id).filter(Boolean))];
-  const { data: listingsData } = useQuery({
-    queryKey: ['receipt-listings', primaryOrder.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('listings')
-        .select('id, shipping_price')
-        .in('id', listingIds);
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: open && listingIds.length > 0,
-    staleTime: 60_000,
-  });
-  const listingsMap = new Map((listingsData ?? []).map((l: any) => [l.id, l]));
-
   const bundleMode = (sellerShippingSettings?.mode || 'none') as BundleShippingMode;
   const discountPercent = sellerShippingSettings?.discountPercent ?? null;
-  const rawShippings = orders.map((o) => Number(listingsMap.get(o.listing_id)?.shipping_price) || 0);
+  // Use the historical shipping price captured on the order row at checkout,
+  // not the current listing price (which can change or the listing can be
+  // deleted). This keeps the receipt matching the amount actually charged.
+  const rawShippings = orders.map((o) => Number(o.shipping_price) || 0);
   const bundleShippingTotal = calculateBundleShippingTotal(rawShippings, bundleMode, discountPercent);
 
   const rawShippingTotal = Math.round(rawShippings.reduce((a, b) => a + b, 0) * 100) / 100;
