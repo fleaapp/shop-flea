@@ -416,6 +416,7 @@ export const getNotificationEmoji = (type: string): string => {
     case 'order_shipped':
       return '✈️';
     case 'order_delivered':
+    case 'sale_delivered':
       return '🏠';
     case 'new_comment':
       return '💬';
