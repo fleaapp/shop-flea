@@ -15,6 +15,16 @@ import { AdminHeader } from '@/components/admin/shell/AdminHeader';
 import { AdminBadge, toneForStatus, statusLabel } from '@/components/admin/shell/AdminBadge';
 import { AdminChipFilter } from '@/components/admin/shell/AdminChipFilter';
 import { AdminEmptyState } from '@/components/admin/shell/AdminEmptyState';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const initials = (s?: string | null) => (s ?? '?').replace('@', '').slice(0, 2).toUpperCase();
 
