@@ -199,12 +199,10 @@ export function computeSellerNet<T extends {
   const subtotal = r2(activeOrders.reduce(
     (s, o) => s + (Number(o.price) || 0) + (Number(o.shipping_price) || 0), 0));
 
-  const hasSavedFee = activeOrders.some((o) => o.transaction_fee !== null && o.transaction_fee !== undefined);
-  const transactionFee = activeOrders.length === 0
-    ? 0
-    : hasSavedFee
-      ? r2(activeOrders.reduce((s, o) => s + (Number(o.transaction_fee) || 0), 0))
-      : calculateTransactionFee(subtotal);
+  // Only ever trust the snapshot written at checkout. A missing snapshot means
+  // no fee was charged (pre-fee order) - recalculating would invent a deduction
+  // that can never be reconciled against Stripe.
+  const transactionFee = r2(activeOrders.reduce((s, o) => s + (Number(o.transaction_fee) || 0), 0));
 
   return {
     activeOrders,
