@@ -1945,6 +1945,10 @@ export type Database = {
         Returns: boolean
       }
       increment_brand_usage: { Args: { _brand_id: string }; Returns: undefined }
+      increment_coupon_redemption: {
+        Args: { _coupon_id: string }
+        Returns: undefined
+      }
       is_region_active: { Args: { region: string }; Returns: boolean }
       is_user_blocked: { Args: { user_uuid: string }; Returns: boolean }
       mark_order_delivered: {
