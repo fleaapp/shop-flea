@@ -213,8 +213,9 @@ Deno.serve(async (req) => {
 
     const payout = await stripe.payouts.create(
       { amount: available, currency, method: "standard", description: "Flea payout" },
-      { stripeAccount: accountId },
+      { stripeAccount: accountId, idempotencyKey: `${idemBase}:standard:${available}` },
     );
+
     return json({ ok: true, payout: { id: payout.id, amount: payout.amount, method: "standard" } });
   } catch (e: any) {
     await logEdgeError({
