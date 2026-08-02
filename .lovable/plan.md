@@ -1,91 +1,66 @@
-# Flea — Full Product Audit
+# Flea — Full Product Audit (this pass)
 
-Verified this pass by reading the fee engine, Terms, FAQ, refund dialog and scanning the whole `src` tree. Anything I could not confirm is marked "needs check", not asserted.
+I re-checked the app against the last audit rather than repeating it. The previous critical items are genuinely done: accessibility labels are on the icon buttons, `h-screen` is gone from every page (only `index.css`, `main.tsx` and `Auth.tsx` keep it deliberately for the app shell), the shared `EmptyState` is used across Wishlist, Cart, Sales, Notifications and every admin list, and fees/refund/shipping copy still line up between the fee engine, Terms and the FAQ.
 
-**Overall Product Health Score: 88/100** — money, refunds and legal copy now line up; the remaining gaps are accessibility, polish and a few consistency issues.
-
-## What I confirmed is correct
-
-- Buyer fee 4% + $0.70 and seller fee 2% + $0.50 come from one file (`feeCalculator.ts`) and match Terms word for word.
-- Refund story matches everywhere: 48 hours after delivery to raise an issue, 72 hours for the seller to respond, auto-refund if they don't, Flea review if declined. Same wording in Terms and FAQ.
-- Shipping rules match: dispatch in 3 days, reminders at 3/6/8 days, overdue flag at 4 days, auto-refund at 9 days.
-- Payouts: first payout up to 7 days, then ~24 hours, instant payout 1.5% — consistent in Terms and FAQ.
-- Account deletion rules (no active orders, 14-day cooldown) are stated in both Terms and FAQ.
-- Multi-item refunds split shipping and fees pro-rata, and use the fees actually charged, so a FREEFLEA order can't refund a fee that was never taken.
+**Overall Product Health Score: 91/100** — money, legal copy and accessibility are solid. What's left is resilience and polish.
 
 ---
 
 ## Critical (fix before release)
 
-**C1 — Icon-only buttons have no names for screen readers**
-Severity Critical (accessibility) · Screens: Header, Cart, Profile, Seller Profile, Wishlist cards, Create/Edit Listing, Comments, Swipe actions, all Admin screens · Impact: a VoiceOver user hears "button" with no idea what it does; this is also an App Store accessibility risk. Found 38 icon-only buttons and only 2 with labels.
-Fix: add a short `aria-label` to every icon-only button ("Close", "Remove from cart", "Delete photo", "Back", etc.).
+**C1 — No offline handling anywhere**
+Severity Critical · Screens: whole app, worst at Checkout · User impact: a dropped connection mid-payment shows a generic failure with no way to know whether the money went through. Business impact: abandoned purchases and support tickets. I searched the whole `src` tree and found no `navigator.onLine` check, no offline banner, no retry surface.
+Fix: a small global "You're offline" bar plus an offline-aware error on the Pay button that says "We couldn't reach the network — your card was not charged. Try again."
 Complexity: Medium.
 
-**C2 — Images missing alt text on some cards**
-Severity Critical (accessibility) · Screens: listing cards, order thumbnails · Impact: unnamed images for screen readers. Roughly 75 `<img>` tags vs 82 `alt` attributes across the app, so coverage is close but needs a sweep to confirm none are missed and that decorative images use `alt=""`.
-Fix: audit each `<img>`, give listing photos a real description (title + brand), decorative ones an empty alt.
+**C2 — Pay button has no in-flight re-entry guard**
+Severity Critical · Screen: Checkout · User impact: `handlePayClick` has no `if (submitting) return;` at the top — the same guard Create Listing already got. On a slow network an impatient double tap can start two payment attempts. Business impact: duplicate charge risk and refund work.
+Fix: one submitting flag checked at the top of `handlePayClick`, released in a `finally`.
 Complexity: Small.
 
 ---
 
 ## High priority
 
-**H1 — `h-screen` still used in 23 places**
-Screens: various full-height pages/sheets · Impact: on iPhone the browser chrome makes `100vh` taller than the visible area, so footers and buttons get cut off — the exact bug class we've fixed repeatedly. Project rule is `svh`/`dvh`.
-Fix: replace `h-screen` with `h-dvh` (or the existing app-shell pattern) everywhere outside `components/ui`.
-Complexity: Small.
+**H1 — Sold or removed item silently disappears at checkout**
+Screens: Cart, Checkout · Checkout filters out paused, inactive, removed and sold items from the payable list, but nothing tells the buyer. An item vanishes from the total with no message. Fix: show a named line — "Vintage Levi's jacket sold while it was in your cart and has been removed." Complexity: Small.
 
-**H2 — "Item never arrived" refunds have no stated waiting period**
-Screens: Refund request dialog, Terms, FAQ · Impact: a buyer can claim non-delivery the moment an order is marked delivered, and the seller has no protection window in the written policy. Terms only mentions "never arrived" as a reason, with no lost-parcel timing.
-Fix: state the lost-parcel rule in one place (dialog + Terms + FAQ) and make the dialog show the same wait time it actually enforces.
-Complexity: Small.
+**H2 — Search with zero results has no guidance**
+Screens: Search, filtered Home · No "no results" copy found in the search surfaces. A blank screen after applying filters reads as broken. Fix: reuse `EmptyState` with a "Clear filters" action. Complexity: Small.
 
-**H3 — Double-tap protection on money actions**
-Screens: Checkout, Create Listing · Impact: only two `disabled` guards on each screen; a slow network plus an impatient tap can create a duplicate charge or duplicate listing. Needs a per-button check that every submit is locked while the request is in flight.
-Fix: single "submitting" flag per screen that disables the primary button and shows a spinner until the request settles.
-Complexity: Small.
-
-**H4 — Empty and error states pass**
-Screens: Wishlist, Cart, Sales, Orders, Search results, Notifications · Impact: empty screens that just show nothing read as "broken app" and kill first-session trust.
-Fix: one shared empty-state component — emoji, one line of copy, one action button — used everywhere.
-Complexity: Medium.
-
----
+**H3 — Session expiry landing**
+Screens: any protected route · We sign users out on a bad token; confirm they land on the login screen with "Please sign in again" rather than a blank frame. Fix: pass a reason flag into the auth redirect and show it. Complexity: Small.
 
 ## Medium priority
 
-- **Offline handling.** No global "you're offline" state was found. A network drop mid-checkout should show a clear retry, not a silent failure. Complexity: Medium.
-- **Deleted / sold-out item in cart.** Confirm checkout blocks with a friendly message naming the item, instead of a generic error. Needs check. Complexity: Small.
-- **Session expiry.** We sign users out on a bad token — confirm they land on the login screen with "Please sign in again", not a blank page. Complexity: Small.
-- **Search with zero results.** Should suggest clearing filters, not just show nothing. Complexity: Small.
-- **Consistency sweep.** Confirm identical buttons behave identically (Sales button on Profile vs Seller Dashboard, back behaviour on deep links, confirmation dialog sizing). Complexity: Medium.
+- **Seller earnings preview while listing.** Show "You'll receive $X" live on Create Listing using the existing fee engine. Reduces the biggest seller drop-off. Complexity: Small.
+- **Buyer protection badge at checkout.** One line above Pay restating the 48-hour window. The single biggest trust lever on a new marketplace. Complexity: Small.
+- **Consistency sweep.** Confirm identical buttons behave identically — Sales on Profile vs Seller Dashboard, back behaviour on deep links, confirmation dialog sizing. Complexity: Medium.
+- **Order status timeline from the notification**, not only inside the drawer. Complexity: Small.
 
 ## Nice to have
 
-- Seller earnings preview shown live while creating a listing ("You'll receive $X").
-- Saved-search alerts surfaced more visibly (Depop/Vinted parity).
-- Buyer protection badge on the checkout screen — the single biggest trust lever on a new marketplace.
-- Order status timeline visible from the notification, not only the drawer.
+- Saved-search alerts surfaced more visibly.
+- Offers / negotiation — expected on Depop and Vinted, absent here.
+- Seller analytics (views, saves per listing).
 
-## Benchmark notes
+## Benchmark
 
-- **Ahead of Depop/Vinted:** in-app-only seller onboarding with no browser hand-off, live-camera-only refund proof, bundle shipping discounts.
-- **Equal:** fee transparency, buyer protection window, tracking-gated payouts.
-- **Behind:** accessibility labelling, empty-state polish, offline resilience, and there are no offers/negotiation and no seller analytics.
+- **Ahead:** in-app-only seller onboarding with no browser hand-off, live-camera-only refund proof, bundle shipping discounts.
+- **Equal:** fee transparency, buyer protection window, tracking-gated payouts, empty-state polish, accessibility labelling.
+- **Behind:** offline resilience, no offers, no seller analytics.
 
 ## Suggested order of work
 
-1. C1 + C2 accessibility labels (release blocker)
-2. H1 `h-dvh` sweep
-3. H3 duplicate-tap guards
-4. H2 lost-parcel copy alignment
-5. H4 shared empty states
-6. Medium items
+1. C2 pay guard (one line, removes duplicate-charge risk)
+2. C1 offline state
+3. H1 removed-item message, H2 zero-results, H3 session expiry
+4. Earnings preview and protection badge
+5. Consistency sweep
 
 ## Technical detail
 
-- Fees stay in `src/utils/feeCalculator.ts` — no hardcoded percentages anywhere else.
-- Accessibility fixes are presentation-only: `aria-label` on `Button size="icon"`, `alt` on `<img>`. No logic changes.
-- `h-screen` → `h-dvh` outside `src/components/ui`.
-- Empty states as one component in `src/components/` reused across list screens.
+- Guard goes at the top of `handlePayClick` in `src/pages/Checkout.tsx`; the filter at line 143 is where the dropped-item names come from for H1.
+- Offline state as one hook plus a bar rendered in the app shell; Checkout reads the same hook.
+- Zero-results and session-expiry reuse `src/components/EmptyState.tsx` — no new patterns.
+- Earnings preview reads `src/utils/feeCalculator.ts`; no new fee maths anywhere.
