@@ -26,6 +26,13 @@ const REVIEWER_USER_IDS = new Set<string>([
   "5883f33c-07f3-4f6a-9a2d-a7e0ea864142",
 ]);
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MAX_CART_ITEMS = 50;
+
+function isUuid(v: unknown): v is string {
+  return typeof v === "string" && UUID_RE.test(v);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
