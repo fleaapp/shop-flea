@@ -111,6 +111,21 @@ const SavedCardsSection = () => {
           </div>
         ))}
       </div>
+
+      <AlertDialog open={!!cardToDelete} onOpenChange={(o) => !o && setCardToDelete(null)}>
+        <AlertDialogContent className="rounded-2xl max-w-[320px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove card?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove {cardToDelete ? brandLabel(cardToDelete.brand) : ''} •••• {cardToDelete?.last4} from your saved cards.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel onClick={() => setCardToDelete(null)} className="flex-1 rounded-lg h-10">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="flex-1 rounded-lg h-10 bg-destructive text-destructive-foreground hover:bg-destructive/90">Remove</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
