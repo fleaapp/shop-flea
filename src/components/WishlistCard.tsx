@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import ListingTag from './ListingTag';
+import EngagementBadges from './EngagementBadges';
 import { Listing } from '@/types/listing';
 
 interface WishlistCardProps {
