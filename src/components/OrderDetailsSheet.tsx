@@ -16,7 +16,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Order, OrderStatus } from '@/hooks/useOrders';
-import { format, differenceInDays } from 'date-fns';
+import { format } from 'date-fns';
 import { useExistingReview } from '@/hooks/useReviews';
 import WriteReviewDrawer from '@/components/WriteReviewDrawer';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
