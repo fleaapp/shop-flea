@@ -339,21 +339,30 @@ const SalesDetailsSheet = ({
                   )}
                 </div>
 
-                <div className="border-t border-border" />
+                {!fullyRefunded && (
+                  <>
+                    <div className="border-t border-border" />
 
-                <div className="px-4 py-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">Transaction Fee (2% + $0.50)</div>
-                    <p className="text-sm text-foreground">−${transactionFee.toFixed(2)}</p>
-                  </div>
-                </div>
+                    <div className="px-4 py-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-muted-foreground">Transaction Fee (2% + $0.50)</div>
+                        <p className="text-sm text-foreground">−${transactionFee.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div className="border-t border-border" />
 
                 {/* Total */}
                 <div className="flex items-center justify-center bg-charcoal text-white py-3 px-4">
-                  <span className="font-medium">You received: ${youReceived.toFixed(2)}</span>
+                  <span className="font-medium">
+                    {fullyRefunded
+                      ? 'Refunded: $0.00'
+                      : `You received: $${youReceived.toFixed(2)}`}
+                  </span>
                 </div>
+
               </div>
             </div>
 
