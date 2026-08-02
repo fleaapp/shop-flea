@@ -1,4 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { ChevronRight, ChevronDown } from 'lucide-react';
@@ -193,6 +203,7 @@ const Settings = () => {
       <AvatarFallback className="text-xs">👤</AvatarFallback>
     </Avatar>;
   const [helpCentreExpanded, setHelpCentreExpanded] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const helpCentreItems = [{
     icon: <span className="text-base">💬</span>,
     label: 'Contact Support',
@@ -276,7 +287,7 @@ const Settings = () => {
     supportItems.push({
       icon: <span className="text-base">🚪</span>,
       label: 'Logout',
-      action: handleLogout,
+      action: () => setLogoutConfirmOpen(true),
       isLogout: true
     });
   }
@@ -444,6 +455,23 @@ const Settings = () => {
       {/* Shipping Settings Sheet */}
       <ShippingSettingsSheet open={shippingOpen} onOpenChange={setShippingOpen} />
       </div>
+
+      <AlertDialog open={logoutConfirmOpen} onOpenChange={setLogoutConfirmOpen}>
+        <AlertDialogContent className="max-w-[280px] rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Log out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You'll need to sign in again to buy, sell or message.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel className="flex-1 mt-0 h-9 rounded-lg">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLogout} className="flex-1 h-9 rounded-lg bg-destructive hover:bg-destructive/90">
+              Log out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <BottomNav adminSettingsBadge={!isGuest && isAdmin ? adminBadgeTotal : undefined} />
     </div>;
