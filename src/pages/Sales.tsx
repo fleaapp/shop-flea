@@ -127,8 +127,9 @@ const Sales = () => {
           </p>
           <div className="mt-1 flex flex-col items-start gap-1.5">
             <span className="inline-block rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
-              ${groupTotal.toFixed(2)}
+              {fullyRefunded ? 'Refunded' : `$${groupTotal.toFixed(2)}`}
             </span>
+
             <span className={cn('inline-block rounded-full px-3 py-1 text-xs font-medium', getStatusBadge(group.status).className)}>
               {getStatusBadge(group.status).label}
             </span>
