@@ -3,6 +3,16 @@ import { Input } from '@/components/ui/input';
 import { Plus, Search, X } from 'lucide-react';
 import { useBrands, Brand } from '@/hooks/useBrands';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface BrandAutocompleteProps {
   value: string;
