@@ -17,6 +17,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { clearOrderChatBadges } from '@/utils/orderChatRead';
 import { supabase } from '@/lib/supabase';
 import EmptyState from '@/components/EmptyState';
+import { computeSellerNet } from '@/utils/feeCalculator';
+
 
 const getStatusBadge = (status: OrderGroup['status']) => {
   switch (status) {
