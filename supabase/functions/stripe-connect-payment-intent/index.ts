@@ -68,8 +68,23 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status,
       });
-    if (!items || !items.length) {
+    if (!Array.isArray(items) || items.length === 0) {
       return jsonError(400, "no_items", "No items provided.");
+    }
+    if (items.length > MAX_CART_ITEMS) {
+      return jsonError(400, "cart_too_large", "Checkout is limited to 50 items.");
+    }
+    for (const item of items) {
+      if (!isUuid(item?.id) || !isUuid(item?.sellerId)) {
+        return jsonError(400, "invalid_item_id", "One or more item IDs are invalid.");
+      }
+    }
+    if (shippingBySeller && typeof shippingBySeller === "object") {
+      for (const sellerId of Object.keys(shippingBySeller)) {
+        if (!isUuid(sellerId)) {
+          return jsonError(400, "invalid_seller_id", "Invalid seller ID in shipping map.");
+        }
+      }
     }
 
 
