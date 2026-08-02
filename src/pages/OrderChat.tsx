@@ -336,7 +336,10 @@ const OrderChat = () => {
       )}
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        {messages.length === 0 && !messagesError && (
+        {messagesLoading && messages.length === 0 && (
+          <div className="flex justify-center mt-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        )}
+        {!messagesLoading && messages.length === 0 && !messagesError && (
           <p className="text-center text-muted-foreground text-sm mt-8">No messages yet. Start the conversation!</p>
         )}
         {messages.map((msg, msgIndex) => {
