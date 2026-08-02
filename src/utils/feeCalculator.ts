@@ -20,6 +20,12 @@ export const SECURE_CHECKOUT_FIXED = 0.70;
 export const TRANSACTION_FEE_RATE = 0.02;
 export const TRANSACTION_FEE_FIXED = 0.50;
 
+/**
+ * Minimum listing price. Below this the fixed portions of the fees make the
+ * application fee larger than the charge itself, which Stripe rejects outright.
+ */
+export const MIN_LISTING_PRICE = 3;
+
 // Legacy alias — total seller-side platform fee rate for reporting only.
 export const PLATFORM_FEE_RATE = TRANSACTION_FEE_RATE;
 
