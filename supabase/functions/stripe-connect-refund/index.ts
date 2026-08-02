@@ -41,6 +41,9 @@ const OPTIONAL_ORDER_COLUMNS = [
   "shipped_at",
   "order_group_id",
   "status",
+  "transaction_fee",
+  "secure_checkout_fee",
+  "coupon_code",
 ] as const;
 
 const ORDER_UPDATE_FALLBACK_COLUMNS = [
@@ -470,8 +473,18 @@ function computeRefundBreakdown(
   const groupSubtotal = round2(itemSubtotals.reduce((sum, s) => sum + s, 0));
   const itemSubtotal = itemSubtotals[targetIndex];
 
-  const secureFee = calculateSecureCheckoutFee(groupSubtotal);
-  const transactionFee = calculateTransactionFee(groupSubtotal);
+  // Use the fees ACTUALLY charged (snapshotted on the order rows at checkout).
+  // Recalculating here would refund a Secure Checkout Fee that a coupon waived,
+  // i.e. hand back money Flea never collected.
+  const savedSecureFee = groupRows.reduce(
+    (sum, o) => sum + (Number(o.secure_checkout_fee) || 0), 0);
+  const hasSavedSecureFee = groupRows.some((o) => o.secure_checkout_fee !== null && o.secure_checkout_fee !== undefined);
+  const savedTransactionFee = groupRows.reduce(
+    (sum, o) => sum + (Number(o.transaction_fee) || 0), 0);
+  const hasSavedTransactionFee = groupRows.some((o) => o.transaction_fee !== null && o.transaction_fee !== undefined);
+
+  const secureFee = hasSavedSecureFee ? round2(savedSecureFee) : calculateSecureCheckoutFee(groupSubtotal);
+  const transactionFee = hasSavedTransactionFee ? round2(savedTransactionFee) : calculateTransactionFee(groupSubtotal);
 
   const secureFeeShare = groupSubtotal > 0 ? round2(secureFee * (itemSubtotal / groupSubtotal)) : 0;
   const transactionFeeShare = groupSubtotal > 0 ? round2(transactionFee * (itemSubtotal / groupSubtotal)) : 0;
@@ -485,7 +498,7 @@ function computeRefundBreakdown(
 async function fetchGroupRows(externalUrl: string, serviceKey: string, order: any) {
   if (!order.order_group_id) return [order];
   const res = await fetch(
-    `${externalUrl}/rest/v1/orders?order_group_id=eq.${order.order_group_id}&select=id,listing_id,price,shipping_price,buyer_id,seller_id,status,refunded_at,created_at,order_group_id`,
+    `${externalUrl}/rest/v1/orders?order_group_id=eq.${order.order_group_id}&select=id,listing_id,price,shipping_price,secure_checkout_fee,transaction_fee,coupon_code,buyer_id,seller_id,status,refunded_at,created_at,order_group_id`,
     { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
   );
   if (!res.ok) return [order];

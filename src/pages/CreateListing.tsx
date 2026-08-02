@@ -271,7 +271,7 @@ const CreateListing = () => {
 
   const handleShippingSetupCancel = () => {
     setShowShippingSetup(false);
-    navigate(-1);
+    safeNavigateBack(navigate, "/profile");
   };
 
   // Crop queue state
@@ -513,7 +513,7 @@ const CreateListing = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(-1)}
+            onClick={() => safeNavigateBack(navigate, "/profile")}
             className="absolute left-4 h-10 w-10 rounded-full"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -577,7 +577,7 @@ const CreateListing = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(-1)}
+            onClick={() => safeNavigateBack(navigate, "/profile")}
             className="absolute left-4 h-10 w-10 rounded-full"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -622,7 +622,7 @@ const CreateListing = () => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate(-1)}
+          onClick={() => safeNavigateBack(navigate, "/profile")}
           className="absolute left-4 h-10 w-10 rounded-full"
         >
           <ArrowLeft className="h-5 w-5" />

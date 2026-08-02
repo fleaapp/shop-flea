@@ -109,11 +109,25 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
   });
   const subtotal = Math.round(itemSubtotals.reduce((a, b) => a + b, 0) * 100) / 100;
 
-  // Secure Checkout Fee: 4% + $0.70 of items + shipping, paid by buyer.
-  const secureCheckoutFee = calculateSecureCheckoutFee(subtotal);
+  // Fees ACTUALLY charged, snapshotted on the order rows at checkout. Only fall
+  // back to recalculating for legacy orders created before the snapshot existed
+  // — recalculating ignores coupons and would show a total the buyer never paid.
+  const savedSecureFee = orders.reduce(
+    (sum, o) => sum + (Number((o as any).secure_checkout_fee) || 0), 0);
+  const hasSavedSecureFee = orders.some((o) => (o as any).secure_checkout_fee != null);
+  const savedTransactionFee = orders.reduce(
+    (sum, o) => sum + (Number((o as any).transaction_fee) || 0), 0);
+  const hasSavedTransactionFee = orders.some((o) => (o as any).transaction_fee != null);
+  const couponCode = orders.find((o) => (o as any).coupon_code)?.['coupon_code' as keyof typeof orders[0]] as string | undefined;
+
+  const secureCheckoutFee = hasSavedSecureFee
+    ? Math.round(savedSecureFee * 100) / 100
+    : calculateSecureCheckoutFee(subtotal);
   const buyerTotal = Math.round((subtotal + secureCheckoutFee) * 100) / 100;
   // Seller-paid Transaction Fee (2% + $0.50) deducted from payout.
-  const transactionFee = calculateTransactionFee(subtotal);
+  const transactionFee = hasSavedTransactionFee
+    ? Math.round(savedTransactionFee * 100) / 100
+    : calculateTransactionFee(subtotal);
   const sellerReceives = Math.round((subtotal - transactionFee) * 100) / 100;
 
   const bundleText = orders.length >= 2 ? getBundleBreakdownText(orders.length, sellerShippingSettings || undefined) : null;
@@ -129,6 +143,7 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
       orders.map((o, i) => ({ price: o.price, rawShipping: rawShippings[i] })),
       bundleMode,
       discountPercent,
+      { secureCheckoutFee, transactionFee },
     ),
   }));
   const buyerRefundTotal = refundBreakdowns.reduce((s, r) => s + r.buyerRefund, 0);
@@ -218,9 +233,17 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
                 {viewAs === 'buyer' ? (
                   <>
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">Secure Checkout Fee (4% + $0.70)</span>
+                      <span className="text-gray-500">
+                        Secure Checkout Fee{secureCheckoutFee > 0 ? ' (4% + $0.70)' : ''}
+                      </span>
                       <span className="text-gray-900">+${secureCheckoutFee.toFixed(2)}</span>
                     </div>
+                    {couponCode && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-500">Coupon {couponCode}</span>
+                        <span className="text-gray-900">Fee waived</span>
+                      </div>
+                    )}
                     {refundBreakdowns.length > 0 && (
                       <div className="flex justify-between text-xs text-destructive">
                         <span>Refund</span>

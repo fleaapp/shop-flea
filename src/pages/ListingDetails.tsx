@@ -1,3 +1,4 @@
+import { safeNavigateBack } from '@/utils/safeBack';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { MapPin, MoreVertical, Flag, Share2, User } from 'lucide-react';
@@ -348,7 +349,7 @@ const ListingDetails = () => {
       <div className="native-safe-top flex min-h-screen flex-col items-center justify-center bg-background gap-4 px-4">
         <p className="text-muted-foreground">Listing not found</p>
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => safeNavigateBack(navigate, "/")}
           className="rounded-full bg-primary px-6 py-3 text-primary-foreground font-medium"
         >
           Go Back

@@ -145,6 +145,10 @@ const ORDER_OPTIONAL_COLUMNS = [
   'shipping_city',
   'shipping_state',
   'shipping_postcode',
+  'transaction_fee',
+  'secure_checkout_fee',
+  'coupon_code',
+  'coupon_type',
 ] as const;
 
 

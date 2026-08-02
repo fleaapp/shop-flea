@@ -1,72 +1,98 @@
-# Flea — Full Product Audit
+I re-checked the real code and database for every item from the last audit before writing this, so the status below is verified, not from memory. Then I've laid out everything still outstanding as a fresh, prioritised audit in plain language.
 
-Five parallel deep audits (payments/refunds, UX/UI/nav, legal/copy/FAQ, security/performance, orders/notifications) read the actual source. Every item below cites a real file:line. **Overall Product Health Score: 68/100** — strong feature depth and a genuinely well-built buyer-protection model, undermined by two unauthenticated admin endpoints, a payout money-leak, and fee/policy copy that contradicts real behaviour.
+## Part 1 — What's already fixed (verified)
 
----
+**Security holes closed**
+- The three unprotected back-end endpoints are locked down. Resetting a seller now requires a verified admin; recovering an order requires the actual buyer or an admin; payouts no longer trust an unverified login token.
+- 17 back-end functions now require a valid login. Only genuinely public ones (payment webhook, email hook) stay open.
 
-## CRITICAL — must fix before release
+**Money correctness**
+- Payouts carry a unique fingerprint, so a double tap or retry can't send the money twice.
+- The 1.5% instant payout fee now actually reaches Flea. If it can't be collected, the payout stops with a clear message instead of quietly shortchanging the seller.
 
-| # | Issue | Where | Impact | Fix | Size |
-|---|---|---|---|---|---|
-| C1 | `admin-reset-seller` has **zero auth** (`verify_jwt=false`, no admin check) — anyone can wipe any seller's Stripe onboarding | `supabase/functions/admin-reset-seller/index.ts:9-64` | Any attacker disables a competitor's payouts | `verify_jwt=true` + `assertAdmin()` (pattern at `admin-data/index.ts:229`) | S |
-| C2 | `admin-recover-order` unauthenticated — forges orders from any `pi_…` | `admin-recover-order/index.ts:20-27` | Order/listing-state forgery, false seller notifications | Same as C1, plus match caller to `metadata.flea_buyer_id` | S |
-| C3 | `stripe-connect-payout` trusts an **unverified** JWT (`atob` of payload) and `verify_jwt=false` | `stripe-connect-payout/index.ts:34-39` | Forged `sub` triggers payouts on any seller's account (griefing, forced 1.5% fees) | Use `getClaims()`/`getUser()` or `verify_jwt=true` | S |
-| C4 | **No idempotency key** on `stripe.payouts.create` | `stripe-connect-payout/index.ts:156-184` | Double-tap / retry = duplicate real payouts | Deterministic idempotency key + DB in-flight lock | S |
-| C5 | Instant-payout 1.5% fee is deducted from the seller but the collecting transfer defaults to `destination: undefined` and the failure is swallowed | `stripe-connect-payout/index.ts:138-154` | Revenue leak: fee taken from seller, never received by Flea | Require `STRIPE_PLATFORM_ACCOUNT_ID`, remove `"self"` fallback, fail loudly, log to `payment_events` | S |
-| C6 | "Stripe" leaked in checkout UI | `Checkout.tsx:987` | Breaks brand rule + inconsistent with Terms/FAQ | "processed by our payment providers" | S |
-| C7 | "Flea sellers pay no selling fees" while a 2% + $0.50 Transaction Fee is charged | `SecureCheckoutInfoPopover.tsx:19` | **ACL s18/29 misleading-conduct risk** | "Sellers only pay when they make a sale — 2% + $0.50 per order" | S |
-| C8 | Coupon-waived buyer fee is never persisted; buyer-facing totals recompute 4% + $0.70 unconditionally | `Cart.tsx:262`, `OrderDetailsSheet.tsx:164`, `OrderReceiptDialog.tsx:112`, `finalize-checkout:450-475` | Buyer sees a total that doesn't match their bank statement | Persist `secure_checkout_fee`, `transaction_fee`, `coupon_code` per order line; read, never recompute | M |
-| C9 | Refunds recompute the full buyer fee even on waived-fee orders | `stripe-connect-refund/index.ts:403-483`, `feeCalculator.ts:139` | **Over-refunds** money never collected; cumulative refunds can exceed the captured PI and fail mid-flow | Pass persisted coupon/fee snapshot into `computeRefundBreakdown` | M |
-| C10 | Lost-in-transit parcels have **no refund path** — refunds require `status === 'delivered'` | `OrderDetailsSheet.tsx:169`; `useOrders.ts:9` | Buyer whose parcel never arrives cannot request a refund in-app | Allow refund from `shipped` after a carrier-inactivity threshold; add `lost_in_transit` state + cron | M |
+**Policy and copy truth**
+- Checkout no longer names the payment provider brand.
+- The fee popover now correctly states the seller's 2% + $0.50 transaction fee instead of "no selling fees".
+- The server refund window matches the published 48h + 72h policy.
+- FAQ now agrees with Terms on dispatch deadlines, on listings being blocked until verification, and on the 7-year record-keeping requirement.
+- Terms and Privacy now cover GST on Flea's fees, chargeback double-dipping, 18+ selling age, and camera permissions.
 
----
+**Other**
+- Screen-reader labels on the header and bottom navigation.
+- Logout confirmation dialog.
+- The 72-hour auto-approval job is confirmed running hourly in the database, alongside auto-refund-unshipped and order-progress jobs.
 
-## HIGH PRIORITY
+## Part 2 — Critical, still outstanding
 
-- **H1 Server refund window is 10 days, policy/UI say 48h** — `stripe-connect-refund/index.ts:786-799`, error text at `:791`. Align constant to 48h. (S)
-- **H2 Buyer can self-declare delivery with no safeguard**, starting the 48h clock at an arbitrary moment — `OrderDetailsSheet.tsx:418-435,550-573`. Require carrier confirmation or route untracked confirmations through the admin gate before fund release. (M)
-- **H3 `admin_marked_delivered` branch is dead code** — no path sets it (`OrderDetailsSheet.tsx:429`). Wire it to the admin queue or remove. (S)
-- **H4 Possible duplicate "Order Shipped" push** — DB trigger *and* `useOrders.ts:423-449` both fire. Pick one source of truth; add a dedup key in `send-push-notification`. (S)
-- **H5 24/28 edge functions run `verify_jwt=false`** — `supabase/config.toml:5-70`. Flip on for everything except `stripe-webhook`/`auth-email-hook`/genuinely public endpoints. (M)
-- **H6 FAQ contradicts Terms on shipping deadlines** — "4 days" (`FAQSection.tsx:72`) vs 3-day dispatch / 9-day auto-refund (`Terms.tsx:159`). (S)
-- **H7 FAQ says listings go live while verification pending** (`FAQSection.tsx:139`) but onboarding gates listing on verification. (S)
-- **H8 FAQ promises permanent data deletion** (`:177`) vs Privacy §8's 7-year record retention. Reconcile wording. (S)
-- **H9 Accessibility: Header and BottomNav are emoji-only with no `aria-label`/`aria-current`** — `Header.tsx:22-39`, `BottomNav.tsx:121-138`. Core navigation is unusable with a screen reader. (S)
-- **H10 Logout has no confirmation and no error path** — `Settings.tsx:146-153`. (S)
-- **H11 `navigate(-1)` can eject deep-link/PWA users** — `ListingDetails.tsx:351`, `Checkout.tsx:134`, `CreateListing.tsx:274,516,580,625`. Migrate to `safeNavigateBack`. (S)
-- **H12 No `refund_request_deadline_at` auto-approval cron found**, though the UI promises 72h auto-approval — `OrderDetailsSheet.tsx:484-488`. Buyers can be stuck indefinitely. (M)
-- **H13 Unbounded `select('*')` list queries** — `useFavorites.ts:58`, `useReviews.ts:41,146`, `useFavoriteListings.ts:94`. Add column lists + pagination. (M)
-- **H14 N+1 in admin threads** — 2 queries per thread, `admin-data/index.ts:284-307`. (M)
+**1. Coupon fees aren't saved onto the order (biggest one)**
+When someone uses FREEFLEA, the waiver isn't recorded. Receipts, order details and refunds all recalculate 4% + $0.70 as if the coupon never existed.
+- *User impact:* the total shown doesn't match their bank statement — the fastest way to lose trust.
+- *Business impact:* refunds pay back fees Flea never collected. Real money out the door.
+- *Fix:* save the actual fee charged, the coupon code and its type onto every order line at checkout; make receipts, order screens and the refund calculator read that saved number instead of recalculating. Add a safeguard so two simultaneous checkouts can't create duplicate order rows.
+- *Size:* Medium.
 
----
+**2. No way to report a lost parcel**
+Refunds are only offered once an order says "delivered". If a parcel never arrives, the buyer has no route in the app.
+- *Fix:* allow a refund request from "shipped" after a set number of quiet days, in both the order screen and the server rule. Add a "where is my parcel" state.
+- *Size:* Medium.
 
-## MEDIUM PRIORITY
+## Part 3 — High priority
 
-Orders: partial refunds hidden by collapsed group status (`useOrders.ts:219-225`); tracking validated for presence only, garbage accepted (`SalesDetailsSheet.tsx:148-160`); partial refund-approval failures leave items in limbo with a generic toast (`useOrders.ts:567-580`); bundle discount label silently vanishes when `discountPercent` is null (`shippingCalculator.ts:170-180`); receipt bundle text reads *live* seller settings rather than the purchase-time snapshot (`OrderDetailsSheet.tsx:127`).
+- **Back button on deep links** — Listing Details, Checkout and Create Listing still use the raw back action, which can drop people on a blank screen when they arrive from a push notification or shared link. A safe helper already exists; switch these over. *Small.*
+- **Buyer self-declared delivery** — the admin review queue exists, but the order screen still shows an older "admin marked delivered" branch. Confirm a buyer's own "delivered" tap routes into review rather than releasing funds instantly. *Medium.*
+- **Possible duplicate "Order Shipped" push** — both the database and the app send it. Pick one sender and add a dedupe key. *Small.*
+- **Heavy list queries** — favourites, reviews and wishlist fetch every column with no page limit; the admin threads screen makes two database calls per thread. Add column lists, pagination and one batched admin query. *Medium.*
+- **Wildcard CORS and no rate limits** on money-moving and admin functions; the ID upload function decodes the whole file before checking its size limit and never checks the file is actually an image. *Medium.*
 
-Notifications: opening the tab marks **everything** read regardless of what was seen (`Notifications.tsx:112-119`); `shipping_final_warning` and `order_overdue_buyer` have no in-app copy, emoji, or click routing (`useNotifications.ts:394`, `Notifications.tsx:180-284`); "delivered" pushes the buyer instead of the seller (`useOrders.ts:479-488`); Cart recomputes badges independently of `useNavBadges` (`Cart.tsx:248-251`).
+## Part 4 — Medium priority
 
-Security/perf: wildcard CORS on money-moving and admin functions; no rate limiting on `log-error`, `add-brand`, admin utilities; `profiles_public` exposes exact `last_sign_in_at`; public `listings` bucket allows full object enumeration (platform scanner finding); `stripe-connect-upload-id` decodes the full base64 body before enforcing its 8MB cap and never checks magic bytes.
+**Orders and refunds**
+- A group of items shows one combined status, so a partial refund can be invisible.
+- Tracking numbers are checked for existence only — nonsense is accepted.
+- A failed partial refund leaves items in limbo behind a generic error message.
+- The bundle discount label disappears silently when no percentage is set.
+- Receipts read the seller's *current* shipping settings rather than the settings at purchase time.
 
-UX/UI: ~20 files hardcode `#ddfed7`/`#423D3D`/`text-white`, bypassing the design system (`ListingDetails.tsx:776-875`, `Settings.tsx:319,378`, `Profile.tsx:122`, auth screens); two equal-weight CTAs on ListingDetails with no clear primary; empty/error/loading states inconsistent (Cart's `⏳` at `:504`, terse strings in Sales/Favorites/OrderChat, no error+retry state on any list page); clickable `<div>`s in ContactSupport; icon buttons at `h-6`–`h-8` below the 44px target across Profile, Wishlist, Comments, CouponInput; no `<h1>` on Index or Cart; password rules validated one-toast-at-a-time.
+**Notifications**
+- Opening the Alerts tab marks everything read, even items the user never scrolled to.
+- Two notification types (final shipping warning, overdue for buyer) have no in-app wording, emoji or tap destination.
+- The "delivered" push goes to the buyer instead of the seller.
+- Cart calculates its badge separately from the shared badge system, so numbers can disagree.
 
-Legal gaps: GST treatment of Flea's own fees undisclosed; chargeback-vs-refund double-dip clause missing; camera permission never mentioned in the Privacy Policy; no prohibited-items FAQ; 18+ seller age enforced in code but absent from Terms; no external dispute-resolution pathway named.
+**UI and consistency**
+- Around 20 files hardcode colours instead of using the design system, which is why some screens drift visually.
+- Listing Details has two equal-weight buttons with no obvious primary action.
+- Empty, loading and error states are inconsistent — no list screen has a proper "something went wrong, retry" state.
+- Contact Support uses tappable plain boxes rather than real buttons.
+- Several icon buttons are smaller than the 44px minimum tap size (Profile, Wishlist, Comments, Coupon input).
+- Home and Cart have no main page heading.
+- Password rules are shown one error toast at a time instead of all at once.
 
----
+**Privacy**
+- Public profiles expose an exact last-active timestamp; the listings image bucket allows the full file list to be enumerated.
 
-## Recommended execution order
+## Part 5 — Feature gaps vs Depop / Vinted / eBay
 
-1. **Security patch (S)** — C1, C2, C3, H5, CORS + rate limits.
-2. **Money correctness (M)** — C4, C5, then the fee-persistence migration that resolves C8/C9 and its refund/receipt consumers.
-3. **Policy truth pass (S)** — C6, C7, H1, H6, H7, H8 + Terms/Privacy disclosure additions, bumping the version and date.
-4. **Order-lifecycle gaps (M)** — C10, H2, H3, H12.
-5. **Accessibility + navigation (S/M)** — H9, H10, H11, tap targets, aria-labels, shared `EmptyState`/`ErrorState`.
-6. **Consistency + performance (M)** — design-token sweep, notification copy centralisation, badge single-source-of-truth, query pagination.
+Flea is at or above the standard on buyer protection, bundle shipping and the swipe feed. It's behind on:
+- **Offers / make-an-offer** — absent entirely, and expected on Depop and Vinted.
+- **In-transit dispute handling** — covered by item 2 above.
+- **Seller analytics** — views, saves, conversion.
+- **Buyer "where is my parcel" tracking view** — currently just a status word.
+- **Prohibited items FAQ** and a named external dispute pathway.
 
-## Benchmark note
+## Overall health score
 
-Buyer protection, bundle shipping, and the swipe feed are at or above Depop/Vinted standard. Flea is behind on: offers/negotiation (absent entirely), in-transit dispute handling, seller analytics, and buyer-facing "where is my parcel" states — all expected on Vinted/eBay.
+**79/100** — up from 68. The release-blocking security holes and the payout money leak are fixed, and the policy copy now tells the truth. The remaining blocker is the coupon fee snapshot: until totals are saved rather than recalculated, some buyers will see a figure that doesn't match their bank.
+
+## Suggested build order
+
+1. Coupon fee snapshot (Critical #1) — money correctness first.
+2. Lost parcel path + delivery review gate (Critical #2, High #2) — same part of the order lifecycle.
+3. Quick wins: safe back button, duplicate shipped push.
+4. Query performance, CORS and rate limits, upload validation.
+5. Medium UI, notification and consistency sweep.
+6. Feature gaps — offers first, then seller analytics.
 
 ## Technical detail
 
-Fee source of truth should become the `orders` table, not `feeCalculator`. Add columns `secure_checkout_fee`, `coupon_type`, and per-line `transaction_fee` (today only row 0 of a group carries it), a unique index on `orders(checkout_reference, listing_id)` to close the finalize-checkout race, and largest-remainder allocation for pro-rata shares so multiple partial refunds sum exactly to the original charge.
+Fee source of truth moves to the `orders` table rather than `feeCalculator`. Add `secure_checkout_fee`, `coupon_type`, and per-line `transaction_fee` (today only the first row of a group carries it), plus a unique index on `orders(checkout_reference, listing_id)` to close the finalize-checkout race. Use largest-remainder allocation for pro-rata shares so repeated partial refunds sum exactly to the original charge.

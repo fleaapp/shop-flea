@@ -107,7 +107,13 @@ export function calculateProRataRefund(
   itemIndex: number,
   items: { price: number; rawShipping: number }[],
   bundleMode: BundleShippingMode,
-  discountPercent: number | null
+  discountPercent: number | null,
+  /**
+   * Fees ACTUALLY charged on the order, snapshotted at checkout. Always pass
+   * these when available — recalculating ignores coupons (e.g. FREEFLEA) and
+   * would refund a fee that was never collected.
+   */
+  actualFees?: { secureCheckoutFee?: number | null; transactionFee?: number | null },
 ): ProRataRefundShare {
   if (!items.length) {
     return { itemSubtotal: 0, secureFeeShare: 0, transactionFeeShare: 0, buyerRefund: 0, sellerNet: 0 };
@@ -133,8 +139,12 @@ export function calculateProRataRefund(
   const itemSubtotal = itemSubtotals[itemIndex];
   const groupSubtotal = r2(itemSubtotals.reduce((sum, s) => sum + s, 0));
 
-  const secureFee = calculateSecureCheckoutFee(groupSubtotal);
-  const transactionFee = calculateTransactionFee(groupSubtotal);
+  const secureFee = actualFees?.secureCheckoutFee != null
+    ? r2(Number(actualFees.secureCheckoutFee))
+    : calculateSecureCheckoutFee(groupSubtotal);
+  const transactionFee = actualFees?.transactionFee != null
+    ? r2(Number(actualFees.transactionFee))
+    : calculateTransactionFee(groupSubtotal);
 
   const secureFeeShare = groupSubtotal > 0 ? r2(secureFee * (itemSubtotal / groupSubtotal)) : 0;
   const transactionFeeShare = groupSubtotal > 0 ? r2(transactionFee * (itemSubtotal / groupSubtotal)) : 0;
