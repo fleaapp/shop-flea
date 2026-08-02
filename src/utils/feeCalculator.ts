@@ -118,8 +118,6 @@ export function calculateProRataRefund(
   if (!items.length) {
     return { itemSubtotal: 0, secureFeeShare: 0, transactionFeeShare: 0, buyerRefund: 0, sellerNet: 0 };
   }
-    return { itemSubtotal: 0, secureFeeShare: 0, transactionFeeShare: 0, buyerRefund: 0, sellerNet: 0 };
-  }
 
   const rawShippingTotal = r2(items.reduce((sum, i) => sum + (Number(i.rawShipping) || 0), 0));
   const bundleShippingTotal = calculateBundleShippingTotal(
