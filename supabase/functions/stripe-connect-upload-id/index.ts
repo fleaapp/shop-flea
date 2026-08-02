@@ -16,13 +16,77 @@ function getStripeSecretKey() {
   return key;
 }
 
-function base64ToBytes(b64: string): Uint8Array {
-  const clean = b64.replace(/^data:image\/\w+;base64,/, "");
+const MAX_BYTES = 8 * 1024 * 1024;
+
+/** Strips any data-URL prefix and whitespace from a base64 payload. */
+function cleanBase64(b64: string): string {
+  return String(b64 || "").replace(/^data:[^;]+;base64,/, "").replace(/\s+/g, "");
+}
+
+/**
+ * Decoded byte length of a base64 string, computed WITHOUT decoding. Lets us
+ * reject an oversized upload before it is materialised in memory.
+ */
+function base64ByteLength(clean: string): number {
+  if (!clean) return 0;
+  const padding = clean.endsWith("==") ? 2 : clean.endsWith("=") ? 1 : 0;
+  return Math.floor((clean.length * 3) / 4) - padding;
+}
+
+function base64ToBytes(clean: string): Uint8Array {
   const bin = atob(clean);
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   return bytes;
 }
+
+/** Detects the real image format from the file's leading bytes. */
+function detectImageType(bytes: Uint8Array): "image/jpeg" | "image/png" | "image/heic" | null {
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
+  if (
+    bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e &&
+    bytes[3] === 0x47 && bytes[4] === 0x0d && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a
+  ) return "image/png";
+  // ISO-BMFF container: bytes 4-7 are "ftyp", brand at 8-11 starts with heic/heif/mif1.
+  if (bytes.length >= 12 && bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70) {
+    const brand = String.fromCharCode(bytes[8], bytes[9], bytes[10], bytes[11]).toLowerCase();
+    if (brand.startsWith("hei") || brand.startsWith("mif") || brand.startsWith("msf")) return "image/heic";
+  }
+  return null;
+}
+
+type DecodedImage = { bytes: Uint8Array; mime: string; ext: string };
+
+/**
+ * Validates size before decoding, then verifies the payload really is an
+ * image. Returns a plain-English error message instead of throwing.
+ */
+function decodeImage(b64: string, label: string): DecodedImage | { error: string } {
+  const clean = cleanBase64(b64);
+  if (!clean) return { error: `${label} image is missing.` };
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(clean)) {
+    return { error: `${label} image could not be read. Please retake the photo.` };
+  }
+  if (base64ByteLength(clean) > MAX_BYTES) {
+    return { error: `${label} image is too large. Please use a photo under 8MB.` };
+  }
+  let bytes: Uint8Array;
+  try {
+    bytes = base64ToBytes(clean);
+  } catch {
+    return { error: `${label} image could not be read. Please retake the photo.` };
+  }
+  if (bytes.byteLength > MAX_BYTES) {
+    return { error: `${label} image is too large. Please use a photo under 8MB.` };
+  }
+  const mime = detectImageType(bytes);
+  if (!mime) {
+    return { error: `${label} file must be a photo (JPEG, PNG or HEIC).` };
+  }
+  const ext = mime === "image/png" ? "png" : mime === "image/heic" ? "heic" : "jpg";
+  return { bytes, mime, ext };
+}
+
 
 async function uploadIdentityFile(
   secretKey: string,
