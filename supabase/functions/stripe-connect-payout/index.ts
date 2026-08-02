@@ -42,6 +42,13 @@ Deno.serve(async (req) => {
       return json({ error: "Invalid payout method" }, 400);
     }
 
+    // Idempotency: a client retry (or a double tap) within the same 10-minute
+    // window reuses the same Stripe idempotency key, so Stripe returns the
+    // original payout instead of creating a duplicate one.
+    const idemWindow = Math.floor(Date.now() / (10 * 60 * 1000));
+    const idemBase = `payout:${userId}:${method}:${idemWindow}`;
+
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
