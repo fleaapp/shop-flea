@@ -107,9 +107,17 @@ export function calculateProRataRefund(
   itemIndex: number,
   items: { price: number; rawShipping: number }[],
   bundleMode: BundleShippingMode,
-  discountPercent: number | null
+  discountPercent: number | null,
+  /**
+   * Fees ACTUALLY charged on the order, snapshotted at checkout. Always pass
+   * these when available — recalculating ignores coupons (e.g. FREEFLEA) and
+   * would refund a fee that was never collected.
+   */
+  actualFees?: { secureCheckoutFee?: number | null; transactionFee?: number | null },
 ): ProRataRefundShare {
   if (!items.length) {
+    return { itemSubtotal: 0, secureFeeShare: 0, transactionFeeShare: 0, buyerRefund: 0, sellerNet: 0 };
+  }
     return { itemSubtotal: 0, secureFeeShare: 0, transactionFeeShare: 0, buyerRefund: 0, sellerNet: 0 };
   }
 
