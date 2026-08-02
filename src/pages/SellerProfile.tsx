@@ -17,8 +17,8 @@ import { ArrowLeft, MoreVertical, LayoutGrid, Rows3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProfileGridCard from '@/components/ProfileGridCard';
 import { safeNavigateBack } from '@/utils/safeBack';
-import {
 import { LISTING_CARD_COLUMNS } from '@/lib/listingColumns';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
