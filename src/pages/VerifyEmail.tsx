@@ -65,7 +65,7 @@ const VerifyEmail = () => {
           <div className="space-y-3">
             <Button
               onClick={() => navigate('/auth')}
-               className="h-10 w-auto px-8 mx-auto flex rounded-full bg-[#423D3D] text-card text-sm font-medium hover:bg-[#423D3D]/90"
+               className="h-10 w-auto px-8 mx-auto flex rounded-full bg-ink text-card text-sm font-medium hover:bg-ink/90"
             >
               Back to Login
             </Button>

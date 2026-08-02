@@ -327,7 +327,7 @@ const Settings = () => {
                   )}
                   <div className="space-y-2 max-[375px]:space-y-1.5">
                     {group.items.map(item => <div key={item.label}>
-                        <div className={`flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow ${(item as any).isLogout ? 'bg-[#e0e0dc]' : 'bg-card'} ${item.toggle ? '' : 'cursor-pointer'}`} onClick={async () => {
+                        <div className={`flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow ${(item as any).isLogout ? 'bg-surface-muted' : 'bg-card'} ${item.toggle ? '' : 'cursor-pointer'}`} onClick={async () => {
                     if (item.toggle) return;
                     if ((item as any).onExpand) {
                       (item as any).onExpand();
@@ -386,7 +386,7 @@ const Settings = () => {
                 </h2>}
               <div className="space-y-2 max-[375px]:space-y-1.5">
                 {group.items.map(item => <div key={item.label}>
-                    <div className={`flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow ${(item as any).isLogout ? 'bg-[#e0e0dc]' : 'bg-card'} ${item.toggle ? '' : 'cursor-pointer'}`} onClick={async () => {
+                    <div className={`flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow ${(item as any).isLogout ? 'bg-surface-muted' : 'bg-card'} ${item.toggle ? '' : 'cursor-pointer'}`} onClick={async () => {
                 if (item.toggle) return;
                 if ((item as any).onExpand) {
                   (item as any).onExpand();
