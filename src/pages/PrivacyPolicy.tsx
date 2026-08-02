@@ -55,6 +55,8 @@ const PrivacyPolicy = () => {
               <li>Messages, attachments and comments you send through buyer–seller chats, order chats, listing comments and support chats.</li>
               <li>Shipping address, recipient name, postcode, suburb, state for orders you place.</li>
               <li>Tracking numbers and carrier details for orders you fulfil.</li>
+              <li><strong>Camera and microphone:</strong> when you request a refund we ask for photos or video of the item, captured live through your device camera rather than uploaded from your gallery. This is an anti-fraud measure so we can verify the condition of the item at the time of the claim. We only access the camera while you are actively capturing proof, and the resulting media is attached to that refund request and shared with the seller and our review team.</li>
+
             </ul>
             <p className="font-semibold mt-3">Payment information</p>
             <ul className="list-disc pl-5 space-y-1">
