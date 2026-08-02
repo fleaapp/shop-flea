@@ -224,19 +224,19 @@ export default function AdminUsers() {
               </DrawerBody>
 
               <DrawerFooter className="flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => setConfirm({ user: selected, type: 'suspend', label: 'Suspend user' })} disabled={selected.status === 'suspended'}>
+                <Button size="sm" variant="outline" className="h-9 rounded-full text-xs" onClick={() => setConfirm({ user: selected, type: 'suspend', label: 'Suspend user' })} disabled={selected.status === 'suspended'}>
                   <ShieldAlert className="mr-1 h-3.5 w-3.5" /> Suspend
                 </Button>
-                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => setConfirm({ user: selected, type: 'ban', label: 'Ban user' })} disabled={selected.status === 'blocked'}>
+                <Button size="sm" variant="outline" className="h-9 rounded-full text-xs" onClick={() => setConfirm({ user: selected, type: 'ban', label: 'Ban user' })} disabled={selected.status === 'blocked'}>
                   <ShieldBan className="mr-1 h-3.5 w-3.5" /> Ban
                 </Button>
-                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => setConfirm({ user: selected, type: 'activate', label: 'Reactivate user' })} disabled={selected.status === 'active'}>
+                <Button size="sm" variant="outline" className="h-9 rounded-full text-xs" onClick={() => setConfirm({ user: selected, type: 'activate', label: 'Reactivate user' })} disabled={selected.status === 'active'}>
                   <ShieldCheck className="mr-1 h-3.5 w-3.5" /> Reactivate
                 </Button>
-                <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => performAction(selected.user_id, 'reset_password')}>
+                <Button size="sm" variant="outline" className="h-9 rounded-full text-xs" onClick={() => performAction(selected.user_id, 'reset_password')}>
                   <KeyRound className="mr-1 h-3.5 w-3.5" /> Reset password
                 </Button>
-                <Button size="sm" variant="destructive" className="h-8 rounded-full text-xs" onClick={() => setConfirm({ user: selected, type: 'delete', label: 'Permanently delete user' })}>
+                <Button size="sm" variant="destructive" className="h-9 rounded-full text-xs" onClick={() => setConfirm({ user: selected, type: 'delete', label: 'Permanently delete user' })}>
                   <Trash2 className="mr-1 h-3.5 w-3.5" /> Delete
                 </Button>
               </DrawerFooter>
