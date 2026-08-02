@@ -198,6 +198,7 @@ const Notifications = () => {
     // Sale-side alerts (seller) → open Sale Details drawer
     if (
       notification.type === 'item_sold' ||
+      notification.type === 'sale_delivered' ||
       notification.type === 'refund_request' ||
       notification.type === 'sale_auto_refunded'
     ) {
