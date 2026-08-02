@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, useMotionValue, useTransform, PanInfo, animate } from 'framer-motion';
 import { Listing } from '@/types/listing';
 import ListingTag from './ListingTag';
+import EngagementBadges from './EngagementBadges';
 import { getCardImageUrl } from '@/utils/optimizedImage';
 
 interface SwipeCardProps {
