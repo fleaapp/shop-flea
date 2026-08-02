@@ -24,10 +24,15 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Require service-role bearer — only pg_cron / internal callers
+  // Require service-role bearer or the cron secret — only pg_cron / internal callers
   const expectedKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const cronSecret = Deno.env.get('CRON_SECRET') ?? '';
   const authHeader = req.headers.get('Authorization') ?? '';
-  if (!expectedKey || authHeader !== `Bearer ${expectedKey}`) {
+  const providedCron = req.headers.get('x-cron-secret') ?? '';
+  const authorized =
+    (!!expectedKey && authHeader === `Bearer ${expectedKey}`) ||
+    (!!cronSecret && providedCron === cronSecret);
+  if (!authorized) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -139,13 +144,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── 8-day FINAL WARNING (auto-refund at day 9) ─────────────────────────
+    // ── 7-day FINAL WARNING (auto-refund at day 8) ─────────────────────────
     const { data: orders8d, error: err8d } = await supabaseAdmin
       .from('orders')
       .select('id, seller_id, buyer_id, listing_id, created_at')
       .eq('status', 'awaiting')
       .is('refunded_at', null)
-      .lte('created_at', new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000).toISOString());
+      .lte('created_at', new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString());
 
     if (err8d) throw err8d;
 

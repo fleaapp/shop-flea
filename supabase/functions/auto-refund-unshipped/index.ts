@@ -1,6 +1,6 @@
 // auto-refund-unshipped
 // Runs hourly via pg_cron. Refunds any order that is still `awaiting` (i.e.
-// not marked as shipped with eligible tracking) 9 days after purchase.
+// not marked as shipped with eligible tracking) 8 days after purchase.
 // Uses Stripe reverse_transfer + refund_application_fee so the buyer's
 // Secure Checkout Fee (4% + $0.70) is also returned, and pulls the sale
 // amount back from the seller's Connect balance.
@@ -230,8 +230,13 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const expectedKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
   const authHeader = req.headers.get("Authorization") ?? "";
-  if (!expectedKey || authHeader !== `Bearer ${expectedKey}`) {
+  const providedCron = req.headers.get("x-cron-secret") ?? "";
+  const authorized =
+    (!!expectedKey && authHeader === `Bearer ${expectedKey}`) ||
+    (!!cronSecret && providedCron === cronSecret);
+  if (!authorized) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -244,7 +249,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    const cutoff = new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString();
+    const cutoff = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
     const orders = await fetchAwaitingRefundOrders(admin, cutoff);
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
@@ -257,21 +262,31 @@ Deno.serve(async (req) => {
         // Demo (Apple Review) orders bypass the payment provider.
         if (!isDemoOrder(order)) {
           const paymentIntentId = await resolvePaymentIntentId(stripe, order);
-          await stripe.refunds.create({
-            payment_intent: paymentIntentId,
-            reverse_transfer: true,
-            refund_application_fee: true,
-            reason: "requested_by_customer",
-            metadata: {
-              flea_order_id: order.id,
-              flea_seller_id: order.seller_id,
-              flea_buyer_id: order.buyer_id,
-              flea_auto_refund: "unshipped_9d",
-            },
-          }, { idempotencyKey: `flea-auto-refund-${order.id}` });
+          try {
+            await stripe.refunds.create({
+              payment_intent: paymentIntentId,
+              reverse_transfer: true,
+              refund_application_fee: true,
+              reason: "requested_by_customer",
+              metadata: {
+                flea_order_id: order.id,
+                flea_seller_id: order.seller_id,
+                flea_buyer_id: order.buyer_id,
+                flea_auto_refund: "unshipped_8d",
+              },
+            }, { idempotencyKey: `flea-auto-refund-${order.id}` });
+          } catch (refundErr: any) {
+            // Bundles share one payment. Once the charge is fully refunded the
+            // sibling rows must still be marked refunded, not treated as failures.
+            const msg = String(refundErr?.message ?? "");
+            if (!/already been refunded|has already been refunded|already refunded/i.test(msg)) {
+              throw refundErr;
+            }
+            console.log(`[auto-refund-unshipped] charge already refunded for order ${order.id}, marking row refunded`);
+          }
         }
 
-        await markOrderRefunded(order.id, "auto_unshipped_9d");
+        await markOrderRefunded(order.id, "auto_unshipped_8d");
 
         // Reactivate the listing so it's not stuck as sold.
         await admin
@@ -285,7 +300,7 @@ Deno.serve(async (req) => {
             user_id: order.buyer_id,
             type: "order_auto_refunded",
             title: "Order refunded",
-            message: "💸 Your order was automatically refunded because the seller didn't ship within 9 days. Funds will appear in 5 to 10 days.",
+            message: "💸 Your order was automatically refunded because the seller didn't ship within 8 days. Funds will appear in 5 to 10 days.",
             related_listing_id: order.listing_id,
             related_user_id: order.seller_id,
             related_order_id: order.id,
@@ -294,22 +309,22 @@ Deno.serve(async (req) => {
             user_id: order.seller_id,
             type: "sale_auto_refunded",
             title: "Sale auto-refunded",
-            message: "⚠️ Your sale was automatically refunded because tracking wasn't added within 9 days. Repeated auto-refunds may affect your account.",
+            message: "⚠️ Your sale was automatically refunded because tracking wasn't added within 8 days. Repeated auto-refunds may affect your account.",
             related_listing_id: order.listing_id,
             related_user_id: order.buyer_id,
             related_order_id: order.id,
           },
         ]);
 
-        firePush(order.buyer_id, { type: "order_auto_refunded", title: "Order refunded", message: "Your order was automatically refunded because the seller didn't ship within 9 days." });
-        firePush(order.seller_id, { type: "sale_auto_refunded", title: "Sale auto-refunded", message: "Your sale was auto-refunded because tracking wasn't added within 9 days." });
+        firePush(order.buyer_id, { type: "order_auto_refunded", title: "Order refunded", message: "Your order was automatically refunded because the seller didn't ship within 8 days." });
+        firePush(order.seller_id, { type: "sale_auto_refunded", title: "Sale auto-refunded", message: "Your sale was auto-refunded because tracking wasn't added within 8 days." });
 
         // Audit trail.
         try {
           await admin.from("payment_events").insert({
             event_type: "auto_refund_unshipped",
             order_id: order.id,
-            metadata: { reason: "unshipped_9d", days: 9 },
+            metadata: { reason: "unshipped_8d", days: 8 },
           });
         } catch (_) { /* payment_events schema tolerant */ }
 
@@ -317,6 +332,17 @@ Deno.serve(async (req) => {
       } catch (e: any) {
         console.error(`[auto-refund-unshipped] order ${order.id} failed`, e?.message);
         failures.push({ orderId: order.id, error: e?.message });
+        // Surface failures in the Admin error log so a broken automation is visible.
+        try {
+          await admin.from("error_logs").insert({
+            source: "auto-refund-unshipped",
+            severity: "error",
+            title: "Auto-refund failed",
+            message: `Order ${order.id}: ${e?.message ?? "unknown error"}`,
+            context: { orderId: order.id },
+            dedupe_key: `auto-refund-unshipped:${order.id}`,
+          });
+        } catch (_) { /* logging is best-effort */ }
       }
     }
 
