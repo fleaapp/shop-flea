@@ -64,7 +64,7 @@ type NotificationRow = {
   related_order_id?: string | null;
 };
 
-const ORDER_INSERT_FALLBACK_COLUMNS = ["checkout_reference", "payment_method"] as const;
+const ORDER_INSERT_FALLBACK_COLUMNS = ["checkout_reference", "payment_method", "secure_checkout_fee", "coupon_type", "coupon_code", "coupon_id"] as const;
 function isMissingColumnError(error: unknown, columnName: string) {
   if (!error || typeof error !== "object" || !("code" in error) || !("message" in error)) return false;
   const code = typeof (error as any).code === "string" ? (error as any).code : "";
