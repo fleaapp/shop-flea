@@ -153,6 +153,8 @@ const SwipeCard = ({
         {/* Image */}
         <div className="relative flex-1 min-h-0 overflow-hidden rounded-2xl bg-muted">
           <img src={getCardImageUrl(listing.image)} alt={listing.title} className="h-full w-full object-cover" draggable={false} loading={isTop ? 'eager' : 'lazy'} decoding="async" fetchPriority={isTop ? 'high' : 'auto'} />
+
+          <EngagementBadges listingId={listing.id} size="lg" className="absolute top-3 left-3 z-10" />
           
           {isTop && (
             <>
