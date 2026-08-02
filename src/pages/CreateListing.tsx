@@ -853,13 +853,18 @@ const CreateListing = () => {
         </div>
 
         {/* Live payout preview so sellers see what actually lands in their account. */}
-        {parseFloat(itemPrice) > 0 && (
+        {parseFloat(itemPrice) > 0 && parseFloat(itemPrice) < MIN_LISTING_PRICE && (
+          <p className="-mt-1 px-1 text-xs text-destructive">
+            Item price must be at least ${MIN_LISTING_PRICE.toFixed(2)}.
+          </p>
+        )}
+        {parseFloat(itemPrice) >= MIN_LISTING_PRICE && (
           <p className="-mt-1 px-1 text-xs text-muted-foreground">
-            You'll receive{' '}
+            If this sells on its own you'll receive{' '}
             <span className="font-semibold text-foreground">
               ${sellerEarningsPreview(parseFloat(itemPrice) || 0, parseFloat(shippingPrice) || 0).toFixed(2)}
             </span>{' '}
-            after the 2% + $0.50 transaction fee. No selling fees - it only covers payment processing.
+            after the 2% + $0.50 transaction fee. The $0.50 is charged once per order, so bundles keep more. No selling fees - it only covers payment processing.
           </p>
         )}
 
