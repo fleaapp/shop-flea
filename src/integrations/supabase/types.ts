@@ -816,6 +816,7 @@ export type Database = {
           completed_at: string | null
           coupon_code: string | null
           coupon_id: string | null
+          coupon_type: string | null
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
@@ -834,6 +835,7 @@ export type Database = {
           refund_requested_at: string | null
           refund_requested_by: string | null
           refunded_at: string | null
+          secure_checkout_fee: number
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -860,6 +862,7 @@ export type Database = {
           completed_at?: string | null
           coupon_code?: string | null
           coupon_id?: string | null
+          coupon_type?: string | null
           created_at?: string
           delivered_at?: string | null
           dispute_window_ends_at?: string | null
@@ -878,6 +881,7 @@ export type Database = {
           refund_requested_at?: string | null
           refund_requested_by?: string | null
           refunded_at?: string | null
+          secure_checkout_fee?: number
           seller_id: string
           shipped_at?: string | null
           shipping_address?: string | null
@@ -904,6 +908,7 @@ export type Database = {
           completed_at?: string | null
           coupon_code?: string | null
           coupon_id?: string | null
+          coupon_type?: string | null
           created_at?: string
           delivered_at?: string | null
           dispute_window_ends_at?: string | null
@@ -922,6 +927,7 @@ export type Database = {
           refund_requested_at?: string | null
           refund_requested_by?: string | null
           refunded_at?: string | null
+          secure_checkout_fee?: number
           seller_id?: string
           shipped_at?: string | null
           shipping_address?: string | null
@@ -1557,6 +1563,7 @@ export type Database = {
           completed_at: string | null
           coupon_code: string | null
           coupon_id: string | null
+          coupon_type: string | null
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
@@ -1575,6 +1582,7 @@ export type Database = {
           refund_requested_at: string | null
           refund_requested_by: string | null
           refunded_at: string | null
+          secure_checkout_fee: number
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -1610,6 +1618,7 @@ export type Database = {
           completed_at: string | null
           coupon_code: string | null
           coupon_id: string | null
+          coupon_type: string | null
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
@@ -1628,6 +1637,7 @@ export type Database = {
           refund_requested_at: string | null
           refund_requested_by: string | null
           refunded_at: string | null
+          secure_checkout_fee: number
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -1667,6 +1677,7 @@ export type Database = {
           completed_at: string | null
           coupon_code: string | null
           coupon_id: string | null
+          coupon_type: string | null
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
@@ -1685,6 +1696,7 @@ export type Database = {
           refund_requested_at: string | null
           refund_requested_by: string | null
           refunded_at: string | null
+          secure_checkout_fee: number
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -1720,6 +1732,7 @@ export type Database = {
           completed_at: string | null
           coupon_code: string | null
           coupon_id: string | null
+          coupon_type: string | null
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
@@ -1738,6 +1751,7 @@ export type Database = {
           refund_requested_at: string | null
           refund_requested_by: string | null
           refunded_at: string | null
+          secure_checkout_fee: number
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -1779,6 +1793,7 @@ export type Database = {
           completed_at: string | null
           coupon_code: string | null
           coupon_id: string | null
+          coupon_type: string | null
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
@@ -1797,6 +1812,7 @@ export type Database = {
           refund_requested_at: string | null
           refund_requested_by: string | null
           refunded_at: string | null
+          secure_checkout_fee: number
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -1944,6 +1960,7 @@ export type Database = {
           completed_at: string | null
           coupon_code: string | null
           coupon_id: string | null
+          coupon_type: string | null
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
@@ -1962,6 +1979,7 @@ export type Database = {
           refund_requested_at: string | null
           refund_requested_by: string | null
           refunded_at: string | null
+          secure_checkout_fee: number
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -2002,6 +2020,7 @@ export type Database = {
           completed_at: string | null
           coupon_code: string | null
           coupon_id: string | null
+          coupon_type: string | null
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
@@ -2020,6 +2039,7 @@ export type Database = {
           refund_requested_at: string | null
           refund_requested_by: string | null
           refunded_at: string | null
+          secure_checkout_fee: number
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -2081,6 +2101,7 @@ export type Database = {
           completed_at: string | null
           coupon_code: string | null
           coupon_id: string | null
+          coupon_type: string | null
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
@@ -2099,6 +2120,7 @@ export type Database = {
           refund_requested_at: string | null
           refund_requested_by: string | null
           refunded_at: string | null
+          secure_checkout_fee: number
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -2139,6 +2161,7 @@ export type Database = {
           completed_at: string | null
           coupon_code: string | null
           coupon_id: string | null
+          coupon_type: string | null
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
@@ -2157,6 +2180,7 @@ export type Database = {
           refund_requested_at: string | null
           refund_requested_by: string | null
           refunded_at: string | null
+          secure_checkout_fee: number
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
