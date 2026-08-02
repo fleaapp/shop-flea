@@ -45,14 +45,20 @@ const SavedCardsSection = () => {
   }, []);
 
   const handleDelete = async (card: SavedCard) => {
-    if (!confirm(`Remove ${brandLabel(card.brand)} •••• ${card.last4}?`)) return;
+    setCardToDelete(card);
+  };
+
+  const confirmDelete = async () => {
+    if (!cardToDelete) return;
     try {
-      await invokeCloudFunction('stripe-detach-card', { paymentMethodId: card.id });
-      setCards((prev) => prev.filter((c) => c.id !== card.id));
+      await invokeCloudFunction('stripe-detach-card', { paymentMethodId: cardToDelete.id });
+      setCards((prev) => prev.filter((c) => c.id !== cardToDelete.id));
       toast.success('Card removed.');
     } catch (err) {
       console.error(err);
       toast.error('Could not remove card.');
+    } finally {
+      setCardToDelete(null);
     }
   };
 
