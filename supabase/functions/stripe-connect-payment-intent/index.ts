@@ -274,7 +274,13 @@ serve(async (req) => {
     const buyerTotalDollars = subtotal + secureCheckoutFee;
     const amountCents = Math.round(buyerTotalDollars * 100);
     // Application fee collects both the buyer Secure Checkout Fee and the seller Transaction Fee.
-    const applicationFeeAmount = Math.round((secureCheckoutFee + transactionFee) * 100);
+    // Clamped below the charge: on very cheap items (or when a coupon waives the
+    // buyer fee) the fixed portions can otherwise exceed the amount and Stripe
+    // rejects the PaymentIntent outright.
+    const applicationFeeAmount = Math.min(
+      Math.round((secureCheckoutFee + transactionFee) * 100),
+      Math.max(amountCents - 1, 0),
+    );
 
     const clientExpectedAmountCents = Number(expectedAmountCents);
     if (Number.isFinite(clientExpectedAmountCents) && Math.round(clientExpectedAmountCents) !== amountCents) {
