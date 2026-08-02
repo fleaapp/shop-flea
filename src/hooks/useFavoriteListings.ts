@@ -124,11 +124,12 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
       query = query.or(`title.ilike.%${filters.search}%,brand.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
     }
 
-    const { data, error } = await query;
+    const { data: rawData, error } = await query;
+    const data = (rawData || []) as unknown as DbListingWithPause[];
 
     if (error) {
       setListings([]);
-    } else if (data && data.length > 0) {
+    } else if (data.length > 0) {
       const normalizedSizeKeys = normalizeSizeKeys(filters?.sizes);
       const sizeKeySet = normalizedSizeKeys.length > 0 ? new Set(normalizedSizeKeys) : null;
       const sizeFiltered = sizeKeySet

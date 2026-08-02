@@ -154,7 +154,7 @@ const SellerProfile = () => {
       .eq('status', 'active');
 
     if (activeData) {
-      setActiveListings(activeData);
+      setActiveListings(activeData as unknown as DbListing[]);
     }
 
     // Fetch sold listings via orders (one card per transaction)
@@ -175,7 +175,7 @@ const SellerProfile = () => {
 
       if (soldData) {
         const listingMap = new Map(
-          soldData
+          (soldData as unknown as DbListing[])
             .filter(l => !HIDDEN_FROM_PROFILE_STATUSES.has((l.status || '').toLowerCase()))
             .map(l => [l.id, l])
         );
@@ -185,7 +185,7 @@ const SellerProfile = () => {
             if (!listing) return null;
             return { ...listing, id: `${listing.id}::${order.id}`, source_listing_id: listing.id, order_id: order.id, created_at: order.created_at };
           })
-          .filter((l): l is DbListing => !!l);
+          .filter(Boolean) as unknown as DbListing[];
         setSoldListings(orderedSold);
       }
     } else {
