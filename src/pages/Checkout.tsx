@@ -1,3 +1,4 @@
+import { safeNavigateBack } from '@/utils/safeBack';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSnapshotDraft } from '@/hooks/useSnapshotDraft';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -131,7 +132,7 @@ const Checkout = () => {
     // drawer animates out (the page renders nothing behind the drawer).
     const canGoBack = window.history.state && window.history.state.idx > 0;
     if (canGoBack) {
-      navigate(-1);
+      safeNavigateBack(navigate, "/cart");
     } else {
       navigate('/cart', { replace: true });
     }
