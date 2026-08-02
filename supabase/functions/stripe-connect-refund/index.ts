@@ -782,15 +782,19 @@ serve(async (req) => {
     }
 
     // Refund window — server-side enforcement for seller-initiated refunds.
-    // Admin dispute overrides and system 72h auto-approvals bypass this.
+    // Buyers must request within 48h of delivery (enforced in request_refund),
+    // and the seller then has 72h to respond. The outer guard therefore allows
+    // delivery + 48h + 72h = 5 days. Admin dispute overrides and system 72h
+    // auto-approvals bypass this.
     if (!isSystemCaller && !isAdminCaller && refundMode !== "cascade") {
       const now = Date.now();
       if (order.delivered_at) {
         const deliveredMs = new Date(order.delivered_at).getTime();
-        if (now - deliveredMs > 10 * 86400_000) {
-          throw new Error("Refund window has closed (10 days after delivery).");
+        if (now - deliveredMs > 5 * 86400_000) {
+          throw new Error("Refund window has closed (48 hours after delivery, plus the seller's 72 hour response window).");
         }
       } else if (order.created_at) {
+
         const createdMs = new Date(order.created_at).getTime();
         if (now - createdMs > 30 * 86400_000) {
           throw new Error("Refund window has closed (30 days after order).");

@@ -122,7 +122,15 @@ const BottomNav = ({ adminSettingsBadge }: BottomNavProps = {}) => {
                 key={item.path}
                 onClick={() => handleNavigate(item.path)}
                 data-onboarding={onboardingId}
+                aria-label={
+                  item.badge
+                    ? `${item.label}, ${item.badge} unread`
+                    : item.label
+                }
+                aria-current={isActive ? 'page' : undefined}
                 className={cn(
+
+
                   'relative flex items-center justify-center rounded-full px-4 max-[375px]:px-3 py-2 max-[375px]:py-1.5 transition-colors duration-150',
                   isActive
                     ? 'bg-primary text-primary-foreground font-bold text-sm max-[375px]:text-xs'

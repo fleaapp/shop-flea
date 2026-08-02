@@ -10,17 +10,24 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getVerifiedUserId, isAdmin } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Authentication: the caller must be signed in. They may only recover
+    // their own checkout unless they hold the admin role.
+    const callerId = await getVerifiedUserId(req);
+    if (!callerId) return json({ error: "Unauthorized" }, 401);
+
     const { paymentIntentId } = (await req.json()) as { paymentIntentId?: string };
     if (!paymentIntentId || !paymentIntentId.startsWith("pi_")) {
       return json({ error: "paymentIntentId (pi_...) is required" }, 400);
@@ -43,11 +50,16 @@ serve(async (req) => {
       return json({ error: "PI metadata missing", metadata: md }, 400);
     }
 
+    if (callerId !== buyerId && !(await isAdmin(callerId))) {
+      return json({ error: "Forbidden" }, 403);
+    }
+
     const svc = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false, autoRefreshToken: false } },
     );
+
 
     // Idempotency: check by listing + buyer since checkout_reference column may not exist.
     const prior = await svc

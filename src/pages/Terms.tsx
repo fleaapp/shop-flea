@@ -43,6 +43,8 @@ const Terms = () => {
             <h2 className="text-base font-bold mb-2">2. Eligibility</h2>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>You must be at least <strong>16 years old</strong> to create an account. Users aged 16-17 must have a parent or guardian's consent.</li>
+              <li>You must be at least <strong>18 years old</strong> to sell on Flea, because selling requires a payment account and the ability to enter a binding contract of sale.</li>
+
               <li>You must be physically located in <strong>Australia</strong>. Flea is currently an Australia-only marketplace and accounts created outside Australia may be blocked or removed.</li>
               <li>You must provide accurate, current and complete information when registering and keep it up to date.</li>
               <li>You may only hold one personal account unless we expressly approve otherwise.</li>
@@ -123,10 +125,13 @@ const Terms = () => {
               <li><strong>No listing fees:</strong> Listing items on Flea is always free — the Transaction Fee only applies when a sale completes.</li>
               <li><strong>Instant payout:</strong> Sellers who choose an instant payout to their bank account pay an additional 1.5% instant payout fee charged by our payment processor.</li>
               <li><strong>Promotional codes:</strong> From time to time we may issue promotional codes (for example, a code that waives the Secure Checkout Fee). Unless stated otherwise, codes are single-use per account, non-transferable, have no cash value, cannot be combined with other offers, and may be withdrawn, changed or revoked by Flea at any time, including where we reasonably suspect abuse or fraud.</li>
+              <li><strong>GST:</strong> Flea's own fees (the Secure Checkout Fee, the Transaction Fee and the instant payout fee) are inclusive of Australian GST where GST applies. Flea's fees are separate from any GST payable by a seller on the sale of their own items, which remains the seller's responsibility.</li>
+              <li><strong>Chargebacks:</strong> Where a buyer receives a refund through Flea, they must not also pursue a chargeback for the same order with their card issuer. If a chargeback is raised on an order that has already been refunded, Flea may recover the duplicated amount from the party who received it, including by offsetting it against future payouts or a Flea balance.</li>
             </ul>
             <p>
-              All amounts are shown in AUD. Payments are processed by our third-party card processor under its own terms. Flea does not store your full card or bank details. Payouts to sellers are made to the connected payment account in the seller's name; sellers are responsible for ensuring those details are accurate. Sellers are responsible for their own tax obligations including any GST and income tax. Fees may change on 30 days' notice via in-app notice or email.
+              All amounts are shown in AUD. Payments are processed by our third-party payment providers under their own terms. Flea does not store your full card or bank details. Payouts to sellers are made to the connected payment account in the seller's name; sellers are responsible for ensuring those details are accurate. Sellers are responsible for their own tax obligations including any GST and income tax. Fees may change on 30 days' notice via in-app notice or email.
             </p>
+
             <p className="font-semibold mt-3">Negative balances and settlement</p>
             <p>
               Refunds, chargebacks, disputes, reversals and processor adjustments can leave your Flea balance negative. A negative balance is a debt owing by you to Flea. While an unsettled negative balance exists on your account:

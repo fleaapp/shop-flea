@@ -984,7 +984,7 @@ const Checkout = () => {
                 {buyerOwesCents > 0 ? 'Settle balance to buy' : payButtonLabel()}
               </Button>
               <p className="text-[11px] text-muted-foreground/70 text-center mt-5 flex items-center justify-center gap-1">
-                <Lock size={11} /> Payments are encrypted and are processed by Stripe.
+                <Lock size={11} /> Payments are encrypted and processed by our payment providers.
               </p>
               <div className="flex items-center justify-center gap-2 mt-4">
                 <img src={applePayLogo} alt="Apple Pay" className="h-6 w-auto rounded-[3px]" />
