@@ -2,37 +2,37 @@ project_id = "teaicrimlqdayqpmxasc"
 
 [functions]
   [functions.admin-reset-seller]
-    verify_jwt = false
+    verify_jwt = true
   [functions.admin-recover-order]
-    verify_jwt = false
+    verify_jwt = true
   [functions.admin-check-role]
-    verify_jwt = false
+    verify_jwt = true
   [functions.admin-data]
-    verify_jwt = false
+    verify_jwt = true
   [functions.add-brand]
-    verify_jwt = false
+    verify_jwt = true
   [functions.auth-email-hook]
     verify_jwt = false
   [functions.cleanup-stale-saved-listings]
     verify_jwt = false
   [functions.comment-mentions]
-    verify_jwt = false
+    verify_jwt = true
   [functions.delete-account]
-    verify_jwt = false
+    verify_jwt = true
   [functions.finalize-checkout]
     verify_jwt = false
   [functions.moderate-content]
-    verify_jwt = false
-  [functions.order-messages]
-    verify_jwt = false
-  [functions.process-email-queue]
     verify_jwt = true
+  [functions.order-messages]
+    verify_jwt = true
+  [functions.process-email-queue]
+    verify_jwt = false
   [functions.register-push-subscription]
     verify_jwt = true
   [functions.send-push-notification]
     verify_jwt = false
   [functions.saved-searches]
-    verify_jwt = false
+    verify_jwt = true
   [functions.shipping-reminders]
     verify_jwt = false
   [functions.notify-saved-search-matches]
@@ -40,17 +40,17 @@ project_id = "teaicrimlqdayqpmxasc"
   [functions.create-saved-searches-table]
     verify_jwt = false
   [functions.stripe-connect-checkout]
-    verify_jwt = false
+    verify_jwt = true
   [functions.stripe-connect-onboard]
-    verify_jwt = false
+    verify_jwt = true
   [functions.stripe-connect-add-bank]
-    verify_jwt = false
+    verify_jwt = true
   [functions.stripe-connect-refund]
-    verify_jwt = false
+    verify_jwt = true
   [functions.stripe-connect-status]
-    verify_jwt = false
+    verify_jwt = true
   [functions.stripe-connect-dashboard]
-    verify_jwt = false
+    verify_jwt = true
   [functions.stripe-webhook]
     verify_jwt = false
   [functions.contact-form-submit]
