@@ -1001,6 +1001,32 @@ const Checkout = () => {
               </div>
             )}
 
+            {/* Items that dropped out of the order, named so the total makes sense. */}
+            {unavailableItems.length > 0 && (
+              <div
+                role="status"
+                className="mt-4 rounded-xl border border-muted-foreground/20 bg-muted/50 p-3 text-sm text-muted-foreground"
+              >
+                <div className="font-medium text-foreground">Some items were removed</div>
+                <ul className="mt-1 space-y-0.5">
+                  {unavailableItems.map((item) => (
+                    <li key={item.id}>
+                      <span className="font-medium">{item.title}</span> {item.reason}, so it isn't part of this order.
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Buyer protection reassurance, restating the 48-hour window. */}
+            <div className="mt-4 flex items-start gap-2 rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground">
+              <ShieldCheck size={15} className="mt-[1px] shrink-0 text-foreground" aria-hidden="true" />
+              <span>
+                <span className="font-medium text-foreground">Buyer protection included.</span> Your money is held until
+                48 hours after delivery. If something's wrong, raise it in that window and we'll step in.
+              </span>
+            </div>
+
             {/* Master Pay button */}
 
             <div className="mt-6">
