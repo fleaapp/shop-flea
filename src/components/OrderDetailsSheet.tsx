@@ -173,7 +173,8 @@ const OrderDetailsSheet = ({
   // Use the Secure Checkout Fee actually charged (saved on the order at
   // checkout, so coupons are respected). Legacy orders fall back to the rate.
   const savedSecureFee = orders.reduce((sum, o) => sum + (Number((o as any).secure_checkout_fee) || 0), 0);
-  const hasSavedSecureFee = orders.some((o) => (o as any).secure_checkout_fee != null);
+  const feeWaivedByCoupon = orders.some((o) => !!(o as any).coupon_code || !!(o as any).coupon_type);
+  const hasSavedSecureFee = savedSecureFee > 0 || feeWaivedByCoupon;
   const processingFee = hasSavedSecureFee
     ? Math.round(savedSecureFee * 100) / 100
     : Math.round((subtotal * 0.04 + 0.70) * 100) / 100;

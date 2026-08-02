@@ -50,6 +50,7 @@ const OPTIONAL_ORDER_COLUMNS = [
   "transaction_fee",
   "secure_checkout_fee",
   "coupon_code",
+  "coupon_type",
 ] as const;
 
 const ORDER_UPDATE_FALLBACK_COLUMNS = [
@@ -484,7 +485,10 @@ function computeRefundBreakdown(
   // i.e. hand back money Flea never collected.
   const savedSecureFee = groupRows.reduce(
     (sum, o) => sum + (Number(o.secure_checkout_fee) || 0), 0);
-  const hasSavedSecureFee = groupRows.some((o) => o.secure_checkout_fee !== null && o.secure_checkout_fee !== undefined);
+  // A saved $0 is only trustworthy when a coupon waived the fee. Otherwise it
+  // is a legacy/default row and we must recalculate, or the buyer is shortchanged.
+  const feeWaivedByCoupon = groupRows.some((o) => !!(o as any).coupon_code || !!(o as any).coupon_type);
+  const hasSavedSecureFee = savedSecureFee > 0 || feeWaivedByCoupon;
   const savedTransactionFee = groupRows.reduce(
     (sum, o) => sum + (Number(o.transaction_fee) || 0), 0);
   const hasSavedTransactionFee = groupRows.some((o) => o.transaction_fee !== null && o.transaction_fee !== undefined);
@@ -504,7 +508,7 @@ function computeRefundBreakdown(
 async function fetchGroupRows(externalUrl: string, serviceKey: string, order: any) {
   if (!order.order_group_id) return [order];
   const res = await fetch(
-    `${externalUrl}/rest/v1/orders?order_group_id=eq.${order.order_group_id}&select=id,listing_id,price,shipping_price,secure_checkout_fee,transaction_fee,coupon_code,buyer_id,seller_id,status,refunded_at,created_at,order_group_id`,
+    `${externalUrl}/rest/v1/orders?order_group_id=eq.${order.order_group_id}&select=id,listing_id,price,shipping_price,secure_checkout_fee,transaction_fee,coupon_code,coupon_type,buyer_id,seller_id,status,refunded_at,created_at,order_group_id`,
     { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
   );
   if (!res.ok) return [order];

@@ -114,7 +114,8 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
   // — recalculating ignores coupons and would show a total the buyer never paid.
   const savedSecureFee = orders.reduce(
     (sum, o) => sum + (Number((o as any).secure_checkout_fee) || 0), 0);
-  const hasSavedSecureFee = orders.some((o) => (o as any).secure_checkout_fee != null);
+  const feeWaivedByCoupon = orders.some((o) => !!(o as any).coupon_code || !!(o as any).coupon_type);
+  const hasSavedSecureFee = savedSecureFee > 0 || feeWaivedByCoupon;
   const savedTransactionFee = orders.reduce(
     (sum, o) => sum + (Number((o as any).transaction_fee) || 0), 0);
   const hasSavedTransactionFee = orders.some((o) => (o as any).transaction_fee != null);
