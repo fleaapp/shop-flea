@@ -300,7 +300,7 @@ Deno.serve(async (req) => {
             user_id: order.buyer_id,
             type: "order_auto_refunded",
             title: "Order refunded",
-            message: "💸 Your order was automatically refunded because the seller didn't ship within 8 days. Funds will appear in 5 to 10 days.",
+            message: "💸 Your order was automatically refunded because the seller didn't ship within 8 days. Funds usually appear straight away, but some banks can take up to 5 business days.",
             related_listing_id: order.listing_id,
             related_user_id: order.seller_id,
             related_order_id: order.id,
