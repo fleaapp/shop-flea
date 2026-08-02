@@ -276,6 +276,10 @@ const RefundRequestDialog = ({ open, onOpenChange, items, onSubmit }: RefundRequ
             <p className="text-xs text-muted-foreground leading-snug">
               Choose the items you want to refund and pick a reason for each.
             </p>
+            <p className="text-xs text-muted-foreground leading-snug">
+              Parcel marked delivered but nothing arrived? Check with your neighbours and your local post office first, then choose "Item never arrived" — we'll review it with the seller.
+            </p>
+
 
             <div className="space-y-2">
               {items.map((it) => {
