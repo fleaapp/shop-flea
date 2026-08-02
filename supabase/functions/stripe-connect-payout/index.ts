@@ -27,6 +27,8 @@ Deno.serve(async (req) => {
     console.log("[stripe-connect-payout] OPTIONS preflight allowed");
     return new Response("ok", { headers: corsHeaders });
   }
+  const originBlock = rejectUntrustedOrigin(req);
+  if (originBlock) return originBlock;
   if (req.method !== "POST") {
     console.warn(`[stripe-connect-payout] Unsupported method: ${req.method}`);
     return json({ error: "Method not allowed" }, 405);
@@ -37,6 +39,12 @@ Deno.serve(async (req) => {
     // authorization on a money-moving endpoint.
     const userId = await getVerifiedUserId(req);
     if (!userId) return json({ error: "Not authenticated" }, 401);
+
+    // Rate limit: at most 5 payout attempts per user per 10 minutes.
+    if (!(await checkRateLimit(callerKey(req, "payout", userId), 5, 600))) {
+      return tooManyRequests(corsHeaders, "Too many payout attempts. Please wait a few minutes.");
+    }
+
 
 
     const { method } = await req.json();
