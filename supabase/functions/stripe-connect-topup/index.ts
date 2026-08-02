@@ -48,6 +48,13 @@ serve(async (req) => {
     }
     const userId = u.user.id;
 
+    // Rate limit: at most 8 balance-settlement attempts per user per 10 minutes.
+    if (!(await checkRateLimit(callerKey(req, "topup", userId), 8, 600))) {
+      return tooManyRequests(corsHeaders);
+    }
+
+
+
     const body = await req.json().catch(() => ({}));
     const amountCents = Number(body.amountCents ?? 0);
     if (!Number.isFinite(amountCents) || amountCents < 100) {
