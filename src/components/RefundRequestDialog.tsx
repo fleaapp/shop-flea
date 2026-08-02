@@ -387,9 +387,15 @@ const RefundRequestDialog = ({ open, onOpenChange, items, onSubmit }: RefundRequ
                       ))}
                     </SelectContent>
                   </Select>
+                  {reasonMap[eligibleItems[0].orderId] === 'Item never arrived' && (
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      Check with your neighbours and your local post office first. If it's still missing, we'll review it with the seller.
+                    </p>
+                  )}
                 </div>
               </div>
             )}
+
 
             {multi && (
               <div className="rounded-xl bg-muted/50 px-3 py-2 text-xs text-muted-foreground leading-snug">
