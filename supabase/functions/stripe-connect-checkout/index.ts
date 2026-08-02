@@ -24,6 +24,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+  const originBlock = rejectUntrustedOrigin(req);
+  if (originBlock) return originBlock;
 
   try {
     // Authenticate against the external Supabase project where users sign in
@@ -39,6 +41,11 @@ serve(async (req) => {
         status: 401,
       });
     }
+
+    if (!(await checkRateLimit(callerKey(req, "checkout", user.id), 15, 600))) {
+      return tooManyRequests(corsHeaders, "Too many checkout attempts. Please wait a few minutes.");
+    }
+
 
     const { items, shipping, couponCode } = await req.json();
 
