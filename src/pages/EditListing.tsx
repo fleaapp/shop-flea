@@ -324,8 +324,8 @@ const EditListing = () => {
       const parsedPrice = parseFloat(itemPrice);
       const parsedShipping = shippingPrice ? parseFloat(shippingPrice) : 0;
 
-      if (isNaN(parsedPrice) || parsedPrice <= 0) {
-        toast.error('Please enter a valid price');
+      if (isNaN(parsedPrice) || parsedPrice < MIN_LISTING_PRICE) {
+        toast.error(`Item price must be at least $${MIN_LISTING_PRICE.toFixed(2)}.`);
         setIsLoading(false);
         return;
       }
