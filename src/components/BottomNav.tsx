@@ -128,6 +128,8 @@ const BottomNav = ({ adminSettingsBadge }: BottomNavProps = {}) => {
                     : item.label
                 }
                 aria-current={isActive ? 'page' : undefined}
+                className={cn(
+
 
                   'relative flex items-center justify-center rounded-full px-4 max-[375px]:px-3 py-2 max-[375px]:py-1.5 transition-colors duration-150',
                   isActive
