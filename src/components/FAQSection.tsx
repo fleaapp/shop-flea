@@ -124,7 +124,7 @@ const faqItems = [
       },
       {
         q: 'What if my parcel never arrives?',
-        a: 'If an order is never marked as shipped with valid tracking, it is refunded to you automatically 9 days after purchase. If tracking says delivered but nothing turned up, check with your neighbours and your local post office first, then request a refund in the order chat within 48 hours of the delivered scan and choose "Item never arrived". Flea reviews these with the seller and funds stay held until it is sorted.',
+        a: 'If an order is never marked as shipped with valid tracking, it is refunded to you automatically 9 days after purchase. If tracking shows the parcel is still in transit with no delivery scan, you can request a refund in the order chat after 10 days from shipment. If tracking says delivered but nothing turned up, check with your neighbours and your local post office first, then request a refund in the order chat within 48 hours of the delivered scan and choose "Item never arrived". Flea reviews these with the seller and funds stay held until it is sorted.',
       },
       {
         q: 'What happens if the seller enters the wrong tracking?',
