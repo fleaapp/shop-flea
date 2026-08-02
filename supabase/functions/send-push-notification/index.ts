@@ -103,6 +103,7 @@ serve(async (req) => {
         "new_review",
         "order_shipped",
         "order_delivered",
+        "sale_delivered",
       ]);
 
       if (!callerUserId || !CROSS_USER_TYPES.has(notification.type)) {
