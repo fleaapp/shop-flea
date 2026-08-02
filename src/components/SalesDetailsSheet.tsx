@@ -28,6 +28,8 @@ import { openTrackingUrl } from '@/lib/tracking';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchSellerShippingSettings, getBundleBreakdownText } from '@/utils/shippingCalculator';
+import { computeSellerNet } from '@/utils/feeCalculator';
+
 import { toast } from 'sonner';
 import { Loader2, ChevronRight } from 'lucide-react';
 import { clearOrderChatBadges } from '@/utils/orderChatRead';
