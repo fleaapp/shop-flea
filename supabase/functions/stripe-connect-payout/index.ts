@@ -30,15 +30,11 @@ Deno.serve(async (req) => {
   }
   console.log("[stripe-connect-payout] POST entered handler");
   try {
-    const authHeader = req.headers.get("Authorization") || "";
-    const jwt = authHeader.replace("Bearer ", "").trim();
-    if (!jwt) return json({ error: "Not authenticated" }, 401);
-    // Manual JWT parse (per project convention)
-    const parts = jwt.split(".");
-    if (parts.length !== 3) return json({ error: "Invalid token" }, 401);
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
-    const userId = payload.sub as string;
-    if (!userId) return json({ error: "Invalid token" }, 401);
+    // Verified authentication — never trust an unsigned JWT payload for
+    // authorization on a money-moving endpoint.
+    const userId = await getVerifiedUserId(req);
+    if (!userId) return json({ error: "Not authenticated" }, 401);
+
 
     const { method } = await req.json();
     console.log(`[stripe-connect-payout] payout method=${method === "instant" ? "instant" : method === "standard" ? "standard" : "invalid"}`);
