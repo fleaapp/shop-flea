@@ -254,6 +254,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (verifyError && isBadJwt) {
             console.warn('[auth] stored token rejected by server — clearing local session:', verifyError);
             try {
+              // Lets the login screen explain why the user landed there.
+              sessionStorage.setItem('flea_session_expired', '1');
+            } catch { /* ignore */ }
+            try {
               await supabase.auth.signOut({ scope: 'local' });
             } catch { /* ignore */ }
             setSession(null);

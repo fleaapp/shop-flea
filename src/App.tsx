@@ -11,6 +11,7 @@ import PageSkeleton from "./components/PageSkeleton";
 import { forceRestoreRouteAppChrome } from "@/lib/appChrome";
 import { getRouteFromNativeAuthUrl } from "@/lib/authRedirects";
 import { PushNotificationSubscriber } from "@/components/PushNotificationSubscriber";
+import OfflineBanner from "@/components/OfflineBanner";
 
 // Critical path – auth is loaded eagerly; app/feed routes are lazy so /auth paints first.
 import Auth from "./pages/Auth";
@@ -294,6 +295,7 @@ const AppContent = () => {
 
   return (
     <>
+      <OfflineBanner />
       <Toaster />
       <Sonner />
       {isAuthRoute ? (

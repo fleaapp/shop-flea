@@ -38,6 +38,7 @@ import ConditionInfoPopover from '@/components/ConditionInfoPopover';
 import BrandAutocomplete from '@/components/BrandAutocomplete';
 import { safeNavigateBack } from '@/utils/safeBack';
 import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
+import { sellerEarningsPreview } from '@/utils/feeCalculator';
 
 interface ImageFile {
   file: File;
@@ -843,6 +844,17 @@ const CreateListing = () => {
             className={`${inputStyles} pl-8`}
           />
         </div>
+
+        {/* Live payout preview so sellers see what actually lands in their account. */}
+        {parseFloat(itemPrice) > 0 && (
+          <p className="-mt-1 px-1 text-xs text-muted-foreground">
+            You'll receive{' '}
+            <span className="font-semibold text-foreground">
+              ${sellerEarningsPreview(parseFloat(itemPrice) || 0, parseFloat(shippingPrice) || 0).toFixed(2)}
+            </span>{' '}
+            after the 2% + $0.50 transaction fee. Listing on Flea is free.
+          </p>
+        )}
 
         {/* Shipping Price */}
         <div className="relative" onClick={tieredShippingEnabled ? () => setShowShippingSettings(true) : undefined}>

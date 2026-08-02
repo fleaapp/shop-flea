@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import FilterChip from '@/components/FilterChip';
@@ -577,6 +578,34 @@ const Index = () => {
                 />
               ))}
             </>
+          ) : (activeFilterChips.length > 0 || searchQuery) ? (
+            <div className="flex h-full flex-col items-center justify-center text-center px-4">
+              <span className="text-5xl mb-3">🔍</span>
+              <p className="text-lg font-medium text-muted-foreground">Nothing matched that</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Try fewer filters or a different search.
+              </p>
+              <Button
+                onClick={() => {
+                  clearSearch();
+                  setAppliedFilters({
+                    preferences: false,
+                    hideSoldItems: false,
+                    sizes: [],
+                    categories: [],
+                    genders: [],
+                    condition: '',
+                    colours: [],
+                    styles: [],
+                    brands: [],
+                    priceRange: [0, 1000],
+                  });
+                }}
+                className="mt-6 rounded-full bg-primary text-primary-foreground"
+              >
+                Clear filters
+              </Button>
+            </div>
           ) : (
             <div className="flex h-full flex-col items-center justify-center text-center px-4">
               <span className="text-5xl mb-3">😢</span>

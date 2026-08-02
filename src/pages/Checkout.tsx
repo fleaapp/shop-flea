@@ -17,12 +17,13 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { toast } from 'sonner';
-import { Pencil, Lock } from 'lucide-react';
+import { Pencil, Lock, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import BlockedUserBanner from '@/components/BlockedUserBanner';
 import { fetchSellerShippingSettings, calculateTotalShipping, getBundleBreakdownText, SellerShippingInfo } from '@/utils/shippingCalculator';
 import { calculateFees } from '@/utils/feeCalculator';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useBuyerAddress } from '@/hooks/useBuyerAddress';
 import SecureCheckoutInfoPopover from '@/components/SecureCheckoutInfoPopover';
 import CouponInput, { AppliedCoupon } from '@/components/CouponInput';
@@ -60,6 +61,7 @@ const Checkout = () => {
   const { user, profile } = useAuth();
   const buyerOwesCents = Number((profile as any)?.negative_balance_cents ?? 0);
   const { isBlocked } = useBlockedStatus();
+  const isOnline = useOnlineStatus();
   const {
     removeFromCart
   } = useCart();
@@ -141,6 +143,25 @@ const Checkout = () => {
   // Check if any items are from paused/inactive/removed sellers (should have been filtered at Cart, but double-check)
   const validItems = useMemo(() =>
     items.filter((item: any) => !item.isPaused && !item.isInactive && !item.isRemoved && item.status !== 'sold'),
+    [items]
+  );
+
+  // Anything dropped from the payable list gets named back to the buyer so a
+  // vanishing item never looks like a bug in the total.
+  const unavailableItems = useMemo(
+    () =>
+      (items as any[])
+        .filter((item) => item.isPaused || item.isInactive || item.isRemoved || item.status === 'sold')
+        .map((item) => ({
+          id: item.id,
+          title: item.title as string,
+          reason:
+            item.status === 'sold'
+              ? 'sold while it was in your cart'
+              : item.isRemoved
+                ? 'was removed by the seller'
+                : 'is unavailable right now',
+        })),
     [items]
   );
   
@@ -294,6 +315,10 @@ const Checkout = () => {
   }
 
   const preflight = () => {
+    if (!isOnline) {
+      showCheckoutError('offline', "You're offline, so we couldn't reach the network. Your card has not been charged — reconnect and try again.");
+      return false;
+    }
     if (!user) { toast.error('You must be logged in to place an order'); return false; }
     if (isBlocked) { toast.error('Your account is restricted. You cannot make purchases.'); return false; }
     if (buyerOwesCents > 0) {
@@ -975,6 +1000,32 @@ const Checkout = () => {
                 </button>
               </div>
             )}
+
+            {/* Items that dropped out of the order, named so the total makes sense. */}
+            {unavailableItems.length > 0 && (
+              <div
+                role="status"
+                className="mt-4 rounded-xl border border-muted-foreground/20 bg-muted/50 p-3 text-sm text-muted-foreground"
+              >
+                <div className="font-medium text-foreground">Some items were removed</div>
+                <ul className="mt-1 space-y-0.5">
+                  {unavailableItems.map((item) => (
+                    <li key={item.id}>
+                      <span className="font-medium">{item.title}</span> {item.reason}, so it isn't part of this order.
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Buyer protection reassurance, restating the 48-hour window. */}
+            <div className="mt-4 flex items-start gap-2 rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground">
+              <ShieldCheck size={15} className="mt-[1px] shrink-0 text-foreground" aria-hidden="true" />
+              <span>
+                <span className="font-medium text-foreground">Buyer protection included.</span> Your money is held until
+                48 hours after delivery. If something's wrong, raise it in that window and we'll step in.
+              </span>
+            </div>
 
             {/* Master Pay button */}
 
