@@ -2,6 +2,8 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { logEdgeError } from "../_shared/logError.ts";
 import { getVerifiedUserId } from "../_shared/auth.ts";
+import { rejectUntrustedOrigin } from "../_shared/cors.ts";
+import { checkRateLimit, callerKey, tooManyRequests } from "../_shared/rateLimit.ts";
 
 
 const corsHeaders = {
@@ -10,6 +12,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Max-Age": "86400",
+  Vary: "Origin",
 };
 
 function getStripeSecretKey() {
