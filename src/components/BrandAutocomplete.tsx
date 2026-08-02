@@ -26,6 +26,7 @@ const BrandAutocomplete = ({ value, onChange, className = '', placeholder = 'Bra
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
+  const [suggestMatch, setSuggestMatch] = useState<Brand | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
