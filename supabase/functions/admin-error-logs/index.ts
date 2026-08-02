@@ -1,5 +1,6 @@
 // Admin-only endpoint that lists and manages runtime error logs stored on the
 // external Supabase. Returns paginated, filtered results for the admin dashboard.
+import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -36,6 +37,8 @@ async function isAdmin(auth: string | null): Promise<{ userId: string; isAdmin: 
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const originBlock = rejectUntrustedOrigin(req);
+  if (originBlock) return originBlock;
   try {
     const auth = req.headers.get("Authorization");
     const check = await isAdmin(auth);

@@ -1,3 +1,4 @@
+import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -28,6 +29,8 @@ async function getUserId(req: Request): Promise<string | null> {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const originBlock = rejectUntrustedOrigin(req);
+  if (originBlock) return originBlock;
 
   const userId = await getUserId(req);
   if (!userId) {

@@ -2,6 +2,7 @@
 // stripe_account_id was cleared in the DB. Searches Stripe for accounts where
 // metadata.flea_user_id matches, then PATCHes the profile on the external
 // Supabase (source of truth) via service role.
+import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -19,6 +20,8 @@ function json(body: unknown, status = 200) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const originBlock = rejectUntrustedOrigin(req);
+  if (originBlock) return originBlock;
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
     const token = authHeader.replace("Bearer ", "");
