@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { MIN_LISTING_PRICE } from '@/utils/feeCalculator';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import ListingImageCropDialog from '@/components/ListingImageCropDialog';
 import { useNavigate, useParams } from 'react-router-dom';
