@@ -194,29 +194,28 @@ serve(async (req) => {
       });
     }
 
-    // Basic size guard — Stripe caps identity docs at 8MB, we accept up to ~6MB base64.
-    const frontBytes = base64ToBytes(frontBase64);
-    if (frontBytes.byteLength > 8 * 1024 * 1024) {
-      return new Response(JSON.stringify({ error: "Front image too large (max 8MB)." }), {
+    // Validate size before decoding, and confirm the payload is a real image.
+    const badRequest = (error: string) =>
+      new Response(JSON.stringify({ error }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
-    }
-    let backBytes: Uint8Array | null = null;
+
+    const front = decodeImage(frontBase64, "Front");
+    if ("error" in front) return badRequest(front.error);
+
+    let back: DecodedImage | null = null;
     if (backBase64) {
-      backBytes = base64ToBytes(backBase64);
-      if (backBytes.byteLength > 8 * 1024 * 1024) {
-        return new Response(JSON.stringify({ error: "Back image too large (max 8MB)." }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        });
-      }
+      const decodedBack = decodeImage(backBase64, "Back");
+      if ("error" in decodedBack) return badRequest(decodedBack.error);
+      back = decodedBack;
     }
 
-    const frontFileId = await uploadIdentityFile(secretKey, accountId, frontBytes, "id-front.jpg");
-    const backFileId = backBytes
-      ? await uploadIdentityFile(secretKey, accountId, backBytes, "id-back.jpg")
+    const frontFileId = await uploadIdentityFile(secretKey, accountId, front, "id-front");
+    const backFileId = back
+      ? await uploadIdentityFile(secretKey, accountId, back, "id-back")
       : undefined;
+
 
     await stripe.accounts.update(accountId, {
       individual: {
