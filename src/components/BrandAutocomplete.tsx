@@ -232,6 +232,21 @@ const BrandAutocomplete = ({ value, onChange, className = '', placeholder = 'Bra
           )}
         </div>
       )}
+
+      <AlertDialog open={!!suggestMatch} onOpenChange={(o) => !o && setSuggestMatch(null)}>
+        <AlertDialogContent className="rounded-2xl max-w-[320px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Did you mean "{suggestMatch?.display_name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tap Use to select this brand, or Create to add "{query.trim()}" as a new brand.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel onClick={declineSuggestedBrand} className="flex-1 rounded-lg h-10">Create</AlertDialogCancel>
+            <AlertDialogAction onClick={acceptSuggestedBrand} className="flex-1 rounded-lg h-10">Use</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
