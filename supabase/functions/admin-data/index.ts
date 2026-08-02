@@ -1767,6 +1767,8 @@ async function listRefunds(payload: any = {}) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const originBlock = rejectUntrustedOrigin(req);
+  if (originBlock) return originBlock;
 
   try {
     if (!EXTERNAL_ANON_KEY || !EXTERNAL_SERVICE_ROLE_KEY) {
@@ -1775,6 +1777,13 @@ Deno.serve(async (req) => {
 
     const auth = await assertAdmin(req);
     if (!auth.ok) return auth.response;
+
+    // Rate limit: 240 admin calls per admin per minute (dashboards poll).
+    if (!(await checkRateLimit(callerKey(req, "admin-data", auth.userId), 240, 60))) {
+      return tooManyRequests(corsHeaders);
+    }
+
+
 
     const body = await req.json().catch(() => ({}));
     const action = body?.action as AdminAction | undefined;
