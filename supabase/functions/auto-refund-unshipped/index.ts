@@ -230,8 +230,13 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const expectedKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
   const authHeader = req.headers.get("Authorization") ?? "";
-  if (!expectedKey || authHeader !== `Bearer ${expectedKey}`) {
+  const providedCron = req.headers.get("x-cron-secret") ?? "";
+  const authorized =
+    (!!expectedKey && authHeader === `Bearer ${expectedKey}`) ||
+    (!!cronSecret && providedCron === cronSecret);
+  if (!authorized) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
