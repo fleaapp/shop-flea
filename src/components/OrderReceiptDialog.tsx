@@ -118,7 +118,7 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
   const savedTransactionFee = orders.reduce(
     (sum, o) => sum + (Number((o as any).transaction_fee) || 0), 0);
   const hasSavedTransactionFee = orders.some((o) => (o as any).transaction_fee != null);
-  const couponCode = orders.find((o) => (o as any).coupon_code)?.coupon_code as string | undefined;
+  const couponCode = orders.find((o) => (o as any).coupon_code)?.['coupon_code' as keyof typeof orders[0]] as string | undefined;
 
   const secureCheckoutFee = hasSavedSecureFee
     ? Math.round(savedSecureFee * 100) / 100
