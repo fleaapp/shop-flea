@@ -239,6 +239,21 @@ export default function AdminListings() {
           )}
         </DrawerContent>
       </Drawer>
+
+      <AlertDialog open={!!listingToDelete} onOpenChange={(o) => !o && setListingToDelete(null)}>
+        <AlertDialogContent className="rounded-2xl max-w-[320px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this listing?</AlertDialogTitle>
+            <AlertDialogDescription>
+              It will stay under Deleted so admin history is preserved.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel onClick={() => setListingToDelete(null)} className="flex-1 rounded-lg h-10">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (listingToDelete) { performAction(listingToDelete.id, 'soft_delete'); setListingToDelete(null); setSelected(null); } }} className="flex-1 rounded-lg h-10 bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
