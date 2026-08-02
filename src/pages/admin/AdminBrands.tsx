@@ -9,6 +9,16 @@ import { AdminHeader } from '@/components/admin/shell/AdminHeader';
 import { AdminBadge } from '@/components/admin/shell/AdminBadge';
 import { AdminEmptyState } from '@/components/admin/shell/AdminEmptyState';
 import { getAdminLastSeen, markAdminTabSeen } from '@/lib/adminLastSeen';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function AdminBrands() {
   const { brands, loading, search, setSearch, rename, remove } = useAdminBrands();
