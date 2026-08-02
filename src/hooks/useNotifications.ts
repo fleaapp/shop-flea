@@ -385,6 +385,8 @@ export const getNotificationMessage = (type: string, username?: string, listingT
       return rawMessage || 'Your refund request was rejected.';
     case 'refund_initiated':
       return rawMessage || 'A refund has been initiated.';
+    case 'sale_delivered':
+      return rawMessage || '🏠 Your item was delivered. Your funds release 48 hours from now.';
     case 'order_auto_refunded':
       return rawMessage || '💸 Your order was automatically refunded.';
     case 'sale_auto_refunded':
