@@ -11,6 +11,7 @@ const ALERT_TITLES: Record<string, string> = {
   item_sold: '🎉 Item Sold!',
   order_shipped: '✈️ Order Shipped',
   order_delivered: '🏠 Order Delivered',
+  sale_delivered: '🏠 Sale Delivered',
   new_review: '⭐ New Review',
   new_comment: '💬 New Comment',
   comment_reply: '↩️ Reply',
