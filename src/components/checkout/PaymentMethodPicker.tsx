@@ -80,6 +80,7 @@ const PaymentMethodPicker = ({ value, onChange, amountCents }: Props) => {
   const [loading, setLoading] = useState(true);
   const [wallet, setWallet] = useState<WalletKind | null>(() => detectNativeWallet() ?? (isApplePayLikelyDevice() ? 'apple' : null));
   const [walletLoading, setWalletLoading] = useState(!Capacitor.isNativePlatform());
+  const [cardToDelete, setCardToDelete] = useState<SavedCard | null>(null);
 
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
