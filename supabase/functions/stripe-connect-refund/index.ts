@@ -484,7 +484,10 @@ function computeRefundBreakdown(
   // i.e. hand back money Flea never collected.
   const savedSecureFee = groupRows.reduce(
     (sum, o) => sum + (Number(o.secure_checkout_fee) || 0), 0);
-  const hasSavedSecureFee = groupRows.some((o) => o.secure_checkout_fee !== null && o.secure_checkout_fee !== undefined);
+  // A saved $0 is only trustworthy when a coupon waived the fee. Otherwise it
+  // is a legacy/default row and we must recalculate, or the buyer is shortchanged.
+  const feeWaivedByCoupon = groupRows.some((o) => !!(o as any).coupon_code || !!(o as any).coupon_type);
+  const hasSavedSecureFee = savedSecureFee > 0 || feeWaivedByCoupon;
   const savedTransactionFee = groupRows.reduce(
     (sum, o) => sum + (Number(o.transaction_fee) || 0), 0);
   const hasSavedTransactionFee = groupRows.some((o) => o.transaction_fee !== null && o.transaction_fee !== undefined);
