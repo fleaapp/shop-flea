@@ -470,8 +470,18 @@ function computeRefundBreakdown(
   const groupSubtotal = round2(itemSubtotals.reduce((sum, s) => sum + s, 0));
   const itemSubtotal = itemSubtotals[targetIndex];
 
-  const secureFee = calculateSecureCheckoutFee(groupSubtotal);
-  const transactionFee = calculateTransactionFee(groupSubtotal);
+  // Use the fees ACTUALLY charged (snapshotted on the order rows at checkout).
+  // Recalculating here would refund a Secure Checkout Fee that a coupon waived,
+  // i.e. hand back money Flea never collected.
+  const savedSecureFee = groupRows.reduce(
+    (sum, o) => sum + (Number(o.secure_checkout_fee) || 0), 0);
+  const hasSavedSecureFee = groupRows.some((o) => o.secure_checkout_fee !== null && o.secure_checkout_fee !== undefined);
+  const savedTransactionFee = groupRows.reduce(
+    (sum, o) => sum + (Number(o.transaction_fee) || 0), 0);
+  const hasSavedTransactionFee = groupRows.some((o) => o.transaction_fee !== null && o.transaction_fee !== undefined);
+
+  const secureFee = hasSavedSecureFee ? round2(savedSecureFee) : calculateSecureCheckoutFee(groupSubtotal);
+  const transactionFee = hasSavedTransactionFee ? round2(savedTransactionFee) : calculateTransactionFee(groupSubtotal);
 
   const secureFeeShare = groupSubtotal > 0 ? round2(secureFee * (itemSubtotal / groupSubtotal)) : 0;
   const transactionFeeShare = groupSubtotal > 0 ? round2(transactionFee * (itemSubtotal / groupSubtotal)) : 0;
