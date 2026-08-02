@@ -345,6 +345,17 @@ serve(async (req) => {
     };
 
     if (!Array.isArray(items) || items.length === 0) throw new Error("No items provided.");
+    if (items.length > MAX_CART_ITEMS) throw new Error("Checkout is limited to 50 items.");
+    for (const item of items) {
+      if (!isUuid(item?.id) || !isUuid(item?.sellerId)) {
+        throw new Error("One or more item IDs are invalid.");
+      }
+    }
+    if (shippingBySeller && typeof shippingBySeller === "object") {
+      for (const sellerId of shippingBySeller.map(([id]) => id)) {
+        if (!isUuid(sellerId)) throw new Error("Invalid seller ID in shipping map.");
+      }
+    }
     if (!shipping) throw new Error("Missing shipping details.");
     if (!checkoutReference) throw new Error("Missing checkoutReference — payment cannot be verified.");
 
