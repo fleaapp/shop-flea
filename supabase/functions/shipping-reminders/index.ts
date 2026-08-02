@@ -24,10 +24,15 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Require service-role bearer — only pg_cron / internal callers
+  // Require service-role bearer or the cron secret — only pg_cron / internal callers
   const expectedKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const cronSecret = Deno.env.get('CRON_SECRET') ?? '';
   const authHeader = req.headers.get('Authorization') ?? '';
-  if (!expectedKey || authHeader !== `Bearer ${expectedKey}`) {
+  const providedCron = req.headers.get('x-cron-secret') ?? '';
+  const authorized =
+    (!!expectedKey && authHeader === `Bearer ${expectedKey}`) ||
+    (!!cronSecret && providedCron === cronSecret);
+  if (!authorized) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
