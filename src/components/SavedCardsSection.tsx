@@ -26,6 +26,7 @@ const SavedCardsSection = () => {
   const [cards, setCards] = useState<SavedCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [cardToDelete, setCardToDelete] = useState<SavedCard | null>(null);
 
   useEffect(() => {
     let cancelled = false;
