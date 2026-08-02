@@ -23,7 +23,7 @@ const CONDITIONS_INFO = [
 const ConditionInfoPopover = () => (
   <Popover>
     <PopoverTrigger asChild>
-      <button type="button" className="flex items-center justify-center h-8 w-8 rounded-full hover:bg-muted transition-colors">
+      <button type="button" aria-label="Condition guide" className="flex items-center justify-center h-11 w-11 -m-1.5 rounded-full hover:bg-muted transition-colors">
         <Info className="h-4 w-4 text-muted-foreground" />
       </button>
     </PopoverTrigger>
