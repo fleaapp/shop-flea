@@ -415,6 +415,13 @@ const CreateListing = () => {
       toast.error('Please fill in all required fields');
       return;
     }
+
+    const parsedItemPrice = parseFloat(itemPrice);
+    if (!Number.isFinite(parsedItemPrice) || parsedItemPrice < MIN_LISTING_PRICE) {
+      toast.error(`Item price must be at least $${MIN_LISTING_PRICE.toFixed(2)}.`);
+      return;
+    }
+
     
     if (imageFiles.length === 0) {
       toast.error('Please add at least one image');
