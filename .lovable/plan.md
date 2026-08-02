@@ -1,57 +1,32 @@
-## Why the score is stuck at 87
+## What's left
 
-The audits are not failing to register progress. Each pass confirms the previous fixes held — fees are consistent, refunds are idempotent, webhooks verify signatures, payouts withhold held funds, no money endpoint is unauthenticated. The score stays flat because the audit scope keeps expanding: every time one category is cleaned, the next pass looks deeper and finds new issues that were always there but not yet inspected.
+One Project monitoring finding, and it's real. I verified it against the live database: all 9 existing orders have `secure_checkout_fee = 0`, and none has a value above 0. The column was added on 2 Aug with `NOT NULL DEFAULT 0`, but the orders themselves were created 21–24 July, before the column existed — so every one of them was silently backfilled to zero.
 
-This is the expected shape of a mature product audit. 87/100 means the app is solid at the surface and the remaining gaps are real but narrow. The way out is not "audit harder"; it is to stop score-chasing and start release-gating.
+Because the refund and display code treats "0" as a genuine saved value (`!== null && !== undefined`), those older orders now:
+- refund the buyer the item + shipping share only, leaving out the 4% + $0.70 they actually paid,
+- show `Secure Checkout Fee $0.00` on receipts, cart group totals, and order details, understating the buyer total.
 
----
+The money isn't sent anywhere else — it just isn't returned.
 
-## Proposed plan: release-gating sprint
+## Fix
 
-### Goal
-Move from "what else is wrong?" to "these specific things must be true before we ship." Lock the audit scope to one final pass after this sprint.
+### 1. Backfill the legacy rows (migration)
+Compute the historical fee per checkout group and write it back:
+- Group orders by `checkout_reference` (fall back to `order_group_id`).
+- Fee = `round(subtotal * 0.04 + 0.70, 2)` on the group's item subtotal, apportioned to rows the same way the app apportions it today.
+- Skip groups where a fee-waiving coupon applied (`coupon_type` indicating FREEFLEA) — those legitimately paid $0.
+- Only touch rows created before the column existed, so nothing written by live checkout is overwritten.
 
-### Phase 1 — Critical blockers (do first)
-These four items from the latest audit are the only ones that can create legal exposure or break a native purchase path:
+### 2. Harden the "is it saved?" check
+Right now a real $0 and a backfilled $0 are indistinguishable. Change the check in `stripe-connect-refund` (`computeRefundBreakdown`), `Cart.tsx`, `OrderDetailsSheet.tsx`, and `OrderReceiptDialog.tsx` to treat the snapshot as authoritative only when the group sum is greater than zero **or** a fee-waiving coupon is recorded; otherwise fall back to `calculateSecureCheckoutFee(subtotal)` as before. This makes the code self-correcting even if another row slips through with a default.
 
-1. **Fix the 48-hour refund clock** (`OrderDetailsSheet`, `SalesDetailsSheet`). Replace `differenceInDays >= 2` with a real 48-hour timestamp comparison. This is a written promise the app currently breaks.
-2. **Remove "Stripe" from buyer-facing refund copy and receipts** (`RefundSystemMessage`, `OrderReceiptDialog`). Use "payment provider" and a generic secured-payment mark.
-3. **Replace native `confirm()` popups with Flea AlertDialogs** (`BrandAutocomplete`, saved-card delete in checkout/profile, admin brands/listings). On iOS these can be suppressed and block card removal.
-4. **Document or remove the 10-day lost-in-transit refund rule** (`OrderDetailsSheet`, `Terms`, `FAQ`). A refund right that exists only in code is a compliance risk.
+### 3. Verify
+- Re-query the orders table to confirm every legacy row now carries a non-zero fee (except any coupon-waived ones).
+- Open a receipt for one of the July orders and confirm the fee line and buyer total are correct.
+- Dry-run the refund breakdown for a legacy order and confirm `buyerRefund` includes the fee share.
 
-### Phase 2 — Backend hardening (do in parallel with Phase 1)
-- Add rate limiting to `validate-coupon`.
-- Validate UUIDs before interpolating `orderId` into service-role PostgREST queries in `stripe-connect-refund` and `finalize-checkout`.
-- Cap `items.length` in `stripe-connect-payment-intent`.
-- Add explicit `verify_jwt` entries in `supabase/config.toml` for the 19 functions that currently rely only on in-code auth.
+## Technical notes
 
-### Phase 3 — UX consistency pass
-- Standardise back arrows: ChevronLeft everywhere.
-- Gate "No messages yet" on loading state in chat screens.
-- Add visible labels to checkout address fields.
-- Show the "no cancellations" term at the point of sale.
-- Converge confirmation-dialog widths and button heights.
-
-### Phase 4 — Final verification
-- One targeted audit pass checking only the items above.
-- If clean, freeze the audit and ship. Do not run another open-ended full-product audit unless the product changes significantly.
-
----
-
-## What this plan does not include
-
-- Another broad "find everything" audit. That is the activity that keeps the score at 87.
-- Rewriting large flows that already work (checkout, onboarding, messaging).
-- Chasing every nice-to-have in the latest report.
-
----
-
-## Decision needed
-
-Do you want to:
-
-A) Run this release-gating sprint — fix the four critical items and the backend hardening, then lock the audit.
-B) Keep auditing deeper until the score crosses a specific number (e.g. 95). This will keep finding new issues and the score may not move much.
-C) Ship as-is and treat 87/100 as good enough for a marketplace beta, fixing only the legal/copy items.
-
-Which path do you want?
+- The backfill is a data migration only; no schema change, no change to how new orders are written.
+- `finalize-checkout` and `stripe-connect-payment-intent` already snapshot the fee correctly for new orders — they need no change.
+- Nine orders are affected, so the backfill is small and reversible; I'll record the pre-update values in the migration comment for traceability.
