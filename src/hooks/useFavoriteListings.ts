@@ -12,7 +12,10 @@ import { LISTING_CARD_COLUMNS } from '@/lib/listingColumns';
 
 // Extended DbListing to include pause_selling from profiles
 export interface DbListingWithPause extends DbListing {
+  country_code?: string | null;
+  region_id?: string | null;
   profiles?: {
+    user_id?: string;
     username: string;
     avatar_url: string | null;
     location: string | null;
@@ -22,6 +25,7 @@ export interface DbListingWithPause extends DbListing {
     status?: string | null;
   } | null;
 }
+
 
 export const useFavoriteListings = (filters?: ListingFilters) => {
   const { user } = useAuth();
