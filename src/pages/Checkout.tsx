@@ -145,6 +145,25 @@ const Checkout = () => {
     items.filter((item: any) => !item.isPaused && !item.isInactive && !item.isRemoved && item.status !== 'sold'),
     [items]
   );
+
+  // Anything dropped from the payable list gets named back to the buyer so a
+  // vanishing item never looks like a bug in the total.
+  const unavailableItems = useMemo(
+    () =>
+      (items as any[])
+        .filter((item) => item.isPaused || item.isInactive || item.isRemoved || item.status === 'sold')
+        .map((item) => ({
+          id: item.id,
+          title: item.title as string,
+          reason:
+            item.status === 'sold'
+              ? 'sold while it was in your cart'
+              : item.isRemoved
+                ? 'was removed by the seller'
+                : 'is unavailable right now',
+        })),
+    [items]
+  );
   
   // Calculate shipping using tiered settings
   const { totalShipping, shippingBySeller } = useMemo(() => {
