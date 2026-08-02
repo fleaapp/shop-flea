@@ -282,7 +282,7 @@ const EditProfile = () => {
       <header className="shrink-0 bg-background px-4 py-4">
         <div className="flex items-center">
           <button onClick={() => safeNavigateBack(navigate, '/profile')} className="p-2 -ml-2">
-            <ArrowLeft className="h-6 w-6 text-foreground" />
+            <ChevronLeft className="h-6 w-6 text-foreground" />
           </button>
           <h1 className="flex-1 text-center text-lg font-bold text-foreground pr-8">Edit Profile</h1>
         </div>
