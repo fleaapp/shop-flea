@@ -339,7 +339,8 @@ const SalesDetailsSheet = ({
                   )}
                 </div>
 
-                {!fullyRefunded && (
+                {/* Hidden when no fee was charged (pre-fee sales) so it doesn't read as a bug. */}
+                {!fullyRefunded && transactionFee > 0 && (
                   <>
                     <div className="border-t border-border" />
 

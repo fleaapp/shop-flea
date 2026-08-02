@@ -432,9 +432,21 @@ serve(async (req) => {
     const SECURE_CHECKOUT_RATE = 0.04, SECURE_CHECKOUT_FIXED = 0.70;
     const TRANSACTION_FEE_RATE = 0.02, TRANSACTION_FEE_FIXED = 0.50;
     let secureCheckoutFee = Math.round((subtotalForFee * SECURE_CHECKOUT_RATE + SECURE_CHECKOUT_FIXED) * 100) / 100;
-    const transactionFeeTotal = subtotalForFee > 0
-      ? Math.round((subtotalForFee * TRANSACTION_FEE_RATE + TRANSACTION_FEE_FIXED) * 100) / 100
-      : 0;
+    // The Transaction Fee is charged per seller on that seller's own subtotal.
+    // Allocating the whole checkout's fee to each seller would over-charge every
+    // seller after the first in a multi-seller cart.
+    const transactionFeeBySeller = new Map<string, number>();
+    for (const [sellerId, sellerItems] of itemsBySellerForShipping.entries()) {
+      const sellerSubtotal = round2(
+        sellerItems.reduce((s, i) => s + Number(i.price), 0) + Number(shippingMap.get(sellerId) || 0),
+      );
+      transactionFeeBySeller.set(
+        sellerId,
+        sellerSubtotal > 0
+          ? Math.round((sellerSubtotal * TRANSACTION_FEE_RATE + TRANSACTION_FEE_FIXED) * 100) / 100
+          : 0,
+      );
+    }
 
     // Re-validate coupon server-side (same logic as stripe-connect-payment-intent).
     let appliedCoupon: { id: string; code: string; type: string } | null = null;
@@ -492,7 +504,7 @@ serve(async (req) => {
           seller_id: sellerId,
           price: Number(item.price),
           shipping_price: index === 0 ? sellerShipping : 0,
-          transaction_fee: index === 0 ? transactionFeeTotal : 0,
+          transaction_fee: index === 0 ? (transactionFeeBySeller.get(sellerId) || 0) : 0,
           secure_checkout_fee: carriesSecureFee ? secureCheckoutFee : 0,
           coupon_id: appliedCoupon?.id ?? null,
           coupon_code: appliedCoupon?.code ?? null,

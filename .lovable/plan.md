@@ -1,51 +1,43 @@
-## Verified state (no money is wrong)
+## Payments audit - what I verified
 
-- **Stripe:** refund `re_3TvxYFDPN6BH77fW1g5Pq1hn`, amount **$1.35**, status succeeded, with `transfer_reversal: trr_1TzxZRDPN6BH77fWMRAAL4YH`. The seller transfer was clawed back in full. Same shape for the second bundle.
-- **Database:** all 4 order rows (FL-001003/4/5/6) are `status = refunded` with `refunded_at` set, `transaction_fee = 0.00`, `secure_checkout_fee = 0` (FREEFLEA).
+I checked the live order data against Stripe and read the fee code paths end to end.
 
-So @sarahhearn2 has **$0.00** from these sales. The "$0.53 fee / You received $0.82" line is a **display bug only** - no payout, no ledger error. The seller dashboard already excludes refunded orders (verified: `SellerDashboard.tsx` filters with `isOrderRefunded` in the pending section), which is why the dashboard and this drawer disagree.
+**Healthy:**
+- All 9 orders have non-null fee snapshots, no refunded rows missing `refunded_at`, every row has a group and checkout reference.
+- Historical orders match Stripe exactly. Example: order FL-001009 stored `secure_checkout_fee 0.74`, `transaction_fee 0.00`; Stripe charged 174c with an application fee of 74c. The FREEFLEA orders correctly stored $0 fees.
+- Per-item (partial) refunds are mathematically correct: buyer gets item + pro-rata secure fee, seller transfer is reversed by item minus pro-rata transaction fee, and the platform keeps exactly the remaining items' fee share.
+- Full-group refunds use `reverse_transfer` + `refund_application_fee`, so nobody is left holding fees.
+- Payout gating correctly holds funds for orders still in buyer protection and charges the 1.5% instant fee via a platform transfer.
 
-## Root cause
+## Issues to fix
 
-`src/components/SalesDetailsSheet.tsx:137-141`:
+**1. Application fee can exceed the charge on cheap items (hard checkout failure)**
+`stripe-connect-payment-intent` sets the application fee to secure fee + transaction fee. For a subtotal under about $0.51 the application fee is larger than the amount charged and Stripe rejects the PaymentIntent. With FREEFLEA applied the threshold is higher still, because the buyer fee is waived but the seller fee is not. Sellers also net a negative-feeling amount on very low-priced items ($1.00 subtotal pays out $0.48).
 
-```
-subtotal = sum(price + shipping) over ALL orders   -> 1.35
-transactionFee = subtotal * 0.02 + 0.50            -> 0.53
-youReceived = subtotal - fee                       -> 0.82
-```
+Fix: clamp the application fee to the charge amount minus 1 cent as a safety net, and add a minimum listing price (suggested $3.00) enforced in `CreateListing`/`EditListing` and validated server-side, with clear copy explaining why.
 
-Two defects in three lines:
-1. **Refund status ignored.** Refunded items still count toward seller earnings.
-2. **Fee recalculated at today's rate** instead of reading the `transaction_fee` snapshot stored on the order - the exact class of bug already fixed on the buyer side for `secure_checkout_fee`.
+**2. Transaction fee is duplicated across sellers in `finalize-checkout`**
+Line ~495 writes the whole checkout's `transactionFeeTotal` onto the first row of *every* seller. Single-seller checkouts (all we allow today, since the PaymentIntent function rejects `multi_seller_checkout`) are unaffected, but the moment multi-seller carts are enabled this over-charges sellers and breaks refund math.
 
-## Fixes
+Fix: compute the transaction fee per seller from that seller's own subtotal, matching how shipping is already allocated.
 
-**1. `src/components/SalesDetailsSheet.tsx` - seller earnings**
-- Partition items with the existing `isOrderRefunded` helper from `useOrders.ts`.
-- Subtotal, shipping and fee computed from non-refunded items only.
-- Use the stored `transaction_fee` sum when any row carries a saved value; fall back to `2% + $0.50` only when no row has one (legacy orders).
-- All items refunded: hide the Transaction Fee row, footer bar reads **"Refunded: $0.00"**.
-- Some items refunded: footer stays "You received", counting active items only.
+**3. `computeSellerNet` can invent fees on legacy rows**
+The helper falls back to `calculateTransactionFee(subtotal)` when no snapshot exists. Every existing row has a snapshot so nothing is wrong today, but any future row that fails to write a fee would silently show a fabricated deduction.
 
-**2. Audit the same pattern everywhere seller money is displayed**
-Apply the identical "exclude refunded + trust the stored fee" rule to:
-- `src/components/OrderReceiptDialog.tsx` (already reads `transaction_fee` at line 114 - verify it excludes refunded items).
-- `src/pages/Sales.tsx` seller card total bubbles.
-- `src/pages/SellerDashboard.tsx` payout/activity rows (spot-check the non-pending sections; the pending section is already correct).
+Fix: drop the fallback and treat a missing snapshot as $0, which is the only value that can be reconciled against Stripe.
 
-**3. Shared helper instead of four copies**
-Add `computeSellerNet(orders)` to `src/utils/feeCalculator.ts` returning `{ activeOrders, refundedOrders, subtotal, shipping, transactionFee, youReceived, fullyRefunded }`, and use it in every surface above. This is what stops the bug from reappearing in the next screen someone adds.
+**4. Seller earnings preview is wrong for bundles**
+`sellerEarningsPreview` applies the full $0.50 fixed fee to a single listing. The fee is charged once per order, so a 3-item bundle preview under-states earnings by $1.00.
 
-**4. Backend cross-check (read-only, no changes unless a gap is found)**
-Reconcile every `refunded` order in the database against Stripe: confirm each has a succeeded refund and, where a transfer existed, a matching reversal. Report any order where the reversal is missing or short. `stripe-connect-refund` already reverses correctly in both single-item and full-group modes; this is a verification pass, not a rewrite.
+Fix: label the preview as "if sold on its own" and show the fee as per-order in the listing form copy.
+
+**5. Fee label shows a rate on zero-fee historical sales**
+Sales details renders "Transaction Fee (2% + $0.50) - $0.00" for pre-fee orders, which reads like a bug to sellers.
+
+Fix: hide the line entirely when the snapshot is $0, same as the fully-refunded case.
 
 ## Technical notes
 
-- No migration and no Stripe action - the money is correct.
-- Rounding stays `Math.round(x * 100) / 100`.
-- Copy uses short dashes per project rules.
-
-## Noted, not in scope
-
-`supabase/functions/stripe-connect-refund/index.ts` still does raw REST calls against an `externalUrl` (`fetchOrderWithFallback`, `patchOrdersWithFallback`), which conflicts with the "Lovable Cloud only, no raw REST bypasses" project rule. It works today; flagging it as a separate cleanup rather than touching a live refund path in the same change as a display fix. Say the word and I'll fold it in.
+- Files: `supabase/functions/stripe-connect-payment-intent/index.ts`, `supabase/functions/finalize-checkout/index.ts`, `src/utils/feeCalculator.ts`, `src/components/SalesDetailsSheet.tsx`, `src/pages/CreateListing.tsx`, `src/pages/EditListing.tsx`.
+- No database migration or backfill is required - the stored data already reconciles with Stripe.
+- The minimum price rule needs both a client check and a server check in the PaymentIntent listing validation so old app builds cannot bypass it.

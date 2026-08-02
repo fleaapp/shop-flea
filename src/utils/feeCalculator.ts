@@ -20,6 +20,12 @@ export const SECURE_CHECKOUT_FIXED = 0.70;
 export const TRANSACTION_FEE_RATE = 0.02;
 export const TRANSACTION_FEE_FIXED = 0.50;
 
+/**
+ * Minimum listing price. Below this the fixed portions of the fees make the
+ * application fee larger than the charge itself, which Stripe rejects outright.
+ */
+export const MIN_LISTING_PRICE = 3;
+
 // Legacy alias — total seller-side platform fee rate for reporting only.
 export const PLATFORM_FEE_RATE = TRANSACTION_FEE_RATE;
 
@@ -83,7 +89,11 @@ export function calculateFees(
   };
 }
 
-/** Quick helper for listing previews — seller take-home after the transaction fee. */
+/**
+ * Quick helper for listing previews — seller take-home after the transaction fee
+ * IF the item sells on its own. The $0.50 fixed portion is charged once per
+ * order, so a multi-item bundle keeps more than the sum of these previews.
+ */
 export function sellerEarningsPreview(price: number, shipping = 0): number {
   const subtotal = price + shipping;
   return r2(subtotal - calculateTransactionFee(subtotal));
@@ -189,12 +199,10 @@ export function computeSellerNet<T extends {
   const subtotal = r2(activeOrders.reduce(
     (s, o) => s + (Number(o.price) || 0) + (Number(o.shipping_price) || 0), 0));
 
-  const hasSavedFee = activeOrders.some((o) => o.transaction_fee !== null && o.transaction_fee !== undefined);
-  const transactionFee = activeOrders.length === 0
-    ? 0
-    : hasSavedFee
-      ? r2(activeOrders.reduce((s, o) => s + (Number(o.transaction_fee) || 0), 0))
-      : calculateTransactionFee(subtotal);
+  // Only ever trust the snapshot written at checkout. A missing snapshot means
+  // no fee was charged (pre-fee order) - recalculating would invent a deduction
+  // that can never be reconciled against Stripe.
+  const transactionFee = r2(activeOrders.reduce((s, o) => s + (Number(o.transaction_fee) || 0), 0));
 
   return {
     activeOrders,
