@@ -9,7 +9,7 @@ import { calculateBundleShippingTotal } from './shippingCalculator';
  *  Seller earns:  items + shipping − Transaction Fee (2% + $0.50)
  *  Flea revenue:  Secure Checkout Fee + Transaction Fee − payment processing cost
  *
- * Sellers pay no listing fees — the Transaction Fee only applies per completed sale.
+ * Sellers pay no selling fees - the Transaction Fee only covers payment processing per completed sale.
  */
 
 // Buyer-paid Secure Checkout Fee

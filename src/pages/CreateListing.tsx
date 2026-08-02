@@ -852,7 +852,7 @@ const CreateListing = () => {
             <span className="font-semibold text-foreground">
               ${sellerEarningsPreview(parseFloat(itemPrice) || 0, parseFloat(shippingPrice) || 0).toFixed(2)}
             </span>{' '}
-            after the 2% + $0.50 transaction fee. Listing on Flea is free.
+            after the 2% + $0.50 transaction fee. No selling fees - it only covers payment processing.
           </p>
         )}
 
