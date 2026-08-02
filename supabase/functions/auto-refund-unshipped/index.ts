@@ -332,6 +332,17 @@ Deno.serve(async (req) => {
       } catch (e: any) {
         console.error(`[auto-refund-unshipped] order ${order.id} failed`, e?.message);
         failures.push({ orderId: order.id, error: e?.message });
+        // Surface failures in the Admin error log so a broken automation is visible.
+        try {
+          await admin.from("error_logs").insert({
+            source: "auto-refund-unshipped",
+            severity: "error",
+            title: "Auto-refund failed",
+            message: `Order ${order.id}: ${e?.message ?? "unknown error"}`,
+            context: { orderId: order.id },
+            dedupe_key: `auto-refund-unshipped:${order.id}`,
+          });
+        } catch (_) { /* logging is best-effort */ }
       }
     }
 
