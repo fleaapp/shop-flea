@@ -121,6 +121,10 @@ async function uploadIdentityFile(
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const originBlock = rejectUntrustedOrigin(req);
+  if (originBlock) return originBlock;
+
+
 
   try {
     const supabaseClient = createClient(
