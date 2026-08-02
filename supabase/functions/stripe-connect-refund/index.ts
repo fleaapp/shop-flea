@@ -50,6 +50,7 @@ const OPTIONAL_ORDER_COLUMNS = [
   "transaction_fee",
   "secure_checkout_fee",
   "coupon_code",
+  "coupon_type",
 ] as const;
 
 const ORDER_UPDATE_FALLBACK_COLUMNS = [
