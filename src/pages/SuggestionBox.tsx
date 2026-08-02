@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -54,7 +54,7 @@ const SuggestionBox = () => {
       {/* Header */}
       <header className="px-4 py-4 flex items-center flex-shrink-0">
         <button onClick={() => safeNavigateBack(navigate, '/profile')} className="p-1">
-          <ArrowLeft className="h-5 w-5 text-foreground" />
+          <ChevronLeft className="h-5 w-5 text-foreground" />
         </button>
         <h1 className="text-xl font-bold text-foreground flex-1 text-center pr-6">📮 Suggestion Box</h1>
       </header>

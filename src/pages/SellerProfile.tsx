@@ -13,7 +13,7 @@ import { getAvatarUrl } from '@/utils/optimizedImage';
 import { toast } from 'sonner';
 import { Listing } from '@/types/listing';
 import ReviewsDrawer from '@/components/ReviewsDrawer';
-import { ArrowLeft, MoreVertical, LayoutGrid, Rows3 } from 'lucide-react';
+import { ChevronLeft, MoreVertical, LayoutGrid, Rows3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProfileGridCard from '@/components/ProfileGridCard';
 import { safeNavigateBack } from '@/utils/safeBack';
@@ -291,7 +291,7 @@ const SellerProfile = () => {
           onClick={() => safeNavigateBack(navigate, '/')}
           className="h-10 w-10 flex items-center justify-center rounded-full bg-card card-shadow"
         >
-          <ArrowLeft className="h-5 w-5 text-foreground" />
+          <ChevronLeft className="h-5 w-5 text-foreground" />
         </button>
         
         <DropdownMenu>

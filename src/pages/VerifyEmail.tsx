@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
- import { ArrowLeft } from 'lucide-react';
+ import { ChevronLeft } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import fleaLogoAuth from '@/assets/flea-logo-auth.jpeg';
@@ -31,7 +31,7 @@ const VerifyEmail = () => {
         onClick={() => navigate('/auth')}
         className="absolute top-6 left-6 text-foreground hover:opacity-70 transition-opacity"
       >
-        <ArrowLeft className="h-6 w-6" />
+        <ChevronLeft className="h-6 w-6" />
       </button>
 
       {/* Logo */}

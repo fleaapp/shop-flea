@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, X, Clock, User, Tag, Bookmark } from 'lucide-react';
+import { ChevronLeft, X, Clock, User, Tag, Bookmark } from 'lucide-react';
 import { Listing } from '@/types/listing';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -272,7 +272,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings, currentFilters, o
           {/* Header */}
           <div className="flex items-center px-6 py-4">
             <button onClick={() => onOpenChange(false)} className="p-1 w-8 flex-shrink-0">
-              <ArrowLeft className="h-6 w-6 text-foreground" />
+              <ChevronLeft className="h-6 w-6 text-foreground" />
             </button>
             <div className="flex-1 flex items-center justify-center">
               <span className="text-lg">🔍</span>

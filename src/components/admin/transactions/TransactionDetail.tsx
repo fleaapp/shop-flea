@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
-import { ArrowLeft, Package, User, DollarSign, Truck, MessageCircle, Clock, AlertTriangle, Flag, CheckCircle, StickyNote } from 'lucide-react';
+import { ChevronLeft, Package, User, DollarSign, Truck, MessageCircle, Clock, AlertTriangle, Flag, CheckCircle, StickyNote } from 'lucide-react';
 
 interface Props { order: TransactionOrder | null; onBack: () => void; }
 
@@ -75,7 +75,7 @@ export function TransactionDetail({ order, onBack }: Props) {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex items-center gap-3 border-b border-border bg-card px-4 py-3">
-        <Button variant="ghost" size="icon" aria-label="Back" onClick={onBack} className="shrink-0"><ArrowLeft className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" aria-label="Back" onClick={onBack} className="shrink-0"><ChevronLeft className="h-4 w-4" /></Button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h2 className="font-mono text-sm font-bold">{getOrderCode(order.id)}</h2>
