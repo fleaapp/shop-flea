@@ -233,9 +233,17 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
                 {viewAs === 'buyer' ? (
                   <>
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">Secure Checkout Fee (4% + $0.70)</span>
+                      <span className="text-gray-500">
+                        Secure Checkout Fee{secureCheckoutFee > 0 ? ' (4% + $0.70)' : ''}
+                      </span>
                       <span className="text-gray-900">+${secureCheckoutFee.toFixed(2)}</span>
                     </div>
+                    {couponCode && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-500">Coupon {couponCode}</span>
+                        <span className="text-gray-900">Fee waived</span>
+                      </div>
+                    )}
                     {refundBreakdowns.length > 0 && (
                       <div className="flex justify-between text-xs text-destructive">
                         <span>Refund</span>
