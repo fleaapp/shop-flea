@@ -69,7 +69,7 @@ const faqItems = [
       },
       {
         q: 'How long do I have to ship an order?',
-        a: 'You should ship orders promptly. You\'ll get a friendly reminder after 3 days and an urgent reminder after 6 days. Orders that haven\'t been shipped within 4 days will be flagged as overdue in your Sales tab.',
+        a: 'You should dispatch within 3 days. You\'ll get a friendly reminder after 3 days, an urgent one after 6 days and a final warning at 8 days. Orders unshipped after 4 days are flagged as overdue in your Sales tab, and an order still unshipped after 9 days is refunded to the buyer automatically.',
       },
       {
         q: 'How do reviews work?',
@@ -137,11 +137,11 @@ const faqItems = [
       },
       {
         q: 'My account status says "Verifying" - what does that mean?',
-        a: 'This means your payment provider is still reviewing your account details. You can still create listings while verification is pending. Once approved, your status will update to Active.',
+        a: 'This means your payment provider is still reviewing your account details. You can finish setting up in the meantime, but you can only publish listings once verification is approved. Once approved, your status updates to Active.',
       },
       {
         q: 'What do "Pending review (🔍)" and "Action required (⚠️)" mean?',
-        a: 'Pending review means your provider is checking your details. Action required means they need extra information from you - tap the status to complete the missing steps in the provider dashboard.',
+        a: 'Pending review means your provider is checking your details. Action required means they need extra information from you - tap the status to complete the missing steps inside the app.',
       },
       {
         q: 'Where do I see my payouts and history?',
@@ -174,7 +174,7 @@ const faqItems = [
       },
       {
         q: 'What happens to my listings if I delete my account?',
-        a: 'Your listings are automatically archived and removed from the marketplace in real time for every user. Your personal data - favourites, cart, notifications, etc. - is permanently deleted.',
+        a: 'Your listings are automatically archived and removed from the marketplace in real time for every user. Your personal data - favourites, cart, notifications, etc. - is permanently deleted. We must keep transaction and payment records for 7 years to meet Australian tax and financial reporting law, as set out in our Privacy Policy.',
       },
       {
         q: 'How do I report a user or listing?',
