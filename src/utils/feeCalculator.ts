@@ -154,3 +154,56 @@ export function calculateProRataRefund(
 
   return { itemSubtotal, secureFeeShare, transactionFeeShare, buyerRefund, sellerNet };
 }
+
+export interface SellerNetSummary {
+  activeOrders: any[];
+  refundedOrders: any[];
+  subtotal: number;        // items + shipping for non-refunded items only
+  shipping: number;        // shipping for non-refunded items only
+  transactionFee: number;  // fee actually charged, refunded items excluded
+  youReceived: number;     // subtotal - transactionFee
+  fullyRefunded: boolean;
+  partiallyRefunded: boolean;
+}
+
+/**
+ * Single source of truth for what a seller actually keeps on an order group.
+ *
+ * Refunded items are excluded entirely (their transfer is reversed in Stripe),
+ * and the Transaction Fee is read from the snapshot stored on each order at
+ * checkout. Recalculating with today's rate would re-price historical orders
+ * and invent fees that were never charged.
+ */
+export function computeSellerNet<T extends {
+  price?: number | null;
+  shipping_price?: number | null;
+  status?: string | null;
+  refunded_at?: string | null;
+  transaction_fee?: number | null;
+}>(orders: T[] | null | undefined): SellerNetSummary {
+  const all = orders ?? [];
+  const refundedOrders = all.filter((o) => o.status === 'refunded' || !!o.refunded_at);
+  const activeOrders = all.filter((o) => !(o.status === 'refunded' || !!o.refunded_at));
+
+  const shipping = r2(activeOrders.reduce((s, o) => s + (Number(o.shipping_price) || 0), 0));
+  const subtotal = r2(activeOrders.reduce(
+    (s, o) => s + (Number(o.price) || 0) + (Number(o.shipping_price) || 0), 0));
+
+  const hasSavedFee = activeOrders.some((o) => o.transaction_fee !== null && o.transaction_fee !== undefined);
+  const transactionFee = activeOrders.length === 0
+    ? 0
+    : hasSavedFee
+      ? r2(activeOrders.reduce((s, o) => s + (Number(o.transaction_fee) || 0), 0))
+      : calculateTransactionFee(subtotal);
+
+  return {
+    activeOrders,
+    refundedOrders,
+    subtotal,
+    shipping,
+    transactionFee,
+    youReceived: r2(subtotal - transactionFee),
+    fullyRefunded: all.length > 0 && activeOrders.length === 0,
+    partiallyRefunded: refundedOrders.length > 0 && activeOrders.length > 0,
+  };
+}

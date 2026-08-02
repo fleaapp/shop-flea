@@ -28,6 +28,8 @@ import { openTrackingUrl } from '@/lib/tracking';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchSellerShippingSettings, getBundleBreakdownText } from '@/utils/shippingCalculator';
+import { computeSellerNet } from '@/utils/feeCalculator';
+
 import { toast } from 'sonner';
 import { Loader2, ChevronRight } from 'lucide-react';
 import { clearOrderChatBadges } from '@/utils/orderChatRead';
@@ -134,11 +136,14 @@ const SalesDetailsSheet = ({
 
   if (!orders || orders.length === 0 || !primaryOrder) return null;
 
-  const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
-  const shippingTotal = orders.reduce((sum, o) => sum + Number(o.shipping_price || 0), 0);
-  // Sellers pay a Transaction Fee (2% + $0.50) deducted from payout.
-  const transactionFee = subtotal > 0 ? Math.round((subtotal * 0.02 + 0.50) * 100) / 100 : 0;
-  const youReceived = Math.round((subtotal - transactionFee) * 100) / 100;
+  // Refunded items are excluded (their transfer is reversed in Stripe) and the
+  // Transaction Fee comes from the snapshot stored at checkout - never today's rate.
+  const sellerNet = computeSellerNet(orders as any[]);
+  const shippingTotal = sellerNet.shipping;
+  const transactionFee = sellerNet.transactionFee;
+  const youReceived = sellerNet.youReceived;
+  const fullyRefunded = sellerNet.fullyRefunded;
+
   const statusBadge = getDisplayStatusBadge(primaryOrder);
   const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
 
@@ -334,21 +339,30 @@ const SalesDetailsSheet = ({
                   )}
                 </div>
 
-                <div className="border-t border-border" />
+                {!fullyRefunded && (
+                  <>
+                    <div className="border-t border-border" />
 
-                <div className="px-4 py-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">Transaction Fee (2% + $0.50)</div>
-                    <p className="text-sm text-foreground">−${transactionFee.toFixed(2)}</p>
-                  </div>
-                </div>
+                    <div className="px-4 py-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-muted-foreground">Transaction Fee (2% + $0.50)</div>
+                        <p className="text-sm text-foreground">−${transactionFee.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div className="border-t border-border" />
 
                 {/* Total */}
                 <div className="flex items-center justify-center bg-charcoal text-white py-3 px-4">
-                  <span className="font-medium">You received: ${youReceived.toFixed(2)}</span>
+                  <span className="font-medium">
+                    {fullyRefunded
+                      ? 'Refunded: $0.00'
+                      : `You received: $${youReceived.toFixed(2)}`}
+                  </span>
                 </div>
+
               </div>
             </div>
 

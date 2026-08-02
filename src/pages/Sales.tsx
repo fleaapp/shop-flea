@@ -17,6 +17,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { clearOrderChatBadges } from '@/utils/orderChatRead';
 import { supabase } from '@/lib/supabase';
 import EmptyState from '@/components/EmptyState';
+import { computeSellerNet } from '@/utils/feeCalculator';
+
 
 const getStatusBadge = (status: OrderGroup['status']) => {
   switch (status) {
@@ -110,7 +112,9 @@ const Sales = () => {
     const productImages = group.orders.slice(0, 2).map((order) => order.listing?.images?.[0]);
     const itemCount = group.orders.length;
     const unread = group.orders.reduce((sum, o) => sum + getGroupUnread(o.id), 0);
-    const groupTotal = group.orders.reduce((sum, o) => sum + Number(o.price || 0) + Number(o.shipping_price || 0), 0);
+    // Refunded items earn nothing - their transfer is reversed in Stripe.
+    const { subtotal: groupTotal, fullyRefunded } = computeSellerNet(group.orders as any[]);
+
 
     return (
       <div
@@ -125,8 +129,9 @@ const Sales = () => {
           </p>
           <div className="mt-1 flex flex-col items-start gap-1.5">
             <span className="inline-block rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
-              ${groupTotal.toFixed(2)}
+              {fullyRefunded ? 'Refunded' : `$${groupTotal.toFixed(2)}`}
             </span>
+
             <span className={cn('inline-block rounded-full px-3 py-1 text-xs font-medium', getStatusBadge(group.status).className)}>
               {getStatusBadge(group.status).label}
             </span>
