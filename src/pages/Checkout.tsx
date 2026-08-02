@@ -23,6 +23,7 @@ import BlockedUserBanner from '@/components/BlockedUserBanner';
 import { fetchSellerShippingSettings, calculateTotalShipping, getBundleBreakdownText, SellerShippingInfo } from '@/utils/shippingCalculator';
 import { calculateFees } from '@/utils/feeCalculator';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useBuyerAddress } from '@/hooks/useBuyerAddress';
 import SecureCheckoutInfoPopover from '@/components/SecureCheckoutInfoPopover';
 import CouponInput, { AppliedCoupon } from '@/components/CouponInput';
