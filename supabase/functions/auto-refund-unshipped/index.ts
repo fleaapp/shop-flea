@@ -249,7 +249,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    const cutoff = new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString();
+    const cutoff = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
     const orders = await fetchAwaitingRefundOrders(admin, cutoff);
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
@@ -271,12 +271,12 @@ Deno.serve(async (req) => {
               flea_order_id: order.id,
               flea_seller_id: order.seller_id,
               flea_buyer_id: order.buyer_id,
-              flea_auto_refund: "unshipped_9d",
+              flea_auto_refund: "unshipped_8d",
             },
           }, { idempotencyKey: `flea-auto-refund-${order.id}` });
         }
 
-        await markOrderRefunded(order.id, "auto_unshipped_9d");
+        await markOrderRefunded(order.id, "auto_unshipped_8d");
 
         // Reactivate the listing so it's not stuck as sold.
         await admin
@@ -290,7 +290,7 @@ Deno.serve(async (req) => {
             user_id: order.buyer_id,
             type: "order_auto_refunded",
             title: "Order refunded",
-            message: "💸 Your order was automatically refunded because the seller didn't ship within 9 days. Funds will appear in 5 to 10 days.",
+            message: "💸 Your order was automatically refunded because the seller didn't ship within 8 days. Funds will appear in 5 to 10 days.",
             related_listing_id: order.listing_id,
             related_user_id: order.seller_id,
             related_order_id: order.id,
@@ -299,22 +299,22 @@ Deno.serve(async (req) => {
             user_id: order.seller_id,
             type: "sale_auto_refunded",
             title: "Sale auto-refunded",
-            message: "⚠️ Your sale was automatically refunded because tracking wasn't added within 9 days. Repeated auto-refunds may affect your account.",
+            message: "⚠️ Your sale was automatically refunded because tracking wasn't added within 8 days. Repeated auto-refunds may affect your account.",
             related_listing_id: order.listing_id,
             related_user_id: order.buyer_id,
             related_order_id: order.id,
           },
         ]);
 
-        firePush(order.buyer_id, { type: "order_auto_refunded", title: "Order refunded", message: "Your order was automatically refunded because the seller didn't ship within 9 days." });
-        firePush(order.seller_id, { type: "sale_auto_refunded", title: "Sale auto-refunded", message: "Your sale was auto-refunded because tracking wasn't added within 9 days." });
+        firePush(order.buyer_id, { type: "order_auto_refunded", title: "Order refunded", message: "Your order was automatically refunded because the seller didn't ship within 8 days." });
+        firePush(order.seller_id, { type: "sale_auto_refunded", title: "Sale auto-refunded", message: "Your sale was auto-refunded because tracking wasn't added within 8 days." });
 
         // Audit trail.
         try {
           await admin.from("payment_events").insert({
             event_type: "auto_refund_unshipped",
             order_id: order.id,
-            metadata: { reason: "unshipped_9d", days: 9 },
+            metadata: { reason: "unshipped_8d", days: 9 },
           });
         } catch (_) { /* payment_events schema tolerant */ }
 
