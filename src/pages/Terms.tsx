@@ -121,8 +121,8 @@ const Terms = () => {
             <h2 className="text-base font-bold mb-2">8. Fees and payments</h2>
             <ul className="list-disc pl-5 space-y-1.5">
               <li><strong>Secure Checkout Fee:</strong> Buyers pay a flat 4% + $0.70 Secure Checkout Fee on each order, added at checkout. It covers secure card processing, fraud protection and marketplace support.</li>
-              <li><strong>Transaction Fee:</strong> Sellers pay a 2% + $0.50 Transaction Fee per completed sale, deducted from the payout. It covers payment processing and marketplace operations.</li>
-              <li><strong>No listing fees:</strong> Listing items on Flea is always free — the Transaction Fee only applies when a sale completes.</li>
+              <li><strong>Transaction Fee:</strong> Sellers pay a 2% + $0.50 Transaction Fee per completed sale, deducted from the payout. It covers payment processing.</li>
+              <li><strong>No selling fees:</strong> Listing and selling on Flea is always free - no selling fees, no monthly fees and no hidden fees. The Transaction Fee only applies when a sale completes.</li>
               <li><strong>Instant payout:</strong> Sellers who choose an instant payout to their bank account pay an additional 1.5% instant payout fee charged by our payment processor.</li>
               <li><strong>Promotional codes:</strong> From time to time we may issue promotional codes (for example, a code that waives the Secure Checkout Fee). Unless stated otherwise, codes are single-use per account, non-transferable, have no cash value, cannot be combined with other offers, and may be withdrawn, changed or revoked by Flea at any time, including where we reasonably suspect abuse or fraud.</li>
               <li><strong>GST:</strong> Flea's own fees (the Secure Checkout Fee, the Transaction Fee and the instant payout fee) are inclusive of Australian GST where GST applies. Flea's fees are separate from any GST payable by a seller on the sale of their own items, which remains the seller's responsibility.</li>
