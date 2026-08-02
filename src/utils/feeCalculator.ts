@@ -139,8 +139,12 @@ export function calculateProRataRefund(
   const itemSubtotal = itemSubtotals[itemIndex];
   const groupSubtotal = r2(itemSubtotals.reduce((sum, s) => sum + s, 0));
 
-  const secureFee = calculateSecureCheckoutFee(groupSubtotal);
-  const transactionFee = calculateTransactionFee(groupSubtotal);
+  const secureFee = actualFees?.secureCheckoutFee != null
+    ? r2(Number(actualFees.secureCheckoutFee))
+    : calculateSecureCheckoutFee(groupSubtotal);
+  const transactionFee = actualFees?.transactionFee != null
+    ? r2(Number(actualFees.transactionFee))
+    : calculateTransactionFee(groupSubtotal);
 
   const secureFeeShare = groupSubtotal > 0 ? r2(secureFee * (itemSubtotal / groupSubtotal)) : 0;
   const transactionFeeShare = groupSubtotal > 0 ? r2(transactionFee * (itemSubtotal / groupSubtotal)) : 0;
