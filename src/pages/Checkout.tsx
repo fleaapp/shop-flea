@@ -285,7 +285,7 @@ const Checkout = () => {
 
 
   if (items.length === 0) {
-    return <div className="native-safe-top min-h-screen bg-background flex flex-col items-center justify-center p-4">
+    return <div className="native-safe-top min-h-dvh bg-background flex flex-col items-center justify-center p-4">
         <p className="text-muted-foreground">No items to checkout</p>
         <Button onClick={() => navigate('/cart')} className="mt-4">
           Back to Cart
@@ -689,6 +689,8 @@ const Checkout = () => {
 
   /** Master Pay button — dispatches by selected method. */
   const handlePayClick = () => {
+    // Guard against double taps while a payment request is already in flight.
+    if (isSubmitting) return;
     if (!selectedMethod) { toast.error('Please pick a payment method.'); return; }
     switch (selectedMethod.kind) {
       case 'wallet':   handleWalletTap(); break;
@@ -710,7 +712,7 @@ const Checkout = () => {
   };
 
 
-  return <div className="native-safe-top min-h-screen bg-background">
+  return <div className="native-safe-top min-h-dvh bg-background">
       <Drawer open={open} onOpenChange={isOpen => !isOpen && handleClose()} shouldScaleBackground={false}>
         <DrawerContent className="bg-background">
           {/* Sticky Header */}

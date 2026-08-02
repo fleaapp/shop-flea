@@ -99,6 +99,7 @@ const WishlistGridCard = ({ listing, onRemove, onAddToCart, isSold = false, isPa
             <Button
               variant="ghost"
               size="icon"
+              aria-label="Remove from wishlist"
               onClick={handleRemoveClick}
               className="absolute top-1.5 left-1.5 h-7 w-7 rounded-full bg-card/90 backdrop-blur-sm hover:bg-card z-10 text-xs"
             >
@@ -110,6 +111,7 @@ const WishlistGridCard = ({ listing, onRemove, onAddToCart, isSold = false, isPa
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label="Add to cart"
                 onClick={handleAddToCart}
                 className={`absolute top-1.5 right-1.5 h-7 w-7 rounded-full backdrop-blur-sm hover:bg-card text-xs ${
                   isInCart ? 'bg-[#ddfed7]' : 'bg-card/90'

@@ -123,9 +123,14 @@ const faqItems = [
         a: 'Once your parcel is marked delivered - either by you tapping Mark as Delivered, or by Flea confirming it - you have 48 hours to check the item and raise any issues. If nothing is reported in that window, the order auto-completes and funds release to the seller. If you tap Report Issue, funds stay held while it is reviewed.',
       },
       {
+        q: 'What if my parcel never arrives?',
+        a: 'If an order is never marked as shipped with valid tracking, it is refunded to you automatically 9 days after purchase. If tracking says delivered but nothing turned up, check with your neighbours and your local post office first, then request a refund in the order chat within 48 hours of the delivered scan and choose "Item never arrived". Flea reviews these with the seller and funds stay held until it is sorted.',
+      },
+      {
         q: 'What happens if the seller enters the wrong tracking?',
         a: 'Flea reviews every tracking number before payouts release. If it is invalid, the seller is asked to update it. Sellers who submit 3 invalid tracking numbers are flagged for extra checks.',
       },
+
     ],
   },
   {

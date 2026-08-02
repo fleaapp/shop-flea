@@ -338,7 +338,7 @@ const ListingDetails = () => {
 
   if (loading) {
     return (
-      <div className="native-safe-top flex min-h-screen items-center justify-center bg-background">
+      <div className="native-safe-top flex min-h-dvh items-center justify-center bg-background">
         <span className="text-5xl">⏳</span>
       </div>
     );
@@ -346,7 +346,7 @@ const ListingDetails = () => {
 
   if (!listing) {
     return (
-      <div className="native-safe-top flex min-h-screen flex-col items-center justify-center bg-background gap-4 px-4">
+      <div className="native-safe-top flex min-h-dvh flex-col items-center justify-center bg-background gap-4 px-4">
         <p className="text-muted-foreground">Listing not found</p>
         <button
           onClick={() => safeNavigateBack(navigate, "/")}
@@ -492,7 +492,7 @@ const ListingDetails = () => {
   };
 
   return (
-    <div className="native-safe-top min-h-screen bg-background">
+    <div className="native-safe-top min-h-dvh bg-background">
       <Drawer open={open} onOpenChange={isOpen => !isOpen && handleClose()} repositionInputs={false}>
         <DrawerContent className="mt-0 flex flex-col overflow-hidden rounded-t-3xl bg-background">
           <div ref={scrollRef} className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 ${isTextInputFocused ? 'pb-4' : 'pb-32'}`}>

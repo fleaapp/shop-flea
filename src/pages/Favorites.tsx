@@ -14,6 +14,7 @@ import { useCart } from '@/context/CartContext';
 import { Listing } from '@/types/listing';
 import { ListingFilters } from '@/hooks/useListings';
 import { toast } from 'sonner';
+import EmptyState from '@/components/EmptyState';
 
 // Convert DbListing to Listing display type
 interface DisplayListing extends Listing {
@@ -136,6 +137,7 @@ const Favorites = () => {
         <Button
           variant="outline"
           size="icon"
+          aria-label="Switch view"
           onClick={() => setViewMode(v => v === 'single' ? 'grid' : 'single')}
           className="h-12 w-12 rounded-xl border-2 border-border bg-card hover:bg-secondary"
         >
@@ -148,6 +150,7 @@ const Favorites = () => {
         <Button
           variant="outline"
           size="icon"
+          aria-label="Open filters"
           onClick={() => setFilterOpen(true)}
           className={`h-12 w-12 rounded-xl border-2 border-border bg-card hover:bg-secondary ${hasFilters ? 'bg-primary text-primary-foreground border-primary' : ''}`}
         >
@@ -210,22 +213,16 @@ const Favorites = () => {
             </div>
           )
         ) : (
-          <div className="flex flex-col items-center justify-center w-full text-center px-4">
-            <span className="text-6xl mb-4">💌</span>
-            <p className="text-lg font-medium text-muted-foreground">
-              {hasFilters ? 'No items match your filters' : 'No saved items yet'}
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {hasFilters ? 'Try adjusting your filters' : 'Swipe right on items you like'}
-            </p>
-            <Button
-              onClick={() => hasFilters ? setAppliedFilters({}) : navigate('/')}
-              className="mt-6 rounded-full bg-primary text-primary-foreground"
-            >
-              {hasFilters ? 'Clear Filters' : 'Browse Listings'}
-            </Button>
-          </div>
+          <EmptyState
+            emoji="💌"
+            title={hasFilters ? 'No items match your filters' : 'No saved items yet'}
+            description={hasFilters ? 'Try adjusting your filters' : 'Swipe right on items you like'}
+            actionLabel={hasFilters ? 'Clear Filters' : 'Browse Listings'}
+            onAction={() => (hasFilters ? setAppliedFilters({}) : navigate('/'))}
+            minHeightClass=""
+          />
         )}
+
       </div>
       
       <FilterSheet

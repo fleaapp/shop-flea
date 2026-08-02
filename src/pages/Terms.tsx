@@ -174,6 +174,10 @@ const Terms = () => {
               Buyers may request a refund through the order chat within <strong>48 hours of delivery</strong> if the item is significantly not as described, damaged in transit, or never arrived. Once a refund request is submitted, the seller has <strong>72 hours</strong> to approve or decline it. If the seller does not respond within 72 hours, Flea will automatically issue the refund to the buyer. If the seller declines the request, it is escalated to Flea for review and we may still issue the refund at our discretion.
             </p>
             <p>
+              <strong>Parcels that never arrive:</strong> if an order is never marked as shipped with valid tracking, it is automatically refunded to the buyer 9 days after purchase. If tracking shows the parcel as delivered but the buyer did not receive it, the buyer must raise the issue in the order chat within <strong>48 hours of the delivered scan</strong> and select "Item never arrived". Flea will review the tracking evidence with the seller and the seller's funds remain held until the matter is resolved.
+            </p>
+
+            <p>
               For multi-item (bundle) orders, buyers may select which items to refund. Shipping and the buyer-paid Secure Checkout Fee are split fairly between the refunded items and the items the buyer keeps, based on each item's price and share of the combined shipping. The seller-paid Transaction Fee is also adjusted so only the fee attributable to the refunded items is reversed from the seller's balance.
             </p>
             <p>

@@ -15,7 +15,7 @@ export function DashboardHeader({ totalThreads, activeThreads, resolvedThreads }
     <header className="border-b border-border bg-card px-4 py-3 sm:px-6 sm:py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 sm:gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0">
+          <Button variant="ghost" size="icon" aria-label="Back to home" onClick={() => navigate('/')} className="shrink-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary sm:h-10 sm:w-10">

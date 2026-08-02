@@ -384,6 +384,10 @@ const CreateListing = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Guard against double taps / repeated submits while a request is in flight.
+    if (isLoading) return;
+
     
     if (!user) {
       toast.error('Please sign in to create a listing');
@@ -495,7 +499,7 @@ const CreateListing = () => {
   // Show loading only while auth is loading
   if (authLoading) {
     return (
-      <div className="native-safe-top min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-8">
+      <div className="native-safe-top min-h-dvh bg-background flex flex-col items-center justify-center gap-4 px-8">
         <span className="text-5xl">⏳</span>
         <p className="text-sm text-muted-foreground text-center leading-relaxed">
           Loading...
@@ -507,12 +511,13 @@ const CreateListing = () => {
   // Show verifying dialog if Stripe is pending (account exists but not yet connected)
   if (stripePending && user && profile) {
     return (
-      <div className="native-safe-top min-h-screen bg-background pb-24">
+      <div className="native-safe-top min-h-dvh bg-background pb-24">
 
         <header className="relative flex items-center justify-center px-4 py-4">
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Back"
             onClick={() => safeNavigateBack(navigate, "/profile")}
             className="absolute left-4 h-10 w-10 rounded-full"
           >
@@ -571,12 +576,13 @@ const CreateListing = () => {
   // Block form until shipping setup is complete for first-time sellers
   if (showShippingSetup) {
     return (
-      <div className="native-safe-top min-h-screen bg-background pb-24">
+      <div className="native-safe-top min-h-dvh bg-background pb-24">
 
         <header className="relative flex items-center justify-center px-4 py-4">
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Back"
             onClick={() => safeNavigateBack(navigate, "/profile")}
             className="absolute left-4 h-10 w-10 rounded-full"
           >
@@ -622,6 +628,7 @@ const CreateListing = () => {
         <Button
           variant="ghost"
           size="icon"
+          aria-label="Back"
           onClick={() => safeNavigateBack(navigate, "/profile")}
           className="absolute left-4 h-10 w-10 rounded-full"
         >

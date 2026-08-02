@@ -23,6 +23,7 @@ import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import { useQueryClient } from '@tanstack/react-query';
 import { clearOrderChatBadges } from '@/utils/orderChatRead';
 import { supabase } from '@/lib/supabase';
+import EmptyState from '@/components/EmptyState';
 
 
 const getOrderStatusBadge = (status: Order['status']) => {
@@ -320,6 +321,7 @@ const Cart = () => {
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Open wishlist"
             onClick={() => navigate('/favorites')}
             data-onboarding="cart-wishlist-button"
             className="absolute right-4 max-[375px]:right-3 top-8 max-[375px]:top-6 h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-full bg-charcoal text-mint hover:bg-charcoal-light text-xl max-[375px]:text-lg"
@@ -486,17 +488,15 @@ const Cart = () => {
 
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-              <span className="text-6xl opacity-50 mb-4">🛒</span>
-              <p className="text-lg font-medium text-muted-foreground">Your cart is empty</p>
-              <p className="mt-2 text-sm text-muted-foreground">Swipe up on items to add them</p>
-              <Button
-                onClick={() => navigate('/')}
-                className="mt-6 rounded-full bg-primary text-primary-foreground"
-              >
-                Browse Listings
-              </Button>
-            </div>
+            <EmptyState
+              emoji="🛒"
+              title="Your cart is empty"
+              description="Swipe up on items to add them"
+              actionLabel="Browse Listings"
+              onAction={() => navigate('/')}
+              minHeightClass="min-h-[60vh]"
+            />
+
           )}
         </div>
       ) : (
@@ -514,12 +514,13 @@ const Cart = () => {
             });
             if (filteredOrders.length === 0) {
               return (
-                <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-                  <span className="text-6xl opacity-50 mb-4">🧾</span>
-                  <p className="text-lg font-medium text-muted-foreground">
-                    {orderStatusFilter === 'shipped' ? 'No shipped orders.' : orderStatusFilter === 'delivered' ? 'No delivered orders.' : orderStatusFilter === 'completed' ? 'No completed orders.' : 'No orders yet.'}
-                  </p>
-                </div>
+                <EmptyState
+                  emoji="🧾"
+                  title={orderStatusFilter === 'shipped' ? 'No shipped orders.' : orderStatusFilter === 'delivered' ? 'No delivered orders.' : orderStatusFilter === 'completed' ? 'No completed orders.' : 'No orders yet.'}
+                  description={orderStatusFilter === 'awaiting' ? 'Orders you place will show up here.' : undefined}
+                  actionLabel={orderStatusFilter === 'awaiting' ? 'Browse Listings' : undefined}
+                  onAction={orderStatusFilter === 'awaiting' ? () => navigate('/') : undefined}
+                />
               );
             }
 

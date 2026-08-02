@@ -18,6 +18,7 @@ import EnablePushBanner from '@/components/EnablePushBanner';
 import { OrderGroup } from '@/hooks/useOrders';
 import { useQueryClient } from '@tanstack/react-query';
 import { clearOrderChatBadges } from '@/utils/orderChatRead';
+import EmptyState from '@/components/EmptyState';
 
 
 const ProductThumbnail = ({
@@ -428,11 +429,12 @@ const Notifications = () => {
             <span className="text-5xl mb-4">⏳</span>
           </div>
         ) : notifications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-            <span className="text-6xl opacity-50 mb-4">🔔</span>
-            <p className="text-lg font-medium text-muted-foreground">No notifications yet</p>
-            <p className="mt-2 text-sm text-muted-foreground">Your activity will appear here</p>
-          </div>
+          <EmptyState
+            emoji="🔔"
+            title="No notifications yet"
+            description="Your activity will appear here"
+            minHeightClass="min-h-[60vh]"
+          />
         ) : (
           notifications.map(notification => (
             <NotificationCard key={notification.id} notification={notification} />

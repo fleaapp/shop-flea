@@ -262,7 +262,7 @@ const SellerProfile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-dvh bg-background flex items-center justify-center">
         <span className="text-5xl">⏳</span>
       </div>
     );
@@ -270,7 +270,7 @@ const SellerProfile = () => {
 
   if (!sellerProfile) {
     return (
-      <div className="min-h-screen bg-background pb-24 flex flex-col items-center justify-center px-4">
+      <div className="min-h-dvh bg-background pb-24 flex flex-col items-center justify-center px-4">
         <p className="text-lg font-medium text-foreground mb-4">Seller not found</p>
         <button
           onClick={() => safeNavigateBack(navigate, '/')}
@@ -355,6 +355,7 @@ const SellerProfile = () => {
         <Button
           variant="outline"
           size="icon"
+          aria-label="Switch view"
           onClick={() => setViewMode(v => v === 'single' ? 'grid' : 'single')}
           className="h-12 w-12 rounded-xl border-2 border-border bg-card hover:bg-secondary"
         >

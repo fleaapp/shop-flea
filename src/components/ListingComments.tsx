@@ -405,6 +405,7 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Comment options"
             className={`flex-shrink-0 text-muted-foreground hover:text-foreground ${isReply ? 'h-6 w-6' : 'h-8 w-8'}`}
           >
             <MoreHorizontal className={isReply ? 'h-3 w-3' : 'h-4 w-4'} />
@@ -505,6 +506,7 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
                 </div>
                 <Button
                   size="icon"
+                  aria-label="Post comment"
                   onClick={handleSubmit}
                   disabled={!newComment.trim() || addComment.isPending || isChecking || isBlocked}
                   className="h-[60px] w-12 rounded-xl bg-primary"

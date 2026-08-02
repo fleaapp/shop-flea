@@ -75,7 +75,7 @@ export function TransactionDetail({ order, onBack }: Props) {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex items-center gap-3 border-b border-border bg-card px-4 py-3">
-        <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0"><ArrowLeft className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" aria-label="Back" onClick={onBack} className="shrink-0"><ArrowLeft className="h-4 w-4" /></Button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h2 className="font-mono text-sm font-bold">{getOrderCode(order.id)}</h2>

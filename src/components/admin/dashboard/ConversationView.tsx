@@ -51,7 +51,7 @@ export function ConversationView({ thread, messages, loading, sending, onSendMes
       <div className="flex items-center justify-between border-b border-border bg-card px-4 py-3 sm:px-6 sm:py-4">
         <div className="flex items-center gap-2 sm:gap-4">
           {onBack && (
-            <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0">
+            <Button variant="ghost" size="icon" aria-label="Back" onClick={onBack} className="shrink-0">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
