@@ -110,7 +110,9 @@ const Sales = () => {
     const productImages = group.orders.slice(0, 2).map((order) => order.listing?.images?.[0]);
     const itemCount = group.orders.length;
     const unread = group.orders.reduce((sum, o) => sum + getGroupUnread(o.id), 0);
-    const groupTotal = group.orders.reduce((sum, o) => sum + Number(o.price || 0) + Number(o.shipping_price || 0), 0);
+    // Refunded items earn nothing - their transfer is reversed in Stripe.
+    const { subtotal: groupTotal, fullyRefunded } = computeSellerNet(group.orders as any[]);
+
 
     return (
       <div
