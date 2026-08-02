@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Send, Image, Flag, Lock } from 'lucide-react';
+import { ChevronLeft, Send, Image, Flag, Lock, Loader2 } from 'lucide-react';
 import RefundSystemMessage from '@/components/RefundSystemMessage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
