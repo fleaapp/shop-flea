@@ -15,6 +15,7 @@ export type NotificationType =
   | 'new_review'
   | 'item_sold'
   | 'order_shipped'
+  | 'sale_delivered'
   | 'order_delivered'
   | 'new_comment'
   | 'comment_reply'
