@@ -442,7 +442,7 @@ export function useOrders() {
           await sendPushNotification(row.buyer_id, {
             type: 'order_shipped',
             title: 'Order Shipped',
-            message: 'Your order is on the way. Tap for details.',
+            message: '✈️ Your order is on the way. Tap for details.',
             related_listing_id: row.listing_id ?? undefined,
             related_order_id: row.id,
             related_user_id: user.id,
