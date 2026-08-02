@@ -100,7 +100,7 @@ const OrderChat = () => {
       ? [orderId]
       : [];
   const fetchKey = relatedIdsForFetch.slice().sort().join(',');
-  const { data: messages = [], error: messagesError } = useQuery({
+  const { data: messages = [], error: messagesError, isLoading: messagesLoading } = useQuery({
     queryKey: ['order-messages', orderId],
     queryFn: async () => {
       if (!orderId || relatedIdsForFetch.length === 0) return [];
