@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import ListingTag from '@/components/ListingTag';
+import EngagementBadges from '@/components/EngagementBadges';
 import ListingComments from '@/components/ListingComments';
 import { supabase } from '@/lib/supabase';
 import { useFavorites } from '@/hooks/useFavorites';
