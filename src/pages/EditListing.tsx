@@ -496,6 +496,7 @@ const EditListing = () => {
         <Button
           variant="ghost"
           size="icon"
+          aria-label="Back"
           onClick={() => safeNavigateBack(navigate, '/profile')}
           className="absolute left-4 h-10 w-10 rounded-full"
         >
@@ -752,6 +753,7 @@ const EditListing = () => {
                 type="button"
                 variant="outline"
                 size="icon"
+                aria-label="Delete listing"
                 disabled={isDeleting}
                 className="h-12 w-12 rounded-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
               >

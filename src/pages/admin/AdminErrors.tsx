@@ -30,7 +30,7 @@ export default function AdminErrors() {
         title="Diagnostics"
         emoji="🩺"
         right={
-          <Button variant="ghost" size="icon" onClick={reload} className="h-9 w-9 rounded-full">
+          <Button variant="ghost" size="icon" aria-label="Refresh errors" onClick={reload} className="h-9 w-9 rounded-full">
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         }

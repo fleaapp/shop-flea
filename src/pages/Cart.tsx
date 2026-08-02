@@ -320,6 +320,7 @@ const Cart = () => {
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Open wishlist"
             onClick={() => navigate('/favorites')}
             data-onboarding="cart-wishlist-button"
             className="absolute right-4 max-[375px]:right-3 top-8 max-[375px]:top-6 h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-full bg-charcoal text-mint hover:bg-charcoal-light text-xl max-[375px]:text-lg"

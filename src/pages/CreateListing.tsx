@@ -513,6 +513,7 @@ const CreateListing = () => {
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Back"
             onClick={() => safeNavigateBack(navigate, "/profile")}
             className="absolute left-4 h-10 w-10 rounded-full"
           >
@@ -577,6 +578,7 @@ const CreateListing = () => {
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Back"
             onClick={() => safeNavigateBack(navigate, "/profile")}
             className="absolute left-4 h-10 w-10 rounded-full"
           >
@@ -622,6 +624,7 @@ const CreateListing = () => {
         <Button
           variant="ghost"
           size="icon"
+          aria-label="Back"
           onClick={() => safeNavigateBack(navigate, "/profile")}
           className="absolute left-4 h-10 w-10 rounded-full"
         >

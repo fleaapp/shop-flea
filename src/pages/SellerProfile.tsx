@@ -355,6 +355,7 @@ const SellerProfile = () => {
         <Button
           variant="outline"
           size="icon"
+          aria-label="Switch view"
           onClick={() => setViewMode(v => v === 'single' ? 'grid' : 'single')}
           className="h-12 w-12 rounded-xl border-2 border-border bg-card hover:bg-secondary"
         >

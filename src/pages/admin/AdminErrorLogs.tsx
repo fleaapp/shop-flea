@@ -79,7 +79,7 @@ export default function AdminErrorLogs() {
         title="Error logs"
         emoji="🪵"
         right={
-          <Button variant="ghost" size="icon" onClick={refresh} className="h-9 w-9 rounded-full">
+          <Button variant="ghost" size="icon" aria-label="Refresh logs" onClick={refresh} className="h-9 w-9 rounded-full">
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         }

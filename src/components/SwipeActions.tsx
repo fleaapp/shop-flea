@@ -14,6 +14,7 @@ const SwipeActions = ({ onSwipeLeft, onSwipeRight, onUndo, canUndo = false }: Sw
       <Button
         variant="outline"
         size="icon"
+        aria-label="Pass on this item"
         onClick={onSwipeLeft}
         className="h-14 w-14 rounded-full border-2 border-destructive bg-card text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all duration-200"
       >
@@ -24,6 +25,7 @@ const SwipeActions = ({ onSwipeLeft, onSwipeRight, onUndo, canUndo = false }: Sw
         <Button
           variant="outline"
           size="icon"
+          aria-label="Undo last swipe"
           onClick={onUndo}
           className="h-10 w-10 rounded-full border-2 border-muted-foreground bg-card text-muted-foreground hover:bg-muted transition-all duration-200"
         >
@@ -34,6 +36,7 @@ const SwipeActions = ({ onSwipeLeft, onSwipeRight, onUndo, canUndo = false }: Sw
       <Button
         variant="outline"
         size="icon"
+        aria-label="Save to wishlist"
         onClick={onSwipeRight}
         className="h-14 w-14 rounded-full border-2 border-price bg-card text-price hover:bg-price hover:text-card transition-all duration-200"
       >

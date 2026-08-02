@@ -76,6 +76,7 @@ const Install = () => {
         <Button
           variant="ghost"
           size="icon"
+          aria-label="Back"
           onClick={() => safeNavigateBack(navigate, '/')}
           className="absolute left-2 rounded-full"
         >
