@@ -1,6 +1,7 @@
 // Admin-only utility to reset a user's seller onboarding state in
 // Lovable Cloud. Uses SUPABASE_SERVICE_ROLE_KEY via raw REST to bypass
 // profiles_update_guard. Requires a verified admin JWT.
+import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { requireAdmin } from "../_shared/auth.ts";
 
 const corsHeaders = {
@@ -11,6 +12,8 @@ const corsHeaders = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const originBlock = rejectUntrustedOrigin(req);
+  if (originBlock) return originBlock;
   try {
     const gate = await requireAdmin(req);
     if (!gate.ok) return json({ error: gate.error }, gate.status);

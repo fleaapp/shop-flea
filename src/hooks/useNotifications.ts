@@ -15,6 +15,7 @@ export type NotificationType =
   | 'new_review'
   | 'item_sold'
   | 'order_shipped'
+  | 'sale_delivered'
   | 'order_delivered'
   | 'new_comment'
   | 'comment_reply'
@@ -384,6 +385,8 @@ export const getNotificationMessage = (type: string, username?: string, listingT
       return rawMessage || 'Your refund request was rejected.';
     case 'refund_initiated':
       return rawMessage || 'A refund has been initiated.';
+    case 'sale_delivered':
+      return rawMessage || '🏠 Your item was delivered. Your funds release 48 hours from now.';
     case 'order_auto_refunded':
       return rawMessage || '💸 Your order was automatically refunded.';
     case 'sale_auto_refunded':
@@ -413,6 +416,7 @@ export const getNotificationEmoji = (type: string): string => {
     case 'order_shipped':
       return '✈️';
     case 'order_delivered':
+    case 'sale_delivered':
       return '🏠';
     case 'new_comment':
       return '💬';

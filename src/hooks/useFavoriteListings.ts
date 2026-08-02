@@ -8,6 +8,7 @@ import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
 import { loadSavedListingSnapshots, saveSavedListingSnapshots, type SavedListingSnapshot } from '@/utils/savedListingSnapshots';
 import { subscribeListingInvalidated, shouldPurgeSnapshot } from '@/utils/listingInvalidation';
 import { getGuestFavorites } from '@/utils/guestWishlist';
+import { LISTING_CARD_COLUMNS } from '@/lib/listingColumns';
 
 // Extended DbListing to include pause_selling from profiles
 export interface DbListingWithPause extends DbListing {
@@ -91,7 +92,7 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
     // Now fetch the actual listings (include all statuses to detect removed)
     let query = supabase
       .from('listings')
-      .select('*')
+      .select(LISTING_CARD_COLUMNS)
       .in('id', favoriteIds)
       .order('created_at', { ascending: false })
       .limit(100); // Limit to prevent DoS via large result sets

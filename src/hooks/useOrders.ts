@@ -442,7 +442,7 @@ export function useOrders() {
           await sendPushNotification(row.buyer_id, {
             type: 'order_shipped',
             title: 'Order Shipped',
-            message: 'Your order is on the way. Tap for details.',
+            message: '✈️ Your order is on the way. Tap for details.',
             related_listing_id: row.listing_id ?? undefined,
             related_order_id: row.id,
             related_user_id: user.id,
@@ -478,8 +478,8 @@ export function useOrders() {
       });
       if (error) throw error;
 
-      // Delivered notification recipient is the buyer (== caller), so the
-      // self-push path allows this without cross-user proof.
+      // Push the buyer (self) and the seller(s). The DB trigger inserts both
+      // notification rows synchronously, so the cross-user push proof exists.
       try {
         await sendPushNotification(user.id, {
           type: 'order_delivered',
@@ -489,6 +489,27 @@ export function useOrders() {
         });
       } catch (err) {
         console.warn('Delivered push notify failed:', err);
+      }
+
+      try {
+        let q = supabase.from('orders').select('id, seller_id, listing_id');
+        q = orderGroupId ? q.eq('order_group_id', orderGroupId) : q.eq('id', orderId!);
+        const { data: rows } = await q;
+        const seen = new Set<string>();
+        for (const row of (rows as any[]) || []) {
+          if (!row.seller_id || row.seller_id === user.id || seen.has(row.seller_id)) continue;
+          seen.add(row.seller_id);
+          await sendPushNotification(row.seller_id, {
+            type: 'sale_delivered',
+            title: 'Sale Delivered',
+            message: 'Your item was delivered. Funds release in 48 hours.',
+            related_listing_id: row.listing_id ?? undefined,
+            related_order_id: row.id,
+            related_user_id: user.id,
+          });
+        }
+      } catch (err) {
+        console.warn('Seller delivered push notify failed:', err);
       }
     },
     onSuccess: () => {

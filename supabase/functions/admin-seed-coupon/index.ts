@@ -2,6 +2,7 @@
 // in the External database (if missing) and upsert FREEFLEA. This is the source
 // of truth for stripe-connect-payment-intent, stripe-connect-checkout, and
 // validate-coupon.
+import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
 
@@ -12,6 +13,8 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const originBlock = rejectUntrustedOrigin(req);
+  if (originBlock) return originBlock;
   try {
     const dbUrl = Deno.env.get("SUPABASE_DB_URL") ?? "";
     if (!dbUrl) throw new Error("SUPABASE_DB_URL not set");

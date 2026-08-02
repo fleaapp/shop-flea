@@ -1,6 +1,7 @@
 // Public endpoint that ingests runtime errors from the app and edge functions,
 // storing them in public.error_logs on the external Supabase (source of truth).
 // The table is created lazily so no separate migration is required.
+import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
 
@@ -66,6 +67,8 @@ const clampJson = (v: unknown, maxBytes = 4000): unknown => {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const originBlock = rejectUntrustedOrigin(req);
+  if (originBlock) return originBlock;
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" },

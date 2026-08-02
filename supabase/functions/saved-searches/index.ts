@@ -1,3 +1,4 @@
+import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -84,6 +85,8 @@ const getUserId = async (req: Request): Promise<string | null> => {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+  const originBlock = rejectUntrustedOrigin(req);
+  if (originBlock) return originBlock;
 
   if (!EXTERNAL_URL || !EXTERNAL_ANON_KEY || !CLOUD_URL || !CLOUD_SERVICE_ROLE_KEY) {
     return json({ error: 'Server misconfiguration' }, 500);

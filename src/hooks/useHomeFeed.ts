@@ -5,6 +5,7 @@ import { preloadImages } from '@/utils/preloadAssets';
 import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
 import { subscribeListingInvalidated } from '@/utils/listingInvalidation';
 import type { DbListing } from '@/hooks/useListings';
+import { LISTING_CARD_COLUMNS } from '@/lib/listingColumns';
 
 const PAGE_SIZE = 50;
 
@@ -60,7 +61,7 @@ export const useHomeFeed = () => {
         const regionId = profile?.region_id || 'AU';
         let fallbackQuery = supabase
           .from('listings')
-          .select('*')
+          .select(LISTING_CARD_COLUMNS)
           .eq('status', 'active')
           .or(`region_id.is.null,region_id.eq.${regionId}`)
           .order('created_at', { ascending: false })

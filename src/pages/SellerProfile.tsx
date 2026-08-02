@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import ProfileGridCard from '@/components/ProfileGridCard';
 import { safeNavigateBack } from '@/utils/safeBack';
 import {
+import { LISTING_CARD_COLUMNS } from '@/lib/listingColumns';
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -148,7 +149,7 @@ const SellerProfile = () => {
     // Fetch active listings
     const { data: activeData } = await supabase
       .from('listings')
-      .select('*')
+      .select(LISTING_CARD_COLUMNS)
       .eq('user_id', sellerId)
       .eq('status', 'active');
 
@@ -168,7 +169,7 @@ const SellerProfile = () => {
       const listingIds = [...new Set(orders.map(o => o.listing_id))];
       const { data: soldData } = await supabase
         .from('listings')
-        .select('*')
+        .select(LISTING_CARD_COLUMNS)
         .in('id', listingIds)
         .eq('user_id', sellerId);
 
