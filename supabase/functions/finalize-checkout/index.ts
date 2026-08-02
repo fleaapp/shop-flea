@@ -413,6 +413,7 @@ serve(async (req) => {
       : 0;
 
     // Re-validate coupon server-side (same logic as stripe-connect-payment-intent).
+    let appliedCoupon: { id: string; code: string; type: string } | null = null;
     const normalizedCode = String(couponCode || "").trim().toUpperCase();
     if (normalizedCode) {
       const { data: c } = await serviceClient
@@ -427,6 +428,7 @@ serve(async (req) => {
         && (c.max_redemptions === null || c.redemption_count < c.max_redemptions)
         && c.type === "waive_buyer_fee") {
         secureCheckoutFee = 0;
+        appliedCoupon = { id: c.id as string, code: c.code as string, type: c.type as string };
       }
     }
     const expectedAmountAud = Math.round((subtotalForFee + secureCheckoutFee) * 100) / 100;
