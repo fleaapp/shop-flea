@@ -1,49 +1,51 @@
-## What's going on
+## Verified state (no money is wrong)
 
-You're right about the direction, and the data confirms it. There are only 9 order rows across 7 payments in the whole database, all from 21-24 July 2026, and the stored fee values no longer match what the payment provider actually captured.
+- **Stripe:** refund `re_3TvxYFDPN6BH77fW1g5Pq1hn`, amount **$1.35**, status succeeded, with `transfer_reversal: trr_1TzxZRDPN6BH77fWMRAAL4YH`. The seller transfer was clawed back in full. Same shape for the second bundle.
+- **Database:** all 4 order rows (FL-001003/4/5/6) are `status = refunded` with `refunded_at` set, `transaction_fee = 0.00`, `secure_checkout_fee = 0` (FREEFLEA).
 
-Two things happened:
+So @sarahhearn2 has **$0.00** from these sales. The "$0.53 fee / You received $0.82" line is a **display bug only** - no payout, no ledger error. The seller dashboard already excludes refunded orders (verified: `SellerDashboard.tsx` filters with `isOrderRefunded` in the pending section), which is why the dashboard and this drawer disagree.
 
-1. **A backfill wrote today's fee formula onto old rows.** Orders created before the current fee rules had `secure_checkout_fee = 0`, so a later repair pass recalculated them at 4% + $0.70 and wrote $0.75 onto rows that were never charged that.
-2. **The coupon record was lost on the order rows.** Every order row has `coupon_code = NULL`, yet the payment intent metadata for at least the two bundles you screenshotted clearly records `coupon_code: FREEFLEA` and `secure_checkout_fee_aud: 0.00`. Because the row looked "coupon-free", the backfill had no reason to leave the fee at zero.
+## Root cause
 
-Net effect on your two screenshots: both bundles were charged **$1.35** and refunded **$1.35** - a full 100% refund, not 50%. The $2.10 shown is a display total built from the wrongly backfilled $0.75 fee.
+`src/components/SalesDetailsSheet.tsx:137-141`:
 
-## Plan
-
-**1. Reconcile every order against the payment provider (source of truth)**
-
-For each of the 7 payment references, pull the actual PaymentIntent/charge and read `amount`, `secure_checkout_fee_aud`, `transaction_fee_aud`, `coupon_code`, `coupon_id`:
-
-```text
-pi_3TwYYUDPN6BH77fW09TuN5Cx   shown $1.74
-pi_3TwHd2DPN6BH77fW1tMIxVsf   shown $1.74
-pi_3Tvxx0DPN6BH77fW0t16EcMf   shown $2.10   (actual charge $1.35)
-pi_3TvzN5DPN6BH77fW2qtsNkx8   shown $1.22
-pi_3TvxYFDPN6BH77fW1IRp1GbX   shown $2.10   (actual charge $1.35)
-pi_3TvYVzDPN6BH77fW0rFeLkeF   shown $1.22
-pi_3TvRyhDPN6BH77fW2HAHrBfC   shown $1.22
+```
+subtotal = sum(price + shipping) over ALL orders   -> 1.35
+transactionFee = subtotal * 0.02 + 0.50            -> 0.53
+youReceived = subtotal - fee                       -> 0.82
 ```
 
-Produce a comparison table (stored total vs captured amount) before changing anything, and share it with you.
+Two defects in three lines:
+1. **Refund status ignored.** Refunded items still count toward seller earnings.
+2. **Fee recalculated at today's rate** instead of reading the `transaction_fee` snapshot stored on the order - the exact class of bug already fixed on the buyer side for `secure_checkout_fee`.
 
-**2. Correct only the rows that disagree**
+## Fixes
 
-Write back the historical truth per order row - `secure_checkout_fee`, `transaction_fee`, `coupon_code`, `coupon_type`, `coupon_id` - taken from the payment metadata, never recalculated. Rows that already match are left alone. This is a data change via the insert/update tool, not a schema migration.
+**1. `src/components/SalesDetailsSheet.tsx` - seller earnings**
+- Partition items with the existing `isOrderRefunded` helper from `useOrders.ts`.
+- Subtotal, shipping and fee computed from non-refunded items only.
+- Use the stored `transaction_fee` sum when any row carries a saved value; fall back to `2% + $0.50` only when no row has one (legacy orders).
+- All items refunded: hide the Transaction Fee row, footer bar reads **"Refunded: $0.00"**.
+- Some items refunded: footer stays "You received", counting active items only.
 
-**3. Stop the backfill from ever inventing a fee again**
+**2. Audit the same pattern everywhere seller money is displayed**
+Apply the identical "exclude refunded + trust the stored fee" rule to:
+- `src/components/OrderReceiptDialog.tsx` (already reads `transaction_fee` at line 114 - verify it excludes refunded items).
+- `src/pages/Sales.tsx` seller card total bubbles.
+- `src/pages/SellerDashboard.tsx` payout/activity rows (spot-check the non-pending sections; the pending section is already correct).
 
-Remove/neutralise the "recalculate when fee looks like zero" fallback so a historical order is never re-priced with current rules. If a payment reference exists, the captured amount and its metadata are authoritative; if no metadata exists, leave the stored value as-is rather than guessing.
+**3. Shared helper instead of four copies**
+Add `computeSellerNet(orders)` to `src/utils/feeCalculator.ts` returning `{ activeOrders, refundedOrders, subtotal, shipping, transactionFee, youReceived, fullyRefunded }`, and use it in every surface above. This is what stops the bug from reappearing in the next screen someone adds.
 
-**4. Persist coupon data on every row at checkout**
-
-In `stripe-connect-payment-intent` / `finalize-checkout`, write `coupon_id`, `coupon_code`, and `coupon_type` onto **all** order rows in the bundle, so a waived fee is provably waived and future repairs can't misread it.
-
-**5. Display guard**
-
-In `OrderDetailsSheet.tsx`, `SalesDetailsSheet.tsx` and the receipt, when the summed line items don't equal the captured amount, show the captured amount as "Total amount paid" so the customer-facing figure can never drift from what was really charged.
+**4. Backend cross-check (read-only, no changes unless a gap is found)**
+Reconcile every `refunded` order in the database against Stripe: confirm each has a succeeded refund and, where a transfer existed, a matching reversal. Report any order where the reversal is missing or short. `stripe-connect-refund` already reverses correctly in both single-item and full-group modes; this is a verification pass, not a rewrite.
 
 ## Technical notes
 
-- Reconciliation reads use the Stripe API tools (`stripe_api_read`) against the live account; no writes to Stripe.
-- Files likely touched: `src/utils/feeCalculator.ts` (drop the recalculation fallback), `supabase/functions/finalize-checkout/index.ts` and `supabase/functions/stripe-connect-payment-intent/index.ts` (persist coupon fields), plus the two details sheets and receipt component.
+- No migration and no Stripe action - the money is correct.
+- Rounding stays `Math.round(x * 100) / 100`.
+- Copy uses short dashes per project rules.
+
+## Noted, not in scope
+
+`supabase/functions/stripe-connect-refund/index.ts` still does raw REST calls against an `externalUrl` (`fetchOrderWithFallback`, `patchOrdersWithFallback`), which conflicts with the "Lovable Cloud only, no raw REST bypasses" project rule. It works today; flagging it as a separate cleanup rather than touching a live refund path in the same change as a display fix. Say the word and I'll fold it in.
