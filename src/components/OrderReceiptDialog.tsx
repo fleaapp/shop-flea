@@ -109,26 +109,19 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
   });
   const subtotal = Math.round(itemSubtotals.reduce((a, b) => a + b, 0) * 100) / 100;
 
-  // Fees ACTUALLY charged, snapshotted on the order rows at checkout. Only fall
-  // back to recalculating for legacy orders created before the snapshot existed
-  // — recalculating ignores coupons and would show a total the buyer never paid.
+  // Fees ACTUALLY charged, snapshotted on the order rows at checkout. These are
+  // never recalculated with today's rates - a historical order was charged under
+  // the rules that applied at the time (and a coupon may have waived the fee).
   const savedSecureFee = orders.reduce(
     (sum, o) => sum + (Number((o as any).secure_checkout_fee) || 0), 0);
-  const feeWaivedByCoupon = orders.some((o) => !!(o as any).coupon_code || !!(o as any).coupon_type);
-  const hasSavedSecureFee = savedSecureFee > 0 || feeWaivedByCoupon;
   const savedTransactionFee = orders.reduce(
     (sum, o) => sum + (Number((o as any).transaction_fee) || 0), 0);
-  const hasSavedTransactionFee = orders.some((o) => (o as any).transaction_fee != null);
   const couponCode = orders.find((o) => (o as any).coupon_code)?.['coupon_code' as keyof typeof orders[0]] as string | undefined;
 
-  const secureCheckoutFee = hasSavedSecureFee
-    ? Math.round(savedSecureFee * 100) / 100
-    : calculateSecureCheckoutFee(subtotal);
+  const secureCheckoutFee = Math.round(savedSecureFee * 100) / 100;
   const buyerTotal = Math.round((subtotal + secureCheckoutFee) * 100) / 100;
-  // Seller-paid Transaction Fee (2% + $0.50) deducted from payout.
-  const transactionFee = hasSavedTransactionFee
-    ? Math.round(savedTransactionFee * 100) / 100
-    : calculateTransactionFee(subtotal);
+  // Seller-paid Transaction Fee deducted from payout, as charged at the time.
+  const transactionFee = Math.round(savedTransactionFee * 100) / 100;
   const sellerReceives = Math.round((subtotal - transactionFee) * 100) / 100;
 
   const bundleText = orders.length >= 2 ? getBundleBreakdownText(orders.length, sellerShippingSettings || undefined) : null;
