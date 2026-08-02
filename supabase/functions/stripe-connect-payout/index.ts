@@ -128,26 +128,60 @@ Deno.serve(async (req) => {
           unshippedCents,
         }, 409);
       }
-      // 1.5% Flea fee is captured as an application fee via reverse transfer.
-      // For instant payouts we deduct the fee by transferring it back to the platform first.
+      // 1.5% Flea instant-payout fee, transferred from the connected account
+      // to the platform account BEFORE the payout leaves. If we cannot collect
+      // the fee we must not deduct it from the seller, so the payout aborts.
       const feeAmount = Math.round(instantAvailable * 0.015);
       const netAmount = Math.max(instantAvailable - feeAmount, 1);
+      const platformAccountId = Deno.env.get("STRIPE_PLATFORM_ACCOUNT_ID");
 
       if (feeAmount > 0) {
+        if (!platformAccountId || platformAccountId === "self") {
+          await logEdgeError({
+            functionName: "stripe-connect-payout",
+            error: new Error("STRIPE_PLATFORM_ACCOUNT_ID is not configured — instant payout fee cannot be collected"),
+            severity: "error",
+            source: "payment",
+            context: { userId, accountId, feeAmount },
+          });
+          return json({
+            error: "Instant payout is temporarily unavailable. Please use a standard payout.",
+            reason: "instant_fee_unavailable",
+          }, 503);
+        }
+
         try {
-          await stripe.transfers.create(
+          const feeTransfer = await stripe.transfers.create(
             {
               amount: feeAmount,
               currency,
-              destination: (Deno.env.get("STRIPE_PLATFORM_ACCOUNT_ID") || "self") === "self"
-                ? undefined as any
-                : Deno.env.get("STRIPE_PLATFORM_ACCOUNT_ID")!,
+              destination: platformAccountId,
               description: "Flea instant payout fee (1.5%)",
-            } as any,
-            { stripeAccount: accountId },
+            },
+            {
+              stripeAccount: accountId,
+              idempotencyKey: `${idemBase}:fee:${feeAmount}`,
+            },
           );
-        } catch (_) {
-          // If transfer back fails, still proceed with payout net of estimated fee via description tag.
+          await recordPaymentEvent(supabase, {
+            event_id: feeTransfer.id,
+            event_type: "instant_payout_fee_collected",
+            seller_id: userId,
+            amount: feeAmount / 100,
+            payload: { transfer_id: feeTransfer.id, currency, account: accountId },
+          });
+        } catch (feeErr) {
+          await logEdgeError({
+            functionName: "stripe-connect-payout",
+            error: feeErr,
+            severity: "error",
+            source: "payment",
+            context: { step: "instant_fee_transfer", userId, accountId, feeAmount },
+          });
+          return json({
+            error: "We couldn't process the instant payout fee. Please try a standard payout.",
+            reason: "instant_fee_failed",
+          }, 502);
         }
       }
 
@@ -158,11 +192,12 @@ Deno.serve(async (req) => {
           method: "instant",
           description: "Flea instant payout",
         },
-        { stripeAccount: accountId },
+        { stripeAccount: accountId, idempotencyKey: `${idemBase}:instant:${netAmount}` },
       );
 
       return json({ ok: true, payout: { id: payout.id, amount: payout.amount, method: "instant" } });
     }
+
 
     // Standard payout — cap at available minus unshipped.
     const availableRaw = sum(balance.available);
