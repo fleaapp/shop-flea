@@ -1,43 +1,50 @@
-## Payments audit - what I verified
+## Add 🛒 / 💌 count badges to all listing cards
 
-I checked the live order data against Stripe and read the fee code paths end to end.
+### What I found first
 
-**Healthy:**
-- All 9 orders have non-null fee snapshots, no refunded rows missing `refunded_at`, every row has a group and checkout reference.
-- Historical orders match Stripe exactly. Example: order FL-001009 stored `secure_checkout_fee 0.74`, `transaction_fee 0.00`; Stripe charged 174c with an application fee of 74c. The FREEFLEA orders correctly stored $0 fees.
-- Per-item (partial) refunds are mathematically correct: buyer gets item + pro-rata secure fee, seller transfer is reversed by item minus pro-rata transaction fee, and the platform keeps exactly the remaining items' fee share.
-- Full-group refunds use `reverse_transfer` + `refund_application_fee`, so nobody is left holding fees.
-- Payout gating correctly holds funds for orders still in buyer protection and charges the 1.5% instant fee via a platform transfer.
+The badges on the listing detail drawer count rows in `cart_items` and `favorites` for that listing. But both tables have RLS `SELECT` policies of `auth.uid() = user_id`, so those count queries only ever see **your own** rows. Today the badge can only ever show 0 or 1, and only reflects you - not "3 people have this in their cart". So this needs fixing at the data layer before spreading it to four more surfaces.
 
-## Issues to fix
+### 1. Data layer (new)
 
-**1. Application fee can exceed the charge on cheap items (hard checkout failure)**
-`stripe-connect-payment-intent` sets the application fee to secure fee + transaction fee. For a subtotal under about $0.51 the application fee is larger than the amount charged and Stripe rejects the PaymentIntent. With FREEFLEA applied the threshold is higher still, because the buyer fee is waived but the seller fee is not. Sellers also net a negative-feeling amount on very low-priced items ($1.00 subtotal pays out $0.48).
+Add a security-definer RPC returning true public counts for a batch of listings:
 
-Fix: clamp the application fee to the charge amount minus 1 cent as a safety net, and add a minimum listing price (suggested $3.00) enforced in `CreateListing`/`EditListing` and validated server-side, with clear copy explaining why.
+```sql
+get_listing_engagement_counts(_listing_ids uuid[])
+  -> table(listing_id uuid, cart_count int, wishlist_count int)
+```
 
-**2. Transaction fee is duplicated across sellers in `finalize-checkout`**
-Line ~495 writes the whole checkout's `transactionFeeTotal` onto the first row of *every* seller. Single-seller checkouts (all we allow today, since the PaymentIntent function rejects `multi_seller_checkout`) are unaffected, but the moment multi-seller carts are enabled this over-charges sellers and breaks refund math.
+Security definer, `set search_path = public`, `grant execute to authenticated` (and `anon` so guest browsing sees badges). Only aggregate counts are exposed, never who saved the item. Input array capped at ~100 ids per call.
 
-Fix: compute the transaction fee per seller from that seller's own subtotal, matching how shipping is already allocated.
+New hook `src/hooks/useListingEngagementCounts.ts` - takes listing ids, calls the RPC via React Query, returns a `Map<listingId, {cart, wishlist}>` with a short stale time.
 
-**3. `computeSellerNet` can invent fees on legacy rows**
-The helper falls back to `calculateTransactionFee(subtotal)` when no snapshot exists. Every existing row has a snapshot so nothing is wrong today, but any future row that fails to write a fee would silently show a fabricated deduction.
+### 2. Shared badge component
 
-Fix: drop the fallback and treat a missing snapshot as $0, which is the only value that can be reconciled against Stripe.
+`src/components/EngagementBadges.tsx` - extracts the markup currently inline in `ListingDetails.tsx` (vertical stack, 🛒 / 💌 in a `bg-background/70 backdrop-blur-sm` circle with the number chip beneath). Two sizes: `lg` for the detail drawer and swipe cards, `sm` for grid cards. Renders nothing when both counts are 0.
 
-**4. Seller earnings preview is wrong for bundles**
-`sellerEarningsPreview` applies the full $0.50 fixed fee to a single listing. The fee is charged once per order, so a 3-item bundle preview under-states earnings by $1.00.
+**Display cap:** any count above 99 renders as `99+`, on every surface including the detail drawer.
 
-Fix: label the preview as "if sold on its own" and show the fee as per-order in the listing form copy.
+### 3. Surfaces
 
-**5. Fee label shows a rate on zero-fee historical sales**
-Sales details renders "Transaction Fee (2% + $0.50) - $0.00" for pre-fee orders, which reads like a bug to sellers.
+| Surface | File | Placement |
+|---|---|---|
+| Detail drawer | `src/pages/ListingDetails.tsx` | Replace inline markup with the shared component, switch to the RPC |
+| Home card stack | `src/components/SwipeCard.tsx` | `absolute top-3 left-3`, size `lg`, pointer-events-none so it never blocks a swipe |
+| User profile grid | `src/components/ProfileGridCard.tsx` | `absolute top-1.5 left-1.5`, size `sm` (edit ✏️ button is on the right, no clash) |
+| Seller profile grid | same component | inherited |
+| Wishlist grid | `src/components/WishlistGridCard.tsx` | The ❌ remove button sits at `top-1.5 left-1.5`, so badges go below it |
+| Wishlist list card | `src/components/WishlistCard.tsx` | Same - badges below the ❌ button (`top-14 left-2`), size `sm` |
 
-Fix: hide the line entirely when the snapshot is $0, same as the fully-refunded case.
+Ids are batched per screen: `Index.tsx` for the visible stack, `Profile.tsx` / `SellerProfile.tsx` for the visible tab, `Favorites.tsx` for the wishlist. One RPC round-trip per screen, not one per card.
 
-## Technical notes
+### 4. Your question on maximums
 
-- Files: `supabase/functions/stripe-connect-payment-intent/index.ts`, `supabase/functions/finalize-checkout/index.ts`, `src/utils/feeCalculator.ts`, `src/components/SalesDetailsSheet.tsx`, `src/pages/CreateListing.tsx`, `src/pages/EditListing.tsx`.
-- No database migration or backfill is required - the stored data already reconciles with Stripe.
-- The minimum price rule needs both a client check and a server check in the PaymentIntent listing validation so old app builds cannot bypass it.
+- **Cart:** a server-side cap of **50 items** exists in `stripe-connect-payment-intent`, enforced only at checkout. No client-side cap and no warning while adding, so a user can add a 51st item and only hit the wall at payment.
+- **Wishlist:** no maximum at all, client or server.
+
+Not in scope for this change - tell me if you want `CartContext.addToCart` to block at 50 with a toast, and a wishlist cap added.
+
+### Technical notes
+
+- The RPC is the only new database object; no table or column changes.
+- Counts include all users' rows; no filtering of the seller's own row (rare and harmless).
+- Badges are display-only and read from one source, so the drawer and the card can never disagree.

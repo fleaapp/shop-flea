@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import ListingTag from '@/components/ListingTag';
+import EngagementBadges from '@/components/EngagementBadges';
 import ListingComments from '@/components/ListingComments';
 import { supabase } from '@/lib/supabase';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -115,8 +116,6 @@ const ListingDetails = () => {
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [salesSheetOpen, setSalesSheetOpen] = useState(false);
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
-  const [cartCount, setCartCount] = useState(0);
-  const [wishlistCount, setWishlistCount] = useState(0);
   const [isTextInputFocused, setIsTextInputFocused] = useState(false);
   const isWebSharedPreview = useIsWebSharedPreview();
 
@@ -284,19 +283,9 @@ const ListingDetails = () => {
     fetchListing();
   }, [id, location.state, user?.id]);
 
-  // Fetch cart and wishlist counts for this listing
-  useEffect(() => {
-    const fetchCounts = async () => {
-      if (!id) return;
-      const [cartRes, favRes] = await Promise.all([
-        supabase.from('cart_items').select('id', { count: 'exact', head: true }).eq('listing_id', id),
-        supabase.from('favorites').select('id', { count: 'exact', head: true }).eq('listing_id', id),
-      ]);
-      setCartCount(cartRes.count ?? 0);
-      setWishlistCount(favRes.count ?? 0);
-    };
-    fetchCounts();
-  }, [id]);
+  // Cart/wishlist counts now come from the shared EngagementBadges component,
+  // which reads true public counts via the get_listing_engagement_counts RPC.
+
 
   const handleClose = () => {
     if (closeStartedRef.current) return;
@@ -585,30 +574,8 @@ const ListingDetails = () => {
               </DropdownMenu>
 
               {/* Cart & Wishlist count icons */}
-              {(cartCount > 0 || wishlistCount > 0) && (
-                <div className="absolute top-3 left-3 flex flex-col items-center gap-2">
-                  {cartCount > 0 && (
-                    <div className="flex flex-col items-center">
-                      <div className="h-8 w-8 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center text-sm">
-                        🛒
-                      </div>
-                      <span className="text-[10px] font-semibold text-foreground mt-0.5 bg-background/70 backdrop-blur-sm rounded-full px-1.5 leading-tight">
-                        {cartCount}
-                      </span>
-                    </div>
-                  )}
-                  {wishlistCount > 0 && (
-                    <div className="flex flex-col items-center">
-                      <div className="h-8 w-8 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center text-sm">
-                        💌
-                      </div>
-                      <span className="text-[10px] font-semibold text-foreground mt-0.5 bg-background/70 backdrop-blur-sm rounded-full px-1.5 leading-tight">
-                        {wishlistCount}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
+              <EngagementBadges listingId={id} size="lg" className="absolute top-3 left-3 z-10" />
+
 
               {images.length > 1 && (
                 <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-background/70 px-2 py-1 text-xs text-foreground">

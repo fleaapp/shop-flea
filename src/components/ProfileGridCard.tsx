@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { formatTagLabel } from '@/components/ListingTag';
+import EngagementBadges from '@/components/EngagementBadges';
 
 interface ProfileGridCardProps {
   listing: {
@@ -38,6 +39,14 @@ const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton }: ProfileGr
             loading="lazy"
             decoding="async"
           />
+
+          <EngagementBadges
+            listingId={(listing as any).source_listing_id?.split?.('::')?.[0] || listing.id}
+            size="sm"
+            className="absolute top-1.5 left-1.5 z-10"
+          />
+
+
 
           {/* Edit button - only for active listings */}
           {activeTab === 'listings' && (

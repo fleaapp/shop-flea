@@ -13,6 +13,7 @@ import {
   type SavedListingSnapshot,
 } from '@/utils/savedListingSnapshots';
 import { subscribeListingInvalidated } from '@/utils/listingInvalidation';
+import { invalidateEngagementCounts } from '@/hooks/useListingEngagementCounts';
 // Extended Listing type to include pause/inactive/removed status
 interface CartListing extends Listing {
   isPaused?: boolean;
@@ -310,6 +311,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
+      invalidateEngagementCounts(listing.id);
       return true;
     } catch (e) {
       console.error('Cart add failed:', e);
@@ -332,6 +334,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
 
+    invalidateEngagementCounts(id);
     setCartItems(prev => prev.filter(item => item.id !== id));
     setCartIds(prev => {
       const next = new Set(prev);

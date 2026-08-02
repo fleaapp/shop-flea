@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import ListingTag from './ListingTag';
+import EngagementBadges from './EngagementBadges';
 import { Listing } from '@/types/listing';
 
 interface WishlistCardProps {
@@ -109,6 +110,10 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused
             >
               ❌
             </Button>
+
+            <EngagementBadges listingId={listing.id} size="sm" className="absolute top-14 left-2 z-10" />
+            
+
             
             {/* Add to cart button - top right (hide if unavailable) */}
             {!isUnavailable && (

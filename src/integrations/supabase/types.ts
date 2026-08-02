@@ -1892,6 +1892,14 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_listing_engagement_counts: {
+        Args: { _listing_ids: string[] }
+        Returns: {
+          cart_count: number
+          listing_id: string
+          wishlist_count: number
+        }[]
+      }
       get_nav_badges: { Args: { _user_id: string }; Returns: Json }
       get_profiles_public: {
         Args: never

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { invalidateEngagementCounts } from '@/hooks/useListingEngagementCounts';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { Listing } from '@/types/listing';
@@ -135,6 +136,8 @@ export const useFavorites = () => {
         }
       });
 
+    invalidateEngagementCounts(listingId);
+
     try {
       persistFavoriteSnapshot(listingId, listing);
     } catch (snapshotError) {
@@ -167,6 +170,8 @@ export const useFavorites = () => {
       toast.error('Failed to remove item');
       return false;
     }
+
+    invalidateEngagementCounts(listingId);
 
     setFavoriteIds(prev => {
       const next = new Set(prev);
