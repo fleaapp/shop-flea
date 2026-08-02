@@ -41,6 +41,9 @@ const OPTIONAL_ORDER_COLUMNS = [
   "shipped_at",
   "order_group_id",
   "status",
+  "transaction_fee",
+  "secure_checkout_fee",
+  "coupon_code",
 ] as const;
 
 const ORDER_UPDATE_FALLBACK_COLUMNS = [
