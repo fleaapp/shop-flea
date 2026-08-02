@@ -107,6 +107,9 @@ const WishlistGridCard = ({ listing, onRemove, onAddToCart, isSold = false, isPa
               ❌
             </Button>
 
+            <EngagementBadges listingId={listing.id} size="sm" className="absolute top-10 left-1.5 z-10" />
+
+
             {/* Add to cart button - top right */}
             {!isUnavailable && (
               <Button
