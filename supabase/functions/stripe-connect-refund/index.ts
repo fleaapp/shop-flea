@@ -16,6 +16,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
+import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -724,6 +725,10 @@ async function insertRefundInitiatedChatMessage(externalUrl: string, serviceKey:
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const originBlock = rejectUntrustedOrigin(req);
+  if (originBlock) return originBlock;
+
+
 
   try {
     const externalUrl = Deno.env.get("SUPABASE_URL") ?? "";

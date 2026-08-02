@@ -12,11 +12,14 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isStripePermissionError, logStripeScopeGap } from "../_shared/stripeErrors.ts";
+import { rejectUntrustedOrigin } from "../_shared/cors.ts";
+import { checkRateLimit, callerKey, tooManyRequests } from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  Vary: "Origin",
 };
 
 const REVIEWER_USER_IDS = new Set<string>([
@@ -27,6 +30,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+  const originBlock = rejectUntrustedOrigin(req);
+  if (originBlock) return originBlock;
+
 
   try {
     const supabaseClient = createClient(
@@ -41,6 +47,13 @@ serve(async (req) => {
         status: 401,
       });
     }
+
+    // Rate limit: guards against card-testing loops. 15 intents per user / 10 min.
+    if (!(await checkRateLimit(callerKey(req, "payment-intent", user.id), 15, 600))) {
+      return tooManyRequests(corsHeaders, "Too many payment attempts. Please wait a few minutes.");
+    }
+
+
 
     const { items, shipping, shippingBySeller, expectedAmountCents, couponCode, saveCard } = await req.json();
     const jsonError = (status: number, code: string, message: string, extra: Record<string, unknown> = {}) =>

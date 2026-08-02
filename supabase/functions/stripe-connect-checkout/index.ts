@@ -2,11 +2,14 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isStripePermissionError, logStripeScopeGap } from "../_shared/stripeErrors.ts";
+import { rejectUntrustedOrigin } from "../_shared/cors.ts";
+import { checkRateLimit, callerKey, tooManyRequests } from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  Vary: "Origin",
 };
 
 // Apple App Review demo account(s). When signed in as any of these UUIDs,
@@ -21,6 +24,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+  const originBlock = rejectUntrustedOrigin(req);
+  if (originBlock) return originBlock;
 
   try {
     // Authenticate against the external Supabase project where users sign in
@@ -36,6 +41,11 @@ serve(async (req) => {
         status: 401,
       });
     }
+
+    if (!(await checkRateLimit(callerKey(req, "checkout", user.id), 15, 600))) {
+      return tooManyRequests(corsHeaders, "Too many checkout attempts. Please wait a few minutes.");
+    }
+
 
     const { items, shipping, couponCode } = await req.json();
 
