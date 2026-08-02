@@ -18,6 +18,7 @@ import EnablePushBanner from '@/components/EnablePushBanner';
 import { OrderGroup } from '@/hooks/useOrders';
 import { useQueryClient } from '@tanstack/react-query';
 import { clearOrderChatBadges } from '@/utils/orderChatRead';
+import EmptyState from '@/components/EmptyState';
 
 
 const ProductThumbnail = ({

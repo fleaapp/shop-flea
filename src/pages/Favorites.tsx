@@ -14,6 +14,7 @@ import { useCart } from '@/context/CartContext';
 import { Listing } from '@/types/listing';
 import { ListingFilters } from '@/hooks/useListings';
 import { toast } from 'sonner';
+import EmptyState from '@/components/EmptyState';
 
 // Convert DbListing to Listing display type
 interface DisplayListing extends Listing {

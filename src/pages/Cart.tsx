@@ -23,6 +23,7 @@ import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import { useQueryClient } from '@tanstack/react-query';
 import { clearOrderChatBadges } from '@/utils/orderChatRead';
 import { supabase } from '@/lib/supabase';
+import EmptyState from '@/components/EmptyState';
 
 
 const getOrderStatusBadge = (status: Order['status']) => {
