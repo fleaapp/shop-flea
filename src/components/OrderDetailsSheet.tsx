@@ -154,7 +154,8 @@ const OrderDetailsSheet = ({
   );
   const refundWindowExpired = useMemo(() => {
     if (!primaryOrder?.delivered_at) return true;
-    return differenceInDays(new Date(), new Date(primaryOrder.delivered_at)) >= 2;
+    const hoursSinceDelivery = (Date.now() - new Date(primaryOrder.delivered_at).getTime()) / (1000 * 60 * 60);
+    return hoursSinceDelivery >= 48;
   }, [primaryOrder?.delivered_at]);
 
   // Lost parcel: a buyer can raise a refund on an order still marked "shipped"
