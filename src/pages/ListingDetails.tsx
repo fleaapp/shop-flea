@@ -284,19 +284,9 @@ const ListingDetails = () => {
     fetchListing();
   }, [id, location.state, user?.id]);
 
-  // Fetch cart and wishlist counts for this listing
-  useEffect(() => {
-    const fetchCounts = async () => {
-      if (!id) return;
-      const [cartRes, favRes] = await Promise.all([
-        supabase.from('cart_items').select('id', { count: 'exact', head: true }).eq('listing_id', id),
-        supabase.from('favorites').select('id', { count: 'exact', head: true }).eq('listing_id', id),
-      ]);
-      setCartCount(cartRes.count ?? 0);
-      setWishlistCount(favRes.count ?? 0);
-    };
-    fetchCounts();
-  }, [id]);
+  // Cart/wishlist counts now come from the shared EngagementBadges component,
+  // which reads true public counts via the get_listing_engagement_counts RPC.
+
 
   const handleClose = () => {
     if (closeStartedRef.current) return;
