@@ -640,7 +640,7 @@ async function insertRefundNotifications(externalUrl: string, serviceKey: string
         user_id: order.buyer_id,
         type: "refund_initiated",
         title: "Refund issued",
-        message: `↩️ Your refund for ${listingTitle} has been processed. Funds will return to your original payment method within a few business days.`,
+        message: `↩️ Your refund for ${listingTitle} has been processed. Funds usually appear straight away, but some banks can take up to 5 business days.`,
         related_listing_id: order.listing_id ?? null,
         related_user_id: order.seller_id ?? null,
         related_order_id: order.id ?? null,

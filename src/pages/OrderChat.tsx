@@ -419,7 +419,7 @@ const OrderChat = () => {
                     queryClient.invalidateQueries({ queryKey: ['orders'] });
                     queryClient.invalidateQueries({ queryKey: ['order-groups'] });
                     queryClient.invalidateQueries({ queryKey: ['seller-balance'] });
-                    toast.success('Refund processed. Buyer will see it in 5–10 days.');
+                    toast.success('Refund processed. The buyer usually sees it straight away.');
                   } catch (e: any) {
                     toast.error(e?.message || 'Failed to process refund');
                   } finally {
