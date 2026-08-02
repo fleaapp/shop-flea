@@ -161,7 +161,7 @@ const Terms = () => {
           <section className={SECTION}>
             <h2 className="text-base font-bold mb-2">10. Shipping, tracking and delivery</h2>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li>Sellers must dispatch sold items within <strong>3 business days</strong> and add valid Australian carrier tracking. Orders that have not been marked as shipped with valid tracking within <strong>9 days</strong> of purchase are automatically refunded to the buyer, the sale is cancelled, and any payout for that order is withheld from the seller's balance.</li>
+              <li>Sellers must dispatch sold items within <strong>3 days</strong> and add valid Australian carrier tracking. Orders that have not been marked as shipped with valid tracking within <strong>9 days</strong> of purchase are automatically refunded to the buyer, the sale is cancelled, and any payout for that order is withheld from the seller's balance.</li>
               <li>Every tracking number is reviewed and approved by Flea before payouts release. Sellers who submit 3 invalid tracking numbers are flagged for extra checks.</li>
               <li>Once a parcel is marked delivered - either by the buyer or by Flea - a <strong>48-hour buyer protection window</strong> starts. Funds stay held during that window. If no issue is raised, the order auto-completes and funds release to the seller.</li>
               <li>Risk in the goods passes to the buyer on delivery to the address provided at checkout.</li>

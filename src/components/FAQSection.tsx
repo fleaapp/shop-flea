@@ -28,7 +28,7 @@ const faqItems = [
       },
       {
         q: 'How do I pay for my order?',
-        a: 'At checkout you can pay by card, Apple Pay or Google Pay through the seller\'s connected payment provider. Payments go directly to the seller - Flea does not hold your funds.',
+        a: 'At checkout you can pay by card, Apple Pay or Google Pay through the seller\'s connected payment provider. Your payment is held securely until the order is delivered and the 48-hour buyer protection window closes - only then are the funds released to the seller.',
       },
       {
         q: 'What fees do I pay as a buyer?',
