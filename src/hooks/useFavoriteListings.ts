@@ -156,7 +156,7 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
       };
 
       // Keep listing details even when seller is invalid; just mark these items as removed for UI
-      const listingsWithProfiles = sizeFiltered.map(listing => {
+      const listingsWithProfiles: DbListingWithPause[] = sizeFiltered.map((listing): DbListingWithPause => {
         const profile = profilesMap.get(listing.user_id) || null;
         const removedBySeller = isInvalidSeller(listing);
 
