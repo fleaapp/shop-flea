@@ -89,7 +89,11 @@ export function calculateFees(
   };
 }
 
-/** Quick helper for listing previews — seller take-home after the transaction fee. */
+/**
+ * Quick helper for listing previews — seller take-home after the transaction fee
+ * IF the item sells on its own. The $0.50 fixed portion is charged once per
+ * order, so a multi-item bundle keeps more than the sum of these previews.
+ */
 export function sellerEarningsPreview(price: number, shipping = 0): number {
   const subtotal = price + shipping;
   return r2(subtotal - calculateTransactionFee(subtotal));
