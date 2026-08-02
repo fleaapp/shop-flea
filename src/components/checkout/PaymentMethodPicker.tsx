@@ -179,18 +179,9 @@ const PaymentMethodPicker = ({ value, onChange, amountCents }: Props) => {
         {/* Saved cards */}
         {savedCards.map((card) => {
           const selected = value?.kind === 'saved' && value.card.id === card.id;
-          const handleDelete = async (e: React.MouseEvent) => {
+          const handleDelete = (e: React.MouseEvent) => {
             e.stopPropagation();
-            if (!confirm(`Remove ${brandLabel(card.brand)} •••• ${card.last4}?`)) return;
-            try {
-              await invokeCloudFunction('stripe-detach-card', { paymentMethodId: card.id });
-              setSavedCards((prev) => prev.filter((c) => c.id !== card.id));
-              if (selected) onChange({ kind: 'new_card' });
-              toast.success('Card removed');
-            } catch (err) {
-              console.error(err);
-              toast.error('Could not remove card');
-            }
+            setCardToDelete(card);
           };
           return (
             <div
