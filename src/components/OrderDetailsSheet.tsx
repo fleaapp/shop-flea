@@ -474,10 +474,21 @@ const OrderDetailsSheet = ({
                     variant="outline"
                     className="flex-1 rounded-full h-12 bg-muted-foreground/60 text-white hover:bg-muted-foreground/70 border-none"
                   >
-                    {refundStatus?.hasPending || refundStatus?.hasAnyRequest ? 'Refund Requested' : 'Request Refund'}
+                    {refundStatus?.hasPending || refundStatus?.hasAnyRequest
+                      ? 'Refund Requested'
+                      : effectiveStatus === 'shipped'
+                        ? 'Parcel not arrived'
+                        : 'Request Refund'}
                   </Button>
                 )}
               </div>
+
+              {!isRefunded && isBuyer && effectiveStatus === 'shipped' && lostParcelEligible && !refundStatus?.hasAnyRequest && (
+                <p className="text-center text-xs text-muted-foreground mt-2">
+                  This parcel has been on its way for over {LOST_PARCEL_DAYS} days. If it still
+                  has not arrived, you can ask for your money back.
+                </p>
+              )}
 
               <button
                 className="text-center text-sm text-foreground underline mt-2"
