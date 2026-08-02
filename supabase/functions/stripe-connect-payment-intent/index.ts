@@ -26,6 +26,13 @@ const REVIEWER_USER_IDS = new Set<string>([
   "5883f33c-07f3-4f6a-9a2d-a7e0ea864142",
 ]);
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MAX_CART_ITEMS = 50;
+
+function isUuid(v: unknown): v is string {
+  return typeof v === "string" && UUID_RE.test(v);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -61,8 +68,23 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status,
       });
-    if (!items || !items.length) {
+    if (!Array.isArray(items) || items.length === 0) {
       return jsonError(400, "no_items", "No items provided.");
+    }
+    if (items.length > MAX_CART_ITEMS) {
+      return jsonError(400, "cart_too_large", "Checkout is limited to 50 items.");
+    }
+    for (const item of items) {
+      if (!isUuid(item?.id) || !isUuid(item?.sellerId)) {
+        return jsonError(400, "invalid_item_id", "One or more item IDs are invalid.");
+      }
+    }
+    if (shippingBySeller && typeof shippingBySeller === "object") {
+      for (const sellerId of Object.keys(shippingBySeller)) {
+        if (!isUuid(sellerId)) {
+          return jsonError(400, "invalid_seller_id", "Invalid seller ID in shipping map.");
+        }
+      }
     }
 
 

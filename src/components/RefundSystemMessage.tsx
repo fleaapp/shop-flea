@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, ExternalLink, Clock } from 'lucide-react';
+import { CheckCircle, Clock } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 interface RefundRequestData {
@@ -37,9 +37,7 @@ interface RefundReminderData {
 
 type RefundData = RefundRequestData | RefundRejectedData | RefundInitiatedData | RefundReminderData;
 
-const STRIPE_BUYER_URL = 'https://support.stripe.com';
-const STRIPE_SELLER_URL = 'https://dashboard.stripe.com/payments';
-const PROVIDER_NAME = 'Stripe';
+const PROVIDER_NAME = 'payment provider';
 
 const formatUsername = (u: string) => u.startsWith('@') ? u : `@${u}`;
 
@@ -160,16 +158,8 @@ const RefundSystemMessage = ({
             <div className="pt-2 space-y-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Clock className="h-3.5 w-3.5" />
-                <span>The seller hasn't responded yet. You can request your refund directly.</span>
+                <span>The seller hasn't responded yet. Flea will review this automatically if they don't reply.</span>
               </div>
-              <Button
-                size="sm"
-                onClick={() => window.open(STRIPE_BUYER_URL, '_blank')}
-                className="rounded-full w-full bg-charcoal text-white hover:bg-charcoal-light"
-              >
-                <ExternalLink className="h-3.5 w-3.5 mr-1" />
-                Request Refund via {PROVIDER_NAME}
-              </Button>
             </div>
           )}
         </div>
@@ -200,21 +190,8 @@ const RefundSystemMessage = ({
           </p>
 
           <p className="text-xs text-muted-foreground">
-            Flea does not hold payments and cannot process refunds directly. Please escalate this request via your original payment provider.
+            The request has been escalated to Flea for review. We'll look at the evidence and update you in this chat.
           </p>
-
-          {!isSeller && (
-            <div className="flex justify-center">
-              <Button
-                size="sm"
-                onClick={() => window.open(STRIPE_BUYER_URL, '_blank')}
-                className="rounded-full w-3/4 h-12 bg-charcoal text-white hover:bg-charcoal-light gap-1.5 items-center justify-center"
-              >
-                <span className="leading-none">↩️</span>
-                Request Refund via {PROVIDER_NAME}
-              </Button>
-            </div>
-          )}
         </div>
       </div>
     );
@@ -231,7 +208,7 @@ const RefundSystemMessage = ({
           </div>
 
           <p className="text-sm text-foreground">
-            <span className="font-semibold">{formatUsername(d.seller_username)}</span> has initiated a refund via {PROVIDER_NAME}.
+            <span className="font-semibold">{formatUsername(d.seller_username)}</span> has initiated a refund. It will return to your original payment method.
           </p>
         </div>
       </div>

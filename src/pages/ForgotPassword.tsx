@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mail } from 'lucide-react';
+import { ChevronLeft, Mail } from 'lucide-react';
 import fleaLogoAuth from '@/assets/flea-logo-auth.jpeg';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,7 +45,7 @@ const ForgotPassword = () => {
           onClick={() => navigate('/auth')}
           className="absolute top-6 left-6 text-foreground hover:opacity-70 transition-opacity"
         >
-          <ArrowLeft className="h-6 w-6" />
+          <ChevronLeft className="h-6 w-6" />
         </button>
       )}
 

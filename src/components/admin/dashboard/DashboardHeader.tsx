@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Headphones, MessageCircle, CheckCircle, BarChart3, ArrowLeft, Users, Package, ShieldAlert } from 'lucide-react';
+import { Headphones, MessageCircle, CheckCircle, BarChart3, ChevronLeft, Users, Package, ShieldAlert } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface DashboardHeaderProps {
@@ -16,7 +16,7 @@ export function DashboardHeader({ totalThreads, activeThreads, resolvedThreads }
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 sm:gap-3">
           <Button variant="ghost" size="icon" aria-label="Back to home" onClick={() => navigate('/')} className="shrink-0">
-            <ArrowLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" />
           </Button>
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary sm:h-10 sm:w-10">
             <Headphones className="h-4 w-4 text-primary-foreground sm:h-5 sm:w-5" />

@@ -9,12 +9,23 @@ import { AdminHeader } from '@/components/admin/shell/AdminHeader';
 import { AdminBadge } from '@/components/admin/shell/AdminBadge';
 import { AdminEmptyState } from '@/components/admin/shell/AdminEmptyState';
 import { getAdminLastSeen, markAdminTabSeen } from '@/lib/adminLastSeen';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function AdminBrands() {
   const { brands, loading, search, setSearch, rename, remove } = useAdminBrands();
   const [editing, setEditing] = useState<AdminBrand | null>(null);
   const [value, setValue] = useState('');
   const [previousLastSeen] = useState<string | null>(() => getAdminLastSeen('brands'));
+  const [brandToDelete, setBrandToDelete] = useState<AdminBrand | null>(null);
 
   useEffect(() => {
     if (!loading) markAdminTabSeen('brands');
@@ -82,7 +93,7 @@ export default function AdminBrands() {
                   </div>
                   <div className="flex items-center gap-1">
                     <Button variant="ghost" size="icon" aria-label="Edit brand" onClick={() => openEdit(b)} className="h-8 w-8"><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" aria-label="Delete brand" onClick={() => { if (confirm(`Delete brand "${b.display_name}"?`)) remove(b.id); }} className="h-8 w-8">
+                    <Button variant="ghost" size="icon" aria-label="Delete brand" onClick={() => setBrandToDelete(b)} className="h-8 w-8">
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
@@ -103,6 +114,21 @@ export default function AdminBrands() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!brandToDelete} onOpenChange={(o) => !o && setBrandToDelete(null)}>
+        <AlertDialogContent className="rounded-2xl max-w-[320px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete brand?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Delete "{brandToDelete?.display_name}"? This action is permanent.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel onClick={() => setBrandToDelete(null)} className="flex-1 rounded-lg h-10">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={async () => { if (brandToDelete) { await remove(brandToDelete.id); setBrandToDelete(null); } }} className="flex-1 rounded-lg h-10 bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import ListingImageCropDialog from '@/components/ListingImageCropDialog';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ImagePlus, X, Trash2, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ImagePlus, X, Trash2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -500,7 +500,7 @@ const EditListing = () => {
           onClick={() => safeNavigateBack(navigate, '/profile')}
           className="absolute left-4 h-10 w-10 rounded-full"
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ChevronLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-xl font-bold text-foreground">Edit Listing</h1>
       </header>

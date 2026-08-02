@@ -15,6 +15,16 @@ import { AdminHeader } from '@/components/admin/shell/AdminHeader';
 import { AdminBadge, toneForStatus, statusLabel } from '@/components/admin/shell/AdminBadge';
 import { AdminChipFilter } from '@/components/admin/shell/AdminChipFilter';
 import { AdminEmptyState } from '@/components/admin/shell/AdminEmptyState';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const initials = (s?: string | null) => (s ?? '?').replace('@', '').slice(0, 2).toUpperCase();
 
@@ -22,6 +32,7 @@ export default function AdminListings() {
   const navigate = useNavigate();
   const { listings, loading, search, setSearch, status, setStatus, sort, setSort, dir, setDir, minReports, setMinReports, performAction, stats } = useAdminListings();
   const [selected, setSelected] = useState<AdminListing | null>(null);
+  const [listingToDelete, setListingToDelete] = useState<AdminListing | null>(null);
 
   useEffect(() => { markAdminTabSeen('listings'); }, []);
 
@@ -220,7 +231,7 @@ export default function AdminListings() {
                     <Button size="sm" variant="outline" className="h-9 rounded-full text-xs" onClick={() => { performAction(selected.id, 'feature'); setSelected(null); }}><Star className="mr-1 h-3.5 w-3.5" /> Feature</Button>
                     <Button size="sm" variant="outline" className="h-9 rounded-full text-xs" onClick={() => { performAction(selected.id, 'restore'); setSelected(null); }}><RotateCcw className="mr-1 h-3.5 w-3.5" /> Restore</Button>
                     <Button size="sm" variant="ghost" className="h-9 rounded-full text-xs" onClick={() => navigate(`/listing/${selected.id}`)}><Eye className="mr-1 h-3.5 w-3.5" /> View</Button>
-                    <Button size="sm" variant="destructive" className="ml-auto h-9 rounded-full text-xs" onClick={() => { if (confirm('Delete this listing? It stays under Deleted so admin history is preserved.')) { performAction(selected.id, 'soft_delete'); setSelected(null); } }}><Trash2 className="mr-1 h-3.5 w-3.5" /> Delete</Button>
+                    <Button size="sm" variant="destructive" className="ml-auto h-9 rounded-full text-xs" onClick={() => setListingToDelete(selected)}><Trash2 className="mr-1 h-3.5 w-3.5" /> Delete</Button>
                   </>
                 )}
               </DrawerFooter>
@@ -228,6 +239,21 @@ export default function AdminListings() {
           )}
         </DrawerContent>
       </Drawer>
+
+      <AlertDialog open={!!listingToDelete} onOpenChange={(o) => !o && setListingToDelete(null)}>
+        <AlertDialogContent className="rounded-2xl max-w-[320px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this listing?</AlertDialogTitle>
+            <AlertDialogDescription>
+              It will stay under Deleted so admin history is preserved.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel onClick={() => setListingToDelete(null)} className="flex-1 rounded-lg h-10">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (listingToDelete) { performAction(listingToDelete.id, 'soft_delete'); setListingToDelete(null); setSelected(null); } }} className="flex-1 rounded-lg h-10 bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

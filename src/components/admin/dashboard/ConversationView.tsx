@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { MessageSquare, CheckCircle2, RotateCcw, Copy, ArrowLeft } from 'lucide-react';
+import { MessageSquare, CheckCircle2, RotateCcw, Copy, ChevronLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Props {
@@ -52,7 +52,7 @@ export function ConversationView({ thread, messages, loading, sending, onSendMes
         <div className="flex items-center gap-2 sm:gap-4">
           {onBack && (
             <Button variant="ghost" size="icon" aria-label="Back" onClick={onBack} className="shrink-0">
-              <ArrowLeft className="h-5 w-5" />
+              <ChevronLeft className="h-5 w-5" />
             </Button>
           )}
           <Avatar className="h-9 w-9 sm:h-12 sm:w-12">

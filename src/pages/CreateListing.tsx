@@ -3,7 +3,7 @@ import { useSnapshotDraft } from '@/hooks/useSnapshotDraft';
 import { loadDraftImages, saveDraftImages, clearDraftImages, DraftImageRecord } from '@/lib/imageDraftStore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ImagePlus, X, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ImagePlus, X, ChevronRight } from 'lucide-react';
 import ListingImageCropDialog from '@/components/ListingImageCropDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -522,7 +522,7 @@ const CreateListing = () => {
             onClick={() => safeNavigateBack(navigate, "/profile")}
             className="absolute left-4 h-10 w-10 rounded-full"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ChevronLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-xl font-bold text-foreground">Add New Listing</h1>
         </header>
@@ -587,7 +587,7 @@ const CreateListing = () => {
             onClick={() => safeNavigateBack(navigate, "/profile")}
             className="absolute left-4 h-10 w-10 rounded-full"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ChevronLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-xl font-bold text-foreground">Add New Listing</h1>
         </header>
@@ -633,7 +633,7 @@ const CreateListing = () => {
           onClick={() => safeNavigateBack(navigate, "/profile")}
           className="absolute left-4 h-10 w-10 rounded-full"
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ChevronLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-xl font-bold text-foreground">Add New Listing</h1>
       </header>

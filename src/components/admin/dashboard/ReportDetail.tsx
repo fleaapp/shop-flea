@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, CheckCircle, XCircle, Flag, User, MessageSquare, ShoppingBag, ExternalLink, Shield } from 'lucide-react';
+import { ChevronLeft, CheckCircle, XCircle, Flag, User, MessageSquare, ShoppingBag, ExternalLink, Shield } from 'lucide-react';
 
 interface Props {
   report: Report | null;
@@ -59,7 +59,7 @@ export function ReportDetail({ report, onUpdateStatus, onBanUser, onBack, report
   return (
     <div className="flex h-full flex-col bg-background">
       <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-        {onBack && <Button variant="ghost" size="icon" aria-label="Back" onClick={onBack}><ArrowLeft className="h-5 w-5" /></Button>}
+        {onBack && <Button variant="ghost" size="icon" aria-label="Back" onClick={onBack}><ChevronLeft className="h-5 w-5" /></Button>}
         <div className="flex items-center gap-2">
           <TypeIcon className="h-5 w-5 text-muted-foreground" />
           <h2 className="text-lg font-semibold capitalize">{report.report_type} Report</h2>

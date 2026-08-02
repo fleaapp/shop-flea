@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Download, Share, Plus } from 'lucide-react';
+import { ChevronLeft, Download, Share, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { safeNavigateBack } from '@/utils/safeBack';
@@ -80,7 +80,7 @@ const Install = () => {
           onClick={() => safeNavigateBack(navigate, '/')}
           className="absolute left-2 rounded-full"
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ChevronLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-lg font-semibold">Get the App</h1>
       </header>

@@ -46,6 +46,14 @@ async function checkRateLimit(key: string, max: number, windowSeconds: number): 
 }
 
 type CheckoutItem = { id: string; sellerId: string; price: number };
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MAX_CART_ITEMS = 50;
+
+function isUuid(v: unknown): v is string {
+  return typeof v === "string" && UUID_RE.test(v);
+}
+
 type ShippingDetails = {
   shippingFirstName?: string;
   shippingLastName?: string;
@@ -337,6 +345,17 @@ serve(async (req) => {
     };
 
     if (!Array.isArray(items) || items.length === 0) throw new Error("No items provided.");
+    if (items.length > MAX_CART_ITEMS) throw new Error("Checkout is limited to 50 items.");
+    for (const item of items) {
+      if (!isUuid(item?.id) || !isUuid(item?.sellerId)) {
+        throw new Error("One or more item IDs are invalid.");
+      }
+    }
+    if (shippingBySeller && typeof shippingBySeller === "object") {
+      for (const sellerId of shippingBySeller.map(([id]) => id)) {
+        if (!isUuid(sellerId)) throw new Error("Invalid seller ID in shipping map.");
+      }
+    }
     if (!shipping) throw new Error("Missing shipping details.");
     if (!checkoutReference) throw new Error("Missing checkoutReference — payment cannot be verified.");
 

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronRight, Camera } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Camera } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -282,7 +282,7 @@ const EditProfile = () => {
       <header className="shrink-0 bg-background px-4 py-4">
         <div className="flex items-center">
           <button onClick={() => safeNavigateBack(navigate, '/profile')} className="p-2 -ml-2">
-            <ArrowLeft className="h-6 w-6 text-foreground" />
+            <ChevronLeft className="h-6 w-6 text-foreground" />
           </button>
           <h1 className="flex-1 text-center text-lg font-bold text-foreground pr-8">Edit Profile</h1>
         </div>

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { markAdminTabSeen } from '@/lib/adminLastSeen';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 import { useAdminChatThreads } from '@/hooks/admin/useAdminChatThreads';
@@ -85,7 +85,7 @@ export default function AdminDashboard() {
   return (
     <div className="admin-scope native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden"><div className="flex-1 overflow-y-auto pb-24">
       <header className="sticky top-0 z-40 flex items-center gap-2 bg-background px-4 py-4">
-        <Button variant="ghost" size="icon" aria-label="Back to settings" onClick={() => navigate('/settings')}><ArrowLeft className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" aria-label="Back to settings" onClick={() => navigate('/settings')}><ChevronLeft className="h-4 w-4" /></Button>
         <h1 className="flex-1 text-center text-xl font-bold">🛡️ Admin</h1>
         <div className="w-8" />
       </header>
@@ -170,7 +170,7 @@ function SectionView({ section, onBack }: { section: Section; onBack: () => void
     <div className="admin-scope native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden">
       <header className="sticky top-0 z-40 flex items-center gap-2 border-b border-border bg-background px-4 py-3">
         <Button variant="ghost" size="icon" aria-label="Back" onClick={() => { setSelectedThread(null); setSelectedReport(null); onBack(); }}>
-          <ArrowLeft className="h-4 w-4" />
+          <ChevronLeft className="h-4 w-4" />
         </Button>
         <h1 className="flex-1 text-center text-lg font-bold">{titles[section]}</h1>
         <div className="w-8" />

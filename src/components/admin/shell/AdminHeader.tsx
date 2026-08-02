@@ -1,4 +1,4 @@
-import { ArrowLeft } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -30,7 +30,7 @@ export function AdminHeader({ title, emoji, onBack, backTo = '/admin', right, cl
         className="h-9 w-9 shrink-0 rounded-full"
         aria-label="Back"
       >
-        <ArrowLeft className="h-4 w-4" />
+        <ChevronLeft className="h-4 w-4" />
       </Button>
       <h1 className="flex-1 truncate text-center text-lg font-bold text-foreground">
         {emoji && <span className="mr-1.5">{emoji}</span>}

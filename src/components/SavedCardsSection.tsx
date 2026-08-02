@@ -3,6 +3,16 @@ import { CreditCard, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import type { SavedCard } from '@/components/checkout/PaymentMethodPicker';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const brandLabel = (brand: string) => {
   const map: Record<string, string> = {
@@ -16,6 +26,7 @@ const SavedCardsSection = () => {
   const [cards, setCards] = useState<SavedCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [cardToDelete, setCardToDelete] = useState<SavedCard | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,14 +45,20 @@ const SavedCardsSection = () => {
   }, []);
 
   const handleDelete = async (card: SavedCard) => {
-    if (!confirm(`Remove ${brandLabel(card.brand)} •••• ${card.last4}?`)) return;
+    setCardToDelete(card);
+  };
+
+  const confirmDelete = async () => {
+    if (!cardToDelete) return;
     try {
-      await invokeCloudFunction('stripe-detach-card', { paymentMethodId: card.id });
-      setCards((prev) => prev.filter((c) => c.id !== card.id));
+      await invokeCloudFunction('stripe-detach-card', { paymentMethodId: cardToDelete.id });
+      setCards((prev) => prev.filter((c) => c.id !== cardToDelete.id));
       toast.success('Card removed.');
     } catch (err) {
       console.error(err);
       toast.error('Could not remove card.');
+    } finally {
+      setCardToDelete(null);
     }
   };
 
@@ -94,6 +111,21 @@ const SavedCardsSection = () => {
           </div>
         ))}
       </div>
+
+      <AlertDialog open={!!cardToDelete} onOpenChange={(o) => !o && setCardToDelete(null)}>
+        <AlertDialogContent className="rounded-2xl max-w-[320px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove card?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove {cardToDelete ? brandLabel(cardToDelete.brand) : ''} •••• {cardToDelete?.last4} from your saved cards.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel onClick={() => setCardToDelete(null)} className="flex-1 rounded-lg h-10">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="flex-1 rounded-lg h-10 bg-destructive text-destructive-foreground hover:bg-destructive/90">Remove</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

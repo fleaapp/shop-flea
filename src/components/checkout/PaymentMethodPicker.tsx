@@ -7,6 +7,16 @@ import { toast } from 'sonner';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { cn } from '@/lib/utils';
 import { getStripe } from '@/lib/stripe/loadStripe';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export type SavedCard = {
   id: string;
@@ -70,6 +80,7 @@ const PaymentMethodPicker = ({ value, onChange, amountCents }: Props) => {
   const [loading, setLoading] = useState(true);
   const [wallet, setWallet] = useState<WalletKind | null>(() => detectNativeWallet() ?? (isApplePayLikelyDevice() ? 'apple' : null));
   const [walletLoading, setWalletLoading] = useState(!Capacitor.isNativePlatform());
+  const [cardToDelete, setCardToDelete] = useState<SavedCard | null>(null);
 
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
@@ -152,6 +163,22 @@ const PaymentMethodPicker = ({ value, onChange, amountCents }: Props) => {
   const isWalletSelected = value?.kind === 'wallet' && value.wallet === wallet;
   const isNewCardSelected = value?.kind === 'new_card';
 
+  const confirmDelete = async () => {
+    if (!cardToDelete) return;
+    try {
+      await invokeCloudFunction('stripe-detach-card', { paymentMethodId: cardToDelete.id });
+      const wasSelected = value?.kind === 'saved' && value.card.id === cardToDelete.id;
+      setSavedCards((prev) => prev.filter((c) => c.id !== cardToDelete.id));
+      if (wasSelected) onChange({ kind: 'new_card' });
+      toast.success('Card removed');
+    } catch (err) {
+      console.error(err);
+      toast.error('Could not remove card');
+    } finally {
+      setCardToDelete(null);
+    }
+  };
+
   return (
     <div className="rounded-xl bg-card overflow-hidden">
       <div className="px-4 pt-3 pb-2">
@@ -168,18 +195,9 @@ const PaymentMethodPicker = ({ value, onChange, amountCents }: Props) => {
         {/* Saved cards */}
         {savedCards.map((card) => {
           const selected = value?.kind === 'saved' && value.card.id === card.id;
-          const handleDelete = async (e: React.MouseEvent) => {
+          const handleDelete = (e: React.MouseEvent) => {
             e.stopPropagation();
-            if (!confirm(`Remove ${brandLabel(card.brand)} •••• ${card.last4}?`)) return;
-            try {
-              await invokeCloudFunction('stripe-detach-card', { paymentMethodId: card.id });
-              setSavedCards((prev) => prev.filter((c) => c.id !== card.id));
-              if (selected) onChange({ kind: 'new_card' });
-              toast.success('Card removed');
-            } catch (err) {
-              console.error(err);
-              toast.error('Could not remove card');
-            }
+            setCardToDelete(card);
           };
           return (
             <div
@@ -247,6 +265,21 @@ const PaymentMethodPicker = ({ value, onChange, amountCents }: Props) => {
           <p className="text-[15px] font-semibold text-foreground">Add new card</p>
         </button>
       </div>
+
+      <AlertDialog open={!!cardToDelete} onOpenChange={(o) => !o && setCardToDelete(null)}>
+        <AlertDialogContent className="rounded-2xl max-w-[320px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove card?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove {cardToDelete ? brandLabel(cardToDelete.brand) : ''} •••• {cardToDelete?.last4} from your saved cards.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel onClick={() => setCardToDelete(null)} className="flex-1 rounded-lg h-10">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="flex-1 rounded-lg h-10 bg-destructive text-destructive-foreground hover:bg-destructive/90">Remove</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

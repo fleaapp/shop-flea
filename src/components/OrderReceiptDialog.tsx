@@ -4,7 +4,7 @@ import { Order } from '@/hooks/useOrders';
 import { format } from 'date-fns';
 import { X, Download } from 'lucide-react';
 import fleaLogo from '@/assets/flea-logo-receipt.jpeg';
-import stripeLogo from '@/assets/logo-stripe.png';
+
 import { useQuery } from '@tanstack/react-query';
 import {
   fetchSellerShippingSettings,
@@ -277,9 +277,8 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
             </div>
 
             {/* Payment processor */}
-            <div className="border-t border-dotted border-gray-300 mt-4 pt-4 pb-3 flex items-center justify-center gap-1.5">
-              <span className="text-[10px] text-gray-400">Processed by</span>
-              <img src={stripeLogo} alt="Stripe" className="h-4 object-contain" style={{ mixBlendMode: 'darken' }} />
+            <div className="border-t border-dotted border-gray-300 mt-4 pt-4 pb-3 text-center">
+              <span className="text-[10px] text-gray-400">Processed by our payment providers.</span>
             </div>
           </div>
 

@@ -3,6 +3,16 @@ import { Input } from '@/components/ui/input';
 import { Plus, Search, X } from 'lucide-react';
 import { useBrands, Brand } from '@/hooks/useBrands';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface BrandAutocompleteProps {
   value: string;
@@ -16,6 +26,7 @@ const BrandAutocomplete = ({ value, onChange, className = '', placeholder = 'Bra
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
+  const [suggestMatch, setSuggestMatch] = useState<Brand | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -55,16 +66,15 @@ const BrandAutocomplete = ({ value, onChange, className = '', placeholder = 'Bra
     if (!trimmed) return;
 
     if (closestMatch) {
-      // Suggest closest match first
-      const confirmed = window.confirm(
-        `Did you mean "${closestMatch.display_name}"? Click OK to use it, or Cancel to create "${trimmed}" as a new brand.`
-      );
-      if (confirmed) {
-        handleSelect(closestMatch);
-        return;
-      }
+      // Suggest closest match first via native AlertDialog
+      setSuggestMatch(closestMatch);
+      return;
     }
 
+    await doAddBrand(trimmed);
+  };
+
+  const doAddBrand = async (trimmed: string) => {
     const newBrand = await addBrand(trimmed);
     if (newBrand) {
       setQuery(newBrand.display_name);
@@ -74,6 +84,19 @@ const BrandAutocomplete = ({ value, onChange, className = '', placeholder = 'Bra
     } else {
       toast.error('Failed to add brand');
     }
+  };
+
+  const acceptSuggestedBrand = () => {
+    if (suggestMatch) {
+      handleSelect(suggestMatch);
+      setSuggestMatch(null);
+    }
+  };
+
+  const declineSuggestedBrand = () => {
+    setSuggestMatch(null);
+    const trimmed = query.trim();
+    if (trimmed) doAddBrand(trimmed);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -209,6 +232,21 @@ const BrandAutocomplete = ({ value, onChange, className = '', placeholder = 'Bra
           )}
         </div>
       )}
+
+      <AlertDialog open={!!suggestMatch} onOpenChange={(o) => !o && setSuggestMatch(null)}>
+        <AlertDialogContent className="rounded-2xl max-w-[320px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Did you mean "{suggestMatch?.display_name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tap Use to select this brand, or Create to add "{query.trim()}" as a new brand.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel onClick={declineSuggestedBrand} className="flex-1 rounded-lg h-10">Create</AlertDialogCancel>
+            <AlertDialogAction onClick={acceptSuggestedBrand} className="flex-1 rounded-lg h-10">Use</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
