@@ -3,6 +3,16 @@ import { CreditCard, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import type { SavedCard } from '@/components/checkout/PaymentMethodPicker';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const brandLabel = (brand: string) => {
   const map: Record<string, string> = {
