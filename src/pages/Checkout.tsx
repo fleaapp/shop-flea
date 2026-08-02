@@ -17,7 +17,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { toast } from 'sonner';
-import { Pencil, Lock } from 'lucide-react';
+import { Pencil, Lock, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import BlockedUserBanner from '@/components/BlockedUserBanner';
 import { fetchSellerShippingSettings, calculateTotalShipping, getBundleBreakdownText, SellerShippingInfo } from '@/utils/shippingCalculator';
