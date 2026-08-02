@@ -134,11 +134,14 @@ const SalesDetailsSheet = ({
 
   if (!orders || orders.length === 0 || !primaryOrder) return null;
 
-  const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
-  const shippingTotal = orders.reduce((sum, o) => sum + Number(o.shipping_price || 0), 0);
-  // Sellers pay a Transaction Fee (2% + $0.50) deducted from payout.
-  const transactionFee = subtotal > 0 ? Math.round((subtotal * 0.02 + 0.50) * 100) / 100 : 0;
-  const youReceived = Math.round((subtotal - transactionFee) * 100) / 100;
+  // Refunded items are excluded (their transfer is reversed in Stripe) and the
+  // Transaction Fee comes from the snapshot stored at checkout - never today's rate.
+  const sellerNet = computeSellerNet(orders as any[]);
+  const shippingTotal = sellerNet.shipping;
+  const transactionFee = sellerNet.transactionFee;
+  const youReceived = sellerNet.youReceived;
+  const fullyRefunded = sellerNet.fullyRefunded;
+
   const statusBadge = getDisplayStatusBadge(primaryOrder);
   const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
 
