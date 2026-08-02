@@ -24,17 +24,18 @@ const Header = ({
           size="icon" 
           onClick={onUndoClick} 
           disabled={!canUndo}
+          aria-label="Undo last swipe"
           data-onboarding="undo-button"
           className="h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-xl border-2 border-border bg-card hover:bg-secondary text-lg max-[375px]:text-base disabled:opacity-40"
         >
-          ↩️
+          <span aria-hidden="true">↩️</span>
         </Button>
         
-        <Button variant="outline" size="icon" onClick={onSearchClick} className="h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-xl border-2 border-border bg-card hover:bg-secondary text-lg max-[375px]:text-base">
-          🔍
+        <Button variant="outline" size="icon" aria-label="Search listings" onClick={onSearchClick} className="h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-xl border-2 border-border bg-card hover:bg-secondary text-lg max-[375px]:text-base">
+          <span aria-hidden="true">🔍</span>
         </Button>
         
-        <Button variant="outline" size="icon" onClick={onFilterClick} className="h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-xl border-2 border-border bg-card hover:bg-secondary">
+        <Button variant="outline" size="icon" aria-label="Open filters" onClick={onFilterClick} className="h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-xl border-2 border-border bg-card hover:bg-secondary">
           <SlidersHorizontal className="h-5 w-5 max-[375px]:h-4 max-[375px]:w-4" />
         </Button>
       </div>
