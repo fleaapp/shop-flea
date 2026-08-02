@@ -7,6 +7,16 @@ import { toast } from 'sonner';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { cn } from '@/lib/utils';
 import { getStripe } from '@/lib/stripe/loadStripe';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export type SavedCard = {
   id: string;
