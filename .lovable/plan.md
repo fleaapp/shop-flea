@@ -1,98 +1,108 @@
-I re-checked the real code and database for every item from the last audit before writing this, so the status below is verified, not from memory. Then I've laid out everything still outstanding as a fresh, prioritised audit in plain language.
+Full end-to-end audit of Flea. Everything below marked "verified" was re-checked in the code and database this turn. Anything I could not confirm without running the app is marked "needs a live check" and is written as an investigation step, not a claim.
 
-## Part 1 — What's already fixed (verified)
+## Since the last audit — now confirmed fixed
 
-**Security holes closed**
-- The three unprotected back-end endpoints are locked down. Resetting a seller now requires a verified admin; recovering an order requires the actual buyer or an admin; payouts no longer trust an unverified login token.
-- 17 back-end functions now require a valid login. Only genuinely public ones (payment webhook, email hook) stay open.
+- Money correctness: checkout saves the real fee, coupon code and coupon type on every order; receipts, refunds and pro-rata math read the saved number. FREEFLEA no longer shows phantom fees.
+- Lost parcel: buyers can request a refund from "shipped" after the quiet period, enforced both in the app and on the server.
+- Back buttons: verified there is exactly one raw back call left in the whole app, and it lives inside the safe helper itself. Twelve screens now use the safe helper.
+- Payout double-send, admin endpoint lockdown, and the fee-copy corrections all still hold.
 
-**Money correctness**
-- Payouts carry a unique fingerprint, so a double tap or retry can't send the money twice.
-- The 1.5% instant payout fee now actually reaches Flea. If it can't be collected, the payout stops with a clear message instead of quietly shortchanging the seller.
+## Critical (fix before release)
 
-**Policy and copy truth**
-- Checkout no longer names the payment provider brand.
-- The fee popover now correctly states the seller's 2% + $0.50 transaction fee instead of "no selling fees".
-- The server refund window matches the published 48h + 72h policy.
-- FAQ now agrees with Terms on dispatch deadlines, on listings being blocked until verification, and on the 7-year record-keeping requirement.
-- Terms and Privacy now cover GST on Flea's fees, chargeback double-dipping, 18+ selling age, and camera permissions.
+**C1 — Money-moving and admin endpoints have no rate limit and accept requests from any website**
+Verified: 50 back-end functions send a wildcard "any origin allowed" header, and only 7 of them use the rate-limit helper. Payout, top-up, payment-intent and the admin data endpoint are all in the unprotected group.
+- Screens: Checkout, Seller Dashboard, Admin.
+- User impact: none visible day to day, but a scripted attacker can hammer payout or checkout.
+- Business impact: card-testing fraud, forced provider rate limits, potential account suspension.
+- Fix: lock the allowed origin to the real app domains plus the native app origin; add the existing rate-limit helper to payout, top-up, payment-intent, finalize-checkout, refund and admin-data.
+- Size: Medium.
 
-**Other**
-- Screen-reader labels on the header and bottom navigation.
-- Logout confirmation dialog.
-- The 72-hour auto-approval job is confirmed running hourly in the database, alongside auto-refund-unshipped and order-progress jobs.
+**C2 — ID upload accepts any file and decodes it before checking the size**
+Verified in the upload function: the file is fully decoded into memory first, then the 8MB check runs, and nothing verifies the file is actually an image.
+- Screens: Seller verification.
+- User impact: a large or corrupt file can hang or crash the step with no useful message.
+- Business impact: memory exhaustion on the server; junk documents sent to the payment provider slow verification.
+- Fix: check the declared length before decoding, verify the file signature is JPEG/PNG/HEIC, and reject anything else with a plain-English message.
+- Size: Small.
 
-## Part 2 — Critical, still outstanding
+## High priority
 
-**1. Coupon fees aren't saved onto the order (biggest one)**
-When someone uses FREEFLEA, the waiver isn't recorded. Receipts, order details and refunds all recalculate 4% + $0.70 as if the coupon never existed.
-- *User impact:* the total shown doesn't match their bank statement — the fastest way to lose trust.
-- *Business impact:* refunds pay back fees Flea never collected. Real money out the door.
-- *Fix:* save the actual fee charged, the coupon code and its type onto every order line at checkout; make receipts, order screens and the refund calculator read that saved number instead of recalculating. Add a safeguard so two simultaneous checkouts can't create duplicate order rows.
-- *Size:* Medium.
+**H1 — Heavy list queries fetch every column with no page limit**
+Verified: favourites, reviews, wishlist, listings and the home feed all request every column, and several have no limit.
+- User impact: slow first paint on Wishlist, Profile and Reviews, worse on mobile data.
+- Business impact: bounce on the two screens that drive repeat buying.
+- Fix: name the columns each screen actually uses, add paging to favourites, reviews and wishlist, and batch the admin threads query into one call.
+- Size: Medium.
 
-**2. No way to report a lost parcel**
-Refunds are only offered once an order says "delivered". If a parcel never arrives, the buyer has no route in the app.
-- *Fix:* allow a refund request from "shipped" after a set number of quiet days, in both the order screen and the server rule. Add a "where is my parcel" state.
-- *Size:* Medium.
+**H2 — Buyer self-declared delivery routing (needs a live check)**
+The admin review queue exists and the server function sets the review flag, but I have not confirmed end to end that a buyer tapping "delivered" on an untracked order lands in review rather than releasing funds.
+- Fix: step one is to place a test order, mark it delivered as the buyer without tracking, and confirm it appears in the admin queue and funds stay held. Fix only what that test exposes.
+- Size: Small to investigate, Medium if broken.
 
-## Part 3 — High priority
+**H3 — Possible duplicate "Order Shipped" alert (needs a live check)**
+Both the database and the app can produce this notification. I found the type referenced in five places across app and server code but could not prove a duplicate fires without sending one.
+- Fix: send a real shipped notification, count what arrives, then remove the losing sender and add a dedupe key.
+- Size: Small.
 
-- **Back button on deep links** — Listing Details, Checkout and Create Listing still use the raw back action, which can drop people on a blank screen when they arrive from a push notification or shared link. A safe helper already exists; switch these over. *Small.*
-- **Buyer self-declared delivery** — the admin review queue exists, but the order screen still shows an older "admin marked delivered" branch. Confirm a buyer's own "delivered" tap routes into review rather than releasing funds instantly. *Medium.*
-- **Possible duplicate "Order Shipped" push** — both the database and the app send it. Pick one sender and add a dedupe key. *Small.*
-- **Heavy list queries** — favourites, reviews and wishlist fetch every column with no page limit; the admin threads screen makes two database calls per thread. Add column lists, pagination and one batched admin query. *Medium.*
-- **Wildcard CORS and no rate limits** on money-moving and admin functions; the ID upload function decodes the whole file before checking its size limit and never checks the file is actually an image. *Medium.*
+**H4 — Public profile leaks an exact last-active timestamp**
+Verified: the public profile view exposes last sign-in time to anyone.
+- User impact: strangers can tell when someone is online or away.
+- Business impact: privacy complaint risk; not something Depop or Vinted expose.
+- Fix: coarsen to "active this week" or drop it from the public view.
+- Size: Small.
 
-## Part 4 — Medium priority
+## Medium priority
 
 **Orders and refunds**
-- A group of items shows one combined status, so a partial refund can be invisible.
-- Tracking numbers are checked for existence only — nonsense is accepted.
-- A failed partial refund leaves items in limbo behind a generic error message.
-- The bundle discount label disappears silently when no percentage is set.
-- Receipts read the seller's *current* shipping settings rather than the settings at purchase time.
+- A bundle shows one combined status, so a partial refund inside it is invisible to the buyer.
+- Tracking numbers are only checked for existence, so nonsense is accepted.
+- A partially failed refund leaves items stuck behind a generic error.
+- The bundle discount label vanishes silently when no percentage is set.
 
 **Notifications**
-- Opening the Alerts tab marks everything read, even items the user never scrolled to.
-- Two notification types (final shipping warning, overdue for buyer) have no in-app wording, emoji or tap destination.
-- The "delivered" push goes to the buyer instead of the seller.
-- Cart calculates its badge separately from the shared badge system, so numbers can disagree.
+- Opening Alerts marks everything read, including items never seen.
+- Two notification types (final shipping warning, buyer overdue) have no in-app wording, emoji or destination.
+- The delivered push goes to the buyer when the seller is the one who needs it.
+- Cart, Profile and Alerts each compute their own badge alongside the shared system, so numbers can disagree.
 
 **UI and consistency**
-- Around 20 files hardcode colours instead of using the design system, which is why some screens drift visually.
-- Listing Details has two equal-weight buttons with no obvious primary action.
-- Empty, loading and error states are inconsistent — no list screen has a proper "something went wrong, retry" state.
-- Contact Support uses tappable plain boxes rather than real buttons.
-- Several icon buttons are smaller than the 44px minimum tap size (Profile, Wishlist, Comments, Coupon input).
-- Home and Cart have no main page heading.
-- Password rules are shown one error toast at a time instead of all at once.
+- Verified: 32 files hardcode colours instead of using the design system, which is why some screens drift.
+- Listing Details shows two equal-weight buttons with no clear primary action.
+- Empty, loading and error states differ per screen, and no list screen has a "something went wrong, retry" state.
+- Contact Support uses tappable boxes rather than real buttons.
+- Several icon buttons fall under the 44px minimum tap size (Profile, Wishlist, Comments, Coupon input).
+- Verified: Home and Cart have no main page heading, unlike the other 20 screens.
+- Password rules appear one error toast at a time instead of all at once.
 
-**Privacy**
-- Public profiles expose an exact last-active timestamp; the listings image bucket allows the full file list to be enumerated.
+## Nice to have
 
-## Part 5 — Feature gaps vs Depop / Vinted / eBay
+- Saved-card selection at checkout is offered but not reusable in a single tap.
+- Seller analytics: views, saves, conversion.
+- A proper "where is my parcel" tracking view instead of a status word.
+- Prohibited items FAQ and a named external dispute pathway.
 
-Flea is at or above the standard on buyer protection, bundle shipping and the swipe feed. It's behind on:
-- **Offers / make-an-offer** — absent entirely, and expected on Depop and Vinted.
-- **In-transit dispute handling** — covered by item 2 above.
-- **Seller analytics** — views, saves, conversion.
-- **Buyer "where is my parcel" tracking view** — currently just a status word.
-- **Prohibited items FAQ** and a named external dispute pathway.
+## Benchmark against Depop, Vinted and eBay
 
-## Overall health score
+At or above standard: buyer protection window, bundle shipping, the swipe feed, live-camera refund proof.
+Behind: no make-an-offer (expected on both Depop and Vinted), no seller analytics, no parcel tracking view, thinner empty and error states.
 
-**79/100** — up from 68. The release-blocking security holes and the payout money leak are fixed, and the policy copy now tells the truth. The remaining blocker is the coupon fee snapshot: until totals are saved rather than recalculated, some buyers will see a figure that doesn't match their bank.
+## Legal, copy and FAQ
+
+The previous pass reconciled FAQ, Terms and Privacy on dispatch deadlines, verification gating, record keeping, GST, 18+ selling age and camera permissions, and those still hold. The one open risk is the delivered/dispute wording: if H2 turns out to release funds early, the in-app behaviour would contradict the published buyer protection window, which is the kind of mismatch that draws complaints.
+
+## Overall product health score
+
+**84/100.** Up from 79. The release-blocking money and security holes are closed and totals now match what buyers are charged. What is left is hardening (open endpoints, upload validation), performance on the list screens, and a consistency sweep — real work, but none of it is a trust-breaking bug.
 
 ## Suggested build order
 
-1. Coupon fee snapshot (Critical #1) — money correctness first.
-2. Lost parcel path + delivery review gate (Critical #2, High #2) — same part of the order lifecycle.
-3. Quick wins: safe back button, duplicate shipped push.
-4. Query performance, CORS and rate limits, upload validation.
-5. Medium UI, notification and consistency sweep.
-6. Feature gaps — offers first, then seller analytics.
+1. C1 and C2 — endpoint hardening and upload validation.
+2. H2 and H3 — live checks on delivery review and duplicate push; fix whatever they expose.
+3. H1 and H4 — query slimming, paging, and the last-active leak.
+4. Notification correctness sweep: single badge source, missing wording, delivered recipient, scroll-aware read.
+5. Design system sweep: colour tokens, tap targets, page headings, shared empty/loading/error components, primary action on Listing Details.
+6. Feature gaps: offers first, then seller analytics and the parcel tracking view.
 
 ## Technical detail
 
-Fee source of truth moves to the `orders` table rather than `feeCalculator`. Add `secure_checkout_fee`, `coupon_type`, and per-line `transaction_fee` (today only the first row of a group carries it), plus a unique index on `orders(checkout_reference, listing_id)` to close the finalize-checkout race. Use largest-remainder allocation for pro-rata shares so repeated partial refunds sum exactly to the original charge.
+Origin allow-list belongs in the shared CORS helper so all 50 functions inherit it; rate limiting reuses the existing `check_and_record_rate_limit` helper already wired into 7 functions. Upload validation should read the declared byte length from the base64 header before decoding and match the first bytes against known image signatures. Query slimming means explicit column lists plus range-based paging in `useFavoriteListings`, `useReviews`, `useListings` and `useHomeFeed`. Badge unification means Cart, Profile and Alerts all read from `useNavBadges` rather than recomputing.
