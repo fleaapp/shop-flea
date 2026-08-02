@@ -13,6 +13,11 @@ Deno.serve(async (req) => {
   const originBlock = rejectUntrustedOrigin(req);
   if (originBlock) return originBlock;
   try {
+    // Rate limit: 30 validation attempts per IP per minute.
+    if (!(await checkRateLimit(callerKey(req, "validate-coupon"), 30, 60))) {
+      return tooManyRequests(corsHeaders, "Too many coupon attempts. Please wait a moment.");
+    }
+
     const { code } = await req.json();
     const normalized = String(code || "").trim().toUpperCase();
     if (!normalized || normalized.length > 40) {
