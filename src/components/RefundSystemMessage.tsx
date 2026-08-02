@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, ExternalLink, Clock } from 'lucide-react';
+import { CheckCircle, Clock } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 interface RefundRequestData {
