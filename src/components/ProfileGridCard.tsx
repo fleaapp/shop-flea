@@ -40,6 +40,14 @@ const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton }: ProfileGr
             decoding="async"
           />
 
+          <EngagementBadges
+            listingId={(listing as any).source_listing_id?.split?.('::')?.[0] || listing.id}
+            size="sm"
+            className="absolute top-1.5 left-1.5 z-10"
+          />
+
+
+
           {/* Edit button - only for active listings */}
           {activeTab === 'listings' && (
             <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-10">
