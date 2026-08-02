@@ -170,14 +170,11 @@ const OrderDetailsSheet = ({
   if (!orders || orders.length === 0) return null;
 
   const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
-  // Use the Secure Checkout Fee actually charged (saved on the order at
-  // checkout, so coupons are respected). Legacy orders fall back to the rate.
+  // Use the Secure Checkout Fee actually charged, snapshotted on the order at
+  // checkout. Never recalculate with today's rates - historical orders were
+  // charged under the rules of their time (and coupons may have waived it).
   const savedSecureFee = orders.reduce((sum, o) => sum + (Number((o as any).secure_checkout_fee) || 0), 0);
-  const feeWaivedByCoupon = orders.some((o) => !!(o as any).coupon_code || !!(o as any).coupon_type);
-  const hasSavedSecureFee = savedSecureFee > 0 || feeWaivedByCoupon;
-  const processingFee = hasSavedSecureFee
-    ? Math.round(savedSecureFee * 100) / 100
-    : Math.round((subtotal * 0.04 + 0.70) * 100) / 100;
+  const processingFee = Math.round(savedSecureFee * 100) / 100;
   const total = subtotal + processingFee;
   const isRefunded = primaryOrder!.status === 'refunded' || !!primaryOrder!.refunded_at;
   const effectiveStatus: OrderStatus = isRefunded ? 'refunded' : primaryOrder!.status;

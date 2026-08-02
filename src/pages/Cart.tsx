@@ -260,13 +260,9 @@ const Cart = () => {
     const itemCount = group.orders.length;
     const unread = group.orders.reduce((sum, o) => sum + getGroupUnread(o.id), 0);
     const subtotal = group.orders.reduce((sum, o) => sum + Number(o.price || 0) + Number(o.shipping_price || 0), 0);
-    // Use the fee actually charged at checkout (a coupon may have waived it).
-    const savedFeeSum = Math.round(group.orders.reduce((sum, o: any) => sum + Number(o.secure_checkout_fee || 0), 0) * 100) / 100;
-    const feeWaivedByCoupon = group.orders.some((o: any) => !!o.coupon_code || !!o.coupon_type);
-    const hasSavedFee = savedFeeSum > 0 || feeWaivedByCoupon;
-    const processingFee = hasSavedFee
-      ? savedFeeSum
-      : Math.round((subtotal * 0.04 + 0.70) * 100) / 100;
+    // Fee actually charged at checkout. Never recalculated - historical orders
+    // were charged under the fee rules that applied at the time.
+    const processingFee = Math.round(group.orders.reduce((sum, o: any) => sum + Number(o.secure_checkout_fee || 0), 0) * 100) / 100;
     const groupTotal = subtotal + processingFee;
 
     return (
