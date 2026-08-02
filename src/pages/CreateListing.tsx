@@ -384,6 +384,10 @@ const CreateListing = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Guard against double taps / repeated submits while a request is in flight.
+    if (isLoading) return;
+
     
     if (!user) {
       toast.error('Please sign in to create a listing');
