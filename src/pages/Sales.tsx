@@ -215,12 +215,11 @@ const Sales = () => {
 
           if (filteredSales.length === 0) {
             return (
-              <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-                <span className="text-6xl opacity-50 mb-4">💸</span>
-                <p className="text-lg font-medium text-muted-foreground">
-                  No sales yet.
-                </p>
-              </div>
+              <EmptyState
+                emoji="💸"
+                title="No sales yet."
+                description="Sales from your listings will appear here."
+              />
             );
           }
 
