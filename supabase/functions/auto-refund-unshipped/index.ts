@@ -1,6 +1,6 @@
 // auto-refund-unshipped
 // Runs hourly via pg_cron. Refunds any order that is still `awaiting` (i.e.
-// not marked as shipped with eligible tracking) 9 days after purchase.
+// not marked as shipped with eligible tracking) 8 days after purchase.
 // Uses Stripe reverse_transfer + refund_application_fee so the buyer's
 // Secure Checkout Fee (4% + $0.70) is also returned, and pulls the sale
 // amount back from the seller's Connect balance.
@@ -314,7 +314,7 @@ Deno.serve(async (req) => {
           await admin.from("payment_events").insert({
             event_type: "auto_refund_unshipped",
             order_id: order.id,
-            metadata: { reason: "unshipped_8d", days: 9 },
+            metadata: { reason: "unshipped_8d", days: 8 },
           });
         } catch (_) { /* payment_events schema tolerant */ }
 
