@@ -1,10 +1,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { rejectUntrustedOrigin } from "../_shared/cors.ts";
+import { checkRateLimit, callerKey, tooManyRequests } from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  Vary: "Origin",
 };
 
 const EXTERNAL_URL = Deno.env.get("SUPABASE_URL") ?? "https://teaicrimlqdayqpmxasc.supabase.co";
