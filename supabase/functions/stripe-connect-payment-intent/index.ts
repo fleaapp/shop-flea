@@ -132,6 +132,13 @@ serve(async (req) => {
     if (listingRows.some((l: any) => l.status !== "active")) {
       return jsonError(409, "item_no_longer_available", "One or more items are no longer available.");
     }
+    // Minimum price: below this the fixed fee portions exceed the charge itself
+    // and Stripe rejects the PaymentIntent. Enforced here so older app builds
+    // cannot bypass the client-side check.
+    const MIN_LISTING_PRICE = 3;
+    if (listingRows.some((l: any) => Number(l.price) < MIN_LISTING_PRICE)) {
+      return jsonError(409, "item_below_minimum_price", `Items must be priced at $${MIN_LISTING_PRICE.toFixed(2)} or more.`);
+    }
     const sellerIds = Array.from(new Set(listingRows.map((l: any) => l.user_id)));
     if (sellerIds.length !== 1) {
       return jsonError(400, "multi_seller_checkout", "All items in a checkout must belong to the same seller.");
