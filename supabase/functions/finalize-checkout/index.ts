@@ -450,11 +450,17 @@ serve(async (req) => {
     }
 
     const inserts: Record<string, unknown>[] = [];
+    let isFirstRowOfCheckout = true;
     for (const [sellerId, sellerItems] of itemsBySeller.entries()) {
       const sellerShipping = shippingMap.get(sellerId) || 0;
       // Allocate the whole checkout's transaction fee onto this seller's first row
-      // (mirrors the shipping_price allocation pattern).
+      // (mirrors the shipping_price allocation pattern). The buyer-paid Secure
+      // Checkout Fee is charged once per checkout, so it lands on the very first
+      // row of the whole checkout — snapshotting the amount ACTUALLY charged so
+      // receipts and refunds never recalculate (and never ignore a coupon).
       sellerItems.forEach((item, index) => {
+        const carriesSecureFee = isFirstRowOfCheckout;
+        isFirstRowOfCheckout = false;
         inserts.push({
           order_group_id: orderGroupId,
           listing_id: item.id,
@@ -463,6 +469,10 @@ serve(async (req) => {
           price: Number(item.price),
           shipping_price: index === 0 ? sellerShipping : 0,
           transaction_fee: index === 0 ? transactionFeeTotal : 0,
+          secure_checkout_fee: carriesSecureFee ? secureCheckoutFee : 0,
+          coupon_id: appliedCoupon?.id ?? null,
+          coupon_code: appliedCoupon?.code ?? null,
+          coupon_type: appliedCoupon?.type ?? null,
           status: "awaiting",
           payment_method: "stripe",
           shipping_first_name: shipping.shippingFirstName,
@@ -477,7 +487,17 @@ serve(async (req) => {
     }
 
     const insertResult = await insertOrdersWithFallback(serviceClient, inserts);
-    if (insertResult.error) throw insertResult.error;
+    if (insertResult.error) {
+      // Unique index on (checkout_reference, listing_id): a concurrent call
+      // already created these rows. Treat as success rather than double-charging
+      // the buyer with duplicate orders.
+      if ((insertResult.error as any)?.code === "23505") {
+        return new Response(JSON.stringify({ ok: true, alreadyProcessed: true }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      throw insertResult.error;
+    }
     let insertedOrders = insertResult.data ?? [];
 
     if (insertedOrders.length !== authoritativeItems.length) {
@@ -489,6 +509,21 @@ serve(async (req) => {
       // Orders did NOT all create — DO NOT mark listings sold. Surface error
       // so support can reconcile manually rather than silently hiding listings.
       throw new Error("Order finalization did not create the expected order records.");
+    }
+
+    // Record the coupon redemption so usage limits actually count down.
+    if (appliedCoupon) {
+      try {
+        await serviceClient.from("coupon_redemptions").insert({
+          coupon_id: appliedCoupon.id,
+          user_id: userId,
+          order_group_id: orderGroupId,
+          checkout_reference: checkoutReference,
+        });
+        await serviceClient.rpc("increment_coupon_redemption", { _coupon_id: appliedCoupon.id });
+      } catch (error) {
+        console.error("[finalize-checkout] coupon redemption record failed:", error);
+      }
     }
 
     // Only NOW flip listings -> sold (after we know all order rows exist).
