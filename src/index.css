@@ -48,6 +48,10 @@
     --nav-bg: 220 15% 20%;
     --price-green: 152 60% 35%;
     --filter-chip-selected: 230 70% 85%;
+    /* Brand constants (same in light and dark) */
+    --ink: 0 4% 25%;              /* #423D3D - auth/brand dark */
+    --tint: 111 95% 92%;          /* #ddfed7 - soft mint tint */
+    --surface-muted: 60 6% 87%;   /* #e0e0dc - muted surface */
 
     /* Shadows */
     --shadow-card: 0 8px 30px -8px hsl(220 15% 25% / 0.15);
