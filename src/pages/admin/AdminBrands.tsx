@@ -25,6 +25,7 @@ export default function AdminBrands() {
   const [editing, setEditing] = useState<AdminBrand | null>(null);
   const [value, setValue] = useState('');
   const [previousLastSeen] = useState<string | null>(() => getAdminLastSeen('brands'));
+  const [brandToDelete, setBrandToDelete] = useState<AdminBrand | null>(null);
 
   useEffect(() => {
     if (!loading) markAdminTabSeen('brands');
