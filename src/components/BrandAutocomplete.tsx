@@ -66,16 +66,15 @@ const BrandAutocomplete = ({ value, onChange, className = '', placeholder = 'Bra
     if (!trimmed) return;
 
     if (closestMatch) {
-      // Suggest closest match first
-      const confirmed = window.confirm(
-        `Did you mean "${closestMatch.display_name}"? Click OK to use it, or Cancel to create "${trimmed}" as a new brand.`
-      );
-      if (confirmed) {
-        handleSelect(closestMatch);
-        return;
-      }
+      // Suggest closest match first via native AlertDialog
+      setSuggestMatch(closestMatch);
+      return;
     }
 
+    await doAddBrand(trimmed);
+  };
+
+  const doAddBrand = async (trimmed: string) => {
     const newBrand = await addBrand(trimmed);
     if (newBrand) {
       setQuery(newBrand.display_name);
@@ -85,6 +84,19 @@ const BrandAutocomplete = ({ value, onChange, className = '', placeholder = 'Bra
     } else {
       toast.error('Failed to add brand');
     }
+  };
+
+  const acceptSuggestedBrand = () => {
+    if (suggestMatch) {
+      handleSelect(suggestMatch);
+      setSuggestMatch(null);
+    }
+  };
+
+  const declineSuggestedBrand = () => {
+    setSuggestMatch(null);
+    const trimmed = query.trim();
+    if (trimmed) doAddBrand(trimmed);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
