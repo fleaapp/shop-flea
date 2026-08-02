@@ -774,7 +774,7 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const { orderId, reason, mode } = body as { orderId?: string; reason?: string; mode?: "single" | "cascade" };
-    if (!orderId) throw new Error("orderId required");
+    if (!orderId || !isUuid(orderId)) throw new Error("orderId required");
 
     const order = await fetchOrderWithFallback(externalUrl, serviceKey, orderId);
     if (!isSystemCaller && !isAdminCaller && order.seller_id !== userId) {
