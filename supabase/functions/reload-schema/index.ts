@@ -16,8 +16,18 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Service-role only: this endpoint talks straight to the database.
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const bearer = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+  if (!serviceKey || bearer !== serviceKey) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
-    const dbUrl = Deno.env.get("SUPABASE_DB_URL") ?? Deno.env.get("SUPABASE_DB_URL") ?? "";
+    const dbUrl = Deno.env.get("SUPABASE_DB_URL") ?? "";
 
     if (!dbUrl) {
       throw new Error("DB URL secret is not configured.");
