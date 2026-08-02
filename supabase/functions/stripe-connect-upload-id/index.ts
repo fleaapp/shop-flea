@@ -91,16 +91,17 @@ function decodeImage(b64: string, label: string): DecodedImage | { error: string
 async function uploadIdentityFile(
   secretKey: string,
   stripeAccount: string,
-  bytes: Uint8Array,
-  filename: string,
+  image: DecodedImage,
+  basename: string,
 ): Promise<string> {
   const form = new FormData();
   form.append("purpose", "identity_document");
   form.append(
     "file",
-    new Blob([bytes], { type: "image/jpeg" }),
-    filename,
+    new Blob([image.bytes], { type: image.mime }),
+    `${basename}.${image.ext}`,
   );
+
 
   const res = await fetch("https://files.stripe.com/v1/files", {
     method: "POST",
