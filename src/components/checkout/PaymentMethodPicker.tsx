@@ -163,6 +163,22 @@ const PaymentMethodPicker = ({ value, onChange, amountCents }: Props) => {
   const isWalletSelected = value?.kind === 'wallet' && value.wallet === wallet;
   const isNewCardSelected = value?.kind === 'new_card';
 
+  const confirmDelete = async () => {
+    if (!cardToDelete) return;
+    try {
+      await invokeCloudFunction('stripe-detach-card', { paymentMethodId: cardToDelete.id });
+      const wasSelected = value?.kind === 'saved' && value.card.id === cardToDelete.id;
+      setSavedCards((prev) => prev.filter((c) => c.id !== cardToDelete.id));
+      if (wasSelected) onChange({ kind: 'new_card' });
+      toast.success('Card removed');
+    } catch (err) {
+      console.error(err);
+      toast.error('Could not remove card');
+    } finally {
+      setCardToDelete(null);
+    }
+  };
+
   return (
     <div className="rounded-xl bg-card overflow-hidden">
       <div className="px-4 pt-3 pb-2">
