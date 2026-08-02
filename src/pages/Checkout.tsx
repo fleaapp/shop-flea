@@ -689,6 +689,8 @@ const Checkout = () => {
 
   /** Master Pay button — dispatches by selected method. */
   const handlePayClick = () => {
+    // Guard against double taps while a payment request is already in flight.
+    if (isSubmitting) return;
     if (!selectedMethod) { toast.error('Please pick a payment method.'); return; }
     switch (selectedMethod.kind) {
       case 'wallet':   handleWalletTap(); break;
