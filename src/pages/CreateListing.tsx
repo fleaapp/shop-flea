@@ -38,6 +38,7 @@ import ConditionInfoPopover from '@/components/ConditionInfoPopover';
 import BrandAutocomplete from '@/components/BrandAutocomplete';
 import { safeNavigateBack } from '@/utils/safeBack';
 import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
+import { sellerEarningsPreview } from '@/utils/feeCalculator';
 
 interface ImageFile {
   file: File;
