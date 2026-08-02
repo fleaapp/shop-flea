@@ -262,18 +262,28 @@ Deno.serve(async (req) => {
         // Demo (Apple Review) orders bypass the payment provider.
         if (!isDemoOrder(order)) {
           const paymentIntentId = await resolvePaymentIntentId(stripe, order);
-          await stripe.refunds.create({
-            payment_intent: paymentIntentId,
-            reverse_transfer: true,
-            refund_application_fee: true,
-            reason: "requested_by_customer",
-            metadata: {
-              flea_order_id: order.id,
-              flea_seller_id: order.seller_id,
-              flea_buyer_id: order.buyer_id,
-              flea_auto_refund: "unshipped_8d",
-            },
-          }, { idempotencyKey: `flea-auto-refund-${order.id}` });
+          try {
+            await stripe.refunds.create({
+              payment_intent: paymentIntentId,
+              reverse_transfer: true,
+              refund_application_fee: true,
+              reason: "requested_by_customer",
+              metadata: {
+                flea_order_id: order.id,
+                flea_seller_id: order.seller_id,
+                flea_buyer_id: order.buyer_id,
+                flea_auto_refund: "unshipped_8d",
+              },
+            }, { idempotencyKey: `flea-auto-refund-${order.id}` });
+          } catch (refundErr: any) {
+            // Bundles share one payment. Once the charge is fully refunded the
+            // sibling rows must still be marked refunded, not treated as failures.
+            const msg = String(refundErr?.message ?? "");
+            if (!/already been refunded|has already been refunded|already refunded/i.test(msg)) {
+              throw refundErr;
+            }
+            console.log(`[auto-refund-unshipped] charge already refunded for order ${order.id}, marking row refunded`);
+          }
         }
 
         await markOrderRefunded(order.id, "auto_unshipped_8d");
