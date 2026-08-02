@@ -240,6 +240,30 @@ Deno.serve(async (req) => {
   }
 });
 
+async function recordPaymentEvent(
+  supabase: any,
+  row: {
+    event_id: string;
+    event_type: string;
+    seller_id?: string;
+    amount?: number;
+    payload?: Record<string, unknown>;
+  },
+) {
+  try {
+    await supabase.from("payment_events").insert({
+      provider: "stripe",
+      event_id: row.event_id,
+      event_type: row.event_type,
+      seller_id: row.seller_id ?? null,
+      amount: row.amount ?? null,
+      payload: row.payload ?? {},
+    });
+  } catch (_) {
+    // Ledger write is best-effort; never block a payout on it.
+  }
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
