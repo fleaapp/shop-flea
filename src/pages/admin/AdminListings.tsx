@@ -32,6 +32,7 @@ export default function AdminListings() {
   const navigate = useNavigate();
   const { listings, loading, search, setSearch, status, setStatus, sort, setSort, dir, setDir, minReports, setMinReports, performAction, stats } = useAdminListings();
   const [selected, setSelected] = useState<AdminListing | null>(null);
+  const [listingToDelete, setListingToDelete] = useState<AdminListing | null>(null);
 
   useEffect(() => { markAdminTabSeen('listings'); }, []);
 
