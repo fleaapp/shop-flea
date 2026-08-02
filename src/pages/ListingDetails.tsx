@@ -116,8 +116,6 @@ const ListingDetails = () => {
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [salesSheetOpen, setSalesSheetOpen] = useState(false);
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
-  const [cartCount, setCartCount] = useState(0);
-  const [wishlistCount, setWishlistCount] = useState(0);
   const [isTextInputFocused, setIsTextInputFocused] = useState(false);
   const isWebSharedPreview = useIsWebSharedPreview();
 
