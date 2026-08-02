@@ -507,7 +507,7 @@ function computeRefundBreakdown(
 async function fetchGroupRows(externalUrl: string, serviceKey: string, order: any) {
   if (!order.order_group_id) return [order];
   const res = await fetch(
-    `${externalUrl}/rest/v1/orders?order_group_id=eq.${order.order_group_id}&select=id,listing_id,price,shipping_price,secure_checkout_fee,transaction_fee,coupon_code,buyer_id,seller_id,status,refunded_at,created_at,order_group_id`,
+    `${externalUrl}/rest/v1/orders?order_group_id=eq.${order.order_group_id}&select=id,listing_id,price,shipping_price,secure_checkout_fee,transaction_fee,coupon_code,coupon_type,buyer_id,seller_id,status,refunded_at,created_at,order_group_id`,
     { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
   );
   if (!res.ok) return [order];
