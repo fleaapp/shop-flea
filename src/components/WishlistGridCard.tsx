@@ -114,7 +114,7 @@ const WishlistGridCard = ({ listing, onRemove, onAddToCart, isSold = false, isPa
                 aria-label="Add to cart"
                 onClick={handleAddToCart}
                 className={`absolute top-1.5 right-1.5 h-7 w-7 rounded-full backdrop-blur-sm hover:bg-card text-xs ${
-                  isInCart ? 'bg-[#ddfed7]' : 'bg-card/90'
+                  isInCart ? 'bg-tint' : 'bg-card/90'
                 }`}
               >
                 🛒

@@ -774,7 +774,7 @@ const ListingDetails = () => {
                                     setSalesSheetOpen(true);
                                   }
                                 }}
-                                className="h-14 rounded-2xl text-sm font-medium px-2 bg-[#ddfed7] text-foreground hover:bg-[#ddfed7]/80 border-2 border-[#ddfed7] w-44 gap-1"
+                                className="h-14 rounded-2xl text-sm font-medium px-2 bg-tint text-foreground hover:bg-tint/80 border-2 border-tint w-44 gap-1"
                               >
                                 ✈️ Mark as shipped
                               </Button>
@@ -846,7 +846,7 @@ const ListingDetails = () => {
                 <Button
                   variant="outline"
                   onClick={handleDiscard}
-                  className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]"
+                  className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-tint active:border-tint"
                 >
                   ❌
                 </Button>
@@ -856,10 +856,10 @@ const ListingDetails = () => {
                   onClick={handleWishlistClick}
                   className={`h-14 w-14 rounded-2xl border-2 text-2xl transition-colors ${
                     isFavorite(listing.id) 
-                      ? 'bg-[#ddfed7] border-[#ddfed7]' 
+                      ? 'bg-tint border-tint' 
                       : isSold 
                         ? 'bg-muted/50 border-muted opacity-50' 
-                        : 'bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]'
+                        : 'bg-transparent active:bg-tint active:border-tint'
                   }`}
                 >
                   💌
@@ -870,10 +870,10 @@ const ListingDetails = () => {
                   onClick={handleCartClick}
                   className={`h-14 w-14 rounded-2xl border-2 text-2xl transition-colors ${
                     isInCart(listing.id) 
-                      ? 'bg-[#ddfed7] border-[#ddfed7]' 
+                      ? 'bg-tint border-tint' 
                       : isSold 
                         ? 'bg-muted/50 border-muted opacity-50' 
-                        : 'bg-transparent active:bg-[#ddfed7] active:border-[#ddfed7]'
+                        : 'bg-transparent active:bg-tint active:border-tint'
                   }`}
                 >
                   🛒

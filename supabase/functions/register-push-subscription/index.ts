@@ -156,7 +156,7 @@ serve(async (req) => {
       console.warn("[register-push-subscription] saved but status check failed:", savedRowsError);
     }
 
-    console.log(`[register-push-subscription] saved ${platform} token for user ${userId} endpoint=${endpoint.slice(0, 16)}…`);
+    console.log(`[register-push-subscription] saved ${platform} token for user ${userId}`);
     return json({
       ok: true,
       platform,

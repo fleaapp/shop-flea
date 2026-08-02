@@ -773,7 +773,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                     type="number"
                     value={filters.priceRange[0] || ''}
                     onChange={(e) => setFilters({ ...filters, priceRange: [Number(e.target.value) || 0, filters.priceRange[1]] })}
-                    className="pl-7 bg-card border-0 h-12 rounded-xl focus-visible:ring-[#ddfed7]"
+                    className="pl-7 bg-card border-0 h-12 rounded-xl focus-visible:ring-tint"
                     placeholder="0"
                     min={0}
                   />
@@ -787,7 +787,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                     type="number"
                     value={filters.priceRange[1] || ''}
                     onChange={(e) => setFilters({ ...filters, priceRange: [filters.priceRange[0], Number(e.target.value) || 0] })}
-                    className="pl-7 bg-card border-0 h-12 rounded-xl focus-visible:ring-[#ddfed7]"
+                    className="pl-7 bg-card border-0 h-12 rounded-xl focus-visible:ring-tint"
                     placeholder="1000"
                     min={0}
                   />

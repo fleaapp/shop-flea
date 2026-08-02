@@ -94,6 +94,9 @@ export default {
   				light: 'hsl(var(--charcoal-light))'
   			},
   			nav: 'hsl(var(--nav-bg))',
+  			ink: 'hsl(var(--ink))',
+  			tint: 'hsl(var(--tint))',
+  			'surface-muted': 'hsl(var(--surface-muted))',
   			tag: 'hsl(var(--tag-bg))',
   			price: 'hsl(var(--price-green))',
   			'filter-chip': 'hsl(var(--filter-chip-selected))',

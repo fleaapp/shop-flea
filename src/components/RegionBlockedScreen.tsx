@@ -98,7 +98,7 @@ const RegionBlockedScreen = ({ countryCode, countryName }: RegionBlockedScreenPr
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="h-10 w-auto px-8 mx-auto flex rounded-full bg-[#423D3D] text-card text-sm font-medium hover:bg-[#423D3D]/90"
+                className="h-10 w-auto px-8 mx-auto flex rounded-full bg-ink text-card text-sm font-medium hover:bg-ink/90"
               >
                 {isSubmitting ? 'Joining...' : 'Join Waitlist'}
               </Button>

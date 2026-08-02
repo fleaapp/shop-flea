@@ -119,7 +119,7 @@ const WishlistCard = ({ listing, onRemove, onAddToCart, isSold = false, isPaused
                 onClick={handleAddToCart}
                 className={`absolute top-2 right-2 h-9 w-9 rounded-full backdrop-blur-sm hover:bg-card text-base ${
                   isInCart 
-                    ? 'bg-[#ddfed7]' 
+                    ? 'bg-tint' 
                     : 'bg-card/90'
                 }`}
               >
