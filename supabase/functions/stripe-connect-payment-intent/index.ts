@@ -48,6 +48,13 @@ serve(async (req) => {
       });
     }
 
+    // Rate limit: guards against card-testing loops. 15 intents per user / 10 min.
+    if (!(await checkRateLimit(callerKey(req, "payment-intent", user.id), 15, 600))) {
+      return tooManyRequests(corsHeaders, "Too many payment attempts. Please wait a few minutes.");
+    }
+
+
+
     const { items, shipping, shippingBySeller, expectedAmountCents, couponCode, saveCard } = await req.json();
     const jsonError = (status: number, code: string, message: string, extra: Record<string, unknown> = {}) =>
       new Response(JSON.stringify({ error: message, code, ...extra }), {
