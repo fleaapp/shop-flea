@@ -580,7 +580,7 @@ async function createSingleItemRefund(
             flea_order_id: order.id,
             flea_refund_id: refund.id,
           },
-        });
+        }, { idempotencyKey: `flea-reversal-${order.id}-${sellerNetCents}` });
         return { refund, transferReversal: reversal };
       }
       console.warn(
