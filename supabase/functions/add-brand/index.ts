@@ -1,3 +1,4 @@
+import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -59,6 +60,8 @@ const getExternalUser = async (authHeader: string) => {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const originBlock = rejectUntrustedOrigin(req);
+  if (originBlock) return originBlock;
   if (req.method !== "GET" && req.method !== "POST") return json({ error: "Method not allowed." }, 405);
 
   try {

@@ -8,6 +8,7 @@
 // Failure here is non-fatal — the local report still succeeded. We log
 // errors but return 200 so the user UX never blocks on a Hub outage.
 
+import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -26,6 +27,8 @@ type Body = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const originBlock = rejectUntrustedOrigin(req);
+  if (originBlock) return originBlock;
 
   try {
     // Verified JWT — identifies the reporter cryptographically.

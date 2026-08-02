@@ -2,6 +2,7 @@
 // Records the current device id on the user's profile. Called on sign-in so
 // we can lock the device if the user ends up with a negative balance later.
 
+import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -13,6 +14,8 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const originBlock = rejectUntrustedOrigin(req);
+  if (originBlock) return originBlock;
 
   try {
     const authHeader = req.headers.get("Authorization") ?? "";

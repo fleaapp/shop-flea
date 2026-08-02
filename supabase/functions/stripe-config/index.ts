@@ -1,4 +1,5 @@
 // Returns Stripe publishable key (public value, safe for client).
+import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 
@@ -44,6 +45,8 @@ const ensurePaymentMethodDomain = async (req: Request) => {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const originBlock = rejectUntrustedOrigin(req);
+  if (originBlock) return originBlock;
   await ensurePaymentMethodDomain(req);
   const stripeKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
   const inferredLivemode = stripeKey.startsWith("sk_live_") || stripeKey.startsWith("rk_live_");
