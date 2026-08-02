@@ -43,6 +43,8 @@ const Terms = () => {
             <h2 className="text-base font-bold mb-2">2. Eligibility</h2>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>You must be at least <strong>16 years old</strong> to create an account. Users aged 16-17 must have a parent or guardian's consent.</li>
+              <li>You must be at least <strong>18 years old</strong> to sell on Flea, because selling requires a payment account and the ability to enter a binding contract of sale.</li>
+
               <li>You must be physically located in <strong>Australia</strong>. Flea is currently an Australia-only marketplace and accounts created outside Australia may be blocked or removed.</li>
               <li>You must provide accurate, current and complete information when registering and keep it up to date.</li>
               <li>You may only hold one personal account unless we expressly approve otherwise.</li>
