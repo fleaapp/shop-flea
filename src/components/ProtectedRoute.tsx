@@ -37,7 +37,7 @@ const ProtectedRoute = ({ children, mode = 'account' }: ProtectedRouteProps) => 
   if (mode === 'guest-gate') {
     if (loading) {
       return (
-        <div className="flex min-h-screen items-center justify-center">
+        <div className="flex min-h-dvh items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       );
@@ -50,7 +50,7 @@ const ProtectedRoute = ({ children, mode = 'account' }: ProtectedRouteProps) => 
   if (mode === 'guest-or-auth') {
     if (loading) {
       return (
-        <div className="flex min-h-screen items-center justify-center">
+        <div className="flex min-h-dvh items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       );
@@ -62,7 +62,7 @@ const ProtectedRoute = ({ children, mode = 'account' }: ProtectedRouteProps) => 
   // account mode
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-dvh items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );

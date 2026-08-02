@@ -464,7 +464,7 @@ const EditListing = () => {
 
   if (authLoading || isFetching) {
     return (
-      <div className="native-safe-top min-h-screen bg-background flex items-center justify-center">
+      <div className="native-safe-top min-h-dvh bg-background flex items-center justify-center">
         <span className="text-5xl">⏳</span>
       </div>
     );

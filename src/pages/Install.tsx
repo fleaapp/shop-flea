@@ -57,7 +57,7 @@ const Install = () => {
 
   if (isInstalled) {
     return (
-      <div className="native-safe-top min-h-screen bg-background flex flex-col items-center justify-center px-8 gap-6">
+      <div className="native-safe-top min-h-dvh bg-background flex flex-col items-center justify-center px-8 gap-6">
         <span className="text-6xl">✅</span>
         <h1 className="text-2xl font-bold text-foreground text-center">Flea is installed!</h1>
         <p className="text-muted-foreground text-center">
