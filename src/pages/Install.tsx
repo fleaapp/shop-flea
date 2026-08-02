@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Download, Share, Plus } from 'lucide-react';
+import { ChevronLeft, Download, Share, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { safeNavigateBack } from '@/utils/safeBack';
