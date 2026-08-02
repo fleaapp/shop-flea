@@ -76,6 +76,16 @@ const Auth = () => {
     return () => window.removeEventListener('flea-auth-conflict', handler);
   }, []);
 
+  // Tell the user why they were signed out when their session expired.
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('flea_session_expired')) {
+        sessionStorage.removeItem('flea_session_expired');
+        toast('Your session expired. Please sign in again.');
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   const redirectParam = new URLSearchParams(location.search).get('redirect');
   const redirectTo = redirectParam?.startsWith('/') && !redirectParam.startsWith('//') ? redirectParam : '/';
   const { isAdmin, loading: adminLoading } = useAdminRole();
