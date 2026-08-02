@@ -488,17 +488,15 @@ const Cart = () => {
 
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-              <span className="text-6xl opacity-50 mb-4">🛒</span>
-              <p className="text-lg font-medium text-muted-foreground">Your cart is empty</p>
-              <p className="mt-2 text-sm text-muted-foreground">Swipe up on items to add them</p>
-              <Button
-                onClick={() => navigate('/')}
-                className="mt-6 rounded-full bg-primary text-primary-foreground"
-              >
-                Browse Listings
-              </Button>
-            </div>
+            <EmptyState
+              emoji="🛒"
+              title="Your cart is empty"
+              description="Swipe up on items to add them"
+              actionLabel="Browse Listings"
+              onAction={() => navigate('/')}
+              minHeightClass="min-h-[60vh]"
+            />
+
           )}
         </div>
       ) : (
