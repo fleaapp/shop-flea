@@ -504,7 +504,7 @@ serve(async (req) => {
           seller_id: sellerId,
           price: Number(item.price),
           shipping_price: index === 0 ? sellerShipping : 0,
-          transaction_fee: index === 0 ? transactionFeeTotal : 0,
+          transaction_fee: index === 0 ? (transactionFeeBySeller.get(sellerId) || 0) : 0,
           secure_checkout_fee: carriesSecureFee ? secureCheckoutFee : 0,
           coupon_id: appliedCoupon?.id ?? null,
           coupon_code: appliedCoupon?.code ?? null,
