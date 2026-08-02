@@ -157,16 +157,33 @@ const OrderDetailsSheet = ({
     return differenceInDays(new Date(), new Date(primaryOrder.delivered_at)) >= 2;
   }, [primaryOrder?.delivered_at]);
 
+  // Lost parcel: a buyer can raise a refund on an order still marked "shipped"
+  // once it has been in transit well beyond any normal domestic delivery time.
+  const LOST_PARCEL_DAYS = 10;
+  const lostParcelEligible = useMemo(() => {
+    const sentAt = primaryOrder?.shipped_at || primaryOrder?.created_at;
+    if (!sentAt || primaryOrder?.delivered_at) return false;
+    return differenceInDays(new Date(), new Date(sentAt)) >= LOST_PARCEL_DAYS;
+  }, [primaryOrder?.shipped_at, primaryOrder?.created_at, primaryOrder?.delivered_at]);
+
   if (!orders || orders.length === 0) return null;
 
   const subtotal = orders.reduce((sum, o) => sum + o.price + o.shipping_price, 0);
-  // Buyer pays a flat Secure Checkout Fee of 4% + $0.70. Sellers pay no selling fees.
-  const processingFee = Math.round((subtotal * 0.04 + 0.70) * 100) / 100;
+  // Use the Secure Checkout Fee actually charged (saved on the order at
+  // checkout, so coupons are respected). Legacy orders fall back to the rate.
+  const savedSecureFee = orders.reduce((sum, o) => sum + (Number((o as any).secure_checkout_fee) || 0), 0);
+  const hasSavedSecureFee = orders.some((o) => (o as any).secure_checkout_fee != null);
+  const processingFee = hasSavedSecureFee
+    ? Math.round(savedSecureFee * 100) / 100
+    : Math.round((subtotal * 0.04 + 0.70) * 100) / 100;
   const total = subtotal + processingFee;
   const isRefunded = primaryOrder!.status === 'refunded' || !!primaryOrder!.refunded_at;
   const effectiveStatus: OrderStatus = isRefunded ? 'refunded' : primaryOrder!.status;
   const hasEligibleRefundItem = refundItemOptions.some((i) => !i.alreadyRequested);
-  const canShowRefundButton = isBuyer && effectiveStatus === 'delivered' && !refundWindowExpired && hasEligibleRefundItem;
+  const refundStatusEligible =
+    (effectiveStatus === 'delivered' && !refundWindowExpired) ||
+    (effectiveStatus === 'shipped' && lostParcelEligible);
+  const canShowRefundButton = isBuyer && refundStatusEligible && hasEligibleRefundItem;
   const statusBadge = getStatusBadge(effectiveStatus);
   const formattedDate = format(new Date(primaryOrder.created_at), 'dd/MM/yyyy');
 
