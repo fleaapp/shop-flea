@@ -31,6 +31,20 @@ import { useUnreadSupport } from '@/hooks/useUnreadSupport';
 import { useAdminRole } from '@/hooks/useAdminRole';
 import { formatAdminBadgeCount, useAdminBadges } from '@/hooks/admin/useAdminBadges';
 
+type SettingsItem = {
+  icon: React.ReactNode;
+  label: string;
+  action?: () => void | Promise<void>;
+  toggle?: boolean;
+  checked?: boolean;
+  onToggle?: (checked: boolean) => void | Promise<void>;
+  badge?: number;
+  expandable?: boolean;
+  onExpand?: () => void;
+  isExpanded?: boolean;
+  isLogout?: boolean;
+};
+
 const Settings = () => {
   const navigate = useNavigate();
   const {
@@ -182,50 +196,14 @@ const Settings = () => {
     }
   };
 
-  // Offers toggle - lets buyers negotiate on this seller's listings.
-  const offersEnabled = (profile as any)?.offers_enabled ?? false;
-  const handleToggleOffers = async (checked: boolean) => {
-    if (!user) return;
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .update({ offers_enabled: checked } as any)
-        .eq('user_id', user.id)
-        .select('offers_enabled')
-        .maybeSingle();
-      if (error) throw error;
-      if (!data) throw new Error('No profile row updated (session mismatch)');
-      await refreshProfile();
-      toast.success(checked ? 'Offers on' : 'Offers off');
-    } catch (error: any) {
-      console.error('[offers_enabled] update failed:', error);
-      toast.error(`Failed to update: ${error?.message ?? 'unknown error'}`);
-    }
-  };
-
-  // Marketing opt-out (Spam Act compliance — transactional comms unaffected).
-  const marketingOptIn = (profile as any)?.marketing_opt_in ?? true;
-  const handleToggleMarketing = async (checked: boolean) => {
-    if (!user) return;
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ marketing_opt_in: checked } as any)
-        .eq('user_id', user.id);
-      if (error) throw error;
-      await refreshProfile();
-      toast.success(checked ? 'Marketing emails on' : 'Marketing emails off');
-    } catch {
-      toast.error('Failed to update marketing preferences');
-    }
-  };
   const ProfileAvatar = () => <Avatar className="h-5 w-5">
       <AvatarImage src={profile?.avatar_url || (user?.id ? getDefaultAvatar(user.id) : '')} alt="Profile" />
       <AvatarFallback className="text-xs">👤</AvatarFallback>
     </Avatar>;
   const [helpCentreExpanded, setHelpCentreExpanded] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
-  const helpCentreItems = [{
+
+  const helpCentreItems: SettingsItem[] = [{
     icon: <span className="text-base">💬</span>,
     label: 'Contact Support',
     action: isGuest ? promptGuest : () => navigate('/contact-support'),
@@ -251,14 +229,34 @@ const Settings = () => {
     label: 'App Walkthrough',
     action: () => openCarousel()
   }];
-  const accountItems: any[] = [];
+
+  // ---- General ----
+  const generalItems: SettingsItem[] = [];
   if (!isGuest) {
-    accountItems.push({
+    generalItems.push({
       icon: <ProfileAvatar />,
-      label: 'Edit Profile'
+      label: 'Edit Profile',
+      action: () => navigate('/settings/profile')
     });
   }
-  accountItems.push({
+  generalItems.push({
+    icon: <span className="text-base">🔔</span>,
+    label: 'Notifications',
+    toggle: true,
+    checked: notificationsEnabled,
+    onToggle: handleToggleNotifications
+  });
+  if (!isGuest && isAdmin) {
+    generalItems.push({
+      icon: <span className="text-base">🛡️</span>,
+      label: 'Admin Dashboard',
+      action: () => navigate('/admin'),
+      badge: adminBadgeTotal || undefined
+    });
+  }
+
+  // ---- Buyer ----
+  const buyerItems: SettingsItem[] = [{
     icon: <span className="text-base">🔁</span>,
     label: 'Refresh Passed Listings',
     action: handleRefreshDiscarded
@@ -266,7 +264,10 @@ const Settings = () => {
     icon: <span className="text-base">📏</span>,
     label: 'Filter Preferences',
     action: isGuest ? promptGuest : () => setPreferencesOpen(true)
-  }, {
+  }];
+
+  // ---- Seller (below the Become a Seller / Seller Dashboard row) ----
+  const sellerItems: SettingsItem[] = [{
     icon: <span className="text-base">✈️</span>,
     label: 'Shipping Settings',
     action: isGuest ? promptGuest : () => setShippingOpen(true)
@@ -280,25 +281,14 @@ const Settings = () => {
     toggle: true,
     checked: pauseSelling,
     onToggle: handleTogglePauseSelling
-  }, isGuest ? {
-    icon: <span className="text-base">💰</span>,
-    label: 'Offers',
-    action: promptGuest
-  } : {
-    icon: <span className="text-base">💰</span>,
-    label: 'Offers',
-    toggle: true,
-    checked: offersEnabled,
-    onToggle: handleToggleOffers
   }, {
-    icon: <span className="text-base">🔔</span>,
-    label: 'Notifications',
-    toggle: true,
-    checked: notificationsEnabled,
-    onToggle: handleToggleNotifications
-  });
+    icon: <span className="text-base">💰</span>,
+    label: 'Offers',
+    action: isGuest ? promptGuest : () => navigate('/offers')
+  }];
 
-  const supportItems: any[] = [{
+  // ---- Support ----
+  const supportItems: SettingsItem[] = [{
     icon: <span className="text-base">🛠️</span>,
     label: 'Help Centre',
     expandable: true,
@@ -306,27 +296,93 @@ const Settings = () => {
     isExpanded: helpCentreExpanded,
     badge: supportUnread || undefined
   }];
-  if (!isGuest && isAdmin) {
-    supportItems.push({
-      icon: <span className="text-base">🛡️</span>,
-      label: 'Admin Dashboard',
-      action: () => navigate('/admin'),
-      badge: adminBadgeTotal || undefined,
-    });
-  }
-  if (!isGuest) {
-    supportItems.push({
-      icon: <span className="text-base">🚪</span>,
-      label: 'Logout',
-      action: () => setLogoutConfirmOpen(true),
-      isLogout: true
-    });
-  }
 
-  const settingsGroups = [
-    { title: 'Account', items: accountItems },
-    { title: 'Support', items: supportItems }
-  ];
+  // ---- Logout ----
+  const logoutItems: SettingsItem[] = isGuest ? [] : [{
+    icon: <span className="text-base">🚪</span>,
+    label: 'Logout',
+    action: () => setLogoutConfirmOpen(true),
+    isLogout: true
+  }];
+
+  const handleItemClick = async (item: SettingsItem) => {
+    if (item.toggle) return;
+    if (item.onExpand) {
+      item.onExpand();
+      return;
+    }
+    if (item.expandable) return;
+    if (item.action) {
+      await item.action();
+    } else {
+      toast(`${item.label} clicked`);
+    }
+  };
+
+  const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+    <h2 className="mb-3 max-[375px]:mb-2 text-sm max-[375px]:text-xs font-medium text-muted-foreground uppercase tracking-wide">
+      {children}
+    </h2>
+  );
+
+  const Row = ({ item }: { item: SettingsItem }) => (
+    <div>
+      <div
+        className={`flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow ${item.isLogout ? 'bg-surface-muted' : 'bg-card'} ${item.toggle ? '' : 'cursor-pointer'}`}
+        onClick={() => handleItemClick(item)}
+      >
+        <div className="flex items-center gap-3 max-[375px]:gap-2">
+          <div className="text-muted-foreground">{item.icon}</div>
+          <span className="text-base max-[375px]:text-sm font-medium text-foreground">{item.label}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {item.badge ? (
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
+              {formatAdminBadgeCount(item.badge)}
+            </span>
+          ) : null}
+          {item.toggle ? (
+            <Switch
+              checked={item.checked}
+              onCheckedChange={item.onToggle}
+              className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime"
+            />
+          ) : item.expandable ? (
+            item.isExpanded ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          )}
+        </div>
+      </div>
+
+      {/* Help Centre sub-items */}
+      {item.isExpanded && item.expandable && (
+        <div className="ml-6 mt-2 space-y-2">
+          {helpCentreItems.map(subItem => (
+            <div
+              key={subItem.label}
+              className="flex items-center justify-between rounded-2xl bg-card p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow cursor-pointer"
+              onClick={() => handleItemClick(subItem)}
+            >
+              <div className="flex items-center gap-3 max-[375px]:gap-2">
+                <div className="text-muted-foreground">{subItem.icon}</div>
+                <span className="text-base max-[375px]:text-sm font-medium text-foreground">{subItem.label}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {subItem.badge ? (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
+                    {formatAdminBadgeCount(subItem.badge)}
+                  </span>
+                ) : null}
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return <div className="native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden">
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-24 max-[375px]:pb-20">
       {/* Header */}
@@ -334,152 +390,81 @@ const Settings = () => {
         <h1 className="text-xl max-[375px]:text-lg font-bold text-foreground text-center">⚙️ Settings</h1>
       </header>
 
-      
       {/* Settings Groups */}
       <div className="px-4 max-[375px]:px-3 space-y-6 max-[375px]:space-y-4">
-        {settingsGroups.map((group, idx) => {
-          if (group.title === 'Account') {
-            return (
-              <React.Fragment key={group.title}>
-                <div>
-                  <h2 className="mb-3 max-[375px]:mb-2 text-sm max-[375px]:text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    {group.title}
-                  </h2>
-                  {isGuest && (
-                    <div className="mb-2 max-[375px]:mb-1.5 space-y-2 max-[375px]:space-y-1.5">
-                      <div
-                        className="flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow bg-muted-foreground/20 text-muted-foreground cursor-pointer"
-                        onClick={() => navigate('/auth', { state: { initialTab: 'login' } })}
-                      >
-                        <span className="text-base max-[375px]:text-sm font-bold text-muted-foreground">Log In / Sign Up</span>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                    </div>
-                  )}
-                  <div className="space-y-2 max-[375px]:space-y-1.5">
-                    {group.items.map(item => <div key={item.label}>
-                        <div className={`flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow ${(item as any).isLogout ? 'bg-surface-muted' : 'bg-card'} ${item.toggle ? '' : 'cursor-pointer'}`} onClick={async () => {
-                    if (item.toggle) return;
-                    if ((item as any).onExpand) {
-                      (item as any).onExpand();
-                      return;
-                    }
-                    if (item.expandable) return;
-                    if (item.label === 'Edit Profile') {
-                      navigate('/settings/profile');
-                    } else if (item.action) {
-                      await item.action();
-                    } else {
-                      toast(`${item.label} clicked`);
-                    }
-                  }}>
-                          <div className="flex items-center gap-3 max-[375px]:gap-2">
-                            <div className="text-muted-foreground">{item.icon}</div>
-                            <span className="text-base max-[375px]:text-sm font-medium text-foreground">{item.label}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {(item as any).badge && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
-                                {formatAdminBadgeCount((item as any).badge)}
-                              </span>}
-                          {item.toggle ? <Switch checked={item.checked} onCheckedChange={item.onToggle} className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime" /> : item.expandable ? (item as any).isExpanded ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
-                          </div>
-                        </div>
-                      </div>)}
-                  </div>
-                </div>
-                {isGuest ? (
-                  <div>
-                    <h2 className="mb-3 max-[375px]:mb-2 text-sm max-[375px]:text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Payments
-                    </h2>
-                    <div
-                      className="flex items-center justify-between rounded-2xl bg-card p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow cursor-pointer"
-                      onClick={() => promptGuest()}
-                    >
-                      <div className="flex items-center gap-3 max-[375px]:gap-2">
-                        <span className="text-base">💳</span>
-                        <span className="text-base max-[375px]:text-sm font-medium text-foreground">Payment Details</span>
-                      </div>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                  </div>
-                ) : (
-                  <PaymentMethodsSection />
-                )}
-              </React.Fragment>
-            );
-          }
-
-          return (
-            <div key={group.title || idx}>
-              {group.title && <h2 className="mb-3 max-[375px]:mb-2 text-sm max-[375px]:text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  {group.title}
-                </h2>}
-              <div className="space-y-2 max-[375px]:space-y-1.5">
-                {group.items.map(item => <div key={item.label}>
-                    <div className={`flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow ${(item as any).isLogout ? 'bg-surface-muted' : 'bg-card'} ${item.toggle ? '' : 'cursor-pointer'}`} onClick={async () => {
-                if (item.toggle) return;
-                if ((item as any).onExpand) {
-                  (item as any).onExpand();
-                  return;
-                }
-                if (item.expandable) return;
-                if (item.label === 'Edit Profile') {
-                  navigate('/settings/profile');
-                } else if (item.action) {
-                  await item.action();
-                } else {
-                  toast(`${item.label} clicked`);
-                }
-              }}>
-                      <div className="flex items-center gap-3 max-[375px]:gap-2">
-                        <div className="text-muted-foreground">{item.icon}</div>
-                        <span className="text-base max-[375px]:text-sm font-medium text-foreground">{item.label}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {(item as any).badge && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
-                            {formatAdminBadgeCount((item as any).badge)}
-                          </span>}
-                      {item.toggle ? <Switch checked={item.checked} onCheckedChange={item.onToggle} className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime" /> : item.expandable ? (item as any).isExpanded ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
-                      </div>
-                    </div>
-                    
-                    {/* Help Centre sub-items */}
-                    {(item as any).isExpanded && <div className="ml-6 mt-2 space-y-2">
-                        {helpCentreItems.map(subItem => <div key={subItem.label}>
-                            <div className="flex items-center justify-between rounded-2xl bg-card p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow cursor-pointer" onClick={async () => {
-                    if (subItem.action) {
-                      await subItem.action();
-                    } else {
-                      toast(`${subItem.label} clicked`);
-                    }
-                  }}>
-                              <div className="flex items-center gap-3 max-[375px]:gap-2">
-                                <div className="text-muted-foreground">{subItem.icon}</div>
-                                <span className="text-base max-[375px]:text-sm font-medium text-foreground">{subItem.label}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {(subItem as any).badge && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
-                                    {formatAdminBadgeCount((subItem as any).badge)}
-                                  </span>}
-                                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                              </div>
-                            </div>
-                          </div>)}
-                      </div>}
-                  </div>)}
+        {/* General */}
+        <div>
+          <SectionTitle>General</SectionTitle>
+          {isGuest && (
+            <div className="mb-2 max-[375px]:mb-1.5">
+              <div
+                className="flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow bg-muted-foreground/20 text-muted-foreground cursor-pointer"
+                onClick={() => navigate('/auth', { state: { initialTab: 'login' } })}
+              >
+                <span className="text-base max-[375px]:text-sm font-bold text-muted-foreground">Log In / Sign Up</span>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </div>
             </div>
-          );
-        })}
+          )}
+          <div className="space-y-2 max-[375px]:space-y-1.5">
+            {generalItems.map(item => <Row key={item.label} item={item} />)}
+          </div>
+        </div>
+
+        {/* Buyer */}
+        <div>
+          <SectionTitle>Buyer</SectionTitle>
+          <div className="space-y-2 max-[375px]:space-y-1.5">
+            {buyerItems.map(item => <Row key={item.label} item={item} />)}
+          </div>
+        </div>
+
+        {/* Seller */}
+        <div>
+          <SectionTitle>Seller</SectionTitle>
+          <div className="space-y-2 max-[375px]:space-y-1.5">
+            {isGuest ? (
+              <div
+                className="flex items-center justify-between rounded-2xl bg-card p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow cursor-pointer"
+                onClick={() => promptGuest()}
+              >
+                <div className="flex items-center gap-3 max-[375px]:gap-2">
+                  <span className="text-base">💸</span>
+                  <span className="text-base max-[375px]:text-sm font-medium text-foreground">Become a Seller</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+            ) : (
+              <PaymentMethodsSection hideHeading />
+            )}
+            {sellerItems.map(item => <Row key={item.label} item={item} />)}
+          </div>
+        </div>
+
+        {/* Support */}
+        <div>
+          <SectionTitle>Support</SectionTitle>
+          <div className="space-y-2 max-[375px]:space-y-1.5">
+            {supportItems.map(item => <Row key={item.label} item={item} />)}
+          </div>
+        </div>
+
+        {/* Logout */}
+        {logoutItems.length > 0 && (
+          <div>
+            <SectionTitle>Logout</SectionTitle>
+            <div className="space-y-2 max-[375px]:space-y-1.5">
+              {logoutItems.map(item => <Row key={item.label} item={item} />)}
+            </div>
+          </div>
+        )}
       </div>
-      
-      
+
       {/* Version */}
       <div className="mt-4 text-center">
         <p className="text-sm max-[375px]:text-xs text-muted-foreground">Version 1.0.0</p>
       </div>
-      
+
       {/* Filter Preferences Sheet */}
       <FilterPreferencesSheet open={preferencesOpen} onOpenChange={setPreferencesOpen} />
 
