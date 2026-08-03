@@ -89,6 +89,8 @@ type DashboardData = {
   payoutsEnabled?: boolean;
   hasSucceededCharge?: boolean;
   instantPayoutEligible?: boolean;
+  hasPaidPayout?: boolean;
+  hasExternalAccount?: boolean;
   nextPayout?: { amount: number; arrivalDate: number; status: string } | null;
   payouts?: PayoutRow[];
   activity?: ActivityRow[];
@@ -225,11 +227,11 @@ const SellerDashboard = () => {
     return count || undefined;
   }, [sellerOrderGroups, perOrder]);
 
-  // Overdue: any awaiting order more than 3 days old — matches the buyer-side
-  // "Overdue" threshold. Surfaced as a red banner because push notifications
-  // aren't a reliable channel for this class of user.
+  // Overdue: any awaiting order more than 4 days old — matches the buyer-side
+  // "Overdue" threshold in Sales and the overdue alert job. Surfaced as a red
+  // banner because push notifications aren't a reliable channel here.
   const overdueGroups = useMemo(() => {
-    const threshold = Date.now() - 3 * 24 * 60 * 60 * 1000;
+    const threshold = Date.now() - 4 * 24 * 60 * 60 * 1000;
     return sellerOrderGroups.filter(
       (g) => g.status === 'awaiting' && new Date(g.created_at).getTime() < threshold,
     );
