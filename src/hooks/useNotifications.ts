@@ -28,7 +28,14 @@ export type NotificationType =
   | 'refund_request'
   | 'refund_rejected'
   | 'refund_initiated'
+  | 'offer_received'
+  | 'offer_countered'
+  | 'offer_accepted'
+  | 'offer_auto_accepted'
+  | 'offer_declined'
+  | 'offer_discount'
   | 'payment_action_required';
+
 
 export interface Notification {
   id: string;
