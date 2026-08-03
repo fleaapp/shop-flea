@@ -10,6 +10,8 @@ import { useOffers, Offer, offerTimeLeft } from '@/hooks/useOffers';
 import MakeOfferDrawer from '@/components/MakeOfferDrawer';
 import { safeNavigateBack } from '@/utils/safeBack';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+
 import { toast } from 'sonner';
 import { calculateTransactionFee } from '@/utils/feeCalculator';
 
