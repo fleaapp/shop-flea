@@ -663,8 +663,15 @@ const ListingDetails = () => {
 
             {/* Content */}
             <div className="pt-4">
-              {/* Title */}
-              <h1 className="text-2xl font-bold text-foreground">{listing.title}</h1>
+              {/* Title + listing age */}
+              <div className="flex items-start justify-between gap-3">
+                <h1 className="text-2xl font-bold text-foreground">{listing.title}</h1>
+                {formatTimeAgo(listing.created_at) && (
+                  <span className="mt-1.5 shrink-0 text-xs text-muted-foreground">
+                    {formatTimeAgo(listing.created_at)}
+                  </span>
+                )}
+              </div>
 
               {/* Description */}
               {listing.description && (
@@ -672,7 +679,7 @@ const ListingDetails = () => {
               )}
 
               {/* Seller Info + Price Row */}
-              <div className="mt-6 flex items-center justify-between gap-3">
+              <div className="mt-6 flex items-start justify-between gap-3">
                 {/* Seller Card */}
                 <div 
                   className="flex items-center gap-2 rounded-2xl bg-card p-2.5 pr-6 card-shadow cursor-pointer active:scale-[0.98] transition-transform"
@@ -693,15 +700,34 @@ const ListingDetails = () => {
                       <MapPin className="h-3 w-3 flex-shrink-0" />
                       <span>{sellerLocation}</span>
                     </div>
+                    {formatLastActive(seller?.last_sign_in_at) && (
+                      <p className="text-xs text-muted-foreground">{formatLastActive(seller?.last_sign_in_at)}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {seller?.rating && seller.rating > 0
+                        ? `⭐ ${seller.rating}/5${seller?.total_reviews ? ` (${seller.total_reviews})` : ''}`
+                        : 'No reviews'}
+                    </p>
                   </div>
                 </div>
 
                 {/* Price */}
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-foreground">${listing.price}</p>
+                  <div className="flex items-center justify-end gap-1.5">
+                    <p className="text-2xl font-bold text-foreground">${listing.price}</p>
+                    <button
+                      type="button"
+                      aria-label="Price breakdown"
+                      onClick={() => setPriceBreakdownOpen(true)}
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground active:scale-95 transition-transform"
+                    >
+                      <Info className="h-4 w-4" />
+                    </button>
+                  </div>
                   <p className="text-xs text-muted-foreground">+${listing.shipping_price || 0} shipping</p>
                 </div>
               </div>
+
 
               {/* Install-the-app CTA — visible only on mobile web, hidden inside
                   the native app / installed PWA. Encourages shared-link viewers
