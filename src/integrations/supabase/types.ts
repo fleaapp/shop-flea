@@ -1865,6 +1865,10 @@ export type Database = {
         Args: { _key: string; _max: number; _window_seconds: number }
         Returns: boolean
       }
+      claim_checkout_listings: {
+        Args: { p_listing_ids: string[] }
+        Returns: boolean
+      }
       complete_order: {
         Args: { p_order_group_id?: string; p_order_id?: string }
         Returns: {
