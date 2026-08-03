@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
       // Find new active listings since last_notified_at, region-matched
       let q = externalAdmin
         .from('listings')
-        .select('id, title, brand, category, subcategory, size, gender, condition, price, tags, user_id, region_id, created_at')
+        .select('id, title, brand, category, subcategory, size, gender, condition, colour, style, price, tags, user_id, region_id, created_at')
         .eq('status', 'active')
         .gt('created_at', s.last_notified_at)
         .neq('user_id', s.user_id)
