@@ -42,13 +42,23 @@ const Offers = () => {
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const all = useMemo(() => [...received, ...sent], [received, sent]);
+  const listingIdsKey = useMemo(
+    () => [...new Set(all.map((o) => o.listing_id))].sort().join(','),
+    [all],
+  );
+  const userIdsKey = useMemo(
+    () =>
+      [...new Set(all.flatMap((o) => [o.buyer_id, o.seller_id]))]
+        .filter((id) => id && id !== user?.id)
+        .sort()
+        .join(','),
+    [all, user?.id],
+  );
 
   useEffect(() => {
     const load = async () => {
-      const listingIds = [...new Set(all.map((o) => o.listing_id))];
-      const userIds = [...new Set(all.flatMap((o) => [o.buyer_id, o.seller_id]))].filter(
-        (id) => id && id !== user?.id,
-      );
+      const listingIds = listingIdsKey ? listingIdsKey.split(',') : [];
+      const userIds = userIdsKey ? userIdsKey.split(',') : [];
       if (listingIds.length > 0) {
         const { data } = await supabase
           .from('listings')
@@ -68,8 +78,9 @@ const Offers = () => {
         setUsernames(map);
       }
     };
-    if (all.length > 0) load();
-  }, [all, user]);
+    if (listingIdsKey) load();
+  }, [listingIdsKey, userIdsKey]);
+
 
   const isLive = (o: Offer) => o.status === 'pending' && new Date(o.expires_at).getTime() > Date.now();
 
