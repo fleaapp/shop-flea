@@ -225,30 +225,46 @@ const Offers = () => {
           </Button>
         )}
 
-        {offer.status === 'accepted' && offer.buyer_id === user?.id && (
-          <Button onClick={() => navigate('/cart')} className="mt-3 h-10 w-full rounded-lg text-sm">
-            Pay ${offer.amount.toFixed(2)} - offer price
-          </Button>
+        {payable && offer.buyer_id === user?.id && !listingGone && (
+          <>
+            <Button onClick={() => navigate('/cart')} className="mt-3 h-10 w-full rounded-lg text-sm">
+              Pay ${offer.amount.toFixed(2)} - offer price
+            </Button>
+            <p className="mt-1.5 text-center text-[11px] text-muted-foreground">
+              Offer price held for {offerTimeLeft(offer.expires_at).replace(' left', '')} - the item is not reserved until you pay.
+            </p>
+          </>
         )}
       </div>
     );
   };
 
-  const list = tab === 'received' ? received : sent;
+  const list = useMemo(() => {
+    const rows = tab === 'received' ? received : sent;
+    const rank = (o: Offer) => {
+      if (isLive(o)) return 0;
+      if (o.status === 'accepted' && new Date(o.expires_at).getTime() > Date.now()) return 1;
+      return 2;
+    };
+    return [...rows].sort(
+      (a, b) =>
+        rank(a) - rank(b) || new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+  }, [tab, received, sent]);
 
   return (
     <div className="native-safe-top fixed inset-0 flex flex-col bg-background pb-24">
-      <div className="flex shrink-0 items-center gap-3 px-4 pt-4">
+      <div className="relative flex h-10 shrink-0 items-center justify-center px-4 pt-4">
         <button
           onClick={() => safeNavigateBack(navigate, '/profile')}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-card card-shadow"
+          className="absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-card card-shadow"
         >
           <ChevronLeft className="h-5 w-5 text-foreground" />
         </button>
         <h1 className="text-lg font-semibold text-foreground">💰 Offers</h1>
       </div>
 
-      <div className="mt-4 flex shrink-0 justify-center px-4">
+      <div className="mt-8 flex shrink-0 justify-center px-4">
         <div className="flex w-[220px] items-center rounded-full bg-muted p-1">
           {(['received', 'sent'] as const).map((t) => (
             <button
@@ -264,22 +280,29 @@ const Offers = () => {
         </div>
       </div>
 
-      <div className="mt-4 flex-1 space-y-3 overflow-y-auto px-4 pb-6">
+      <div className="mt-4 flex-1 overflow-y-auto px-4 pb-6">
         {loading ? (
-          <div className="flex justify-center py-12">
+          <div className="flex min-h-[50vh] items-center justify-center">
             <span className="text-5xl">⏳</span>
           </div>
         ) : list.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <span className="mb-3 text-5xl">💰</span>
-            <p className="text-sm text-muted-foreground">
-              {tab === 'received' ? 'No offers received yet.' : 'You have not made any offers yet.'}
-            </p>
-          </div>
+          <EmptyState
+            emoji="💰"
+            title={tab === 'received' ? 'No offers yet' : 'No offers sent yet'}
+            description={
+              tab === 'received'
+                ? 'When a buyer makes you an offer, it lands here. You have 24 hours to accept, counter or decline.'
+                : 'Found something you love? Make an offer and the seller has 24 hours to reply.'
+            }
+            actionLabel={tab === 'sent' ? 'Browse items' : undefined}
+            onAction={tab === 'sent' ? () => navigate('/') : undefined}
+            minHeightClass="min-h-[55vh]"
+          />
         ) : (
-          list.map((o) => renderCard(o, tab))
+          <div className="space-y-3">{list.map((o) => renderCard(o, tab))}</div>
         )}
       </div>
+
 
       {counterOffer && listings[counterOffer.listing_id] && (
         <MakeOfferDrawer
