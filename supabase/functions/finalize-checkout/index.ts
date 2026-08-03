@@ -508,19 +508,6 @@ serve(async (req) => {
     // based on DB prices (prevents client-supplied price tampering).
     await verifyPayment({ reference: checkoutReference, expectedAmountAud });
 
-    // Atomically claim every listing before creating orders. Only the first
-    // completed checkout can transition an active listing to sold, preventing
-    // two buyers with accepted offers from purchasing the same item.
-    const { error: claimError } = await serviceClient.rpc("claim_checkout_listings", {
-      p_listing_ids: authoritativeItems.map((item) => item.id),
-    });
-    if (claimError) {
-      await refundUnavailableCheckout(checkoutReference);
-      throw new Error("One or more items were purchased by someone else. Your payment was automatically refunded.");
-    }
-
-    // Filter out listings already sold by another order (defensive — payment
-    // already succeeded so we cannot just refuse; we still record what we can).
     const orderGroupId = crypto.randomUUID();
     // shippingMap already initialized above for amount verification.
     const itemsBySeller = new Map<string, ListingRow[]>();
@@ -569,13 +556,15 @@ serve(async (req) => {
 
     const insertResult = await insertOrdersWithFallback(serviceClient, inserts);
     if (insertResult.error) {
-      // Unique index on (checkout_reference, listing_id): a concurrent call
-      // already created these rows. Treat as success rather than double-charging
-      // the buyer with duplicate orders.
       if ((insertResult.error as any)?.code === "23505") {
-        return new Response(JSON.stringify({ ok: true, alreadyProcessed: true }), {
-          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        const existing = await fetchOrdersForBuyer(serviceClient, userId, authoritativeItems.map((i) => i.id), checkoutReference);
+        if (!existing.error && (existing.data?.length ?? 0) === authoritativeItems.length) {
+          return new Response(JSON.stringify({ ok: true, alreadyProcessed: true }), {
+            status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        await refundUnavailableCheckout(checkoutReference);
+        throw new Error("One or more items were purchased by someone else. Your payment was automatically refunded.");
       }
       throw insertResult.error;
     }
@@ -586,6 +575,13 @@ serve(async (req) => {
       if (verify.error) throw verify.error;
       insertedOrders = verify.data ?? [];
     }
+
+    // Order rows are protected by a unique listing id, so this update can only
+    // happen for the checkout that won the purchase race.
+    await serviceClient
+      .from("listings")
+      .update({ status: "sold", updated_at: new Date().toISOString() })
+      .in("id", authoritativeItems.map((item) => item.id));
     if (insertedOrders.length !== authoritativeItems.length) {
       // Orders did NOT all create — DO NOT mark listings sold. Surface error
       // so support can reconcile manually rather than silently hiding listings.
