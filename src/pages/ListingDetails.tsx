@@ -67,6 +67,7 @@ interface DbListing {
   subcategory?: string | null;
   user_id: string;
   status?: string;
+  created_at?: string | null;
 }
 
 interface SellerProfile {
@@ -75,6 +76,9 @@ interface SellerProfile {
   location: string | null;
   country_code: string | null;
   offers_enabled?: boolean | null;
+  rating?: number | null;
+  total_reviews?: number | null;
+  last_sign_in_at?: string | null;
 }
 
 const TERMINAL_LISTING_STATUSES = new Set(['sold', 'refunded', 'delivered', 'completed']);
