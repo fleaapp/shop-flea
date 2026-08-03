@@ -84,6 +84,7 @@ const EditListing = () => {
   const [styles, setStyles] = useState<string[]>([]);
   const [itemPrice, setItemPrice] = useState('');
   const [shippingPrice, setShippingPrice] = useState('');
+  const [autoAcceptPrice, setAutoAcceptPrice] = useState('');
   const [description, setDescription] = useState('');
 
   // Reset dependent fields when parent selection changes
@@ -146,6 +147,7 @@ const EditListing = () => {
       setFit(data.gender || '');
       setItemPrice(data.price.toString());
       setShippingPrice(data.shipping_price?.toString() || '');
+      setAutoAcceptPrice((data as any).auto_accept_offer_price?.toString() || '');
       setDescription(data.description || '');
       setExistingImages(data.images || []);
       // Align existing thumbnails to existing images by index (fallback: null).
@@ -343,6 +345,8 @@ const EditListing = () => {
         gender: fit || null,
         price: parsedPrice,
         shipping_price: isNaN(parsedShipping) ? 0 : parsedShipping,
+        auto_accept_offer_price:
+          offersEnabled && autoAcceptPrice && parseFloat(autoAcceptPrice) > 0 ? parseFloat(autoAcceptPrice) : null,
         images: allImages,
         thumbnails: allThumbs,
         tags: [brand, category].filter(Boolean),
@@ -458,6 +462,7 @@ const EditListing = () => {
     }
   };
 
+  const offersEnabled = (profile as any)?.offers_enabled === true;
   const inputStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 placeholder:text-muted-foreground/60 focus-visible:ring-muted-foreground/50";
   const selectStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 [&>span]:text-muted-foreground/60 [&>span]:text-base focus:ring-muted-foreground/50";
 
@@ -737,6 +742,25 @@ const EditListing = () => {
           </span>
         </div>
         
+        {/* Auto-accept offers */}
+        {offersEnabled && (
+          <>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60 font-medium">$</span>
+              <Input
+                type="number"
+                placeholder="Auto-accept offers at (optional)"
+                value={autoAcceptPrice}
+                onChange={(e) => setAutoAcceptPrice(e.target.value)}
+                className={`${inputStyles} pl-8`}
+              />
+            </div>
+            <p className="-mt-1 px-1 text-xs text-muted-foreground">
+              💰 Any offer at or above this amount is accepted instantly. Leave blank to review every offer yourself.
+            </p>
+          </>
+        )}
+
         {/* Description */}
         <Textarea
           placeholder="Description"
