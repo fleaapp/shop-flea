@@ -13,6 +13,8 @@ import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
 import EnablePushBanner from '@/components/EnablePushBanner';
 import { supabase } from '@/lib/supabase';
 import { logError } from '@/lib/errorLogger';
+import { INSTANT_PAYOUT_RATE } from '@/utils/feeCalculator';
+
 
 const BalanceInfo = ({ title, body, tone = 'muted' }: { title: string; body: string; tone?: 'muted' | 'amber' | 'primary' }) => {
   const iconClass =
