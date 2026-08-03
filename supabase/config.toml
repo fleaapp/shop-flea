@@ -57,3 +57,5 @@ project_id = "teaicrimlqdayqpmxasc"
     verify_jwt = false
   [functions.auto-approve-refund-requests]
     verify_jwt = false
+  [functions.offers]
+    verify_jwt = true
