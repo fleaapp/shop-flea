@@ -37,12 +37,14 @@ type SettingsItem = {
   action?: () => void | Promise<void>;
   toggle?: boolean;
   checked?: boolean;
+  disabled?: boolean;
   onToggle?: (checked: boolean) => void | Promise<void>;
   badge?: number;
   expandable?: boolean;
   onExpand?: () => void;
   isExpanded?: boolean;
   isLogout?: boolean;
+  children?: SettingsItem[];
 };
 
 const Settings = () => {
