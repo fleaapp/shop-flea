@@ -341,7 +341,14 @@ const SellerProfile = () => {
             </span>
           </div>
         </div>
+        <BundleOfferBadge
+          mode={sellerProfile.bundle_shipping_mode}
+          discountPercent={sellerProfile.bundle_shipping_discount_percent}
+          itemDiscountPercent={sellerProfile.bundle_item_discount_percent}
+          className="mt-2"
+        />
       </div>
+
 
       <div className="mt-5 max-[430px]:mt-4 max-[393px]:mt-3 max-[375px]:mt-2 flex justify-center items-center gap-2">
         <div className="flex items-center rounded-full bg-muted p-1 w-[220px]">
