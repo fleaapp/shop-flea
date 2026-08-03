@@ -1,7 +1,7 @@
 import { safeNavigateBack } from '@/utils/safeBack';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { MapPin, MoreVertical, Flag, Share2, User } from 'lucide-react';
+import { MapPin, MoreVertical, Flag, Share2, User, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import MakeOfferDrawer from '@/components/MakeOfferDrawer';
 import { useOffers, useAcceptedOffers, offerTimeLeft } from '@/hooks/useOffers';
@@ -1161,6 +1161,13 @@ const ListingDetails = () => {
           />
         );
       })()}
+
+      <PriceBreakdownDrawer
+        open={priceBreakdownOpen}
+        onOpenChange={setPriceBreakdownOpen}
+        price={Number(listing.price || 0)}
+        shipping={listing.shipping_price}
+      />
 
       <ReportDialog
         open={!!pendingReport}
