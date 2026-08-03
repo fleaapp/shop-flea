@@ -873,13 +873,14 @@ const ListingDetails = () => {
                   ) : (
                     <Button
                       variant="outline"
-                      onClick={() => requireAuth(() => {
+                      onClick={() => {
+                        if (!requireAuth()) return;
                         if (hasLiveOffer) {
                           toast.info('You already have an offer waiting on this item.');
                           return;
                         }
                         setOfferDrawerOpen(true);
-                      })}
+                      }}
                       className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-tint active:border-tint"
                       aria-label="Make an offer"
                     >
