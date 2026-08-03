@@ -407,19 +407,6 @@ async function checkRateLimit(key: string, max: number, windowSeconds: number): 
 
 type BundleMode = "none" | "discounted" | "free";
 
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
-}
-
-function calculateSecureCheckoutFee(subtotal: number): number {
-  if (subtotal <= 0) return 0;
-  return round2(subtotal * 0.04 + 0.7);
-}
-
-function calculateTransactionFee(subtotal: number): number {
-  if (subtotal <= 0) return 0;
-  return round2(subtotal * 0.02 + 0.5);
-}
 
 function calculateBundleShippingTotal(
   rawShippings: number[],
