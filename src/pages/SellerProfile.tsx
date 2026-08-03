@@ -19,6 +19,7 @@ import ProfileGridCard from '@/components/ProfileGridCard';
 import EngagementBadges from '@/components/EngagementBadges';
 import { safeNavigateBack } from '@/utils/safeBack';
 import { LISTING_CARD_COLUMNS } from '@/lib/listingColumns';
+import { formatLastActiveShort } from '@/utils/timeAgo';
 import {
   DropdownMenu,
   DropdownMenuContent,
