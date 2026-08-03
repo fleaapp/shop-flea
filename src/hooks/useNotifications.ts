@@ -436,6 +436,12 @@ export const getNotificationMessage = (type: string, username?: string, listingT
       return rawMessage || '↩️ An offer was replaced with a new one. Tap to view the details.';
     case 'offer_discount':
       return rawMessage || '🏷️ A seller sent you a special offer. It expires in 24 hours.';
+    case 'offer_cancelled':
+      return rawMessage || '😔 Your offer was cancelled because the item changed. Tap to view the details.';
+    case 'offer_expiring':
+      return rawMessage || '⏳ Your accepted offer expires soon. Check out now to keep the price.';
+    case 'saved_search_match':
+      return rawMessage || '🔔 A new item matches one of your saved searches. Tap to view.';
     default:
       return 'New notification';
   }
