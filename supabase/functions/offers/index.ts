@@ -250,6 +250,29 @@ Deno.serve(async (req) => {
       if (!listing || listing.user_id !== userId) return json({ error: "Not authorised" }, 403);
       if (listing.status !== "active") return json({ error: "This item is no longer available" }, 400);
 
+      // Same price + eligibility rules the create_offer RPC enforces, so a
+      // blast can never undercut the floor or run from a paused/blocked seller.
+      const { data: sellerProfile } = await admin
+        .from("profiles")
+        .select("offers_enabled, status, pause_selling")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!sellerProfile?.offers_enabled) {
+        return json({ error: "Turn on offers in your settings first." }, 400);
+      }
+      if (sellerProfile.status !== "active" || sellerProfile.pause_selling) {
+        return json({ error: "Your selling is paused, so offers can't be sent." }, 400);
+      }
+      const listingPrice = Number(listing.price);
+      if (amount >= listingPrice) {
+        return json({ error: "Offer must be less than the asking price" }, 400);
+      }
+      if (amount < 3) return json({ error: "Offers must be at least $3.00" }, 400);
+      if (amount < Math.round(listingPrice * 0.6 * 100) / 100) {
+        return json({ error: "Offer must be at least 60% of the asking price" }, 400);
+      }
+
+
       // Once per listing per 24 hours.
       const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { count: recent } = await admin
