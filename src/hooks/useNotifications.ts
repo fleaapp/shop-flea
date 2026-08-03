@@ -342,8 +342,19 @@ export const getNotificationMessage = (type: string, username?: string, listingT
     return listingTitle;
   }
 
-  // For message-type notifications, use the pre-built message from the trigger
-  if ((type === 'order_message_seller' || type === 'order_message_buyer' || type === 'support_message' || type === 'order_shipped' || type === 'order_delivered' || type === 'refund_initiated' || type === 'order_auto_refunded' || type === 'sale_auto_refunded') && rawMessage) {
+  // Offer messages are generated with recipient-specific context by the
+  // backend. Never replace them with a buyer- or seller-specific UI template.
+  const usesAuthoritativeMessage =
+    type.startsWith('offer_') ||
+    type === 'order_message_seller' ||
+    type === 'order_message_buyer' ||
+    type === 'support_message' ||
+    type === 'order_shipped' ||
+    type === 'order_delivered' ||
+    type === 'refund_initiated' ||
+    type === 'order_auto_refunded' ||
+    type === 'sale_auto_refunded';
+  if (usesAuthoritativeMessage && rawMessage) {
     return rawMessage;
   }
   
@@ -409,11 +420,11 @@ export const getNotificationMessage = (type: string, username?: string, listingT
         ? `🔁 ${displayUsername} sent you a counter-offer. You have 24 hours to reply.`
         : '🔁 You received a counter-offer. You have 24 hours to reply.');
     case 'offer_accepted':
-      return rawMessage || '🎉 Your offer was accepted. It is in your cart at that price - you have 24 hours to pay.';
+      return '🎉 An offer was accepted. Tap to view the details.';
     case 'offer_auto_accepted':
-      return rawMessage || '🎉 An offer on your item was auto-accepted. The buyer has 24 hours to pay.';
+      return '🎉 An offer was auto-accepted. Tap to view the details.';
     case 'offer_declined':
-      return rawMessage || '😔 Your offer was declined. You can try another offer.';
+      return '😔 An offer was declined. Tap to view the details.';
     case 'offer_discount':
       return rawMessage || '🏷️ A seller sent you a special offer. It expires in 24 hours.';
     default:
