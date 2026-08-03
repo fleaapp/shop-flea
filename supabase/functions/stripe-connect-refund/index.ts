@@ -18,6 +18,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { logEdgeError } from "../_shared/logError.ts";
+import { calculateSecureCheckoutFee, calculateTransactionFee, round2 } from "../_shared/fees.ts";
+
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 function isUuid(v: unknown): v is string {
