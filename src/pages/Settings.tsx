@@ -296,7 +296,8 @@ const Settings = () => {
     expandable: true,
     onExpand: () => setHelpCentreExpanded(!helpCentreExpanded),
     isExpanded: helpCentreExpanded,
-    badge: supportUnread || undefined
+    badge: supportUnread || undefined,
+    children: helpCentreItems
   }];
 
   // ---- Logout ----
