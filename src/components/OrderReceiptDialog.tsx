@@ -213,7 +213,7 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
                 </div>
                 {bundleText && (
                   <div className="text-[10px] text-gray-500 text-left mt-0.5">
-                    <div><span className="mr-1">✈️</span><span className="font-bold">Bundle shipping:</span></div>
+                    <div><span className="mr-1">{bundleText.emoji}</span><span className="font-bold">{bundleText.label}</span></div>
                     <div>{bundleText.detail}</div>
                   </div>
                 )}
