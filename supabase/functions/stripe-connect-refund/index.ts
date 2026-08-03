@@ -433,7 +433,14 @@ interface RefundBreakdown {
   transactionFeeShare: number;
   buyerRefund: number;
   sellerNet: number;
+  /**
+   * Amount (in dollars) the seller owes Flea because their share of this refund
+   * exceeds what can be pulled back from the transfer. Recorded against their
+   * negative balance instead of being silently written off.
+   */
+  sellerShortfall: number;
 }
+
 
 function computeRefundBreakdown(
   targetOrder: any,
