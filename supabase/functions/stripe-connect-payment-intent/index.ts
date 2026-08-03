@@ -294,16 +294,11 @@ serve(async (req) => {
         }, 0)
       : Number(shipping) || 0;
     const subtotal = itemsTotal + shippingAmount;
-    const SECURE_CHECKOUT_RATE = 0.04;
-    const SECURE_CHECKOUT_FIXED = 0.70;
-    let secureCheckoutFee = Math.round((subtotal * SECURE_CHECKOUT_RATE + SECURE_CHECKOUT_FIXED) * 100) / 100;
+    // Fee math lives in _shared/fees.ts so buyer/seller totals can never drift
+    // between checkout, finalisation and refunds.
+    let secureCheckoutFee = calculateSecureCheckoutFee(subtotal);
+    const transactionFee = calculateTransactionFee(subtotal);
 
-    // Seller-paid Transaction Fee: 2% + $0.50, deducted from payout.
-    const TRANSACTION_FEE_RATE = 0.02;
-    const TRANSACTION_FEE_FIXED = 0.50;
-    const transactionFee = subtotal > 0
-      ? Math.round((subtotal * TRANSACTION_FEE_RATE + TRANSACTION_FEE_FIXED) * 100) / 100
-      : 0;
 
     let appliedCoupon: { id: string; code: string; type: string } | null = null;
     const normalizedCode = String(couponCode || "").trim().toUpperCase();
