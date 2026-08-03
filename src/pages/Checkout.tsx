@@ -813,7 +813,14 @@ const Checkout = () => {
                             <div className="flex-1 flex flex-col justify-between">
                               <h3 className="font-semibold text-foreground">{item.title}</h3>
                               <div className="text-right">
-                                <p className="text-lg font-semibold">${item.price}</p>
+                                <div className="text-right">
+                                  {item.offerPrice !== undefined && item.offerOriginalPrice !== undefined && (
+                                    <p className="text-xs text-muted-foreground line-through">
+                                      ${item.offerOriginalPrice.toFixed(2)}
+                                    </p>
+                                  )}
+                                  <p className="text-lg font-semibold">${Number(item.price).toFixed(2)}</p>
+                                </div>
                                 {!hasBundleRow && idx === sellerItems.length - 1 && (
                                   <p className="text-sm text-muted-foreground">+${shipping.toFixed(2)} shipping</p>
                                 )}

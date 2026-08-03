@@ -310,6 +310,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchCart, user]);
 
   useEffect(() => {
+    const expiries = cartItems
+      .map((item) => item.offerExpiresAt ? new Date(item.offerExpiresAt).getTime() : Number.POSITIVE_INFINITY)
+      .filter(Number.isFinite);
+    if (expiries.length === 0) return;
+    const delay = Math.max(0, Math.min(...expiries) - Date.now()) + 250;
+    const timer = window.setTimeout(() => void fetchCart(), delay);
+    return () => window.clearTimeout(timer);
+  }, [cartItems, fetchCart]);
+
+  useEffect(() => {
     if (!user) return;
     const channel = supabase
       .channel(`cart-offers-${user.id}`)

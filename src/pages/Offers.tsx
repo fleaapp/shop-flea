@@ -109,6 +109,11 @@ const Offers = () => {
     if (listingIdsKey) load();
   }, [listingIdsKey, userIdsKey]);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => void refresh(), 60_000);
+    return () => window.clearInterval(timer);
+  }, [refresh]);
+
 
   const isLive = (o: Offer) => o.status === 'pending' && new Date(o.expires_at).getTime() > Date.now();
 
