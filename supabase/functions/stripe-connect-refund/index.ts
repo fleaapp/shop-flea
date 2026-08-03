@@ -900,7 +900,8 @@ serve(async (req) => {
       const listings = await fetchListings(externalUrl, serviceKey, listingIds);
       const breakdown = computeRefundBreakdown(order, groupRows, listings, sellerSettings.mode, sellerSettings.discountPercent);
 
-      const { refund, transferReversal } = await createSingleItemRefund(stripe, order, breakdown, actor);
+      const { refund, transferReversal, shortfallCents } = await createSingleItemRefund(stripe, order, breakdown, actor);
+      await recordSellerShortfall(externalUrl, serviceKey, order.seller_id, shortfallCents);
 
       await markOrderRefunded(externalUrl, serviceKey, order.id);
       if (order.listing_id) await markListingsRefunded(externalUrl, serviceKey, [order.listing_id]);
@@ -924,6 +925,44 @@ serve(async (req) => {
     }
 
     // Cascade / full order-group refund.
+    const cascadeRows = await fetchGroupRows(externalUrl, serviceKey, order);
+    const alreadyRefunded = cascadeRows.filter((r: any) => r.refunded_at);
+    const remainingRows = cascadeRows.filter((r: any) => !r.refunded_at);
+
+    // If part of this bundle has already been refunded, refunding the whole
+    // payment intent (and its full application fee) would hand back money that
+    // has already gone back. Fall back to per-item refunds using each order's
+    // own fee snapshot, then send ONE combined notification.
+    if (alreadyRefunded.length > 0 && remainingRows.length > 0) {
+      const listingIds = [...new Set(cascadeRows.map((r: any) => r.listing_id).filter(Boolean))];
+      const [listings, sellerSettings] = await Promise.all([
+        fetchListings(externalUrl, serviceKey, listingIds as string[]),
+        fetchSellerBundleSettings(externalUrl, serviceKey, order.seller_id),
+      ]);
+
+      const refundIds: string[] = [];
+      let totalShortfall = 0;
+      for (const row of remainingRows) {
+        const breakdown = computeRefundBreakdown(row, cascadeRows, listings, sellerSettings.mode, sellerSettings.discountPercent);
+        const result = await createSingleItemRefund(stripe, { ...row, seller_id: order.seller_id, buyer_id: order.buyer_id }, breakdown, actor);
+        refundIds.push(result.refund.id);
+        totalShortfall += result.shortfallCents;
+        await markOrderRefunded(externalUrl, serviceKey, row.id);
+        if (row.listing_id) await markListingsRefunded(externalUrl, serviceKey, [row.listing_id]);
+      }
+      await recordSellerShortfall(externalUrl, serviceKey, order.seller_id, totalShortfall);
+      await insertRefundNotifications(externalUrl, serviceKey, order, remainingRows.length);
+      await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order);
+
+      return jsonResponse({
+        success: true,
+        refundIds,
+        refundId: refundIds[0] ?? null,
+        mode: "cascade_partial",
+        refundedItems: remainingRows.length,
+      });
+    }
+
     const paymentIntentId = await resolvePaymentIntentId(stripe, order);
     const refund = await stripe.refunds.create({
       payment_intent: paymentIntentId,
@@ -938,6 +977,7 @@ serve(async (req) => {
         flea_mode: "cascade",
       },
     }, { idempotencyKey: `flea-refund-${orderId}` });
+
 
     await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
     const relatedListingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
