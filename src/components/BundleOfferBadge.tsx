@@ -5,6 +5,7 @@ interface BundleOfferBadgeProps {
   discountPercent?: number | null;
   itemDiscountPercent?: number | null;
   className?: string;
+  variant?: 'light' | 'solid';
 }
 
 export function getBundleOfferLabel(
@@ -18,13 +19,24 @@ export function getBundleOfferLabel(
   return null;
 }
 
-const BundleOfferBadge = ({ mode, discountPercent, itemDiscountPercent, className = '' }: BundleOfferBadgeProps) => {
+const BundleOfferBadge = ({
+  mode,
+  discountPercent,
+  itemDiscountPercent,
+  className = '',
+  variant = 'light',
+}: BundleOfferBadgeProps) => {
   const label = getBundleOfferLabel(mode, discountPercent, itemDiscountPercent);
   if (!label) return null;
 
+  const variantClasses =
+    variant === 'solid'
+      ? 'bg-primary text-foreground border-transparent'
+      : 'border border-primary bg-primary/20 text-foreground';
+
   return (
     <span
-      className={`inline-flex items-center whitespace-nowrap rounded-full border border-primary bg-primary/20 px-3 py-1 text-xs font-semibold text-foreground ${className}`}
+      className={`inline-flex items-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold ${variantClasses} ${className}`}
     >
       {label}
     </span>
