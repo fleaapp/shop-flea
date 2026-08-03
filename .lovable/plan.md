@@ -1,30 +1,32 @@
-# Bundle Offer Badge
+# Lock listings once they are sold
 
-Show a small lime bubble banner wherever a seller has bundle offers turned on.
+You are right - a buyer should never be refunded just because a seller tidied up their listings. The fix is to stop the deletion, not to compensate for it.
 
-## Badge content
+## What I found (verified)
 
-Driven by the seller's saved bundle mode:
+- Sellers can permanently delete their own listing rows at any time, including listings with live orders.
+- The link from orders to listings is set to "cascade delete". So deleting a sold listing **deletes the order records with it** - the buyer's purchase, tracking, messages and refund history disappear. This is worse than the audit described.
+- The status rules already lock a listing once it is `sold`, `removed`, `blocked` or `refunded`, so status changes are safe. Only hard deletion is unguarded.
+- The in-app "Delete" button on a listing does a soft remove (sets status to `removed`), so the risk is the raw delete path, not the normal UI action.
 
-- `free` - "Free ✈️ on bundles"
-- `discounted` - "20% off ✈️ on bundles"
-- `item_discount` - "📦 10% off bundles"
-- `none` - nothing rendered
+## The rule to enforce
 
-Style: light lime background with a lime border, lime-tinted text, rounded-full pill, small text. Uses existing design tokens (primary lime), no hardcoded hex.
+A listing can only be permanently deleted when it has **no orders at all**. If it has any order, deletion is blocked forever - order history must stay intact for receipts, disputes, tax and admin review. Sellers can still hide or remove the listing from view; the record simply stays.
 
-## Where it appears
+For active (unsold) listings nothing changes - remove works exactly as today.
 
-1. **Seller profile** - centered under the reviews / last-active bubbles row, above the Listings|Sold toggle.
-2. **Listing details drawer** - centered at the top of the image area, on the same row as the 3-dot menu (right) and cart/wishlist stats (left), so it sits between them.
+## Changes
+
+1. **Stop the cascade.** Change the order-to-listing link so deleting a listing can never delete orders.
+2. **Block the delete.** Add a database guard that rejects deletion of any listing that has orders attached, with a clear message.
+3. **Tighten permissions.** Restrict the seller delete rule so it only applies to listings with no orders.
+4. **Clear message in the app.** When a seller tries to delete a sold listing, show: "This item has been sold, so it can't be deleted. You can hide it instead." Keep the hide/remove option available.
+5. **Admin.** Admin delete in the Listings screen already soft-deletes to the "Deleted" tab - keep that behaviour and surface the same message if a hard delete is attempted.
 
 ## Technical notes
 
-- New shared component `src/components/BundleOfferBadge.tsx` taking `mode`, `discountPercent`, `itemDiscountPercent`; returns null for `none`.
-- Seller profile already loads the profile; extend its `profiles_public` select with `bundle_shipping_mode`, `bundle_shipping_discount_percent`, `bundle_item_discount_percent`.
-- Listing details does not fetch bundle settings today - add a lightweight lookup via the existing `fetchSellerShippingSettings` helper for the listing's seller.
-- Long text is kept on one line; the badge is centered with `absolute inset-x-0 top-3` and horizontal padding so it never overlaps the icons.
-
-## Out of scope
-
-No changes to bundle pricing logic, cart, or checkout.
+- Migration: `ALTER TABLE public.orders DROP CONSTRAINT orders_listing_id_fkey`, re-add with `ON DELETE RESTRICT`.
+- Add `listings_delete_guard()` BEFORE DELETE trigger raising an exception when `EXISTS (SELECT 1 FROM public.orders WHERE listing_id = OLD.id)`.
+- Replace the `Users can delete their own listings` policy with a `USING` clause that adds `NOT EXISTS (SELECT 1 FROM public.orders o WHERE o.listing_id = id)`.
+- Frontend: in `src/pages/ListingDetails.tsx`, keep the soft `status = 'removed'` update and add error handling/copy for a blocked hard delete.
+- No change to refund logic - the audit item about refunding on deletion becomes unnecessary once deletion is impossible.
