@@ -182,6 +182,27 @@ const Settings = () => {
     }
   };
 
+  // Offers toggle - lets buyers negotiate on this seller's listings.
+  const offersEnabled = (profile as any)?.offers_enabled ?? false;
+  const handleToggleOffers = async (checked: boolean) => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ offers_enabled: checked } as any)
+        .eq('user_id', user.id)
+        .select('offers_enabled')
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error('No profile row updated (session mismatch)');
+      await refreshProfile();
+      toast.success(checked ? 'Offers on' : 'Offers off');
+    } catch (error: any) {
+      console.error('[offers_enabled] update failed:', error);
+      toast.error(`Failed to update: ${error?.message ?? 'unknown error'}`);
+    }
+  };
+
   // Marketing opt-out (Spam Act compliance — transactional comms unaffected).
   const marketingOptIn = (profile as any)?.marketing_opt_in ?? true;
   const handleToggleMarketing = async (checked: boolean) => {
@@ -259,6 +280,16 @@ const Settings = () => {
     toggle: true,
     checked: pauseSelling,
     onToggle: handleTogglePauseSelling
+  }, isGuest ? {
+    icon: <span className="text-base">💰</span>,
+    label: 'Offers',
+    action: promptGuest
+  } : {
+    icon: <span className="text-base">💰</span>,
+    label: 'Offers',
+    toggle: true,
+    checked: offersEnabled,
+    onToggle: handleToggleOffers
   }, {
     icon: <span className="text-base">🔔</span>,
     label: 'Notifications',

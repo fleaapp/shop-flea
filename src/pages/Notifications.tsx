@@ -274,6 +274,17 @@ const Notifications = () => {
       return;
     }
 
+    // Offer activity → open the Offers screen on the right tab
+    if (notification.type?.startsWith('offer_')) {
+      const sentTab =
+        notification.type === 'offer_accepted' ||
+        notification.type === 'offer_auto_accepted' ||
+        notification.type === 'offer_declined';
+      navigate('/offers', { state: { tab: sentTab ? 'sent' : 'received' } });
+      return;
+    }
+
+
 
     // Navigate based on notification type (comments, mentions, wishlist/cart sold, etc.)
     if (notification.related_listing_id) {

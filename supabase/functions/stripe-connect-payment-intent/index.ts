@@ -151,9 +151,30 @@ serve(async (req) => {
 
 
     const listingById = new Map(listingRows.map((l: any) => [l.id, l]));
+
+    // Accepted offers are looked up server-side; the client never supplies the
+    // discounted price. Only live (unexpired) accepted offers for this buyer count.
+    const acceptedOfferByListing = new Map<string, { id: string; amount: number }>();
+    {
+      const { data: offerRows } = await serviceClient.rpc("get_accepted_offer_prices", {
+        _buyer_id: user.id,
+        _listing_ids: itemIds,
+      });
+      (offerRows ?? []).forEach((row: any) => {
+        acceptedOfferByListing.set(row.listing_id, { id: row.offer_id, amount: Number(row.amount) });
+      });
+    }
+
     const authoritativeItems = itemIds.map((id: string) => {
       const l: any = listingById.get(id);
-      return { id: l.id, title: l.title, price: Number(l.price), shippingPrice: Number(l.shipping_price || 0) };
+      const offer = acceptedOfferByListing.get(l.id);
+      return {
+        id: l.id,
+        title: l.title,
+        price: offer ? offer.amount : Number(l.price),
+        shippingPrice: Number(l.shipping_price || 0),
+        offerId: offer?.id ?? null,
+      };
     });
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {

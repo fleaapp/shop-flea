@@ -130,6 +130,7 @@ const CreateListing = () => {
   // Only show "verifying" if user just returned from Stripe with success param
   // or if they have a completed account in DB that needs syncing
   const stripeAccountId = profile?.stripe_account_id || null;
+  const offersEnabled = (profile as any)?.offers_enabled === true;
   const returnedFromStripe = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('stripe_success') === 'true';
   const stripePending = !hasPaymentMethod && returnedFromStripe;
 
@@ -149,6 +150,7 @@ const CreateListing = () => {
   const [styles, setStyles] = useState<string[]>([]);
   const [itemPrice, setItemPrice] = useState('');
   const [shippingPrice, setShippingPrice] = useState('');
+  const [autoAcceptPrice, setAutoAcceptPrice] = useState('');
   const [description, setDescription] = useState('');
 
   // --- Draft persistence (survives app backgrounding / WebView reload) ---
@@ -219,7 +221,7 @@ const CreateListing = () => {
     if (imageDraftKey) void clearDraftImages(imageDraftKey);
     setProductName(''); setFit(''); setCategory(''); setSubcategory('');
     setSize(''); setBrand(''); setCondition(''); setColours([]); setStyles([]);
-    setItemPrice(''); setShippingPrice(''); setDescription('');
+    setItemPrice(''); setShippingPrice(''); setAutoAcceptPrice(''); setDescription('');
     setImageFiles((prev) => {
       prev.forEach((img) => URL.revokeObjectURL(img.preview));
       return [];
@@ -463,6 +465,10 @@ const CreateListing = () => {
           gender: fit || null,
           price: parseFloat(itemPrice),
           shipping_price: shippingPrice ? parseFloat(shippingPrice) : 0,
+          auto_accept_offer_price:
+            offersEnabled && autoAcceptPrice && parseFloat(autoAcceptPrice) > 0
+              ? parseFloat(autoAcceptPrice)
+              : null,
           images: imageUrls,
           thumbnails: thumbUrls,
           tags: [brand, category].filter(Boolean),
@@ -896,6 +902,25 @@ const CreateListing = () => {
           </span>
         </div>
         
+        {/* Auto-accept offers - only shown when the seller has offers turned on. */}
+        {offersEnabled && (
+          <>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60 font-medium">$</span>
+              <Input
+                type="number"
+                placeholder="Auto-accept offers at (optional)"
+                value={autoAcceptPrice}
+                onChange={(e) => setAutoAcceptPrice(e.target.value)}
+                className={`${inputStyles} pl-8`}
+              />
+            </div>
+            <p className="-mt-1 px-1 text-xs text-muted-foreground">
+              💰 Any offer at or above this amount is accepted instantly. Leave blank to review every offer yourself.
+            </p>
+          </>
+        )}
+
         {/* Description */}
         <Textarea
           placeholder="Description"

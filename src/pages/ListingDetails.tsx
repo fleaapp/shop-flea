@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { MapPin, MoreVertical, Flag, Share2, User } from 'lucide-react';
 import { toast } from 'sonner';
+import MakeOfferDrawer from '@/components/MakeOfferDrawer';
+import { useOffers, useAcceptedOffers, offerTimeLeft } from '@/hooks/useOffers';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { getDetailImageUrl, getAvatarUrl } from '@/utils/optimizedImage';
 import {
@@ -72,6 +74,7 @@ interface SellerProfile {
   avatar_url: string | null;
   location: string | null;
   country_code: string | null;
+  offers_enabled?: boolean | null;
 }
 
 const TERMINAL_LISTING_STATUSES = new Set(['sold', 'refunded', 'delivered', 'completed']);
@@ -107,6 +110,8 @@ const ListingDetails = () => {
   const { addToCart, removeFromCart, isInCart } = useCart();
   const { addDiscarded } = useDiscardedListings();
   const { requireAuth } = useGuestMode();
+  const { create: createOffer, sent: sentOffers, blast: blastOffer } = useOffers();
+  const { acceptedOffers } = useAcceptedOffers();
 
   // Confirmation dialog states
   const [showRemoveFromCartDialog, setShowRemoveFromCartDialog] = useState(false);
@@ -115,6 +120,8 @@ const ListingDetails = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [salesSheetOpen, setSalesSheetOpen] = useState(false);
+  const [offerDrawerOpen, setOfferDrawerOpen] = useState(false);
+  const [blastDrawerOpen, setBlastDrawerOpen] = useState(false);
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [isTextInputFocused, setIsTextInputFocused] = useState(false);
   const isWebSharedPreview = useIsWebSharedPreview();
@@ -127,6 +134,13 @@ const ListingDetails = () => {
     listing && sellerOrders.some((order) => order.listing_id === listing.id)
   );
   const isSold = isSoldFromRouteOrStatus || hasSellerOrderForListing;
+  const hasAcceptedOffer = Boolean(listing && acceptedOffers[listing.id]);
+  const hasLiveOffer = Boolean(
+    listing &&
+      sentOffers.some(
+        (o) => o.listing_id === listing.id && o.status === 'pending' && new Date(o.expires_at).getTime() > Date.now(),
+      ),
+  );
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -250,7 +264,7 @@ const ListingDetails = () => {
       // Fetch profile in parallel (non-blocking) — use public view (excludes sensitive fields)
       supabase
         .from('profiles_public')
-        .select('username, avatar_url, location, country_code')
+        .select('username, avatar_url, location, country_code, offers_enabled')
         .eq('user_id', listingData.user_id)
         .maybeSingle()
         .then(({ data: profileData, error: profileError }) => {
@@ -798,6 +812,16 @@ const ListingDetails = () => {
                       <span className="mr-0.5">✏️</span>
                       Edit Listing
                     </Button>
+                    {seller?.offers_enabled && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setBlastDrawerOpen(true)}
+                        aria-label="Offer to interested buyers"
+                        className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent shrink-0"
+                      >
+                        💰
+                      </Button>
+                    )}
                     <Button
                       onClick={() => setShowMarkAsSoldDialog(true)}
                       className="h-14 rounded-2xl text-sm font-medium bg-charcoal text-white hover:bg-charcoal/90 border-2 border-charcoal flex-1"
@@ -845,9 +869,80 @@ const ListingDetails = () => {
                 >
                   🛒
                 </Button>
+
+                {seller?.offers_enabled && !isSold && !isRemoved && (
+                  hasAcceptedOffer ? (
+                    <Button
+                      onClick={() => {
+                        setOpen(false);
+                        setTimeout(() => navigate('/cart'), 300);
+                      }}
+                      className="h-14 flex-1 rounded-2xl text-sm font-semibold"
+                    >
+                      💰 ${acceptedOffers[listing.id].amount.toFixed(2)} · {offerTimeLeft(acceptedOffers[listing.id].expires_at)}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (!requireAuth()) return;
+                        if (hasLiveOffer) {
+                          toast.info('You already have an offer waiting on this item.');
+                          return;
+                        }
+                        setOfferDrawerOpen(true);
+                      }}
+                      className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent active:bg-tint active:border-tint"
+                      aria-label="Make an offer"
+                    >
+                      💰
+                    </Button>
+                  )
+                )}
               </>
             )}
           </div>
+          )}
+
+          {listing && seller?.offers_enabled && isOwner && (
+            <MakeOfferDrawer
+              open={blastDrawerOpen}
+              onOpenChange={setBlastDrawerOpen}
+              mode="blast"
+              listing={{
+                id: listing.id,
+                title: listing.title,
+                price: Number(listing.price),
+                shipping_price: listing.shipping_price,
+                image: listing.images?.[0],
+              }}
+              onSubmit={async (amount) => {
+                const sent = await blastOffer(listing.id, amount);
+                toast.success(
+                  sent > 0
+                    ? `Offer sent to ${sent} interested ${sent === 1 ? 'buyer' : 'buyers'}.`
+                    : 'Nobody has this item saved yet - try again later.',
+                );
+              }}
+            />
+          )}
+
+          {listing && seller?.offers_enabled && !isOwner && (
+            <MakeOfferDrawer
+              open={offerDrawerOpen}
+              onOpenChange={setOfferDrawerOpen}
+              listing={{
+                id: listing.id,
+                title: listing.title,
+                price: Number(listing.price),
+                shipping_price: listing.shipping_price,
+                image: listing.images?.[0],
+              }}
+              onSubmit={async (amount) => {
+                await createOffer(listing.id, amount);
+                toast.success('Offer sent. The seller has 24 hours to reply.');
+              }}
+            />
           )}
 
           {/* Remove from Wishlist Confirmation */}

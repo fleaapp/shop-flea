@@ -394,7 +394,24 @@ serve(async (req) => {
     if (listingError) throw listingError;
 
     const listingMap = new Map((listingRows ?? []).map((r) => [r.id, r as ListingRow]));
-    const authoritativeItems = itemIds.map((id) => listingMap.get(id)).filter((x): x is ListingRow => !!x);
+
+    // Apply live accepted-offer prices exactly as stripe-connect-payment-intent
+    // does, so the expected total reconciles with what the buyer was charged.
+    const { data: offerRows } = await serviceClient.rpc("get_accepted_offer_prices", {
+      _buyer_id: userId,
+      _listing_ids: itemIds,
+    });
+    const offerPriceByListing = new Map<string, number>();
+    (offerRows ?? []).forEach((row: any) => offerPriceByListing.set(row.listing_id, Number(row.amount)));
+
+    const authoritativeItems = itemIds
+      .map((id) => {
+        const row = listingMap.get(id);
+        if (!row) return undefined;
+        const offerPrice = offerPriceByListing.get(id);
+        return offerPrice !== undefined ? { ...row, price: offerPrice } : row;
+      })
+      .filter((x): x is ListingRow => !!x);
     if (authoritativeItems.length === 0) throw new Error("Purchased items could not be found.");
 
     // Compute expected paid amount from DB-authoritative prices and seller
