@@ -130,6 +130,7 @@ const CreateListing = () => {
   // Only show "verifying" if user just returned from Stripe with success param
   // or if they have a completed account in DB that needs syncing
   const stripeAccountId = profile?.stripe_account_id || null;
+  const offersEnabled = (profile as any)?.offers_enabled === true;
   const returnedFromStripe = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('stripe_success') === 'true';
   const stripePending = !hasPaymentMethod && returnedFromStripe;
 
