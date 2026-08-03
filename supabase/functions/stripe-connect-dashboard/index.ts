@@ -171,17 +171,27 @@ serve(async (req) => {
     // Has any payout ever actually landed? Drives the "first payout hold" copy
     // and must match between Settings and the Seller Dashboard.
     const hasPaidPayout = (payouts.data || []).some((p: any) => p.status === "paid");
-    // Does the seller have a bank account attached? Without one, payouts can
-    // never run and the UI must say so instead of blaming a security hold.
-    let hasExternalAccount = ((account as any).external_accounts?.total_count ?? 0) > 0;
-    if (!hasExternalAccount) {
+    // Does the seller have a bank account attached? `null` means we could not
+    // determine it - the UI must stay silent in that case rather than telling a
+    // correctly set up seller to add bank details.
+    let hasExternalAccount: boolean | null =
+      ((account as any).external_accounts?.total_count ?? 0) > 0 ? true : null;
+    if (hasExternalAccount !== true) {
       try {
         const ext = await stripe.accounts.listExternalAccounts(accountId, { limit: 1 });
         hasExternalAccount = (ext.data || []).length > 0;
       } catch (e) {
         console.warn("[stripe-connect-dashboard] external account check failed", e);
+        hasExternalAccount = null;
       }
     }
+    // Explicit signal from Stripe that a bank account is missing or rejected.
+    const reqs: any = (account as any).requirements || {};
+    const externalAccountDue = [
+      ...(reqs.currently_due || []),
+      ...(reqs.past_due || []),
+      ...(reqs.errors || []).map((e: any) => e?.requirement).filter(Boolean),
+    ].some((r: string) => typeof r === "string" && r.startsWith("external_account"));
 
 
     return new Response(
@@ -202,6 +212,7 @@ serve(async (req) => {
         instantPayoutEligible,
         hasPaidPayout,
         hasExternalAccount,
+        externalAccountDue,
         nextPayout: nextPayout
           ? {
               amount: nextPayout.amount,
