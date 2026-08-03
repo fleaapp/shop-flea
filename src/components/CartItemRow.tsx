@@ -1,3 +1,4 @@
+import { offerTimeLeft } from '@/hooks/useOffers';
 import { useState, useRef } from 'react';
 import soldSticker from '@/assets/sold-sticker.png';
 import { useNavigate } from 'react-router-dom';
@@ -18,7 +19,15 @@ import {
 } from '@/components/ui/alert-dialog';
 
 interface CartItemRowProps {
-  item: Listing & { status?: string; isPaused?: boolean; isInactive?: boolean; isRemoved?: boolean };
+  item: Listing & {
+    status?: string;
+    isPaused?: boolean;
+    isInactive?: boolean;
+    isRemoved?: boolean;
+    offerPrice?: number;
+    offerOriginalPrice?: number;
+    offerExpiresAt?: string;
+  };
   isSelected: boolean;
   isLast: boolean;
   showSellerAvatar: boolean;
@@ -209,9 +218,19 @@ const CartItemRow = ({
             )}
           </div>
           <div className="pb-1">
+            {item.offerPrice !== undefined && item.offerOriginalPrice !== undefined && (
+              <p className="text-xs font-medium text-muted-foreground line-through leading-tight">
+                ${item.offerOriginalPrice.toFixed(2)}
+              </p>
+            )}
             <p className="text-lg font-bold leading-tight text-foreground">
               ${item.price}
             </p>
+            {item.offerExpiresAt && (
+              <p className="text-xs font-semibold leading-tight text-foreground">
+                💰 Offer · {offerTimeLeft(item.offerExpiresAt)}
+              </p>
+            )}
             <p className="text-sm text-muted-foreground leading-tight">
               +${item.shippingPrice} shipping
             </p>
