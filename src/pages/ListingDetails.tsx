@@ -924,12 +924,14 @@ const ListingDetails = () => {
                 image: listing.images?.[0],
               }}
               onSubmit={async (amount) => {
-                const sent = await blastOffer(listing.id, amount);
-                toast.success(
-                  sent > 0
-                    ? `Offer sent to ${sent} interested ${sent === 1 ? 'buyer' : 'buyers'}.`
-                    : 'Nobody has this item saved yet - try again later.',
-                );
+                const { sent, reason } = await blastOffer(listing.id, amount);
+                if (sent > 0) {
+                  toast.success(`Offer sent to ${sent} interested ${sent === 1 ? 'buyer' : 'buyers'}.`);
+                } else if (reason === 'already_negotiating') {
+                  toast.info('Everyone interested already has an open offer on this item.');
+                } else {
+                  toast.info('Nobody has this item saved or in their cart yet - try again later.');
+                }
               }}
             />
           )}
