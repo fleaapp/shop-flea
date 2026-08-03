@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { loadShippingPrefs, saveShippingPrefs, BundleShippingMode } from '@/utils/shippingPrefs';
+import PercentSlider from '@/components/PercentSlider';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -12,12 +13,11 @@ interface ShippingSettingsSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const DISCOUNT_OPTIONS = [10, 20, 30, 40, 50] as const;
-
 const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProps) => {
   const { user, refreshProfile } = useAuth();
   const [mode, setMode] = useState<BundleShippingMode>('none');
   const [discountPercent, setDiscountPercent] = useState<number>(20);
+  const [itemDiscountPercent, setItemDiscountPercent] = useState<number>(10);
   const [isLoading, setIsLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
@@ -28,7 +28,7 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
       setInitialLoading(true);
       const { data, error } = await supabase
         .from('profiles')
-        .select('bundle_shipping_mode, bundle_shipping_discount_percent')
+        .select('bundle_shipping_mode, bundle_shipping_discount_percent, bundle_item_discount_percent')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -39,12 +39,18 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
           if (local.mode === 'discounted' && local.discountPercent) {
             setDiscountPercent(local.discountPercent);
           }
+          if (local.mode === 'item_discount' && local.itemDiscountPercent) {
+            setItemDiscountPercent(local.itemDiscountPercent);
+          }
         }
       } else {
         const m = (data.bundle_shipping_mode as BundleShippingMode) || 'none';
         setMode(m);
         if (m === 'discounted' && data.bundle_shipping_discount_percent) {
           setDiscountPercent(Number(data.bundle_shipping_discount_percent));
+        }
+        if (m === 'item_discount' && (data as any).bundle_item_discount_percent) {
+          setItemDiscountPercent(Number((data as any).bundle_item_discount_percent));
         }
       }
 
@@ -62,6 +68,7 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
       const updateData: Record<string, any> = {
         bundle_shipping_mode: mode,
         bundle_shipping_discount_percent: mode === 'discounted' ? discountPercent : null,
+        bundle_item_discount_percent: mode === 'item_discount' ? itemDiscountPercent : null,
       };
 
       const { error } = await supabase
@@ -72,6 +79,7 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
       saveShippingPrefs(user.id, {
         mode,
         discountPercent: mode === 'discounted' ? discountPercent : null,
+        itemDiscountPercent: mode === 'item_discount' ? itemDiscountPercent : null,
       });
 
       if (error && (error as any).code !== 'PGRST204') {
@@ -79,11 +87,11 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
       }
 
       await refreshProfile();
-      toast.success('Shipping settings saved!');
+      toast.success('Bundle offers saved!');
       onOpenChange(false);
     } catch (error) {
-      console.error('Error saving shipping settings:', error);
-      toast.error('Failed to save shipping settings');
+      console.error('Error saving bundle offers:', error);
+      toast.error('Failed to save bundle offers');
     } finally {
       setIsLoading(false);
     }
@@ -133,7 +141,7 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
       <DrawerContent className="px-6 pb-8">
         <DrawerHeader className="py-6">
           <DrawerTitle className="text-center flex items-center justify-center gap-2">
-            <span>✈️</span> Bundle Shipping
+            <span>📦</span> Bundle Offers
           </DrawerTitle>
         </DrawerHeader>
 
@@ -142,48 +150,47 @@ const ShippingSettingsSheet = ({ open, onOpenChange }: ShippingSettingsSheetProp
             <span className="text-3xl">⏳</span>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 overflow-y-auto">
             <OptionRow
               value="none"
-              title="No bundle shipping"
-              subtitle="Buyers pay each item's shipping in full, even in bundles."
+              title="No bundle offers"
+              subtitle="Buyers pay each item's price and shipping in full."
             />
             <OptionRow
               value="discounted"
-              title="Discounted shipping for bundles"
+              title="✈️ Discounted shipping for bundles"
               subtitle="Discount the total shipping when buyers buy 2+ items from you."
             />
             <OptionRow
               value="free"
-              title="Free shipping for bundles"
+              title="✈️ Free shipping for bundles"
               subtitle="Bundles of 2+ items ship free. Single items still pay shipping."
+            />
+            <OptionRow
+              value="item_discount"
+              title="📦 Discount on bundles"
+              subtitle="Take a % off your item prices when buyers buy 2+ items. Shipping is charged as normal."
             />
 
             {mode === 'discounted' && (
-              <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
-                <p className="text-sm font-medium text-foreground">Discount amount</p>
-                <div className="grid grid-cols-5 gap-2">
-                  {DISCOUNT_OPTIONS.map((pct) => {
-                    const selected = discountPercent === pct;
-                    return (
-                      <button
-                        key={pct}
-                        type="button"
-                        onClick={() => setDiscountPercent(pct)}
-                        className={cn(
-                          'h-11 rounded-xl text-sm font-semibold border-2 transition-colors',
-                          selected
-                            ? 'border-charcoal bg-charcoal text-white'
-                            : 'border-border bg-background text-foreground hover:bg-secondary/40'
-                        )}
-                      >
-                        {pct}%
-                      </button>
-                    );
-                  })}
-                </div>
-                <p className="text-xs text-muted-foreground leading-snug">
+              <div className="rounded-2xl border border-border bg-card p-4 space-y-1">
+                <p className="text-sm font-medium text-foreground text-center">
+                  Shipping discount
+                </p>
+                <PercentSlider value={discountPercent} onChange={setDiscountPercent} />
+                <p className="text-xs text-muted-foreground leading-snug text-center">
                   Buyers save {discountPercent}% off their total shipping when they buy 2+ items
+                  from you.
+                </p>
+              </div>
+            )}
+
+            {mode === 'item_discount' && (
+              <div className="rounded-2xl border border-border bg-card p-4 space-y-1">
+                <p className="text-sm font-medium text-foreground text-center">Bundle discount</p>
+                <PercentSlider value={itemDiscountPercent} onChange={setItemDiscountPercent} />
+                <p className="text-xs text-muted-foreground leading-snug text-center">
+                  Buyers save {itemDiscountPercent}% off your item prices when they buy 2+ items
                   from you.
                 </p>
               </div>

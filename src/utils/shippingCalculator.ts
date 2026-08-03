@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 
-export type BundleShippingMode = 'none' | 'discounted' | 'free';
+export type BundleShippingMode = 'none' | 'discounted' | 'free' | 'item_discount';
 
 export interface CartItem {
   id: string;
@@ -11,7 +11,8 @@ export interface CartItem {
 export interface SellerShippingInfo {
   sellerId: string;
   mode: BundleShippingMode;
-  discountPercent: number | null; // 10/20/30/40/50 when mode = 'discounted'
+  discountPercent: number | null; // 5-50 when mode = 'discounted'
+  itemDiscountPercent: number | null; // 5-50 when mode = 'item_discount'
   // Legacy fields kept for back-compat with any older callers
   tieredEnabled?: boolean;
   tier1?: number;
@@ -20,7 +21,7 @@ export interface SellerShippingInfo {
 }
 
 /**
- * Fetches bundle shipping settings for multiple sellers.
+ * Fetches bundle offer settings for multiple sellers.
  */
 export async function fetchSellerShippingSettings(
   sellerIds: string[]
@@ -30,7 +31,7 @@ export async function fetchSellerShippingSettings(
   if (uniqueIds.length === 0) return settingsMap;
 
   const selectFields =
-    'user_id, bundle_shipping_mode, bundle_shipping_discount_percent, tiered_shipping_enabled, shipping_tier_1, shipping_tier_2, shipping_tier_3';
+    'user_id, bundle_shipping_mode, bundle_shipping_discount_percent, bundle_item_discount_percent, tiered_shipping_enabled, shipping_tier_1, shipping_tier_2, shipping_tier_3';
 
   const normalizeRows = (rows: any[] | null | undefined) => {
     (rows || []).forEach((profile: any) => {
@@ -41,6 +42,10 @@ export async function fetchSellerShippingSettings(
         discountPercent:
           mode === 'discounted' && profile.bundle_shipping_discount_percent != null
             ? Number(profile.bundle_shipping_discount_percent)
+            : null,
+        itemDiscountPercent:
+          mode === 'item_discount' && profile.bundle_item_discount_percent != null
+            ? Number(profile.bundle_item_discount_percent)
             : null,
         tieredEnabled: profile.tiered_shipping_enabled ?? false,
         tier1: Number(profile.shipping_tier_1) || 0,
@@ -83,7 +88,7 @@ export const fetchSellerBundleSettings = fetchSellerShippingSettings;
  * Calculates shipping for one seller's items in a single order.
  *
  * Rules:
- *  - none: sum every item's shipping price.
+ *  - none / item_discount: sum every item's shipping price.
  *  - discounted: if 1 item -> its own shipping. If 2+ items -> sum * (1 - discount%).
  *  - free: if 1 item -> its own shipping. If 2+ items -> 0.
  */
@@ -108,7 +113,7 @@ export const calculateSellerBundleShipping = calculateSellerShipping;
  * Raw bundle-shipping math used by both cart and refund calculations.
  *
  * Rules:
- *  - none: sum of raw shippings.
+ *  - none / item_discount: sum of raw shippings.
  *  - discounted: if 2+ items -> sum * (1 - discount%).
  *  - free: if 2+ items -> 0.
  *  Single items always pay their own raw shipping.
@@ -165,16 +170,77 @@ export function calculateTotalShipping(
 /**
  * Cart / Checkout bundle label. Returns null when no label should be shown.
  * Bundle labels only appear when itemCount >= 2 AND mode !== 'none'.
- * Callers render the ✈️ and bold "Bundle shipping:" prefix themselves.
+ * Shipping-based modes use ✈️, the item discount mode uses 📦.
  */
 export function getBundleBreakdownText(
   itemCount: number,
   sellerSettings: SellerShippingInfo | undefined
-): { detail: string } | null {
+): { detail: string; emoji: string; label: string } | null {
   if (!sellerSettings || itemCount < 2) return null;
-  if (sellerSettings.mode === 'free') return { detail: 'Free shipping on bundles' };
+  if (sellerSettings.mode === 'free') {
+    return { detail: 'Free shipping on bundles', emoji: '✈️', label: 'Bundle shipping:' };
+  }
   if (sellerSettings.mode === 'discounted' && sellerSettings.discountPercent) {
-    return { detail: `${sellerSettings.discountPercent}% off combined shipping` };
+    return {
+      detail: `${sellerSettings.discountPercent}% off combined shipping`,
+      emoji: '✈️',
+      label: 'Bundle shipping:',
+    };
+  }
+  if (sellerSettings.mode === 'item_discount' && sellerSettings.itemDiscountPercent) {
+    return {
+      detail: `${sellerSettings.itemDiscountPercent}% off items in this bundle`,
+      emoji: '📦',
+      label: 'Bundle offer:',
+    };
   }
   return null;
+}
+
+/**
+ * Item-level bundle discount. Applies only when the seller's mode is
+ * 'item_discount' and the buyer takes 2+ items from that seller.
+ * Items bought at an accepted offer price are excluded (no double discount)
+ * but still count toward the 2-item threshold.
+ */
+export function calculateBundleItemDiscount(
+  items: { price: number; hasAcceptedOffer?: boolean }[],
+  sellerSettings: SellerShippingInfo | undefined
+): number {
+  if (!sellerSettings || sellerSettings.mode !== 'item_discount') return 0;
+  if (items.length < 2) return 0;
+  const pct = Math.max(0, Math.min(100, Number(sellerSettings.itemDiscountPercent) || 0));
+  if (pct <= 0) return 0;
+
+  return round2(
+    items.reduce((sum, item) => {
+      if (item.hasAcceptedOffer) return sum;
+      const price = Number(item.price) || 0;
+      return sum + round2(price - round2(price * (1 - pct / 100)));
+    }, 0)
+  );
+}
+
+/**
+ * Totals the item-level bundle discount across every seller in a cart.
+ */
+export function calculateTotalItemDiscount(
+  items: { sellerId: string; price: number; hasAcceptedOffer?: boolean }[],
+  sellerSettingsMap: Map<string, SellerShippingInfo>
+): { totalDiscount: number; discountBySeller: Map<string, number> } {
+  const bySeller = new Map<string, { price: number; hasAcceptedOffer?: boolean }[]>();
+  items.forEach((item) => {
+    const existing = bySeller.get(item.sellerId) || [];
+    bySeller.set(item.sellerId, [...existing, item]);
+  });
+
+  const discountBySeller = new Map<string, number>();
+  let totalDiscount = 0;
+  bySeller.forEach((sellerItems, sellerId) => {
+    const d = calculateBundleItemDiscount(sellerItems, sellerSettingsMap.get(sellerId));
+    discountBySeller.set(sellerId, d);
+    totalDiscount += d;
+  });
+
+  return { totalDiscount: round2(totalDiscount), discountBySeller };
 }

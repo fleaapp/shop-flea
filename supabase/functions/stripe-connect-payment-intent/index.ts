@@ -177,6 +177,28 @@ serve(async (req) => {
       };
     });
 
+    // Seller bundle settings (also used for the item-level bundle discount below).
+    const { data: sellerProfile } = await serviceClient
+      .from("profiles")
+      .select("stripe_account_id, bundle_shipping_mode, bundle_shipping_discount_percent, bundle_item_discount_percent")
+      .eq("user_id", sellerId).maybeSingle();
+
+    // Bundle offer: % off item prices on 2+ items from the same seller.
+    // Items already on an accepted offer are excluded (no double discount).
+    {
+      const r2 = (n: number) => Math.round(n * 100) / 100;
+      const itemDiscountPct = String((sellerProfile as any)?.bundle_shipping_mode || "none") === "item_discount"
+        && authoritativeItems.length >= 2
+        ? Math.max(0, Math.min(100, Number((sellerProfile as any)?.bundle_item_discount_percent || 0)))
+        : 0;
+      if (itemDiscountPct > 0) {
+        for (const it of authoritativeItems) {
+          if (it.offerId) continue;
+          it.price = r2(it.price * (1 - itemDiscountPct / 100));
+        }
+      }
+    }
+
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
@@ -206,10 +228,6 @@ serve(async (req) => {
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
     }
 
-    const { data: sellerProfile } = await serviceClient
-      .from("profiles")
-      .select("stripe_account_id, bundle_shipping_mode, bundle_shipping_discount_percent")
-      .eq("user_id", sellerId).maybeSingle();
     if (!sellerProfile?.stripe_account_id) {
       return new Response(
         JSON.stringify({ error: "Seller is not set up to receive payments.", code: "seller_not_connected" }),

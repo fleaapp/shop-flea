@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { saveShippingPrefs, BundleShippingMode } from '@/utils/shippingPrefs';
+import PercentSlider from '@/components/PercentSlider';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -13,12 +14,11 @@ interface TieredShippingSetupModalProps {
   onCancel: () => void;
 }
 
-const DISCOUNT_OPTIONS = [10, 20, 30, 40, 50] as const;
-
 const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShippingSetupModalProps) => {
   const { user, refreshProfile } = useAuth();
   const [mode, setMode] = useState<BundleShippingMode>('discounted');
   const [discountPercent, setDiscountPercent] = useState<number>(20);
+  const [itemDiscountPercent, setItemDiscountPercent] = useState<number>(10);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSave = async () => {
@@ -29,6 +29,7 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
       const updateData: Record<string, any> = {
         bundle_shipping_mode: mode,
         bundle_shipping_discount_percent: mode === 'discounted' ? discountPercent : null,
+        bundle_item_discount_percent: mode === 'item_discount' ? itemDiscountPercent : null,
         shipping_preferences_set: true,
       };
 
@@ -40,6 +41,7 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
       saveShippingPrefs(user.id, {
         mode,
         discountPercent: mode === 'discounted' ? discountPercent : null,
+        itemDiscountPercent: mode === 'item_discount' ? itemDiscountPercent : null,
       });
 
       if (error && (error as any).code !== 'PGRST204') {
@@ -47,11 +49,11 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
       }
 
       await refreshProfile();
-      toast.success('Shipping preferences saved!');
+      toast.success('Bundle offers saved!');
       onComplete();
     } catch (error) {
-      console.error('Error saving shipping preferences:', error);
-      toast.error('Failed to save shipping preferences');
+      console.error('Error saving bundle offers:', error);
+      toast.error('Failed to save bundle offers');
     } finally {
       setIsLoading(false);
     }
@@ -99,63 +101,56 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
       <DialogContent
-        className="w-[90vw] max-w-md rounded-3xl border-[3px] border-charcoal bg-card p-6"
+        className="w-[90vw] max-w-md rounded-3xl border-[3px] border-charcoal bg-card p-6 max-h-[85svh] overflow-y-auto"
         hideCloseButton={false}
       >
         <DialogHeader className="text-center space-y-3 pt-4 pb-2">
           <DialogTitle className="text-xl font-bold flex items-center justify-center gap-2">
-            <span>✈️</span> Bundle Shipping
+            <span>📦</span> Bundle Offers
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground text-center leading-relaxed">
-            Choose how you charge shipping<br />when buyers bundle items.
+            Choose the deal buyers get<br />when they bundle your items.
           </DialogDescription>
         </DialogHeader>
 
         <div className="mt-4 space-y-3">
           <OptionRow
             value="none"
-            title="No bundle shipping"
-            subtitle="Buyers pay each item's shipping in full."
+            title="No bundle offers"
+            subtitle="Buyers pay each item's price and shipping in full."
           />
           <OptionRow
             value="discounted"
-            title="Discounted for bundles"
+            title="✈️ Discounted shipping for bundles"
             subtitle="Discount total shipping on bundles of 2+."
           />
           <OptionRow
             value="free"
-            title="Free for bundles"
+            title="✈️ Free shipping for bundles"
             subtitle="Bundles of 2+ items ship free."
+          />
+          <OptionRow
+            value="item_discount"
+            title="📦 Discount on bundles"
+            subtitle="A % off your item prices on bundles of 2+."
           />
 
           {mode === 'discounted' && (
-            <div className="rounded-2xl border border-border bg-background p-4 space-y-3">
-              <p className="text-sm font-medium text-foreground text-center">Discount amount</p>
-              <div className="grid grid-cols-5 gap-2">
-                {DISCOUNT_OPTIONS.map((pct) => {
-                  const selected = discountPercent === pct;
-                  return (
-                    <button
-                      key={pct}
-                      type="button"
-                      onClick={() => setDiscountPercent(pct)}
-                      className={cn(
-                        'h-10 rounded-xl text-sm font-semibold border-2 transition-colors',
-                        selected
-                          ? 'border-charcoal bg-charcoal text-white'
-                          : 'border-border bg-card text-foreground'
-                      )}
-                    >
-                      {pct}%
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="rounded-2xl border border-border bg-background p-4 space-y-1">
+              <p className="text-sm font-medium text-foreground text-center">Shipping discount</p>
+              <PercentSlider value={discountPercent} onChange={setDiscountPercent} />
+            </div>
+          )}
+
+          {mode === 'item_discount' && (
+            <div className="rounded-2xl border border-border bg-background p-4 space-y-1">
+              <p className="text-sm font-medium text-foreground text-center">Bundle discount</p>
+              <PercentSlider value={itemDiscountPercent} onChange={setItemDiscountPercent} />
             </div>
           )}
 
           <p className="text-xs text-muted-foreground text-center leading-relaxed pt-1">
-            You can change this anytime<br />in Settings → Shipping.
+            You can change this anytime<br />in Settings → Bundle Offers.
           </p>
 
           <div className="flex justify-center pt-1">
