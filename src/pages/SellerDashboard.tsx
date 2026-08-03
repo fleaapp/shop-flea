@@ -419,6 +419,23 @@ const SellerDashboard = () => {
           </div>
         ) : (
           <>
+            {needsBankDetails && (
+              <section className="rounded-2xl bg-amber-50 border-2 border-amber-300 p-4 mt-2">
+                <div className="flex items-center gap-2 text-[11px] font-semibold text-amber-700 uppercase tracking-wide">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Bank details needed
+                </div>
+                <p className="text-[13px] text-charcoal mt-1.5 leading-relaxed">
+                  You can take sales, but we can't pay you out yet - there's no bank account on file. Add your account details and any money you've earned will be released to you.
+                </p>
+                <Button
+                  onClick={() => setActionRequiredOpen(true)}
+                  className="w-full mt-3 h-11 rounded-xl bg-amber-600 text-white hover:bg-amber-700 font-semibold"
+                >
+                  Add bank details
+                </Button>
+              </section>
+            )}
+
             {liveActionRequired && (
               <section className="rounded-2xl bg-orange-50 border-2 border-orange-300 p-4 mt-2">
                 <div className="flex items-center gap-2 text-[11px] font-semibold text-orange-700 uppercase tracking-wide">
@@ -439,7 +456,8 @@ const SellerDashboard = () => {
             {/* Balance breakdown: Held for unshipped → Clearing → First payout hold */}
             {!isNegative && (() => {
               const pendingCents = data?.pending ?? 0;
-              const hasPaidPayout = (data?.payouts ?? []).some((p) => p.status === 'paid');
+              const hasPaidPayout =
+                data?.hasPaidPayout ?? (data?.payouts ?? []).some((p) => p.status === 'paid');
 
               // Seller-net for a pending Stripe balance transaction (gross minus
               // the Secure Checkout Fee that Flea collects as application_fee).
