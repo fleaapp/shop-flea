@@ -29,6 +29,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import ListingTag from '@/components/ListingTag';
 import EngagementBadges from '@/components/EngagementBadges';
+import BundleOfferBadge from '@/components/BundleOfferBadge';
+import { fetchSellerShippingSettings, SellerShippingInfo } from '@/utils/shippingCalculator';
 import ListingComments from '@/components/ListingComments';
 import { supabase } from '@/lib/supabase';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -131,6 +133,7 @@ const ListingDetails = () => {
   const [blastDrawerOpen, setBlastDrawerOpen] = useState(false);
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [isTextInputFocused, setIsTextInputFocused] = useState(false);
+  const [bundleInfo, setBundleInfo] = useState<SellerShippingInfo | null>(null);
   const isWebSharedPreview = useIsWebSharedPreview();
 
   const isOwner = user?.id === listing?.user_id;
@@ -604,6 +607,17 @@ const ListingDetails = () => {
 
               {/* Cart & Wishlist count icons */}
               <EngagementBadges listingId={id} size="lg" className="absolute top-3 left-3 z-10" />
+
+              {/* Bundle offer banner */}
+              {bundleInfo && (
+                <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center px-16">
+                  <BundleOfferBadge
+                    mode={bundleInfo.mode}
+                    discountPercent={bundleInfo.discountPercent}
+                    itemDiscountPercent={bundleInfo.itemDiscountPercent}
+                  />
+                </div>
+              )}
 
 
 
