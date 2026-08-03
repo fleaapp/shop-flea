@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
+import EmptyState from '@/components/EmptyState';
+
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useOffers, Offer, offerTimeLeft } from '@/hooks/useOffers';
