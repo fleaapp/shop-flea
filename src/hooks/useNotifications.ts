@@ -351,6 +351,7 @@ export const getNotificationMessage = (type: string, username?: string, listingT
   // backend. Never replace them with a buyer- or seller-specific UI template.
   const usesAuthoritativeMessage =
     type.startsWith('offer_') ||
+    type === 'saved_search_match' ||
     type === 'order_message_seller' ||
     type === 'order_message_buyer' ||
     type === 'support_message' ||
