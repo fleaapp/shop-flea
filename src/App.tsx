@@ -34,6 +34,7 @@ const loadSellerProfile = () => import("./pages/SellerProfile");
 const loadFAQ = () => import("./pages/FAQ");
 const loadOrderChat = () => import("./pages/OrderChat");
 const loadSales = () => import("./pages/Sales");
+const loadOffers = () => import("./pages/Offers");
 const loadSellerDashboard = () => import("./pages/SellerDashboard");
 
 const loadInstall = () => import("./pages/Install");
@@ -74,6 +75,7 @@ const SellerProfile = lazy(loadSellerProfile);
 const FAQ = lazy(loadFAQ);
 const OrderChat = lazy(loadOrderChat);
 const Sales = lazy(loadSales);
+const Offers = lazy(loadOffers);
 const SellerDashboard = lazy(loadSellerDashboard);
 
 const Install = lazy(loadInstall);
@@ -276,6 +278,7 @@ const AppContent = () => {
           <Route path="/contact-support/:threadId" element={<ProtectedRoute><ChatConversation /></ProtectedRoute>} />
           <Route path="/seller/:sellerId" element={<ProtectedRoute mode="public"><SellerProfile /></ProtectedRoute>} />
           <Route path="/sales" element={<ProtectedRoute mode="public"><Sales /></ProtectedRoute>} />
+          <Route path="/offers" element={<ProtectedRoute><Offers /></ProtectedRoute>} />
           <Route path="/seller-dashboard" element={<ProtectedRoute><SellerDashboard /></ProtectedRoute>} />
           <Route path="/order-chat/:orderId" element={<ProtectedRoute><OrderChat /></ProtectedRoute>} />
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
