@@ -161,7 +161,7 @@ const Terms = () => {
           <section className={SECTION}>
             <h2 className="text-base font-bold mb-2">10. Shipping, tracking and delivery</h2>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li>Sellers must dispatch sold items within <strong>3 days</strong> and add valid Australian carrier tracking. Orders that have not been marked as shipped with valid tracking within <strong>9 days</strong> of purchase are automatically refunded to the buyer, the sale is cancelled, and any payout for that order is withheld from the seller's balance.</li>
+              <li>Sellers must dispatch sold items within <strong>3 days</strong> and add valid Australian carrier tracking. Orders that have not been marked as shipped with valid tracking within <strong>8 days</strong> of purchase are automatically refunded to the buyer, the sale is cancelled, and any payout for that order is withheld from the seller's balance.</li>
               <li>Every tracking number is reviewed and approved by Flea before payouts release. Sellers who submit 3 invalid tracking numbers are flagged for extra checks.</li>
               <li>Once a parcel is marked delivered - either by the buyer or by Flea - a <strong>48-hour buyer protection window</strong> starts. Funds stay held during that window. If no issue is raised, the order auto-completes and funds release to the seller.</li>
               <li>Risk in the goods passes to the buyer on delivery to the address provided at checkout.</li>
@@ -174,7 +174,7 @@ const Terms = () => {
               Buyers may request a refund through the order chat within <strong>48 hours of delivery</strong> if the item is significantly not as described, damaged in transit, or never arrived. Once a refund request is submitted, the seller has <strong>72 hours</strong> to approve or decline it. If the seller does not respond within 72 hours, Flea will automatically issue the refund to the buyer. If the seller declines the request, it is escalated to Flea for review and we may still issue the refund at our discretion.
             </p>
             <p>
-              <strong>Parcels that never arrive:</strong> if an order is never marked as shipped with valid tracking, it is automatically refunded to the buyer 9 days after purchase. If tracking shows the parcel is still in transit with no delivery scan, the buyer may request a refund in the order chat after <strong>10 days from shipment</strong>. If tracking shows the parcel as delivered but the buyer did not receive it, the buyer must raise the issue in the order chat within <strong>48 hours of the delivered scan</strong> and select "Item never arrived". Flea will review the tracking evidence with the seller and the seller's funds remain held until the matter is resolved.
+              <strong>Parcels that never arrive:</strong> if an order is never marked as shipped with valid tracking, it is automatically refunded to the buyer 8 days after purchase. If tracking shows the parcel is still in transit with no delivery scan, the buyer may request a refund in the order chat after <strong>10 days from shipment</strong>. If tracking shows the parcel as delivered but the buyer did not receive it, the buyer must raise the issue in the order chat within <strong>48 hours of the delivered scan</strong> and select "Item never arrived". Flea will review the tracking evidence with the seller and the seller's funds remain held until the matter is resolved.
             </p>
 
             <p>
