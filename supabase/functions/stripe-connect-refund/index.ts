@@ -651,7 +651,12 @@ async function createSingleItemRefund(
 
 // -------------------- Notifications & chat --------------------
 
-async function insertRefundNotifications(externalUrl: string, serviceKey: string, order: any) {
+async function insertRefundNotifications(
+  externalUrl: string,
+  serviceKey: string,
+  order: any,
+  itemCount = 1,
+) {
   try {
     if (order.id) {
       const since = new Date(Date.now() - 5 * 60 * 1000).toISOString();
@@ -679,12 +684,18 @@ async function insertRefundNotifications(externalUrl: string, serviceKey: string
       }
     }
 
+    // A bundle refund is one event, so it gets one combined message rather than
+    // one notification per item.
+    const subject = itemCount > 1
+      ? `${listingTitle} and ${itemCount - 1} other item${itemCount - 1 === 1 ? "" : "s"}`
+      : listingTitle;
+
     const rows = [
       {
         user_id: order.buyer_id,
         type: "refund_initiated",
         title: "Refund issued",
-        message: `↩️ Your refund for ${listingTitle} has been processed. Funds usually appear straight away, but some banks can take up to 5 business days.`,
+        message: `↩️ Your refund for ${subject} has been processed. Funds usually appear straight away, but some banks can take up to 5 business days.`,
         related_listing_id: order.listing_id ?? null,
         related_user_id: order.seller_id ?? null,
         related_order_id: order.id ?? null,
@@ -693,11 +704,12 @@ async function insertRefundNotifications(externalUrl: string, serviceKey: string
         user_id: order.seller_id,
         type: "refund_initiated",
         title: "Refund issued",
-        message: `↩️ You refunded the buyer for ${listingTitle}. The sale has been reversed.`,
+        message: `↩️ You refunded the buyer for ${subject}. The sale has been reversed.`,
         related_listing_id: order.listing_id ?? null,
         related_user_id: order.buyer_id ?? null,
         related_order_id: order.id ?? null,
       },
+
     ];
 
     const insertRes = await fetch(`${externalUrl}/rest/v1/notifications`, {
