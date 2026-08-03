@@ -400,9 +400,26 @@ export const getNotificationMessage = (type: string, username?: string, listingT
       return rawMessage || '⚠️ Your sale was auto-refunded.';
     case 'payment_action_required':
       return rawMessage || '⚠️ Your payment account needs attention. Tap to fix.';
+    case 'offer_received':
+      return rawMessage || (displayUsername
+        ? `💰 ${displayUsername} made you an offer. You have 24 hours to reply.`
+        : '💰 You have a new offer. You have 24 hours to reply.');
+    case 'offer_countered':
+      return rawMessage || (displayUsername
+        ? `🔁 ${displayUsername} sent you a counter-offer. You have 24 hours to reply.`
+        : '🔁 You received a counter-offer. You have 24 hours to reply.');
+    case 'offer_accepted':
+      return rawMessage || '🎉 Your offer was accepted. It is in your cart at that price - you have 24 hours to pay.';
+    case 'offer_auto_accepted':
+      return rawMessage || '🎉 An offer on your item was auto-accepted. The buyer has 24 hours to pay.';
+    case 'offer_declined':
+      return rawMessage || '😔 Your offer was declined. You can try another offer.';
+    case 'offer_discount':
+      return rawMessage || '🏷️ A seller sent you a special offer. It expires in 24 hours.';
     default:
       return 'New notification';
   }
+
 };
 
 export const getNotificationEmoji = (type: string): string => {
