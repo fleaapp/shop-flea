@@ -1,82 +1,87 @@
-# Flea - Full Product Audit
+# Flea - Full QA Test Checklist
 
-This audit is based on the live database, the current code, and the error log. Where something could not be confirmed by a read, it is flagged as "needs checking" rather than stated as fact.
+A pre-launch test pass covering every screen, flow and edge case. Test on native iOS first (source of truth), then PWA/web. Use two real accounts (buyer + seller) plus one admin.
 
-## What is already in good shape
+## 1. Accounts and auth
+- Sign up with email: username taken, invalid email, weak password, existing account detection.
+- Sign up / sign in with Google and Apple; same email across providers shows the conflict dialog, not a duplicate account.
+- Login with username (case-insensitive, with and without a leading @) and with email.
+- Forgot password, reset link, verify email link (check inbox and spam, sender shows as Flea).
+- Password setup prompt for OAuth users; tutorial blocked until complete.
+- Session persistence: kill and reopen app, background 24h+, expired/rotated token forces a clean sign-out (not a white screen).
+- Logout, then guest mode: browsing allowed, gated actions prompt sign-in.
+- Account deletion: blocked with active orders, cooldown message correct.
 
-Verified during this audit, so these are not issues:
+## 2. Onboarding and seller setup
+- Seller onboarding steps 1-4 copy, progress saved when the app is backgrounded or force-quit mid-flow.
+- ID verification: front and back required for AU licence, camera capture only, retake, upload failure retry.
+- No external links or Safari hand-offs at any point.
+- "Action required" state on the seller setup button; listing creation blocked until verified.
+- Verification result popup after onboarding; balance replaces status once verified.
 
-- Money and policy wording line up. Buyer fee (4% + $0.70), seller fee (2% + $0.50), 3-day dispatch, 8-day auto refund, 48-hour delivery dispute window, 72-hour seller response - all identical in Terms and FAQ.
-- Data is clean. No stuck pending orders, no expired offers left open, no overdue unshipped sales, no seller carrying a negative balance, no listing showing as active while it has a live order.
-- Offer rules hold up. Accepting an offer re-clocks it to 24 hours, blocks acceptance if the seller turned offers off or the item is gone, and adds the item to the cart at the agreed price. Expired offers cannot be used at checkout.
-- Listings that sell, pause, or get refunded automatically cancel any open offers on them.
-- Icon-only buttons all carry screen-reader labels, and empty states, offline banner, error boundary and loading skeletons all exist.
+## 3. Listings
+- Create listing: all categories and subcategories save, image crop 4:5, up to max photos, thumbnails, brand autocomplete, price/shipping validation, earnings preview.
+- Edit, hide (disappears from profile and feed), pause selling, mark as sold, delete.
+- Sold, refunded, paused and removed states never appear as active, and never show Edit to non-owners.
+- Refunded items stay terminal - not relisted, not in feed.
+- Listing details: created date, price info drawer, tags, seller card, bundle offer badge, report menu, engagement badges (cart/wishlist, 99+ cap).
 
-## Critical issues (fix before release)
+## 4. Browsing, search, wishlist, cart
+- Home swipe stack: like, skip, undo behaviour, feed excludes own/paused/inactive-seller items, infinite scroll.
+- Search: text, trending searches, all filters (size, category, gender, condition, colour, style, brand, price range), clearing filters.
+- Save a search, saved-search alert arrives within the hour for a matching new listing, no alert for non-matching filters.
+- Wishlist add/remove, swipe-to-remove without screen shake, grid and single view.
+- Cart: add, remove, bundle grouping per seller, shipping and bundle discounts, sold-out item removed with a message.
 
-**1. Buyers are never told their offer died.**
-When a seller sells, pauses, or removes an item, every open and accepted offer on it is silently switched to expired. No alert is sent. A buyer who was mid-negotiation, or who had an accepted offer sitting in their cart, simply finds it gone. This is the single most trust-damaging gap found.
-Fix: send an alert ("The seller's item is no longer available, so your offer was cancelled") whenever offers are voided this way.
+## 5. Offers
+- Buyer makes an offer, counter-offer rounds, withdraw, decline, accept.
+- Seller blast offer reaches wishlist and cart holders; 60% floor enforced.
+- Offers toggle off closes open offers.
+- Accepted offer price flows into cart and checkout; 24h payment window countdown; expiry reminder 4h before.
+- Offers voided when item is sold, deleted, paused or repriced - both sides notified with the correct wording.
 
-**2. Repeat app crashes are being logged and nobody is acting on them.**
-The error log shows real crashes on real devices: four "Render crash" events, plus crashes from missing code (`formatTime`, `anyStillClearing`) and 22 combined "module script failed / Load failed" events, which are people on an old app version after a release.
-Fix: treat the stale-version reload path as a release checklist item, and add an admin alert when any crash repeats more than twice in a day so these do not sit unnoticed again.
+## 6. Checkout and payments
+- Apple Pay, Google Pay, saved card and new card; amounts match the summary exactly (no 100x errors).
+- Fees: buyer 4% + $0.70 secure checkout fee shown clearly; discount and free shipping on their own lines.
+- Coupon FREEFLEA removes buyer fees and recalculates the total correctly.
+- Multi-seller cart splits into correct orders; bundle discount applied once per seller.
+- Failure paths: declined card, cancelled sheet, network drop mid-payment, double-tap on Pay, backgrounding during payment. No orphan charges, no duplicate orders.
+- Address entry and saved details, AU-only address lookup.
+- Success screen, receipt, order appears for both parties.
 
-**3. Price changes do not cancel offers.**
-Offers are only cancelled when a listing's status changes. If a seller drops the price after accepting an offer, the buyer can still be locked into the older, higher agreed price.
-Fix: cancel or re-quote open and accepted offers when a listing's price changes, and tell the buyer.
+## 7. Orders, shipping, refunds
+- Buyer: order list tabs (ordered / shipped / delivered / refunds), order details drawer, tracking link, mark as delivered.
+- Seller: sales list, add tracking (AU carriers only), invalid tracking rejection, overdue banner at 4+ days.
+- 8-day auto-refund for unshipped orders fires and notifies both sides.
+- Refund request within 10 days of delivery with live camera photo/video only; seller accept/decline; 72h auto-approval; admin dispute queue.
+- Funds release 48h after delivery; held/pending/available balances add up on the seller dashboard.
+- Payout history shows payouts and refunds; 1.5% instant payout; negative balance settlement.
 
-## High priority
+## 8. Messaging and notifications
+- Order chat both directions, attachments, send speed, read receipts clearing badges.
+- Support chat threads.
+- Comments and @mentions on listings, speed and notifications.
+- Push notifications: correct account only, tapping opens the right screen or drawer (order, sale, offer, review, listing).
+- Bell alerts: no duplicates, marked read on open, badges clear and never flash when switching tabs.
+- Notification settings screen: push toggle, marketing emails toggle, permission denied path.
 
-**4. Ninety database warnings from the security scanner.**
-Almost all are the same pattern: internal database helper functions that a signed-out visitor can call. Most are harmless, but they have never been individually reviewed.
-Fix: go through the list once, lock down the ones that should be sign-in only, and record the safe ones in security memory so future scans stay quiet.
+## 9. Reviews and profiles
+- Leave a review as buyer and as seller, photo attachment, rating updates seller average.
+- Review notification opens the review.
+- Own profile vs seller profile: tabs, counts, grid/single view, star rating and last-active bubbles, bundle offer banner.
+- Report user and report listing; strike handling.
 
-**5. Loading states are lopsided.**
-The admin area has proper skeletons everywhere. Buyer and seller screens mostly do not, so slow connections show blank space instead of an obvious "loading" state.
-Fix: apply the existing PageSkeleton to the main buyer and seller screens.
+## 10. Admin
+- Access denied for non-admins on every /admin route.
+- Users (signup and last active), listings, brands, transactions, refunds/disputes, approvals queue, error logs in plain English, mark-as-seen clears badges.
 
-**6. Push notification diagnostics are logged as warnings.**
-Routine push setup steps ("setup-started", "token-received") make up over 50 of the last 30 days of log entries, which buries the genuine errors.
-Fix: drop these to a debug level or stop logging them, so the error log shows only things that need attention.
+## 11. Device, layout and resilience
+- Safe area: no notch clipping, no lime bleed on scroll, status bar correct when drawers open and close.
+- Keyboard: no black background, inputs never hidden behind the keyboard, auth screen stays put on focus.
+- Drawer footers not cut off; 44px touch targets.
+- Offline banner, airplane-mode recovery, slow 3G, app resumes on the same screen after backgrounding.
+- Fresh install, app update with stale JS chunk (auto-reload), PWA install and reload.
+- Copy check: short dashes only, no "Stripe" in user-facing text, trailing full stops on notifications, ✈️/📦 emoji usage consistent.
 
-## Medium priority
-
-**7. Offer expiry is invisible until it lapses.** Buyers see the 24-hour payment window only inside the Offers screen. Add a reminder alert a few hours before an accepted offer expires.
-
-**8. No warning before an item leaves a cart.** If a listing sells to someone else, the cart shows it as sold, but the shopper is not actively told. A single alert when a cart item sells would prevent a wasted checkout attempt.
-
-**9. Seller-side clarity on held funds.** Funds release 48 hours after delivery, but the reason a specific payout is being held is only shown in some places. Show the same plain-English reason and release date wherever a held amount appears.
-
-## Nice to have
-
-**10. Saved searches and back-in-stock style alerts** - the table exists but is not surfaced to users.
-**11. Order chat quick replies** for the most common seller messages ("Posted today", "Sending tomorrow").
-**12. Seller performance summary** - dispatch speed and refund rate, which is what Depop and Vinted use to build buyer confidence.
-
-## Needs checking before I can call it
-
-These could not be confirmed by reading code or data alone and need a run-through on a device:
-
-- Whether a shopper mid-checkout is blocked cleanly if the item sells in that moment.
-- Whether Apple Pay totals and the on-screen total match on every bundle combination.
-- Whether push notifications open the correct screen for every alert type.
-
-## Scores
-
-**Overall product health: 82/100.** The money, policy and marketplace rules are solid and consistent, which is the hard part. Points come off for silent offer cancellations, unreviewed crash reports and uneven loading states.
-
-**Launch readiness: ready after the three critical fixes.** Nothing found blocks payments or breaks the core buy-sell loop today.
-
-- **Top launch blockers:** silent offer cancellation, unreviewed repeat crashes.
-- **Highest-risk payment issue:** stale-version app loads failing during a release window.
-- **Highest-risk legal issue:** none found - fee and refund terms match the product exactly.
-- **Highest-risk UX issue:** buyers losing an accepted offer with no explanation.
-- **Quick wins:** the offer-cancelled alert, the cart-item-sold alert, and buyer-side loading skeletons. All three are small and all three directly protect conversion and trust.
-
-## Technical notes
-
-- Offer voiding happens in the `void_offers_on_listing_change` trigger; it updates status only and inserts no notification row. Fix belongs there or in an edge function called alongside it.
-- Price-change voiding needs the same trigger widened from a status-only condition to include price.
-- Crash grouping already exists in the admin error log; the alerting threshold is the missing piece.
-- Push diagnostic entries are written at `warning` severity from the native push setup path and should be lowered.
+## Priority order
+1. Checkout and payments, 2. Offers to purchase, 3. Refunds and payouts, 4. Notifications, 5. Listing lifecycle, 6. Everything else.
