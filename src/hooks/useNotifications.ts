@@ -502,6 +502,12 @@ export const getNotificationEmoji = (type: string): string => {
     case 'offer_withdrawn':
     case 'offer_superseded':
       return '↩️';
+    case 'offer_cancelled':
+      return '😔';
+    case 'offer_expiring':
+      return '⏳';
+    case 'saved_search_match':
+      return '🔔';
     default:
       return '🔔';
   }
