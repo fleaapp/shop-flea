@@ -469,7 +469,18 @@ export const getNotificationEmoji = (type: string): string => {
       return '⚠️';
     case 'payment_action_required':
       return '⚠️';
+    case 'offer_received':
+    case 'offer_discount':
+      return '💰';
+    case 'offer_countered':
+      return '🔁';
+    case 'offer_accepted':
+    case 'offer_auto_accepted':
+      return '🎉';
+    case 'offer_declined':
+      return '😔';
     default:
       return '🔔';
   }
 };
+
