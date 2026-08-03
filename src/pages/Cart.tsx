@@ -12,6 +12,8 @@ import { useOrders, Order, OrderGroup } from '@/hooks/useOrders';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import CartItemRow from '@/components/CartItemRow';
+import { offerTimeLeft } from '@/hooks/useOffers';
+
 import OrderDetailsSheet from '@/components/OrderDetailsSheet';
 import OrderItemThumbnailStack from '@/components/OrderItemThumbnailStack';
 
