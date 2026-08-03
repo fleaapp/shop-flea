@@ -315,6 +315,22 @@ async function verifyPayment(opts: {
   };
 }
 
+async function refundUnavailableCheckout(reference: string): Promise<void> {
+  const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
+  let paymentIntentId = reference;
+  if (!reference.startsWith("pi_")) {
+    const session = await stripe.checkout.sessions.retrieve(reference);
+    paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : "";
+  }
+  if (!paymentIntentId) throw new Error("Paid checkout could not be refunded automatically");
+  await stripe.refunds.create({
+    payment_intent: paymentIntentId,
+    reverse_transfer: true,
+    refund_application_fee: true,
+    reason: "requested_by_customer",
+  }, { idempotencyKey: `flea-unavailable-${paymentIntentId}` });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   const originBlock = rejectUntrustedOrigin(req);
@@ -499,7 +515,8 @@ serve(async (req) => {
       p_listing_ids: authoritativeItems.map((item) => item.id),
     });
     if (claimError) {
-      throw new Error("One or more items were purchased by someone else. Your payment needs review.");
+      await refundUnavailableCheckout(checkoutReference);
+      throw new Error("One or more items were purchased by someone else. Your payment was automatically refunded.");
     }
 
     // Filter out listings already sold by another order (defensive — payment
