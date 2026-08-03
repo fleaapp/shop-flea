@@ -46,4 +46,4 @@ Restructure the Settings page so users can find account, buying, selling, suppor
 ## Out of scope
 - No backend or edge-function changes.
 - No new routes.
-- No changes to `EditProfile.tsx` unless requested; `SavedCardsSection` will simply be reused inside the new Buyer sheet.
+- No changes to the Offers screen itself or to `EditProfile.tsx` (saved cards stay there).
