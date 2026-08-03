@@ -50,10 +50,13 @@ const matchesFilters = (listing: any, f: Record<string, any>) => {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
-  // Require service-role auth — this is an internal cron/admin function.
+  // Require service-role or cron-secret auth — this is an internal cron/admin function.
   const authHeader = req.headers.get('Authorization') ?? '';
-  const expectedKeys = [SERVICE_KEY].filter(Boolean);
-  const isAuthorized = expectedKeys.some((k) => authHeader === `Bearer ${k}`);
+  const cronSecret = req.headers.get('x-cron-secret') ?? '';
+  const expectedCronSecret = Deno.env.get('CRON_SECRET') ?? '';
+  const isAuthorized =
+    (SERVICE_KEY && authHeader === `Bearer ${SERVICE_KEY}`) ||
+    (!!expectedCronSecret && cronSecret === expectedCronSecret);
   if (!isAuthorized) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
