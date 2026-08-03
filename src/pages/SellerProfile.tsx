@@ -19,6 +19,7 @@ import ProfileGridCard from '@/components/ProfileGridCard';
 import EngagementBadges from '@/components/EngagementBadges';
 import { safeNavigateBack } from '@/utils/safeBack';
 import { LISTING_CARD_COLUMNS } from '@/lib/listingColumns';
+import { formatLastActiveShort } from '@/utils/timeAgo';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -323,15 +324,23 @@ const SellerProfile = () => {
           </div>
         </div>
         <h2 className="mt-3 text-lg max-[430px]:text-base font-semibold text-foreground">{sellerProfile.username || '@seller'}</h2>
-        <button
-          onClick={() => setReviewsOpen(true)}
-          className="mt-2 flex items-center gap-1.5 rounded-full bg-card px-3 py-1 card-shadow hover:bg-muted transition-colors"
-        >
-          <span className="text-sm">⭐</span>
-          <span className="text-sm font-medium text-foreground">
-            {sellerProfile.rating && sellerProfile.rating > 0 ? `${sellerProfile.rating}/5` : 'No reviews'}
-          </span>
-        </button>
+        <div className="mt-2 flex items-center gap-2">
+          <button
+            onClick={() => setReviewsOpen(true)}
+            className="flex items-center gap-1.5 rounded-full bg-card px-3 py-1 card-shadow hover:bg-muted transition-colors"
+          >
+            <span className="text-sm">⭐</span>
+            <span className="text-sm font-medium text-foreground">
+              {sellerProfile.rating && sellerProfile.rating > 0 ? `${sellerProfile.rating}/5` : 'No reviews'}
+            </span>
+          </button>
+          <div className="flex items-center gap-1.5 rounded-full bg-card px-3 py-1 card-shadow">
+            <span className="text-sm">⏱️</span>
+            <span className="text-sm font-medium text-foreground">
+              {formatLastActiveShort(sellerProfile.last_sign_in_at)}
+            </span>
+          </div>
+        </div>
       </div>
 
       <div className="mt-5 max-[430px]:mt-4 max-[393px]:mt-3 max-[375px]:mt-2 flex justify-center items-center gap-2">

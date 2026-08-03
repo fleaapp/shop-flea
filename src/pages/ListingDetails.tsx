@@ -37,7 +37,7 @@ import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 import { useReporting } from '@/hooks/useReporting';
 import ReportDialog from '@/components/ReportDialog';
 import PriceBreakdownDrawer from '@/components/PriceBreakdownDrawer';
-import { formatTimeAgo, formatLastActive } from '@/utils/timeAgo';
+import { formatTimeAgo } from '@/utils/timeAgo';
 import { useAuth } from '@/context/AuthContext';
 import { useGuestMode } from '@/context/GuestModeContext';
 import { useOrders, OrderGroup } from '@/hooks/useOrders';
@@ -700,14 +700,6 @@ const ListingDetails = () => {
                       <MapPin className="h-3 w-3 flex-shrink-0" />
                       <span>{sellerLocation}</span>
                     </div>
-                    {formatLastActive(seller?.last_sign_in_at) && (
-                      <p className="text-xs text-muted-foreground">{formatLastActive(seller?.last_sign_in_at)}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      {seller?.rating && seller.rating > 0
-                        ? `⭐ ${seller.rating}/5${seller?.total_reviews ? ` (${seller.total_reviews})` : ''}`
-                        : 'No reviews'}
-                    </p>
                   </div>
                 </div>
 

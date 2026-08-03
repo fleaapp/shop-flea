@@ -49,3 +49,16 @@ export const formatLastActive = (value?: string | null): string | null => {
   const ago = formatTimeAgo(value);
   return ago ? `Active ${ago}` : null;
 };
+
+/** e.g. "2 hours", "3 days", "Inactive" — no "ago" / "Active" prefix */
+export const formatLastActiveShort = (value?: string | null, inactiveAfterDays = 10): string => {
+  if (!value) return 'Inactive';
+  const then = new Date(value).getTime();
+  if (Number.isNaN(then)) return 'Inactive';
+
+  const diff = Math.max(0, Date.now() - then);
+  if (diff >= inactiveAfterDays * DAY) return 'Inactive';
+
+  const ago = formatTimeAgo(value);
+  return ago ? ago.replace(/ ago$/, '') : 'Inactive';
+};
