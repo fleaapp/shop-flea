@@ -699,7 +699,7 @@ const ListingDetails = () => {
               <div className="flex items-start justify-between gap-3">
                 <h1 className="text-2xl font-bold text-foreground">{listing.title}</h1>
                 {formatTimeAgo(listing.created_at) && (
-                  <span className="mt-1.5 shrink-0 text-xs text-muted-foreground">
+                  <span className="mt-1.5 shrink-0 text-sm text-muted-foreground">
                     {formatTimeAgo(listing.created_at)}
                   </span>
                 )}
@@ -738,7 +738,6 @@ const ListingDetails = () => {
                 {/* Price */}
                 <div className="text-right">
                   <div className="flex items-center justify-end gap-1.5">
-                    <p className="text-2xl font-bold text-foreground">${listing.price}</p>
                     <button
                       type="button"
                       aria-label="Price breakdown"
@@ -747,6 +746,7 @@ const ListingDetails = () => {
                     >
                       <Info className="h-4 w-4" />
                     </button>
+                    <p className="text-2xl font-bold text-foreground">${listing.price}</p>
                   </div>
                   <p className="text-xs text-muted-foreground">+${listing.shipping_price || 0} shipping</p>
                 </div>
@@ -909,7 +909,7 @@ const ListingDetails = () => {
                       ? 'bg-tint border-tint' 
                       : isSold 
                         ? 'bg-muted/50 border-muted opacity-50' 
-                        : 'bg-muted/40 border-muted/70 text-muted-foreground active:bg-tint active:border-tint'
+                        : 'bg-muted/25 border-muted/50 text-muted-foreground active:bg-tint active:border-tint'
                   }`}
                 >
                   💌
@@ -936,7 +936,7 @@ const ListingDetails = () => {
                         setOpen(false);
                         setTimeout(() => navigate('/cart'), 300);
                       }}
-                      className="h-14 flex-1 rounded-2xl px-3 text-sm font-semibold"
+                      className="h-14 w-auto shrink-0 rounded-2xl px-2 text-sm font-semibold"
                     >
                       💰 ${acceptedOffers[listing.id].amount.toFixed(2)} · {offerTimeLeft(acceptedOffers[listing.id].expires_at)}
                     </Button>
