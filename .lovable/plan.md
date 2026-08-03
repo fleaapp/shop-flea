@@ -1,30 +1,39 @@
-## Offers polish + audit fixes
+## Accepted offer pricing and full-flow fix
 
-### What I confirmed
-- The 24-hour pay window already exists in the backend: accepting an offer sets `expires_at = now() + 24h`, drops the item into the buyer's cart, and an hourly cron (`expire-stale-offers`) expires accepted-but-unpaid offers. Checkout looks the price up server-side. So the rule works - it's just barely communicated in the UI.
-- Offer notifications are written with types `offer_received`, `offer_accepted`, `offer_auto_accepted`, `offer_declined`, `offer_countered`, `offer_discount`. None of these are handled in `getNotificationMessage` / `getNotificationEmoji` or in the realtime toast title map, so they fall through to the generic "New notification" / 🔔.
+### Confirmed issue
+- The accepted offer is valid in the database: the latest accepted offer is **$4.25** against a **$5.00** listing, remains active for 24 hours, and the item is in the buyer's cart.
+- The backend payment and order functions already resolve accepted-offer prices authoritatively.
+- The frontend cart only resolves offer prices when `CartContext.fetchCart()` runs. Accepting an offer does not refresh or invalidate the shared cart state, so the existing $5.00 cart item remains cached when the buyer opens Cart or Checkout.
+- The cart's accepted-offer RPC currently ignores returned query errors, allowing a failed price lookup to silently display the listing price.
 
-### 1. Offers screen UI
-- Center the header: back chevron absolutely positioned left, "💰 Offers" centred, matching other screens.
-- Replace the ad-hoc empty block with the shared `EmptyState` component, vertically centred in the scroll area (emoji 💰, clear title + description, and a "Browse items" action on the Sent tab).
-- Add a loading state that matches the rest of the app instead of the lone hourglass.
+### 1. Make accepted prices update immediately
+- Add a shared offer-change invalidation event/query path.
+- After accept, auto-accept, counter, decline, withdrawal, and offer creation, refresh accepted offers and the shared cart where the action can affect price or expiry.
+- Make Cart and Checkout refresh accepted prices on screen entry, app resume, and offer-change events - not only when the cart provider first mounts.
+- Preserve the original listing price separately and apply the accepted price as the displayed and calculated item price.
 
-### 2. Notification copy (the real fix for "New notification")
-- Add all `offer_*` types to `getNotificationMessage` and `getNotificationEmoji` (💰 offers, 🎉 accepted, 😔 declined, 🔁 countered, 🏷️ discount), always preferring the rich `rawMessage` written by the edge function.
-- Add the same types to `ALERT_TITLES` in `RealtimeAlerts.tsx` so in-app toasts read "💰 New offer" etc.
-- Add the types to the `NotificationType` union.
+### 2. Fail safely instead of silently showing the wrong amount
+- Handle RPC errors explicitly in `CartContext` and `useAcceptedOffers`.
+- When accepted-price resolution fails, block checkout and show a clear retry message rather than displaying or charging an unverified price.
+- Keep the payment-intent endpoint as the price authority and return the corrected server total when stale client totals reach checkout.
+- Refresh the cart automatically after a checkout amount mismatch, then let the buyer retry with the correct visible total.
 
-### 3. Make the 24-hour pay window obvious
-- Accepted-offer card on the Offers screen: countdown pill ("Pay within 23h") plus the existing Pay button, and a clear "Expired - offer no longer valid" state once past.
-- Cart: keep the per-item 💰 badge, and add a single line above the checkout button when any cart item has an accepted offer: "💰 Offer price locked for Xh - pay before it expires."
-- Checkout: same reminder line above the pay button, so the deadline is visible at the point of payment.
-- Copy in `MakeOfferDrawer` updated to state both windows: seller has 24h to reply, buyer has 24h to pay after acceptance.
+### 3. Cover every offer transition
+- Buyer offer: create, auto-accept, seller accept, decline, withdraw, expire.
+- Seller offer: send to wishlist/cart users, buyer accept, decline, counter, expire.
+- Counter-offers: close the prior offer, expose only the current live round, and refresh both participants' offer and cart state.
+- Accepted offers: add/retain the item in the buyer's cart, show the locked price and 24-hour countdown, and remove the discount immediately on expiry.
+- Sold, removed, refunded, paused, or otherwise unavailable listings: prevent new responses/payment and show a terminal state.
 
-### 4. Audit fixes found while reading the flow
-- Offers screen currently refetches listings on every `all` change (new array each render) - memoise the id lists so it stops re-querying in a loop.
-- Sort each tab so live offers appear above closed ones, and show closed offers in a muted style.
-- Show the listing's live status on the card (Sold / Removed) when the item is no longer active, so a stale accepted offer isn't confusing.
-- Toast copy after accepting a seller-side offer will state the buyer's 24-hour pay window explicitly.
+### 4. Keep UI, checkout, and stored orders consistent
+- Use the accepted amount in Cart rows, Cart totals, Checkout rows, Checkout totals, payment creation, finalized order price, receipts, refunds, and seller payout calculations.
+- Show original price struck through beside the offer price where applicable.
+- Ensure the 24-hour reminder and countdown update without requiring an app restart.
+- Once payment succeeds, finalize the order at the accepted amount and expire/close competing offers for that listing.
 
-### Technical notes
-Files touched: `src/pages/Offers.tsx`, `src/hooks/useNotifications.ts`, `src/components/RealtimeAlerts.tsx`, `src/components/MakeOfferDrawer.tsx`, `src/pages/Cart.tsx`, `src/pages/Checkout.tsx`. No database or edge-function changes needed - the offer lifecycle, expiry cron and server-side price authority are already correct.
+### 5. Verification
+- Test buyer-created and seller-created offers, including auto-accept and counters.
+- Confirm the price changes immediately in Cart and Checkout without reload.
+- Confirm payment creation and finalized `orders.price` use the accepted amount.
+- Test expiry, app background/resume, stale checkout state, unavailable listings, duplicate actions, and multi-item carts containing both offer-priced and normal items.
+- Check notifications and recipient routing for each transition and confirm no duplicate offer notifications are created.

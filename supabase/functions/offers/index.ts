@@ -296,13 +296,22 @@ Deno.serve(async (req) => {
       const toInsert = rows.filter((r) => !blocked.has(r.buyer_id));
       if (toInsert.length === 0) return json({ sent: 0, reason: "already_negotiating" });
 
-      const { error: insertError } = await admin.from("offers").insert(toInsert);
-      if (insertError) return json({ error: insertError.message }, 400);
+      // Insert independently so one recipient starting a negotiation during
+      // this blast cannot make every other recipient's offer fail.
+      const inserted: typeof toInsert = [];
+      for (const row of toInsert) {
+        const { error: insertError } = await admin.from("offers").insert(row);
+        if (!insertError) inserted.push(row);
+        else if (insertError.code !== "23505") {
+          console.error("[offers] blast recipient insert failed", insertError);
+        }
+      }
+      if (inserted.length === 0) return json({ sent: 0, reason: "already_negotiating" });
 
       const actor = await usernameOf(userId);
       await notify(
         admin,
-        toInsert.map((r) => ({
+        inserted.map((r) => ({
           user_id: r.buyer_id,
           type: "offer_discount",
           title: "Special offer",
@@ -312,7 +321,7 @@ Deno.serve(async (req) => {
         })),
       );
 
-      return json({ sent: toInsert.length });
+      return json({ sent: inserted.length });
     }
 
     return json({ error: "Unknown action" }, 400);

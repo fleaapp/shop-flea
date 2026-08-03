@@ -315,6 +315,22 @@ async function verifyPayment(opts: {
   };
 }
 
+async function refundUnavailableCheckout(reference: string): Promise<void> {
+  const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
+  let paymentIntentId = reference;
+  if (!reference.startsWith("pi_")) {
+    const session = await stripe.checkout.sessions.retrieve(reference);
+    paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : "";
+  }
+  if (!paymentIntentId) throw new Error("Paid checkout could not be refunded automatically");
+  await stripe.refunds.create({
+    payment_intent: paymentIntentId,
+    reverse_transfer: true,
+    refund_application_fee: true,
+    reason: "requested_by_customer",
+  }, { idempotencyKey: `flea-unavailable-${paymentIntentId}` });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   const originBlock = rejectUntrustedOrigin(req);
@@ -492,8 +508,6 @@ serve(async (req) => {
     // based on DB prices (prevents client-supplied price tampering).
     await verifyPayment({ reference: checkoutReference, expectedAmountAud });
 
-    // Filter out listings already sold by another order (defensive — payment
-    // already succeeded so we cannot just refuse; we still record what we can).
     const orderGroupId = crypto.randomUUID();
     // shippingMap already initialized above for amount verification.
     const itemsBySeller = new Map<string, ListingRow[]>();
@@ -542,13 +556,15 @@ serve(async (req) => {
 
     const insertResult = await insertOrdersWithFallback(serviceClient, inserts);
     if (insertResult.error) {
-      // Unique index on (checkout_reference, listing_id): a concurrent call
-      // already created these rows. Treat as success rather than double-charging
-      // the buyer with duplicate orders.
       if ((insertResult.error as any)?.code === "23505") {
-        return new Response(JSON.stringify({ ok: true, alreadyProcessed: true }), {
-          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        const existing = await fetchOrdersForBuyer(serviceClient, userId, authoritativeItems.map((i) => i.id), checkoutReference);
+        if (!existing.error && (existing.data?.length ?? 0) === authoritativeItems.length) {
+          return new Response(JSON.stringify({ ok: true, alreadyProcessed: true }), {
+            status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        await refundUnavailableCheckout(checkoutReference);
+        throw new Error("One or more items were purchased by someone else. Your payment was automatically refunded.");
       }
       throw insertResult.error;
     }
@@ -559,6 +575,13 @@ serve(async (req) => {
       if (verify.error) throw verify.error;
       insertedOrders = verify.data ?? [];
     }
+
+    // Order rows are protected by a unique listing id, so this update can only
+    // happen for the checkout that won the purchase race.
+    await serviceClient
+      .from("listings")
+      .update({ status: "sold", updated_at: new Date().toISOString() })
+      .in("id", authoritativeItems.map((item) => item.id));
     if (insertedOrders.length !== authoritativeItems.length) {
       // Orders did NOT all create — DO NOT mark listings sold. Surface error
       // so support can reconcile manually rather than silently hiding listings.
@@ -579,12 +602,6 @@ serve(async (req) => {
         console.error("[finalize-checkout] coupon redemption record failed:", error);
       }
     }
-
-    // Only NOW flip listings -> sold (after we know all order rows exist).
-    await serviceClient
-      .from("listings")
-      .update({ status: "sold", updated_at: new Date().toISOString() })
-      .in("id", authoritativeItems.map((i) => i.id));
 
     await createCheckoutNotifications(
       serviceClient,

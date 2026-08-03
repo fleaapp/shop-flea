@@ -65,7 +65,10 @@ const Checkout = () => {
   const { isBlocked } = useBlockedStatus();
   const isOnline = useOnlineStatus();
   const {
-    removeFromCart
+    cartItems,
+    offerPricingError,
+    refetch: refetchCart,
+    removeFromCart,
   } = useCart();
 
   // Scroll focused input into view when mobile keyboard opens
@@ -81,11 +84,21 @@ const Checkout = () => {
     document.addEventListener('focusin', handleFocusIn);
     return () => document.removeEventListener('focusin', handleFocusIn);
   }, []);
-  const items: Listing[] = location.state?.items || [];
+  const routeItems: Listing[] = location.state?.items || [];
+  const checkoutItemIds = useMemo(() => routeItems.map((item) => item.id), [routeItems]);
+  const liveCheckoutItems = useMemo(
+    () => cartItems.filter((item) => checkoutItemIds.includes(item.id)),
+    [cartItems, checkoutItemIds],
+  );
+  const items: Listing[] = liveCheckoutItems.length > 0 ? liveCheckoutItems : routeItems;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [open, setOpen] = useState(true);
   const [sellerSettings, setSellerSettings] = useState<Map<string, SellerShippingInfo>>(new Map());
   const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
+
+  useEffect(() => {
+    void refetchCart();
+  }, [refetchCart]);
 
   // Shipping details — backed by `buyer_addresses` table (RLS), with
   // localStorage as a fast first-paint cache so the form pre-fills instantly.
@@ -271,6 +284,9 @@ const Checkout = () => {
       showCheckoutError('create-payment-intent', error.message, {
         code: code || (status ? `http_${status}` : undefined),
       });
+      if (code === 'checkout_amount_mismatch' || status === 409) {
+        await refetchCart();
+      }
       throw error;
     }
     if (data?.demo) {
@@ -302,7 +318,7 @@ const Checkout = () => {
       customerId?: string;
       merchantDisplayName?: string;
     };
-  }, [validItems, totalShipping, shippingBySeller, total, coupon, showCheckoutError]);
+  }, [validItems, totalShipping, shippingBySeller, total, coupon, showCheckoutError, refetchCart]);
 
 
 
@@ -322,6 +338,10 @@ const Checkout = () => {
       return false;
     }
     if (!user) { toast.error('You must be logged in to place an order'); return false; }
+    if (offerPricingError) {
+      showCheckoutError('offer-price-verification', offerPricingError, { code: 'offer_price_unverified' });
+      return false;
+    }
     if (isBlocked) { toast.error('Your account is restricted. You cannot make purchases.'); return false; }
     if (buyerOwesCents > 0) {
       toast.error(`Settle your seller balance ($${(buyerOwesCents / 100).toFixed(2)}) in Seller Dashboard before making new purchases.`);
@@ -793,7 +813,14 @@ const Checkout = () => {
                             <div className="flex-1 flex flex-col justify-between">
                               <h3 className="font-semibold text-foreground">{item.title}</h3>
                               <div className="text-right">
-                                <p className="text-lg font-semibold">${item.price}</p>
+                                <div className="text-right">
+                                  {item.offerPrice !== undefined && item.offerOriginalPrice !== undefined && (
+                                    <p className="text-xs text-muted-foreground line-through">
+                                      ${item.offerOriginalPrice.toFixed(2)}
+                                    </p>
+                                  )}
+                                  <p className="text-lg font-semibold">${Number(item.price).toFixed(2)}</p>
+                                </div>
                                 {!hasBundleRow && idx === sellerItems.length - 1 && (
                                   <p className="text-sm text-muted-foreground">+${shipping.toFixed(2)} shipping</p>
                                 )}

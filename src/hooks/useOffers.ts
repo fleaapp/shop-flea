@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { notifyOfferChanged } from '@/utils/offerInvalidation';
 
 export type OfferStatus = 'pending' | 'accepted' | 'declined' | 'countered' | 'expired' | 'withdrawn';
 export type OfferDirection = 'buyer_to_seller' | 'seller_to_buyer';
@@ -103,6 +104,7 @@ export function useOffers() {
   const respond = useCallback(
     async (offerId: string, decision: 'accept' | 'decline') => {
       const res = await callOffers({ action: 'respond', offerId, decision });
+      notifyOfferChanged((res.offer as Offer | undefined)?.listing_id);
       await fetchOffers();
       return res.offer as Offer;
     },
@@ -112,6 +114,7 @@ export function useOffers() {
   const withdraw = useCallback(
     async (offerId: string) => {
       const res = await callOffers({ action: 'withdraw', offerId });
+      notifyOfferChanged((res.offer as Offer | undefined)?.listing_id);
       await fetchOffers();
       return res.offer as Offer;
     },
@@ -121,6 +124,7 @@ export function useOffers() {
   const create = useCallback(
     async (listingId: string, amount: number, parentOfferId?: string | null) => {
       const res = await callOffers({ action: 'create', listingId, amount, parentOfferId: parentOfferId ?? null });
+      notifyOfferChanged(listingId);
       await fetchOffers();
       return res.offer as Offer;
     },
@@ -129,6 +133,7 @@ export function useOffers() {
 
   const blast = useCallback(async (listingId: string, amount: number) => {
     const res = await callOffers({ action: 'blast', listingId, amount });
+    notifyOfferChanged(listingId);
     return { sent: res.sent as number, reason: (res.reason ?? null) as string | null };
   }, []);
 
@@ -139,18 +144,23 @@ export function useOffers() {
 export function useAcceptedOffers() {
   const { user } = useAuth();
   const [map, setMap] = useState<Record<string, Offer>>({});
+  const [error, setError] = useState<string | null>(null);
 
   const fetchAccepted = useCallback(async () => {
     if (!user) {
       setMap({});
       return;
     }
-    const { data } = await supabase
+    const { data, error: queryError } = await supabase
       .from('offers' as any)
       .select('*')
       .eq('buyer_id', user.id)
       .eq('status', 'accepted')
       .gt('expires_at', new Date().toISOString());
+    if (queryError) {
+      setError('Could not verify accepted offer prices.');
+      return;
+    }
     const next: Record<string, Offer> = {};
     ((data ?? []) as unknown as Offer[]).forEach((o) => {
       const existing = next[o.listing_id];
@@ -159,6 +169,7 @@ export function useAcceptedOffers() {
       }
     });
     setMap(next);
+    setError(null);
   }, [user]);
 
   useEffect(() => {
@@ -173,7 +184,7 @@ export function useAcceptedOffers() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [fetchAccepted]);
 
-  return { acceptedOffers: map, refreshAcceptedOffers: fetchAccepted };
+  return { acceptedOffers: map, acceptedOffersError: error, refreshAcceptedOffers: fetchAccepted };
 }
 
 /** Countdown label like "23h left" / "42m left". */

@@ -13,6 +13,7 @@ import {
   type SavedListingSnapshot,
 } from '@/utils/savedListingSnapshots';
 import { subscribeListingInvalidated } from '@/utils/listingInvalidation';
+import { subscribeOfferChanged } from '@/utils/offerInvalidation';
 import { invalidateEngagementCounts } from '@/hooks/useListingEngagementCounts';
 // Extended Listing type to include pause/inactive/removed status
 interface CartListing extends Listing {
@@ -29,6 +30,7 @@ interface CartContextType {
   cartItems: CartListing[];
   cartIds: Set<string>;
   loading: boolean;
+  offerPricingError: string | null;
   addToCart: (listing: Listing) => Promise<boolean>;
   removeFromCart: (id: string) => Promise<boolean>;
   isInCart: (id: string) => boolean;
@@ -43,6 +45,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cartItems, setCartItems] = useState<CartListing[]>([]);
   const [cartIds, setCartIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [offerPricingError, setOfferPricingError] = useState<string | null>(null);
 
   const fetchCart = useCallback(async () => {
     if (!user) {
@@ -239,10 +242,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     try {
       const activeIds = transformedListings.filter((l) => !l.isRemoved).map((l) => l.id);
       if (activeIds.length > 0) {
-        const { data: offerRows } = await supabase.rpc('get_accepted_offer_prices' as any, {
+        const { data: offerRows, error: offerError } = await supabase.rpc('get_accepted_offer_prices' as any, {
           _buyer_id: user.id,
           _listing_ids: activeIds,
         });
+        if (offerError) throw offerError;
         const offerMap = new Map<string, any>();
         ((offerRows ?? []) as any[]).forEach((row) => offerMap.set(row.listing_id, row));
         transformedListings.forEach((l) => {
@@ -254,9 +258,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             l.price = Number(offer.amount);
           }
         });
+        setOfferPricingError(null);
       }
     } catch (offerError) {
       console.error('[cart] accepted offer lookup failed:', offerError);
+      setOfferPricingError('Could not verify your offer prices. Pull to refresh and try again.');
     }
 
     // Sort by the order they were added to cart (most recent first)
@@ -291,6 +297,42 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       void fetchCart();
     });
   }, [fetchCart]);
+
+  useEffect(() => subscribeOfferChanged(() => void fetchCart()), [fetchCart]);
+
+  useEffect(() => {
+    if (!user) return;
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void fetchCart();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [fetchCart, user]);
+
+  useEffect(() => {
+    const expiries = cartItems
+      .map((item) => item.offerExpiresAt ? new Date(item.offerExpiresAt).getTime() : Number.POSITIVE_INFINITY)
+      .filter(Number.isFinite);
+    if (expiries.length === 0) return;
+    const delay = Math.max(0, Math.min(...expiries) - Date.now()) + 250;
+    const timer = window.setTimeout(() => void fetchCart(), delay);
+    return () => window.clearTimeout(timer);
+  }, [cartItems, fetchCart]);
+
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`cart-offers-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'offers', filter: `buyer_id=eq.${user.id}` },
+        () => void fetchCart(),
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [fetchCart, user]);
 
 
   const addToCart = useCallback(async (listing: Listing): Promise<boolean> => {
@@ -400,6 +442,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       cartItems,
       cartIds,
       loading,
+      offerPricingError,
       addToCart,
       removeFromCart,
       isInCart,

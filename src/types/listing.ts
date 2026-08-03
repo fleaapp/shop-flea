@@ -18,6 +18,10 @@ export interface Listing {
   createdAt: Date;
   condition: 'new' | 'like-new' | 'good' | 'fair';
   status?: string;
+  /** Present when an accepted offer temporarily overrides the listing price. */
+  offerPrice?: number;
+  offerOriginalPrice?: number;
+  offerExpiresAt?: string;
 }
 
 
