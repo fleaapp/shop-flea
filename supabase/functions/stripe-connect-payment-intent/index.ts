@@ -15,6 +15,8 @@ import { isStripePermissionError, logStripeScopeGap } from "../_shared/stripeErr
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { checkRateLimit, callerKey, tooManyRequests } from "../_shared/rateLimit.ts";
 import { logEdgeError } from "../_shared/logError.ts";
+import { calculateSecureCheckoutFee, calculateTransactionFee } from "../_shared/fees.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
