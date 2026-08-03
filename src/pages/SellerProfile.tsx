@@ -349,6 +349,7 @@ const SellerProfile = () => {
           mode={sellerProfile.bundle_shipping_mode}
           discountPercent={sellerProfile.bundle_shipping_discount_percent}
           itemDiscountPercent={sellerProfile.bundle_item_discount_percent}
+          variant="solid"
           className="mt-2"
         />
       </div>
