@@ -68,7 +68,7 @@ const Cart = () => {
   const isUnauthed = !user;
   const routeState = location.state as { initialTab?: 'cart' | 'orders' } | null;
 
-  const { cartItems, removeFromCart } = useCart();
+  const { cartItems, offerPricingError, refetch, removeFromCart } = useCart();
   const { addFavorite } = useFavorites();
   const { removeDiscarded } = useDiscardedListings();
   const { buyerOrderGroups, loadingBuyerOrders, markAsDelivered, completeOrder } = useOrders();
@@ -185,7 +185,12 @@ const Cart = () => {
     });
   };
 
-  const handleCheckout = (itemIds: string[]) => {
+  const handleCheckout = async (itemIds: string[]) => {
+    if (offerPricingError) {
+      toast.error(offerPricingError);
+      await refetch();
+      return;
+    }
     // Filter out sold, paused, inactive, or removed items
     const validItems = cartItems.filter((item) => {
       const itemWithStatus = item as any;
@@ -460,13 +465,16 @@ const Cart = () => {
                             </div>
                           )}
                           {(() => {
-                            const offerItem = availableItems.find((i: any) => i.offerExpiresAt);
-                            if (!offerItem) return null;
+                            const offerItems = availableItems
+                              .filter((i: any) => i.offerExpiresAt)
+                              .sort((a: any, b: any) => new Date(a.offerExpiresAt).getTime() - new Date(b.offerExpiresAt).getTime());
+                            if (offerItems.length === 0) return null;
+                            const soonest = offerItems[0] as any;
                             return (
                               <div className="px-4 py-2 bg-primary/15 text-center text-xs text-foreground">
-                                <span className="font-bold">💰 Offer price locked</span>{' '}
+                                <span className="font-bold">💰 {offerItems.length > 1 ? `${offerItems.length} offer prices locked` : 'Offer price locked'}</span>{' '}
                                 <span>
-                                  for {offerTimeLeft((offerItem as any).offerExpiresAt).replace(' left', '')} - pay before it expires.
+                                  - earliest expires in {offerTimeLeft(soonest.offerExpiresAt).replace(' left', '')}.
                                 </span>
                               </div>
                             );

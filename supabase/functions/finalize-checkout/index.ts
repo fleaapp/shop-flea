@@ -492,6 +492,16 @@ serve(async (req) => {
     // based on DB prices (prevents client-supplied price tampering).
     await verifyPayment({ reference: checkoutReference, expectedAmountAud });
 
+    // Atomically claim every listing before creating orders. Only the first
+    // completed checkout can transition an active listing to sold, preventing
+    // two buyers with accepted offers from purchasing the same item.
+    const { error: claimError } = await serviceClient.rpc("claim_checkout_listings", {
+      p_listing_ids: authoritativeItems.map((item) => item.id),
+    });
+    if (claimError) {
+      throw new Error("One or more items were purchased by someone else. Your payment needs review.");
+    }
+
     // Filter out listings already sold by another order (defensive — payment
     // already succeeded so we cannot just refuse; we still record what we can).
     const orderGroupId = crypto.randomUUID();
@@ -579,12 +589,6 @@ serve(async (req) => {
         console.error("[finalize-checkout] coupon redemption record failed:", error);
       }
     }
-
-    // Only NOW flip listings -> sold (after we know all order rows exist).
-    await serviceClient
-      .from("listings")
-      .update({ status: "sold", updated_at: new Date().toISOString() })
-      .in("id", authoritativeItems.map((i) => i.id));
 
     await createCheckoutNotifications(
       serviceClient,
