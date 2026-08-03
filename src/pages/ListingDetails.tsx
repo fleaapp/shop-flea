@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { MapPin, MoreVertical, Flag, Share2, User } from 'lucide-react';
 import { toast } from 'sonner';
+import MakeOfferDrawer from '@/components/MakeOfferDrawer';
+import { useOffers, useAcceptedOffers, offerTimeLeft } from '@/hooks/useOffers';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { getDetailImageUrl, getAvatarUrl } from '@/utils/optimizedImage';
 import {
@@ -72,6 +74,7 @@ interface SellerProfile {
   avatar_url: string | null;
   location: string | null;
   country_code: string | null;
+  offers_enabled?: boolean | null;
 }
 
 const TERMINAL_LISTING_STATUSES = new Set(['sold', 'refunded', 'delivered', 'completed']);
@@ -115,6 +118,7 @@ const ListingDetails = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [salesSheetOpen, setSalesSheetOpen] = useState(false);
+  const [offerDrawerOpen, setOfferDrawerOpen] = useState(false);
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [isTextInputFocused, setIsTextInputFocused] = useState(false);
   const isWebSharedPreview = useIsWebSharedPreview();
@@ -250,7 +254,7 @@ const ListingDetails = () => {
       // Fetch profile in parallel (non-blocking) — use public view (excludes sensitive fields)
       supabase
         .from('profiles_public')
-        .select('username, avatar_url, location, country_code')
+        .select('username, avatar_url, location, country_code, offers_enabled')
         .eq('user_id', listingData.user_id)
         .maybeSingle()
         .then(({ data: profileData, error: profileError }) => {
