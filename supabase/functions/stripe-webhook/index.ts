@@ -6,6 +6,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logEdgeError } from "../_shared/logError.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -308,6 +309,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
+    await logEdgeError({ functionName: "stripe-webhook", error: error, title: "Payment provider webhook failed", severity: "error", source: "payment" });
     console.error("[stripe-webhook] handler error:", error);
     // Return 200 anyway so Stripe doesn't retry forever — we've already logged.
     return new Response(JSON.stringify({ received: true, error: error?.message }), {

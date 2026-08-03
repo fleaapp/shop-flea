@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
+import { logEdgeError } from "../_shared/logError.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -251,6 +252,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
     );
   } catch (error: any) {
+    await logEdgeError({ functionName: "stripe-connect-upload-id", error: error, title: "Seller ID upload failed", severity: "error", source: "payment" });
     console.error("[stripe-connect-upload-id] error:", error?.message || error);
     return new Response(
       JSON.stringify({ error: error?.message || "Failed to upload ID." }),

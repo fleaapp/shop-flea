@@ -1,6 +1,7 @@
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkRateLimit, callerKey, tooManyRequests } from "../_shared/rateLimit.ts";
+import { logEdgeError } from "../_shared/logError.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,6 +60,7 @@ Deno.serve(async (req) => {
 
     return json({ valid: true, code: c.code, type: c.type, message });
   } catch (e) {
+    await logEdgeError({ functionName: "validate-coupon", error: e, title: "Discount code could not be checked", severity: "error", source: "payment" });
     return json({ valid: false, message: "Could not validate code." }, 200);
   }
 });

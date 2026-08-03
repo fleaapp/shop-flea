@@ -8,6 +8,7 @@
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
+import { logEdgeError } from "../_shared/logError.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -350,6 +351,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {
+    await logEdgeError({ functionName: "auto-refund-unshipped", error: e, title: "Scheduled job failed: late-shipment refunds", severity: "error", source: "payment" });
     console.error("[auto-refund-unshipped] fatal", e);
     return new Response(JSON.stringify({ error: e?.message }), {
       status: 500,

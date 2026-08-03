@@ -17,6 +17,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
+import { logEdgeError } from "../_shared/logError.ts";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 function isUuid(v: unknown): v is string {
@@ -891,6 +892,7 @@ serve(async (req) => {
 
     return jsonResponse({ success: true, refundId: refund.id, status: refund.status, mode: "cascade" });
   } catch (error: any) {
+    await logEdgeError({ functionName: "stripe-connect-refund", error: error, title: "Refund could not be issued", severity: "error", source: "payment" });
     console.error("[stripe-connect-refund] error:", error);
     return jsonResponse({ error: error?.message ?? "Refund failed" }, error?.statusCode || error?.status || 400);
   }

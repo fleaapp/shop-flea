@@ -14,6 +14,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isStripePermissionError, logStripeScopeGap } from "../_shared/stripeErrors.ts";
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { checkRateLimit, callerKey, tooManyRequests } from "../_shared/rateLimit.ts";
+import { logEdgeError } from "../_shared/logError.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -429,6 +430,7 @@ serve(async (req) => {
       clientStripeAccountId: null,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
   } catch (error) {
+    await logEdgeError({ functionName: "stripe-connect-payment-intent", error: error, title: "Checkout failed for a buyer", severity: "error", source: "payment" });
     console.error("[stripe-connect-payment-intent] error:", error);
     return new Response(JSON.stringify({
       error: (error as Error)?.message || "Payment could not be started. Please try again.",
