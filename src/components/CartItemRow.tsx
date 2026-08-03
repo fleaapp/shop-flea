@@ -1,4 +1,3 @@
-import { offerTimeLeft } from '@/hooks/useOffers';
 import { useState, useRef } from 'react';
 import soldSticker from '@/assets/sold-sticker.png';
 import { useNavigate } from 'react-router-dom';
