@@ -89,6 +89,8 @@ type DashboardData = {
   payoutsEnabled?: boolean;
   hasSucceededCharge?: boolean;
   instantPayoutEligible?: boolean;
+  hasPaidPayout?: boolean;
+  hasExternalAccount?: boolean;
   nextPayout?: { amount: number; arrivalDate: number; status: string } | null;
   payouts?: PayoutRow[];
   activity?: ActivityRow[];
@@ -225,11 +227,11 @@ const SellerDashboard = () => {
     return count || undefined;
   }, [sellerOrderGroups, perOrder]);
 
-  // Overdue: any awaiting order more than 3 days old — matches the buyer-side
-  // "Overdue" threshold. Surfaced as a red banner because push notifications
-  // aren't a reliable channel for this class of user.
+  // Overdue: any awaiting order more than 4 days old — matches the buyer-side
+  // "Overdue" threshold in Sales and the overdue alert job. Surfaced as a red
+  // banner because push notifications aren't a reliable channel here.
   const overdueGroups = useMemo(() => {
-    const threshold = Date.now() - 3 * 24 * 60 * 60 * 1000;
+    const threshold = Date.now() - 4 * 24 * 60 * 60 * 1000;
     return sellerOrderGroups.filter(
       (g) => g.status === 'awaiting' && new Date(g.created_at).getTime() < threshold,
     );
@@ -324,6 +326,26 @@ const SellerDashboard = () => {
   const canInstant =
     canPayout && !!data?.instantPayoutEligible && instantAvailableToWithdraw > 0;
 
+  // Payouts are blocked purely because no bank account is attached. Say that
+  // plainly instead of blaming a security hold the seller can't act on.
+  const needsBankDetails =
+    !!data?.connected &&
+    !isNegative &&
+    !!data?.chargesEnabled &&
+    (data?.hasExternalAccount === false || (!data?.payoutsEnabled && data?.hasExternalAccount !== true));
+
+  // One clear reason the payout buttons are disabled.
+  const payoutBlockedReason = (() => {
+    if (isNegative) return 'Settle your outstanding balance to withdraw.';
+    if (needsBankDetails) return 'Add your bank details to withdraw.';
+    if (!data?.chargesEnabled) return 'Finish verification to withdraw.';
+    if (!data?.hasSucceededCharge) return 'Available once your first sale clears.';
+    if (availableToWithdraw <= 0 && unshippedCents > 0)
+      return 'Your funds are held until orders are delivered and the 48 hour buyer protection window closes.';
+    if (availableToWithdraw <= 0) return 'Nothing to withdraw yet.';
+    return null;
+  })();
+
   const instantFee = Math.round(instantAvailableToWithdraw * 0.015);
   const instantNet = Math.max(instantAvailableToWithdraw - instantFee, 0);
 
@@ -417,6 +439,23 @@ const SellerDashboard = () => {
           </div>
         ) : (
           <>
+            {needsBankDetails && (
+              <section className="rounded-2xl bg-amber-50 border-2 border-amber-300 p-4 mt-2">
+                <div className="flex items-center gap-2 text-[11px] font-semibold text-amber-700 uppercase tracking-wide">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Bank details needed
+                </div>
+                <p className="text-[13px] text-charcoal mt-1.5 leading-relaxed">
+                  You can take sales, but we can't pay you out yet - there's no bank account on file. Add your account details and any money you've earned will be released to you.
+                </p>
+                <Button
+                  onClick={() => setActionRequiredOpen(true)}
+                  className="w-full mt-3 h-11 rounded-xl bg-amber-600 text-white hover:bg-amber-700 font-semibold"
+                >
+                  Add bank details
+                </Button>
+              </section>
+            )}
+
             {liveActionRequired && (
               <section className="rounded-2xl bg-orange-50 border-2 border-orange-300 p-4 mt-2">
                 <div className="flex items-center gap-2 text-[11px] font-semibold text-orange-700 uppercase tracking-wide">
@@ -437,7 +476,8 @@ const SellerDashboard = () => {
             {/* Balance breakdown: Held for unshipped → Clearing → First payout hold */}
             {!isNegative && (() => {
               const pendingCents = data?.pending ?? 0;
-              const hasPaidPayout = (data?.payouts ?? []).some((p) => p.status === 'paid');
+              const hasPaidPayout =
+                data?.hasPaidPayout ?? (data?.payouts ?? []).some((p) => p.status === 'paid');
 
               // Seller-net for a pending Stripe balance transaction (gross minus
               // the Secure Checkout Fee that Flea collects as application_fee).
@@ -660,13 +700,20 @@ const SellerDashboard = () => {
                 )}
               </Button>
 
+              {payoutBlockedReason && (
+                <p className="text-[11px] text-muted-foreground mt-2 text-center leading-relaxed px-1">
+                  {payoutBlockedReason}
+                </p>
+              )}
+
               <p className="text-[11px] text-muted-foreground mt-4 text-center leading-relaxed px-1">
                 <span className="font-semibold text-foreground">Need the funds faster?</span>
                 <br />
                 Use <span className="font-semibold text-foreground">Instant Payout</span> (≈30 minutes) for a 1.5% fee.
                 <br />
-                Available after the security hold clears.
+                Available once your funds are released.
               </p>
+
               <Button
                 onClick={() => setConfirm('instant')}
                 disabled={!canInstant || payoutLoading !== null}

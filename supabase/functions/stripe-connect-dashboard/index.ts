@@ -168,6 +168,21 @@ serve(async (req) => {
     const hasSucceededCharge = (charges as any).data?.some?.((c: any) => c.status === "succeeded") ?? false;
     const capabilities: any = account.capabilities || {};
     const instantPayoutEligible = capabilities.instant_payouts === "active";
+    // Has any payout ever actually landed? Drives the "first payout hold" copy
+    // and must match between Settings and the Seller Dashboard.
+    const hasPaidPayout = (payouts.data || []).some((p: any) => p.status === "paid");
+    // Does the seller have a bank account attached? Without one, payouts can
+    // never run and the UI must say so instead of blaming a security hold.
+    let hasExternalAccount = ((account as any).external_accounts?.total_count ?? 0) > 0;
+    if (!hasExternalAccount) {
+      try {
+        const ext = await stripe.accounts.listExternalAccounts(accountId, { limit: 1 });
+        hasExternalAccount = (ext.data || []).length > 0;
+      } catch (e) {
+        console.warn("[stripe-connect-dashboard] external account check failed", e);
+      }
+    }
+
 
     return new Response(
       JSON.stringify({
@@ -185,6 +200,8 @@ serve(async (req) => {
         payoutsEnabled,
         hasSucceededCharge,
         instantPayoutEligible,
+        hasPaidPayout,
+        hasExternalAccount,
         nextPayout: nextPayout
           ? {
               amount: nextPayout.amount,

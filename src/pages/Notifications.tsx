@@ -278,7 +278,9 @@ const Notifications = () => {
     if (notification.type?.startsWith('offer_')) {
       const sentTab =
         notification.type === 'offer_accepted' ||
-        notification.type === 'offer_declined';
+        notification.type === 'offer_declined' ||
+        notification.type === 'offer_withdrawn' ||
+        notification.type === 'offer_superseded';
       navigate('/offers', { state: { tab: sentTab ? 'sent' : 'received' } });
       return;
     }

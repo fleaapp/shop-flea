@@ -33,6 +33,8 @@ export type NotificationType =
   | 'offer_accepted'
   | 'offer_auto_accepted'
   | 'offer_declined'
+  | 'offer_withdrawn'
+  | 'offer_superseded'
   | 'offer_discount'
   | 'payment_action_required';
 
@@ -425,6 +427,10 @@ export const getNotificationMessage = (type: string, username?: string, listingT
       return '🎉 An offer was auto-accepted. Tap to view the details.';
     case 'offer_declined':
       return '😔 An offer was declined. Tap to view the details.';
+    case 'offer_withdrawn':
+      return rawMessage || '↩️ An offer was withdrawn. Tap to view the details.';
+    case 'offer_superseded':
+      return rawMessage || '↩️ An offer was replaced with a new one. Tap to view the details.';
     case 'offer_discount':
       return rawMessage || '🏷️ A seller sent you a special offer. It expires in 24 hours.';
     default:
@@ -490,6 +496,9 @@ export const getNotificationEmoji = (type: string): string => {
       return '🎉';
     case 'offer_declined':
       return '😔';
+    case 'offer_withdrawn':
+    case 'offer_superseded':
+      return '↩️';
     default:
       return '🔔';
   }
