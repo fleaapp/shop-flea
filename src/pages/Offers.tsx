@@ -33,7 +33,7 @@ const STATUS_LABEL: Record<string, string> = {
 const Offers = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const { received, sent, loading, create, respond, withdraw, refresh } = useOffers();
   const [tab, setTab] = useState<'received' | 'sent'>(
     (location.state as any)?.tab === 'sent' ? 'sent' : 'received',
@@ -42,6 +42,30 @@ const Offers = () => {
   const [usernames, setUsernames] = useState<Record<string, string>>({});
   const [counterOffer, setCounterOffer] = useState<Offer | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [savingOffersToggle, setSavingOffersToggle] = useState(false);
+
+  const offersEnabled = (profile as any)?.offers_enabled ?? false;
+  const handleToggleOffers = async (checked: boolean) => {
+    if (!user) return;
+    setSavingOffersToggle(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ offers_enabled: checked } as any)
+        .eq('user_id', user.id)
+        .select('offers_enabled')
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error('No profile row updated');
+      await refreshProfile();
+      toast.success(checked ? 'Offers on' : 'Offers off');
+    } catch (error: any) {
+      toast.error(`Failed to update: ${error?.message ?? 'unknown error'}`);
+    } finally {
+      setSavingOffersToggle(false);
+    }
+  };
+
 
   const all = useMemo(() => [...received, ...sent], [received, sent]);
   const listingIdsKey = useMemo(
