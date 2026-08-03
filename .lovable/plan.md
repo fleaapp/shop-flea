@@ -1,228 +1,194 @@
-# Flea - QA Test Checklist (one item per line)
+# Flea - Full QA Test Checklist
 
-Test on native iOS first, then PWA/web. Use a buyer account, a seller account and an admin account.
+Every line is one test case. Mark pass/fail. Test on native iOS first (source of truth), then web/PWA.
 
-## Auth
-1. Sign up with email and password.
-2. Sign up with a username that is already taken.
-3. Sign up with an invalid email format.
-4. Sign up with a weak password.
-5. Sign up with an email that already has an account.
-6. Sign up with Google.
-7. Sign up with Apple.
-8. Sign in with the same email on a different provider (conflict dialog appears).
-9. Sign in with username, lowercase.
-10. Sign in with username, uppercase.
-11. Sign in with username using a leading @.
-12. Sign in with email.
-13. Sign in with a wrong password.
-14. Forgot password request email.
-15. Reset password from the emailed link.
-16. Verify email from the emailed link.
-17. Check verification email is not in spam and sender reads Flea.
-18. Password setup prompt for a new OAuth user.
-19. Tutorial blocked until password setup is complete.
-20. Close and reopen the app - still signed in.
-21. Leave the app backgrounded overnight - still signed in.
-22. Expired or rotated token signs the user out cleanly (no white screen).
-23. Log out.
-24. Browse as a guest.
-25. Guest taps a gated action and is prompted to sign in.
-26. Delete account with an active order (blocked).
-27. Delete account with no active orders (cooldown message shown).
+## 1. Account & Auth
+1. Sign up with email + password, receive verify email, land in inbox not spam, sender shows "Flea".
+2. Sign up with an email that already exists - blocked with clear message, no duplicate account.
+3. Sign up with a username already taken - blocked before submit.
+4. Username login with and without leading @, mixed case.
+5. Login with wrong password - clear error, no lockout confusion.
+6. Forgot password - request email, open link, land on reset screen (not auto-logged-in), set new password, login with new password.
+7. Forgot password with an email that has no account - generic message, no account enumeration.
+8. Forgot password link used twice / after expiry - clear error.
+9. Google sign-in on native (new user) - profile created, username setup prompted.
+10. Google sign-in on an email that already has a password account - provider conflict dialog appears and resolves.
+11. Apple/Google sign-in cancelled midway - returns cleanly, no stuck spinner.
+12. Change email in settings - verification sent to new address, old address still works until confirmed.
+13. Change password while logged in.
+14. Logout - lands on /auth, no protected data cached, back button doesn't restore session.
+15. Session expiry / JWT rotation - user is signed out gracefully, not stuck on blank screen.
+16. Account deletion blocked when active orders exist; allowed otherwise, with cooldown.
+17. Paused selling toggle on/off persists after app restart.
+18. Blocked/inactive user - listings auto-archived, cannot list or buy.
+19. Non-AU location - regional lockdown behaviour.
+20. Onboarding tutorial completes; force-quit mid-tutorial resumes at same slide.
 
-## Seller onboarding
-28. Seller onboarding step 1 copy and Continue.
-29. Step 2 copy and Continue.
-30. Step 3 copy and Continue.
-31. Step 4 copy and Finish.
-32. Force-quit mid-onboarding and reopen - progress restored.
-33. ID verification front photo capture.
-34. ID verification back photo required for AU licence.
-35. Retake an ID photo.
-36. ID upload failure and retry.
-37. No step opens Safari or an external link.
-38. "Action required" shows on the seller setup button when more info is needed.
-39. Listing creation blocked until verified.
-40. Verification result popup after onboarding.
-41. Balance replaces the status area once verified.
-42. Bank details missing banner on the seller dashboard.
+## 2. Profile & Social
+21. Edit profile: avatar crop/upload, bio, username change, save persists after reload.
+22. Avatar fallback renders for users with no image.
+23. Tapping own username anywhere routes to /profile, not /seller/:id.
+24. Seller profile: star rating bubble, review count, last-active bubble, bundle offer badge.
+25. Follow/unfollow, follower counts update.
+26. Block a user - their listings and messages disappear both ways.
+27. Report a user and report a listing - admin sees the report.
+28. Comment on a listing, @mention another user - both seller and mentioned user get notified.
+29. Delete own comment; cannot delete others'.
 
-## Listings
-43. Create a listing in each category.
-44. Create a listing in each subcategory.
-45. Crop images to 4:5.
-46. Add the maximum number of photos.
-47. Remove a photo from the preview strip.
-48. Brand autocomplete and free-text brand.
-49. Price validation (zero, negative, very large).
-50. Shipping price validation.
-51. Earnings preview matches the fee rules.
-52. Edit an existing listing.
-53. Hide a listing (gone from profile and feed).
-54. Pause selling (all listings hidden, ⏸️ state).
-55. Mark a listing as sold.
-56. Delete a listing.
-57. Delete blocked for a listing with an active order.
-58. Refunded listing stays terminal and does not return to the feed.
-59. Sold, refunded and removed cards show the right overlay.
-60. Edit button never shows on someone else's card.
-61. Listing details: created date and time.
-62. Listing details: price info drawer.
-63. Listing details: tags and size/condition/brand bubbles.
-64. Listing details: seller card and bundle offer badge.
-65. Listing details: report listing from the menu.
-66. Engagement badges show cart and wishlist counts.
-67. Engagement badges cap at 99+.
+## 3. Listings
+30. Create listing: all required fields, 4:5 crop on every image, multi-image reorder and delete.
+31. Create listing blocked when seller not verified - "action required" path shown.
+32. Every category and subcategory combination saves without constraint error.
+33. Sizes render with AU prefix in detail, uppercase no prefix on cards.
+34. Multi-select tags (condition, colour, style) split into individual bubbles.
+35. Brand matching: valid brand, unknown brand, 1-char input.
+36. Shipping price shows as 📦 +$X on cards and +$X shipping in detail.
+37. Bundle Offers configured in shipping settings; badge shows on profile and listing.
+38. Edit listing - price change voids existing offers and notifies offerers.
+39. Hide listing - removed from own profile and all feeds; unhide restores.
+40. Pause listing - ⏸️ state, not purchasable.
+41. Mark as sold manually (sold elsewhere) - listing terminal, no errors.
+42. Delete listing with no orders - succeeds. With an active order - blocked with clear reason.
+43. Refunded listing does not reappear as active or sold twice.
+44. Listing detail: created date/time, price info ⓘ drawer, engagement badges (cart/wishlist counts, 99+ cap).
+45. Report listing from 3-dot menu.
 
-## Browse, search, wishlist, cart
-68. Home swipe: like a card.
-69. Home swipe: skip a card (moves to bottom).
-70. Feed excludes your own, paused and inactive-seller items.
-71. Feed loads more on scroll.
-72. Search by text.
-73. Tap a trending search.
-74. Filter by size.
-75. Filter by category and subcategory.
-76. Filter by gender.
-77. Filter by condition.
-78. Filter by colour.
-79. Filter by style.
-80. Filter by brand.
-81. Filter by price range.
-82. Clear all filters.
-83. Save a search.
-84. Saved-search alert arrives for a matching new listing.
-85. No saved-search alert for a non-matching listing.
-86. Add to wishlist and remove from wishlist.
-87. Swipe-to-remove on wishlist (no screen shake).
-88. Wishlist grid view and single view.
-89. Add to cart and remove from cart.
-90. Cart groups items by seller with bundle pricing.
-91. Sold-out item is removed from cart with a message.
+## 4. Discovery
+46. Home swipe stack: like, skip (moves to bottom), wishlist, no visual jump on swipe.
+47. Feed excludes own listings, blocked users, inactive sellers, sold/paused/refunded items.
+48. Search by keyword, by brand, empty-result state.
+49. Trending searches populate and refresh when sheet opens.
+50. Filters: category, subcategory, size, condition, price range, colour, style - combined and cleared.
+51. Save a search; hourly match notification fires for a new matching listing.
+52. Wishlist add/remove; swipe-to-remove without screen shake; grid and list view modes.
+53. Wishlist item that sells shows sold overlay; deleted item shows ⛔️ with cached details.
 
-## Offers
-92. Buyer makes an offer.
-93. Seller counters the offer.
-94. Buyer counters back.
-95. Buyer withdraws an offer.
-96. Seller declines an offer.
-97. Seller accepts an offer.
-98. Seller sends a blast offer to wishlist and cart holders.
-99. Blast offer below the 60% floor is rejected.
-100. Turning offers off closes open offers.
-101. Accepted offer price shows in cart.
-102. Accepted offer price shows at checkout.
-103. 24h payment countdown displays and expires.
-104. Offer-expiring reminder arrives 4 hours before expiry.
-105. Offer voided when the item sells - both sides notified.
-106. Offer voided when the item is deleted or paused.
-107. Offer voided when the price changes.
+## 5. Offers
+54. Buyer makes an offer; seller gets notification with correct name, amount, item.
+55. Offer below 60% floor rejected with clear message.
+56. Seller accepts - buyer notified "you have 24 hours to pay", price updates in cart and checkout immediately.
+57. Seller declines - buyer notified.
+58. Seller counters - buyer notified, can accept/decline/counter back.
+59. Buyer withdraws offer - seller notified.
+60. New offer supersedes previous - old one marked declined, "Offer replaced" notification.
+61. Offer expires at 24h - both parties notified, cart price reverts.
+62. Accepted-offer payment window expires - reminder notification then void.
+63. Seller blast offer to all users with item in wishlist AND cart.
+64. Blast offer to a user who already has a pending offer - handled, correct toast.
+65. Blast offer when nobody has it saved - correct toast.
+66. Offers toggle off on profile hides 💰 Offer button.
+67. Offers page: pending/accepted/expired tabs, countdowns tick correctly.
+68. Offer voided by listing being sold/hidden/paused - user notified.
 
-## Checkout and payments
-108. Pay with Apple Pay.
-109. Pay with Google Pay.
-110. Pay with a saved card.
-111. Pay with a new card and save it.
-112. Amount in the payment sheet matches the summary exactly.
-113. Buyer fee 4% + $0.70 shown clearly.
-114. Discount shown on its own line.
-115. Free shipping shown on its own line.
-116. Apply coupon FREEFLEA - buyer fees removed and total recalculated.
-117. Apply an invalid or expired coupon.
-118. Multi-seller cart splits into separate orders.
-119. Declined card message.
-120. Cancel the payment sheet.
-121. Lose network mid-payment.
-122. Double-tap Pay (no duplicate order or charge).
-123. Background the app during payment.
-124. Enter a new shipping address (AU lookup only).
-125. Use saved shipping details.
-126. Success screen and receipt.
-127. Order appears for both buyer and seller.
+## 6. Cart & Checkout
+69. Add multiple items from the same seller - bundle shipping applied once, discount line shown separately.
+70. Add items from multiple sellers - grouped correctly, shipping per seller.
+71. Cart item sells to someone else while in cart - removed with a message.
+72. Fee line: 4% + $0.70 buyer fee displayed; ⓘ popover copy correct (no seller-fee sentence, no cancellation block).
+73. Coupon FREEFLEA removes buyer fees; total recalculates on cart and checkout.
+74. Invalid/expired coupon - clear error, total unchanged.
+75. Coupon applied then removed - fees restored.
+76. Order with offer price only.
+77. Order with offer price + coupon - both discounts apply once, order total matches charge.
+78. Order with bundle + offer + coupon together.
+79. Checkout with Apple Pay - correct amount (not 100x), sheet loads promptly.
+80. Checkout with saved card; with new card; with save-card checkbox on and off.
+81. Card declined - friendly message, cart preserved, no order created.
+82. 3DS/authentication challenge path.
+83. Network drop mid-payment - no duplicate charge, no orphan order.
+84. Backgrounding the app during the payment sheet then returning.
+85. Address entry: AU-only autocomplete, suburb maps to shipping city, save-details persists.
+86. Buying own listing blocked.
+87. Buying from a seller who is not payout-eligible.
+88. Successful order - confirmation, cart cleared, seller notified once (no duplicate sale alerts).
 
-## Orders, shipping, refunds
-128. Buyer order tabs: ordered, shipped, delivered, refunds.
-129. Buyer order details drawer and tracking.
-130. Buyer marks an order as delivered.
-131. Seller adds tracking with a valid AU carrier.
-132. Seller enters invalid tracking (rejected).
-133. Overdue banner at 4+ days unshipped.
-134. 8-day auto-refund fires and notifies both sides.
-135. Buyer requests a refund with live photo.
-136. Buyer requests a refund with live video.
-137. Upload-from-library is not offered.
-138. Seller accepts a refund request.
-139. Seller declines a refund request.
-140. 72h auto-approval of an unanswered refund request.
-141. Admin resolves a dispute.
-142. Funds release 48h after delivery.
-143. Held, pending and available balances add up correctly.
-144. Payout history shows payouts and refunds.
-145. Instant payout at 1.5%.
-146. Negative balance settlement flow.
+## 7. Orders (Buyer)
+89. Order appears under Ordered; segments Ordered / Shipped / Delivered.
+90. Seller ships with valid AU tracking - buyer notified, status moves.
+91. Invalid tracking number rejected.
+92. Mark as delivered manually.
+93. Order 4+ days unshipped groups as Overdue with banner.
+94. No shipment by 8 days - automatic refund fires, both parties notified, listing set to refunded.
+95. Request refund within 10 days of delivery - live camera photo/video required, upload from gallery blocked.
+96. Refund request with coupon-discounted order - refund amount equals what buyer actually paid.
+97. Refund request on a non-coupon order - full amount incl. fees per policy.
+98. Partial/bundle refund - only affected item refunded, single consolidated notification.
+99. Refund auto-approved after 72h of seller inaction.
+100. Refund declined by seller - dispute path to admin.
+101. Order receipt renders and downloads with correct totals.
 
-## Messaging and notifications
-147. Buyer sends an order message.
-148. Seller replies to an order message.
-149. Send an attachment in order chat.
-150. Message send speed feels instant.
-151. Opening a thread clears its unread badge and it stays cleared.
-152. Support chat thread create and reply.
-153. Comment on a listing.
-154. @mention a user in a comment.
-155. Push notification goes only to the signed-in account.
-156. Push tap opens the order details drawer.
-157. Push tap opens the sale details drawer.
-158. Push tap opens offers.
-159. Push tap opens the review.
-160. Push tap opens the listing.
-161. No duplicate bell alerts.
-162. Bell badge clears on read and does not flash when switching tabs.
-163. Push toggle in notification settings.
-164. Marketing emails toggle.
-165. Denying push permission at OS level is handled.
+## 8. Orders (Seller) & Payouts
+102. Sale appears in Sales with cost/total bubble, no date stamps.
+103. Sale details drawer opens from card and from notification; order summary totals correct.
+104. Seller net = price - 2% - $0.50, matches dashboard and Stripe.
+105. Refunded sale shows refunded state, not payable.
+106. Seller dashboard math: available, pending, in-progress, negative balance after refund.
+107. Payout blocked until tracking entered.
+108. Funds release 48 hours after delivery (buyer protection window).
+109. Instant payout 1.5% fee, only after first payment and full verification.
+110. Payout history shows payouts and refunds.
+111. Settle negative balance sheet works.
+112. Bank details missing - banner shown, payout blocked.
+113. Seller dashboard refreshes on every open.
 
-## Reviews and profiles
-166. Buyer reviews a seller.
-167. Seller reviews a buyer.
-168. Attach a photo to a review.
-169. Seller average rating and review count update.
-170. Own profile tabs and counts.
-171. Seller profile star rating and last-active bubbles.
-172. Bundle offer banner on seller profile.
-173. Tapping your own username goes to /profile, not /seller/:id.
-174. Report a user.
+## 9. Seller Onboarding & Verification
+114. Set up seller from settings and from the listing gate - same 4-step in-app flow.
+115. No external browser or deep link at any step.
+116. Exit the app mid-onboarding and return - resumes at the same step.
+117. Onboarding step copy correct: step 1 states listing on Flea is free; step 4 has no bank-debit refund mention.
+118. Successful completion - native confirmation of verification status.
+119. Verification pending - "Pending review 🔍" state, listing still gated.
+120. Verification fails / more info required - "Action required ⚠️" on the Set up seller button.
+121. ID verification: AU driver licence requires both front and back; passport single image.
+122. ID upload from live capture; rejected document re-upload path.
+123. Verified seller - balance shown where status pill used to be, no status pills remaining.
+124. Payment action required alert rate-limited to once per 24h.
 
-## Admin
-175. Non-admin blocked from every /admin route.
-176. Admin users list with signup and last-active times.
-177. Admin listings management.
-178. Admin brands management.
-179. Admin transactions.
-180. Admin refunds and disputes.
-181. Admin approvals queue.
-182. Admin error logs in plain English.
-183. Mark-as-seen clears admin badges.
+## 10. Messaging
+125. Buyer messages seller from order; thread opens from card and from notification.
+126. Message send latency acceptable; optimistic message never duplicates.
+127. Send failure - retry path, no lost message.
+128. Attachments/photos in order chat.
+129. Unread badge clears on read and stays cleared after app restart.
+130. Push notification for a new message opens the correct thread.
+131. Messages hidden after a user is blocked.
 
-## Device, layout, resilience
-184. No notch clipping on any screen.
-185. No lime bleed when scrolling.
-186. Status bar correct when drawers open and close.
-187. Keyboard has no black background.
-188. Inputs are never hidden behind the keyboard.
-189. Auth screen does not jump on input focus.
-190. Drawer footer buttons fully visible.
-191. Touch targets at least 44px.
-192. Offline banner appears and recovers.
-193. Slow 3G loading states and skeletons.
-194. App resumes on the same screen after backgrounding.
-195. Fresh install first run.
-196. App update with a stale JS chunk auto-reloads.
-197. PWA install and reload.
-198. Copy uses short dashes only.
-199. No mention of Stripe in user-facing text.
-200. Notification copy ends with a full stop and uses the right emoji.
+## 11. Reviews
+132. Leave a buyer review and a seller review after delivery; ratings aggregate correctly.
+133. Review with cropped 1:1 photo.
+134. Cannot review twice for the same order.
+135. Review notification opens the reviews drawer at that review.
 
-## Priority order
-Checkout and payments, then offers to purchase, refunds and payouts, notifications, listing lifecycle, then everything else.
+## 12. Notifications
+136. Push permission sheet appears once; native prompt fires; declining handled.
+137. Push token exclusivity - logging in as a different account never delivers the previous user's alerts.
+138. Bell notifications mark read; badge counts match unread rows.
+139. Footer badges (Alerts, Sales, Cart) show live counts, no flashing when switching screens.
+140. Sales badge = awaiting-shipment orders + unread seller messages.
+141. Every notification type has correct role-aware copy, bold @username, trailing full stop, no "New notification".
+142. Each notification type routes to the correct screen or drawer (order, sale, offer, review, comment, saved search).
+143. Push received while app is closed opens the right screen on tap.
+
+## 13. Admin
+144. Non-admin cannot reach /admin.
+145. Brand management: add, edit, remove.
+146. Users: signup time, last active, block/unblock, mark as seen clears badge.
+147. Reports: mark handled/resolved.
+148. Refunds/disputes queue: approve, decline, manual release.
+149. Approvals queue for held payouts.
+150. Error logs: plain-English messages, grouping, severity, filtering.
+151. Admin badges do not flicker or persist after clearing.
+
+## 14. Layout, Native & Resilience
+152. Status bar area live and correctly coloured on every screen, including while drawers open.
+153. No content clipped by the notch mid-session or after backgrounding.
+154. Keyboard: no black background, inputs lift above the keyboard, no lime bleed at the footer.
+155. Auth screen: logo position stable, text boxes do not disappear or jump on focus.
+156. Every drawer footer button fully visible above the home indicator.
+157. All screens scroll internally, none sit too high or too low.
+158. Offline banner appears and recovers.
+159. Stale JS chunk after deploy triggers auto-reload instead of a white screen.
+160. App returns to the same screen after being backgrounded and reopened.
+161. PWA install and launch without white screen.
+162. Slow 3G: skeleton loaders on profile, dashboard and feeds, no infinite spinners.
+163. Copy audit: short dashes only, no em dashes, no mention of Stripe, no "7%" fee anywhere.
