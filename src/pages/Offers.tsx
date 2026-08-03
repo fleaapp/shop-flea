@@ -92,9 +92,10 @@ const Offers = () => {
         decision === 'accept'
           ? offer.direction === 'buyer_to_seller'
             ? 'Offer accepted. The buyer has 24 hours to pay.'
-            : 'Offer accepted. The item is in your cart at that price.'
+            : 'Offer accepted. The item is in your cart at that price - pay within 24 hours.'
           : 'Offer declined.',
       );
+
     } catch (error: any) {
       toast.error(error?.message || 'Could not update that offer.');
     } finally {
