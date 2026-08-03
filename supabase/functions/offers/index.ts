@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
             user_id: offer.seller_id,
             type: "offer_auto_accepted",
             title: "Offer auto-accepted",
-            message: `💰 @${actor} offered ${money(offer.amount)} on "${title}" and it was auto-accepted.`,
+            message: `💰 @${actor} offered ${money(offer.amount)} on "${title}" and it was auto-accepted. They have 24 hours to pay.`,
             related_listing_id: offer.listing_id,
             related_user_id: offer.buyer_id,
           },
@@ -205,7 +205,7 @@ Deno.serve(async (req) => {
             title: "Offer accepted",
             message: recipient === offer.buyer_id
               ? `🎉 @${actor} accepted your ${money(offer.amount)} offer on "${title}". It's in your cart at that price for 24 hours.`
-              : `🎉 @${actor} accepted your ${money(offer.amount)} offer on "${title}".`,
+              : `🎉 @${actor} accepted your ${money(offer.amount)} offer on "${title}". They have 24 hours to pay.`,
             related_listing_id: offer.listing_id,
             related_user_id: userId,
           },
