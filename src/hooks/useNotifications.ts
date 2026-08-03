@@ -36,6 +36,9 @@ export type NotificationType =
   | 'offer_withdrawn'
   | 'offer_superseded'
   | 'offer_discount'
+  | 'offer_cancelled'
+  | 'offer_expiring'
+  | 'saved_search_match'
   | 'payment_action_required';
 
 
