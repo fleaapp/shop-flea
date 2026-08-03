@@ -1,5 +1,6 @@
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logEdgeError } from "../_shared/logError.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -905,6 +906,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
+    await logEdgeError({ functionName: "order-messages", error: error, title: "Order message failed to send", severity: "error", source: "edge_function" });
     console.error("[order-messages] Error:", error);
 
     const message = error instanceof Error ? error.message : "Unknown error";

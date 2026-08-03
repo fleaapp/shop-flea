@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { logEdgeError } from "../_shared/logError.ts";
 
 async function firePushNotification(userId: string, notification: Record<string, unknown>) {
   try {
@@ -253,6 +254,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
+    await logEdgeError({ functionName: "shipping-reminders", error: err, title: "Scheduled job failed: shipping reminders", severity: "error", source: "edge_function" });
     console.error('[shipping-reminders] Error:', err);
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,

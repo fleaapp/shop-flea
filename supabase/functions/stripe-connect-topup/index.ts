@@ -8,6 +8,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { checkRateLimit, callerKey, tooManyRequests } from "../_shared/rateLimit.ts";
+import { logEdgeError } from "../_shared/logError.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -154,6 +155,7 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err: any) {
+    await logEdgeError({ functionName: "stripe-connect-topup", error: err, title: "Seller balance settlement failed", severity: "error", source: "payment" });
     console.error("[stripe-connect-topup] error:", err);
     return new Response(JSON.stringify({ error: err?.message ?? "Top-up failed" }), {
       status: 500,

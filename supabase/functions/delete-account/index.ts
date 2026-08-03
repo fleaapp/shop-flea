@@ -1,5 +1,6 @@
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { logEdgeError } from "../_shared/logError.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -146,6 +147,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
+    await logEdgeError({ functionName: "delete-account", error: err, title: "Account deletion failed", severity: "error", source: "edge_function" });
     console.error('Unexpected error:', err);
     return new Response(JSON.stringify({ error: 'Unexpected error occurred.' }), {
       status: 500,

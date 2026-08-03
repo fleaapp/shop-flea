@@ -8,6 +8,7 @@
 // the specific items whose buyers requested a refund.
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { logEdgeError } from "../_shared/logError.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -90,6 +91,7 @@ serve(async (req) => {
       }
       results.push({ orderId: row.id, ok: true });
     } catch (e: any) {
+      await logEdgeError({ functionName: "auto-approve-refund-requests", error: e, title: "Scheduled job failed: refund auto-approval", severity: "error", source: "payment" });
       console.error("[auto-approve-refund-requests] exception", row.id, e);
       results.push({ orderId: row.id, ok: false, error: e?.message || String(e) });
     }

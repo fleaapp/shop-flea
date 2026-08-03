@@ -2,6 +2,7 @@ import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logEdgeError } from "../_shared/logError.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -439,6 +440,7 @@ serve(async (req) => {
       }
     );
   } catch (error) {
+    await logEdgeError({ functionName: "stripe-connect-status", error: error, title: "Seller verification status check failed", severity: "error", source: "payment" });
     console.error("Stripe Connect status error:", error);
     return new Response(
       JSON.stringify({ error: error.message }),

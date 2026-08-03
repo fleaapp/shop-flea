@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useSnapshotDraft } from '@/hooks/useSnapshotDraft';
+import { logError } from '@/lib/errorLogger';
+
 import { loadDraftImages, saveDraftImages, clearDraftImages, DraftImageRecord } from '@/lib/imageDraftStore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -495,7 +497,15 @@ const CreateListing = () => {
       console.error('Error creating listing:', error);
       console.error('Error details:', JSON.stringify(error, null, 2));
       const message = error?.message || error?.error_description || 'Please try again.';
+      void logError({
+        title: 'Listing could not be posted',
+        message,
+        stack: error?.stack ?? null,
+        severity: 'error',
+        source: 'client',
+      });
       toast.error(`Failed to create listing: ${message}`);
+
     } finally {
       setIsLoading(false);
     }
