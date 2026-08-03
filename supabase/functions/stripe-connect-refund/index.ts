@@ -982,7 +982,8 @@ serve(async (req) => {
     await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
     const relatedListingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
     await markListingsRefunded(externalUrl, serviceKey, relatedListingIds);
-    await insertRefundNotifications(externalUrl, serviceKey, order);
+    await insertRefundNotifications(externalUrl, serviceKey, order, cascadeRows.length);
+
     await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order);
 
     return jsonResponse({ success: true, refundId: refund.id, status: refund.status, mode: "cascade" });
