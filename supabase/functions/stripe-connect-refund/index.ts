@@ -497,10 +497,13 @@ function computeRefundBreakdown(
   const transactionFeeShare = groupSubtotal > 0 ? round2(transactionFee * (itemSubtotal / groupSubtotal)) : 0;
 
   const buyerRefund = round2(itemSubtotal + secureFeeShare);
-  const sellerNet = Math.max(0, round2(itemSubtotal - transactionFeeShare));
+  const sellerNetRaw = round2(itemSubtotal - transactionFeeShare);
+  const sellerNet = Math.max(0, sellerNetRaw);
+  const sellerShortfall = Math.max(0, round2(-sellerNetRaw));
 
-  return { itemSubtotal, secureFeeShare, transactionFeeShare, buyerRefund, sellerNet };
+  return { itemSubtotal, secureFeeShare, transactionFeeShare, buyerRefund, sellerNet, sellerShortfall };
 }
+
 
 async function fetchGroupRows(externalUrl: string, serviceKey: string, order: any) {
   if (!order.order_group_id) return [order];
