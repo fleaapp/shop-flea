@@ -94,7 +94,7 @@ export function useNativePushNotifications() {
         void logError({
           title: 'Native push token status check failed',
           message: error.message || 'push-status failed',
-          severity: 'warning',
+          severity: 'error',
           source: 'client',
           context: { reason, user_id: user.id, platform: Capacitor.getPlatform() },
         });
@@ -109,7 +109,7 @@ export function useNativePushNotifications() {
       void logError({
         title: 'Native push token status check crashed',
         message: err instanceof Error ? err.message : String(err),
-        severity: 'warning',
+        severity: 'error',
         source: 'client',
         context: { reason, user_id: user.id, platform: Capacitor.getPlatform() },
       });
@@ -146,7 +146,7 @@ export function useNativePushNotifications() {
         void logError({
           title: 'Native push token save failed',
           message: error.message || 'register-push-subscription failed',
-          severity: 'warning',
+          severity: 'error',
           source: 'client',
           context: {
             reason,
@@ -182,7 +182,7 @@ export function useNativePushNotifications() {
         title: 'Native push token save exception',
         message: err instanceof Error ? err.message : String(err),
         stack: err instanceof Error ? err.stack ?? null : null,
-        severity: 'warning',
+        severity: 'error',
         source: 'client',
         context: {
           reason,
@@ -289,7 +289,7 @@ export function useNativePushNotifications() {
           title: 'Native push setup failed',
           message: err instanceof Error ? err.message : String(err),
           stack: err instanceof Error ? err.stack ?? null : null,
-          severity: 'warning',
+          severity: 'error',
           source: 'client',
           context: {
             reason,
@@ -323,7 +323,7 @@ export function useNativePushNotifications() {
         void logError({
           title: 'Native APNs registration error',
           message: typeof err === 'object' && err && 'error' in err ? String((err as { error?: unknown }).error) : JSON.stringify(err),
-          severity: 'warning',
+          severity: 'error',
           source: 'client',
           context: {
             user_id: user.id,
@@ -375,7 +375,7 @@ export function useNativePushNotifications() {
         title: 'Native push listener setup failed',
         message: err instanceof Error ? err.message : String(err),
         stack: err instanceof Error ? err.stack ?? null : null,
-        severity: 'warning',
+        severity: 'error',
         source: 'client',
         context: {
           user_id: user.id,
