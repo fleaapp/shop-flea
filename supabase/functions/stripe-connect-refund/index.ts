@@ -18,6 +18,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { logEdgeError } from "../_shared/logError.ts";
+import { calculateSecureCheckoutFee, calculateTransactionFee, round2 } from "../_shared/fees.ts";
+
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 function isUuid(v: unknown): v is string {
@@ -407,19 +409,6 @@ async function checkRateLimit(key: string, max: number, windowSeconds: number): 
 
 type BundleMode = "none" | "discounted" | "free";
 
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
-}
-
-function calculateSecureCheckoutFee(subtotal: number): number {
-  if (subtotal <= 0) return 0;
-  return round2(subtotal * 0.04 + 0.7);
-}
-
-function calculateTransactionFee(subtotal: number): number {
-  if (subtotal <= 0) return 0;
-  return round2(subtotal * 0.02 + 0.5);
-}
 
 function calculateBundleShippingTotal(
   rawShippings: number[],
@@ -444,7 +433,14 @@ interface RefundBreakdown {
   transactionFeeShare: number;
   buyerRefund: number;
   sellerNet: number;
+  /**
+   * Amount (in dollars) the seller owes Flea because their share of this refund
+   * exceeds what can be pulled back from the transfer. Recorded against their
+   * negative balance instead of being silently written off.
+   */
+  sellerShortfall: number;
 }
+
 
 function computeRefundBreakdown(
   targetOrder: any,
@@ -501,10 +497,13 @@ function computeRefundBreakdown(
   const transactionFeeShare = groupSubtotal > 0 ? round2(transactionFee * (itemSubtotal / groupSubtotal)) : 0;
 
   const buyerRefund = round2(itemSubtotal + secureFeeShare);
-  const sellerNet = Math.max(0, round2(itemSubtotal - transactionFeeShare));
+  const sellerNetRaw = round2(itemSubtotal - transactionFeeShare);
+  const sellerNet = Math.max(0, sellerNetRaw);
+  const sellerShortfall = Math.max(0, round2(-sellerNetRaw));
 
-  return { itemSubtotal, secureFeeShare, transactionFeeShare, buyerRefund, sellerNet };
+  return { itemSubtotal, secureFeeShare, transactionFeeShare, buyerRefund, sellerNet, sellerShortfall };
 }
+
 
 async function fetchGroupRows(externalUrl: string, serviceKey: string, order: any) {
   if (!order.order_group_id) return [order];
@@ -545,15 +544,52 @@ async function fetchSellerBundleSettings(externalUrl: string, serviceKey: string
   };
 }
 
+// Records money the seller owes Flea (a refund we could not fully claw back)
+// against their negative balance, so it is settled before they can list, buy
+// or withdraw again.
+async function recordSellerShortfall(
+  externalUrl: string,
+  serviceKey: string,
+  sellerId: string,
+  shortfallCents: number,
+) {
+  if (!sellerId || shortfallCents <= 0) return;
+  try {
+    const res = await fetch(
+      `${externalUrl}/rest/v1/profiles?user_id=eq.${sellerId}&select=negative_balance_cents`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+    );
+    const rows = res.ok ? await safeJson(res) : null;
+    const current = Array.isArray(rows) && rows[0] ? Number(rows[0].negative_balance_cents) || 0 : 0;
+    await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${sellerId}`, {
+      method: "PATCH",
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        negative_balance_cents: current + Math.round(shortfallCents),
+        negative_balance_updated_at: new Date().toISOString(),
+      }),
+    });
+  } catch (error) {
+    console.error("[stripe-connect-refund] recording seller shortfall failed:", error);
+  }
+}
+
 async function createSingleItemRefund(
   stripe: Stripe,
   order: any,
   breakdown: RefundBreakdown,
   actor: string,
-): Promise<{ refund: Stripe.Refund; transferReversal?: Stripe.TransferReversal }> {
+): Promise<{ refund: Stripe.Refund; transferReversal?: Stripe.TransferReversal; shortfallCents: number }> {
   const paymentIntentId = await resolvePaymentIntentId(stripe, order);
   const amountCents = Math.round(breakdown.buyerRefund * 100);
   const sellerNetCents = Math.round(breakdown.sellerNet * 100);
+  // Fee shortfall (item worth less than the transaction fee) is owed regardless.
+  let shortfallCents = Math.round(breakdown.sellerShortfall * 100);
 
   const refund = await stripe.refunds.create(
     {
@@ -583,32 +619,44 @@ async function createSingleItemRefund(
     if (transferId && sellerNetCents > 0) {
       const transfer = await stripe.transfers.retrieve(transferId);
       const availableCents = (transfer.amount ?? 0) - (transfer.amount_reversed ?? 0);
-      if (availableCents >= sellerNetCents) {
+      const reversibleCents = Math.max(0, Math.min(availableCents, sellerNetCents));
+      if (reversibleCents > 0) {
         const reversal = await stripe.transferReversals.create(transferId, {
-          amount: sellerNetCents,
+          amount: reversibleCents,
           metadata: {
             flea_order_id: order.id,
             flea_refund_id: refund.id,
           },
-        }, { idempotencyKey: `flea-reversal-${order.id}-${sellerNetCents}` });
-        return { refund, transferReversal: reversal };
+        }, { idempotencyKey: `flea-reversal-${order.id}-${reversibleCents}` });
+        // Anything we could not pull back is now owed by the seller.
+        shortfallCents += sellerNetCents - reversibleCents;
+        return { refund, transferReversal: reversal, shortfallCents };
       }
       console.warn(
-        `[stripe-connect-refund] transfer ${transferId} only has ${availableCents}c available; needed ${sellerNetCents}c`,
+        `[stripe-connect-refund] transfer ${transferId} has nothing reversible; needed ${sellerNetCents}c`,
       );
+      shortfallCents += sellerNetCents;
+    } else if (sellerNetCents > 0 && !transferId) {
+      shortfallCents += sellerNetCents;
     }
   } catch (transferError) {
     console.error("[stripe-connect-refund] transfer reversal failed:", transferError);
-    // Continue: the buyer refund succeeded. The seller balance will be handled
-    // by the platform ledger and can be settled if needed.
+    // The buyer refund succeeded, so the seller's share becomes a debt to Flea.
+    shortfallCents += sellerNetCents;
   }
 
-  return { refund };
+  return { refund, shortfallCents };
+
 }
 
 // -------------------- Notifications & chat --------------------
 
-async function insertRefundNotifications(externalUrl: string, serviceKey: string, order: any) {
+async function insertRefundNotifications(
+  externalUrl: string,
+  serviceKey: string,
+  order: any,
+  itemCount = 1,
+) {
   try {
     if (order.id) {
       const since = new Date(Date.now() - 5 * 60 * 1000).toISOString();
@@ -636,12 +684,18 @@ async function insertRefundNotifications(externalUrl: string, serviceKey: string
       }
     }
 
+    // A bundle refund is one event, so it gets one combined message rather than
+    // one notification per item.
+    const subject = itemCount > 1
+      ? `${listingTitle} and ${itemCount - 1} other item${itemCount - 1 === 1 ? "" : "s"}`
+      : listingTitle;
+
     const rows = [
       {
         user_id: order.buyer_id,
         type: "refund_initiated",
         title: "Refund issued",
-        message: `↩️ Your refund for ${listingTitle} has been processed. Funds usually appear straight away, but some banks can take up to 5 business days.`,
+        message: `↩️ Your refund for ${subject} has been processed. Funds usually appear straight away, but some banks can take up to 5 business days.`,
         related_listing_id: order.listing_id ?? null,
         related_user_id: order.seller_id ?? null,
         related_order_id: order.id ?? null,
@@ -650,11 +704,12 @@ async function insertRefundNotifications(externalUrl: string, serviceKey: string
         user_id: order.seller_id,
         type: "refund_initiated",
         title: "Refund issued",
-        message: `↩️ You refunded the buyer for ${listingTitle}. The sale has been reversed.`,
+        message: `↩️ You refunded the buyer for ${subject}. The sale has been reversed.`,
         related_listing_id: order.listing_id ?? null,
         related_user_id: order.buyer_id ?? null,
         related_order_id: order.id ?? null,
       },
+
     ];
 
     const insertRes = await fetch(`${externalUrl}/rest/v1/notifications`, {
@@ -845,7 +900,8 @@ serve(async (req) => {
       const listings = await fetchListings(externalUrl, serviceKey, listingIds);
       const breakdown = computeRefundBreakdown(order, groupRows, listings, sellerSettings.mode, sellerSettings.discountPercent);
 
-      const { refund, transferReversal } = await createSingleItemRefund(stripe, order, breakdown, actor);
+      const { refund, transferReversal, shortfallCents } = await createSingleItemRefund(stripe, order, breakdown, actor);
+      await recordSellerShortfall(externalUrl, serviceKey, order.seller_id, shortfallCents);
 
       await markOrderRefunded(externalUrl, serviceKey, order.id);
       if (order.listing_id) await markListingsRefunded(externalUrl, serviceKey, [order.listing_id]);
@@ -869,6 +925,44 @@ serve(async (req) => {
     }
 
     // Cascade / full order-group refund.
+    const cascadeRows = await fetchGroupRows(externalUrl, serviceKey, order);
+    const alreadyRefunded = cascadeRows.filter((r: any) => r.refunded_at);
+    const remainingRows = cascadeRows.filter((r: any) => !r.refunded_at);
+
+    // If part of this bundle has already been refunded, refunding the whole
+    // payment intent (and its full application fee) would hand back money that
+    // has already gone back. Fall back to per-item refunds using each order's
+    // own fee snapshot, then send ONE combined notification.
+    if (alreadyRefunded.length > 0 && remainingRows.length > 0) {
+      const listingIds = [...new Set(cascadeRows.map((r: any) => r.listing_id).filter(Boolean))];
+      const [listings, sellerSettings] = await Promise.all([
+        fetchListings(externalUrl, serviceKey, listingIds as string[]),
+        fetchSellerBundleSettings(externalUrl, serviceKey, order.seller_id),
+      ]);
+
+      const refundIds: string[] = [];
+      let totalShortfall = 0;
+      for (const row of remainingRows) {
+        const breakdown = computeRefundBreakdown(row, cascadeRows, listings, sellerSettings.mode, sellerSettings.discountPercent);
+        const result = await createSingleItemRefund(stripe, { ...row, seller_id: order.seller_id, buyer_id: order.buyer_id }, breakdown, actor);
+        refundIds.push(result.refund.id);
+        totalShortfall += result.shortfallCents;
+        await markOrderRefunded(externalUrl, serviceKey, row.id);
+        if (row.listing_id) await markListingsRefunded(externalUrl, serviceKey, [row.listing_id]);
+      }
+      await recordSellerShortfall(externalUrl, serviceKey, order.seller_id, totalShortfall);
+      await insertRefundNotifications(externalUrl, serviceKey, order, remainingRows.length);
+      await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order);
+
+      return jsonResponse({
+        success: true,
+        refundIds,
+        refundId: refundIds[0] ?? null,
+        mode: "cascade_partial",
+        refundedItems: remainingRows.length,
+      });
+    }
+
     const paymentIntentId = await resolvePaymentIntentId(stripe, order);
     const refund = await stripe.refunds.create({
       payment_intent: paymentIntentId,
@@ -884,10 +978,12 @@ serve(async (req) => {
       },
     }, { idempotencyKey: `flea-refund-${orderId}` });
 
+
     await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
     const relatedListingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
     await markListingsRefunded(externalUrl, serviceKey, relatedListingIds);
-    await insertRefundNotifications(externalUrl, serviceKey, order);
+    await insertRefundNotifications(externalUrl, serviceKey, order, cascadeRows.length);
+
     await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order);
 
     return jsonResponse({ success: true, refundId: refund.id, status: refund.status, mode: "cascade" });

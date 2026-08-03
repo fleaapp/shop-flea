@@ -20,6 +20,16 @@ export const SECURE_CHECKOUT_FIXED = 0.70;
 export const TRANSACTION_FEE_RATE = 0.02;
 export const TRANSACTION_FEE_FIXED = 0.50;
 
+// Optional fee when a seller cashes out instantly instead of waiting for the
+// standard bank payout.
+export const INSTANT_PAYOUT_RATE = 0.015;
+
+// Shared user-facing fee labels so every screen says the same thing.
+export const SECURE_CHECKOUT_FEE_LABEL = '4% + $0.70';
+export const TRANSACTION_FEE_LABEL = '2% + $0.50';
+export const INSTANT_PAYOUT_FEE_LABEL = '1.5%';
+
+
 /**
  * Minimum listing price. Below this the fixed portions of the fees make the
  * application fee larger than the charge itself, which Stripe rejects outright.

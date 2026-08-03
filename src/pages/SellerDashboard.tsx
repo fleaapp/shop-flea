@@ -13,6 +13,8 @@ import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
 import EnablePushBanner from '@/components/EnablePushBanner';
 import { supabase } from '@/lib/supabase';
 import { logError } from '@/lib/errorLogger';
+import { INSTANT_PAYOUT_RATE } from '@/utils/feeCalculator';
+
 
 const BalanceInfo = ({ title, body, tone = 'muted' }: { title: string; body: string; tone?: 'muted' | 'amber' | 'primary' }) => {
   const iconClass =
@@ -348,8 +350,20 @@ const SellerDashboard = () => {
     return null;
   })();
 
-  const instantFee = Math.round(instantAvailableToWithdraw * 0.015);
+  const instantFee = Math.round(instantAvailableToWithdraw * INSTANT_PAYOUT_RATE);
   const instantNet = Math.max(instantAvailableToWithdraw - instantFee, 0);
+
+  // Instant payout has extra requirements on top of a standard payout, so it
+  // gets its own explanation instead of silently greying out.
+  const instantBlockedReason = (() => {
+    if (payoutBlockedReason) return payoutBlockedReason;
+    if (!data?.instantPayoutEligible)
+      return 'Instant payouts are not supported by your bank yet - use a standard payout.';
+    if (instantAvailableToWithdraw <= 0)
+      return 'None of your released funds are eligible for instant payout right now.';
+    return null;
+  })();
+
 
   const handlePayout = async (method: 'standard' | 'instant') => {
     setConfirm(null);
@@ -727,6 +741,13 @@ const SellerDashboard = () => {
                   'Instant Payout 1.5% fee'
                 )}
               </Button>
+
+              {instantBlockedReason && instantBlockedReason !== payoutBlockedReason && (
+                <p className="text-[11px] text-muted-foreground mt-2 text-center leading-relaxed px-1">
+                  {instantBlockedReason}
+                </p>
+              )}
+
             </div>
 
 
