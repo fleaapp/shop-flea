@@ -90,7 +90,8 @@ type DashboardData = {
   hasSucceededCharge?: boolean;
   instantPayoutEligible?: boolean;
   hasPaidPayout?: boolean;
-  hasExternalAccount?: boolean;
+  hasExternalAccount?: boolean | null;
+  externalAccountDue?: boolean;
   nextPayout?: { amount: number; arrivalDate: number; status: string } | null;
   payouts?: PayoutRow[];
   activity?: ActivityRow[];
