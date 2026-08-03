@@ -18,6 +18,7 @@ import { compressImage } from '@/utils/imageCompression';
 import { toast } from 'sonner';
 import AvatarCropDialog from '@/components/AvatarCropDialog';
 import ProfileGridCard from '@/components/ProfileGridCard';
+import EngagementBadges from '@/components/EngagementBadges';
 import { Button } from '@/components/ui/button';
 import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
 import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
