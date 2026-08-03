@@ -700,13 +700,20 @@ const SellerDashboard = () => {
                 )}
               </Button>
 
+              {payoutBlockedReason && (
+                <p className="text-[11px] text-muted-foreground mt-2 text-center leading-relaxed px-1">
+                  {payoutBlockedReason}
+                </p>
+              )}
+
               <p className="text-[11px] text-muted-foreground mt-4 text-center leading-relaxed px-1">
                 <span className="font-semibold text-foreground">Need the funds faster?</span>
                 <br />
                 Use <span className="font-semibold text-foreground">Instant Payout</span> (≈30 minutes) for a 1.5% fee.
                 <br />
-                Available after the security hold clears.
+                Available once your funds are released.
               </p>
+
               <Button
                 onClick={() => setConfirm('instant')}
                 disabled={!canInstant || payoutLoading !== null}
