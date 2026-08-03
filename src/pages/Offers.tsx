@@ -10,6 +10,8 @@ import { useOffers, Offer, offerTimeLeft } from '@/hooks/useOffers';
 import MakeOfferDrawer from '@/components/MakeOfferDrawer';
 import { safeNavigateBack } from '@/utils/safeBack';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+
 import { toast } from 'sonner';
 import { calculateTransactionFee } from '@/utils/feeCalculator';
 
@@ -33,7 +35,7 @@ const STATUS_LABEL: Record<string, string> = {
 const Offers = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const { received, sent, loading, create, respond, withdraw, refresh } = useOffers();
   const [tab, setTab] = useState<'received' | 'sent'>(
     (location.state as any)?.tab === 'sent' ? 'sent' : 'received',
@@ -42,6 +44,30 @@ const Offers = () => {
   const [usernames, setUsernames] = useState<Record<string, string>>({});
   const [counterOffer, setCounterOffer] = useState<Offer | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [savingOffersToggle, setSavingOffersToggle] = useState(false);
+
+  const offersEnabled = (profile as any)?.offers_enabled ?? false;
+  const handleToggleOffers = async (checked: boolean) => {
+    if (!user) return;
+    setSavingOffersToggle(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ offers_enabled: checked } as any)
+        .eq('user_id', user.id)
+        .select('offers_enabled')
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error('No profile row updated');
+      await refreshProfile();
+      toast.success(checked ? 'Offers on' : 'Offers off');
+    } catch (error: any) {
+      toast.error(`Failed to update: ${error?.message ?? 'unknown error'}`);
+    } finally {
+      setSavingOffersToggle(false);
+    }
+  };
+
 
   const all = useMemo(() => [...received, ...sent], [received, sent]);
   const listingIdsKey = useMemo(
@@ -282,7 +308,29 @@ const Offers = () => {
         </div>
       </div>
 
+      {tab === 'received' && (
+        <div className="mt-4 shrink-0 px-4">
+          <div className="flex items-center justify-between rounded-2xl bg-card px-4 py-3 card-shadow">
+            <div className="min-w-0 pr-3">
+              <p className="text-sm font-semibold text-foreground">💰 Offers</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {offersEnabled
+                  ? 'Buyers can make offers on your listings.'
+                  : 'Turn on to let buyers make offers on your listings.'}
+              </p>
+            </div>
+            <Switch
+              checked={offersEnabled}
+              disabled={savingOffersToggle}
+              onCheckedChange={handleToggleOffers}
+              className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime"
+            />
+          </div>
+        </div>
+      )}
+
       <div className="mt-4 flex-1 overflow-y-auto px-4 pb-6">
+
         {loading ? (
           <div className="flex min-h-[50vh] items-center justify-center">
             <span className="text-5xl">⏳</span>

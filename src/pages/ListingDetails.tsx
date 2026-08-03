@@ -587,8 +587,22 @@ const ListingDetails = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              {/* Delete listing - owner only, sits under the 3-dot menu */}
+              {isOwner && !isSold && !isRemoved && (
+                <button
+                  data-vaul-no-drag
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => setShowDeleteDialog(true)}
+                  aria-label="Delete listing"
+                  className="absolute top-14 right-3 h-8 w-8 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center text-sm hover:bg-background/90 transition-colors"
+                >
+                  🗑️
+                </button>
+              )}
+
               {/* Cart & Wishlist count icons */}
               <EngagementBadges listingId={id} size="lg" className="absolute top-3 left-3 z-10" />
+
 
 
               {images.length > 1 && (
@@ -795,14 +809,6 @@ const ListingDetails = () => {
                   <div className="flex gap-3 justify-center">
                     <Button
                       variant="outline"
-                      onClick={() => setShowDeleteDialog(true)}
-                      aria-label="Remove listing"
-                      className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent shrink-0"
-                    >
-                      🗑️
-                    </Button>
-                    <Button
-                      variant="outline"
                       onClick={() => {
                         setOpen(false);
                         setTimeout(() => navigate(`/listing/${listing.id}/edit`), 300);
@@ -811,6 +817,12 @@ const ListingDetails = () => {
                     >
                       <span className="mr-0.5">✏️</span>
                       Edit Listing
+                    </Button>
+                    <Button
+                      onClick={() => setShowMarkAsSoldDialog(true)}
+                      className="h-14 rounded-2xl text-sm font-medium bg-charcoal text-white hover:bg-charcoal/90 border-2 border-charcoal flex-1"
+                    >
+                      Mark as sold
                     </Button>
                     {seller?.offers_enabled && (
                       <Button
@@ -822,13 +834,8 @@ const ListingDetails = () => {
                         💰
                       </Button>
                     )}
-                    <Button
-                      onClick={() => setShowMarkAsSoldDialog(true)}
-                      className="h-14 rounded-2xl text-sm font-medium bg-charcoal text-white hover:bg-charcoal/90 border-2 border-charcoal flex-1"
-                    >
-                      Mark as sold
-                    </Button>
                   </div>
+
                 </>
               )
             ) : (
