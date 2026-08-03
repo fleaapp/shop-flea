@@ -298,9 +298,7 @@ const Profile = () => {
 
       <div className={`flex-1 min-h-0 flex flex-col ${viewMode === 'single' ? 'justify-center overflow-x-auto overflow-y-hidden snap-x snap-mandatory' : 'overflow-y-auto overflow-x-hidden'} scrollbar-hide py-6 max-[430px]:py-5 max-[393px]:py-4 max-[375px]:py-3`} style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <span className="text-5xl">⏳</span>
-          </div>
+          <ListingGridSkeleton count={viewMode === 'single' ? 2 : 4} />
         ) : pauseSelling && activeTab === 'listings' ? (
           <div className="flex flex-col items-center justify-center px-4 py-12">
             <span className="text-5xl mb-4">⏸️</span>
