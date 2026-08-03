@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useSnapshotDraft } from '@/hooks/useSnapshotDraft';
+import { logError } from '@/lib/errorLogger';
+
 import { loadDraftImages, saveDraftImages, clearDraftImages, DraftImageRecord } from '@/lib/imageDraftStore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useNavigate, useSearchParams } from 'react-router-dom';
