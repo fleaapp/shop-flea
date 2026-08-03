@@ -327,6 +327,7 @@ const Profile = () => {
                     onClick={() => navigate(`/listing/${realId}`, activeTab === 'sold' ? { state: { isSold: true, orderId: (listing as any).order_id } } : undefined)}
                   >
                     <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
+                    <EngagementBadges listingId={realId} size="lg" className="absolute top-2 left-2 z-10" />
                     {activeTab === 'sold' && getOrderStatusButton((listing as any).source_listing_id || listing.id, (listing as any).order_id)}
                   </div>
                   <div className="px-2 max-[393px]:px-1.5 max-[375px]:px-1 pt-3 max-[393px]:pt-1.5 max-[375px]:pt-1.5 pb-2.5 max-[393px]:pb-2 max-[375px]:pb-1.5">
