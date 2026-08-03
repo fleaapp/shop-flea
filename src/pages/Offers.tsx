@@ -124,9 +124,13 @@ const Offers = () => {
     const sellerNet =
       Math.round((offer.amount + shipping - calculateTransactionFee(offer.amount + shipping)) * 100) / 100;
     const iAmSeller = offer.seller_id === user?.id;
+    const payable = offer.status === 'accepted' && new Date(offer.expires_at).getTime() > Date.now();
+    const acceptedLapsed = offer.status === 'accepted' && !payable;
+    const listingGone = listing ? listing.status !== 'active' : false;
+    const closed = !live && !payable;
 
     return (
-      <div key={offer.id} className="rounded-2xl bg-card p-3 card-shadow">
+      <div key={offer.id} className={`rounded-2xl bg-card p-3 card-shadow ${closed ? 'opacity-70' : ''}`}>
         <div className="flex gap-3">
           <button
             onClick={() => navigate(`/listing/${offer.listing_id}`)}
@@ -142,10 +146,16 @@ const Offers = () => {
               <p className="truncate text-sm font-semibold text-foreground">{listing?.title || 'Item'}</p>
               <span
                 className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                  live ? 'bg-primary/15 text-foreground' : 'bg-muted text-muted-foreground'
+                  live || payable ? 'bg-primary/15 text-foreground' : 'bg-muted text-muted-foreground'
                 }`}
               >
-                {live ? offerTimeLeft(offer.expires_at) : STATUS_LABEL[offer.status] || 'Closed'}
+                {live
+                  ? offerTimeLeft(offer.expires_at)
+                  : payable
+                    ? `Pay within ${offerTimeLeft(offer.expires_at).replace(' left', '')}`
+                    : acceptedLapsed
+                      ? 'Expired'
+                      : STATUS_LABEL[offer.status] || 'Closed'}
               </span>
             </div>
             <p className="mt-0.5 text-xs text-muted-foreground">
@@ -157,11 +167,22 @@ const Offers = () => {
                 ${Number(offer.original_price).toFixed(2)}
               </span>
             </div>
-            {iAmSeller && (
+            {iAmSeller && !closed && (
               <p className="mt-0.5 text-xs text-muted-foreground">You'd receive ${sellerNet.toFixed(2)}</p>
+            )}
+            {listingGone && (
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {listing?.status === 'sold' ? 'This item has sold.' : 'This item is no longer available.'}
+              </p>
+            )}
+            {acceptedLapsed && (
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                The 24 hour payment window closed, so this offer price is no longer valid.
+              </p>
             )}
           </div>
         </div>
+
 
         {live && list === 'received' && (
           <div className="mt-3 flex gap-2">
