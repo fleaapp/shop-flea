@@ -90,7 +90,8 @@ type DashboardData = {
   hasSucceededCharge?: boolean;
   instantPayoutEligible?: boolean;
   hasPaidPayout?: boolean;
-  hasExternalAccount?: boolean;
+  hasExternalAccount?: boolean | null;
+  externalAccountDue?: boolean;
   nextPayout?: { amount: number; arrivalDate: number; status: string } | null;
   payouts?: PayoutRow[];
   activity?: ActivityRow[];
@@ -326,13 +327,14 @@ const SellerDashboard = () => {
   const canInstant =
     canPayout && !!data?.instantPayoutEligible && instantAvailableToWithdraw > 0;
 
-  // Payouts are blocked purely because no bank account is attached. Say that
-  // plainly instead of blaming a security hold the seller can't act on.
+  // Only claim bank details are missing when Stripe explicitly says so. A
+  // verified seller always has a bank account (payouts_enabled requires one),
+  // so an unknown/undefined value must never trigger this banner.
   const needsBankDetails =
     !!data?.connected &&
     !isNegative &&
     !!data?.chargesEnabled &&
-    (data?.hasExternalAccount === false || (!data?.payoutsEnabled && data?.hasExternalAccount !== true));
+    (data?.hasExternalAccount === false || data?.externalAccountDue === true);
 
   // One clear reason the payout buttons are disabled.
   const payoutBlockedReason = (() => {
