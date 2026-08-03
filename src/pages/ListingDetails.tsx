@@ -36,6 +36,8 @@ import { useCart } from '@/context/CartContext';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 import { useReporting } from '@/hooks/useReporting';
 import ReportDialog from '@/components/ReportDialog';
+import PriceBreakdownDrawer from '@/components/PriceBreakdownDrawer';
+import { formatTimeAgo, formatLastActive } from '@/utils/timeAgo';
 import { useAuth } from '@/context/AuthContext';
 import { useGuestMode } from '@/context/GuestModeContext';
 import { useOrders, OrderGroup } from '@/hooks/useOrders';
@@ -102,6 +104,7 @@ const ListingDetails = () => {
   const [loading, setLoading] = useState(true);
   const [listingStatus, setListingStatus] = useState<string>(location.state?.isRemoved ? 'removed' : 'active');
   const [showRemoveFromBothDialog, setShowRemoveFromBothDialog] = useState(false);
+  const [priceBreakdownOpen, setPriceBreakdownOpen] = useState(false);
   
   // Check if listing is sold/completed - check both navigation state AND database status
   const isSoldFromRouteOrStatus = Boolean(location.state?.isSold) || isTerminalListingStatus(listingStatus);
@@ -185,6 +188,7 @@ const ListingDetails = () => {
           category: stateListing.category || '',
           user_id: stateListing.user_id || stateListing.sellerId || 'unknown',
           status: forcedStatus,
+          created_at: (stateListing as { created_at?: string | null }).created_at ?? null,
         });
 
         setSeller({
@@ -222,6 +226,7 @@ const ListingDetails = () => {
           category: snapshot.listing.category || '',
           user_id: snapshot.listing.user_id || 'unknown',
           status: 'removed',
+          created_at: (snapshot.listing as { created_at?: string | null }).created_at ?? null,
         });
 
         setSeller(snapshot.seller
@@ -268,7 +273,7 @@ const ListingDetails = () => {
       // Fetch profile in parallel (non-blocking) — use public view (excludes sensitive fields)
       supabase
         .from('profiles_public')
-        .select('username, avatar_url, location, country_code, offers_enabled')
+        .select('username, avatar_url, location, country_code, offers_enabled, rating, total_reviews, last_sign_in_at')
         .eq('user_id', listingData.user_id)
         .maybeSingle()
         .then(({ data: profileData, error: profileError }) => {
@@ -551,14 +556,7 @@ const ListingDetails = () => {
                         <Flag className="h-4 w-4" />
                         Report listing
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => openReport('user', listing.user_id, listing.user_id)}
-                        disabled={isReporting}
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        <User className="h-4 w-4" />
-                        Report seller
-                      </DropdownMenuItem>
+
                       <DropdownMenuSeparator />
                     </>
                   )}
