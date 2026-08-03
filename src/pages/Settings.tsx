@@ -244,9 +244,23 @@ const Settings = () => {
   generalItems.push({
     icon: <span className="text-base">🔔</span>,
     label: 'Notifications',
-    toggle: true,
-    checked: notificationsEnabled,
-    onToggle: handleToggleNotifications
+    expandable: true,
+    onExpand: () => setNotificationsExpanded(!notificationsExpanded),
+    isExpanded: notificationsExpanded,
+    children: [{
+      icon: <span className="text-base">📲</span>,
+      label: 'Push notifications',
+      toggle: true,
+      checked: notificationsEnabled,
+      onToggle: handleToggleNotifications
+    }, {
+      icon: <span className="text-base">📧</span>,
+      label: 'Marketing emails',
+      toggle: true,
+      checked: marketingOptIn,
+      disabled: marketingSaving || isGuest,
+      onToggle: handleToggleMarketing
+    }]
   });
   if (!isGuest && isAdmin) {
     generalItems.push({
