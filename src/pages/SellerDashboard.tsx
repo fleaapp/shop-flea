@@ -348,8 +348,20 @@ const SellerDashboard = () => {
     return null;
   })();
 
-  const instantFee = Math.round(instantAvailableToWithdraw * 0.015);
+  const instantFee = Math.round(instantAvailableToWithdraw * INSTANT_PAYOUT_RATE);
   const instantNet = Math.max(instantAvailableToWithdraw - instantFee, 0);
+
+  // Instant payout has extra requirements on top of a standard payout, so it
+  // gets its own explanation instead of silently greying out.
+  const instantBlockedReason = (() => {
+    if (payoutBlockedReason) return payoutBlockedReason;
+    if (!data?.instantPayoutEligible)
+      return 'Instant payouts are not supported by your bank yet - use a standard payout.';
+    if (instantAvailableToWithdraw <= 0)
+      return 'None of your released funds are eligible for instant payout right now.';
+    return null;
+  })();
+
 
   const handlePayout = async (method: 'standard' | 'instant') => {
     setConfirm(null);
