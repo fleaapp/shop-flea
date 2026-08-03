@@ -19,6 +19,10 @@ interface CartListing extends Listing {
   isPaused?: boolean;
   isInactive?: boolean;
   isRemoved?: boolean;
+  /** Set when the buyer has a live accepted offer - `price` is already discounted. */
+  offerPrice?: number;
+  offerOriginalPrice?: number;
+  offerExpiresAt?: string;
 }
 
 interface CartContextType {
@@ -228,6 +232,31 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         isInactive: false,
         isRemoved: true,
       });
+    }
+
+    // Apply live accepted-offer prices. The server re-verifies these at payment
+    // time, so this is purely so the buyer sees the same number they'll be charged.
+    try {
+      const activeIds = transformedListings.filter((l) => !l.isRemoved).map((l) => l.id);
+      if (activeIds.length > 0) {
+        const { data: offerRows } = await supabase.rpc('get_accepted_offer_prices' as any, {
+          _buyer_id: user.id,
+          _listing_ids: activeIds,
+        });
+        const offerMap = new Map<string, any>();
+        ((offerRows ?? []) as any[]).forEach((row) => offerMap.set(row.listing_id, row));
+        transformedListings.forEach((l) => {
+          const offer = offerMap.get(l.id);
+          if (offer) {
+            l.offerOriginalPrice = Number(offer.original_price);
+            l.offerPrice = Number(offer.amount);
+            l.offerExpiresAt = offer.expires_at;
+            l.price = Number(offer.amount);
+          }
+        });
+      }
+    } catch (offerError) {
+      console.error('[cart] accepted offer lookup failed:', offerError);
     }
 
     // Sort by the order they were added to cart (most recent first)
