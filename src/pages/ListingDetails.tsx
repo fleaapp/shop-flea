@@ -699,7 +699,7 @@ const ListingDetails = () => {
               <div className="flex items-start justify-between gap-3">
                 <h1 className="text-2xl font-bold text-foreground">{listing.title}</h1>
                 {formatTimeAgo(listing.created_at) && (
-                  <span className="mt-1.5 shrink-0 text-xs text-muted-foreground">
+                  <span className="mt-1.5 shrink-0 text-sm text-muted-foreground">
                     {formatTimeAgo(listing.created_at)}
                   </span>
                 )}
