@@ -4,6 +4,7 @@ import { useOffers } from '@/hooks/useOffers';
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import BottomNav from '@/components/BottomNav';
+import ListingGridSkeleton from '@/components/ListingGridSkeleton';
 import { useAuth } from '@/context/AuthContext';
 import { useGuestMode } from '@/context/GuestModeContext';
 import { useUserListings } from '@/hooks/useListings';
