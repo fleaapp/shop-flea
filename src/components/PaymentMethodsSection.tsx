@@ -8,7 +8,7 @@ import { ChevronRight } from 'lucide-react';
 import { clearStripeConnectionState, getStripeConnectedStorageKey } from '@/utils/stripeConnectionState';
 import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
 
-const PaymentMethodsSection = () => {
+const PaymentMethodsSection = ({ hideHeading = false }: { hideHeading?: boolean }) => {
   const navigate = useNavigate();
   const { user, profile, refreshProfile } = useAuth();
   const [isChecking, setIsChecking] = useState(false);
