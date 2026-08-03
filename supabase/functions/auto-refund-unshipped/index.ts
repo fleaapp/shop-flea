@@ -289,10 +289,11 @@ Deno.serve(async (req) => {
 
         await markOrderRefunded(order.id, "auto_unshipped_8d");
 
-        // Reactivate the listing so it's not stuck as sold.
+        // Refunded items must never go back on sale — mark the listing refunded
+        // (same as the manual refund path in stripe-connect-refund).
         await admin
           .from("listings")
-          .update({ status: "active", updated_at: new Date().toISOString() })
+          .update({ status: "refunded", updated_at: new Date().toISOString() })
           .eq("id", order.listing_id);
 
         // Notify buyer and seller.
