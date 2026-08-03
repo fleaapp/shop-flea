@@ -1,6 +1,8 @@
 import { safeNavigateBack } from '@/utils/safeBack';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSnapshotDraft } from '@/hooks/useSnapshotDraft';
+import { offerTimeLeft } from '@/hooks/useOffers';
+
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { ApplePayEventsEnum, GooglePayEventsEnum, Stripe } from '@capacitor-community/stripe';
@@ -1037,6 +1039,16 @@ const Checkout = () => {
             {/* Master Pay button */}
 
             <div className="mt-6">
+              {(() => {
+                const offerItem = (validItems as any[]).find((i) => i.offerExpiresAt);
+                if (!offerItem) return null;
+                return (
+                  <p className="mb-3 rounded-xl bg-primary/15 px-3 py-2 text-center text-xs text-foreground">
+                    <span className="font-semibold">💰 Offer price locked</span> for{' '}
+                    {offerTimeLeft(offerItem.offerExpiresAt).replace(' left', '')} - pay before it expires.
+                  </p>
+                );
+              })()}
               <Button
                 onClick={handlePayClick}
                 disabled={isSubmitting || !isShippingComplete || !sellerHasStripe || (!isNative() && !selectedMethod) || buyerOwesCents > 0}
@@ -1044,6 +1056,7 @@ const Checkout = () => {
               >
                 {buyerOwesCents > 0 ? 'Settle balance to buy' : payButtonLabel()}
               </Button>
+
               <p className="text-[11px] text-muted-foreground/70 text-center mt-5 flex items-center justify-center gap-1">
                 <Lock size={11} /> Payments are encrypted and processed by our payment providers.
               </p>

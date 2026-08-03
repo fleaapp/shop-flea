@@ -12,6 +12,8 @@ import { useOrders, Order, OrderGroup } from '@/hooks/useOrders';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import CartItemRow from '@/components/CartItemRow';
+import { offerTimeLeft } from '@/hooks/useOffers';
+
 import OrderDetailsSheet from '@/components/OrderDetailsSheet';
 import OrderItemThumbnailStack from '@/components/OrderItemThumbnailStack';
 
@@ -457,6 +459,19 @@ const Cart = () => {
                               <span>{bundleText.detail}</span>
                             </div>
                           )}
+                          {(() => {
+                            const offerItem = availableItems.find((i: any) => i.offerExpiresAt);
+                            if (!offerItem) return null;
+                            return (
+                              <div className="px-4 py-2 bg-primary/15 text-center text-xs text-foreground">
+                                <span className="font-bold">💰 Offer price locked</span>{' '}
+                                <span>
+                                  for {offerTimeLeft((offerItem as any).offerExpiresAt).replace(' left', '')} - pay before it expires.
+                                </span>
+                              </div>
+                            );
+                          })()}
+
                           {allPausedOrInactive ? (
                             <Button
                               className="w-full rounded-none rounded-b-2xl bg-[#787878] text-white h-12 cursor-not-allowed pointer-events-none font-semibold hover:bg-[#787878]"

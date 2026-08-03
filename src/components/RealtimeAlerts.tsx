@@ -27,7 +27,15 @@ const ALERT_TITLES: Record<string, string> = {
   cart_item_sold: '🛒 Cart Item Sold',
   wishlist_item_sold: '😢 Wishlist Item Sold',
   cart_wishlist_item_sold: '💔 Item Sold',
+  offer_received: '💰 New Offer',
+  offer_countered: '🔁 Counter-Offer',
+  offer_accepted: '🎉 Offer Accepted',
+  offer_auto_accepted: '🎉 Offer Auto-Accepted',
+  offer_declined: '😔 Offer Declined',
+  offer_discount: '🏷️ Special Offer',
+  offer_expiring: '⏳ Offer Expiring',
 };
+
 
 const RealtimeAlerts = () => {
   const { user } = useAuth();

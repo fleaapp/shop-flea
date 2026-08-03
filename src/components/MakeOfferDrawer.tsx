@@ -147,8 +147,9 @@ const MakeOfferDrawer = ({
           <p className="mt-4 text-center text-xs text-muted-foreground">
             {mode === 'blast'
               ? 'Everyone with this item in their cart or wishlist gets 24 hours to take it.'
-              : 'Offers expire after 24 hours. Items are not reserved until paid for.'}
+              : 'Offers last 24 hours. If it is accepted, the buyer then has 24 hours to pay before the price expires. Items are not reserved until paid for.'}
           </p>
+
         </div>
 
         <div className="shrink-0 px-4 pb-8 pt-3">

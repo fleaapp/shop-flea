@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
+import EmptyState from '@/components/EmptyState';
+
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useOffers, Offer, offerTimeLeft } from '@/hooks/useOffers';
@@ -42,13 +44,23 @@ const Offers = () => {
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const all = useMemo(() => [...received, ...sent], [received, sent]);
+  const listingIdsKey = useMemo(
+    () => [...new Set(all.map((o) => o.listing_id))].sort().join(','),
+    [all],
+  );
+  const userIdsKey = useMemo(
+    () =>
+      [...new Set(all.flatMap((o) => [o.buyer_id, o.seller_id]))]
+        .filter((id) => id && id !== user?.id)
+        .sort()
+        .join(','),
+    [all, user?.id],
+  );
 
   useEffect(() => {
     const load = async () => {
-      const listingIds = [...new Set(all.map((o) => o.listing_id))];
-      const userIds = [...new Set(all.flatMap((o) => [o.buyer_id, o.seller_id]))].filter(
-        (id) => id && id !== user?.id,
-      );
+      const listingIds = listingIdsKey ? listingIdsKey.split(',') : [];
+      const userIds = userIdsKey ? userIdsKey.split(',') : [];
       if (listingIds.length > 0) {
         const { data } = await supabase
           .from('listings')
@@ -68,8 +80,9 @@ const Offers = () => {
         setUsernames(map);
       }
     };
-    if (all.length > 0) load();
-  }, [all, user]);
+    if (listingIdsKey) load();
+  }, [listingIdsKey, userIdsKey]);
+
 
   const isLive = (o: Offer) => o.status === 'pending' && new Date(o.expires_at).getTime() > Date.now();
 
@@ -81,9 +94,10 @@ const Offers = () => {
         decision === 'accept'
           ? offer.direction === 'buyer_to_seller'
             ? 'Offer accepted. The buyer has 24 hours to pay.'
-            : 'Offer accepted. The item is in your cart at that price.'
+            : 'Offer accepted. The item is in your cart at that price - pay within 24 hours.'
           : 'Offer declined.',
       );
+
     } catch (error: any) {
       toast.error(error?.message || 'Could not update that offer.');
     } finally {
@@ -112,9 +126,13 @@ const Offers = () => {
     const sellerNet =
       Math.round((offer.amount + shipping - calculateTransactionFee(offer.amount + shipping)) * 100) / 100;
     const iAmSeller = offer.seller_id === user?.id;
+    const payable = offer.status === 'accepted' && new Date(offer.expires_at).getTime() > Date.now();
+    const acceptedLapsed = offer.status === 'accepted' && !payable;
+    const listingGone = listing ? listing.status !== 'active' : false;
+    const closed = !live && !payable;
 
     return (
-      <div key={offer.id} className="rounded-2xl bg-card p-3 card-shadow">
+      <div key={offer.id} className={`rounded-2xl bg-card p-3 card-shadow ${closed ? 'opacity-70' : ''}`}>
         <div className="flex gap-3">
           <button
             onClick={() => navigate(`/listing/${offer.listing_id}`)}
@@ -130,10 +148,16 @@ const Offers = () => {
               <p className="truncate text-sm font-semibold text-foreground">{listing?.title || 'Item'}</p>
               <span
                 className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                  live ? 'bg-primary/15 text-foreground' : 'bg-muted text-muted-foreground'
+                  live || payable ? 'bg-primary/15 text-foreground' : 'bg-muted text-muted-foreground'
                 }`}
               >
-                {live ? offerTimeLeft(offer.expires_at) : STATUS_LABEL[offer.status] || 'Closed'}
+                {live
+                  ? offerTimeLeft(offer.expires_at)
+                  : payable
+                    ? `Pay within ${offerTimeLeft(offer.expires_at).replace(' left', '')}`
+                    : acceptedLapsed
+                      ? 'Expired'
+                      : STATUS_LABEL[offer.status] || 'Closed'}
               </span>
             </div>
             <p className="mt-0.5 text-xs text-muted-foreground">
@@ -145,11 +169,22 @@ const Offers = () => {
                 ${Number(offer.original_price).toFixed(2)}
               </span>
             </div>
-            {iAmSeller && (
+            {iAmSeller && !closed && (
               <p className="mt-0.5 text-xs text-muted-foreground">You'd receive ${sellerNet.toFixed(2)}</p>
+            )}
+            {listingGone && (
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {listing?.status === 'sold' ? 'This item has sold.' : 'This item is no longer available.'}
+              </p>
+            )}
+            {acceptedLapsed && (
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                The 24 hour payment window closed, so this offer price is no longer valid.
+              </p>
             )}
           </div>
         </div>
+
 
         {live && list === 'received' && (
           <div className="mt-3 flex gap-2">
@@ -192,30 +227,46 @@ const Offers = () => {
           </Button>
         )}
 
-        {offer.status === 'accepted' && offer.buyer_id === user?.id && (
-          <Button onClick={() => navigate('/cart')} className="mt-3 h-10 w-full rounded-lg text-sm">
-            Pay ${offer.amount.toFixed(2)} - offer price
-          </Button>
+        {payable && offer.buyer_id === user?.id && !listingGone && (
+          <>
+            <Button onClick={() => navigate('/cart')} className="mt-3 h-10 w-full rounded-lg text-sm">
+              Pay ${offer.amount.toFixed(2)} - offer price
+            </Button>
+            <p className="mt-1.5 text-center text-[11px] text-muted-foreground">
+              Offer price held for {offerTimeLeft(offer.expires_at).replace(' left', '')} - the item is not reserved until you pay.
+            </p>
+          </>
         )}
       </div>
     );
   };
 
-  const list = tab === 'received' ? received : sent;
+  const list = useMemo(() => {
+    const rows = tab === 'received' ? received : sent;
+    const rank = (o: Offer) => {
+      if (isLive(o)) return 0;
+      if (o.status === 'accepted' && new Date(o.expires_at).getTime() > Date.now()) return 1;
+      return 2;
+    };
+    return [...rows].sort(
+      (a, b) =>
+        rank(a) - rank(b) || new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+  }, [tab, received, sent]);
 
   return (
     <div className="native-safe-top fixed inset-0 flex flex-col bg-background pb-24">
-      <div className="flex shrink-0 items-center gap-3 px-4 pt-4">
+      <div className="relative flex h-10 shrink-0 items-center justify-center px-4 pt-4">
         <button
           onClick={() => safeNavigateBack(navigate, '/profile')}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-card card-shadow"
+          className="absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-card card-shadow"
         >
           <ChevronLeft className="h-5 w-5 text-foreground" />
         </button>
         <h1 className="text-lg font-semibold text-foreground">💰 Offers</h1>
       </div>
 
-      <div className="mt-4 flex shrink-0 justify-center px-4">
+      <div className="mt-8 flex shrink-0 justify-center px-4">
         <div className="flex w-[220px] items-center rounded-full bg-muted p-1">
           {(['received', 'sent'] as const).map((t) => (
             <button
@@ -231,22 +282,29 @@ const Offers = () => {
         </div>
       </div>
 
-      <div className="mt-4 flex-1 space-y-3 overflow-y-auto px-4 pb-6">
+      <div className="mt-4 flex-1 overflow-y-auto px-4 pb-6">
         {loading ? (
-          <div className="flex justify-center py-12">
+          <div className="flex min-h-[50vh] items-center justify-center">
             <span className="text-5xl">⏳</span>
           </div>
         ) : list.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <span className="mb-3 text-5xl">💰</span>
-            <p className="text-sm text-muted-foreground">
-              {tab === 'received' ? 'No offers received yet.' : 'You have not made any offers yet.'}
-            </p>
-          </div>
+          <EmptyState
+            emoji="💰"
+            title={tab === 'received' ? 'No offers yet' : 'No offers sent yet'}
+            description={
+              tab === 'received'
+                ? 'When a buyer makes you an offer, it lands here. You have 24 hours to accept, counter or decline.'
+                : 'Found something you love? Make an offer and the seller has 24 hours to reply.'
+            }
+            actionLabel={tab === 'sent' ? 'Browse items' : undefined}
+            onAction={tab === 'sent' ? () => navigate('/') : undefined}
+            minHeightClass="min-h-[55vh]"
+          />
         ) : (
-          list.map((o) => renderCard(o, tab))
+          <div className="space-y-3">{list.map((o) => renderCard(o, tab))}</div>
         )}
       </div>
+
 
       {counterOffer && listings[counterOffer.listing_id] && (
         <MakeOfferDrawer
