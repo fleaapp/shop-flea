@@ -277,10 +277,13 @@ const PaymentMethodsSection = ({ hideHeading = false }: { hideHeading?: boolean 
     />
 
     <div>
-      <h2 className="mb-3 max-[375px]:mb-2 text-sm max-[375px]:text-xs font-medium text-muted-foreground uppercase tracking-wide">
-        Payment Methods
-      </h2>
+      {!hideHeading && (
+        <h2 className="mb-3 max-[375px]:mb-2 text-sm max-[375px]:text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          Payment Methods
+        </h2>
+      )}
       <div className="space-y-2 max-[375px]:space-y-1.5">
+
         <div
           className="flex items-center justify-between rounded-2xl p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow bg-card cursor-pointer"
           onClick={handleStripeRowClick}
