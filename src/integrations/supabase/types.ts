@@ -649,6 +649,7 @@ export type Database = {
       }
       listings: {
         Row: {
+          auto_accept_offer_price: number | null
           brand: string
           category: string
           colour: string | null
@@ -674,6 +675,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          auto_accept_offer_price?: number | null
           brand: string
           category: string
           colour?: string | null
@@ -699,6 +701,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          auto_accept_offer_price?: number | null
           brand?: string
           category?: string
           colour?: string | null
@@ -771,6 +774,78 @@ export type Database = {
             columns: ["related_listing_id"]
             isOneToOne: false
             referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offers: {
+        Row: {
+          accepted_at: string | null
+          amount: number
+          buyer_id: string
+          created_at: string
+          direction: string
+          expires_at: string
+          id: string
+          listing_id: string
+          message: string | null
+          original_price: number
+          parent_offer_id: string | null
+          responded_at: string | null
+          round: number
+          seller_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          amount: number
+          buyer_id: string
+          created_at?: string
+          direction?: string
+          expires_at?: string
+          id?: string
+          listing_id: string
+          message?: string | null
+          original_price: number
+          parent_offer_id?: string | null
+          responded_at?: string | null
+          round?: number
+          seller_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          amount?: number
+          buyer_id?: string
+          created_at?: string
+          direction?: string
+          expires_at?: string
+          id?: string
+          listing_id?: string
+          message?: string | null
+          original_price?: number
+          parent_offer_id?: string | null
+          responded_at?: string | null
+          round?: number
+          seller_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offers_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offers_parent_offer_id_fkey"
+            columns: ["parent_offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
             referencedColumns: ["id"]
           },
         ]
@@ -1024,6 +1099,7 @@ export type Database = {
           marketing_opt_in: boolean
           negative_balance_cents: number
           negative_balance_updated_at: string | null
+          offers_enabled: boolean
           password_set: boolean
           pause_selling: boolean
           paypal_merchant_id: string | null
@@ -1069,6 +1145,7 @@ export type Database = {
           marketing_opt_in?: boolean
           negative_balance_cents?: number
           negative_balance_updated_at?: string | null
+          offers_enabled?: boolean
           password_set?: boolean
           pause_selling?: boolean
           paypal_merchant_id?: string | null
@@ -1114,6 +1191,7 @@ export type Database = {
           marketing_opt_in?: boolean
           negative_balance_cents?: number
           negative_balance_updated_at?: string | null
+          offers_enabled?: boolean
           password_set?: boolean
           pause_selling?: boolean
           paypal_merchant_id?: string | null
@@ -1159,6 +1237,7 @@ export type Database = {
           id: string
           last_sign_in_at: string | null
           location: string | null
+          offers_enabled: boolean | null
           pause_selling: boolean | null
           paypal_onboarding_complete: boolean | null
           rating: number | null
@@ -1184,6 +1263,7 @@ export type Database = {
           id: string
           last_sign_in_at?: string | null
           location?: string | null
+          offers_enabled?: boolean | null
           pause_selling?: boolean | null
           paypal_onboarding_complete?: boolean | null
           rating?: number | null
@@ -1209,6 +1289,7 @@ export type Database = {
           id?: string
           last_sign_in_at?: string | null
           location?: string | null
+          offers_enabled?: boolean | null
           pause_selling?: boolean | null
           paypal_onboarding_complete?: boolean | null
           rating?: number | null
@@ -1848,6 +1929,38 @@ export type Database = {
         }
         Returns: undefined
       }
+      create_offer: {
+        Args: {
+          p_amount: number
+          p_listing_id: string
+          p_message?: string
+          p_parent_offer_id?: string
+        }
+        Returns: {
+          accepted_at: string | null
+          amount: number
+          buyer_id: string
+          created_at: string
+          direction: string
+          expires_at: string
+          id: string
+          listing_id: string
+          message: string | null
+          original_price: number
+          parent_offer_id: string | null
+          responded_at: string | null
+          round: number
+          seller_id: string
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "offers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -1857,10 +1970,22 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      expire_stale_offers: { Args: never; Returns: number }
+      get_accepted_offer_prices: {
+        Args: { _buyer_id: string; _listing_ids: string[] }
+        Returns: {
+          amount: number
+          expires_at: string
+          listing_id: string
+          offer_id: string
+          original_price: number
+        }[]
+      }
       get_email_by_username: { Args: { p_username: string }; Returns: string }
       get_home_feed: {
         Args: { p_limit?: number; p_offset?: number }
         Returns: {
+          auto_accept_offer_price: number | null
           brand: string
           category: string
           colour: string | null
@@ -2159,6 +2284,33 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      respond_to_offer: {
+        Args: { p_decision: string; p_offer_id: string }
+        Returns: {
+          accepted_at: string | null
+          amount: number
+          buyer_id: string
+          created_at: string
+          direction: string
+          expires_at: string
+          id: string
+          listing_id: string
+          message: string | null
+          original_price: number
+          parent_offer_id: string | null
+          responded_at: string | null
+          round: number
+          seller_id: string
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "offers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       respond_to_refund_request: {
         Args: {
           p_decision?: string
@@ -2220,6 +2372,33 @@ export type Database = {
         }
       }
       seed_push_vault_key: { Args: { p_key: string }; Returns: undefined }
+      withdraw_offer: {
+        Args: { p_offer_id: string }
+        Returns: {
+          accepted_at: string | null
+          amount: number
+          buyer_id: string
+          created_at: string
+          direction: string
+          expires_at: string
+          id: string
+          listing_id: string
+          message: string | null
+          original_price: number
+          parent_offer_id: string | null
+          responded_at: string | null
+          round: number
+          seller_id: string
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "offers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
