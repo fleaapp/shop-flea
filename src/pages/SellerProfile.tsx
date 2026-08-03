@@ -405,10 +405,11 @@ const SellerProfile = () => {
                 return (
                 <div key={listing.id} className="relative w-64 max-[430px]:w-60 max-[393px]:w-52 max-[375px]:w-44 flex-shrink-0 overflow-hidden rounded-3xl max-[375px]:rounded-2xl bg-card p-2.5 max-[430px]:p-2 max-[375px]:p-1.5 card-shadow snap-center">
                   <div 
-                    className="aspect-[3/4] max-[430px]:aspect-[3/4] max-[393px]:aspect-[4/5] max-[375px]:aspect-[1/1] w-full overflow-hidden rounded-2xl max-[375px]:rounded-xl cursor-pointer"
+                    className="relative aspect-[3/4] max-[430px]:aspect-[3/4] max-[393px]:aspect-[4/5] max-[375px]:aspect-[1/1] w-full overflow-hidden rounded-2xl max-[375px]:rounded-xl cursor-pointer"
                     onClick={() => navigate(`/listing/${realId}`, activeTab === 'sold' ? { state: { isSold: true, orderId: listing.order_id } } : undefined)}
                   >
                     <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
+                    <EngagementBadges listingId={realId} size="lg" className="absolute top-2 left-2 z-10" />
                   </div>
                   <div className="px-2 max-[393px]:px-1.5 max-[375px]:px-1 pt-3 max-[393px]:pt-1.5 max-[375px]:pt-1.5 pb-2.5 max-[393px]:pb-2 max-[375px]:pb-1.5">
                     <div className="flex items-end justify-between">
