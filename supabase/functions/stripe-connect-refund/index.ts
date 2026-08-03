@@ -544,15 +544,52 @@ async function fetchSellerBundleSettings(externalUrl: string, serviceKey: string
   };
 }
 
+// Records money the seller owes Flea (a refund we could not fully claw back)
+// against their negative balance, so it is settled before they can list, buy
+// or withdraw again.
+async function recordSellerShortfall(
+  externalUrl: string,
+  serviceKey: string,
+  sellerId: string,
+  shortfallCents: number,
+) {
+  if (!sellerId || shortfallCents <= 0) return;
+  try {
+    const res = await fetch(
+      `${externalUrl}/rest/v1/profiles?user_id=eq.${sellerId}&select=negative_balance_cents`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+    );
+    const rows = res.ok ? await safeJson(res) : null;
+    const current = Array.isArray(rows) && rows[0] ? Number(rows[0].negative_balance_cents) || 0 : 0;
+    await fetch(`${externalUrl}/rest/v1/profiles?user_id=eq.${sellerId}`, {
+      method: "PATCH",
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        negative_balance_cents: current + Math.round(shortfallCents),
+        negative_balance_updated_at: new Date().toISOString(),
+      }),
+    });
+  } catch (error) {
+    console.error("[stripe-connect-refund] recording seller shortfall failed:", error);
+  }
+}
+
 async function createSingleItemRefund(
   stripe: Stripe,
   order: any,
   breakdown: RefundBreakdown,
   actor: string,
-): Promise<{ refund: Stripe.Refund; transferReversal?: Stripe.TransferReversal }> {
+): Promise<{ refund: Stripe.Refund; transferReversal?: Stripe.TransferReversal; shortfallCents: number }> {
   const paymentIntentId = await resolvePaymentIntentId(stripe, order);
   const amountCents = Math.round(breakdown.buyerRefund * 100);
   const sellerNetCents = Math.round(breakdown.sellerNet * 100);
+  // Fee shortfall (item worth less than the transaction fee) is owed regardless.
+  let shortfallCents = Math.round(breakdown.sellerShortfall * 100);
 
   const refund = await stripe.refunds.create(
     {
@@ -582,27 +619,34 @@ async function createSingleItemRefund(
     if (transferId && sellerNetCents > 0) {
       const transfer = await stripe.transfers.retrieve(transferId);
       const availableCents = (transfer.amount ?? 0) - (transfer.amount_reversed ?? 0);
-      if (availableCents >= sellerNetCents) {
+      const reversibleCents = Math.max(0, Math.min(availableCents, sellerNetCents));
+      if (reversibleCents > 0) {
         const reversal = await stripe.transferReversals.create(transferId, {
-          amount: sellerNetCents,
+          amount: reversibleCents,
           metadata: {
             flea_order_id: order.id,
             flea_refund_id: refund.id,
           },
-        }, { idempotencyKey: `flea-reversal-${order.id}-${sellerNetCents}` });
-        return { refund, transferReversal: reversal };
+        }, { idempotencyKey: `flea-reversal-${order.id}-${reversibleCents}` });
+        // Anything we could not pull back is now owed by the seller.
+        shortfallCents += sellerNetCents - reversibleCents;
+        return { refund, transferReversal: reversal, shortfallCents };
       }
       console.warn(
-        `[stripe-connect-refund] transfer ${transferId} only has ${availableCents}c available; needed ${sellerNetCents}c`,
+        `[stripe-connect-refund] transfer ${transferId} has nothing reversible; needed ${sellerNetCents}c`,
       );
+      shortfallCents += sellerNetCents;
+    } else if (sellerNetCents > 0 && !transferId) {
+      shortfallCents += sellerNetCents;
     }
   } catch (transferError) {
     console.error("[stripe-connect-refund] transfer reversal failed:", transferError);
-    // Continue: the buyer refund succeeded. The seller balance will be handled
-    // by the platform ledger and can be settled if needed.
+    // The buyer refund succeeded, so the seller's share becomes a debt to Flea.
+    shortfallCents += sellerNetCents;
   }
 
-  return { refund };
+  return { refund, shortfallCents };
+
 }
 
 // -------------------- Notifications & chat --------------------
