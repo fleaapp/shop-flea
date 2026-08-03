@@ -470,11 +470,11 @@ const Cart = () => {
                               .sort((a: any, b: any) => new Date(a.offerExpiresAt).getTime() - new Date(b.offerExpiresAt).getTime());
                             if (offerItems.length === 0) return null;
                             const soonest = offerItems[0] as any;
+                            const hoursLeft = Math.max(0, Math.ceil((new Date(soonest.offerExpiresAt).getTime() - Date.now()) / 3600000));
                             return (
                               <div className="px-4 py-2 bg-primary/15 text-center text-xs text-foreground">
-                                <span className="font-bold">💰 {offerItems.length > 1 ? `${offerItems.length} offer prices locked` : 'Offer price locked'}</span>{' '}
-                                <span>
-                                  - earliest expires in {offerTimeLeft(soonest.offerExpiresAt).replace(' left', '')}.
+                                <span className="font-bold">
+                                  💰 {offerItems.length > 1 ? `${offerItems.length} offers expire` : 'Offer expires'} in {hoursLeft}h
                                 </span>
                               </div>
                             );
