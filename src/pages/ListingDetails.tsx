@@ -770,7 +770,7 @@ const ListingDetails = () => {
 
           {/* Sticky Footer Actions — hidden in shared-link web preview mode */}
           {!isTextInputFocused && !isWebSharedPreview && (
-          <div data-listing-footer className="left-0 right-0 z-10 flex shrink-0 justify-center gap-3 border-t border-border bg-background px-4 pt-4 pb-12 transition-all duration-200">
+          <div data-listing-footer className="left-0 right-0 z-10 flex shrink-0 justify-center gap-2 border-t border-border bg-background px-4 pt-4 pb-12 transition-all duration-200">
             {isRemoved && !isOwner ? (
               // Removed listing footer
               <div className="flex flex-col items-center gap-3">
@@ -909,7 +909,7 @@ const ListingDetails = () => {
                       ? 'bg-tint border-tint' 
                       : isSold 
                         ? 'bg-muted/50 border-muted opacity-50' 
-                        : 'bg-transparent active:bg-tint active:border-tint'
+                        : 'bg-muted/40 border-muted/70 text-muted-foreground active:bg-tint active:border-tint'
                   }`}
                 >
                   💌
@@ -936,7 +936,7 @@ const ListingDetails = () => {
                         setOpen(false);
                         setTimeout(() => navigate('/cart'), 300);
                       }}
-                      className="h-14 flex-1 rounded-2xl text-sm font-semibold"
+                      className="h-14 flex-1 rounded-2xl px-3 text-sm font-semibold"
                     >
                       💰 ${acceptedOffers[listing.id].amount.toFixed(2)} · {offerTimeLeft(acceptedOffers[listing.id].expires_at)}
                     </Button>
