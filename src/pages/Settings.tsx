@@ -203,7 +203,36 @@ const Settings = () => {
       <AvatarFallback className="text-xs">👤</AvatarFallback>
     </Avatar>;
   const [helpCentreExpanded, setHelpCentreExpanded] = useState(false);
+  const [notificationsExpanded, setNotificationsExpanded] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState<boolean>((profile as any)?.marketing_opt_in ?? true);
+  const [marketingSaving, setMarketingSaving] = useState(false);
+
+  useEffect(() => {
+    setMarketingOptIn((profile as any)?.marketing_opt_in ?? true);
+  }, [(profile as any)?.marketing_opt_in]);
+
+  const handleToggleMarketing = async (checked: boolean) => {
+    if (!user) {
+      promptGuest();
+      return;
+    }
+    const prev = marketingOptIn;
+    setMarketingOptIn(checked);
+    setMarketingSaving(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ marketing_opt_in: checked } as any)
+      .eq('user_id', user.id);
+    setMarketingSaving(false);
+    if (error) {
+      setMarketingOptIn(prev);
+      toast.error('Failed to update preference');
+      return;
+    }
+    await refreshProfile();
+    toast.success(checked ? 'Marketing emails on' : 'Marketing emails off');
+  };
 
   const helpCentreItems: SettingsItem[] = [{
     icon: <span className="text-base">💬</span>,
