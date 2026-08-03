@@ -35,6 +35,15 @@ const matchesQuery = (listing: any, q: string) => {
   return hay.includes(needle);
 };
 
+const multiValueMatch = (listingValue: unknown, wanted: string[]) => {
+  if (!listingValue) return false;
+  const parts = String(listingValue)
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  return wanted.some((w) => parts.includes(String(w).trim().toLowerCase()));
+};
+
 const matchesFilters = (listing: any, f: Record<string, any>) => {
   if (!f) return true;
   if (f.sizes?.length && !f.sizes.includes(listing.size)) return false;
@@ -42,6 +51,8 @@ const matchesFilters = (listing: any, f: Record<string, any>) => {
   if (f.genders?.length && !f.genders.includes(listing.gender)) return false;
   if (f.condition && listing.condition !== f.condition) return false;
   if (f.brands?.length && !f.brands.includes(listing.brand)) return false;
+  if (f.colours?.length && !multiValueMatch(listing.colour, f.colours)) return false;
+  if (f.styles?.length && !multiValueMatch(listing.style, f.styles)) return false;
   if (typeof f.minPrice === 'number' && Number(listing.price) < f.minPrice) return false;
   if (typeof f.maxPrice === 'number' && Number(listing.price) > f.maxPrice) return false;
   return true;
@@ -50,10 +61,13 @@ const matchesFilters = (listing: any, f: Record<string, any>) => {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
-  // Require service-role auth — this is an internal cron/admin function.
+  // Require service-role or cron-secret auth — this is an internal cron/admin function.
   const authHeader = req.headers.get('Authorization') ?? '';
-  const expectedKeys = [SERVICE_KEY].filter(Boolean);
-  const isAuthorized = expectedKeys.some((k) => authHeader === `Bearer ${k}`);
+  const cronSecret = req.headers.get('x-cron-secret') ?? '';
+  const expectedCronSecret = Deno.env.get('CRON_SECRET') ?? '';
+  const isAuthorized =
+    (SERVICE_KEY && authHeader === `Bearer ${SERVICE_KEY}`) ||
+    (!!expectedCronSecret && cronSecret === expectedCronSecret);
   if (!isAuthorized) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
@@ -81,7 +95,7 @@ Deno.serve(async (req) => {
       // Find new active listings since last_notified_at, region-matched
       let q = externalAdmin
         .from('listings')
-        .select('id, title, brand, category, subcategory, size, gender, condition, price, tags, user_id, region_id, created_at')
+        .select('id, title, brand, category, subcategory, size, gender, condition, colour, style, price, tags, user_id, region_id, created_at')
         .eq('status', 'active')
         .gt('created_at', s.last_notified_at)
         .neq('user_id', s.user_id)

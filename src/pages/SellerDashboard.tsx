@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Loader2, AlertTriangle, Info, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { Skeleton } from '@/components/ui/skeleton';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { useOrders, isOrderRefunded } from '@/hooks/useOrders';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
@@ -446,8 +447,11 @@ const SellerDashboard = () => {
             Finish your seller setup to see your balance and payouts here.
           </div>
         ) : loading ? (
-          <div className="flex items-center justify-center pt-24">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <div className="space-y-3 pt-2">
+            <Skeleton className="h-28 w-full rounded-2xl" />
+            <Skeleton className="h-16 w-full rounded-2xl" />
+            <Skeleton className="h-16 w-full rounded-2xl" />
+            <Skeleton className="h-40 w-full rounded-2xl" />
           </div>
         ) : error ? (
           <div className="pt-16 text-center text-sm text-muted-foreground max-w-[280px] mx-auto">

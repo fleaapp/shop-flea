@@ -36,6 +36,9 @@ export type NotificationType =
   | 'offer_withdrawn'
   | 'offer_superseded'
   | 'offer_discount'
+  | 'offer_cancelled'
+  | 'offer_expiring'
+  | 'saved_search_match'
   | 'payment_action_required';
 
 
@@ -348,6 +351,7 @@ export const getNotificationMessage = (type: string, username?: string, listingT
   // backend. Never replace them with a buyer- or seller-specific UI template.
   const usesAuthoritativeMessage =
     type.startsWith('offer_') ||
+    type === 'saved_search_match' ||
     type === 'order_message_seller' ||
     type === 'order_message_buyer' ||
     type === 'support_message' ||
@@ -433,6 +437,12 @@ export const getNotificationMessage = (type: string, username?: string, listingT
       return rawMessage || '↩️ An offer was replaced with a new one. Tap to view the details.';
     case 'offer_discount':
       return rawMessage || '🏷️ A seller sent you a special offer. It expires in 24 hours.';
+    case 'offer_cancelled':
+      return rawMessage || '😔 Your offer was cancelled because the item changed. Tap to view the details.';
+    case 'offer_expiring':
+      return rawMessage || '⏳ Your accepted offer expires soon. Check out now to keep the price.';
+    case 'saved_search_match':
+      return rawMessage || '🔔 A new item matches one of your saved searches. Tap to view.';
     default:
       return 'New notification';
   }
@@ -499,6 +509,12 @@ export const getNotificationEmoji = (type: string): string => {
     case 'offer_withdrawn':
     case 'offer_superseded':
       return '↩️';
+    case 'offer_cancelled':
+      return '😔';
+    case 'offer_expiring':
+      return '⏳';
+    case 'saved_search_match':
+      return '🔔';
     default:
       return '🔔';
   }
