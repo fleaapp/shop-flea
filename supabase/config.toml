@@ -59,3 +59,5 @@ project_id = "teaicrimlqdayqpmxasc"
     verify_jwt = false
   [functions.offers]
     verify_jwt = true
+  [functions.reconcile-orphan-payments]
+    verify_jwt = false
