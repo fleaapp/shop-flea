@@ -1,5 +1,6 @@
 import { Plus, Camera, LayoutGrid, Rows3 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useOffers } from '@/hooks/useOffers';
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import BottomNav from '@/components/BottomNav';
@@ -27,6 +28,7 @@ import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
 
 
 const Profile = () => {
+  const { pendingReceivedCount } = useOffers();
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -197,6 +199,23 @@ const Profile = () => {
           {salesBadge && (
             <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
               {salesBadge}
+            </span>
+          )}
+        </div>
+
+        <div className="relative">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => navigate('/offers')}
+            className="h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-xl border-2 border-border bg-card hover:bg-secondary text-lg max-[375px]:text-base"
+            aria-label="Offers"
+          >
+            💰
+          </Button>
+          {pendingReceivedCount > 0 && (
+            <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+              {pendingReceivedCount > 99 ? '99+' : pendingReceivedCount}
             </span>
           )}
         </div>
