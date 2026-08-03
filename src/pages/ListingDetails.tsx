@@ -936,7 +936,7 @@ const ListingDetails = () => {
                         setOpen(false);
                         setTimeout(() => navigate('/cart'), 300);
                       }}
-                      className="h-14 flex-1 rounded-2xl text-sm font-semibold"
+                      className="h-14 flex-1 rounded-2xl px-3 text-sm font-semibold"
                     >
                       💰 ${acceptedOffers[listing.id].amount.toFixed(2)} · {offerTimeLeft(acceptedOffers[listing.id].expires_at)}
                     </Button>
