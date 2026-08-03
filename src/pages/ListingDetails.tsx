@@ -936,9 +936,12 @@ const ListingDetails = () => {
                         setOpen(false);
                         setTimeout(() => navigate('/cart'), 300);
                       }}
-                      className="h-14 w-auto shrink-0 rounded-2xl px-2 text-sm font-semibold"
+                      className="h-14 min-w-[140px] shrink-0 rounded-2xl px-3 text-sm font-semibold"
                     >
-                      💰 ${acceptedOffers[listing.id].amount.toFixed(2)} · {offerTimeLeft(acceptedOffers[listing.id].expires_at)}
+                      <span>💰 ${acceptedOffers[listing.id].amount.toFixed(2)}</span>
+                      <span className="ml-1 text-primary-foreground/55">
+                        · {offerTimeLeft(acceptedOffers[listing.id].expires_at)}
+                      </span>
                     </Button>
                   ) : (
                     <Button
