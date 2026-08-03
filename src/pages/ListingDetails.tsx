@@ -738,7 +738,6 @@ const ListingDetails = () => {
                 {/* Price */}
                 <div className="text-right">
                   <div className="flex items-center justify-end gap-1.5">
-                    <p className="text-2xl font-bold text-foreground">${listing.price}</p>
                     <button
                       type="button"
                       aria-label="Price breakdown"
@@ -747,6 +746,7 @@ const ListingDetails = () => {
                     >
                       <Info className="h-4 w-4" />
                     </button>
+                    <p className="text-2xl font-bold text-foreground">${listing.price}</p>
                   </div>
                   <p className="text-xs text-muted-foreground">+${listing.shipping_price || 0} shipping</p>
                 </div>
