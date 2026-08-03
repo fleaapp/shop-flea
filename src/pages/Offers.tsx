@@ -306,7 +306,29 @@ const Offers = () => {
         </div>
       </div>
 
+      {tab === 'received' && (
+        <div className="mt-4 shrink-0 px-4">
+          <div className="flex items-center justify-between rounded-2xl bg-card px-4 py-3 card-shadow">
+            <div className="min-w-0 pr-3">
+              <p className="text-sm font-semibold text-foreground">💰 Offers</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {offersEnabled
+                  ? 'Buyers can make offers on your listings.'
+                  : 'Turn on to let buyers make offers on your listings.'}
+              </p>
+            </div>
+            <Switch
+              checked={offersEnabled}
+              disabled={savingOffersToggle}
+              onCheckedChange={handleToggleOffers}
+              className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime"
+            />
+          </div>
+        </div>
+      )}
+
       <div className="mt-4 flex-1 overflow-y-auto px-4 pb-6">
+
         {loading ? (
           <div className="flex min-h-[50vh] items-center justify-center">
             <span className="text-5xl">⏳</span>
