@@ -271,7 +271,7 @@ Deno.serve(async (req) => {
         ...new Set([...(cartRows ?? []), ...(favRows ?? [])].map((r: any) => r.user_id)),
       ].filter((id) => id !== userId).slice(0, 50);
 
-      if (recipients.length === 0) return json({ sent: 0 });
+      if (recipients.length === 0) return json({ sent: 0, reason: "no_recipients" });
 
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
       const rows = recipients.map((buyerId) => ({
