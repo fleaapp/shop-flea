@@ -2223,6 +2223,11 @@ export type Database = {
         }
         Returns: number
       }
+      notify_expiring_accepted_offers: { Args: never; Returns: number }
+      notify_offers_voided: {
+        Args: { _listing_id: string; _reason: string }
+        Returns: undefined
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
