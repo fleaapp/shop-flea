@@ -274,12 +274,19 @@ const Notifications = () => {
       return;
     }
 
+    // Accepted offer about to lapse → send them straight to the cart to pay
+    if (notification.type === 'offer_expiring') {
+      navigate('/cart');
+      return;
+    }
+
     // Offer activity → open the Offers screen on the right tab
     if (notification.type?.startsWith('offer_')) {
       const sentTab =
         notification.type === 'offer_accepted' ||
         notification.type === 'offer_declined' ||
         notification.type === 'offer_withdrawn' ||
+        notification.type === 'offer_cancelled' ||
         notification.type === 'offer_superseded';
       navigate('/offers', { state: { tab: sentTab ? 'sent' : 'received' } });
       return;
