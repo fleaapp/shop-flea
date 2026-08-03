@@ -317,7 +317,7 @@ Deno.serve(async (req) => {
     return json({ error: "Unknown action" }, 400);
   } catch (err) {
     console.error("[offers] error", err);
-    await logEdgeError("offers", err);
+    await logEdgeError({ functionName: "offers", error: err, source: "edge_function" });
     return json({ error: "Something went wrong. Please try again." }, 500);
   }
 });
