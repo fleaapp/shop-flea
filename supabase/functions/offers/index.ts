@@ -232,8 +232,30 @@ Deno.serve(async (req) => {
       if (!offerId) return json({ error: "Invalid request" }, 400);
       const { data, error } = await userClient.rpc("withdraw_offer", { p_offer_id: offerId });
       if (error) return json({ error: error.message }, 400);
-      return json({ offer: Array.isArray(data) ? data[0] : data });
+      const offer: any = Array.isArray(data) ? data[0] : data;
+
+      // Tell the other side - otherwise they keep waiting on a dead offer.
+      if (offer) {
+        const title = await listingTitle(offer.listing_id);
+        const actor = await usernameOf(userId);
+        const recipient = userId === offer.seller_id ? offer.buyer_id : offer.seller_id;
+        if (recipient) {
+          await notify(admin, [
+            {
+              user_id: recipient,
+              type: "offer_withdrawn",
+              title: "Offer withdrawn",
+              message: `↩️ @${actor} withdrew their ${money(offer.amount)} offer on "${title}".`,
+              related_listing_id: offer.listing_id,
+              related_user_id: userId,
+            },
+          ]);
+        }
+      }
+
+      return json({ offer });
     }
+
 
     // ------------------------------------------------------------------ blast
     // Seller sends a discounted offer to everyone with the item saved.

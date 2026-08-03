@@ -84,11 +84,44 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
+    // The settlement must clear the whole debt. Partial payments would leave
+    // the seller still blocked while the app tells them they're unlocked.
+    let owedCents = Math.max(Number(profile?.negative_balance_cents ?? 0), 0);
+    try {
+      const balance = await stripe.balance.retrieve({ stripeAccount: accountId });
+      const sumAud = (arr: any[] | undefined) =>
+        (arr || [])
+          .filter((b) => (b.currency || "aud").toLowerCase() === "aud")
+          .reduce((s, b) => s + (b.amount || 0), 0);
+      const total = sumAud((balance as any).available) + sumAud((balance as any).pending);
+      owedCents = total < 0 ? Math.abs(total) : 0;
+    } catch (e) {
+      console.warn("[stripe-connect-topup] live balance check failed", e);
+    }
+
+    if (owedCents <= 0) {
+      return new Response(
+        JSON.stringify({ error: "Your balance is already settled.", owedCents: 0 }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    if (amountCents < owedCents) {
+      return new Response(
+        JSON.stringify({
+          error: "This must settle the full outstanding balance.",
+          owedCents,
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    // Never charge more than what's owed.
+    const chargeCents = owedCents;
+
     // Create a PaymentIntent ON the connected account. Funds go directly to
     // their Connect balance and offset the negative amount.
     const intent = await stripe.paymentIntents.create(
       {
-        amount: amountCents,
+        amount: chargeCents,
         currency: "aud",
         automatic_payment_methods: { enabled: true },
         description: "Flea seller balance settlement",
@@ -99,9 +132,10 @@ serve(async (req) => {
       },
       {
         stripeAccount: accountId,
-        idempotencyKey: `flea-topup-${userId}-${amountCents}-${Math.floor(Date.now() / 60000)}`,
+        idempotencyKey: `flea-topup-${userId}-${chargeCents}-${Math.floor(Date.now() / 60000)}`,
       },
     );
+
 
     // Fetch the recent refunds/disputes that pushed the balance negative so we
     // can show the seller a breakdown of what they owe on.
@@ -150,6 +184,7 @@ serve(async (req) => {
         clientSecret: intent.client_secret,
         paymentIntentId: intent.id,
         connectedAccountId: accountId,
+        owedCents,
         breakdown,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
