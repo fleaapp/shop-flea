@@ -1,4 +1,3 @@
-import { offerTimeLeft } from '@/hooks/useOffers';
 import { useState, useRef } from 'react';
 import soldSticker from '@/assets/sold-sticker.png';
 import { useNavigate } from 'react-router-dom';
@@ -226,11 +225,6 @@ const CartItemRow = ({
             <p className="text-lg font-bold leading-tight text-foreground">
               ${item.price}
             </p>
-            {item.offerExpiresAt && (
-              <p className="text-xs font-semibold leading-tight text-foreground">
-                💰 Offer · {offerTimeLeft(item.offerExpiresAt)}
-              </p>
-            )}
             <p className="text-sm text-muted-foreground leading-tight">
               +${item.shippingPrice} shipping
             </p>
