@@ -1,22 +1,30 @@
-# Seller Info UI Tidy-Up
+# Bundle Offer Badge
 
-## What we’re changing
+Show a small lime bubble banner wherever a seller has bundle offers turned on.
 
-1. **Listing Details drawer seller card**
-   - Remove the review-star line and the "Last active" line from the username/location box.
-   - The seller card should show only: avatar, username, location.
+## Badge content
 
-2. **Seller Profile header**
-   - Keep the existing star-rating bubble that opens reviews.
-   - Add a second bubble immediately to its right showing `⏱️ <last active>` (e.g. "⏱️ Active today"), using the existing `formatLastActive` helper.
-   - Both bubbles should sit on the same horizontal row below the username.
+Driven by the seller's saved bundle mode:
 
-## Files to touch
+- `free` - "Free ✈️ on bundles"
+- `discounted` - "20% off ✈️ on bundles"
+- `item_discount` - "📦 10% off bundles"
+- `none` - nothing rendered
 
-- `src/pages/ListingDetails.tsx` — strip rating/last-active lines from seller card.
-- `src/pages/SellerProfile.tsx` — render last-active bubble next to the reviews bubble.
+Style: light lime background with a lime border, lime-tinted text, rounded-full pill, small text. Uses existing design tokens (primary lime), no hardcoded hex.
+
+## Where it appears
+
+1. **Seller profile** - centered under the reviews / last-active bubbles row, above the Listings|Sold toggle.
+2. **Listing details drawer** - centered at the top of the image area, on the same row as the 3-dot menu (right) and cart/wishlist stats (left), so it sits between them.
+
+## Technical notes
+
+- New shared component `src/components/BundleOfferBadge.tsx` taking `mode`, `discountPercent`, `itemDiscountPercent`; returns null for `none`.
+- Seller profile already loads the profile; extend its `profiles_public` select with `bundle_shipping_mode`, `bundle_shipping_discount_percent`, `bundle_item_discount_percent`.
+- Listing details does not fetch bundle settings today - add a lightweight lookup via the existing `fetchSellerShippingSettings` helper for the listing's seller.
+- Long text is kept on one line; the badge is centered with `absolute inset-x-0 top-3` and horizontal padding so it never overlaps the icons.
 
 ## Out of scope
 
-- No backend or data changes; both `rating` and `last_sign_in_at` are already fetched.
-- No navigation or interaction changes beyond what already exists.
+No changes to bundle pricing logic, cart, or checkout.
