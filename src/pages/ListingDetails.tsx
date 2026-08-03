@@ -138,6 +138,24 @@ const ListingDetails = () => {
 
   const isOwner = user?.id === listing?.user_id;
 
+  const listingSellerId = listing?.user_id;
+  useEffect(() => {
+    let cancelled = false;
+    if (!listingSellerId) {
+      setBundleInfo(null);
+      return;
+    }
+    fetchSellerShippingSettings([listingSellerId])
+      .then((map) => {
+        if (cancelled) return;
+        const info = map.get(listingSellerId) || null;
+        setBundleInfo(info && info.mode !== 'none' ? info : null);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [listingSellerId]);
+
+
   // Fetch seller orders for own sold listings
   const { sellerOrders, sellerOrderGroups, markAsShipped } = useOrders();
   const hasSellerOrderForListing = Boolean(
