@@ -271,7 +271,7 @@ Deno.serve(async (req) => {
         ...new Set([...(cartRows ?? []), ...(favRows ?? [])].map((r: any) => r.user_id)),
       ].filter((id) => id !== userId).slice(0, 50);
 
-      if (recipients.length === 0) return json({ sent: 0 });
+      if (recipients.length === 0) return json({ sent: 0, reason: "no_recipients" });
 
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
       const rows = recipients.map((buyerId) => ({
@@ -285,15 +285,16 @@ Deno.serve(async (req) => {
         expires_at: expiresAt,
       }));
 
-      // Skip anyone who already has an open offer on this item.
+      // Skip anyone who already has a live open offer on this item.
       const { data: existing } = await admin
         .from("offers")
         .select("buyer_id")
         .eq("listing_id", listingId)
-        .eq("status", "pending");
+        .eq("status", "pending")
+        .gt("expires_at", new Date().toISOString());
       const blocked = new Set((existing ?? []).map((r: any) => r.buyer_id));
       const toInsert = rows.filter((r) => !blocked.has(r.buyer_id));
-      if (toInsert.length === 0) return json({ sent: 0 });
+      if (toInsert.length === 0) return json({ sent: 0, reason: "already_negotiating" });
 
       const { error: insertError } = await admin.from("offers").insert(toInsert);
       if (insertError) return json({ error: insertError.message }, 400);
