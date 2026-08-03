@@ -741,6 +741,13 @@ const SellerDashboard = () => {
                   'Instant Payout 1.5% fee'
                 )}
               </Button>
+
+              {instantBlockedReason && instantBlockedReason !== payoutBlockedReason && (
+                <p className="text-[11px] text-muted-foreground mt-2 text-center leading-relaxed px-1">
+                  {instantBlockedReason}
+                </p>
+              )}
+
             </div>
 
 
