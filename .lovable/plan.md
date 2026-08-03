@@ -1,46 +1,39 @@
-# Listing details drawer - seller card, listing age, price breakdown
+# Bundle Offers (rename + item discount option)
 
-Five changes to the listing details drawer (`src/pages/ListingDetails.tsx`).
+Rebrand the seller "Bundle Shipping" feature as "Bundle Offers" with a 📦 emoji, and add a fourth option that discounts the items themselves rather than the shipping.
 
-## 1. Listing age
+## The four options
 
-Show how long ago the listing was created (e.g. "2 hours ago", "4 days ago", "1 week ago") on the right side of the row that holds the listing title, so it sits horizontally aligned with the item name. Styled as muted small text matching the seller card's secondary text.
+1. No bundle offers - buyers pay each item's price and shipping in full.
+2. Discounted shipping for bundles - X% off combined shipping on 2+ items.
+3. Free shipping for bundles - shipping is $0 on 2+ items.
+4. Discount on bundles (new) - X% off the seller's item subtotal on 2+ items. Shipping still charged in full.
 
-## 2. Price info button
+Options stay mutually exclusive (one radio choice).
 
-Add a small circular info button (ⓘ) next to the price. Tapping opens a Flea-style drawer titled "Total" showing:
+## Percentage picker
 
-```text
-Item price                        $5.00
-Shipping                         $15.00
-Secure Checkout Fee               $0.95
-  This fee keeps Flea running and protects
-  every purchase:
-  - Buyer protection on every order
-  - Secure payments and payouts
-  - Fraud detection and prevention
-  - Support when something goes wrong
-Total                            $20.95
-```
+Replace the five fixed buttons with a Depop-style draggable slider: 5% to 50% in 5% steps, current value shown large above the track. Used by both the shipping-discount and the new item-discount option.
 
-Numbers come from the existing fee helper (`calculateFees`, 4% + $0.70), so the drawer always matches checkout. Uses the standard Flea drawer style (top-10 offset, rounded, px-4 padding, safe-area footer padding) and short dashes.
+## Where the discount shows up
 
-## 3. Three-dots menu
+- Cart: per-seller group banner becomes "📦 Bundle offer: X% off items" (or the existing shipping wording for shipping modes), with the discount shown as its own line in the totals.
+- Checkout: same banner treatment plus a "Bundle discount -$X.XX" line in the summary, above the Secure Checkout Fee.
+- Fees: the buyer fee (4% + $0.70) is calculated on the discounted subtotal, so the discount reduces the total correctly.
+- Seller payout: the seller absorbs the discount - their net is based on the discounted item price, with the 2% + $0.50 transaction fee applied after.
+- Order records: each order row stores its own discounted price so receipts, sale details, and refunds all use the real amount charged.
+- Refunds: pro-rata refund math uses the stored discounted prices, so partial refunds of a bundle stay accurate.
 
-Collapse "Report listing" and "Report seller" into a single "🚩 Report listing" item. Seller reporting stays available on the seller profile screen, where it already exists.
+## Copy sweep
 
-## 4. Last active
-
-Add a line under location in the seller card showing last active, derived from the seller's last sign-in (e.g. "Active today", "Active 3 days ago", "Active 2 weeks ago"). If the seller has been inactive 10+ days, use the existing inactive treatment wording rather than a plain timestamp.
-
-## 5. Rating and reviews
-
-Add a line under last active in the seller card: filled/empty stars plus the review count, e.g. `⭐️⭐️⭐️⭐️★ 4.6 (23)`. If the seller has no reviews yet, show "No reviews yet".
+Every user-facing "Bundle shipping" string becomes "Bundle offers", with ✈️ replaced by 📦 in that feature only (shipping prices elsewhere keep their existing emoji). Covers the settings sheet, the seller setup modal, Settings menu row, cart, checkout, and receipts.
 
 ## Technical notes
 
-- Seller fetch in `ListingDetails.tsx` currently selects `username, avatar_url, location, country_code, offers_enabled`; extend it to also pull `rating`, `total_reviews`, `last_sign_in_at`. These columns already exist on both `profiles` and the `profiles_public` view, so no schema or policy change is needed.
-- Listing `created_at` is added to the listing select and the state/snapshot hydration paths so shared-link and cached opens still render an age.
-- New component `src/components/PriceBreakdownDrawer.tsx` for the price breakdown; it takes item price and shipping and calls `calculateFees` from `src/utils/feeCalculator.ts`.
-- Star rendering follows the existing review convention (⭐️ filled / ★ empty).
-- Seller card grows to three secondary lines; row layout switches to `items-start` so the price block stays top-aligned with the card.
+- Migration: widen `profiles_bundle_shipping_mode_check` to allow `item_discount`, add `bundle_item_discount_percent integer`, expose it on `profiles_public` (view, `sync_profiles_public` trigger, and `get_profiles_public`).
+- `src/utils/shippingCalculator.ts`: extend `BundleShippingMode` with `item_discount`, add `calculateBundleItemDiscount(itemPrices, mode, percent)`, and update `getBundleBreakdownText` to return the item-discount label. Shipping stays untouched in `item_discount` mode.
+- `src/utils/shippingPrefs.ts`: persist the new mode and percent in the local fallback.
+- `src/utils/feeCalculator.ts`: apply the item discount to the seller subtotal before buyer fees and before `computeSellerNet`.
+- Frontend: `ShippingSettingsSheet.tsx`, `TieredShippingSetupModal.tsx` (four options + new slider component), `Cart.tsx`, `Checkout.tsx`, `Settings.tsx` row label.
+- Edge functions: `stripe-connect-payment-intent`, `finalize-checkout`, and `stripe-connect-refund` each read the new column and apply the same discount math server-side, so the charged amount and stored `orders.price` values are authoritative and tamper-proof.
+- Interaction with accepted offers: an item bought at an accepted offer price is excluded from the bundle item discount (no double discount); it still counts toward the 2+ item threshold.
