@@ -313,8 +313,8 @@ const Settings = () => {
 
   // ---- Seller (below the Become a Seller / Seller Dashboard row) ----
   const sellerItems: SettingsItem[] = [{
-    icon: <span className="text-base">✈️</span>,
-    label: 'Shipping Settings',
+    icon: <span className="text-base">📦</span>,
+    label: 'Bundle Offers',
     action: isGuest ? promptGuest : () => setShippingOpen(true)
   }, isGuest ? {
     icon: <span className="text-base">⏸️</span>,

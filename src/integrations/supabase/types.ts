@@ -1082,6 +1082,7 @@ export type Database = {
         Row: {
           auth_provider: string | null
           avatar_url: string | null
+          bundle_item_discount_percent: number | null
           bundle_shipping_discount_percent: number | null
           bundle_shipping_mode: string
           country_code: string | null
@@ -1128,6 +1129,7 @@ export type Database = {
         Insert: {
           auth_provider?: string | null
           avatar_url?: string | null
+          bundle_item_discount_percent?: number | null
           bundle_shipping_discount_percent?: number | null
           bundle_shipping_mode?: string
           country_code?: string | null
@@ -1174,6 +1176,7 @@ export type Database = {
         Update: {
           auth_provider?: string | null
           avatar_url?: string | null
+          bundle_item_discount_percent?: number | null
           bundle_shipping_discount_percent?: number | null
           bundle_shipping_mode?: string
           country_code?: string | null
@@ -1230,6 +1233,7 @@ export type Database = {
       profiles_public: {
         Row: {
           avatar_url: string | null
+          bundle_item_discount_percent: number | null
           bundle_shipping_discount_percent: number | null
           bundle_shipping_mode: string | null
           country_code: string | null
@@ -1256,6 +1260,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          bundle_item_discount_percent?: number | null
           bundle_shipping_discount_percent?: number | null
           bundle_shipping_mode?: string | null
           country_code?: string | null
@@ -1282,6 +1287,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          bundle_item_discount_percent?: number | null
           bundle_shipping_discount_percent?: number | null
           bundle_shipping_mode?: string | null
           country_code?: string | null

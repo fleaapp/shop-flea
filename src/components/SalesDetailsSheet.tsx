@@ -333,7 +333,7 @@ const SalesDetailsSheet = ({
                   </div>
                   {bundleText && (
                     <div className="text-xs text-accent-foreground text-left">
-                      <div><span className="mr-1">✈️</span><span className="font-bold">Bundle shipping:</span></div>
+                      <div><span className="mr-1">{bundleText.emoji}</span><span className="font-bold">{bundleText.label}</span></div>
                       <div>{bundleText.detail}</div>
                     </div>
                   )}

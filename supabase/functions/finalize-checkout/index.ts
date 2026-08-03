@@ -428,17 +428,34 @@ serve(async (req) => {
         return offerPrice !== undefined ? { ...row, price: offerPrice } : row;
       })
       .filter((x): x is ListingRow => !!x);
+
+    // Bundle offer: % off item prices on 2+ items from the same seller. Mirrors
+    // stripe-connect-payment-intent exactly so the verified total reconciles.
+    const applyBundleItemDiscount = (
+      rows: ListingRow[],
+      settings: any,
+    ): ListingRow[] => {
+      const r2 = (n: number) => Math.round(n * 100) / 100;
+      const pct = String(settings?.bundle_shipping_mode || "none") === "item_discount" && rows.length >= 2
+        ? Math.max(0, Math.min(100, Number(settings?.bundle_item_discount_percent || 0)))
+        : 0;
+      if (pct <= 0) return rows;
+      return rows.map((row) =>
+        offerPriceByListing.get(row.id) !== undefined
+          ? row
+          : { ...row, price: r2(Number(row.price) * (1 - pct / 100)) }
+      );
+    };
     if (authoritativeItems.length === 0) throw new Error("Purchased items could not be found.");
 
     // Compute expected paid amount from DB-authoritative prices and seller
     // bundle-shipping settings. This must match stripe-connect-payment-intent
     // exactly; do not trust client-supplied shipping totals for verification.
     const round2 = (n: number) => Math.round(n * 100) / 100;
-    const dbItemsTotal = authoritativeItems.reduce((s, i) => s + Number(i.price), 0);
     const sellerIds = Array.from(new Set(authoritativeItems.map((item) => item.user_id)));
     const { data: sellerProfiles, error: sellerProfilesError } = await serviceClient
       .from("profiles")
-      .select("user_id, bundle_shipping_mode, bundle_shipping_discount_percent")
+      .select("user_id, bundle_shipping_mode, bundle_shipping_discount_percent, bundle_item_discount_percent")
       .in("user_id", sellerIds);
     if (sellerProfilesError) throw sellerProfilesError;
 
@@ -449,6 +466,16 @@ serve(async (req) => {
       arr.push(item);
       itemsBySellerForShipping.set(item.user_id, arr);
     }
+    // Apply per-seller bundle item discounts before any fee/total maths.
+    const discountedItems: ListingRow[] = [];
+    for (const [sellerId, sellerItems] of itemsBySellerForShipping.entries()) {
+      const discounted = applyBundleItemDiscount(sellerItems, sellerSettings.get(sellerId));
+      itemsBySellerForShipping.set(sellerId, discounted);
+      discountedItems.push(...discounted);
+    }
+    authoritativeItems.length = 0;
+    authoritativeItems.push(...discountedItems);
+    const dbItemsTotal = authoritativeItems.reduce((sum, i) => sum + Number(i.price), 0);
     const shippingMap = new Map<string, number>();
     for (const [sellerId, sellerItems] of itemsBySellerForShipping.entries()) {
       const settings: any = sellerSettings.get(sellerId) ?? {};

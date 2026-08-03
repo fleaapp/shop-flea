@@ -22,7 +22,7 @@ import { toast } from 'sonner';
 import { Pencil, Lock, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import BlockedUserBanner from '@/components/BlockedUserBanner';
-import { fetchSellerShippingSettings, calculateTotalShipping, getBundleBreakdownText, SellerShippingInfo } from '@/utils/shippingCalculator';
+import { fetchSellerShippingSettings, calculateTotalShipping, calculateTotalItemDiscount, getBundleBreakdownText, SellerShippingInfo } from '@/utils/shippingCalculator';
 import { calculateFees } from '@/utils/feeCalculator';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
@@ -196,8 +196,23 @@ const Checkout = () => {
   // Server-side payment-intent validation is the final safety net.
   const sellerHasStripe = true;
 
+  // Bundle offers: item-level discount when a seller offers "% off bundles".
+  const { totalDiscount: bundleItemDiscount, discountBySeller } = useMemo(
+    () =>
+      calculateTotalItemDiscount(
+        validItems.map((item: any) => ({
+          sellerId: item.sellerId,
+          price: Number(item.price) || 0,
+          hasAcceptedOffer: item.offerPrice !== undefined,
+        })),
+        sellerSettings
+      ),
+    [validItems, sellerSettings]
+  );
+
   // Single source of truth for fees — see src/utils/feeCalculator.ts
-  const itemsTotal = validItems.reduce((sum: number, item: any) => sum + item.price, 0);
+  const rawItemsTotal = validItems.reduce((sum: number, item: any) => sum + item.price, 0);
+  const itemsTotal = Math.round((rawItemsTotal - bundleItemDiscount) * 100) / 100;
   const subtotal = itemsTotal + totalShipping;
   const rawFees = calculateFees(itemsTotal, totalShipping, 'stripe');
   const feeWaived = coupon?.type === 'waive_buyer_fee';
@@ -803,7 +818,8 @@ const Checkout = () => {
                   return Array.from(groupedItems.entries()).map(([sellerId, sellerItems]) => {
                     const shipping = shippingBySeller.get(sellerId) || 0;
                     const bundleText = getBundleBreakdownText(sellerItems.length, sellerSettings.get(sellerId));
-                    const hasBundleRow = !!bundleText;
+                    // Item-discount bundles still pay shipping normally, so keep the shipping line.
+                    const hasBundleRow = !!bundleText && sellerSettings.get(sellerId)?.mode !== 'item_discount';
                     
                     return (
                       <div key={sellerId} className="space-y-4">
@@ -839,7 +855,7 @@ const Checkout = () => {
                 <CouponInput value={coupon} onChange={setCoupon} />
               </div>
 
-              {/* Bundle shipping labels (one per qualifying seller) */}
+              {/* Bundle offer labels (one per qualifying seller) */}
               {(() => {
                 const groupedItems = new Map<string, Listing[]>();
                 validItems.forEach(item => {
@@ -856,14 +872,18 @@ const Checkout = () => {
                 return (
                   <div className="px-4 py-3 border-t border-border space-y-2">
                     {rows.map(({ sellerId, bundleText }) => {
+                      const isItemDiscount = sellerSettings.get(sellerId)?.mode === 'item_discount';
                       const shipping = shippingBySeller.get(sellerId) || 0;
+                      const discount = discountBySeller.get(sellerId) || 0;
                       return (
                         <div key={sellerId} className="flex items-end justify-between gap-3 text-accent-foreground text-sm">
                           <div className="text-left">
-                            <div><span className="mr-1">✈️</span><span className="font-bold">Bundle shipping:</span></div>
+                            <div><span className="mr-1">{bundleText!.emoji}</span><span className="font-bold">{bundleText!.label}</span></div>
                             <div>{bundleText!.detail}</div>
                           </div>
-                          <div className="text-right whitespace-nowrap text-muted-foreground">+${shipping.toFixed(2)}</div>
+                          <div className="text-right whitespace-nowrap text-muted-foreground">
+                            {isItemDiscount ? `- $${discount.toFixed(2)}` : `+$${shipping.toFixed(2)}`}
+                          </div>
                         </div>
                       );
                     })}

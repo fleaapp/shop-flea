@@ -459,8 +459,8 @@ const Cart = () => {
                         <>
                           {bundleText && (
                             <div className="px-4 py-2 bg-accent/30 text-center text-xs text-accent-foreground">
-                              <span className="mr-1">✈️</span>
-                              <span className="font-bold">Bundle shipping:</span>{' '}
+                              <span className="mr-1">{bundleText.emoji}</span>
+                              <span className="font-bold">{bundleText.label}</span>{' '}
                               <span>{bundleText.detail}</span>
                             </div>
                           )}
