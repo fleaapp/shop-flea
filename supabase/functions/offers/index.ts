@@ -118,6 +118,15 @@ Deno.serve(async (req) => {
       const amount = Number(body?.amount);
       if (!listingId || !Number.isFinite(amount)) return json({ error: "Invalid request" }, 400);
 
+      // Capture any live offer from the other side that this new offer will
+      // supersede, so we can tell them instead of silently killing it.
+      const { data: superseded } = await admin
+        .from("offers")
+        .select("id, amount, seller_id, buyer_id, direction")
+        .eq("listing_id", listingId)
+        .eq("status", "pending")
+        .is("parent_offer_id", body?.parentOfferId ? undefined : null);
+
       const { data, error } = await userClient.rpc("create_offer", {
         p_listing_id: listingId,
         p_amount: amount,
@@ -129,6 +138,31 @@ Deno.serve(async (req) => {
       const offer: any = Array.isArray(data) ? data[0] : data;
       const title = await listingTitle(offer.listing_id);
       const actor = await usernameOf(userId);
+
+      // Notify the counterparty whose pending offer just got replaced.
+      if (!body?.parentOfferId) {
+        const killed = (superseded ?? []).filter(
+          (o: any) =>
+            o.buyer_id === offer.buyer_id &&
+            o.id !== offer.id &&
+            ((userId === offer.buyer_id && o.direction === "seller_to_buyer") ||
+              (userId === offer.seller_id && o.direction === "buyer_to_seller")),
+        );
+        for (const k of killed) {
+          const recipient = userId === offer.buyer_id ? offer.seller_id : offer.buyer_id;
+          await notify(admin, [
+            {
+              user_id: recipient,
+              type: "offer_superseded",
+              title: "Offer replaced",
+              message: `↩️ @${actor} replaced your ${money(k.amount)} offer on "${title}" with a new ${money(offer.amount)} offer.`,
+              related_listing_id: offer.listing_id,
+              related_user_id: userId,
+            },
+          ]);
+        }
+      }
+
 
       if (offer.status === "accepted") {
         // Auto-accepted by the seller's rule.
