@@ -110,7 +110,7 @@ const ListingDetails = () => {
   const { addToCart, removeFromCart, isInCart } = useCart();
   const { addDiscarded } = useDiscardedListings();
   const { requireAuth } = useGuestMode();
-  const { create: createOffer, sent: sentOffers } = useOffers();
+  const { create: createOffer, sent: sentOffers, blast: blastOffer } = useOffers();
   const { acceptedOffers } = useAcceptedOffers();
 
   // Confirmation dialog states
@@ -121,6 +121,7 @@ const ListingDetails = () => {
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [salesSheetOpen, setSalesSheetOpen] = useState(false);
   const [offerDrawerOpen, setOfferDrawerOpen] = useState(false);
+  const [blastDrawerOpen, setBlastDrawerOpen] = useState(false);
   const [selectedOrderGroup, setSelectedOrderGroup] = useState<OrderGroup | null>(null);
   const [isTextInputFocused, setIsTextInputFocused] = useState(false);
   const isWebSharedPreview = useIsWebSharedPreview();
@@ -811,6 +812,16 @@ const ListingDetails = () => {
                       <span className="mr-0.5">✏️</span>
                       Edit Listing
                     </Button>
+                    {seller?.offers_enabled && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setBlastDrawerOpen(true)}
+                        aria-label="Offer to interested buyers"
+                        className="h-14 w-14 rounded-2xl border-2 text-2xl bg-transparent shrink-0"
+                      >
+                        💰
+                      </Button>
+                    )}
                     <Button
                       onClick={() => setShowMarkAsSoldDialog(true)}
                       className="h-14 rounded-2xl text-sm font-medium bg-charcoal text-white hover:bg-charcoal/90 border-2 border-charcoal flex-1"
@@ -891,6 +902,29 @@ const ListingDetails = () => {
               </>
             )}
           </div>
+          )}
+
+          {listing && seller?.offers_enabled && isOwner && (
+            <MakeOfferDrawer
+              open={blastDrawerOpen}
+              onOpenChange={setBlastDrawerOpen}
+              mode="blast"
+              listing={{
+                id: listing.id,
+                title: listing.title,
+                price: Number(listing.price),
+                shipping_price: listing.shipping_price,
+                image: listing.images?.[0],
+              }}
+              onSubmit={async (amount) => {
+                const sent = await blastOffer(listing.id, amount);
+                toast.success(
+                  sent > 0
+                    ? `Offer sent to ${sent} interested ${sent === 1 ? 'buyer' : 'buyers'}.`
+                    : 'Nobody has this item saved yet - try again later.',
+                );
+              }}
+            />
           )}
 
           {listing && seller?.offers_enabled && !isOwner && (

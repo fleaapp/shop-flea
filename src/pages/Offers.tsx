@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 import { supabase } from '@/lib/supabase';
@@ -30,9 +30,12 @@ const STATUS_LABEL: Record<string, string> = {
 
 const Offers = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { received, sent, loading, create, respond, withdraw, refresh } = useOffers();
-  const [tab, setTab] = useState<'received' | 'sent'>('received');
+  const [tab, setTab] = useState<'received' | 'sent'>(
+    (location.state as any)?.tab === 'sent' ? 'sent' : 'received',
+  );
   const [listings, setListings] = useState<Record<string, ListingLite>>({});
   const [usernames, setUsernames] = useState<Record<string, string>>({});
   const [counterOffer, setCounterOffer] = useState<Offer | null>(null);
