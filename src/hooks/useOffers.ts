@@ -187,11 +187,11 @@ export function useAcceptedOffers() {
   return { acceptedOffers: map, acceptedOffersError: error, refreshAcceptedOffers: fetchAccepted };
 }
 
-/** Countdown label like "23h left" / "42m left". */
+/** Countdown label like "23h" / "42m". */
 export function offerTimeLeft(expiresAt: string): string {
   const ms = new Date(expiresAt).getTime() - Date.now();
   if (ms <= 0) return 'Expired';
   const hours = Math.floor(ms / 3600000);
-  if (hours >= 1) return `${hours}h left`;
-  return `${Math.max(1, Math.floor(ms / 60000))}m left`;
+  if (hours >= 1) return `${hours}h`;
+  return `${Math.max(1, Math.floor(ms / 60000))}m`;
 }
