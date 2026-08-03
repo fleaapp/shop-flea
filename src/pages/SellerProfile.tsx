@@ -16,6 +16,7 @@ import ReviewsDrawer from '@/components/ReviewsDrawer';
 import { ChevronLeft, MoreVertical, LayoutGrid, Rows3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProfileGridCard from '@/components/ProfileGridCard';
+import EngagementBadges from '@/components/EngagementBadges';
 import { safeNavigateBack } from '@/utils/safeBack';
 import { LISTING_CARD_COLUMNS } from '@/lib/listingColumns';
 import {
