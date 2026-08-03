@@ -37,12 +37,14 @@ type SettingsItem = {
   action?: () => void | Promise<void>;
   toggle?: boolean;
   checked?: boolean;
+  disabled?: boolean;
   onToggle?: (checked: boolean) => void | Promise<void>;
   badge?: number;
   expandable?: boolean;
   onExpand?: () => void;
   isExpanded?: boolean;
   isLogout?: boolean;
+  children?: SettingsItem[];
 };
 
 const Settings = () => {
@@ -201,7 +203,36 @@ const Settings = () => {
       <AvatarFallback className="text-xs">👤</AvatarFallback>
     </Avatar>;
   const [helpCentreExpanded, setHelpCentreExpanded] = useState(false);
+  const [notificationsExpanded, setNotificationsExpanded] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState<boolean>((profile as any)?.marketing_opt_in ?? true);
+  const [marketingSaving, setMarketingSaving] = useState(false);
+
+  useEffect(() => {
+    setMarketingOptIn((profile as any)?.marketing_opt_in ?? true);
+  }, [(profile as any)?.marketing_opt_in]);
+
+  const handleToggleMarketing = async (checked: boolean) => {
+    if (!user) {
+      promptGuest();
+      return;
+    }
+    const prev = marketingOptIn;
+    setMarketingOptIn(checked);
+    setMarketingSaving(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ marketing_opt_in: checked } as any)
+      .eq('user_id', user.id);
+    setMarketingSaving(false);
+    if (error) {
+      setMarketingOptIn(prev);
+      toast.error('Failed to update preference');
+      return;
+    }
+    await refreshProfile();
+    toast.success(checked ? 'Marketing emails on' : 'Marketing emails off');
+  };
 
   const helpCentreItems: SettingsItem[] = [{
     icon: <span className="text-base">💬</span>,
@@ -242,9 +273,23 @@ const Settings = () => {
   generalItems.push({
     icon: <span className="text-base">🔔</span>,
     label: 'Notifications',
-    toggle: true,
-    checked: notificationsEnabled,
-    onToggle: handleToggleNotifications
+    expandable: true,
+    onExpand: () => setNotificationsExpanded(!notificationsExpanded),
+    isExpanded: notificationsExpanded,
+    children: [{
+      icon: <span className="text-base">📲</span>,
+      label: 'Push notifications',
+      toggle: true,
+      checked: notificationsEnabled,
+      onToggle: handleToggleNotifications
+    }, {
+      icon: <span className="text-base">📧</span>,
+      label: 'Marketing emails',
+      toggle: true,
+      checked: marketingOptIn,
+      disabled: marketingSaving || isGuest,
+      onToggle: handleToggleMarketing
+    }]
   });
   if (!isGuest && isAdmin) {
     generalItems.push({
@@ -294,7 +339,8 @@ const Settings = () => {
     expandable: true,
     onExpand: () => setHelpCentreExpanded(!helpCentreExpanded),
     isExpanded: helpCentreExpanded,
-    badge: supportUnread || undefined
+    badge: supportUnread || undefined,
+    children: helpCentreItems
   }];
 
   // ---- Logout ----
@@ -355,13 +401,13 @@ const Settings = () => {
         </div>
       </div>
 
-      {/* Help Centre sub-items */}
+      {/* Sub-items */}
       {item.isExpanded && item.expandable && (
         <div className="ml-6 mt-2 space-y-2">
-          {helpCentreItems.map(subItem => (
+          {(item.children ?? []).map(subItem => (
             <div
               key={subItem.label}
-              className="flex items-center justify-between rounded-2xl bg-card p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow cursor-pointer"
+              className={`flex items-center justify-between rounded-2xl bg-card p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow ${subItem.toggle ? '' : 'cursor-pointer'}`}
               onClick={() => handleItemClick(subItem)}
             >
               <div className="flex items-center gap-3 max-[375px]:gap-2">
@@ -374,7 +420,16 @@ const Settings = () => {
                     {formatAdminBadgeCount(subItem.badge)}
                   </span>
                 ) : null}
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                {subItem.toggle ? (
+                  <Switch
+                    checked={subItem.checked}
+                    disabled={subItem.disabled}
+                    onCheckedChange={subItem.onToggle}
+                    className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime"
+                  />
+                ) : (
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                )}
               </div>
             </div>
           ))}
