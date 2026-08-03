@@ -587,8 +587,22 @@ const ListingDetails = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              {/* Delete listing - owner only, sits under the 3-dot menu */}
+              {isOwner && !isSold && !isRemoved && (
+                <button
+                  data-vaul-no-drag
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => setShowDeleteDialog(true)}
+                  aria-label="Delete listing"
+                  className="absolute top-14 right-3 h-8 w-8 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center text-sm hover:bg-background/90 transition-colors"
+                >
+                  🗑️
+                </button>
+              )}
+
               {/* Cart & Wishlist count icons */}
               <EngagementBadges listingId={id} size="lg" className="absolute top-3 left-3 z-10" />
+
 
 
               {images.length > 1 && (
