@@ -124,8 +124,7 @@ Deno.serve(async (req) => {
         .from("offers")
         .select("id, amount, seller_id, buyer_id, direction")
         .eq("listing_id", listingId)
-        .eq("status", "pending")
-        .is("parent_offer_id", body?.parentOfferId ? undefined : null);
+        .eq("status", "pending");
 
       const { data, error } = await userClient.rpc("create_offer", {
         p_listing_id: listingId,
