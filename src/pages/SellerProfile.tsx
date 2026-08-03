@@ -20,6 +20,7 @@ import EngagementBadges from '@/components/EngagementBadges';
 import { safeNavigateBack } from '@/utils/safeBack';
 import { LISTING_CARD_COLUMNS } from '@/lib/listingColumns';
 import { formatLastActiveShort } from '@/utils/timeAgo';
+import BundleOfferBadge from '@/components/BundleOfferBadge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +36,9 @@ interface SellerProfile {
   created_at?: string | null;
   updated_at?: string | null;
   last_sign_in_at?: string | null;
+  bundle_shipping_mode?: string | null;
+  bundle_shipping_discount_percent?: number | null;
+  bundle_item_discount_percent?: number | null;
 }
 
 interface DbListing {
@@ -105,7 +109,7 @@ const SellerProfile = () => {
 
     const { data: publicData, error: publicError } = await supabase
       .from('profiles_public' as any)
-      .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at')
+      .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at, bundle_shipping_mode, bundle_shipping_discount_percent, bundle_item_discount_percent')
       .eq('user_id', sellerId)
       .maybeSingle();
 
@@ -115,7 +119,7 @@ const SellerProfile = () => {
       // Fallback to profiles_public view (cross-user reads of base profiles are restricted)
       const { data: pData, error: pError } = await supabase
         .from('profiles_public')
-        .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at')
+        .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at, bundle_shipping_mode, bundle_shipping_discount_percent, bundle_item_discount_percent')
         .eq('user_id', sellerId)
         .maybeSingle();
 
