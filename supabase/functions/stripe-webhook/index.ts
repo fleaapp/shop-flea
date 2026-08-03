@@ -191,7 +191,20 @@ serve(async (req) => {
         break;
       }
 
+      case "payment_intent.succeeded": {
+        // Informational: the reconcile-orphan-payments job refunds any
+        // successful charge that never produced order rows.
+        const pi = event.data.object as Stripe.PaymentIntent;
+        await logEvent(event, {
+          buyer_id: (pi.metadata?.flea_buyer_id as string) ?? null,
+          seller_id: (pi.metadata?.flea_seller_id as string) ?? null,
+          amount: (pi.amount ?? 0) / 100,
+        });
+        break;
+      }
+
       case "payment_intent.payment_failed": {
+
         const pi = event.data.object as Stripe.PaymentIntent;
         const orders = await findOrdersByPaymentIntent(pi.id);
         for (const o of orders) {
