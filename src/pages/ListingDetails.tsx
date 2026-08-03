@@ -37,7 +37,7 @@ import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 import { useReporting } from '@/hooks/useReporting';
 import ReportDialog from '@/components/ReportDialog';
 import PriceBreakdownDrawer from '@/components/PriceBreakdownDrawer';
-import { formatTimeAgo, formatLastActive } from '@/utils/timeAgo';
+import { formatTimeAgo } from '@/utils/timeAgo';
 import { useAuth } from '@/context/AuthContext';
 import { useGuestMode } from '@/context/GuestModeContext';
 import { useOrders, OrderGroup } from '@/hooks/useOrders';
