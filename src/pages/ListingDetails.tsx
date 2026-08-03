@@ -1,7 +1,7 @@
 import { safeNavigateBack } from '@/utils/safeBack';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { MapPin, MoreVertical, Flag, Share2, User } from 'lucide-react';
+import { MapPin, MoreVertical, Flag, Share2, User, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import MakeOfferDrawer from '@/components/MakeOfferDrawer';
 import { useOffers, useAcceptedOffers, offerTimeLeft } from '@/hooks/useOffers';
@@ -36,6 +36,8 @@ import { useCart } from '@/context/CartContext';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 import { useReporting } from '@/hooks/useReporting';
 import ReportDialog from '@/components/ReportDialog';
+import PriceBreakdownDrawer from '@/components/PriceBreakdownDrawer';
+import { formatTimeAgo, formatLastActive } from '@/utils/timeAgo';
 import { useAuth } from '@/context/AuthContext';
 import { useGuestMode } from '@/context/GuestModeContext';
 import { useOrders, OrderGroup } from '@/hooks/useOrders';
@@ -67,6 +69,7 @@ interface DbListing {
   subcategory?: string | null;
   user_id: string;
   status?: string;
+  created_at?: string | null;
 }
 
 interface SellerProfile {
@@ -75,6 +78,9 @@ interface SellerProfile {
   location: string | null;
   country_code: string | null;
   offers_enabled?: boolean | null;
+  rating?: number | null;
+  total_reviews?: number | null;
+  last_sign_in_at?: string | null;
 }
 
 const TERMINAL_LISTING_STATUSES = new Set(['sold', 'refunded', 'delivered', 'completed']);
@@ -98,6 +104,7 @@ const ListingDetails = () => {
   const [loading, setLoading] = useState(true);
   const [listingStatus, setListingStatus] = useState<string>(location.state?.isRemoved ? 'removed' : 'active');
   const [showRemoveFromBothDialog, setShowRemoveFromBothDialog] = useState(false);
+  const [priceBreakdownOpen, setPriceBreakdownOpen] = useState(false);
   
   // Check if listing is sold/completed - check both navigation state AND database status
   const isSoldFromRouteOrStatus = Boolean(location.state?.isSold) || isTerminalListingStatus(listingStatus);
@@ -181,6 +188,7 @@ const ListingDetails = () => {
           category: stateListing.category || '',
           user_id: stateListing.user_id || stateListing.sellerId || 'unknown',
           status: forcedStatus,
+          created_at: (stateListing as { created_at?: string | null }).created_at ?? null,
         });
 
         setSeller({
@@ -218,6 +226,7 @@ const ListingDetails = () => {
           category: snapshot.listing.category || '',
           user_id: snapshot.listing.user_id || 'unknown',
           status: 'removed',
+          created_at: (snapshot.listing as { created_at?: string | null }).created_at ?? null,
         });
 
         setSeller(snapshot.seller
@@ -264,7 +273,7 @@ const ListingDetails = () => {
       // Fetch profile in parallel (non-blocking) — use public view (excludes sensitive fields)
       supabase
         .from('profiles_public')
-        .select('username, avatar_url, location, country_code, offers_enabled')
+        .select('username, avatar_url, location, country_code, offers_enabled, rating, total_reviews, last_sign_in_at')
         .eq('user_id', listingData.user_id)
         .maybeSingle()
         .then(({ data: profileData, error: profileError }) => {
@@ -547,14 +556,7 @@ const ListingDetails = () => {
                         <Flag className="h-4 w-4" />
                         Report listing
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => openReport('user', listing.user_id, listing.user_id)}
-                        disabled={isReporting}
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        <User className="h-4 w-4" />
-                        Report seller
-                      </DropdownMenuItem>
+
                       <DropdownMenuSeparator />
                     </>
                   )}
@@ -661,8 +663,15 @@ const ListingDetails = () => {
 
             {/* Content */}
             <div className="pt-4">
-              {/* Title */}
-              <h1 className="text-2xl font-bold text-foreground">{listing.title}</h1>
+              {/* Title + listing age */}
+              <div className="flex items-start justify-between gap-3">
+                <h1 className="text-2xl font-bold text-foreground">{listing.title}</h1>
+                {formatTimeAgo(listing.created_at) && (
+                  <span className="mt-1.5 shrink-0 text-xs text-muted-foreground">
+                    {formatTimeAgo(listing.created_at)}
+                  </span>
+                )}
+              </div>
 
               {/* Description */}
               {listing.description && (
@@ -670,7 +679,7 @@ const ListingDetails = () => {
               )}
 
               {/* Seller Info + Price Row */}
-              <div className="mt-6 flex items-center justify-between gap-3">
+              <div className="mt-6 flex items-start justify-between gap-3">
                 {/* Seller Card */}
                 <div 
                   className="flex items-center gap-2 rounded-2xl bg-card p-2.5 pr-6 card-shadow cursor-pointer active:scale-[0.98] transition-transform"
@@ -691,15 +700,34 @@ const ListingDetails = () => {
                       <MapPin className="h-3 w-3 flex-shrink-0" />
                       <span>{sellerLocation}</span>
                     </div>
+                    {formatLastActive(seller?.last_sign_in_at) && (
+                      <p className="text-xs text-muted-foreground">{formatLastActive(seller?.last_sign_in_at)}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {seller?.rating && seller.rating > 0
+                        ? `⭐ ${seller.rating}/5${seller?.total_reviews ? ` (${seller.total_reviews})` : ''}`
+                        : 'No reviews'}
+                    </p>
                   </div>
                 </div>
 
                 {/* Price */}
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-foreground">${listing.price}</p>
+                  <div className="flex items-center justify-end gap-1.5">
+                    <p className="text-2xl font-bold text-foreground">${listing.price}</p>
+                    <button
+                      type="button"
+                      aria-label="Price breakdown"
+                      onClick={() => setPriceBreakdownOpen(true)}
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground active:scale-95 transition-transform"
+                    >
+                      <Info className="h-4 w-4" />
+                    </button>
+                  </div>
                   <p className="text-xs text-muted-foreground">+${listing.shipping_price || 0} shipping</p>
                 </div>
               </div>
+
 
               {/* Install-the-app CTA — visible only on mobile web, hidden inside
                   the native app / installed PWA. Encourages shared-link viewers
@@ -1133,6 +1161,13 @@ const ListingDetails = () => {
           />
         );
       })()}
+
+      <PriceBreakdownDrawer
+        open={priceBreakdownOpen}
+        onOpenChange={setPriceBreakdownOpen}
+        price={Number(listing.price || 0)}
+        shipping={listing.shipping_price}
+      />
 
       <ReportDialog
         open={!!pendingReport}
