@@ -80,8 +80,13 @@ serve(async (req) => {
         return jsonError(400, "invalid_item_id", "One or more item IDs are invalid.");
       }
     }
+    // The client sends this as an array of [sellerId, cost] tuples; older
+    // payloads may send a plain object map. Validate the seller ids in both shapes.
     if (shippingBySeller && typeof shippingBySeller === "object") {
-      for (const sellerId of Object.keys(shippingBySeller)) {
+      const sellerIds = Array.isArray(shippingBySeller)
+        ? shippingBySeller.map((entry: any) => (Array.isArray(entry) ? entry[0] : undefined))
+        : Object.keys(shippingBySeller);
+      for (const sellerId of sellerIds) {
         if (!isUuid(sellerId)) {
           return jsonError(400, "invalid_seller_id", "Invalid seller ID in shipping map.");
         }
