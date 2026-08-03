@@ -357,13 +357,13 @@ const Settings = () => {
         </div>
       </div>
 
-      {/* Help Centre sub-items */}
+      {/* Sub-items */}
       {item.isExpanded && item.expandable && (
         <div className="ml-6 mt-2 space-y-2">
-          {helpCentreItems.map(subItem => (
+          {(item.children ?? []).map(subItem => (
             <div
               key={subItem.label}
-              className="flex items-center justify-between rounded-2xl bg-card p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow cursor-pointer"
+              className={`flex items-center justify-between rounded-2xl bg-card p-4 pl-6 max-[375px]:p-3 max-[375px]:pl-5 card-shadow ${subItem.toggle ? '' : 'cursor-pointer'}`}
               onClick={() => handleItemClick(subItem)}
             >
               <div className="flex items-center gap-3 max-[375px]:gap-2">
@@ -376,7 +376,16 @@ const Settings = () => {
                     {formatAdminBadgeCount(subItem.badge)}
                   </span>
                 ) : null}
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                {subItem.toggle ? (
+                  <Switch
+                    checked={subItem.checked}
+                    disabled={subItem.disabled}
+                    onCheckedChange={subItem.onToggle}
+                    className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime"
+                  />
+                ) : (
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                )}
               </div>
             </div>
           ))}
