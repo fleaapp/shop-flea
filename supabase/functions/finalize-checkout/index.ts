@@ -398,7 +398,7 @@ serve(async (req) => {
     // Apply live accepted-offer prices exactly as stripe-connect-payment-intent
     // does, so the expected total reconciles with what the buyer was charged.
     const { data: offerRows } = await serviceClient.rpc("get_accepted_offer_prices", {
-      _buyer_id: buyerId,
+      _buyer_id: userId,
       _listing_ids: itemIds,
     });
     const offerPriceByListing = new Map<string, number>();
