@@ -129,7 +129,7 @@ export function useOffers() {
 
   const blast = useCallback(async (listingId: string, amount: number) => {
     const res = await callOffers({ action: 'blast', listingId, amount });
-    return res.sent as number;
+    return { sent: res.sent as number, reason: (res.reason ?? null) as string | null };
   }, []);
 
   return { offers, received, sent, pendingReceivedCount, loading, refresh: fetchOffers, create, respond, withdraw, blast };
