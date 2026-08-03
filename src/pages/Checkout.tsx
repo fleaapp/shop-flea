@@ -1076,12 +1076,6 @@ const Checkout = () => {
               </span>
             </div>
 
-            {/* Cancellation policy reminder. */}
-            <div className="mt-3 flex items-start gap-2 rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground">
-              <span>
-                <span className="font-medium text-foreground">No cancellations.</span> Once you pay, the seller ships your item. If something goes wrong, use the order chat to request a refund within the protection window.
-              </span>
-            </div>
 
             {/* Master Pay button */}
 
