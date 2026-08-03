@@ -326,6 +326,26 @@ const SellerDashboard = () => {
   const canInstant =
     canPayout && !!data?.instantPayoutEligible && instantAvailableToWithdraw > 0;
 
+  // Payouts are blocked purely because no bank account is attached. Say that
+  // plainly instead of blaming a security hold the seller can't act on.
+  const needsBankDetails =
+    !!data?.connected &&
+    !isNegative &&
+    !!data?.chargesEnabled &&
+    (data?.hasExternalAccount === false || (!data?.payoutsEnabled && data?.hasExternalAccount !== true));
+
+  // One clear reason the payout buttons are disabled.
+  const payoutBlockedReason = (() => {
+    if (isNegative) return 'Settle your outstanding balance to withdraw.';
+    if (needsBankDetails) return 'Add your bank details to withdraw.';
+    if (!data?.chargesEnabled) return 'Finish verification to withdraw.';
+    if (!data?.hasSucceededCharge) return 'Available once your first sale clears.';
+    if (availableToWithdraw <= 0 && unshippedCents > 0)
+      return 'Your funds are held until orders are delivered and the 48 hour buyer protection window closes.';
+    if (availableToWithdraw <= 0) return 'Nothing to withdraw yet.';
+    return null;
+  })();
+
   const instantFee = Math.round(instantAvailableToWithdraw * 0.015);
   const instantNet = Math.max(instantAvailableToWithdraw - instantFee, 0);
 
