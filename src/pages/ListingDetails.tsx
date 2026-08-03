@@ -1099,12 +1099,18 @@ const ListingDetails = () => {
                       .eq('id', listing.id)
                       .eq('user_id', user!.id);
                     if (error) {
-                      toast.error('Failed to remove listing');
+                      const blocked = /sold|cannot be deleted|Cannot change status/i.test(error.message ?? '');
+                      toast.error(
+                        blocked
+                          ? "This item has been sold, so it can't be removed."
+                          : 'Failed to remove listing',
+                      );
                     } else {
                       toast.success('🗑️ Listing removed');
                       setShowDeleteDialog(false);
                       handleClose();
                     }
+
                   }}
                   className="flex-1 h-9 rounded-lg text-sm bg-destructive text-white hover:bg-destructive/90"
                 >
