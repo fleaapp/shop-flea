@@ -732,15 +732,19 @@ const EditListing = () => {
             placeholder="Shipping price"
             value={shippingPrice}
             onChange={(e) => setShippingPrice(e.target.value)}
-            className={`${inputStyles} pl-8 pr-32`}
+            className={`${inputStyles} pl-8`}
           />
-          <span
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60 cursor-pointer"
-            onClick={(e) => { e.stopPropagation(); setShowShippingSettings(true); }}
-          >
-            Shipping settings ›
-          </span>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setShowShippingSettings(true)}
+          className={`${inputStyles} flex items-center justify-between px-4 text-sm text-foreground`}
+        >
+          <span>📦 Bundle offers</span>
+          <span className="text-muted-foreground/60">›</span>
+        </button>
+
         
         {/* Auto-accept offers */}
         {offersEnabled && (

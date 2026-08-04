@@ -74,24 +74,24 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
         type="button"
         onClick={() => setMode(value)}
         className={cn(
-          'w-full text-left rounded-2xl border p-3.5 transition-colors',
+          'w-full text-left rounded-xl border p-2.5 transition-colors',
           selected
             ? 'border-charcoal bg-charcoal/5'
             : 'border-border bg-card hover:bg-secondary/40'
         )}
       >
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-2.5">
           <span
             className={cn(
-              'mt-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 shrink-0',
+              'mt-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 shrink-0',
               selected ? 'border-charcoal' : 'border-muted-foreground/40'
             )}
           >
-            {selected && <span className="h-2.5 w-2.5 rounded-full bg-charcoal" />}
+            {selected && <span className="h-2 w-2 rounded-full bg-charcoal" />}
           </span>
           <div className="flex-1">
-            <p className="text-sm font-semibold text-foreground">{title}</p>
-            <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{subtitle}</p>
+            <p className="text-[13px] font-semibold text-foreground leading-snug">{title}</p>
+            <p className="text-[11px] text-muted-foreground leading-snug">{subtitle}</p>
           </div>
         </div>
       </button>
@@ -101,68 +101,69 @@ const TieredShippingSetupModal = ({ open, onComplete, onCancel }: TieredShipping
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
       <DialogContent
-        className="w-[90vw] max-w-md rounded-3xl border-[3px] border-charcoal bg-card p-6 max-h-[85svh] overflow-y-auto"
+        className="w-[90vw] max-w-sm rounded-3xl border-[3px] border-charcoal bg-card p-4 max-h-[85svh] overflow-y-auto"
         hideCloseButton={false}
       >
-        <DialogHeader className="text-center space-y-3 pt-4 pb-2">
-          <DialogTitle className="text-xl font-bold flex items-center justify-center gap-2">
+        <DialogHeader className="text-center space-y-0 pt-1 pb-0">
+          <DialogTitle className="text-lg font-bold flex items-center justify-center gap-2">
             <span>📦</span> Bundle Offers
           </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground text-center leading-relaxed">
-            Choose the deal buyers get<br />when they bundle your items.
+          <DialogDescription className="sr-only">
+            Choose your bundle offer.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-4 space-y-3">
+        <div className="mt-2 space-y-2">
           <OptionRow
             value="none"
             title="No bundle offers"
-            subtitle="Buyers pay each item's price and shipping in full."
+            subtitle="Full price and shipping per item."
           />
           <OptionRow
             value="discounted"
-            title="✈️ Discounted shipping for bundles"
-            subtitle="Discount total shipping on bundles of 2+."
+            title="✈️ Discounted shipping"
+            subtitle="% off total shipping on bundles of 2+."
           />
           <OptionRow
             value="free"
-            title="✈️ Free shipping for bundles"
+            title="✈️ Free shipping"
             subtitle="Bundles of 2+ items ship free."
           />
           <OptionRow
             value="item_discount"
             title="📦 Discount on bundles"
-            subtitle="A % off your item prices on bundles of 2+."
+            subtitle="% off item prices on bundles of 2+."
           />
 
           {mode === 'discounted' && (
-            <div className="rounded-2xl border border-border bg-background p-4 space-y-1">
-              <p className="text-sm font-medium text-foreground text-center">Shipping discount</p>
+            <div className="rounded-xl border border-border bg-background px-3 py-2">
+              <p className="text-xs font-medium text-foreground text-center">Shipping discount</p>
               <PercentSlider value={discountPercent} onChange={setDiscountPercent} />
             </div>
           )}
 
           {mode === 'item_discount' && (
-            <div className="rounded-2xl border border-border bg-background p-4 space-y-1">
-              <p className="text-sm font-medium text-foreground text-center">Bundle discount</p>
+            <div className="rounded-xl border border-border bg-background px-3 py-2">
+              <p className="text-xs font-medium text-foreground text-center">Bundle discount</p>
               <PercentSlider value={itemDiscountPercent} onChange={setItemDiscountPercent} />
             </div>
           )}
 
-          <p className="text-xs text-muted-foreground text-center leading-relaxed pt-1">
-            You can change this anytime<br />in Settings → Bundle Offers.
+          <p className="text-[11px] text-muted-foreground text-center leading-snug">
+            Change this anytime in Settings → Bundle Offers.
           </p>
 
-          <div className="flex justify-center pt-1">
+          <div className="flex justify-center pt-0.5">
             <Button
               onClick={handleSave}
               disabled={isLoading}
-              className="w-40 h-12 rounded-full bg-charcoal text-white font-medium hover:bg-charcoal-light"
+              className="w-40 h-11 rounded-full bg-charcoal text-white font-medium hover:bg-charcoal-light"
             >
               {isLoading ? 'Saving...' : 'Save & Continue'}
             </Button>
           </div>
         </div>
+
       </DialogContent>
     </Dialog>
   );

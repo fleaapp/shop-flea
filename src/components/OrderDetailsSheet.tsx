@@ -348,15 +348,15 @@ const OrderDetailsSheet = ({
 
                 {couponCode && (
                   <>
-                    <div className="h-px w-full bg-border" />
                     <div className="flex justify-between text-sm px-4 py-3">
                       <span className="text-muted-foreground">Coupon ({couponCode})</span>
                       <span className="text-foreground">{feesWaived ? 'Buyer fees waived' : 'Applied'}</span>
                     </div>
+                    <div className="h-px w-full bg-border" />
                   </>
                 )}
 
-                {/* Fee line */}
+                {/* Fee line - always last before the total */}
                 <div className="flex justify-between text-sm px-4 py-3">
                   <span className="text-muted-foreground inline-flex items-center gap-1.5">
                     Secure Checkout Fee (4% + $0.70)
@@ -364,6 +364,7 @@ const OrderDetailsSheet = ({
                   </span>
                   <span className="text-muted-foreground">+ ${processingFee.toFixed(2)}</span>
                 </div>
+
 
                 {/* Total */}
                 <div className="flex items-center justify-center bg-charcoal text-white py-3 px-4">

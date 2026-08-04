@@ -283,9 +283,12 @@ const Cart = () => {
       >
         <OrderItemThumbnailStack imageUrls={productImages} itemCount={itemCount} avatarUrl={sellerAvatar} />
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-foreground">
-            From <span className="font-semibold">@{sellerUsername}</span>
-            {itemCount > 1 ? <span className="text-muted-foreground"> • x{itemCount}</span> : null}.
+          <p className="flex min-w-0 items-baseline text-sm text-foreground">
+            <span className="shrink-0">From&nbsp;</span>
+            <span className="min-w-0 truncate font-semibold">@{sellerUsername}</span>
+            <span className="shrink-0">
+              {itemCount > 1 && <span className="text-muted-foreground">&nbsp;• x{itemCount}</span>}.
+            </span>
           </p>
           <div className="mt-1 flex flex-col items-start gap-1.5">
             <span className="inline-block rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
