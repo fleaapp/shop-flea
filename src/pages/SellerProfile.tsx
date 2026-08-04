@@ -91,11 +91,14 @@ const SellerProfile = () => {
   useEffect(() => {
     if (sellerId) {
       fetchSellerData();
-      if (user) {
-        checkOutstandingOrders();
-      }
     }
-  }, [sellerId, user]);
+  }, [sellerId]);
+
+  useEffect(() => {
+    if (sellerProfile?.user_id && user) {
+      checkOutstandingOrders();
+    }
+  }, [sellerProfile?.user_id, user]);
 
   const fetchSellerData = async () => {
     if (!sellerId) return;
