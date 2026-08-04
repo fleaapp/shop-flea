@@ -32,16 +32,16 @@ In the seller dashboard function, the held-funds figure sums `price + shipping` 
 Include delivered orders still inside the 48-hour protection window and orders with an open refund request in the "Sales in progress" list, using the same held rule the backend uses. Add a short status word per row (Awaiting shipment, Shipped, Delivered - protection window, Refund requested) so no row is a mystery.
 
 
-### 3. Pending rows show net earnings
+### 4. Pending rows show net earnings
 Each row shows what the seller receives for that sale (price + shipping - transaction fee), consistent with the Sale details drawer. Rows with no fee snapshot (older sales) stay at gross, which is correct for them.
 
-### 4. Pending panel gets a plain-English breakdown
-Under the total: "Sale total $4.75 - fees $0.59 = $4.16 to you." So the seller can reconcile the header against the rows.
+### 5. Pending panel gets a plain-English breakdown
+Under the total: "Sale total $4.25 - fees $0.59 = $3.66 to you." So the seller can reconcile the header against the rows.
 
-### 5. Sales list bubbles show net
+### 6. Sales list bubbles show net
 The amount bubble on each sale card in Sales currently shows gross subtotal while the Sale details drawer shows "You received". Switch the bubble to the net figure so a seller never sees two different numbers for the same sale.
 
-### 6. Settings balance summary follows
+### 7. Settings balance summary follows
 The "Available / Pending" pair under the seller dashboard button recomputes the same pending figure client-side. Point it at the corrected backend numbers so all three surfaces agree.
 
 ## Audit of everything else (no changes needed)
