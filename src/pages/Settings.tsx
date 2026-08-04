@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useSellerGate from '@/hooks/useSellerGate';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -439,7 +440,6 @@ const Settings = () => {
           ))}
         </div>
       )}
-      {sellerGate}
 </div>
   );
 
