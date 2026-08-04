@@ -692,26 +692,61 @@ async function insertRefundNotifications(
       : listingTitle;
 
     const rows = [
-      {
-        user_id: order.buyer_id,
-        type: "refund_initiated",
-        title: "Refund issued",
-        message: `↩️ Your refund for ${subject} has been processed. Funds usually appear straight away, but some banks can take up to 5 business days.`,
-        related_listing_id: order.listing_id ?? null,
-        related_user_id: order.seller_id ?? null,
-        related_order_id: order.id ?? null,
-      },
-      {
-        user_id: order.seller_id,
-        type: "refund_initiated",
-        title: "Refund issued",
-        message: `↩️ You refunded the buyer for ${subject}. The sale has been reversed.`,
-        related_listing_id: order.listing_id ?? null,
-        related_user_id: order.buyer_id ?? null,
-        related_order_id: order.id ?? null,
-      },
+    let sellerHandle: string | null = null;
+    if (sellerCancelled && order.seller_id) {
+      const sellerRes = await fetch(
+        `${externalUrl}/rest/v1/profiles?user_id=eq.${order.seller_id}&select=username`,
+        { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+      );
+      if (sellerRes.ok) {
+        const sellerRows = await sellerRes.json();
+        const raw = Array.isArray(sellerRows) ? sellerRows[0]?.username : null;
+        if (raw) sellerHandle = raw.startsWith("@") ? raw : `@${raw}`;
+      }
+    }
 
-    ];
+    const rows = sellerCancelled
+      ? [
+        {
+          user_id: order.buyer_id,
+          type: "refund_initiated",
+          title: "Order cancelled",
+          message: `😔 ${sellerHandle ?? "The seller"} cancelled your order for ${subject}. You have been fully refunded, including fees.`,
+          related_listing_id: order.listing_id ?? null,
+          related_user_id: order.seller_id ?? null,
+          related_order_id: order.id ?? null,
+        },
+        {
+          user_id: order.seller_id,
+          type: "refund_initiated",
+          title: "Order cancelled",
+          message: `↩️ You cancelled the sale of ${subject}. The buyer has been fully refunded.`,
+          related_listing_id: order.listing_id ?? null,
+          related_user_id: order.buyer_id ?? null,
+          related_order_id: order.id ?? null,
+        },
+      ]
+      : [
+        {
+          user_id: order.buyer_id,
+          type: "refund_initiated",
+          title: "Refund issued",
+          message: `↩️ Your refund for ${subject} has been processed. Funds usually appear straight away, but some banks can take up to 5 business days.`,
+          related_listing_id: order.listing_id ?? null,
+          related_user_id: order.seller_id ?? null,
+          related_order_id: order.id ?? null,
+        },
+        {
+          user_id: order.seller_id,
+          type: "refund_initiated",
+          title: "Refund issued",
+          message: `↩️ You refunded the buyer for ${subject}. The sale has been reversed.`,
+          related_listing_id: order.listing_id ?? null,
+          related_user_id: order.buyer_id ?? null,
+          related_order_id: order.id ?? null,
+        },
+      ];
+
 
     const insertRes = await fetch(`${externalUrl}/rest/v1/notifications`, {
       method: "POST",
