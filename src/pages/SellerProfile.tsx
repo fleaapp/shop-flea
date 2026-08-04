@@ -108,7 +108,7 @@ const SellerProfile = () => {
 
     // Support both user ids and @username routes
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sellerId);
-    const usernameParam = sellerId.startsWith('@') ? sellerId.slice(1) : sellerId;
+    const bareUsername = (sellerId.startsWith('@') ? sellerId.slice(1) : sellerId).trim();
 
     // Try profiles_public first (no RLS restrictions), fallback to profiles
     let profileData: SellerProfile | null = null;
@@ -116,15 +116,23 @@ const SellerProfile = () => {
 
     const baseSelect = 'user_id, username, avatar_url, rating, pause_selling, last_sign_in_at, bundle_shipping_mode, bundle_shipping_discount_percent, bundle_item_discount_percent';
     const publicQuery = supabase.from('profiles_public' as any).select(baseSelect);
+    // Usernames are stored with a leading "@" - match both forms
     const { data: publicData, error: publicError } = isUuid
       ? await publicQuery.eq('user_id', sellerId).maybeSingle()
-      : await publicQuery.ilike('username', usernameParam).maybeSingle();
+      : await publicQuery
+          .or(`username.ilike.${bareUsername},username.ilike.@${bareUsername}`)
+          .limit(1)
+          .maybeSingle();
+
 
 
     if (!publicError && publicData) {
       profileData = publicData as any;
+    } else if (!isUuid) {
+      profileError = publicError ?? new Error('Seller not found');
     } else {
       // Fallback to profiles_public view (cross-user reads of base profiles are restricted)
+
       const { data: pData, error: pError } = await supabase
         .from('profiles_public')
         .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at, bundle_shipping_mode, bundle_shipping_discount_percent, bundle_item_discount_percent')

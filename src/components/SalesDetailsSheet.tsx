@@ -365,13 +365,7 @@ const SalesDetailsSheet = ({
                           <div className="text-sm text-muted-foreground">Items subtotal</div>
                           <p className="text-sm text-foreground">${itemsSubtotal.toFixed(2)}</p>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm text-muted-foreground">Shipping paid to you</div>
-                          <p className="text-sm text-foreground">+${shippingTotal.toFixed(2)}</p>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Buyer fees and any coupon do not affect your payout.
-                        </p>
+
                       </div>
                     </>
                   );
