@@ -656,6 +656,7 @@ async function insertRefundNotifications(
   serviceKey: string,
   order: any,
   itemCount = 1,
+  sellerCancelled = false,
 ) {
   try {
     if (order.id) {
