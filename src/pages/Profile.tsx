@@ -191,7 +191,10 @@ const Profile = () => {
           <Button
             variant="outline"
             size="icon"
-            onClick={() => navigate('/sales')}
+            onClick={() => {
+              if (!hasPaymentMethod) { setPaymentGateOpen(true); return; }
+              navigate('/sales');
+            }}
             className="h-12 w-12 max-[375px]:h-10 max-[375px]:w-10 rounded-xl border-2 border-border bg-card hover:bg-secondary text-lg max-[375px]:text-base"
             aria-label="Sales"
           >
