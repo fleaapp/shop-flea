@@ -435,6 +435,7 @@ const Offers = () => {
         />
       )}
 
+      {sellerGate}
       <BottomNav />
     </div>
   );
