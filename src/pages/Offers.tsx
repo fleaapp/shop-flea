@@ -38,6 +38,7 @@ const Offers = () => {
   const location = useLocation();
   const { user, profile, refreshProfile } = useAuth();
   const { received, sent, loading, create, respond, withdraw, refresh } = useOffers();
+  const { sellerReady, gate: sellerGate, setGateOpen: setSellerGateOpen } = useSellerGate();
   const [role, setRole] = useState<'buyer' | 'seller'>(
     (location.state as any)?.role === 'seller' ? 'seller' : 'buyer',
   );
