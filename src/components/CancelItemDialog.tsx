@@ -85,14 +85,15 @@ const CancelItemDialog = ({ orderId, itemTitle, itemImage, itemPrice, open, onOp
           p_order_id: orderId,
         });
         if (relistError) {
-          toast.warning('Item cancelled and refunded, but it could not be relisted automatically.');
+          toast.warning('Item refunded, but it could not be relisted automatically.');
         }
       }
 
       toast.success(
         relist
-          ? 'Item cancelled and refunded. It is back up for sale.'
-          : 'Item cancelled and refunded. The buyer has been notified.',
+          ? 'Item refunded. It is back up for sale.'
+          : 'Item refunded. The buyer has been notified.',
+
       );
 
       await Promise.all([
