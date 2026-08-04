@@ -574,6 +574,39 @@ const SellerDashboard = () => {
                     }));
                     const grossTotal = heldGroups.reduce((s, g) => s + g.gross, 0);
                     const feeTotal = heldGroups.reduce((s, g) => s + g.fee, 0);
+                    const heldNetTotal = heldGroups.reduce((s, g) => s + g.net, 0);
+
+                    // Money that has left the held buckets (order completed) but
+                    // is still moving through the payment provider. It is part of
+                    // the Pending header, so it needs its own row.
+                    const rows: Array<{
+                      key: string;
+                      title: string;
+                      subtitle: string;
+                      net: number;
+                      gross?: number;
+                      fee?: number;
+                    }> = heldGroups.map((g) => ({
+                      key: g.key,
+                      title: g.title,
+                      subtitle: HELD_STATE_LABEL[g.state] ?? 'In progress',
+                      net: g.net,
+                      gross: g.gross,
+                      fee: g.fee,
+                    }));
+
+                    const residual = Math.max(pendingTotal - heldNetTotal, 0);
+                    if (residual > 0) {
+                      rows.push({
+                        key: 'clearing',
+                        title: 'Clearing from completed sales',
+                        subtitle: earliestClearing
+                          ? `Releases ${fmtDate(earliestClearing)}`
+                          : 'On its way to Available',
+                        net: residual,
+                      });
+                    }
+
 
                     return (
                       <section className="rounded-2xl bg-card border border-border mt-2 p-4">
