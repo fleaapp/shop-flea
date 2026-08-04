@@ -724,12 +724,41 @@ const SalesDetailsSheet = ({
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog open={refundPickerOpen} onOpenChange={setRefundPickerOpen}>
+        <AlertDialogContent className="max-w-[340px] rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Which item do you want to refund?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            {refundableOrders.map((o: any) => (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => {
+                  setRefundPickerOpen(false);
+                  setCancelOrderId(o.id);
+                  setCancelItemTitle(o.listing?.title || 'Item');
+                }}
+                className="w-full flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left hover:bg-secondary"
+              >
+                <span className="text-sm text-foreground truncate">{o.listing?.title || 'Item'}</span>
+                <span className="text-sm font-semibold text-foreground">${o.price}</span>
+              </button>
+            ))}
+          </div>
+          <AlertDialogFooter className="flex-row gap-2 mt-1">
+            <AlertDialogCancel className="flex-1 h-9 rounded-lg mt-0">Close</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <CancelItemDialog
         orderId={cancelOrderId}
         itemTitle={cancelItemTitle}
         open={!!cancelOrderId}
         onOpenChange={(o) => { if (!o) setCancelOrderId(null); }}
       />
+
     </Drawer>
   );
 };
