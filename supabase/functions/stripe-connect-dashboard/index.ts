@@ -238,6 +238,7 @@ serve(async (req) => {
         pending,
         instantAvailable,
         unshippedCents,
+        heldBreakdown,
         availableToWithdraw,
         instantAvailableToWithdraw,
         negativeBalanceCents,
