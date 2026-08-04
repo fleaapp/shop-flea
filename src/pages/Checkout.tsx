@@ -286,7 +286,7 @@ const Checkout = () => {
   /** Server-authoritative PaymentIntent creation. */
   const createPaymentIntent = useCallback(async (saveCard: boolean) => {
     const { data, error } = await invokeCloudFunction('stripe-connect-payment-intent', {
-      items: validItems.map(item => ({ id: item.id, title: item.title, price: item.price, image: item.image })),
+      items: validItems.map(item => ({ id: item.id, sellerId: item.sellerId, title: item.title, price: item.price, image: item.image })),
       shipping: totalShipping,
       shippingBySeller: Array.from(shippingBySeller.entries()),
       expectedAmountCents: Math.round(total * 100),

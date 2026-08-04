@@ -78,7 +78,13 @@ serve(async (req) => {
       return jsonError(400, "cart_too_large", "Checkout is limited to 50 items.");
     }
     for (const item of items) {
-      if (!isUuid(item?.id) || !isUuid(item?.sellerId)) {
+      if (!isUuid(item?.id)) {
+        return jsonError(400, "invalid_item_id", "One or more item IDs are invalid.");
+      }
+      // sellerId is optional: older shipped app builds omit it, and the real
+      // seller is always derived from the listings table below. Only reject a
+      // value that is present but malformed.
+      if (item?.sellerId !== undefined && item?.sellerId !== null && !isUuid(item.sellerId)) {
         return jsonError(400, "invalid_item_id", "One or more item IDs are invalid.");
       }
     }
