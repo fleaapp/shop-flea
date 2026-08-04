@@ -781,7 +781,12 @@ async function insertRefundNotifications(
   }
 }
 
-async function insertRefundInitiatedChatMessage(externalUrl: string, serviceKey: string, order: any) {
+async function insertRefundInitiatedChatMessage(
+  externalUrl: string,
+  serviceKey: string,
+  order: any,
+  sellerCancelled = false,
+) {
   try {
     let sellerUsername: string | null = null;
     if (order.seller_id) {
@@ -799,6 +804,8 @@ async function insertRefundInitiatedChatMessage(externalUrl: string, serviceKey:
       type: "refund_initiated",
       seller_username: sellerUsername,
       payment_method: "stripe",
+      seller_cancelled: sellerCancelled || undefined,
+      cancel_reason: sellerCancelled ? (order.refund_reason ?? null) : undefined,
       initiated_at: new Date().toISOString(),
     });
 
