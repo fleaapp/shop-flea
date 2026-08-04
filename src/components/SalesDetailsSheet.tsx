@@ -353,6 +353,30 @@ const SalesDetailsSheet = ({
                   </>
                 )}
 
+                {(() => {
+                  const itemsSubtotal = (orders as any[])
+                    .filter((o) => !(o.refunded_at || o.status === 'refunded'))
+                    .reduce((sum, o) => sum + Number(o.price || 0), 0);
+                  return (
+                    <>
+                      <div className="border-t border-border" />
+                      <div className="px-4 py-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-muted-foreground">Items subtotal</div>
+                          <p className="text-sm text-foreground">${itemsSubtotal.toFixed(2)}</p>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-muted-foreground">Shipping paid to you</div>
+                          <p className="text-sm text-foreground">+${shippingTotal.toFixed(2)}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Buyer fees and any coupon do not affect your payout.
+                        </p>
+                      </div>
+                    </>
+                  );
+                })()}
+
                 <div className="border-t border-border" />
 
                 {/* Total */}

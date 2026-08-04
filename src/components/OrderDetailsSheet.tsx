@@ -125,6 +125,9 @@ const OrderDetailsSheet = ({
   });
 
   const shippingTotal = (orders ?? []).reduce((sum, o) => sum + Number(o.shipping_price || 0), 0);
+  const itemsSubtotal = (orders ?? []).reduce((sum, o) => sum + Number(o.price || 0), 0);
+  const couponCode = (primaryOrder as any)?.coupon_code as string | null | undefined;
+  const feesWaived = !!couponCode && Number((primaryOrder as any)?.secure_checkout_fee ?? 0) === 0;
   const { data: sellerShippingSettings } = useQuery({
     queryKey: ['seller-shipping-settings', primaryOrder?.seller_id],
     queryFn: async () => {
@@ -323,6 +326,12 @@ const OrderDetailsSheet = ({
                 <div className="px-4 py-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-muted-foreground">
+                      Items subtotal{orders.length >= 2 ? ` (${orders.length} items)` : ''}
+                    </div>
+                    <p className="text-sm text-foreground">${itemsSubtotal.toFixed(2)}</p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
                       Shipping{orders.length >= 2 ? ' (combined)' : ''}
                     </div>
                     <p className="text-sm text-foreground">+${shippingTotal.toFixed(2)}</p>
@@ -336,6 +345,16 @@ const OrderDetailsSheet = ({
                 </div>
 
                 <div className="h-px w-full bg-border" />
+
+                {couponCode && (
+                  <>
+                    <div className="h-px w-full bg-border" />
+                    <div className="flex justify-between text-sm px-4 py-3">
+                      <span className="text-muted-foreground">Coupon ({couponCode})</span>
+                      <span className="text-foreground">{feesWaived ? 'Buyer fees waived' : 'Applied'}</span>
+                    </div>
+                  </>
+                )}
 
                 {/* Fee line */}
                 <div className="flex justify-between text-sm px-4 py-3">
