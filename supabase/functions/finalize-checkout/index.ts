@@ -187,50 +187,77 @@ async function createCheckoutNotifications(
 
   const pushes: Array<{ userId: string; notification: NotificationRow }> = [];
 
+  // Seller: ONE push for the whole checkout, matching the single bundle-aware
+  // in-app alert the DB trigger creates.
+  const ordersBySeller = new Map<string, typeof insertedOrders>();
   for (const order of insertedOrders) {
-    const listing = listingMap.get(order.listing_id);
-    const title = listing?.title ?? "your item";
+    const list = ordersBySeller.get(order.seller_id) ?? [];
+    list.push(order);
+    ordersBySeller.set(order.seller_id, list);
+  }
+
+  for (const [sellerId, sellerOrders] of ordersBySeller) {
+    const first = sellerOrders[0];
+    const title = listingMap.get(first.listing_id)?.title ?? "your item";
+    const message = sellerOrders.length > 1
+      ? `🎉🤑 Cha-ching! Your bundle of ${sellerOrders.length} items has just sold. Tap to view the order.`
+      : `🎉🤑 Cha-ching! Your item "${title}" has just sold. Tap to view the order.`;
 
     pushes.push({
-      userId: order.seller_id,
+      userId: sellerId,
       notification: {
-        user_id: order.seller_id,
+        user_id: sellerId,
         type: "item_sold",
         title: "Item Sold",
-        message: `🎉🤑 Cha-ching! Your item ${title} has just sold. Tap to view the order.`,
-        related_listing_id: order.listing_id,
+        message,
+        related_listing_id: first.listing_id,
         related_user_id: buyerId,
-        related_order_id: order.id,
+        related_order_id: first.id,
       },
     });
+  }
 
+  // Watchers: ONE push per user covering every item of theirs in this checkout.
+  type WatcherState = { inCart: boolean; inWishlist: boolean; listingIds: string[] };
+  const watchers = new Map<string, WatcherState>();
+
+  for (const order of insertedOrders) {
     const cartUsers = cartUsersByListing.get(order.listing_id) ?? new Set<string>();
     const favoriteUsers = favoriteUsersByListing.get(order.listing_id) ?? new Set<string>();
-    const interestedUserIds = new Set([...cartUsers, ...favoriteUsers]);
-
-    for (const userId of interestedUserIds) {
+    for (const userId of new Set([...cartUsers, ...favoriteUsers])) {
       if (userId === buyerId || userId === order.seller_id) continue;
-      const inCart = cartUsers.has(userId);
-      const inWishlist = favoriteUsers.has(userId);
-      const type = inCart && inWishlist
-        ? "cart_wishlist_item_sold"
-        : inCart
-          ? "cart_item_sold"
-          : "wishlist_item_sold";
-
-      pushes.push({
-        userId,
-        notification: {
-          user_id: userId,
-          type,
-          title: type === "cart_item_sold" ? "Cart Item Sold" : type === "wishlist_item_sold" ? "Wishlist Item Sold" : "Item Sold",
-          message: title,
-          related_listing_id: order.listing_id,
-          related_user_id: order.seller_id,
-          related_order_id: order.id,
-        },
-      });
+      const state = watchers.get(userId) ?? { inCart: false, inWishlist: false, listingIds: [] };
+      state.inCart = state.inCart || cartUsers.has(userId);
+      state.inWishlist = state.inWishlist || favoriteUsers.has(userId);
+      state.listingIds.push(order.listing_id);
+      watchers.set(userId, state);
     }
+  }
+
+  for (const [userId, state] of watchers) {
+    const type = state.inCart && state.inWishlist
+      ? "cart_wishlist_item_sold"
+      : state.inCart
+        ? "cart_item_sold"
+        : "wishlist_item_sold";
+    const place = state.inCart && state.inWishlist ? "cart and wishlist" : state.inCart ? "cart" : "wishlist";
+    const firstListingId = state.listingIds[0];
+    const listingTitle = listingMap.get(firstListingId)?.title ?? "An item";
+    const message = state.listingIds.length > 1
+      ? `😞 ${state.listingIds.length} items from your ${place} have just sold.`
+      : `😞 "${listingTitle}" from your ${place} has just sold.`;
+
+    pushes.push({
+      userId,
+      notification: {
+        user_id: userId,
+        type,
+        title: type === "cart_item_sold" ? "Cart Item Sold" : type === "wishlist_item_sold" ? "Wishlist Item Sold" : "Item Sold",
+        message,
+        related_listing_id: firstListingId,
+        related_user_id: listingMap.get(firstListingId)?.user_id ?? undefined,
+      },
+    });
   }
 
   if (!pushes.length) return;
@@ -239,6 +266,7 @@ async function createCheckoutNotifications(
     pushes.map((entry) => sendPush(serviceUrl, serviceKey, entry.userId, entry.notification)),
   );
 }
+
 
 // Signature-verified JWT extraction. Uses Supabase's auth client to validate
 // the token cryptographically (not just decode it) — protects against forged
