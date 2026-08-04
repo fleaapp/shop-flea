@@ -691,7 +691,6 @@ async function insertRefundNotifications(
       ? `${listingTitle} and ${itemCount - 1} other item${itemCount - 1 === 1 ? "" : "s"}`
       : listingTitle;
 
-    const rows = [
     let sellerHandle: string | null = null;
     if (sellerCancelled && order.seller_id) {
       const sellerRes = await fetch(
