@@ -1,58 +1,29 @@
-# Seller Onboarding Flow Update
+# Comment mentions, Offers toggle, Sale details cleanup
 
-## Goal
-Improve the first impression of seller onboarding and add an explicit ID-matching education step before collecting personal details.
+## 1. Tapping a tagged username says "Seller not found"
 
-## Changes
+Usernames are stored in the database with a leading `@` (e.g. `@jcsbh`). When a mention link opens the seller profile, the route handler strips the `@` from the URL and then looks for a username without it, so nothing matches and the page falls through to the "Seller not found" state.
 
-### 1. Refine Step 1 intro screen
-Update `src/components/SellerOnboardingSheet.tsx` step 1 with the requested hierarchy and more vertical breathing room:
+Fix: in `src/pages/SellerProfile.tsx`, look up the username in a way that matches whether or not the stored value has a leading `@` (try both forms). Keep the existing UUID path unchanged, and keep the "self" redirect to `/profile` working.
 
-- **Bold heading**: "Start selling on Flea"
-- Body line 1: "Set up your seller account in just a few minutes."
-- Body line 2: "We'll ask for a few details to verify your identity and enable payouts."
-- **Bold subheading**: "Selling on Flea is free."
-- **Bold subheading**: "You only pay a 2% + $0.50 transaction fee to cover payment processing when an item sells."
-- Footer: "By continuing you agree to our" with linked "Terms & Privacy".
+Also confirm the link in `src/components/ListingComments.tsx` passes the handle cleanly to the seller route.
 
-Implementation notes:
-- Split the single paragraph into discrete blocks so spacing can be controlled.
-- Use `space-y-` tokens to add breathing room between sections while keeping the overall sheet compact.
-- Keep the existing Flea logo, "Step 1 of N" label, Continue button, and Not now secondary action.
+## 2. Offers "Received | Sent" toggle styling
 
-### 2. Insert new Step 2: ID matching reminder
-Add a new onboarding step immediately after the intro and before the personal-details form.
+`src/pages/Offers.tsx` currently renders the secondary toggle as a bordered outline pill with `bg-muted` on the active item, which does not match Sales/Orders.
 
-Content:
-- Large emoji: 🪪
-- **Bold, larger text**: "Your details must match your government-issued ID."
-- Body: "Our payment processing provider uses this information to confirm your identity and activate seller payouts."
+Fix: restyle it to match the secondary segmented control used on Sales and Orders - filled `bg-muted` track with `p-1`, active item `bg-card text-foreground shadow-sm`, inactive `text-muted-foreground`, same rounded-full pill and text size. Keep the primary Buyer | Seller toggle and all behaviour unchanged.
 
-Behaviour:
-- Continue button advances from Step 2 → Step 3 (the existing personal-details form).
-- Back button returns to Step 1.
+## 3. Remove redundant payout copy in Sale details
 
-### 3. Re-number existing steps
-The current 4-step flow becomes 5 steps:
+In `src/components/SalesDetailsSheet.tsx`, remove:
+- the "Shipping paid to you" row
+- the "Buyer fees and any coupon do not affect your payout." note
 
-```text
-Step 1  Intro
-Step 2  ID match reminder  (new)
-Step 3  Your details       (was Step 2)
-Step 4  Your address       (was Step 3)
-Step 5  Bank details       (was Step 4)
-```
+The "Items subtotal" row and the rest of the breakdown stay. Order details has no equivalent copy, so nothing changes there (its "Shipping" line is a real buyer charge).
 
-Update:
-- `TOTAL_STEPS` constant from `4` to `5`.
-- Progress dots array from `[1,2,3,4]` to `[1,2,3,4,5]`.
-- Conditional step renders: `step === 2` for the new screen, shift form steps to `3`, `4`, `5`.
-- Navigation `setStep(...)` calls inside each step's Back/Continue buttons.
-- Resume validation range from `dbStep <= 4` to `dbStep <= 5`.
+## Technical notes
 
-## Files to edit
-- `src/components/SellerOnboardingSheet.tsx`
-
-## Out of scope
-- No changes to form fields, validation, or backend edge functions.
-- No changes to the bank-details sub-component other than step-number references.
+- Files touched: `src/pages/SellerProfile.tsx`, `src/pages/Offers.tsx`, `src/components/SalesDetailsSheet.tsx`.
+- No database or edge function changes.
+- Verify with a TypeScript typecheck after the edits.
