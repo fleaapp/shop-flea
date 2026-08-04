@@ -948,7 +948,7 @@ serve(async (req) => {
 
       await markOrderRefunded(externalUrl, serviceKey, order.id);
       if (order.listing_id) await markListingsRefunded(externalUrl, serviceKey, [order.listing_id]);
-      await insertRefundNotifications(externalUrl, serviceKey, order);
+      await insertRefundNotifications(externalUrl, serviceKey, order, 1, sellerCancelled);
       await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order);
 
       return jsonResponse({
