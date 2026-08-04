@@ -129,9 +129,9 @@ const SellerOnboardingSheet = ({
     const p: any = profile || {};
     const localStep = getOnboardingStep(user?.id);
     const dbStep = Number(p.stripe_onboarding_step);
-    const resumeStep: 1 | 2 | 3 | 4 =
+    const resumeStep: 1 | 2 | 3 | 4 | 5 =
       localStep ??
-      (dbStep >= 1 && dbStep <= 4 ? (dbStep as 1 | 2 | 3 | 4) : 1);
+      (dbStep >= 1 && dbStep <= 5 ? (dbStep as 1 | 2 | 3 | 4 | 5) : 1);
     setStep(resumeStep);
     const d = loadDraft(user?.id);
     setFirstName(d.firstName ?? p.first_name ?? '');
