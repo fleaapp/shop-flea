@@ -181,6 +181,7 @@ const Settings = () => {
   };
   const handleTogglePauseSelling = async (checked: boolean) => {
     if (!user) return;
+    if (!sellerReady) { setSellerGateOpen(true); return; }
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -315,7 +316,7 @@ const Settings = () => {
   const sellerItems: SettingsItem[] = [{
     icon: <span className="text-base">📦</span>,
     label: 'Bundle Offers',
-    action: isGuest ? promptGuest : () => setShippingOpen(true)
+    action: isGuest ? promptGuest : () => (sellerReady ? setShippingOpen(true) : setSellerGateOpen(true))
   }, isGuest ? {
     icon: <span className="text-base">⏸️</span>,
     label: 'Pause Selling',
@@ -329,7 +330,9 @@ const Settings = () => {
   }, {
     icon: <span className="text-base">💰</span>,
     label: 'Offers',
-    action: isGuest ? promptGuest : () => navigate('/offers')
+    action: isGuest
+      ? promptGuest
+      : () => (sellerReady ? navigate('/offers', { state: { role: 'seller' } }) : setSellerGateOpen(true))
   }];
 
   // ---- Support ----
