@@ -37,6 +37,9 @@ const Offers = () => {
   const location = useLocation();
   const { user, profile, refreshProfile } = useAuth();
   const { received, sent, loading, create, respond, withdraw, refresh } = useOffers();
+  const [role, setRole] = useState<'buyer' | 'seller'>(
+    (location.state as any)?.role === 'seller' ? 'seller' : 'buyer',
+  );
   const [tab, setTab] = useState<'received' | 'sent'>(
     (location.state as any)?.tab === 'sent' ? 'sent' : 'received',
   );
@@ -272,18 +275,29 @@ const Offers = () => {
     );
   };
 
+  const isMine = (o: Offer) =>
+    (o.direction === 'buyer_to_seller' && o.buyer_id === user?.id) ||
+    (o.direction === 'seller_to_buyer' && o.seller_id === user?.id);
+
   const list = useMemo(() => {
-    const rows = tab === 'received' ? received : sent;
+    const rows = all.filter((o) => {
+      const inRole = role === 'buyer' ? o.buyer_id === user?.id : o.seller_id === user?.id;
+      if (!inRole) return false;
+      return tab === 'sent' ? isMine(o) : !isMine(o);
+    });
     const rank = (o: Offer) => {
       if (isLive(o)) return 0;
       if (o.status === 'accepted' && new Date(o.expires_at).getTime() > Date.now()) return 1;
       return 2;
     };
-    return [...rows].sort(
-      (a, b) =>
-        rank(a) - rank(b) || new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    );
-  }, [tab, received, sent]);
+    const seen = new Set<string>();
+    return [...rows]
+      .filter((o) => (seen.has(o.id) ? false : (seen.add(o.id), true)))
+      .sort(
+        (a, b) =>
+          rank(a) - rank(b) || new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+  }, [role, tab, all, user?.id]);
 
   return (
     <div className="native-safe-top fixed inset-0 flex flex-col bg-background pb-24">
@@ -299,12 +313,28 @@ const Offers = () => {
 
       <div className="mt-8 flex shrink-0 justify-center px-4">
         <div className="flex w-[220px] items-center rounded-full bg-muted p-1">
+          {(['buyer', 'seller'] as const).map((r) => (
+            <button
+              key={r}
+              onClick={() => setRole(r)}
+              className={`w-1/2 rounded-full px-3 py-2.5 text-sm font-medium capitalize transition-all ${
+                role === r ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
+              }`}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-3 flex shrink-0 justify-center px-4">
+        <div className="flex w-[220px] items-center rounded-full border border-border p-1">
           {(['received', 'sent'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`w-1/2 rounded-full px-3 py-2.5 text-sm font-medium capitalize transition-all ${
-                tab === t ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
+              className={`w-1/2 rounded-full px-3 py-2 text-xs font-medium capitalize transition-all ${
+                tab === t ? 'bg-muted text-foreground' : 'text-muted-foreground'
               }`}
             >
               {t}
@@ -313,7 +343,7 @@ const Offers = () => {
         </div>
       </div>
 
-      {tab === 'received' && (
+      {role === 'seller' && (
         <div className="mt-4 shrink-0 px-4">
           <div className="flex items-center justify-between rounded-2xl bg-card px-4 py-3 card-shadow">
             <div className="min-w-0 pr-3">
@@ -343,14 +373,18 @@ const Offers = () => {
         ) : list.length === 0 ? (
           <EmptyState
             emoji="💰"
-            title={tab === 'received' ? 'No offers yet' : 'No offers sent yet'}
+            title={tab === 'received' ? 'No offers received' : 'No offers sent'}
             description={
-              tab === 'received'
-                ? 'When a buyer makes you an offer, it lands here. You have 24 hours to accept, counter or decline.'
-                : 'Found something you love? Make an offer and the seller has 24 hours to reply.'
+              role === 'seller'
+                ? tab === 'received'
+                  ? 'When a buyer makes you an offer, it lands here. You have 24 hours to accept, counter or decline.'
+                  : 'Send a discount offer from a listing to everyone who saved it.'
+                : tab === 'received'
+                  ? 'Sellers can send you a discount on items you have saved. Those offers land here.'
+                  : 'Found something you love? Make an offer and the seller has 24 hours to reply.'
             }
-            actionLabel={tab === 'sent' ? 'Browse items' : undefined}
-            onAction={tab === 'sent' ? () => navigate('/') : undefined}
+            actionLabel={role === 'buyer' ? 'Browse items' : undefined}
+            onAction={role === 'buyer' ? () => navigate('/') : undefined}
             minHeightClass="min-h-[55vh]"
           />
         ) : (
