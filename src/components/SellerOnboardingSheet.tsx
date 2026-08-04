@@ -352,7 +352,7 @@ const SellerOnboardingSheet = ({
               onEditName={() => {
                 // Route user back to the "Your details" step so they can
                 // correct their legal name before re-uploading their ID.
-                setStep(2);
+                setStep(3);
               }}
               onDone={() => {
                 handleVerifiedSuccess();
