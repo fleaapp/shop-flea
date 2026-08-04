@@ -9,22 +9,28 @@ Seller @sarahhearn2 currently has two orders whose funds are still held:
 | Order | Item | Price | Shipping | Buyer coupon | Transaction fee | Seller actually receives |
 |---|---|---|---|---|---|---|
 | FL-001010 | Dress | $4.25 | $0.00 | FREEFLEA | $0.59 | $3.66 |
-| FL-001007 | Test (delivered, protection window still open) | $0.50 | $0.00 | - | $0.00 (pre-fee sale) | $0.50 |
+| FL-001007 | Test (delivered 28 July) | $0.50 | $0.00 | - | $0.00 (pre-fee sale) | $0.50 |
 
 $4.25 + $0.50 = **$4.75**. So:
 
-1. The "unexplained $0.50" is a real second order - a delivered Test item still inside buyer protection. It is invisible because the "Sales in progress" list only lists orders with status awaiting or shipped, so delivered-but-held orders are counted in the total and never listed.
+1. **The $0.50 is a stuck order, not a real hold.** FL-001007 was marked delivered on 28 July but its protection-window end date was never set (the field is empty). Two things then key off that empty field: the auto-complete job only completes orders that have a window end date in the past, so it skips this one forever; and the held-funds rule treats an empty window as "still open", so it holds the money forever. The cash itself already cleared and was paid out - the dashboard is ring-fencing $0.50 that is no longer in the balance. Any order delivered without that date set will behave the same way.
 2. The Pending total and each row are **gross** (price + shipping). The seller's transaction fee is never subtracted, so Pending reads $4.75 when the seller will actually receive $4.16. Available to withdraw, by contrast, comes straight from the payment provider and is already net - so the two boxes speak different languages.
 
 Everything downstream of that (the fee split sent to the payment provider, the fee snapshot written onto each order, sale details, refunds) checks out as correct. The fault is display and hold arithmetic, not money movement.
 
 ## Fixes
 
-### 1. Held funds become net, not gross (backend)
+### 1. Stop the stuck delivered orders
+- Backfill the missing protection-window end date on delivered orders that don't have one, set to 48 hours after their delivery time, then let the existing auto-complete job close out the ones already past it (FL-001007 completes immediately).
+- Make sure the window end date is always stamped whenever an order is marked delivered, by any path - buyer confirmation, auto-delivery, or admin approval.
+- Change the held rule so a delivered order with no window date is treated as delivered 48 hours after its delivery time rather than held indefinitely, so a missing field can never freeze funds again.
+
+### 2. Held funds become net, not gross (backend)
 In the seller dashboard function, the held-funds figure sums `price + shipping` per order. Subtract each order's stored transaction fee so the held amount matches what will actually land. This also stops the ring-fence over-withholding from Available to withdraw.
 
-### 2. Pending list shows every held order
+### 3. Pending list shows every held order
 Include delivered orders still inside the 48-hour protection window and orders with an open refund request in the "Sales in progress" list, using the same held rule the backend uses. Add a short status word per row (Awaiting shipment, Shipped, Delivered - protection window, Refund requested) so no row is a mystery.
+
 
 ### 3. Pending rows show net earnings
 Each row shows what the seller receives for that sale (price + shipping - transaction fee), consistent with the Sale details drawer. Rows with no fee snapshot (older sales) stay at gross, which is correct for them.
