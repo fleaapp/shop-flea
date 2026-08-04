@@ -76,6 +76,16 @@ type ActivityRow = {
   description?: string | null;
 };
 
+type HeldRow = {
+  orderId: string;
+  orderGroupId: string | null;
+  title: string | null;
+  grossCents: number;
+  feeCents: number;
+  netCents: number;
+  state: 'awaiting' | 'shipped' | 'delivered' | 'refund_requested' | string;
+};
+
 type DashboardData = {
   connected: boolean;
   demo?: boolean;
@@ -84,6 +94,7 @@ type DashboardData = {
   pending?: number;
   instantAvailable?: number;
   unshippedCents?: number;
+  heldBreakdown?: HeldRow[];
   availableToWithdraw?: number;
   instantAvailableToWithdraw?: number;
   negativeBalanceCents?: number;
@@ -99,6 +110,14 @@ type DashboardData = {
   payouts?: PayoutRow[];
   activity?: ActivityRow[];
 };
+
+const HELD_STATE_LABEL: Record<string, string> = {
+  awaiting: 'Awaiting shipment',
+  shipped: 'Shipped',
+  delivered: 'Buyer protection',
+  refund_requested: 'Refund requested',
+};
+
 
 const fmtMoney = (cents: number, currency = 'aud') =>
   new Intl.NumberFormat('en-AU', {
