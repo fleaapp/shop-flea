@@ -128,8 +128,11 @@ const SellerProfile = () => {
 
     if (!publicError && publicData) {
       profileData = publicData as any;
+    } else if (!isUuid) {
+      profileError = publicError ?? new Error('Seller not found');
     } else {
       // Fallback to profiles_public view (cross-user reads of base profiles are restricted)
+
       const { data: pData, error: pError } = await supabase
         .from('profiles_public')
         .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at, bundle_shipping_mode, bundle_shipping_discount_percent, bundle_item_discount_percent')
