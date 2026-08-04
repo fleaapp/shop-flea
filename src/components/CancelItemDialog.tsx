@@ -1,17 +1,20 @@
 import { useState } from 'react';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,23 +32,26 @@ const REASONS = [
 interface CancelItemDialogProps {
   orderId: string | null;
   itemTitle?: string;
+  itemImage?: string;
+  itemPrice?: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCancelled?: () => void;
 }
 
-const CancelItemDialog = ({ orderId, itemTitle, open, onOpenChange, onCancelled }: CancelItemDialogProps) => {
+const CancelItemDialog = ({ orderId, itemTitle, itemImage, itemPrice, open, onOpenChange, onCancelled }: CancelItemDialogProps) => {
   const queryClient = useQueryClient();
-  const [reason, setReason] = useState<string>(REASONS[0]);
-  const [otherReason, setOtherReason] = useState('');
+  const [reason, setReason] = useState<string>('');
+  const [details, setDetails] = useState('');
   const [relist, setRelist] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   const reset = () => {
-    setReason(REASONS[0]);
-    setOtherReason('');
+    setReason('');
+    setDetails('');
     setRelist(true);
   };
+
 
   const handleConfirm = async () => {
     if (!orderId) return;
