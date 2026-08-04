@@ -14,6 +14,7 @@ import SizeSelectionDrawer from '@/components/SizeSelectionDrawer';
 import CategorySelectionDrawer from '@/components/CategorySelectionDrawer';
 import BlockedUserBanner from '@/components/BlockedUserBanner';
 import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { loadShippingPrefs } from '@/utils/shippingPrefs';
@@ -61,6 +62,7 @@ const EditListing = () => {
   const [sizeDrawerOpen, setSizeDrawerOpen] = useState(false);
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
   const [showShippingSettings, setShowShippingSettings] = useState(false);
+  const [savingOffersToggle, setSavingOffersToggle] = useState(false);
   
   // Kept for back-compat; bundle shipping no longer locks the shipping price input.
   const tieredShippingEnabled = false;
@@ -463,6 +465,26 @@ const EditListing = () => {
   };
 
   const offersEnabled = (profile as any)?.offers_enabled === true;
+  const handleToggleOffers = async (checked: boolean) => {
+    if (!user) return;
+    setSavingOffersToggle(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ offers_enabled: checked } as any)
+        .eq('user_id', user.id)
+        .select('offers_enabled')
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error('No profile row updated');
+      await refreshProfile();
+      toast.success(checked ? 'Offers on' : 'Offers off');
+    } catch (error: any) {
+      toast.error(`Failed to update: ${error?.message ?? 'unknown error'}`);
+    } finally {
+      setSavingOffersToggle(false);
+    }
+  };
   const inputStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 placeholder:text-muted-foreground/60 focus-visible:ring-muted-foreground/50";
   const selectStyles = "h-14 rounded-2xl bg-muted/50 border border-muted-foreground/20 [&>span]:text-muted-foreground/60 [&>span]:text-base focus:ring-muted-foreground/50";
 
