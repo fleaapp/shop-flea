@@ -29,17 +29,32 @@ const REASONS = [
   'Other',
 ] as const;
 
+export interface CancelItemTarget {
+  id: string;
+  title?: string;
+  image?: string;
+  price?: number;
+}
+
 interface CancelItemDialogProps {
   orderId: string | null;
   itemTitle?: string;
   itemImage?: string;
   itemPrice?: number;
+  /** When provided, refunds every listed item in sequence. */
+  items?: CancelItemTarget[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCancelled?: () => void;
 }
 
-const CancelItemDialog = ({ orderId, itemTitle, itemImage, itemPrice, open, onOpenChange, onCancelled }: CancelItemDialogProps) => {
+const CancelItemDialog = ({ orderId, itemTitle, itemImage, itemPrice, items, open, onOpenChange, onCancelled }: CancelItemDialogProps) => {
+  const targets: CancelItemTarget[] = items?.length
+    ? items
+    : orderId
+      ? [{ id: orderId, title: itemTitle, image: itemImage, price: itemPrice }]
+      : [];
+  const multiple = targets.length > 1;
   const queryClient = useQueryClient();
   const [reason, setReason] = useState<string>('');
   const [details, setDetails] = useState('');
@@ -54,47 +69,50 @@ const CancelItemDialog = ({ orderId, itemTitle, itemImage, itemPrice, open, onOp
 
 
   const handleConfirm = async () => {
-    if (!orderId) return;
+    if (!targets.length) return;
     const finalReason = [reason, details.trim()].filter(Boolean).join(' - ');
     if (!reason) {
       toast.error('Please choose a reason.');
       return;
     }
 
-
     setSubmitting(true);
     try {
-      const { error: beginError } = await supabase.rpc('seller_cancel_order_begin', {
-        p_order_id: orderId,
-        p_reason: finalReason,
-      });
-      if (beginError) throw new Error(beginError.message);
-
-      const res: any = await invokeCloudFunction('stripe-connect-refund', {
-        orderId,
-        mode: 'single',
-        sellerCancelled: true,
-        reason: 'requested_by_customer',
-      });
-      if (res?.error || !res?.data?.success) {
-        throw new Error(res?.error?.message || res?.data?.error || 'Refund failed');
-      }
-
-      if (relist) {
-        const { error: relistError } = await supabase.rpc('seller_relist_cancelled_listing', {
-          p_order_id: orderId,
+      let relistFailed = false;
+      for (const target of targets) {
+        const { error: beginError } = await supabase.rpc('seller_cancel_order_begin', {
+          p_order_id: target.id,
+          p_reason: finalReason,
         });
-        if (relistError) {
-          toast.warning('Item refunded, but it could not be relisted automatically.');
+        if (beginError) throw new Error(beginError.message);
+
+        const res: any = await invokeCloudFunction('stripe-connect-refund', {
+          orderId: target.id,
+          mode: 'single',
+          sellerCancelled: true,
+          reason: 'requested_by_customer',
+        });
+        if (res?.error || !res?.data?.success) {
+          throw new Error(res?.error?.message || res?.data?.error || 'Refund failed');
+        }
+
+        if (relist) {
+          const { error: relistError } = await supabase.rpc('seller_relist_cancelled_listing', {
+            p_order_id: target.id,
+          });
+          if (relistError) relistFailed = true;
         }
       }
 
-      toast.success(
-        relist
-          ? 'Item refunded. It is back up for sale.'
-          : 'Item refunded. The buyer has been notified.',
-
-      );
+      if (relistFailed) {
+        toast.warning(multiple ? 'Items refunded, but some could not be relisted automatically.' : 'Item refunded, but it could not be relisted automatically.');
+      } else {
+        toast.success(
+          relist
+            ? multiple ? 'Items refunded. They are back up for sale.' : 'Item refunded. It is back up for sale.'
+            : multiple ? 'Items refunded. The buyer has been notified.' : 'Item refunded. The buyer has been notified.'
+        );
+      }
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['orders'] }),
@@ -106,7 +124,7 @@ const CancelItemDialog = ({ orderId, itemTitle, itemImage, itemPrice, open, onOp
       onOpenChange(false);
       onCancelled?.();
     } catch (err: any) {
-      toast.error(err?.message || 'Could not cancel this item. Please try again.');
+      toast.error(err?.message || 'Could not refund. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -116,25 +134,29 @@ const CancelItemDialog = ({ orderId, itemTitle, itemImage, itemPrice, open, onOp
     <Dialog open={open} onOpenChange={(o) => !submitting && onOpenChange(o)}>
       <DialogContent className="max-w-[85vw] sm:max-w-sm rounded-2xl z-[110] max-h-[85svh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-lg">Refund item</DialogTitle>
+          <DialogTitle className="text-lg">{multiple ? `Refund ${targets.length} items` : 'Refund item'}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 mt-2">
           <div className="rounded-xl bg-card border border-border p-3">
-            <div className="flex gap-3 items-center">
-              {itemImage && (
-                <img
-                  src={itemImage}
-                  alt=""
-                  className="h-12 w-12 rounded-lg object-cover bg-muted shrink-0"
-                />
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold truncate">{itemTitle || 'Item'}</p>
-                {typeof itemPrice === 'number' && (
-                  <p className="text-xs text-muted-foreground mt-0.5">${itemPrice.toFixed(2)}</p>
-                )}
-              </div>
+            <div className="space-y-2">
+              {targets.map((t) => (
+                <div key={t.id} className="flex gap-3 items-center">
+                  {t.image && (
+                    <img
+                      src={t.image}
+                      alt=""
+                      className="h-12 w-12 rounded-lg object-cover bg-muted shrink-0"
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold truncate">{t.title || 'Item'}</p>
+                    {typeof t.price === 'number' && (
+                      <p className="text-xs text-muted-foreground mt-0.5">${t.price.toFixed(2)}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
             <div className="mt-3 space-y-2">
               <label className="text-xs font-medium text-foreground block">Reason for refund *</label>
@@ -165,22 +187,22 @@ const CancelItemDialog = ({ orderId, itemTitle, itemImage, itemPrice, open, onOp
 
           <div className="flex items-center justify-between gap-3 rounded-xl bg-muted/50 px-3 py-2">
             <div>
-              <p className="text-sm font-medium text-foreground">Relist this item</p>
-              <p className="text-xs text-muted-foreground">Put it back up for sale on your profile.</p>
+              <p className="text-sm font-medium text-foreground">{multiple ? 'Relist these items' : 'Relist this item'}</p>
+              <p className="text-xs text-muted-foreground">{multiple ? 'Put them back up for sale on your profile.' : 'Put it back up for sale on your profile.'}</p>
             </div>
             <Switch checked={relist} onCheckedChange={setRelist} />
           </div>
 
           <p className="text-xs text-muted-foreground leading-snug">
-            The buyer gets a full refund, including their fees, and you are not paid for this item. Refunding often can affect your account.
+            The buyer gets a full refund, including their fees, and you are not paid for {multiple ? 'these items' : 'this item'}. Refunding often can affect your account.
           </p>
 
           <Button
             onClick={handleConfirm}
-            disabled={submitting || !reason}
+            disabled={submitting || !reason || !targets.length}
             className="w-full rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12"
           >
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Refund item'}
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : multiple ? `Refund ${targets.length} items` : 'Refund item'}
           </Button>
         </div>
       </DialogContent>
