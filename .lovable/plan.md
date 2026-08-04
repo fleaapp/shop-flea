@@ -1,33 +1,31 @@
-# Order codes, pending summary, and seller refund button
+# Make the seller refund flow match the buyer refund flow
 
-## 1. Admin order codes now match the app
+Right now the seller's "Refund item" on the sale details drawer is styled and structured differently to the buyer's "Request Refund" flow on the order details drawer. This aligns the button, the dialog and the item picker so both feel like the same feature.
 
-Admin Transactions invents its own code (`FLA-` + first 8 characters of the internal ID), while the rest of the app shows the real order number (`FL-001007`). Same order, two different codes.
+## Button (sale details drawer)
 
-Fix: admin uses the real order number everywhere - table, detail panel, and CSV export - falling back to the short ID only if an order somehow has no number. The order number is already loaded by the admin data function, so no database change is needed.
+- Move "Refund item" onto the same row as "Mark as shipped" instead of stacked underneath, using the same two-button row the buyer side uses: both `flex-1`, `h-12`, full-width row with padding.
+- Style the refund action exactly like the buyer's secondary refund button - muted grey fill with white text, rounded-full, no outline - so it never disappears against the lime background.
+- When a refund is already in progress for an item, the button reads "Refund requested" and is disabled, matching the buyer behaviour.
 
-## 2. Seller dashboard pending summary trimmed
+## Refund dialog (seller)
 
-Remove the duplicated summary lines under the Pending total:
+Restyle the seller cancel/refund dialog so it matches the buyer's refund dialog:
 
-- "Sale total $4.25 - fees $0.59 = $3.66 to you, plus $0.50 clearing."
-- "Next release 6 Aug 2026."
+- Same shell: centred dialog, `max-w-[85vw] sm:max-w-sm`, rounded-2xl, scrollable, with a "Refund item" title.
+- Item card at the top with thumbnail, title and price, same as the buyer's single-item view.
+- Reason chosen from the same dropdown control style the buyer uses (instead of the radio list), plus an optional note field.
+- Optional "Additional details" textarea using the buyer's field styling.
+- Keep the seller-only "Relist this item" toggle, placed below the details field.
+- Single full-width charcoal confirm button at the bottom, matching the buyer's submit button.
 
-The itemised Pending funds list already shows each sale with its own amount, fee line, and release date, so the header keeps just the label and the total.
+Behaviour (refund + relist + notifications) stays exactly as it is today - this is presentation only.
 
-## 3. Refund action on sale details
+## Multi-item picker
 
-Currently the only way to cancel an unshipped item is a small red "Cancel item" text link next to the price, which is hard to spot.
-
-Change:
-- Remove the per-item "Cancel item" text link.
-- Add a clearly visible "Refund item" button directly below "Mark as shipped" (shown only while the sale is unshipped and not already refunded), styled as an outlined/secondary button so it reads clearly against the lime background.
-- Single-item sales open the existing cancel/refund dialog straight away. Multi-item sales first show a short picker listing the items still eligible, then open the same dialog for the chosen item.
-
-No change to the refund logic itself - it still uses the existing seller cancellation flow.
+Replace the current picker with the buyer's step-1 layout: item cards with checkbox, thumbnail, title and price, selected state highlighted, then a full-width charcoal "Continue" button into the refund dialog.
 
 ## Technical notes
 
-- `src/types/admin/transactions.ts`: `getOrderCode` takes the order and returns `order_number ?? FLA-<short id>`; add `order_number` to `TransactionOrder`. Update callers in `AdminTransactions.tsx`, `TransactionTable.tsx`, `TransactionDetail.tsx`.
-- `src/pages/SellerDashboard.tsx` lines 627-637: delete the two summary blocks (the `grossTotal`/`feeTotal`/`residual`/`earliestClearing` values stay in use for the rows).
-- `src/components/SalesDetailsSheet.tsx`: drop the inline cancel link (lines 318-332), add the refund button near the "Mark as shipped" block, reusing `cancelOrderId` state and `CancelItemDialog`.
+- `src/components/SalesDetailsSheet.tsx` - button row layout and styling, picker markup.
+- `src/components/CancelItemDialog.tsx` - convert from `AlertDialog` + radio list to the `Dialog` + `Select` structure used in `src/components/RefundRequestDialog.tsx`; no changes to the `seller_cancel_order_begin` / `stripe-connect-refund` / relist calls.
