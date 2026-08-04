@@ -330,12 +330,12 @@ const Offers = () => {
       </div>
 
       <div className="mt-3 flex shrink-0 justify-center px-4">
-        <div className="inline-flex items-center rounded-full bg-muted p-1">
+        <div className="flex w-[220px] items-center rounded-full bg-muted p-1">
           {(['received', 'sent'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`rounded-full px-3 py-2 text-xs font-medium capitalize whitespace-nowrap transition-all ${
+              className={`w-1/2 rounded-full px-3 py-2 text-xs font-medium capitalize whitespace-nowrap transition-all ${
                 tab === t ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
               }`}
             >
@@ -346,45 +346,40 @@ const Offers = () => {
       </div>
 
 
-      {role === 'seller' && (
+
+      {role === 'seller' && sellerReady && (
         <div className="mt-4 shrink-0 px-4">
-          {!sellerReady ? (
-            <div className="rounded-2xl bg-card p-4 card-shadow">
-              <p className="text-sm font-semibold text-foreground">Set up seller account</p>
+          <div className="flex items-center justify-between rounded-2xl bg-card px-4 py-3 card-shadow">
+            <div className="min-w-0 pr-3">
+              <p className="text-sm font-semibold text-foreground">💰 Offers</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Become a seller to receive and manage offers on your listings.
+                {offersEnabled
+                  ? 'Buyers can make offers on your listings.'
+                  : 'Turn on to let buyers make offers on your listings.'}
               </p>
-              <Button
-                onClick={() => setSellerGateOpen(true)}
-                className="mt-3 h-10 w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold"
-              >
-                Set up seller account
-              </Button>
             </div>
-          ) : (
-            <div className="flex items-center justify-between rounded-2xl bg-card px-4 py-3 card-shadow">
-              <div className="min-w-0 pr-3">
-                <p className="text-sm font-semibold text-foreground">💰 Offers</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {offersEnabled
-                    ? 'Buyers can make offers on your listings.'
-                    : 'Turn on to let buyers make offers on your listings.'}
-                </p>
-              </div>
-              <Switch
-                checked={offersEnabled}
-                disabled={savingOffersToggle}
-                onCheckedChange={handleToggleOffers}
-                className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime"
-              />
-            </div>
-          )}
+            <Switch
+              checked={offersEnabled}
+              disabled={savingOffersToggle}
+              onCheckedChange={handleToggleOffers}
+              className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime"
+            />
+          </div>
         </div>
       )}
 
       <div className="mt-4 flex-1 overflow-y-auto px-4 pb-6">
 
-        {loading ? (
+        {role === 'seller' && !sellerReady ? (
+          <EmptyState
+            emoji="💰"
+            title="Set up seller account"
+            description="Become a seller to receive and manage offers on your listings."
+            actionLabel="Set up seller account"
+            onAction={() => setSellerGateOpen(true)}
+            minHeightClass="min-h-[55vh]"
+          />
+        ) : loading ? (
           <div className="flex min-h-[50vh] items-center justify-center">
             <span className="text-5xl">⏳</span>
           </div>
@@ -409,6 +404,7 @@ const Offers = () => {
           <div className="space-y-3">{list.map((o) => renderCard(o, tab))}</div>
         )}
       </div>
+
 
 
       {counterOffer && listings[counterOffer.listing_id] && (
