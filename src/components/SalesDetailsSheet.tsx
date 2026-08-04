@@ -100,7 +100,16 @@ const SalesDetailsSheet = ({
   const [cancelItemImage, setCancelItemImage] = useState<string | undefined>(undefined);
   const [cancelItemPrice, setCancelItemPrice] = useState<number | undefined>(undefined);
   const [refundPickerOpen, setRefundPickerOpen] = useState(false);
+  const [refundSelectedIds, setRefundSelectedIds] = useState<string[]>([]);
+  const [cancelItems, setCancelItems] = useState<{ id: string; title?: string; image?: string; price?: number }[]>([]);
+  const toCancelTarget = (o: any) => ({
+    id: o.id,
+    title: o.listing?.title || 'Item',
+    image: o.listing?.images?.[0] || o.listing?.image_url || undefined,
+    price: Number(o.price) || 0,
+  });
   const openCancelFor = (o: any) => {
+    setCancelItems([toCancelTarget(o)]);
     setCancelOrderId(o.id);
     setCancelItemTitle(o.listing?.title || 'Item');
     setCancelItemImage(o.listing?.images?.[0] || o.listing?.image_url || undefined);
@@ -726,34 +735,77 @@ const SalesDetailsSheet = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={refundPickerOpen} onOpenChange={setRefundPickerOpen}>
+      <Dialog open={refundPickerOpen} onOpenChange={(o) => { setRefundPickerOpen(o); if (!o) setRefundSelectedIds([]); }}>
         <DialogContent className="max-w-[85vw] sm:max-w-sm rounded-2xl z-[110] max-h-[85svh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-lg">Refund item</DialogTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">Step 1 of 2 • Select item</p>
+            <DialogTitle className="text-lg">Refund items</DialogTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">Step 1 of 2 • Select items</p>
           </DialogHeader>
           <div className="space-y-2 mt-2">
-            {refundableOrders.map((o: any) => (
+            {refundableOrders.map((o: any) => {
+              const checked = refundSelectedIds.includes(o.id);
+              return (
+                <button
+                  key={o.id}
+                  type="button"
+                  onClick={() =>
+                    setRefundSelectedIds((prev) =>
+                      prev.includes(o.id) ? prev.filter((id) => id !== o.id) : [...prev, o.id]
+                    )
+                  }
+                  className={cn(
+                    'w-full flex gap-3 items-center text-left rounded-xl border bg-card p-3 transition-colors',
+                    checked ? 'border-charcoal bg-charcoal/5' : 'border-border hover:bg-secondary'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'flex h-5 w-5 items-center justify-center rounded-md border-2 shrink-0',
+                      checked ? 'border-charcoal bg-charcoal' : 'border-muted-foreground/40'
+                    )}
+                  >
+                    {checked && <Check className="h-3.5 w-3.5 text-white" />}
+                  </span>
+                  <img
+                    src={o.listing?.images?.[0] || o.listing?.image_url || ''}
+                    alt=""
+                    className="h-14 w-14 rounded-lg object-cover bg-muted shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold truncate">{o.listing?.title || 'Item'}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">${Number(o.price || 0).toFixed(2)}</p>
+                  </div>
+                </button>
+              );
+            })}
+            {refundableOrders.length > 1 && (
               <button
-                key={o.id}
                 type="button"
-                onClick={() => {
-                  setRefundPickerOpen(false);
-                  openCancelFor(o);
-                }}
-                className="w-full flex gap-3 items-center text-left rounded-xl border border-border bg-card p-3 hover:bg-secondary transition-colors"
+                onClick={() =>
+                  setRefundSelectedIds(
+                    refundSelectedIds.length === refundableOrders.length
+                      ? []
+                      : refundableOrders.map((o: any) => o.id)
+                  )
+                }
+                className="w-full text-center text-xs font-medium text-muted-foreground underline py-1"
               >
-                <img
-                  src={o.listing?.images?.[0] || o.listing?.image_url || ''}
-                  alt=""
-                  className="h-14 w-14 rounded-lg object-cover bg-muted shrink-0"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold truncate">{o.listing?.title || 'Item'}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">${Number(o.price || 0).toFixed(2)}</p>
-                </div>
+                {refundSelectedIds.length === refundableOrders.length ? 'Clear selection' : 'Select all items'}
               </button>
-            ))}
+            )}
+            <Button
+              disabled={refundSelectedIds.length === 0}
+              onClick={() => {
+                const selected = refundableOrders.filter((o: any) => refundSelectedIds.includes(o.id));
+                setCancelItems(selected.map(toCancelTarget));
+                setCancelOrderId(selected[0]?.id ?? null);
+                setRefundPickerOpen(false);
+                setRefundSelectedIds([]);
+              }}
+              className="w-full rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 mt-1"
+            >
+              {refundSelectedIds.length > 1 ? `Refund ${refundSelectedIds.length} items` : 'Refund item'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -763,8 +815,9 @@ const SalesDetailsSheet = ({
         itemTitle={cancelItemTitle}
         itemImage={cancelItemImage}
         itemPrice={cancelItemPrice}
+        items={cancelItems}
         open={!!cancelOrderId}
-        onOpenChange={(o) => { if (!o) setCancelOrderId(null); }}
+        onOpenChange={(o) => { if (!o) { setCancelOrderId(null); setCancelItems([]); } }}
       />
 
 
