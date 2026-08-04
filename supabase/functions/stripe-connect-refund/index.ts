@@ -54,6 +54,8 @@ const OPTIONAL_ORDER_COLUMNS = [
   "secure_checkout_fee",
   "coupon_code",
   "coupon_type",
+  "cancelled_by_seller",
+  "refund_reason",
 ] as const;
 
 const ORDER_UPDATE_FALLBACK_COLUMNS = [
@@ -656,6 +658,7 @@ async function insertRefundNotifications(
   serviceKey: string,
   order: any,
   itemCount = 1,
+  sellerCancelled = false,
 ) {
   try {
     if (order.id) {
@@ -690,27 +693,61 @@ async function insertRefundNotifications(
       ? `${listingTitle} and ${itemCount - 1} other item${itemCount - 1 === 1 ? "" : "s"}`
       : listingTitle;
 
-    const rows = [
-      {
-        user_id: order.buyer_id,
-        type: "refund_initiated",
-        title: "Refund issued",
-        message: `↩️ Your refund for ${subject} has been processed. Funds usually appear straight away, but some banks can take up to 5 business days.`,
-        related_listing_id: order.listing_id ?? null,
-        related_user_id: order.seller_id ?? null,
-        related_order_id: order.id ?? null,
-      },
-      {
-        user_id: order.seller_id,
-        type: "refund_initiated",
-        title: "Refund issued",
-        message: `↩️ You refunded the buyer for ${subject}. The sale has been reversed.`,
-        related_listing_id: order.listing_id ?? null,
-        related_user_id: order.buyer_id ?? null,
-        related_order_id: order.id ?? null,
-      },
+    let sellerHandle: string | null = null;
+    if (sellerCancelled && order.seller_id) {
+      const sellerRes = await fetch(
+        `${externalUrl}/rest/v1/profiles?user_id=eq.${order.seller_id}&select=username`,
+        { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+      );
+      if (sellerRes.ok) {
+        const sellerRows = await sellerRes.json();
+        const raw = Array.isArray(sellerRows) ? sellerRows[0]?.username : null;
+        if (raw) sellerHandle = raw.startsWith("@") ? raw : `@${raw}`;
+      }
+    }
 
-    ];
+    const rows = sellerCancelled
+      ? [
+        {
+          user_id: order.buyer_id,
+          type: "refund_initiated",
+          title: "Order cancelled",
+          message: `😔 ${sellerHandle ?? "The seller"} cancelled your order for ${subject}. You have been fully refunded, including fees.`,
+          related_listing_id: order.listing_id ?? null,
+          related_user_id: order.seller_id ?? null,
+          related_order_id: order.id ?? null,
+        },
+        {
+          user_id: order.seller_id,
+          type: "refund_initiated",
+          title: "Order cancelled",
+          message: `↩️ You cancelled the sale of ${subject}. The buyer has been fully refunded.`,
+          related_listing_id: order.listing_id ?? null,
+          related_user_id: order.buyer_id ?? null,
+          related_order_id: order.id ?? null,
+        },
+      ]
+      : [
+        {
+          user_id: order.buyer_id,
+          type: "refund_initiated",
+          title: "Refund issued",
+          message: `↩️ Your refund for ${subject} has been processed. Funds usually appear straight away, but some banks can take up to 5 business days.`,
+          related_listing_id: order.listing_id ?? null,
+          related_user_id: order.seller_id ?? null,
+          related_order_id: order.id ?? null,
+        },
+        {
+          user_id: order.seller_id,
+          type: "refund_initiated",
+          title: "Refund issued",
+          message: `↩️ You refunded the buyer for ${subject}. The sale has been reversed.`,
+          related_listing_id: order.listing_id ?? null,
+          related_user_id: order.buyer_id ?? null,
+          related_order_id: order.id ?? null,
+        },
+      ];
+
 
     const insertRes = await fetch(`${externalUrl}/rest/v1/notifications`, {
       method: "POST",
@@ -745,7 +782,12 @@ async function insertRefundNotifications(
   }
 }
 
-async function insertRefundInitiatedChatMessage(externalUrl: string, serviceKey: string, order: any) {
+async function insertRefundInitiatedChatMessage(
+  externalUrl: string,
+  serviceKey: string,
+  order: any,
+  sellerCancelled = false,
+) {
   try {
     let sellerUsername: string | null = null;
     if (order.seller_id) {
@@ -763,6 +805,8 @@ async function insertRefundInitiatedChatMessage(externalUrl: string, serviceKey:
       type: "refund_initiated",
       seller_username: sellerUsername,
       payment_method: "stripe",
+      seller_cancelled: sellerCancelled || undefined,
+      cancel_reason: sellerCancelled ? (order.refund_reason ?? null) : undefined,
       initiated_at: new Date().toISOString(),
     });
 
@@ -833,7 +877,12 @@ serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { orderId, reason, mode } = body as { orderId?: string; reason?: string; mode?: "single" | "cascade" };
+    const { orderId, reason, mode, sellerCancelled: sellerCancelledRaw } = body as {
+      orderId?: string;
+      reason?: string;
+      mode?: "single" | "cascade";
+      sellerCancelled?: boolean;
+    };
     if (!orderId || !isUuid(orderId)) throw new Error("orderId required");
 
     const order = await fetchOrderWithFallback(externalUrl, serviceKey, orderId);
@@ -843,6 +892,9 @@ serve(async (req) => {
     if (order.refunded_at) throw new Error("Order already refunded");
 
     const refundMode = mode === "single" ? "single" : "cascade";
+    // Seller cancellations are stamped on the order by seller_cancel_order_begin
+    // before this runs, so trust the row rather than the request body alone.
+    const sellerCancelled = sellerCancelledRaw === true || order.cancelled_by_seller === true;
 
     // Demo orders (Apple App Review bypass) have no payment intent —
     // just mark refunded directly so reviewers can exercise the refund flow.
@@ -855,8 +907,8 @@ serve(async (req) => {
         const demoListingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
         await markListingsRefunded(externalUrl, serviceKey, demoListingIds);
       }
-      await insertRefundNotifications(externalUrl, serviceKey, order);
-      await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order);
+      await insertRefundNotifications(externalUrl, serviceKey, order, 1, sellerCancelled);
+      await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order, sellerCancelled);
       return jsonResponse({ success: true, demo: true, mode: refundMode });
     }
 
@@ -905,8 +957,8 @@ serve(async (req) => {
 
       await markOrderRefunded(externalUrl, serviceKey, order.id);
       if (order.listing_id) await markListingsRefunded(externalUrl, serviceKey, [order.listing_id]);
-      await insertRefundNotifications(externalUrl, serviceKey, order);
-      await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order);
+      await insertRefundNotifications(externalUrl, serviceKey, order, 1, sellerCancelled);
+      await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order, sellerCancelled);
 
       return jsonResponse({
         success: true,
@@ -951,8 +1003,8 @@ serve(async (req) => {
         if (row.listing_id) await markListingsRefunded(externalUrl, serviceKey, [row.listing_id]);
       }
       await recordSellerShortfall(externalUrl, serviceKey, order.seller_id, totalShortfall);
-      await insertRefundNotifications(externalUrl, serviceKey, order, remainingRows.length);
-      await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order);
+      await insertRefundNotifications(externalUrl, serviceKey, order, remainingRows.length, sellerCancelled);
+      await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order, sellerCancelled);
 
       return jsonResponse({
         success: true,
@@ -982,9 +1034,9 @@ serve(async (req) => {
     await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
     const relatedListingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
     await markListingsRefunded(externalUrl, serviceKey, relatedListingIds);
-    await insertRefundNotifications(externalUrl, serviceKey, order, cascadeRows.length);
+    await insertRefundNotifications(externalUrl, serviceKey, order, cascadeRows.length, sellerCancelled);
 
-    await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order);
+    await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order, sellerCancelled);
 
     return jsonResponse({ success: true, refundId: refund.id, status: refund.status, mode: "cascade" });
   } catch (error: any) {

@@ -27,6 +27,8 @@ interface RefundInitiatedData {
   type: 'refund_initiated';
   seller_username: string;
   payment_method?: string;
+  seller_cancelled?: boolean;
+  cancel_reason?: string | null;
   initiated_at: string;
 }
 
@@ -199,6 +201,28 @@ const RefundSystemMessage = ({
 
   if (data.type === 'refund_initiated') {
     const d = data as RefundInitiatedData;
+    if (d.seller_cancelled) {
+      return (
+        <div className="mx-4 my-3">
+          <div className="rounded-2xl border-2 border-amber-400/50 bg-amber-50 dark:bg-amber-950/30 p-4 space-y-2">
+            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+              <span className="text-base">😔</span>
+              <span className="font-semibold text-sm">Order Cancelled</span>
+            </div>
+
+            <p className="text-sm text-foreground">
+              <span className="font-semibold">{formatUsername(d.seller_username)}</span> cancelled this item before it shipped. A full refund, including fees, is on its way back to the original payment method.
+            </p>
+
+            {d.cancel_reason && (
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Reason:</span> {d.cancel_reason}
+              </p>
+            )}
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="mx-4 my-3">
         <div className="rounded-2xl border-2 border-green-400/50 bg-green-50 dark:bg-green-950/30 p-4 space-y-2">

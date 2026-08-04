@@ -21,6 +21,7 @@ import { useExistingReview } from '@/hooks/useReviews';
 import WriteReviewDrawer from '@/components/WriteReviewDrawer';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import OrderReceiptDialog from '@/components/OrderReceiptDialog';
+import CancelItemDialog from '@/components/CancelItemDialog';
 import { useAuth } from '@/context/AuthContext';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import ShippingStatusTracker from '@/components/ShippingStatusTracker';
@@ -93,6 +94,8 @@ const SalesDetailsSheet = ({
   const [refundDeclineReason, setRefundDeclineReason] = useState('');
   const [refundDeclineOpen, setRefundDeclineOpen] = useState(false);
   const [refundActionOrderId, setRefundActionOrderId] = useState<string | null>(null);
+  const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
+  const [cancelItemTitle, setCancelItemTitle] = useState<string | undefined>(undefined);
   const highlightRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
@@ -312,10 +315,23 @@ const SalesDetailsSheet = ({
                               </span>
                             )}
                           </div>
-                          <div className="text-right">
+                          <div className="flex items-end justify-between gap-2">
+                            {!itemRefunded && !itemPending && o.status === 'awaiting' && !o.shipped_at ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCancelOrderId(o.id);
+                                  setCancelItemTitle(listingTitle);
+                                }}
+                                className="text-xs font-medium text-destructive underline underline-offset-2"
+                              >
+                                Cancel item
+                              </button>
+                            ) : <span />}
                             <p className="text-lg font-semibold">${o.price}</p>
                           </div>
                         </div>
+
                       </div>
                     );
 
@@ -693,6 +709,13 @@ const SalesDetailsSheet = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CancelItemDialog
+        orderId={cancelOrderId}
+        itemTitle={cancelItemTitle}
+        open={!!cancelOrderId}
+        onOpenChange={(o) => { if (!o) setCancelOrderId(null); }}
+      />
     </Drawer>
   );
 };

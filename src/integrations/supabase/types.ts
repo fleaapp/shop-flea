@@ -887,6 +887,7 @@ export type Database = {
         Row: {
           admin_marked_delivered: boolean
           buyer_id: string
+          cancelled_by_seller: boolean
           checkout_reference: string | null
           completed_at: string | null
           coupon_code: string | null
@@ -933,6 +934,7 @@ export type Database = {
         Insert: {
           admin_marked_delivered?: boolean
           buyer_id: string
+          cancelled_by_seller?: boolean
           checkout_reference?: string | null
           completed_at?: string | null
           coupon_code?: string | null
@@ -979,6 +981,7 @@ export type Database = {
         Update: {
           admin_marked_delivered?: boolean
           buyer_id?: string
+          cancelled_by_seller?: boolean
           checkout_reference?: string | null
           completed_at?: string | null
           coupon_code?: string | null
@@ -1110,6 +1113,7 @@ export type Database = {
           rating: number | null
           region_id: string | null
           report_strike_count: number
+          seller_cancel_count: number
           shipping_preferences_set: boolean | null
           shipping_tier_1: number | null
           shipping_tier_2: number | null
@@ -1157,6 +1161,7 @@ export type Database = {
           rating?: number | null
           region_id?: string | null
           report_strike_count?: number
+          seller_cancel_count?: number
           shipping_preferences_set?: boolean | null
           shipping_tier_1?: number | null
           shipping_tier_2?: number | null
@@ -1204,6 +1209,7 @@ export type Database = {
           rating?: number | null
           region_id?: string | null
           report_strike_count?: number
+          seller_cancel_count?: number
           shipping_preferences_set?: boolean | null
           shipping_tier_1?: number | null
           shipping_tier_2?: number | null
@@ -1646,6 +1652,7 @@ export type Database = {
         Returns: {
           admin_marked_delivered: boolean
           buyer_id: string
+          cancelled_by_seller: boolean
           checkout_reference: string | null
           completed_at: string | null
           coupon_code: string | null
@@ -1701,6 +1708,7 @@ export type Database = {
         Returns: {
           admin_marked_delivered: boolean
           buyer_id: string
+          cancelled_by_seller: boolean
           checkout_reference: string | null
           completed_at: string | null
           coupon_code: string | null
@@ -1760,6 +1768,7 @@ export type Database = {
         Returns: {
           admin_marked_delivered: boolean
           buyer_id: string
+          cancelled_by_seller: boolean
           checkout_reference: string | null
           completed_at: string | null
           coupon_code: string | null
@@ -1815,6 +1824,7 @@ export type Database = {
         Returns: {
           admin_marked_delivered: boolean
           buyer_id: string
+          cancelled_by_seller: boolean
           checkout_reference: string | null
           completed_at: string | null
           coupon_code: string | null
@@ -1876,6 +1886,7 @@ export type Database = {
         Returns: {
           admin_marked_delivered: boolean
           buyer_id: string
+          cancelled_by_seller: boolean
           checkout_reference: string | null
           completed_at: string | null
           coupon_code: string | null
@@ -2099,6 +2110,7 @@ export type Database = {
         Returns: {
           admin_marked_delivered: boolean
           buyer_id: string
+          cancelled_by_seller: boolean
           checkout_reference: string | null
           completed_at: string | null
           coupon_code: string | null
@@ -2159,6 +2171,7 @@ export type Database = {
         Returns: {
           admin_marked_delivered: boolean
           buyer_id: string
+          cancelled_by_seller: boolean
           checkout_reference: string | null
           completed_at: string | null
           coupon_code: string | null
@@ -2245,6 +2258,7 @@ export type Database = {
         Returns: {
           admin_marked_delivered: boolean
           buyer_id: string
+          cancelled_by_seller: boolean
           checkout_reference: string | null
           completed_at: string | null
           coupon_code: string | null
@@ -2332,6 +2346,7 @@ export type Database = {
         Returns: {
           admin_marked_delivered: boolean
           buyer_id: string
+          cancelled_by_seller: boolean
           checkout_reference: string | null
           completed_at: string | null
           coupon_code: string | null
@@ -2383,6 +2398,66 @@ export type Database = {
         }
       }
       seed_push_vault_key: { Args: { p_key: string }; Returns: undefined }
+      seller_cancel_order_begin: {
+        Args: { p_order_id: string; p_reason: string }
+        Returns: {
+          admin_marked_delivered: boolean
+          buyer_id: string
+          cancelled_by_seller: boolean
+          checkout_reference: string | null
+          completed_at: string | null
+          coupon_code: string | null
+          coupon_id: string | null
+          coupon_type: string | null
+          created_at: string
+          delivered_at: string | null
+          dispute_window_ends_at: string | null
+          id: string
+          listing_id: string
+          order_group_id: string | null
+          order_number: string | null
+          payment_method: string
+          pending_admin_delivery_review: boolean
+          price: number
+          refund_declined_at: string | null
+          refund_declined_reason: string | null
+          refund_reason: string | null
+          refund_request_deadline_at: string | null
+          refund_request_reason: string | null
+          refund_requested_at: string | null
+          refund_requested_by: string | null
+          refunded_at: string | null
+          secure_checkout_fee: number
+          seller_id: string
+          shipped_at: string | null
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_first_name: string | null
+          shipping_last_name: string | null
+          shipping_postcode: string | null
+          shipping_price: number
+          shipping_state: string | null
+          status: string
+          tracking_approved_at: string | null
+          tracking_approved_by: string | null
+          tracking_number: string | null
+          tracking_provider: string | null
+          tracking_rejected_at: string | null
+          tracking_rejection_reason: string | null
+          transaction_fee: number
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      seller_relist_cancelled_listing: {
+        Args: { p_order_id: string }
+        Returns: boolean
+      }
       withdraw_offer: {
         Args: { p_offer_id: string }
         Returns: {
