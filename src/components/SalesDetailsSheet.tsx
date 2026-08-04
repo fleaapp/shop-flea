@@ -464,13 +464,29 @@ const SalesDetailsSheet = ({
               />
             )}
             {!isRefunded && effectiveStatus === 'awaiting' && (
-              <div className="flex justify-center">
+              <div className="flex flex-col items-center gap-3">
                 <Button
                   onClick={handleMarkShipped}
                   className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
                 >
                   Mark as shipped
                 </Button>
+                {refundableOrders.length > 0 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (refundableOrders.length === 1) {
+                        setCancelOrderId(refundableOrders[0].id);
+                        setCancelItemTitle(refundableOrders[0].listing?.title || 'Item');
+                      } else {
+                        setRefundPickerOpen(true);
+                      }
+                    }}
+                    className="rounded-full h-12 px-8 border-2 border-border bg-card text-foreground hover:bg-secondary"
+                  >
+                    Refund item
+                  </Button>
+                )}
               </div>
             )}
 
