@@ -549,6 +549,8 @@ const Settings = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {sellerGate}
+
       <BottomNav adminSettingsBadge={!isGuest && isAdmin ? adminBadgeTotal : undefined} />
     </div>;
 };
