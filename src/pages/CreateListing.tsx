@@ -17,6 +17,7 @@ import CategorySelectionDrawer from '@/components/CategorySelectionDrawer';
 import TieredShippingSetupModal from '@/components/TieredShippingSetupModal';
 import BlockedUserBanner from '@/components/BlockedUserBanner';
 import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
+import { Switch } from '@/components/ui/switch';
 import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
@@ -131,6 +132,27 @@ const CreateListing = () => {
   // or if they have a completed account in DB that needs syncing
   const stripeAccountId = profile?.stripe_account_id || null;
   const offersEnabled = (profile as any)?.offers_enabled === true;
+  const [savingOffersToggle, setSavingOffersToggle] = useState(false);
+  const handleToggleOffers = async (checked: boolean) => {
+    if (!user) return;
+    setSavingOffersToggle(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ offers_enabled: checked } as any)
+        .eq('user_id', user.id)
+        .select('offers_enabled')
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error('No profile row updated');
+      await refreshProfile();
+      toast.success(checked ? 'Offers on' : 'Offers off');
+    } catch (error: any) {
+      toast.error(`Failed to update: ${error?.message ?? 'unknown error'}`);
+    } finally {
+      setSavingOffersToggle(false);
+    }
+  };
   const returnedFromStripe = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('stripe_success') === 'true';
   const stripePending = !hasPaymentMethod && returnedFromStripe;
 
@@ -895,6 +917,17 @@ const CreateListing = () => {
           <span>📦 Bundle offers</span>
           <ChevronRight className="h-5 w-5 text-muted-foreground" />
         </button>
+
+        <div className={`${inputStyles} w-full flex items-center justify-between px-4 text-sm text-foreground`}>
+          <span>💰 Offers</span>
+          <Switch
+            checked={offersEnabled}
+            onCheckedChange={handleToggleOffers}
+            disabled={savingOffersToggle}
+          />
+        </div>
+
+
 
         
         {/* Auto-accept offers - only shown when the seller has offers turned on. */}
