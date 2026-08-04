@@ -62,6 +62,7 @@ const Settings = () => {
   } = useDiscardedListings();
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [shippingOpen, setShippingOpen] = useState(false);
+  const { sellerReady, gate: sellerGate, setGateOpen: setSellerGateOpen } = useSellerGate();
   const { openCarousel } = useOnboarding();
   const {
     total: supportUnread
@@ -438,7 +439,8 @@ const Settings = () => {
           ))}
         </div>
       )}
-    </div>
+      {sellerGate}
+</div>
   );
 
   return <div className="native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden">
