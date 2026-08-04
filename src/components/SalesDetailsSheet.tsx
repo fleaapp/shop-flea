@@ -96,7 +96,17 @@ const SalesDetailsSheet = ({
   const [refundActionOrderId, setRefundActionOrderId] = useState<string | null>(null);
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [cancelItemTitle, setCancelItemTitle] = useState<string | undefined>(undefined);
+  const [refundPickerOpen, setRefundPickerOpen] = useState(false);
   const highlightRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const refundableOrders = (orders ?? []).filter(
+    (o: any) =>
+      o.status === 'awaiting' &&
+      !o.shipped_at &&
+      !o.refunded_at &&
+      o.status !== 'refunded' &&
+      !(o.refund_requested_at && !o.refund_declined_at),
+  );
 
   useEffect(() => {
     if (!open || !highlightOrderId) return;
