@@ -345,9 +345,22 @@ const SalesDetailsSheet = ({
                   })}
                 </div>
 
-                <div className="border-t border-border" />
+                <div className="h-px w-full bg-border" />
 
                 <div className="px-4 py-3 space-y-2">
+                  {(() => {
+                    const itemsSubtotal = (orders as any[])
+                      .filter((o) => !(o.refunded_at || o.status === 'refunded'))
+                      .reduce((sum, o) => sum + Number(o.price || 0), 0);
+                    return (
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-muted-foreground">
+                          Items subtotal{orders.length >= 2 ? ` (${orders.length} items)` : ''}
+                        </div>
+                        <p className="text-sm text-foreground">${itemsSubtotal.toFixed(2)}</p>
+                      </div>
+                    );
+                  })()}
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-muted-foreground">
                       Shipping{orders.length >= 2 ? ' (combined)' : ''}
@@ -362,39 +375,19 @@ const SalesDetailsSheet = ({
                   )}
                 </div>
 
-                {/* Hidden when no fee was charged (pre-fee sales) so it doesn't read as a bug. */}
+                {/* Fees last. Hidden when no fee was charged (pre-fee sales) so it doesn't read as a bug. */}
                 {!fullyRefunded && transactionFee > 0 && (
                   <>
-                    <div className="border-t border-border" />
-
-                    <div className="px-4 py-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm text-muted-foreground">Transaction Fee (2% + $0.50)</div>
-                        <p className="text-sm text-foreground">−${transactionFee.toFixed(2)}</p>
-                      </div>
+                    <div className="h-px w-full bg-border" />
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <div className="text-sm text-muted-foreground">Transaction Fee (2% + $0.50)</div>
+                      <p className="text-sm text-foreground">−${transactionFee.toFixed(2)}</p>
                     </div>
                   </>
                 )}
 
-                {(() => {
-                  const itemsSubtotal = (orders as any[])
-                    .filter((o) => !(o.refunded_at || o.status === 'refunded'))
-                    .reduce((sum, o) => sum + Number(o.price || 0), 0);
-                  return (
-                    <>
-                      <div className="border-t border-border" />
-                      <div className="px-4 py-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm text-muted-foreground">Items subtotal</div>
-                          <p className="text-sm text-foreground">${itemsSubtotal.toFixed(2)}</p>
-                        </div>
+                <div className="h-px w-full bg-border" />
 
-                      </div>
-                    </>
-                  );
-                })()}
-
-                <div className="border-t border-border" />
 
                 {/* Total */}
                 <div className="flex items-center justify-center bg-charcoal text-white py-3 px-4">
