@@ -11,6 +11,7 @@ import MakeOfferDrawer from '@/components/MakeOfferDrawer';
 import { safeNavigateBack } from '@/utils/safeBack';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import useSellerGate from '@/hooks/useSellerGate';
 
 import { toast } from 'sonner';
 import { calculateTransactionFee } from '@/utils/feeCalculator';
