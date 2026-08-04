@@ -16,12 +16,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useReporting } from '@/hooks/useReporting';
 import ReportDialog from '@/components/ReportDialog';
 import { useContentModeration } from '@/hooks/useContentModeration';
