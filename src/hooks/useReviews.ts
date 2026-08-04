@@ -14,6 +14,7 @@ export interface Review {
   created_at: string;
   updated_at: string;
   reviewer_role?: 'buyer' | 'seller';
+  reviewed_role?: 'buyer' | 'seller';
   reviewer_profile?: {
     username: string;
     avatar_url: string | null;
@@ -89,6 +90,9 @@ export function useUserReviews(userId: string | undefined) {
         return {
           ...review,
           reviewer_role: reviewerRole,
+          reviewed_role: order
+            ? (order.seller_id === review.reviewed_user_id ? 'seller' : 'buyer')
+            : undefined,
           reviewer_profile: profileMap.get(review.reviewer_id) || { username: '@user', avatar_url: null, user_id: review.reviewer_id },
           order: {
             listing_id: order?.listing_id,
