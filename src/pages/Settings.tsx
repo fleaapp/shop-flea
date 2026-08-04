@@ -334,7 +334,7 @@ const Settings = () => {
     label: 'Offers',
     action: isGuest
       ? promptGuest
-      : () => (sellerReady ? navigate('/offers', { state: { role: 'seller' } }) : setSellerGateOpen(true))
+      : () => navigate('/offers', { state: { role: sellerReady ? 'seller' : 'buyer' } })
   }];
 
   // ---- Support ----
