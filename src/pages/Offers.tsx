@@ -348,22 +348,37 @@ const Offers = () => {
 
       {role === 'seller' && (
         <div className="mt-4 shrink-0 px-4">
-          <div className="flex items-center justify-between rounded-2xl bg-card px-4 py-3 card-shadow">
-            <div className="min-w-0 pr-3">
-              <p className="text-sm font-semibold text-foreground">💰 Offers</p>
+          {!sellerReady ? (
+            <div className="rounded-2xl bg-card p-4 card-shadow">
+              <p className="text-sm font-semibold text-foreground">Set up seller account</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                {offersEnabled
-                  ? 'Buyers can make offers on your listings.'
-                  : 'Turn on to let buyers make offers on your listings.'}
+                Become a seller to receive and manage offers on your listings.
               </p>
+              <Button
+                onClick={() => setSellerGateOpen(true)}
+                className="mt-3 h-10 w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold"
+              >
+                Set up seller account
+              </Button>
             </div>
-            <Switch
-              checked={offersEnabled}
-              disabled={savingOffersToggle}
-              onCheckedChange={handleToggleOffers}
-              className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime"
-            />
-          </div>
+          ) : (
+            <div className="flex items-center justify-between rounded-2xl bg-card px-4 py-3 card-shadow">
+              <div className="min-w-0 pr-3">
+                <p className="text-sm font-semibold text-foreground">💰 Offers</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {offersEnabled
+                    ? 'Buyers can make offers on your listings.'
+                    : 'Turn on to let buyers make offers on your listings.'}
+                </p>
+              </div>
+              <Switch
+                checked={offersEnabled}
+                disabled={savingOffersToggle}
+                onCheckedChange={handleToggleOffers}
+                className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime"
+              />
+            </div>
+          )}
         </div>
       )}
 
