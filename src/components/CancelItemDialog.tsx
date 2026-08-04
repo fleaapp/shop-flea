@@ -116,12 +116,22 @@ const CancelItemDialog = ({ orderId, itemTitle, open, onOpenChange, onCancelled 
             <p className="text-sm font-medium text-foreground">Why are you cancelling?</p>
             <RadioGroup value={reason} onValueChange={setReason} className="space-y-2">
               {REASONS.map((r) => (
-                <div key={r} className="flex items-center gap-2">
-                  <RadioGroupItem value={r} id={`cancel-reason-${r}`} />
-                  <Label htmlFor={`cancel-reason-${r}`} className="text-sm font-normal">
+                <label
+                  key={r}
+                  htmlFor={`cancel-reason-${r}`}
+                  className={`flex items-center gap-2.5 rounded-xl border px-3 py-2 cursor-pointer transition-colors ${
+                    reason === r ? 'border-charcoal bg-muted' : 'border-border bg-card'
+                  }`}
+                >
+                  <RadioGroupItem
+                    value={r}
+                    id={`cancel-reason-${r}`}
+                    className="border-charcoal text-charcoal"
+                  />
+                  <Label htmlFor={`cancel-reason-${r}`} className="text-sm font-normal text-foreground cursor-pointer">
                     {r}
                   </Label>
-                </div>
+                </label>
               ))}
             </RadioGroup>
             {reason === 'Other' && (

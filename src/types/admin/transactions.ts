@@ -14,6 +14,7 @@ export interface TransactionOrder {
   refunded_at?: string | null;
   refund_reason?: string | null;
   created_at: string;
+  order_number?: string | null;
   updated_at: string;
   listing?: { title: string; images: string[]; brand: string; category: string };
   buyer_profile?: { username: string; avatar_url: string | null };
@@ -87,6 +88,7 @@ export function getDaysOverdue(o: TransactionOrder, deadlineDays = 5): number | 
 export function getTransactionStatus(o: TransactionOrder): string {
   return o.refunded_at ? 'refunded' : o.status;
 }
-export function getOrderCode(orderId: string): string {
-  return `FLA-${orderId.substring(0, 8).toUpperCase()}`;
+export function getOrderCode(order: string | { id: string; order_number?: string | null }): string {
+  if (typeof order === 'string') return `FLA-${order.substring(0, 8).toUpperCase()}`;
+  return order.order_number || `FLA-${order.id.substring(0, 8).toUpperCase()}`;
 }

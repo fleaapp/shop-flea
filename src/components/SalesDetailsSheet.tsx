@@ -96,7 +96,17 @@ const SalesDetailsSheet = ({
   const [refundActionOrderId, setRefundActionOrderId] = useState<string | null>(null);
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [cancelItemTitle, setCancelItemTitle] = useState<string | undefined>(undefined);
+  const [refundPickerOpen, setRefundPickerOpen] = useState(false);
   const highlightRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const refundableOrders = (orders ?? []).filter(
+    (o: any) =>
+      o.status === 'awaiting' &&
+      !o.shipped_at &&
+      !o.refunded_at &&
+      o.status !== 'refunded' &&
+      !(o.refund_requested_at && !o.refund_declined_at),
+  );
 
   useEffect(() => {
     if (!open || !highlightOrderId) return;
@@ -315,19 +325,7 @@ const SalesDetailsSheet = ({
                               </span>
                             )}
                           </div>
-                          <div className="flex items-end justify-between gap-2">
-                            {!itemRefunded && !itemPending && o.status === 'awaiting' && !o.shipped_at ? (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCancelOrderId(o.id);
-                                  setCancelItemTitle(listingTitle);
-                                }}
-                                className="text-xs font-medium text-destructive underline underline-offset-2"
-                              >
-                                Cancel item
-                              </button>
-                            ) : <span />}
+                          <div className="flex items-end justify-end gap-2">
                             <p className="text-lg font-semibold">${o.price}</p>
                           </div>
                         </div>
@@ -476,13 +474,29 @@ const SalesDetailsSheet = ({
               />
             )}
             {!isRefunded && effectiveStatus === 'awaiting' && (
-              <div className="flex justify-center">
+              <div className="flex flex-col items-center gap-3">
                 <Button
                   onClick={handleMarkShipped}
                   className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
                 >
                   Mark as shipped
                 </Button>
+                {refundableOrders.length > 0 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (refundableOrders.length === 1) {
+                        setCancelOrderId(refundableOrders[0].id);
+                        setCancelItemTitle(refundableOrders[0].listing?.title || 'Item');
+                      } else {
+                        setRefundPickerOpen(true);
+                      }
+                    }}
+                    className="rounded-full h-12 px-8 border-2 border-border bg-card text-foreground hover:bg-secondary"
+                  >
+                    Refund item
+                  </Button>
+                )}
               </div>
             )}
 
@@ -710,12 +724,41 @@ const SalesDetailsSheet = ({
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog open={refundPickerOpen} onOpenChange={setRefundPickerOpen}>
+        <AlertDialogContent className="max-w-[340px] rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Which item do you want to refund?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            {refundableOrders.map((o: any) => (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => {
+                  setRefundPickerOpen(false);
+                  setCancelOrderId(o.id);
+                  setCancelItemTitle(o.listing?.title || 'Item');
+                }}
+                className="w-full flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left hover:bg-secondary"
+              >
+                <span className="text-sm text-foreground truncate">{o.listing?.title || 'Item'}</span>
+                <span className="text-sm font-semibold text-foreground">${o.price}</span>
+              </button>
+            ))}
+          </div>
+          <AlertDialogFooter className="flex-row gap-2 mt-1">
+            <AlertDialogCancel className="flex-1 h-9 rounded-lg mt-0">Close</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <CancelItemDialog
         orderId={cancelOrderId}
         itemTitle={cancelItemTitle}
         open={!!cancelOrderId}
         onOpenChange={(o) => { if (!o) setCancelOrderId(null); }}
       />
+
     </Drawer>
   );
 };

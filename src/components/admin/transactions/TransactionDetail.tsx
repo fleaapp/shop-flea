@@ -78,7 +78,7 @@ export function TransactionDetail({ order, onBack }: Props) {
         <Button variant="ghost" size="icon" aria-label="Back" onClick={onBack} className="shrink-0"><ChevronLeft className="h-4 w-4" /></Button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h2 className="font-mono text-sm font-bold">{getOrderCode(order.id)}</h2>
+            <h2 className="font-mono text-sm font-bold">{getOrderCode(order)}</h2>
             <Badge variant="outline" className={`text-[11px] ${statusColors[displayStatus] || ''}`}>{displayStatus}</Badge>
           </div>
           <p className="text-xs text-muted-foreground">{format(new Date(order.created_at), 'PPpp')}</p>
