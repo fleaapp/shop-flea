@@ -16,12 +16,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useReporting } from '@/hooks/useReporting';
 import ReportDialog from '@/components/ReportDialog';
 import { useContentModeration } from '@/hooks/useContentModeration';
@@ -53,6 +47,8 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
   const [isOpen, setIsOpen] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<{ id: string; username: string; userId: string } | null>(null);
+  const [menuComment, setMenuComment] = useState<Comment | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Comment | null>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
   const [cursorPosition, setCursorPosition] = useState(0);
@@ -400,39 +396,21 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
       </div>
       
       {/* 3-dot menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Comment options"
-            className={`flex-shrink-0 text-muted-foreground hover:text-foreground ${isReply ? 'h-6 w-6' : 'h-8 w-8'}`}
-          >
-            <MoreHorizontal className={isReply ? 'h-3 w-3' : 'h-4 w-4'} />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
-          {canDeleteComment(comment) && (
-            <DropdownMenuItem
-              onClick={() => deleteComment.mutate(comment.id)}
-              disabled={deleteComment.isPending}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Remove
-            </DropdownMenuItem>
-          )}
-          <DropdownMenuItem 
-            onClick={() => handleReport(comment)}
-            disabled={isReporting}
-          >
-            <Flag className="h-4 w-4 mr-2" />
-            Report
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <button
+        type="button"
+        aria-label="Comment options"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setMenuComment(comment);
+        }}
+        className={`flex-shrink-0 flex items-center justify-center rounded-full text-muted-foreground active:bg-muted ${isReply ? 'h-7 w-7' : 'h-9 w-9'}`}
+      >
+        <MoreHorizontal className={isReply ? 'h-3 w-3' : 'h-4 w-4'} />
+      </button>
     </div>
   );
+
 
   return (
     <div className="mt-6">
@@ -577,6 +555,85 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
           )}
         </CollapsibleContent>
       </Collapsible>
+
+      {/* Comment actions sheet - plain fixed overlay so it works inside drawers on native */}
+      {menuComment && (
+        <div
+          className="fixed inset-0 z-[80] flex items-end bg-black/40"
+          onClick={() => setMenuComment(null)}
+        >
+          <div
+            className="w-full rounded-t-2xl bg-card p-3 pb-8 space-y-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {canDeleteComment(menuComment) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmDelete(menuComment);
+                  setMenuComment(null);
+                }}
+                className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left text-destructive active:bg-muted"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete comment
+              </button>
+            )}
+            {user && menuComment.user_id !== user.id && (
+              <button
+                type="button"
+                onClick={() => {
+                  const target = menuComment;
+                  setMenuComment(null);
+                  handleReport(target);
+                }}
+                className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left text-foreground active:bg-muted"
+              >
+                <Flag className="h-4 w-4" />
+                Report comment
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setMenuComment(null)}
+              className="w-full rounded-xl bg-muted px-4 py-3 text-center font-medium text-foreground"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/50 px-6">
+          <div className="w-full max-w-[320px] rounded-2xl bg-card p-5 text-center">
+            <p className="font-semibold text-foreground">Delete this comment?</p>
+            <p className="mt-1 text-sm text-muted-foreground">This cannot be undone.</p>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(null)}
+                className="h-9 flex-1 rounded-lg bg-muted text-sm font-medium text-foreground"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteComment.isPending}
+                onClick={() => {
+                  deleteComment.mutate(confirmDelete.id);
+                  setConfirmDelete(null);
+                }}
+                className="h-9 flex-1 rounded-lg bg-destructive text-sm font-medium text-destructive-foreground"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ReportDialog
         open={!!pendingReport}
         onOpenChange={(v) => { if (!v) closeReport(); }}
@@ -584,6 +641,7 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
         isSubmitting={isReporting}
         reportType={pendingReport?.reportType || 'comment'}
       />
+
     </div>
   );
 };

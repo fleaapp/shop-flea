@@ -63,7 +63,7 @@ function ReviewsDrawer({ userId, username, open, onOpenChange }: ReviewsDrawerPr
 
   const filteredReviews = reviews?.filter(r => {
     if (activeTab === 'all') return true;
-    return r.reviewer_role === activeTab;
+    return r.reviewed_role === activeTab;
   }) ?? [];
 
   return (
@@ -126,7 +126,7 @@ function ReviewsDrawer({ userId, username, open, onOpenChange }: ReviewsDrawerPr
                   const formattedDate = format(new Date(review.created_at), 'dd/MM/yyyy');
                   const listingImage = review.order?.listing?.images?.[0];
                   const listingId = review.order?.listing_id;
-                  const roleLabel = review.reviewer_role === 'buyer' ? 'Buyer' : review.reviewer_role === 'seller' ? 'Seller' : null;
+                  const roleLabel = review.reviewed_role === 'buyer' ? 'As buyer' : review.reviewed_role === 'seller' ? 'As seller' : null;
 
                   return (
                     <div

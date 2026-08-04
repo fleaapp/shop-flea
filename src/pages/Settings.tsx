@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useSellerGate from '@/hooks/useSellerGate';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,6 +63,7 @@ const Settings = () => {
   } = useDiscardedListings();
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [shippingOpen, setShippingOpen] = useState(false);
+  const { sellerReady, gate: sellerGate, setGateOpen: setSellerGateOpen } = useSellerGate();
   const { openCarousel } = useOnboarding();
   const {
     total: supportUnread
@@ -181,6 +183,7 @@ const Settings = () => {
   };
   const handleTogglePauseSelling = async (checked: boolean) => {
     if (!user) return;
+    if (!sellerReady) { setSellerGateOpen(true); return; }
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -315,7 +318,7 @@ const Settings = () => {
   const sellerItems: SettingsItem[] = [{
     icon: <span className="text-base">📦</span>,
     label: 'Bundle Offers',
-    action: isGuest ? promptGuest : () => setShippingOpen(true)
+    action: isGuest ? promptGuest : () => (sellerReady ? setShippingOpen(true) : setSellerGateOpen(true))
   }, isGuest ? {
     icon: <span className="text-base">⏸️</span>,
     label: 'Pause Selling',
@@ -329,7 +332,9 @@ const Settings = () => {
   }, {
     icon: <span className="text-base">💰</span>,
     label: 'Offers',
-    action: isGuest ? promptGuest : () => navigate('/offers')
+    action: isGuest
+      ? promptGuest
+      : () => (sellerReady ? navigate('/offers', { state: { role: 'seller' } }) : setSellerGateOpen(true))
   }];
 
   // ---- Support ----
@@ -435,7 +440,7 @@ const Settings = () => {
           ))}
         </div>
       )}
-    </div>
+</div>
   );
 
   return <div className="native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden">
@@ -543,6 +548,8 @@ const Settings = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {sellerGate}
 
       <BottomNav adminSettingsBadge={!isGuest && isAdmin ? adminBadgeTotal : undefined} />
     </div>;

@@ -91,11 +91,14 @@ const SellerProfile = () => {
   useEffect(() => {
     if (sellerId) {
       fetchSellerData();
-      if (user) {
-        checkOutstandingOrders();
-      }
     }
-  }, [sellerId, user]);
+  }, [sellerId]);
+
+  useEffect(() => {
+    if (sellerProfile?.user_id && user) {
+      checkOutstandingOrders();
+    }
+  }, [sellerProfile?.user_id, user]);
 
   const fetchSellerData = async () => {
     if (!sellerId) return;
@@ -103,15 +106,20 @@ const SellerProfile = () => {
     setLoading(true);
     setListingsLoading(true);
 
+    // Support both user ids and @username routes
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sellerId);
+    const usernameParam = sellerId.startsWith('@') ? sellerId.slice(1) : sellerId;
+
     // Try profiles_public first (no RLS restrictions), fallback to profiles
     let profileData: SellerProfile | null = null;
     let profileError: any = null;
 
-    const { data: publicData, error: publicError } = await supabase
-      .from('profiles_public' as any)
-      .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at, bundle_shipping_mode, bundle_shipping_discount_percent, bundle_item_discount_percent')
-      .eq('user_id', sellerId)
-      .maybeSingle();
+    const baseSelect = 'user_id, username, avatar_url, rating, pause_selling, last_sign_in_at, bundle_shipping_mode, bundle_shipping_discount_percent, bundle_item_discount_percent';
+    const publicQuery = supabase.from('profiles_public' as any).select(baseSelect);
+    const { data: publicData, error: publicError } = isUuid
+      ? await publicQuery.eq('user_id', sellerId).maybeSingle()
+      : await publicQuery.ilike('username', usernameParam).maybeSingle();
+
 
     if (!publicError && publicData) {
       profileData = publicData as any;
@@ -152,11 +160,13 @@ const SellerProfile = () => {
     setSellerProfile(profileData);
     setLoading(false);
 
+    const resolvedId = profileData.user_id;
+
     // Fetch active listings
     const { data: activeData } = await supabase
       .from('listings')
       .select(LISTING_CARD_COLUMNS)
-      .eq('user_id', sellerId)
+      .eq('user_id', resolvedId)
       .eq('status', 'active');
 
     if (activeData) {
@@ -167,7 +177,7 @@ const SellerProfile = () => {
     const { data: orders } = await supabase
       .from('orders')
       .select('id, listing_id, created_at')
-      .eq('seller_id', sellerId)
+      .eq('seller_id', resolvedId)
       .order('created_at', { ascending: false })
       .limit(500);
 
@@ -177,7 +187,7 @@ const SellerProfile = () => {
         .from('listings')
         .select(LISTING_CARD_COLUMNS)
         .in('id', listingIds)
-        .eq('user_id', sellerId);
+        .eq('user_id', resolvedId);
 
       if (soldData) {
         const listingMap = new Map(
@@ -202,14 +212,15 @@ const SellerProfile = () => {
   };
 
   const checkOutstandingOrders = async () => {
-    if (!sellerId || !user) return;
+    const targetId = sellerProfile?.user_id;
+    if (!targetId || !user) return;
 
     // Check for orders where current user is buyer and seller is the profile user, or vice versa
     // Outstanding orders are those that are not 'delivered' or 'cancelled'
     const { data: orders } = await supabase
       .from('orders')
       .select('id, status')
-      .or(`and(buyer_id.eq.${user.id},seller_id.eq.${sellerId}),and(buyer_id.eq.${sellerId},seller_id.eq.${user.id})`)
+      .or(`and(buyer_id.eq.${user.id},seller_id.eq.${targetId}),and(buyer_id.eq.${targetId},seller_id.eq.${user.id})`)
       .not('status', 'in', '("delivered","cancelled")');
 
     setHasOutstandingOrder(orders && orders.length > 0);
@@ -292,7 +303,10 @@ const SellerProfile = () => {
   return (
     <div className="native-safe-top fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col" style={{ touchAction: 'pan-x', overscrollBehavior: 'none' }}>
       {/* Header with back button and menu - absolute positioned */}
-      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-4 z-20">
+      <div
+        className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 z-20"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}
+      >
         <button
           onClick={() => safeNavigateBack(navigate, '/')}
           className="h-10 w-10 flex items-center justify-center rounded-full bg-card card-shadow"
