@@ -45,7 +45,7 @@ interface SellerOnboardingSheetProps {
   onComplete?: (result?: { setupCompleted?: boolean }) => void;
 }
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA'];
 const secondaryActionClass = "w-auto h-10 px-4 rounded-full bg-transparent text-muted-foreground hover:bg-transparent hover:text-muted-foreground focus:bg-transparent focus:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:bg-transparent active:bg-muted/60 active:text-foreground";
 
@@ -85,7 +85,7 @@ const SellerOnboardingSheet = ({
 }: SellerOnboardingSheetProps) => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPushSheet, setShowPushSheet] = useState(false);
 
@@ -129,9 +129,9 @@ const SellerOnboardingSheet = ({
     const p: any = profile || {};
     const localStep = getOnboardingStep(user?.id);
     const dbStep = Number(p.stripe_onboarding_step);
-    const resumeStep: 1 | 2 | 3 | 4 =
+    const resumeStep: 1 | 2 | 3 | 4 | 5 =
       localStep ??
-      (dbStep >= 1 && dbStep <= 4 ? (dbStep as 1 | 2 | 3 | 4) : 1);
+      (dbStep >= 1 && dbStep <= 5 ? (dbStep as 1 | 2 | 3 | 4 | 5) : 1);
     setStep(resumeStep);
     const d = loadDraft(user?.id);
     setFirstName(d.firstName ?? p.first_name ?? '');
@@ -171,16 +171,16 @@ const SellerOnboardingSheet = ({
         ];
         // External account (bank) missing or invalid — jump straight to bank step.
         if (due.some((r) => r.startsWith('external_account'))) {
-          setStep(4);
+          setStep(5);
           return;
         }
         // Address requirement — jump to address step.
         if (due.some((r) => r.includes('address'))) {
-          setStep(3);
+          setStep(4);
           return;
         }
         // Otherwise assume personal info is what's needed.
-        setStep(2);
+        setStep(3);
       } catch {
         // Non-blocking; keep whatever step we resumed on.
       }
@@ -268,7 +268,7 @@ const SellerOnboardingSheet = ({
         console.warn('profile name persist failed (non-blocking):', e);
       }
     }
-    setStep(3);
+    setStep(4);
   };
 
   const handleAddressNext = () => {
@@ -313,7 +313,7 @@ const SellerOnboardingSheet = ({
       if (!data?.accountId) throw new Error('No account created');
 
       // Move to the embedded onboarding step — no redirects, no Stripe branding.
-      setStep(4);
+      setStep(5);
     } catch (err: any) {
       console.error('Seller onboarding error:', err);
       toast.error(err?.message || 'Failed to start setup. Please try again.');
@@ -324,7 +324,7 @@ const SellerOnboardingSheet = ({
 
   const ProgressDots = () => (
     <div className="flex items-center justify-center gap-1.5 mb-1">
-      {[1, 2, 3, 4].map((n) => (
+      {[1, 2, 3, 4, 5].map((n) => (
         <div
           key={n}
           className={`h-1.5 rounded-full transition-all ${
@@ -352,7 +352,7 @@ const SellerOnboardingSheet = ({
               onEditName={() => {
                 // Route user back to the "Your details" step so they can
                 // correct their legal name before re-uploading their ID.
-                setStep(2);
+                setStep(3);
               }}
               onDone={() => {
                 handleVerifiedSuccess();
@@ -370,15 +370,17 @@ const SellerOnboardingSheet = ({
           {step === 1 && (
             <>
               <img src={fleaLogo} alt="FLEA" className="h-11 w-auto" />
-              <SheetHeader className="space-y-3">
+              <SheetHeader className="space-y-5">
                 <SheetTitle className="text-xl">Start selling on Flea</SheetTitle>
-                <div className="text-sm text-muted-foreground leading-relaxed max-w-[300px] mx-auto space-y-3">
-                  <p>
-                    Set up your seller account in just a few minutes. We'll ask for a few details to verify your identity and enable payouts. Make sure the information you provide matches your government-issued ID.
-                  </p>
-                  <p className="font-semibold text-foreground">
-                    Selling on Flea is free - no selling fees. A 2% + $0.50 transaction fee covers payment processing.
-                  </p>
+                <div className="text-sm text-muted-foreground leading-relaxed max-w-[300px] mx-auto space-y-5">
+                  <div className="space-y-2">
+                    <p>Set up your seller account in just a few minutes.</p>
+                    <p>We'll ask for a few details to verify your identity and enable payouts.</p>
+                  </div>
+                  <div className="space-y-2 text-foreground">
+                    <p className="font-semibold">Selling on Flea is free.</p>
+                    <p className="font-semibold">You only pay a 2% + $0.50 transaction fee to cover payment processing.</p>
+                  </div>
                   <p>
                     By continuing you agree to our{' '}
                     <Link
@@ -390,13 +392,13 @@ const SellerOnboardingSheet = ({
                         navigate('/terms');
                       }}
                     >
-                      terms & conditions
+                      Terms & Privacy
                     </Link>
                     .
                   </p>
                 </div>
               </SheetHeader>
-              <div className="w-full space-y-3 mt-4 flex flex-col items-center">
+              <div className="w-full space-y-3 mt-6 flex flex-col items-center">
                 <Button
                   onClick={() => setStep(2)}
                   className="w-52 h-12 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-[15px] font-semibold"
@@ -415,6 +417,35 @@ const SellerOnboardingSheet = ({
           )}
 
           {step === 2 && (
+            <>
+              <div className="text-6xl mb-2">🪪</div>
+              <SheetHeader className="space-y-4">
+                <SheetTitle className="text-xl text-center leading-snug">
+                  Your details must match your government-issued ID.
+                </SheetTitle>
+                <p className="text-sm text-muted-foreground leading-relaxed max-w-[300px] mx-auto">
+                  Our payment processing provider uses this information to confirm your identity and activate seller payouts.
+                </p>
+              </SheetHeader>
+              <div className="w-full space-y-3 mt-6 flex flex-col items-center">
+                <Button
+                  onClick={() => setStep(3)}
+                  className="w-52 h-12 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-[15px] font-semibold"
+                >
+                  Continue
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setStep(1)}
+                  className={secondaryAction()}
+                >
+                  Back
+                </Button>
+              </div>
+            </>
+          )}
+
+          {step === 3 && (
             <>
               <SheetHeader className="space-y-2 w-full max-w-[280px] mx-auto items-center text-center">
                 <SheetTitle className="text-lg text-center">Your details</SheetTitle>
@@ -449,7 +480,7 @@ const SellerOnboardingSheet = ({
                 </Button>
                 <Button
                   variant="ghost"
-                  onClick={() => setStep(1)}
+                  onClick={() => setStep(2)}
                   className={secondaryAction()}
                 >
                   Back
@@ -458,7 +489,7 @@ const SellerOnboardingSheet = ({
             </>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <>
               <SheetHeader className="space-y-2">
                 <SheetTitle className="text-lg">Your address</SheetTitle>
@@ -522,7 +553,7 @@ const SellerOnboardingSheet = ({
                 </Button>
                 <Button
                   variant="ghost"
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep(3)}
                   disabled={isSubmitting}
                   className={secondaryAction()}
                 >
@@ -532,14 +563,14 @@ const SellerOnboardingSheet = ({
             </>
           )}
 
-              {step === 4 && (
-                <BankDetailsStep
-                  firstName={firstName}
-                  lastName={lastName}
-                  onBack={() => setStep(3)}
-                  onDone={() => handleVerifiedSuccess({ setupCompleted: true })}
-                />
-              )}
+          {step === 5 && (
+            <BankDetailsStep
+              firstName={firstName}
+              lastName={lastName}
+              onBack={() => setStep(4)}
+              onDone={() => handleVerifiedSuccess({ setupCompleted: true })}
+            />
+          )}
             </>
           )}
         </div>

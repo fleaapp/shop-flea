@@ -31,17 +31,17 @@ export const hasOnboardingResume = (userId?: string | null): boolean => {
   try { return localStorage.getItem(k) === '1'; } catch { return false; }
 };
 
-export const setOnboardingStep = (userId: string | null | undefined, step: 1 | 2 | 3 | 4) => {
+export const setOnboardingStep = (userId: string | null | undefined, step: 1 | 2 | 3 | 4 | 5) => {
   const k = stepKey(userId);
   if (!k) return;
   try { localStorage.setItem(k, String(step)); } catch { /* non-blocking */ }
 };
 
-export const getOnboardingStep = (userId?: string | null): 1 | 2 | 3 | 4 | null => {
+export const getOnboardingStep = (userId?: string | null): 1 | 2 | 3 | 4 | 5 | null => {
   const k = stepKey(userId);
   if (!k) return null;
   try {
     const n = Number(localStorage.getItem(k));
-    return n >= 1 && n <= 4 ? (n as 1 | 2 | 3 | 4) : null;
+    return n >= 1 && n <= 5 ? (n as 1 | 2 | 3 | 4 | 5) : null;
   } catch { return null; }
 };
