@@ -33,7 +33,8 @@ import { fetchSellerShippingSettings, getBundleBreakdownText } from '@/utils/shi
 import { computeSellerNet } from '@/utils/feeCalculator';
 
 import { toast } from 'sonner';
-import { Loader2, ChevronRight } from 'lucide-react';
+import { Loader2, ChevronRight, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { clearOrderChatBadges } from '@/utils/orderChatRead';
 
 interface SalesDetailsSheetProps {
