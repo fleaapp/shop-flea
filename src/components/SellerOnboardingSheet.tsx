@@ -375,8 +375,8 @@ const SellerOnboardingSheet = ({
                 <div className="text-sm text-muted-foreground leading-relaxed max-w-[300px] mx-auto space-y-5">
                   <div className="space-y-2">
                     <p>
-                      Set up your seller account in<br />
-                      just a few minutes.
+                      Set up your seller account in just<br />
+                      a few minutes.
                     </p>
                     <p>We'll ask for a few details to verify your identity and enable payouts.</p>
                   </div>
