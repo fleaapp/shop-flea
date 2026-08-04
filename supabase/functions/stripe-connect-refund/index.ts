@@ -55,6 +55,7 @@ const OPTIONAL_ORDER_COLUMNS = [
   "coupon_code",
   "coupon_type",
   "cancelled_by_seller",
+  "refund_reason",
 ] as const;
 
 const ORDER_UPDATE_FALLBACK_COLUMNS = [
@@ -907,7 +908,7 @@ serve(async (req) => {
         await markListingsRefunded(externalUrl, serviceKey, demoListingIds);
       }
       await insertRefundNotifications(externalUrl, serviceKey, order, 1, sellerCancelled);
-      await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order);
+      await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order, sellerCancelled);
       return jsonResponse({ success: true, demo: true, mode: refundMode });
     }
 
@@ -957,7 +958,7 @@ serve(async (req) => {
       await markOrderRefunded(externalUrl, serviceKey, order.id);
       if (order.listing_id) await markListingsRefunded(externalUrl, serviceKey, [order.listing_id]);
       await insertRefundNotifications(externalUrl, serviceKey, order, 1, sellerCancelled);
-      await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order);
+      await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order, sellerCancelled);
 
       return jsonResponse({
         success: true,
@@ -1003,7 +1004,7 @@ serve(async (req) => {
       }
       await recordSellerShortfall(externalUrl, serviceKey, order.seller_id, totalShortfall);
       await insertRefundNotifications(externalUrl, serviceKey, order, remainingRows.length);
-      await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order);
+      await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order, sellerCancelled);
 
       return jsonResponse({
         success: true,
@@ -1035,7 +1036,7 @@ serve(async (req) => {
     await markListingsRefunded(externalUrl, serviceKey, relatedListingIds);
     await insertRefundNotifications(externalUrl, serviceKey, order, cascadeRows.length);
 
-    await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order);
+    await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order, sellerCancelled);
 
     return jsonResponse({ success: true, refundId: refund.id, status: refund.status, mode: "cascade" });
   } catch (error: any) {
