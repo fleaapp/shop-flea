@@ -624,17 +624,6 @@ const SellerDashboard = () => {
                             {fmtMoney(pendingTotal, currency)}
                           </div>
                         </div>
-                        {feeTotal > 0 && (
-                          <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                            Sale total {fmtMoney(grossTotal, currency)} - fees {fmtMoney(feeTotal, currency)} = {fmtMoney(grossTotal - feeTotal, currency)} to you
-                            {residual > 0 ? `, plus ${fmtMoney(residual, currency)} clearing.` : '.'}
-                          </div>
-                        )}
-                        {earliestClearing > 0 && (
-                          <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                            Next release {fmtDate(earliestClearing)}.
-                          </div>
-                        )}
                         {rows.length > 0 && (
                           <>
                             <button

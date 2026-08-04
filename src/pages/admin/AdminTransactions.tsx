@@ -23,7 +23,7 @@ export default function AdminTransactions() {
     const headers = ['Date', 'Order Code', 'Buyer', 'Seller', 'Total', 'Status', 'Shipping Status'];
     const rows = orders.map((o) => [
       new Date(o.created_at).toISOString(),
-      getOrderCode(o.id),
+      getOrderCode(o),
       o.buyer_profile?.username || '',
       o.seller_profile?.username || '',
       (o.price + o.shipping_price).toFixed(2),

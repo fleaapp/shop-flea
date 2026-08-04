@@ -77,7 +77,7 @@ export function TransactionTable({ orders, loading, onSelectOrder, sortField, so
             return (
               <TableRow key={order.id} className="cursor-pointer" onClick={() => onSelectOrder(order)}>
                 <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{format(new Date(order.created_at), 'dd MMM yy')}</TableCell>
-                <TableCell className="font-mono text-xs font-medium">{getOrderCode(order.id)}</TableCell>
+                <TableCell className="font-mono text-xs font-medium">{getOrderCode(order)}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Avatar className="h-6 w-6">
