@@ -1,31 +1,46 @@
-# Make the seller refund flow match the buyer refund flow
+# Order / Sale UI cleanup + bundle offers tidy
 
-Right now the seller's "Refund item" on the sale details drawer is styled and structured differently to the buyer's "Request Refund" flow on the order details drawer. This aligns the button, the dialog and the item picker so both feel like the same feature.
+## 1. Item count stays on the username line
+On order cards (Cart/Orders) and sale cards (Sales), the `• x2` count currently wraps to its own line on narrow screens.
 
-## Button (sale details drawer)
+Fix: keep the username and the count on one row - username truncates with ellipsis, the count and trailing full stop stay pinned beside it and never wrap.
 
-- Move "Refund item" onto the same row as "Mark as shipped" instead of stacked underneath, using the same two-button row the buyer side uses: both `flex-1`, `h-12`, full-width row with padding.
-- Style the refund action exactly like the buyer's secondary refund button - muted grey fill with white text, rounded-full, no outline - so it never disappears against the lime background.
-- When a refund is already in progress for an item, the button reads "Refund requested" and is disabled, matching the buyer behaviour.
+## 2. Multi-item refund: select one, several, or all
+Today the seller refund picker on a multi-item sale forces one item at a time.
 
-## Refund dialog (seller)
+Change:
+- The picker becomes multi-select (tap to toggle, tick indicator) with a "Select all" control and a running "Refund N items" confirm button.
+- The refund/cancel dialog accepts the selected set, shows all chosen items in the summary, and processes each one in sequence (same reason and relist choice applied to all), reporting a single success or a clear partial-failure message.
+- Single-item sales behave exactly as now (straight to the dialog).
 
-Restyle the seller cancel/refund dialog so it matches the buyer's refund dialog:
+## 3. Order / Sale summary cleanup
+Reorder both summaries to one consistent top-to-bottom order:
 
-- Same shell: centred dialog, `max-w-[85vw] sm:max-w-sm`, rounded-2xl, scrollable, with a "Refund item" title.
-- Item card at the top with thumbnail, title and price, same as the buyer's single-item view.
-- Reason chosen from the same dropdown control style the buyer uses (instead of the radio list), plus an optional note field.
-- Optional "Additional details" textarea using the buyer's field styling.
-- Keep the seller-only "Relist this item" toggle, placed below the details field.
-- Single full-width charcoal confirm button at the bottom, matching the buyer's submit button.
+```text
+Items (thumbnails + prices)
+Items subtotal
+Shipping (+ bundle offer note)
+Coupon (buyer only, if applied)
+Fees (last line before total)
+Total bar
+```
 
-Behaviour (refund + relist + notifications) stays exactly as it is today - this is presentation only.
+- Sale details currently shows Shipping -> Fee -> Items subtotal; it moves to subtotal -> shipping -> fee.
+- Dividers on the sale sheet use a heavier border than the order sheet; both will use the same 1px hairline.
+- Remove duplicated dividers and empty spacing wrappers so the rows sit evenly.
 
-## Multi-item picker
+## 4. Bundle offers sheet is too tall
+- Remove the "Choose the deal buyers get when they bundle your items." line.
+- Tighten it: smaller header padding, condensed option rows (tighter padding, one short subtitle line each), shorter subtitle copy, tighter spacing around the percentage slider, and a compact footer button.
 
-Replace the current picker with the buyer's step-1 layout: item cards with checkbox, thumbnail, title and price, selected state highlighted, then a full-width charcoal "Continue" button into the refund dialog.
+## 5. Shipping settings entry moves to its own button
+- Remove the "Shipping settings ›" / "Tiered shipping ›" text inside the shipping price field on both Create listing and Edit listing.
+- Add a dedicated full-width button directly under the shipping price box that opens the Bundle Offers sheet, styled like the other secondary buttons on those screens.
+
+## 6. Remove the payout preview blurb
+Delete the "If this sells on its own you'll receive $X after the 2% + $0.50 transaction fee..." paragraph from Create listing. The minimum-price validation message stays.
 
 ## Technical notes
-
-- `src/components/SalesDetailsSheet.tsx` - button row layout and styling, picker markup.
-- `src/components/CancelItemDialog.tsx` - convert from `AlertDialog` + radio list to the `Dialog` + `Select` structure used in `src/components/RefundRequestDialog.tsx`; no changes to the `seller_cancel_order_begin` / `stripe-connect-refund` / relist calls.
+- Files: `src/pages/Cart.tsx`, `src/pages/Sales.tsx`, `src/components/SalesDetailsSheet.tsx`, `src/components/OrderDetailsSheet.tsx`, `src/components/CancelItemDialog.tsx`, `src/components/ShippingSettingsSheet.tsx`, `src/pages/CreateListing.tsx`, `src/pages/EditListing.tsx`.
+- Multi-refund loops the existing `seller_cancel_order_begin` RPC plus the `stripe-connect-refund` call per order id - no backend or schema changes.
+- All changes are presentation-only apart from the refund loop; fee maths and totals are untouched.
