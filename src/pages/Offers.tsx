@@ -328,13 +328,13 @@ const Offers = () => {
       </div>
 
       <div className="mt-3 flex shrink-0 justify-center px-4">
-        <div className="flex w-[220px] items-center rounded-full border border-border p-1">
+        <div className="inline-flex items-center rounded-full bg-muted p-1">
           {(['received', 'sent'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`w-1/2 rounded-full px-3 py-2 text-xs font-medium capitalize transition-all ${
-                tab === t ? 'bg-muted text-foreground' : 'text-muted-foreground'
+              className={`rounded-full px-3 py-2 text-xs font-medium capitalize whitespace-nowrap transition-all ${
+                tab === t ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
               }`}
             >
               {t}
@@ -342,6 +342,7 @@ const Offers = () => {
           ))}
         </div>
       </div>
+
 
       {role === 'seller' && (
         <div className="mt-4 shrink-0 px-4">
