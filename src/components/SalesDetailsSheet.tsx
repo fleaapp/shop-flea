@@ -315,19 +315,7 @@ const SalesDetailsSheet = ({
                               </span>
                             )}
                           </div>
-                          <div className="flex items-end justify-between gap-2">
-                            {!itemRefunded && !itemPending && o.status === 'awaiting' && !o.shipped_at ? (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCancelOrderId(o.id);
-                                  setCancelItemTitle(listingTitle);
-                                }}
-                                className="text-xs font-medium text-destructive underline underline-offset-2"
-                              >
-                                Cancel item
-                              </button>
-                            ) : <span />}
+                          <div className="flex items-end justify-end gap-2">
                             <p className="text-lg font-semibold">${o.price}</p>
                           </div>
                         </div>
