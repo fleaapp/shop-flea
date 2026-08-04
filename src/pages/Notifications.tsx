@@ -367,8 +367,10 @@ const Notifications = () => {
     const isCommentType = ['new_comment', 'comment_reply'].includes(notification.type);
     const isShippingReminder = ['shipping_reminder_3d', 'shipping_reminder_6d'].includes(notification.type);
     const isMessageType = notification.type.startsWith('offer_') || ['order_message_seller', 'order_message_buyer', 'support_message', 'order_shipped', 'order_delivered', 'sale_delivered', 'refund_request', 'refund_rejected', 'refund_initiated', 'order_auto_refunded', 'sale_auto_refunded'].includes(notification.type);
+    const isSoldType = isSoldOrLegacy || notification.type === 'item_sold';
     const messageArg = isSoldOrLegacy ? itemName : isCommentType ? notification.message : isShippingReminder ? null : itemName;
-    const message = getNotificationMessage(notification.type as any, username, messageArg, isMessageType ? notification.message : null);
+    const message = getNotificationMessage(notification.type as any, username, messageArg, (isMessageType || isSoldType) ? notification.message : null);
+
 
     const renderMessage = () => {
       const boldUsernames = (text: string) => {
