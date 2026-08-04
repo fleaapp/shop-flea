@@ -56,7 +56,8 @@ The "Available / Pending" pair under the seller dashboard button recomputes the 
 
 ## Technical notes
 
-- `supabase/functions/stripe-connect-dashboard/index.ts` - held-funds sum subtracts `transaction_fee`; return a per-order held breakdown (order id, group id, title-less amounts, status, net) so the client stops re-deriving it.
+- Data fix + schema: backfill `orders.dispute_window_ends_at = delivered_at + 48h` where status is delivered and the field is null; stamp it in `mark_order_delivered`, `auto_deliver_shipped_orders` and `admin_approve_untracked_delivery` if any path can currently miss it.
+- `supabase/functions/stripe-connect-dashboard/index.ts` - `isHeld` falls back to `delivered_at + 48h` when `dispute_window_ends_at` is null instead of returning held; held-funds sum subtracts `transaction_fee`; return a per-order held breakdown (order id, group id, amount, net, status) so the client stops re-deriving it.
 - `src/pages/SellerDashboard.tsx` - consume the held breakdown for the "Sales in progress" list, include delivered-in-window and refund-requested groups, render net per row plus the fee summary line.
 - `src/pages/Sales.tsx` - swap `subtotal` for `youReceived` from `computeSellerNet`.
 - `src/components/PaymentMethodsSection.tsx` - use the corrected pending value rather than recomputing.
