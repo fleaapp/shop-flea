@@ -21,6 +21,7 @@ import { useExistingReview } from '@/hooks/useReviews';
 import WriteReviewDrawer from '@/components/WriteReviewDrawer';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import OrderReceiptDialog from '@/components/OrderReceiptDialog';
+import CancelItemDialog from '@/components/CancelItemDialog';
 import { useAuth } from '@/context/AuthContext';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import ShippingStatusTracker from '@/components/ShippingStatusTracker';
@@ -708,6 +709,13 @@ const SalesDetailsSheet = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CancelItemDialog
+        orderId={cancelOrderId}
+        itemTitle={cancelItemTitle}
+        open={!!cancelOrderId}
+        onOpenChange={(o) => { if (!o) setCancelOrderId(null); }}
+      />
     </Drawer>
   );
 };
