@@ -374,7 +374,8 @@ const SellerOnboardingSheet = ({
                 <SheetTitle className="text-xl">Start selling on Flea</SheetTitle>
                 <div className="text-sm text-muted-foreground leading-relaxed max-w-[300px] mx-auto space-y-5">
                   <div className="space-y-2">
-                    <p>Set up your seller account in just a few minutes.</p>
+                    <p>Set up your seller account in</p>
+                    <p>just a few minutes.</p>
                     <p>We'll ask for a few details to verify your identity and enable payouts.</p>
                   </div>
                   <div className="space-y-2 text-foreground">
@@ -382,7 +383,9 @@ const SellerOnboardingSheet = ({
                     <p className="font-semibold">You only pay a 2% + $0.50 transaction fee to cover payment processing.</p>
                   </div>
                   <p>
-                    By continuing you agree to our{' '}
+                    By continuing you agree to our
+                  </p>
+                  <p>
                     <Link
                       to="/terms"
                       className="underline underline-offset-2 text-foreground hover:text-foreground/80"
