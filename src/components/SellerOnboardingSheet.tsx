@@ -385,7 +385,7 @@ const SellerOnboardingSheet = ({
                     <p className="font-semibold">You only pay a 2% + $0.50 transaction fee to cover payment processing.</p>
                   </div>
                   <p>
-                    By continuing you agree to our<br />
+                    By continuing you agree to our{' '}
                     <Link
                       to="/terms"
                       className="underline underline-offset-2 text-foreground hover:text-foreground/80"
@@ -395,7 +395,19 @@ const SellerOnboardingSheet = ({
                         navigate('/terms');
                       }}
                     >
-                      Terms & Privacy
+                      Terms
+                    </Link>
+                    {' '}and{' '}
+                    <Link
+                      to="/privacy"
+                      className="underline underline-offset-2 text-foreground hover:text-foreground/80"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleOpenChange(false);
+                        navigate('/privacy');
+                      }}
+                    >
+                      Privacy
                     </Link>
                     .
                   </p>
