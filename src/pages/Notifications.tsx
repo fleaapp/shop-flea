@@ -288,7 +288,7 @@ const Notifications = () => {
         notification.type === 'offer_withdrawn' ||
         notification.type === 'offer_cancelled' ||
         notification.type === 'offer_superseded';
-      navigate('/offers', { state: { tab: sentTab ? 'sent' : 'received' } });
+      navigate('/offers', { state: { tab: sentTab ? 'sent' : 'received', role: 'auto' } });
       return;
     }
 

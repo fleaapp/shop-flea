@@ -39,9 +39,13 @@ const Offers = () => {
   const { user, profile, refreshProfile } = useAuth();
   const { received, sent, loading, create, respond, withdraw, refresh } = useOffers();
   const { sellerReady, gate: sellerGate, setGateOpen: setSellerGateOpen } = useSellerGate();
+  const requestedRole = (location.state as any)?.role;
   const [role, setRole] = useState<'buyer' | 'seller'>(
-    (location.state as any)?.role === 'seller' ? 'seller' : 'buyer',
+    requestedRole === 'seller' ? 'seller' : 'buyer',
   );
+  // Notifications can't tell which side of an offer the user is on, so they pass
+  // role: 'auto' and we land on whichever side actually holds the offers.
+  const [autoRole, setAutoRole] = useState(requestedRole === 'auto');
   const [tab, setTab] = useState<'received' | 'sent'>(
     (location.state as any)?.tab === 'sent' ? 'sent' : 'received',
   );
@@ -300,6 +304,15 @@ const Offers = () => {
           rank(a) - rank(b) || new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
   }, [role, tab, all, user?.id]);
+
+  useEffect(() => {
+    if (!autoRole || !user?.id || all.length === 0) return;
+    const inTab = (o: Offer) => (tab === 'sent' ? isMine(o) : !isMine(o));
+    const buyerCount = all.filter((o) => o.buyer_id === user.id && inTab(o)).length;
+    const sellerCount = all.filter((o) => o.seller_id === user.id && inTab(o)).length;
+    if (buyerCount === 0 && sellerCount > 0) setRole('seller');
+    setAutoRole(false);
+  }, [autoRole, all, tab, user?.id]);
 
   return (
     <div className="native-safe-top fixed inset-0 flex flex-col bg-background pb-24">
