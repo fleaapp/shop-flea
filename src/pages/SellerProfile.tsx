@@ -209,14 +209,15 @@ const SellerProfile = () => {
   };
 
   const checkOutstandingOrders = async () => {
-    if (!sellerId || !user) return;
+    const targetId = sellerProfile?.user_id;
+    if (!targetId || !user) return;
 
     // Check for orders where current user is buyer and seller is the profile user, or vice versa
     // Outstanding orders are those that are not 'delivered' or 'cancelled'
     const { data: orders } = await supabase
       .from('orders')
       .select('id, status')
-      .or(`and(buyer_id.eq.${user.id},seller_id.eq.${sellerId}),and(buyer_id.eq.${sellerId},seller_id.eq.${user.id})`)
+      .or(`and(buyer_id.eq.${user.id},seller_id.eq.${targetId}),and(buyer_id.eq.${targetId},seller_id.eq.${user.id})`)
       .not('status', 'in', '("delivered","cancelled")');
 
     setHasOutstandingOrder(orders && orders.length > 0);
