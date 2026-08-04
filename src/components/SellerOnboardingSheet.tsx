@@ -421,10 +421,10 @@ const SellerOnboardingSheet = ({
 
           {step === 2 && (
             <>
-              <div className="text-6xl mb-2">🪪</div>
+              <div className="text-6xl mb-2">🪪💳</div>
               <SheetHeader className="space-y-4">
                 <SheetTitle className="text-xl text-center leading-snug">
-                  Your details must match your government-issued ID.
+                  Your details must match your government-issued ID & bank account.
                 </SheetTitle>
                 <p className="text-sm text-muted-foreground leading-relaxed max-w-[300px] mx-auto">
                   Our payment processing provider uses this information to confirm your identity and activate seller payouts.
