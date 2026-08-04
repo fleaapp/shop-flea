@@ -739,10 +739,10 @@ const EditListing = () => {
         <button
           type="button"
           onClick={() => setShowShippingSettings(true)}
-          className={`${inputStyles} flex items-center justify-between px-4 text-sm text-foreground`}
+          className={`${inputStyles} w-full flex items-center justify-between px-4 text-sm text-foreground`}
         >
           <span>📦 Bundle offers</span>
-          <span className="text-muted-foreground/60">›</span>
+          <ChevronRight className="h-5 w-5 text-muted-foreground" />
         </button>
 
         
