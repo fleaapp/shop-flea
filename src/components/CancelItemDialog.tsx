@@ -55,11 +55,12 @@ const CancelItemDialog = ({ orderId, itemTitle, itemImage, itemPrice, open, onOp
 
   const handleConfirm = async () => {
     if (!orderId) return;
-    const finalReason = reason === 'Other' ? otherReason.trim() : reason;
-    if (!finalReason) {
-      toast.error('Please add a short reason.');
+    const finalReason = [reason, details.trim()].filter(Boolean).join(' - ');
+    if (!reason) {
+      toast.error('Please choose a reason.');
       return;
     }
+
 
     setSubmitting(true);
     try {
