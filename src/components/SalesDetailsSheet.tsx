@@ -96,7 +96,15 @@ const SalesDetailsSheet = ({
   const [refundActionOrderId, setRefundActionOrderId] = useState<string | null>(null);
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [cancelItemTitle, setCancelItemTitle] = useState<string | undefined>(undefined);
+  const [cancelItemImage, setCancelItemImage] = useState<string | undefined>(undefined);
+  const [cancelItemPrice, setCancelItemPrice] = useState<number | undefined>(undefined);
   const [refundPickerOpen, setRefundPickerOpen] = useState(false);
+  const openCancelFor = (o: any) => {
+    setCancelOrderId(o.id);
+    setCancelItemTitle(o.listing?.title || 'Item');
+    setCancelItemImage(o.listing?.images?.[0] || o.listing?.image_url || undefined);
+    setCancelItemPrice(Number(o.price) || 0);
+  };
   const highlightRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const refundableOrders = (orders ?? []).filter(
@@ -474,31 +482,31 @@ const SalesDetailsSheet = ({
               />
             )}
             {!isRefunded && effectiveStatus === 'awaiting' && (
-              <div className="flex flex-col items-center gap-3">
+              <div className="flex flex-col items-center space-y-3 w-full px-4">
                 <Button
                   onClick={handleMarkShipped}
-                  className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
+                  className="w-full rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12"
                 >
                   Mark as shipped
                 </Button>
                 {refundableOrders.length > 0 && (
                   <Button
-                    variant="outline"
                     onClick={() => {
                       if (refundableOrders.length === 1) {
-                        setCancelOrderId(refundableOrders[0].id);
-                        setCancelItemTitle(refundableOrders[0].listing?.title || 'Item');
+                        openCancelFor(refundableOrders[0]);
                       } else {
                         setRefundPickerOpen(true);
                       }
                     }}
-                    className="rounded-full h-12 px-8 border-2 border-border bg-card text-foreground hover:bg-secondary"
+                    variant="outline"
+                    className="w-full rounded-full h-12 bg-muted-foreground/60 text-white hover:bg-muted-foreground/70 border-none"
                   >
                     Refund item
                   </Button>
                 )}
               </div>
             )}
+
 
             {/* Seller Dashboard entry (replaces payment & payout / Stripe links) */}
             <button
