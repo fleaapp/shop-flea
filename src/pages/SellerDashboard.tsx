@@ -76,6 +76,16 @@ type ActivityRow = {
   description?: string | null;
 };
 
+type HeldRow = {
+  orderId: string;
+  orderGroupId: string | null;
+  title: string | null;
+  grossCents: number;
+  feeCents: number;
+  netCents: number;
+  state: 'awaiting' | 'shipped' | 'delivered' | 'refund_requested' | string;
+};
+
 type DashboardData = {
   connected: boolean;
   demo?: boolean;
@@ -84,6 +94,7 @@ type DashboardData = {
   pending?: number;
   instantAvailable?: number;
   unshippedCents?: number;
+  heldBreakdown?: HeldRow[];
   availableToWithdraw?: number;
   instantAvailableToWithdraw?: number;
   negativeBalanceCents?: number;
@@ -99,6 +110,14 @@ type DashboardData = {
   payouts?: PayoutRow[];
   activity?: ActivityRow[];
 };
+
+const HELD_STATE_LABEL: Record<string, string> = {
+  awaiting: 'Awaiting shipment',
+  shipped: 'Shipped',
+  delivered: 'Buyer protection',
+  refund_requested: 'Refund requested',
+};
+
 
 const fmtMoney = (cents: number, currency = 'aud') =>
   new Intl.NumberFormat('en-AU', {
@@ -535,27 +554,26 @@ const SellerDashboard = () => {
                 <>
                   {(unshippedRemaining > 0 || clearing > 0) && (() => {
                     const pendingTotal = unshippedRemaining + clearing;
-                    // Build the list of sales still generating pending funds.
-                    const activeGroups = sellerOrderGroups
-                      .filter((g) => {
-                        const remaining = g.orders.filter((o) => !isOrderRefunded(o));
-                        return remaining.length > 0 && (g.status === 'awaiting' || g.status === 'shipped');
-                      })
-                      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-
-                    // Cleared cutoff: pending payments whose available_on has passed
-                    // count as cleared. Anything else with a matching pending Stripe
-                    // row is still clearing.
-                    const nowSec = Math.floor(Date.now() / 1000);
-                    const stillClearingRows = clearingPending.filter(
-                      (a) => !a.available_on || a.available_on > nowSec,
-                    );
-                    const stillClearingAmountCents = stillClearingRows.reduce((s, a) => s + netCents(a), 0);
-                    const stillClearingCount = stillClearingRows.length;
-                    // Oldest groups clear first — mark the last N as still clearing.
-                    const clearedCount = Math.max(activeGroups.length - stillClearingCount, 0);
-
-
+                    // Every order whose money is still held, straight from the
+                    // backend so the rows always add up to the same rule the
+                    // held total uses. Grouped so a bundle reads as one sale.
+                    const held = data?.heldBreakdown ?? [];
+                    const groupMap = new Map<string, HeldRow[]>();
+                    held.forEach((h) => {
+                      const key = h.orderGroupId ?? h.orderId;
+                      groupMap.set(key, [...(groupMap.get(key) ?? []), h]);
+                    });
+                    const heldGroups = Array.from(groupMap.entries()).map(([key, rows]) => ({
+                      key,
+                      rows,
+                      gross: rows.reduce((s, r) => s + r.grossCents, 0),
+                      fee: rows.reduce((s, r) => s + r.feeCents, 0),
+                      net: rows.reduce((s, r) => s + r.netCents, 0),
+                      title: rows.length > 1 ? `Bundle (${rows.length} items)` : rows[0].title ?? 'Item',
+                      state: rows[0].state,
+                    }));
+                    const grossTotal = heldGroups.reduce((s, g) => s + g.gross, 0);
+                    const feeTotal = heldGroups.reduce((s, g) => s + g.fee, 0);
 
                     return (
                       <section className="rounded-2xl bg-card border border-border mt-2 p-4">
@@ -565,7 +583,7 @@ const SellerDashboard = () => {
                             <BalanceInfo
                               title="Pending"
                               body={
-                                'Funds waiting to be released.\n\n• Add a valid tracking number - it must be approved by Flea before it counts.\n• Once the parcel is marked delivered, a 48-hour buyer protection window starts.\n• Funds move to Available once that window closes with no issues raised.'
+                                'Funds waiting to be released. Amounts shown are what you receive, after the Transaction Fee.\n\n• Add a valid tracking number - it must be approved by Flea before it counts.\n• Once the parcel is marked delivered, a 48-hour buyer protection window starts.\n• Funds move to Available once that window closes with no issues raised.'
                               }
                             />
                           </div>
@@ -573,63 +591,50 @@ const SellerDashboard = () => {
                             {fmtMoney(pendingTotal, currency)}
                           </div>
                         </div>
+                        {feeTotal > 0 && (
+                          <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                            Sale total {fmtMoney(grossTotal, currency)} - fees {fmtMoney(feeTotal, currency)} = {fmtMoney(grossTotal - feeTotal, currency)} to you.
+                          </div>
+                        )}
                         {earliestClearing > 0 && (
                           <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
                             Next release {fmtDate(earliestClearing)}.
                           </div>
                         )}
-                        {activeGroups.length > 0 && (
+                        {heldGroups.length > 0 && (
                           <>
                             <button
                               type="button"
                               onClick={() => setPendingOpen((v) => !v)}
                               className="mt-3 w-full flex items-center justify-between text-[12px] font-medium text-charcoal/80"
                             >
-                              <span>Sales in progress ({activeGroups.length})</span>
+                              <span>Sales in progress ({heldGroups.length})</span>
                               <ChevronDown
                                 className={`h-4 w-4 transition-transform ${pendingOpen ? 'rotate-180' : ''}`}
                               />
                             </button>
                             {pendingOpen && (
                               <ul className="mt-2 divide-y divide-border">
-                                {activeGroups.map((g, idx) => {
-                                  const activeOrders = g.orders.filter((o) => !isOrderRefunded(o));
-                                  const refundedCount = g.orders.length - activeOrders.length;
-                                  const isBundle = g.orders.length > 1;
-                                  const title = isBundle
-                                    ? `Bundle${refundedCount > 0 ? ` (${refundedCount} refunded)` : ''}`
-                                    : g.orders[0]?.listing?.title ?? 'Item';
-                                  const amountCents = activeOrders.reduce(
-                                    (s, o) => s + Math.round(((o.price ?? 0) + (o.shipping_price ?? 0)) * 100),
-                                    0,
-                                  );
-                                  const shipped = !!g.shipped_at || g.status === 'shipped';
-                                  // Oldest groups clear first: first `clearedCount` are cleared.
-                                  const cleared = idx < clearedCount;
-
-                                  return (
-                                    <li key={g.id} className="py-2 flex items-center gap-2">
-                                      <div className="flex-1 min-w-0 text-[13px] text-foreground truncate">
-                                        {title}
+                                {heldGroups.map((g) => (
+                                  <li key={g.key} className="py-2 flex items-center gap-2">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="text-[13px] text-foreground truncate">{g.title}</div>
+                                      <div className="text-[11px] text-muted-foreground">
+                                        {HELD_STATE_LABEL[g.state] ?? 'In progress'}
                                       </div>
+                                    </div>
+                                    <div className="text-right">
                                       <div className="text-[13px] font-medium text-foreground tabular-nums">
-                                        {fmtMoney(amountCents, currency)}
+                                        {fmtMoney(g.net, currency)}
                                       </div>
-                                      <div className="flex items-center gap-1">
-                                        <span
-                                          className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${shipped ? 'bg-primary/60 text-charcoal' : 'bg-muted text-charcoal/70'}`}
-                                        >
-                                          Shipped
-                                        </span>
-                                        <span
-                                          className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${cleared ? 'bg-primary/60 text-charcoal' : 'bg-muted text-charcoal/70'}`}
-                                        >
-                                          Cleared
-                                        </span>
-                                      </div>
-                                    </li>
-                                  );
-                                })}
+                                      {g.fee > 0 && (
+                                        <div className="text-[11px] text-muted-foreground tabular-nums">
+                                          {fmtMoney(g.gross, currency)} - {fmtMoney(g.fee, currency)} fee
+                                        </div>
+                                      )}
+                                    </div>
+                                  </li>
+                                ))}
                               </ul>
                             )}
                           </>
@@ -637,6 +642,7 @@ const SellerDashboard = () => {
                       </section>
                     );
                   })()}
+
 
 
                   {firstHoldCents > 0 && (
