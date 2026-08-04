@@ -11,6 +11,7 @@ import MakeOfferDrawer from '@/components/MakeOfferDrawer';
 import { safeNavigateBack } from '@/utils/safeBack';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import useSellerGate from '@/hooks/useSellerGate';
 
 import { toast } from 'sonner';
 import { calculateTransactionFee } from '@/utils/feeCalculator';
@@ -37,6 +38,7 @@ const Offers = () => {
   const location = useLocation();
   const { user, profile, refreshProfile } = useAuth();
   const { received, sent, loading, create, respond, withdraw, refresh } = useOffers();
+  const { sellerReady, gate: sellerGate, setGateOpen: setSellerGateOpen } = useSellerGate();
   const [role, setRole] = useState<'buyer' | 'seller'>(
     (location.state as any)?.role === 'seller' ? 'seller' : 'buyer',
   );
@@ -346,22 +348,37 @@ const Offers = () => {
 
       {role === 'seller' && (
         <div className="mt-4 shrink-0 px-4">
-          <div className="flex items-center justify-between rounded-2xl bg-card px-4 py-3 card-shadow">
-            <div className="min-w-0 pr-3">
-              <p className="text-sm font-semibold text-foreground">💰 Offers</p>
+          {!sellerReady ? (
+            <div className="rounded-2xl bg-card p-4 card-shadow">
+              <p className="text-sm font-semibold text-foreground">Set up seller account</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                {offersEnabled
-                  ? 'Buyers can make offers on your listings.'
-                  : 'Turn on to let buyers make offers on your listings.'}
+                Become a seller to receive and manage offers on your listings.
               </p>
+              <Button
+                onClick={() => setSellerGateOpen(true)}
+                className="mt-3 h-10 w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold"
+              >
+                Set up seller account
+              </Button>
             </div>
-            <Switch
-              checked={offersEnabled}
-              disabled={savingOffersToggle}
-              onCheckedChange={handleToggleOffers}
-              className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime"
-            />
-          </div>
+          ) : (
+            <div className="flex items-center justify-between rounded-2xl bg-card px-4 py-3 card-shadow">
+              <div className="min-w-0 pr-3">
+                <p className="text-sm font-semibold text-foreground">💰 Offers</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {offersEnabled
+                    ? 'Buyers can make offers on your listings.'
+                    : 'Turn on to let buyers make offers on your listings.'}
+                </p>
+              </div>
+              <Switch
+                checked={offersEnabled}
+                disabled={savingOffersToggle}
+                onCheckedChange={handleToggleOffers}
+                className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime"
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -418,6 +435,7 @@ const Offers = () => {
         />
       )}
 
+      {sellerGate}
       <BottomNav />
     </div>
   );
