@@ -268,7 +268,7 @@ const SellerOnboardingSheet = ({
         console.warn('profile name persist failed (non-blocking):', e);
       }
     }
-    setStep(3);
+    setStep(4);
   };
 
   const handleAddressNext = () => {
