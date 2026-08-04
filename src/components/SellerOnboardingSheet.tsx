@@ -171,16 +171,16 @@ const SellerOnboardingSheet = ({
         ];
         // External account (bank) missing or invalid — jump straight to bank step.
         if (due.some((r) => r.startsWith('external_account'))) {
-          setStep(4);
+          setStep(5);
           return;
         }
         // Address requirement — jump to address step.
         if (due.some((r) => r.includes('address'))) {
-          setStep(3);
+          setStep(4);
           return;
         }
         // Otherwise assume personal info is what's needed.
-        setStep(2);
+        setStep(3);
       } catch {
         // Non-blocking; keep whatever step we resumed on.
       }
