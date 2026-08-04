@@ -767,6 +767,17 @@ const EditListing = () => {
           <ChevronRight className="h-5 w-5 text-muted-foreground" />
         </button>
 
+        <div className={`${inputStyles} w-full flex items-center justify-between px-4 text-sm text-foreground`}>
+          <span>💰 Offers</span>
+          <Switch
+            checked={offersEnabled}
+            onCheckedChange={handleToggleOffers}
+            disabled={savingOffersToggle}
+          />
+        </div>
+
+
+
         
         {/* Auto-accept offers */}
         {offersEnabled && (
