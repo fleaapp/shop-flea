@@ -157,11 +157,13 @@ const SellerProfile = () => {
     setSellerProfile(profileData);
     setLoading(false);
 
+    const resolvedId = profileData.user_id;
+
     // Fetch active listings
     const { data: activeData } = await supabase
       .from('listings')
       .select(LISTING_CARD_COLUMNS)
-      .eq('user_id', sellerId)
+      .eq('user_id', resolvedId)
       .eq('status', 'active');
 
     if (activeData) {
@@ -172,7 +174,7 @@ const SellerProfile = () => {
     const { data: orders } = await supabase
       .from('orders')
       .select('id, listing_id, created_at')
-      .eq('seller_id', sellerId)
+      .eq('seller_id', resolvedId)
       .order('created_at', { ascending: false })
       .limit(500);
 
@@ -182,7 +184,7 @@ const SellerProfile = () => {
         .from('listings')
         .select(LISTING_CARD_COLUMNS)
         .in('id', listingIds)
-        .eq('user_id', sellerId);
+        .eq('user_id', resolvedId);
 
       if (soldData) {
         const listingMap = new Map(
