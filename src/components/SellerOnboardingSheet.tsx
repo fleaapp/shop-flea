@@ -418,6 +418,35 @@ const SellerOnboardingSheet = ({
 
           {step === 2 && (
             <>
+              <div className="text-6xl mb-2">🪪</div>
+              <SheetHeader className="space-y-4">
+                <SheetTitle className="text-xl text-center leading-snug">
+                  Your details must match your government-issued ID.
+                </SheetTitle>
+                <p className="text-sm text-muted-foreground leading-relaxed max-w-[300px] mx-auto">
+                  Our payment processing provider uses this information to confirm your identity and activate seller payouts.
+                </p>
+              </SheetHeader>
+              <div className="w-full space-y-3 mt-6 flex flex-col items-center">
+                <Button
+                  onClick={() => setStep(3)}
+                  className="w-52 h-12 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-[15px] font-semibold"
+                >
+                  Continue
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setStep(1)}
+                  className={secondaryAction()}
+                >
+                  Back
+                </Button>
+              </div>
+            </>
+          )}
+
+          {step === 3 && (
+            <>
               <SheetHeader className="space-y-2 w-full max-w-[280px] mx-auto items-center text-center">
                 <SheetTitle className="text-lg text-center">Your details</SheetTitle>
                 <p className="text-sm text-muted-foreground leading-relaxed text-center">
@@ -451,7 +480,7 @@ const SellerOnboardingSheet = ({
                 </Button>
                 <Button
                   variant="ghost"
-                  onClick={() => setStep(1)}
+                  onClick={() => setStep(2)}
                   className={secondaryAction()}
                 >
                   Back
@@ -460,7 +489,7 @@ const SellerOnboardingSheet = ({
             </>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <>
               <SheetHeader className="space-y-2">
                 <SheetTitle className="text-lg">Your address</SheetTitle>
@@ -524,7 +553,7 @@ const SellerOnboardingSheet = ({
                 </Button>
                 <Button
                   variant="ghost"
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep(3)}
                   disabled={isSubmitting}
                   className={secondaryAction()}
                 >
@@ -534,14 +563,14 @@ const SellerOnboardingSheet = ({
             </>
           )}
 
-              {step === 4 && (
-                <BankDetailsStep
-                  firstName={firstName}
-                  lastName={lastName}
-                  onBack={() => setStep(3)}
-                  onDone={() => handleVerifiedSuccess({ setupCompleted: true })}
-                />
-              )}
+          {step === 5 && (
+            <BankDetailsStep
+              firstName={firstName}
+              lastName={lastName}
+              onBack={() => setStep(4)}
+              onDone={() => handleVerifiedSuccess({ setupCompleted: true })}
+            />
+          )}
             </>
           )}
         </div>
