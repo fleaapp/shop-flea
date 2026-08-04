@@ -400,39 +400,21 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
       </div>
       
       {/* 3-dot menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Comment options"
-            className={`flex-shrink-0 text-muted-foreground hover:text-foreground ${isReply ? 'h-6 w-6' : 'h-8 w-8'}`}
-          >
-            <MoreHorizontal className={isReply ? 'h-3 w-3' : 'h-4 w-4'} />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
-          {canDeleteComment(comment) && (
-            <DropdownMenuItem
-              onClick={() => deleteComment.mutate(comment.id)}
-              disabled={deleteComment.isPending}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Remove
-            </DropdownMenuItem>
-          )}
-          <DropdownMenuItem 
-            onClick={() => handleReport(comment)}
-            disabled={isReporting}
-          >
-            <Flag className="h-4 w-4 mr-2" />
-            Report
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <button
+        type="button"
+        aria-label="Comment options"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setMenuComment(comment);
+        }}
+        className={`flex-shrink-0 flex items-center justify-center rounded-full text-muted-foreground active:bg-muted ${isReply ? 'h-7 w-7' : 'h-9 w-9'}`}
+      >
+        <MoreHorizontal className={isReply ? 'h-3 w-3' : 'h-4 w-4'} />
+      </button>
     </div>
   );
+
 
   return (
     <div className="mt-6">
