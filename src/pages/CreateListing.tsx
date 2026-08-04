@@ -874,33 +874,28 @@ const CreateListing = () => {
             Item price must be at least ${MIN_LISTING_PRICE.toFixed(2)}.
           </p>
         )}
-        {parseFloat(itemPrice) >= MIN_LISTING_PRICE && (
-          <p className="-mt-1 px-1 text-xs text-muted-foreground">
-            If this sells on its own you'll receive{' '}
-            <span className="font-semibold text-foreground">
-              ${sellerEarningsPreview(parseFloat(itemPrice) || 0, parseFloat(shippingPrice) || 0).toFixed(2)}
-            </span>{' '}
-            after the 2% + $0.50 transaction fee. The $0.50 is charged once per order, so bundles keep more. No selling fees - it only covers payment processing.
-          </p>
-        )}
 
         {/* Shipping Price */}
-        <div className="relative" onClick={tieredShippingEnabled ? () => setShowShippingSettings(true) : undefined}>
-          <span className={`absolute left-4 top-1/2 -translate-y-1/2 font-medium ${tieredShippingEnabled ? 'text-muted-foreground/40' : 'text-muted-foreground/60'}`}>$</span>
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 font-medium text-muted-foreground/60">$</span>
           <Input
             type="number"
             placeholder="Shipping price"
             value={shippingPrice}
             onChange={(e) => setShippingPrice(e.target.value)}
-            className={`${inputStyles} pl-8 pr-32`}
+            className={`${inputStyles} pl-8`}
           />
-          <span
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60 cursor-pointer"
-            onClick={(e) => { e.stopPropagation(); setShowShippingSettings(true); }}
-          >
-            {tieredShippingEnabled ? 'Tiered shipping ›' : 'Shipping settings ›'}
-          </span>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setShowShippingSettings(true)}
+          className={`${inputStyles} flex items-center justify-between px-4 text-sm text-foreground`}
+        >
+          <span>📦 Bundle offers</span>
+          <span className="text-muted-foreground/60">›</span>
+        </button>
+
         
         {/* Auto-accept offers - only shown when the seller has offers turned on. */}
         {offersEnabled && (
