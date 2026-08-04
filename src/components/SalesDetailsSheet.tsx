@@ -93,6 +93,8 @@ const SalesDetailsSheet = ({
   const [refundDeclineReason, setRefundDeclineReason] = useState('');
   const [refundDeclineOpen, setRefundDeclineOpen] = useState(false);
   const [refundActionOrderId, setRefundActionOrderId] = useState<string | null>(null);
+  const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
+  const [cancelItemTitle, setCancelItemTitle] = useState<string | undefined>(undefined);
   const highlightRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
