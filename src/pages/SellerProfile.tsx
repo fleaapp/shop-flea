@@ -103,15 +103,20 @@ const SellerProfile = () => {
     setLoading(true);
     setListingsLoading(true);
 
+    // Support both user ids and @username routes
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sellerId);
+    const usernameParam = sellerId.startsWith('@') ? sellerId.slice(1) : sellerId;
+
     // Try profiles_public first (no RLS restrictions), fallback to profiles
     let profileData: SellerProfile | null = null;
     let profileError: any = null;
 
-    const { data: publicData, error: publicError } = await supabase
-      .from('profiles_public' as any)
-      .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at, bundle_shipping_mode, bundle_shipping_discount_percent, bundle_item_discount_percent')
-      .eq('user_id', sellerId)
-      .maybeSingle();
+    const baseSelect = 'user_id, username, avatar_url, rating, pause_selling, last_sign_in_at, bundle_shipping_mode, bundle_shipping_discount_percent, bundle_item_discount_percent';
+    const publicQuery = supabase.from('profiles_public' as any).select(baseSelect);
+    const { data: publicData, error: publicError } = isUuid
+      ? await publicQuery.eq('user_id', sellerId).maybeSingle()
+      : await publicQuery.ilike('username', usernameParam).maybeSingle();
+
 
     if (!publicError && publicData) {
       profileData = publicData as any;
