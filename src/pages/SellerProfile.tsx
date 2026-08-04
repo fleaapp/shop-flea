@@ -292,7 +292,10 @@ const SellerProfile = () => {
   return (
     <div className="native-safe-top fixed inset-0 bg-background pb-24 overflow-hidden flex flex-col" style={{ touchAction: 'pan-x', overscrollBehavior: 'none' }}>
       {/* Header with back button and menu - absolute positioned */}
-      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-4 z-20">
+      <div
+        className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 z-20"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}
+      >
         <button
           onClick={() => safeNavigateBack(navigate, '/')}
           className="h-10 w-10 flex items-center justify-center rounded-full bg-card card-shadow"
