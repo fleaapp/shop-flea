@@ -27,6 +27,8 @@ interface RefundInitiatedData {
   type: 'refund_initiated';
   seller_username: string;
   payment_method?: string;
+  seller_cancelled?: boolean;
+  cancel_reason?: string | null;
   initiated_at: string;
 }
 
