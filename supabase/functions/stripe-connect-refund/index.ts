@@ -1003,7 +1003,7 @@ serve(async (req) => {
         if (row.listing_id) await markListingsRefunded(externalUrl, serviceKey, [row.listing_id]);
       }
       await recordSellerShortfall(externalUrl, serviceKey, order.seller_id, totalShortfall);
-      await insertRefundNotifications(externalUrl, serviceKey, order, remainingRows.length);
+      await insertRefundNotifications(externalUrl, serviceKey, order, remainingRows.length, sellerCancelled);
       await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order, sellerCancelled);
 
       return jsonResponse({
@@ -1034,7 +1034,7 @@ serve(async (req) => {
     await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
     const relatedListingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
     await markListingsRefunded(externalUrl, serviceKey, relatedListingIds);
-    await insertRefundNotifications(externalUrl, serviceKey, order, cascadeRows.length);
+    await insertRefundNotifications(externalUrl, serviceKey, order, cascadeRows.length, sellerCancelled);
 
     await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order, sellerCancelled);
 
