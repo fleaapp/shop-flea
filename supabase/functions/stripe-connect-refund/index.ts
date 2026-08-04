@@ -868,7 +868,12 @@ serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { orderId, reason, mode } = body as { orderId?: string; reason?: string; mode?: "single" | "cascade" };
+    const { orderId, reason, mode, sellerCancelled: sellerCancelledRaw } = body as {
+      orderId?: string;
+      reason?: string;
+      mode?: "single" | "cascade";
+      sellerCancelled?: boolean;
+    };
     if (!orderId || !isUuid(orderId)) throw new Error("orderId required");
 
     const order = await fetchOrderWithFallback(externalUrl, serviceKey, orderId);
@@ -878,6 +883,9 @@ serve(async (req) => {
     if (order.refunded_at) throw new Error("Order already refunded");
 
     const refundMode = mode === "single" ? "single" : "cascade";
+    // Seller cancellations are stamped on the order by seller_cancel_order_begin
+    // before this runs, so trust the row rather than the request body alone.
+    const sellerCancelled = sellerCancelledRaw === true || order.cancelled_by_seller === true;
 
     // Demo orders (Apple App Review bypass) have no payment intent —
     // just mark refunded directly so reviewers can exercise the refund flow.
@@ -890,7 +898,7 @@ serve(async (req) => {
         const demoListingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
         await markListingsRefunded(externalUrl, serviceKey, demoListingIds);
       }
-      await insertRefundNotifications(externalUrl, serviceKey, order);
+      await insertRefundNotifications(externalUrl, serviceKey, order, 1, sellerCancelled);
       await insertRefundInitiatedChatMessage(externalUrl, serviceKey, order);
       return jsonResponse({ success: true, demo: true, mode: refundMode });
     }
