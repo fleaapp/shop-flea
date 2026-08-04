@@ -626,7 +626,8 @@ const SellerDashboard = () => {
                         </div>
                         {feeTotal > 0 && (
                           <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                            Sale total {fmtMoney(grossTotal, currency)} - fees {fmtMoney(feeTotal, currency)} = {fmtMoney(grossTotal - feeTotal, currency)} to you.
+                            Sale total {fmtMoney(grossTotal, currency)} - fees {fmtMoney(feeTotal, currency)} = {fmtMoney(grossTotal - feeTotal, currency)} to you
+                            {residual > 0 ? `, plus ${fmtMoney(residual, currency)} clearing.` : '.'}
                           </div>
                         )}
                         {earliestClearing > 0 && (
@@ -634,35 +635,35 @@ const SellerDashboard = () => {
                             Next release {fmtDate(earliestClearing)}.
                           </div>
                         )}
-                        {heldGroups.length > 0 && (
+                        {rows.length > 0 && (
                           <>
                             <button
                               type="button"
                               onClick={() => setPendingOpen((v) => !v)}
                               className="mt-3 w-full flex items-center justify-between text-[12px] font-medium text-charcoal/80"
                             >
-                              <span>Sales in progress ({heldGroups.length})</span>
+                              <span>Pending funds ({rows.length})</span>
                               <ChevronDown
                                 className={`h-4 w-4 transition-transform ${pendingOpen ? 'rotate-180' : ''}`}
                               />
                             </button>
                             {pendingOpen && (
                               <ul className="mt-2 divide-y divide-border">
-                                {heldGroups.map((g) => (
+                                {rows.map((g) => (
                                   <li key={g.key} className="py-2 flex items-center gap-2">
                                     <div className="flex-1 min-w-0">
                                       <div className="text-[13px] text-foreground truncate">{g.title}</div>
                                       <div className="text-[11px] text-muted-foreground">
-                                        {HELD_STATE_LABEL[g.state] ?? 'In progress'}
+                                        {g.subtitle}
                                       </div>
                                     </div>
                                     <div className="text-right">
                                       <div className="text-[13px] font-medium text-foreground tabular-nums">
                                         {fmtMoney(g.net, currency)}
                                       </div>
-                                      {g.fee > 0 && (
+                                      {!!g.fee && g.fee > 0 && (
                                         <div className="text-[11px] text-muted-foreground tabular-nums">
-                                          {fmtMoney(g.gross, currency)} - {fmtMoney(g.fee, currency)} fee
+                                          {fmtMoney(g.gross ?? 0, currency)} - {fmtMoney(g.fee, currency)} fee
                                         </div>
                                       )}
                                     </div>
@@ -672,6 +673,7 @@ const SellerDashboard = () => {
                             )}
                           </>
                         )}
+
                       </section>
                     );
                   })()}
