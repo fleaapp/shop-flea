@@ -313,7 +313,7 @@ const SellerOnboardingSheet = ({
       if (!data?.accountId) throw new Error('No account created');
 
       // Move to the embedded onboarding step — no redirects, no Stripe branding.
-      setStep(4);
+      setStep(5);
     } catch (err: any) {
       console.error('Seller onboarding error:', err);
       toast.error(err?.message || 'Failed to start setup. Please try again.');
