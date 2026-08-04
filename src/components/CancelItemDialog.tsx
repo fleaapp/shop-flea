@@ -1,17 +1,20 @@
 import { useState } from 'react';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,31 +32,35 @@ const REASONS = [
 interface CancelItemDialogProps {
   orderId: string | null;
   itemTitle?: string;
+  itemImage?: string;
+  itemPrice?: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCancelled?: () => void;
 }
 
-const CancelItemDialog = ({ orderId, itemTitle, open, onOpenChange, onCancelled }: CancelItemDialogProps) => {
+const CancelItemDialog = ({ orderId, itemTitle, itemImage, itemPrice, open, onOpenChange, onCancelled }: CancelItemDialogProps) => {
   const queryClient = useQueryClient();
-  const [reason, setReason] = useState<string>(REASONS[0]);
-  const [otherReason, setOtherReason] = useState('');
+  const [reason, setReason] = useState<string>('');
+  const [details, setDetails] = useState('');
   const [relist, setRelist] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   const reset = () => {
-    setReason(REASONS[0]);
-    setOtherReason('');
+    setReason('');
+    setDetails('');
     setRelist(true);
   };
 
+
   const handleConfirm = async () => {
     if (!orderId) return;
-    const finalReason = reason === 'Other' ? otherReason.trim() : reason;
-    if (!finalReason) {
-      toast.error('Please add a short reason.');
+    const finalReason = [reason, details.trim()].filter(Boolean).join(' - ');
+    if (!reason) {
+      toast.error('Please choose a reason.');
       return;
     }
+
 
     setSubmitting(true);
     try {
@@ -78,14 +85,15 @@ const CancelItemDialog = ({ orderId, itemTitle, open, onOpenChange, onCancelled 
           p_order_id: orderId,
         });
         if (relistError) {
-          toast.warning('Item cancelled and refunded, but it could not be relisted automatically.');
+          toast.warning('Item refunded, but it could not be relisted automatically.');
         }
       }
 
       toast.success(
         relist
-          ? 'Item cancelled and refunded. It is back up for sale.'
-          : 'Item cancelled and refunded. The buyer has been notified.',
+          ? 'Item refunded. It is back up for sale.'
+          : 'Item refunded. The buyer has been notified.',
+
       );
 
       await Promise.all([
@@ -105,44 +113,54 @@ const CancelItemDialog = ({ orderId, itemTitle, open, onOpenChange, onCancelled 
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={(o) => !submitting && onOpenChange(o)}>
-      <AlertDialogContent className="max-w-[340px] rounded-2xl">
-        <AlertDialogHeader>
-          <AlertDialogTitle>Cancel {itemTitle ? `"${itemTitle}"` : 'this item'}?</AlertDialogTitle>
-        </AlertDialogHeader>
+    <Dialog open={open} onOpenChange={(o) => !submitting && onOpenChange(o)}>
+      <DialogContent className="max-w-[85vw] sm:max-w-sm rounded-2xl z-[110] max-h-[85svh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-lg">Refund item</DialogTitle>
+        </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">Why are you cancelling?</p>
-            <RadioGroup value={reason} onValueChange={setReason} className="space-y-2">
-              {REASONS.map((r) => (
-                <label
-                  key={r}
-                  htmlFor={`cancel-reason-${r}`}
-                  className={`flex items-center gap-2.5 rounded-xl border px-3 py-2 cursor-pointer transition-colors ${
-                    reason === r ? 'border-charcoal bg-muted' : 'border-border bg-card'
-                  }`}
-                >
-                  <RadioGroupItem
-                    value={r}
-                    id={`cancel-reason-${r}`}
-                    className="border-charcoal text-charcoal"
-                  />
-                  <Label htmlFor={`cancel-reason-${r}`} className="text-sm font-normal text-foreground cursor-pointer">
-                    {r}
-                  </Label>
-                </label>
-              ))}
-            </RadioGroup>
-            {reason === 'Other' && (
-              <Input
-                value={otherReason}
-                onChange={(e) => setOtherReason(e.target.value)}
-                placeholder="Tell the buyer what happened"
-                maxLength={200}
-                className="h-9 rounded-lg"
-              />
-            )}
+        <div className="space-y-4 mt-2">
+          <div className="rounded-xl bg-card border border-border p-3">
+            <div className="flex gap-3 items-center">
+              {itemImage && (
+                <img
+                  src={itemImage}
+                  alt=""
+                  className="h-12 w-12 rounded-lg object-cover bg-muted shrink-0"
+                />
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold truncate">{itemTitle || 'Item'}</p>
+                {typeof itemPrice === 'number' && (
+                  <p className="text-xs text-muted-foreground mt-0.5">${itemPrice.toFixed(2)}</p>
+                )}
+              </div>
+            </div>
+            <div className="mt-3 space-y-2">
+              <label className="text-xs font-medium text-foreground block">Reason for refund *</label>
+              <Select value={reason} onValueChange={setReason}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder="Select a reason" />
+                </SelectTrigger>
+                <SelectContent position="popper" className="z-[200] pointer-events-auto">
+                  {REASONS.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-foreground mb-1.5 block">Additional details</label>
+            <Textarea
+              value={details}
+              onChange={(e) => setDetails(e.target.value)}
+              placeholder="Let the buyer know what happened..."
+              className="rounded-xl resize-none"
+              rows={3}
+              maxLength={500}
+            />
           </div>
 
           <div className="flex items-center justify-between gap-3 rounded-xl bg-muted/50 px-3 py-2">
@@ -153,28 +171,21 @@ const CancelItemDialog = ({ orderId, itemTitle, open, onOpenChange, onCancelled 
             <Switch checked={relist} onCheckedChange={setRelist} />
           </div>
 
-          <p className="text-xs text-muted-foreground">
-            The buyer gets a full refund, including their fees, and you are not paid for this item. Cancelling often can affect your account.
+          <p className="text-xs text-muted-foreground leading-snug">
+            The buyer gets a full refund, including their fees, and you are not paid for this item. Refunding often can affect your account.
           </p>
-        </div>
 
-        <AlertDialogFooter className="flex-row gap-2">
-          <AlertDialogCancel disabled={submitting} className="flex-1 h-9 rounded-lg mt-0">
-            Keep item
-          </AlertDialogCancel>
-          <AlertDialogAction
-            disabled={submitting}
-            onClick={(e) => {
-              e.preventDefault();
-              handleConfirm();
-            }}
-            className="flex-1 h-9 rounded-lg bg-charcoal text-white hover:bg-charcoal-light"
+          <Button
+            onClick={handleConfirm}
+            disabled={submitting || !reason}
+            className="w-full rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12"
           >
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Cancel item'}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Refund item'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+
   );
 };
 

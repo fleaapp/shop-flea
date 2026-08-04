@@ -22,6 +22,7 @@ import WriteReviewDrawer from '@/components/WriteReviewDrawer';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import OrderReceiptDialog from '@/components/OrderReceiptDialog';
 import CancelItemDialog from '@/components/CancelItemDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/context/AuthContext';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import ShippingStatusTracker from '@/components/ShippingStatusTracker';
@@ -96,7 +97,15 @@ const SalesDetailsSheet = ({
   const [refundActionOrderId, setRefundActionOrderId] = useState<string | null>(null);
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [cancelItemTitle, setCancelItemTitle] = useState<string | undefined>(undefined);
+  const [cancelItemImage, setCancelItemImage] = useState<string | undefined>(undefined);
+  const [cancelItemPrice, setCancelItemPrice] = useState<number | undefined>(undefined);
   const [refundPickerOpen, setRefundPickerOpen] = useState(false);
+  const openCancelFor = (o: any) => {
+    setCancelOrderId(o.id);
+    setCancelItemTitle(o.listing?.title || 'Item');
+    setCancelItemImage(o.listing?.images?.[0] || o.listing?.image_url || undefined);
+    setCancelItemPrice(Number(o.price) || 0);
+  };
   const highlightRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const refundableOrders = (orders ?? []).filter(
@@ -474,31 +483,31 @@ const SalesDetailsSheet = ({
               />
             )}
             {!isRefunded && effectiveStatus === 'awaiting' && (
-              <div className="flex flex-col items-center gap-3">
+              <div className="flex flex-col items-center space-y-3 w-full px-4">
                 <Button
                   onClick={handleMarkShipped}
-                  className="rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12 px-8"
+                  className="w-full rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12"
                 >
                   Mark as shipped
                 </Button>
                 {refundableOrders.length > 0 && (
                   <Button
-                    variant="outline"
                     onClick={() => {
                       if (refundableOrders.length === 1) {
-                        setCancelOrderId(refundableOrders[0].id);
-                        setCancelItemTitle(refundableOrders[0].listing?.title || 'Item');
+                        openCancelFor(refundableOrders[0]);
                       } else {
                         setRefundPickerOpen(true);
                       }
                     }}
-                    className="rounded-full h-12 px-8 border-2 border-border bg-card text-foreground hover:bg-secondary"
+                    variant="outline"
+                    className="w-full rounded-full h-12 bg-muted-foreground/60 text-white hover:bg-muted-foreground/70 border-none"
                   >
                     Refund item
                   </Button>
                 )}
               </div>
             )}
+
 
             {/* Seller Dashboard entry (replaces payment & payout / Stripe links) */}
             <button
@@ -724,40 +733,47 @@ const SalesDetailsSheet = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={refundPickerOpen} onOpenChange={setRefundPickerOpen}>
-        <AlertDialogContent className="max-w-[340px] rounded-2xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Which item do you want to refund?</AlertDialogTitle>
-          </AlertDialogHeader>
-          <div className="space-y-2">
+      <Dialog open={refundPickerOpen} onOpenChange={setRefundPickerOpen}>
+        <DialogContent className="max-w-[85vw] sm:max-w-sm rounded-2xl z-[110] max-h-[85svh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg">Refund item</DialogTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">Step 1 of 2 • Select item</p>
+          </DialogHeader>
+          <div className="space-y-2 mt-2">
             {refundableOrders.map((o: any) => (
               <button
                 key={o.id}
                 type="button"
                 onClick={() => {
                   setRefundPickerOpen(false);
-                  setCancelOrderId(o.id);
-                  setCancelItemTitle(o.listing?.title || 'Item');
+                  openCancelFor(o);
                 }}
-                className="w-full flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left hover:bg-secondary"
+                className="w-full flex gap-3 items-center text-left rounded-xl border border-border bg-card p-3 hover:bg-secondary transition-colors"
               >
-                <span className="text-sm text-foreground truncate">{o.listing?.title || 'Item'}</span>
-                <span className="text-sm font-semibold text-foreground">${o.price}</span>
+                <img
+                  src={o.listing?.images?.[0] || o.listing?.image_url || ''}
+                  alt=""
+                  className="h-14 w-14 rounded-lg object-cover bg-muted shrink-0"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold truncate">{o.listing?.title || 'Item'}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">${Number(o.price || 0).toFixed(2)}</p>
+                </div>
               </button>
             ))}
           </div>
-          <AlertDialogFooter className="flex-row gap-2 mt-1">
-            <AlertDialogCancel className="flex-1 h-9 rounded-lg mt-0">Close</AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        </DialogContent>
+      </Dialog>
 
       <CancelItemDialog
         orderId={cancelOrderId}
         itemTitle={cancelItemTitle}
+        itemImage={cancelItemImage}
+        itemPrice={cancelItemPrice}
         open={!!cancelOrderId}
         onOpenChange={(o) => { if (!o) setCancelOrderId(null); }}
       />
+
 
     </Drawer>
   );
