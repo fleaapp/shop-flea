@@ -561,6 +561,85 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
           )}
         </CollapsibleContent>
       </Collapsible>
+
+      {/* Comment actions sheet - plain fixed overlay so it works inside drawers on native */}
+      {menuComment && (
+        <div
+          className="fixed inset-0 z-[80] flex items-end bg-black/40"
+          onClick={() => setMenuComment(null)}
+        >
+          <div
+            className="w-full rounded-t-2xl bg-card p-3 pb-8 space-y-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {canDeleteComment(menuComment) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmDelete(menuComment);
+                  setMenuComment(null);
+                }}
+                className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left text-destructive active:bg-muted"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete comment
+              </button>
+            )}
+            {user && menuComment.user_id !== user.id && (
+              <button
+                type="button"
+                onClick={() => {
+                  const target = menuComment;
+                  setMenuComment(null);
+                  handleReport(target);
+                }}
+                className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left text-foreground active:bg-muted"
+              >
+                <Flag className="h-4 w-4" />
+                Report comment
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setMenuComment(null)}
+              className="w-full rounded-xl bg-muted px-4 py-3 text-center font-medium text-foreground"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/50 px-6">
+          <div className="w-full max-w-[320px] rounded-2xl bg-card p-5 text-center">
+            <p className="font-semibold text-foreground">Delete this comment?</p>
+            <p className="mt-1 text-sm text-muted-foreground">This cannot be undone.</p>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(null)}
+                className="h-9 flex-1 rounded-lg bg-muted text-sm font-medium text-foreground"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteComment.isPending}
+                onClick={() => {
+                  deleteComment.mutate(confirmDelete.id);
+                  setConfirmDelete(null);
+                }}
+                className="h-9 flex-1 rounded-lg bg-destructive text-sm font-medium text-destructive-foreground"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ReportDialog
         open={!!pendingReport}
         onOpenChange={(v) => { if (!v) closeReport(); }}
@@ -568,6 +647,7 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
         isSubmitting={isReporting}
         reportType={pendingReport?.reportType || 'comment'}
       />
+
     </div>
   );
 };
