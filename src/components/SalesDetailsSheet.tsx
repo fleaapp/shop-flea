@@ -230,6 +230,48 @@ const SalesDetailsSheet = ({
     onMarkShipped?.({ serviceProvider: serviceProvider.trim(), trackingNumber: cleanNumber });
   };
 
+  const handleUpdateTracking = async () => {
+    if (verifyingTracking) return;
+    const formatError = validateTrackingFormat(serviceProvider, trackingNumber);
+    if (formatError) {
+      setValidationError(formatError);
+      return;
+    }
+    setValidationError('');
+    const cleanNumber = normaliseTrackingNumber(trackingNumber);
+    setVerifyingTracking(true);
+    try {
+      const { data: check } = await supabase.functions.invoke('tracking-register', {
+        body: { validate_only: true, carrier: serviceProvider, tracking_number: cleanNumber },
+      });
+      if (check && check.valid === false) {
+        setValidationError(check.message || 'That tracking number was not recognised.');
+        setVerifyingTracking(false);
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke('tracking-register', {
+        body: {
+          order_group_id: primaryOrder?.order_group_id ?? undefined,
+          order_id: primaryOrder?.order_group_id ? undefined : primaryOrder?.id,
+          carrier: serviceProvider,
+          new_tracking_number: cleanNumber,
+        },
+      });
+      if (error || (data && data.error)) {
+        throw new Error(error?.message || data.error);
+      }
+      toast.success('✈️ Tracking number updated.');
+      setEditingTracking(false);
+    } catch (err) {
+      toast.error('Could not update the tracking number. Please try again.');
+      console.error('Update tracking failed:', err);
+    } finally {
+      setVerifyingTracking(false);
+    }
+  };
+
+
+
 
   const rawBuyerUsername = primaryOrder.buyer_profile?.username || 'Unknown';
   const buyerUsername = rawBuyerUsername.startsWith('@') ? rawBuyerUsername.slice(1) : rawBuyerUsername;
