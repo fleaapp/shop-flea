@@ -420,25 +420,38 @@ const SalesDetailsSheet = ({
                   <>
                     <div>
                       <p className="font-semibold text-foreground mb-1.5">Service Provider:</p>
-                      <Input
-                        value={serviceProvider}
-                        onChange={(e) => setServiceProvider(e.target.value)}
-                        placeholder="e.g. Royal Mail, DPD, Evri"
-                        className="bg-background"
-                      />
+                      <Select value={serviceProvider} onValueChange={setServiceProvider}>
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="Choose carrier" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {AU_CARRIERS.map((c) => (
+                            <SelectItem key={c.name} value={c.name}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <p className="font-semibold text-foreground mb-1.5">Tracking number:</p>
                       <Input
                         value={trackingNumber}
-                        onChange={(e) => setTrackingNumber(e.target.value)}
+                        onChange={(e) => {
+                          setTrackingNumber(e.target.value);
+                          if (validationError) setValidationError('');
+                        }}
                         placeholder="Enter tracking number"
+                        autoCapitalize="characters"
+                        autoCorrect="off"
+                        spellCheck={false}
                         className="bg-background"
                       />
                     </div>
                     {validationError && (
                       <p className="text-sm text-destructive">{validationError}</p>
                     )}
+
                   </>
                 ) : (
                   <>
