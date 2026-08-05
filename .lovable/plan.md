@@ -13,6 +13,12 @@ Polish the first and fourth steps of the in-app seller onboarding sheet so the c
    - Bump it from the surrounding `text-sm` size to `text-base` (or `text-lg`) and keep `font-semibold` so it reads as the key value prop.
 3. Move the Terms / Privacy links onto their own line so the legal copy does not wrap awkwardly with the agreement sentence.
 
+### Step 3 — `src/components/SellerOnboardingSheet.tsx`
+1. Change the title from `Your details` to `Details`.
+2. Remove the sentence `Used to verify your identity and enable payouts.`
+3. Update the remaining description so it starts with `Details` instead of `Your details`:
+   - **To:** `Details must match your bank account and government-issued ID. Never shown publicly on your profile.`
+
 ### Step 4 — `src/components/SellerOnboardingSheet.tsx`
 1. Remove the paragraph: `Used to verify your identity and enable payouts. Your details must match your bank account and government-issued ID.`
 2. Keep the remaining line `Australian addresses only. Never shown publicly on your profile.` and ensure it is centered and balanced (it already is, but verify after the removal).
