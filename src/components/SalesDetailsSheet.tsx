@@ -517,7 +517,90 @@ const SalesDetailsSheet = ({
                         ✈️ Track parcel
                       </Button>
                     )}
+                    {!isRefunded && effectiveStatus === 'shipped' && (
+                      editingTracking ? (
+                        <div className="space-y-3 pt-1">
+                          <div>
+                            <p className="font-semibold text-foreground mb-1.5">New carrier:</p>
+                            <Select value={serviceProvider} onValueChange={setServiceProvider}>
+                              <SelectTrigger className="bg-background">
+                                <SelectValue placeholder="Choose carrier" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {AU_CARRIERS.map((c) => (
+                                  <SelectItem key={c.name} value={c.name}>
+                                    {c.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-foreground mb-1.5">New tracking number:</p>
+                            <Input
+                              value={trackingNumber}
+                              onChange={(e) => {
+                                setTrackingNumber(e.target.value);
+                                if (validationError) setValidationError('');
+                              }}
+                              placeholder="Enter tracking number"
+                              autoCapitalize="characters"
+                              autoCorrect="off"
+                              spellCheck={false}
+                              className="bg-background"
+                            />
+                          </div>
+                          {validationError && (
+                            <p className="text-sm text-destructive">{validationError}</p>
+                          )}
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                setEditingTracking(false);
+                                setValidationError('');
+                              }}
+                              className="flex-1 rounded-full h-10 border-charcoal text-charcoal"
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              type="button"
+                              onClick={handleUpdateTracking}
+                              disabled={verifyingTracking}
+                              className="flex-1 rounded-full bg-charcoal text-white hover:bg-charcoal-light h-10"
+                            >
+                              {verifyingTracking ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                'Save'
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setServiceProvider(
+                              trackingProviderDisplay && trackingProviderDisplay !== 'Multiple'
+                                ? trackingProviderDisplay
+                                : '',
+                            );
+                            setTrackingNumber('');
+                            setValidationError('');
+                            setEditingTracking(true);
+                          }}
+                          className="w-full rounded-full h-10 border-charcoal text-charcoal"
+                        >
+                          Update tracking number
+                        </Button>
+                      )
+                    )}
                   </>
+
                 )}
               </div>
             </div>
