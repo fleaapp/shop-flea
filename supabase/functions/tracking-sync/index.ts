@@ -29,15 +29,27 @@ Deno.serve(async (req) => {
   const admin = createClient(Deno.env.get('SUPABASE_URL')!, serviceKey);
 
   try {
-    // Only shipments that are still moving: not delivered, registered recently.
+    const body = await req.json().catch(() => ({} as any));
+    // 'fresh' runs hourly and only covers parcels shipped in the last 48h that
+    // the carrier hasn't scanned yet, so a number that becomes valid shows up
+    // quickly. The default daily run covers everything still in flight.
+    const mode = body?.mode === 'fresh' ? 'fresh' : 'daily';
+
     const cutoff = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString();
-    const { data: shipments, error } = await admin
+    let sq = admin
       .from('tracking_shipments')
       .select('id, order_group_id, seller_id, buyer_id, tracking_number, carrier_code, registered_at, not_found_notified_at')
       .is('delivered_at', null)
       .gte('created_at', cutoff)
       .limit(100);
+    if (mode === 'fresh') {
+      sq = sq
+        .is('first_scan_at', null)
+        .gte('created_at', new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString());
+    }
+    const { data: shipments, error } = await sq;
     if (error) throw new Error(error.message);
+
 
     let synced = 0;
     let notified = 0;
