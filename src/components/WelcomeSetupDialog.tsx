@@ -83,21 +83,14 @@ const WelcomeSetupDialog = ({ open, onComplete, isGoogleUser = false }: WelcomeS
         return;
       }
 
-      // Update the user's profile with all fields, including location.
-      // Region/country are REQUIRED — fall back to AU if detection failed,
-      // since the app is AU-exclusive (see regional lockdown rules).
-      const resolvedCountry =
-        detectedLocation?.countryCode && detectedLocation.countryCode !== 'UNKNOWN'
-          ? detectedLocation.countryCode
-          : 'AU';
-      const resolvedRegion = detectedLocation?.regionId ?? 'AU';
-
+      // The app is AU-exclusive and the profile row is created with AU
+      // country/region at signup. The database guard rejects any change to
+      // those columns once set, so never send a detected foreign location
+      // here — it would fail the whole profile setup.
       const updateData: Record<string, any> = {
         username: `@${formattedUsername}`,
         first_name: firstName.trim() || null,
         last_name: lastName.trim() || null,
-        country_code: resolvedCountry,
-        region_id: resolvedRegion,
       };
 
       const { error: updateError } = await supabase
