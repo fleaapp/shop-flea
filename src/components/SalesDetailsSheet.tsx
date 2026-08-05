@@ -38,6 +38,8 @@ import ShippingStatusTracker from '@/components/ShippingStatusTracker';
 import TrackingEvents from '@/components/TrackingEvents';
 import { openTrackingUrl } from '@/lib/tracking';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
+import { supabase } from '@/integrations/supabase/client';
+
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchSellerShippingSettings, getBundleBreakdownText } from '@/utils/shippingCalculator';
 import { computeSellerNet } from '@/utils/feeCalculator';
