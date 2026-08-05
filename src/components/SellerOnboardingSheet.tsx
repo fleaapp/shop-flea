@@ -373,44 +373,42 @@ const SellerOnboardingSheet = ({
               <SheetHeader className="space-y-5">
                 <SheetTitle className="text-xl">Start selling on Flea</SheetTitle>
                 <div className="text-sm text-muted-foreground leading-relaxed max-w-[300px] mx-auto space-y-5">
-                  <div className="space-y-2">
-                    <p>
-                      Set up your seller account in just<br />
-                      a few minutes.
-                    </p>
-                    <p>We'll ask for a few details to verify your identity and enable payouts.</p>
-                  </div>
+                  <p>
+                    Start selling in minutes with quick identity verification and secure payouts set up.
+                  </p>
                   <div className="space-y-2 text-foreground">
-                    <p className="font-semibold">Selling on Flea is free.</p>
+                    <p className="text-base font-semibold">Selling on Flea is free.</p>
                     <p className="font-semibold">You only pay a 2% + $0.50 transaction fee to cover payment processing.</p>
                   </div>
-                  <p>
-                    By continuing you agree to our{' '}
-                    <Link
-                      to="/terms"
-                      className="underline underline-offset-2 text-foreground hover:text-foreground/80"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleOpenChange(false);
-                        navigate('/terms');
-                      }}
-                    >
-                      Terms
-                    </Link>
-                    {' '}and{' '}
-                    <Link
-                      to="/privacy"
-                      className="underline underline-offset-2 text-foreground hover:text-foreground/80"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleOpenChange(false);
-                        navigate('/privacy');
-                      }}
-                    >
-                      Privacy
-                    </Link>
-                    .
-                  </p>
+                  <div className="space-y-1">
+                    <p>By continuing you agree to our</p>
+                    <p>
+                      <Link
+                        to="/terms"
+                        className="underline underline-offset-2 text-foreground hover:text-foreground/80"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleOpenChange(false);
+                          navigate('/terms');
+                        }}
+                      >
+                        Terms
+                      </Link>
+                      {' '}and{' '}
+                      <Link
+                        to="/privacy"
+                        className="underline underline-offset-2 text-foreground hover:text-foreground/80"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleOpenChange(false);
+                          navigate('/privacy');
+                        }}
+                      >
+                        Privacy
+                      </Link>
+                      .
+                    </p>
+                  </div>
                 </div>
               </SheetHeader>
               <div className="w-full space-y-3 mt-6 flex flex-col items-center">
