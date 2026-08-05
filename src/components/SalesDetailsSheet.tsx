@@ -2,6 +2,15 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { AU_CARRIERS, normaliseTrackingNumber, validateTrackingFormat } from '@/lib/auCarriers';
+
 import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
@@ -29,6 +38,8 @@ import ShippingStatusTracker from '@/components/ShippingStatusTracker';
 import TrackingEvents from '@/components/TrackingEvents';
 import { openTrackingUrl } from '@/lib/tracking';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
+import { supabase } from '@/integrations/supabase/client';
+
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchSellerShippingSettings, getBundleBreakdownText } from '@/utils/shippingCalculator';
 import { computeSellerNet } from '@/utils/feeCalculator';
@@ -88,6 +99,10 @@ const SalesDetailsSheet = ({
   const [serviceProvider, setServiceProvider] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [validationError, setValidationError] = useState('');
+  const [verifyingTracking, setVerifyingTracking] = useState(false);
+  const [editingTracking, setEditingTracking] = useState(false);
+
+
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [refundConfirmOpen, setRefundConfirmOpen] = useState(false);
@@ -183,19 +198,80 @@ const SalesDetailsSheet = ({
   const bundleText = orders.length >= 2 ? getBundleBreakdownText(orders.length, sellerShippingSettings || undefined) : null;
 
 
-  const handleMarkShipped = () => {
-    // Validate tracking details
-    if (!serviceProvider.trim()) {
-      setValidationError('Please enter a service provider');
-      return;
-    }
-    if (!trackingNumber.trim()) {
-      setValidationError('Please enter a tracking number');
+  const handleMarkShipped = async () => {
+    if (verifyingTracking) return;
+    const formatError = validateTrackingFormat(serviceProvider, trackingNumber);
+    if (formatError) {
+      setValidationError(formatError);
       return;
     }
     setValidationError('');
-    onMarkShipped?.({ serviceProvider: serviceProvider.trim(), trackingNumber: trackingNumber.trim() });
+    const cleanNumber = normaliseTrackingNumber(trackingNumber);
+
+    // Live check with the carrier before the order flips to shipped.
+    setVerifyingTracking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('tracking-register', {
+        body: { validate_only: true, carrier: serviceProvider, tracking_number: cleanNumber },
+      });
+      if (!error && data && data.valid === false) {
+        setValidationError(
+          data.message ||
+            `That tracking number wasn't recognised by ${serviceProvider}. Check it and try again.`,
+        );
+        setVerifyingTracking(false);
+        return;
+      }
+    } catch (err) {
+      // Never block shipping on a provider outage - the daily sync will catch up.
+      console.warn('Tracking validation unavailable:', err);
+    }
+    setVerifyingTracking(false);
+    onMarkShipped?.({ serviceProvider: serviceProvider.trim(), trackingNumber: cleanNumber });
   };
+
+  const handleUpdateTracking = async () => {
+    if (verifyingTracking) return;
+    const formatError = validateTrackingFormat(serviceProvider, trackingNumber);
+    if (formatError) {
+      setValidationError(formatError);
+      return;
+    }
+    setValidationError('');
+    const cleanNumber = normaliseTrackingNumber(trackingNumber);
+    setVerifyingTracking(true);
+    try {
+      const { data: check } = await supabase.functions.invoke('tracking-register', {
+        body: { validate_only: true, carrier: serviceProvider, tracking_number: cleanNumber },
+      });
+      if (check && check.valid === false) {
+        setValidationError(check.message || 'That tracking number was not recognised.');
+        setVerifyingTracking(false);
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke('tracking-register', {
+        body: {
+          order_group_id: primaryOrder?.order_group_id ?? undefined,
+          order_id: primaryOrder?.order_group_id ? undefined : primaryOrder?.id,
+          carrier: serviceProvider,
+          new_tracking_number: cleanNumber,
+        },
+      });
+      if (error || (data && data.error)) {
+        throw new Error(error?.message || data.error);
+      }
+      toast.success('✈️ Tracking number updated.');
+      setEditingTracking(false);
+    } catch (err) {
+      toast.error('Could not update the tracking number. Please try again.');
+      console.error('Update tracking failed:', err);
+    } finally {
+      setVerifyingTracking(false);
+    }
+  };
+
+
+
 
   const rawBuyerUsername = primaryOrder.buyer_profile?.username || 'Unknown';
   const buyerUsername = rawBuyerUsername.startsWith('@') ? rawBuyerUsername.slice(1) : rawBuyerUsername;
@@ -420,25 +496,38 @@ const SalesDetailsSheet = ({
                   <>
                     <div>
                       <p className="font-semibold text-foreground mb-1.5">Service Provider:</p>
-                      <Input
-                        value={serviceProvider}
-                        onChange={(e) => setServiceProvider(e.target.value)}
-                        placeholder="e.g. Royal Mail, DPD, Evri"
-                        className="bg-background"
-                      />
+                      <Select value={serviceProvider} onValueChange={setServiceProvider}>
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="Choose carrier" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {AU_CARRIERS.map((c) => (
+                            <SelectItem key={c.name} value={c.name}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <p className="font-semibold text-foreground mb-1.5">Tracking number:</p>
                       <Input
                         value={trackingNumber}
-                        onChange={(e) => setTrackingNumber(e.target.value)}
+                        onChange={(e) => {
+                          setTrackingNumber(e.target.value);
+                          if (validationError) setValidationError('');
+                        }}
                         placeholder="Enter tracking number"
+                        autoCapitalize="characters"
+                        autoCorrect="off"
+                        spellCheck={false}
                         className="bg-background"
                       />
                     </div>
                     {validationError && (
                       <p className="text-sm text-destructive">{validationError}</p>
                     )}
+
                   </>
                 ) : (
                   <>
@@ -472,7 +561,90 @@ const SalesDetailsSheet = ({
                         ✈️ Track parcel
                       </Button>
                     )}
+                    {!isRefunded && effectiveStatus === 'shipped' && (
+                      editingTracking ? (
+                        <div className="space-y-3 pt-1">
+                          <div>
+                            <p className="font-semibold text-foreground mb-1.5">New carrier:</p>
+                            <Select value={serviceProvider} onValueChange={setServiceProvider}>
+                              <SelectTrigger className="bg-background">
+                                <SelectValue placeholder="Choose carrier" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {AU_CARRIERS.map((c) => (
+                                  <SelectItem key={c.name} value={c.name}>
+                                    {c.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-foreground mb-1.5">New tracking number:</p>
+                            <Input
+                              value={trackingNumber}
+                              onChange={(e) => {
+                                setTrackingNumber(e.target.value);
+                                if (validationError) setValidationError('');
+                              }}
+                              placeholder="Enter tracking number"
+                              autoCapitalize="characters"
+                              autoCorrect="off"
+                              spellCheck={false}
+                              className="bg-background"
+                            />
+                          </div>
+                          {validationError && (
+                            <p className="text-sm text-destructive">{validationError}</p>
+                          )}
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                setEditingTracking(false);
+                                setValidationError('');
+                              }}
+                              className="flex-1 rounded-full h-10 border-charcoal text-charcoal"
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              type="button"
+                              onClick={handleUpdateTracking}
+                              disabled={verifyingTracking}
+                              className="flex-1 rounded-full bg-charcoal text-white hover:bg-charcoal-light h-10"
+                            >
+                              {verifyingTracking ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                'Save'
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setServiceProvider(
+                              trackingProviderDisplay && trackingProviderDisplay !== 'Multiple'
+                                ? trackingProviderDisplay
+                                : '',
+                            );
+                            setTrackingNumber('');
+                            setValidationError('');
+                            setEditingTracking(true);
+                          }}
+                          className="w-full rounded-full h-10 border-charcoal text-charcoal"
+                        >
+                          Update tracking number
+                        </Button>
+                      )
+                    )}
                   </>
+
                 )}
               </div>
             </div>
@@ -493,10 +665,19 @@ const SalesDetailsSheet = ({
               <div className="flex flex-col items-center space-y-3 w-full px-4">
                 <Button
                   onClick={handleMarkShipped}
+                  disabled={verifyingTracking}
                   className="w-full rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12"
                 >
-                  Mark as shipped
+                  {verifyingTracking ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Checking tracking
+                    </span>
+                  ) : (
+                    'Mark as shipped'
+                  )}
                 </Button>
+
                 {refundableOrders.length > 0 && (
                   <Button
                     onClick={() => {
