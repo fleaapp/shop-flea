@@ -463,9 +463,9 @@ const SellerOnboardingSheet = ({
           {step === 3 && (
             <>
               <SheetHeader className="space-y-2 w-full max-w-[280px] mx-auto items-center text-center">
-                <SheetTitle className="text-lg text-center">Details</SheetTitle>
+                <SheetTitle className="text-lg text-center">Verify Identity</SheetTitle>
                 <p className="text-sm text-muted-foreground leading-relaxed text-center">
-                  Details must match your bank account and government-issued ID. Never shown publicly on your profile.
+                  Details must match the bank account and government-issued ID. Never shown publicly on your profile.
                 </p>
               </SheetHeader>
               <div className="w-[230px] max-w-[calc(100vw-96px)] mx-auto text-left space-y-3 mt-1">
