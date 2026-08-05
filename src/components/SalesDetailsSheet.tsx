@@ -496,19 +496,15 @@ const SalesDetailsSheet = ({
                   <>
                     <div>
                       <p className="font-semibold text-foreground mb-1.5">Service Provider:</p>
-                      <Select value={serviceProvider} onValueChange={setServiceProvider}>
-                        <SelectTrigger className="bg-background">
-                          <SelectValue placeholder="Choose carrier" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {AU_CARRIERS.map((c) => (
-                            <SelectItem key={c.name} value={c.name}>
-                              {c.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <CarrierPicker
+                        value={serviceProvider}
+                        onChange={(name) => {
+                          setServiceProvider(name);
+                          if (validationError) setValidationError('');
+                        }}
+                      />
                     </div>
+
                     <div>
                       <p className="font-semibold text-foreground mb-1.5">Tracking number:</p>
                       <Input
