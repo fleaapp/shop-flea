@@ -79,8 +79,8 @@ const SectionHeader = ({ children }: { children: React.ReactNode }) => (
 );
 
 /**
- * Inline carrier chips. A Radix Select popup does not open reliably inside the
- * drag-enabled drawer on touch, so the options are always visible instead.
+ * Carrier dropdown. Uses the platform's own select so it opens reliably inside
+ * the drag-enabled drawer, where a portalled popup gets its taps swallowed.
  */
 const CarrierPicker = ({
   value,
@@ -89,27 +89,28 @@ const CarrierPicker = ({
   value: string;
   onChange: (name: string) => void;
 }) => (
-  <div className="grid grid-cols-2 gap-2">
-    {AU_CARRIERS.map((c) => {
-      const selected = value === c.name;
-      return (
-        <button
-          key={c.name}
-          type="button"
-          onClick={() => onChange(c.name)}
-          className={cn(
-            'rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors',
-            selected
-              ? 'border-primary bg-primary text-primary-foreground'
-              : 'border-border bg-background text-foreground',
-          )}
-        >
+  <div className="relative">
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={cn(
+        'h-11 w-full appearance-none rounded-xl border border-border bg-background pl-3 pr-9 text-sm',
+        value ? 'text-foreground' : 'text-muted-foreground',
+      )}
+    >
+      <option value="" disabled>
+        Select carrier
+      </option>
+      {AU_CARRIERS.map((c) => (
+        <option key={c.name} value={c.name}>
           {c.name}
-        </button>
-      );
-    })}
+        </option>
+      ))}
+    </select>
+    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
   </div>
 );
+
 
 
 const SalesDetailsSheet = ({
