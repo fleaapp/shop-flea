@@ -1583,6 +1583,113 @@ export type Database = {
         }
         Relationships: []
       }
+      tracking_events: {
+        Row: {
+          created_at: string
+          description: string
+          event_at: string
+          id: string
+          location: string | null
+          shipment_id: string
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          event_at: string
+          id?: string
+          location?: string | null
+          shipment_id: string
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          event_at?: string
+          id?: string
+          location?: string | null
+          shipment_id?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_events_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "tracking_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracking_shipments: {
+        Row: {
+          buyer_id: string
+          carrier_code: string | null
+          carrier_name: string | null
+          created_at: string
+          delivered_at: string | null
+          first_scan_at: string | null
+          id: string
+          is_exception: boolean
+          last_synced_at: string | null
+          latest_event_at: string | null
+          latest_event_summary: string | null
+          not_found_notified_at: string | null
+          order_group_id: string
+          provider: string
+          provider_status: string | null
+          raw_payload: Json | null
+          registered_at: string | null
+          seller_id: string
+          tracking_number: string
+          updated_at: string
+        }
+        Insert: {
+          buyer_id: string
+          carrier_code?: string | null
+          carrier_name?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          first_scan_at?: string | null
+          id?: string
+          is_exception?: boolean
+          last_synced_at?: string | null
+          latest_event_at?: string | null
+          latest_event_summary?: string | null
+          not_found_notified_at?: string | null
+          order_group_id: string
+          provider?: string
+          provider_status?: string | null
+          raw_payload?: Json | null
+          registered_at?: string | null
+          seller_id: string
+          tracking_number: string
+          updated_at?: string
+        }
+        Update: {
+          buyer_id?: string
+          carrier_code?: string | null
+          carrier_name?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          first_scan_at?: string | null
+          id?: string
+          is_exception?: boolean
+          last_synced_at?: string | null
+          latest_event_at?: string | null
+          latest_event_summary?: string | null
+          not_found_notified_at?: string | null
+          order_group_id?: string
+          provider?: string
+          provider_status?: string | null
+          raw_payload?: Json | null
+          registered_at?: string | null
+          seller_id?: string
+          tracking_number?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string

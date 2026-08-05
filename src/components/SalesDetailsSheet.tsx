@@ -26,6 +26,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useAuth } from '@/context/AuthContext';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import ShippingStatusTracker from '@/components/ShippingStatusTracker';
+import TrackingEvents from '@/components/TrackingEvents';
 import { openTrackingUrl } from '@/lib/tracking';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -478,12 +479,15 @@ const SalesDetailsSheet = ({
 
             {/* Shipping Status Tracker - visible once shipped, hidden if refunded */}
             {!isRefunded && (effectiveStatus === 'shipped' || effectiveStatus === 'delivered') && (
-              <ShippingStatusTracker
-                createdAt={primaryOrder.created_at}
-                shippedAt={primaryOrder.shipped_at}
-                deliveredAt={primaryOrder.delivered_at}
-                status={effectiveStatus}
-              />
+              <>
+                <ShippingStatusTracker
+                  createdAt={primaryOrder.created_at}
+                  shippedAt={primaryOrder.shipped_at}
+                  deliveredAt={primaryOrder.delivered_at}
+                  status={effectiveStatus}
+                />
+                <TrackingEvents orderGroupId={primaryOrder.order_group_id ?? primaryOrder.id} />
+              </>
             )}
             {!isRefunded && effectiveStatus === 'awaiting' && (
               <div className="flex flex-col items-center space-y-3 w-full px-4">
