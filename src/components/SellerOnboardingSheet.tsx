@@ -373,44 +373,42 @@ const SellerOnboardingSheet = ({
               <SheetHeader className="space-y-5">
                 <SheetTitle className="text-xl">Start selling on Flea</SheetTitle>
                 <div className="text-sm text-muted-foreground leading-relaxed max-w-[300px] mx-auto space-y-5">
-                  <div className="space-y-2">
-                    <p>
-                      Set up your seller account in just<br />
-                      a few minutes.
-                    </p>
-                    <p>We'll ask for a few details to verify your identity and enable payouts.</p>
-                  </div>
+                  <p>
+                    Start selling in minutes with quick identity verification and secure payouts set up.
+                  </p>
                   <div className="space-y-2 text-foreground">
-                    <p className="font-semibold">Selling on Flea is free.</p>
+                    <p className="text-base font-semibold">Selling on Flea is free.</p>
                     <p className="font-semibold">You only pay a 2% + $0.50 transaction fee to cover payment processing.</p>
                   </div>
-                  <p>
-                    By continuing you agree to our{' '}
-                    <Link
-                      to="/terms"
-                      className="underline underline-offset-2 text-foreground hover:text-foreground/80"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleOpenChange(false);
-                        navigate('/terms');
-                      }}
-                    >
-                      Terms
-                    </Link>
-                    {' '}and{' '}
-                    <Link
-                      to="/privacy"
-                      className="underline underline-offset-2 text-foreground hover:text-foreground/80"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleOpenChange(false);
-                        navigate('/privacy');
-                      }}
-                    >
-                      Privacy
-                    </Link>
-                    .
-                  </p>
+                  <div className="space-y-1">
+                    <p>By continuing you agree to our</p>
+                    <p>
+                      <Link
+                        to="/terms"
+                        className="underline underline-offset-2 text-foreground hover:text-foreground/80"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleOpenChange(false);
+                          navigate('/terms');
+                        }}
+                      >
+                        Terms
+                      </Link>
+                      {' '}and{' '}
+                      <Link
+                        to="/privacy"
+                        className="underline underline-offset-2 text-foreground hover:text-foreground/80"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleOpenChange(false);
+                          navigate('/privacy');
+                        }}
+                      >
+                        Privacy
+                      </Link>
+                      .
+                    </p>
+                  </div>
                 </div>
               </SheetHeader>
               <div className="w-full space-y-3 mt-6 flex flex-col items-center">
@@ -465,9 +463,9 @@ const SellerOnboardingSheet = ({
           {step === 3 && (
             <>
               <SheetHeader className="space-y-2 w-full max-w-[280px] mx-auto items-center text-center">
-                <SheetTitle className="text-lg text-center">Your details</SheetTitle>
+                <SheetTitle className="text-lg text-center">Details</SheetTitle>
                 <p className="text-sm text-muted-foreground leading-relaxed text-center">
-                  Used to verify your identity and enable payouts. Your details must match your bank account and government-issued ID. Never shown publicly on your profile.
+                  Details must match your bank account and government-issued ID. Never shown publicly on your profile.
                 </p>
               </SheetHeader>
               <div className="w-[230px] max-w-[calc(100vw-96px)] mx-auto text-left space-y-3 mt-1">
@@ -511,7 +509,7 @@ const SellerOnboardingSheet = ({
               <SheetHeader className="space-y-2">
                 <SheetTitle className="text-lg">Your address</SheetTitle>
                 <p className="text-sm text-muted-foreground leading-relaxed max-w-[320px] mx-auto">
-                  Used to verify your identity and enable payouts. Your details must match your bank account and government-issued ID. Australian addresses only. Never shown publicly on your profile.
+                  Australian addresses only. Never shown publicly on your profile.
                 </p>
               </SheetHeader>
               <div className="w-full text-left space-y-3 mt-1">
