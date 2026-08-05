@@ -2,13 +2,6 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { AU_CARRIERS, normaliseTrackingNumber, validateTrackingFormat } from '@/lib/auCarriers';
 
 import { Badge } from '@/components/ui/badge';
@@ -84,6 +77,40 @@ const SectionHeader = ({ children }: { children: React.ReactNode }) => (
     {children}
   </div>
 );
+
+/**
+ * Inline carrier chips. A Radix Select popup does not open reliably inside the
+ * drag-enabled drawer on touch, so the options are always visible instead.
+ */
+const CarrierPicker = ({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (name: string) => void;
+}) => (
+  <div className="grid grid-cols-2 gap-2">
+    {AU_CARRIERS.map((c) => {
+      const selected = value === c.name;
+      return (
+        <button
+          key={c.name}
+          type="button"
+          onClick={() => onChange(c.name)}
+          className={cn(
+            'rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors',
+            selected
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-border bg-background text-foreground',
+          )}
+        >
+          {c.name}
+        </button>
+      );
+    })}
+  </div>
+);
+
 
 const SalesDetailsSheet = ({
   orders,
@@ -496,19 +523,15 @@ const SalesDetailsSheet = ({
                   <>
                     <div>
                       <p className="font-semibold text-foreground mb-1.5">Service Provider:</p>
-                      <Select value={serviceProvider} onValueChange={setServiceProvider}>
-                        <SelectTrigger className="bg-background">
-                          <SelectValue placeholder="Choose carrier" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {AU_CARRIERS.map((c) => (
-                            <SelectItem key={c.name} value={c.name}>
-                              {c.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <CarrierPicker
+                        value={serviceProvider}
+                        onChange={(name) => {
+                          setServiceProvider(name);
+                          if (validationError) setValidationError('');
+                        }}
+                      />
                     </div>
+
                     <div>
                       <p className="font-semibold text-foreground mb-1.5">Tracking number:</p>
                       <Input
@@ -566,19 +589,15 @@ const SalesDetailsSheet = ({
                         <div className="space-y-3 pt-1">
                           <div>
                             <p className="font-semibold text-foreground mb-1.5">New carrier:</p>
-                            <Select value={serviceProvider} onValueChange={setServiceProvider}>
-                              <SelectTrigger className="bg-background">
-                                <SelectValue placeholder="Choose carrier" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {AU_CARRIERS.map((c) => (
-                                  <SelectItem key={c.name} value={c.name}>
-                                    {c.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <CarrierPicker
+                              value={serviceProvider}
+                              onChange={(name) => {
+                                setServiceProvider(name);
+                                if (validationError) setValidationError('');
+                              }}
+                            />
                           </div>
+
                           <div>
                             <p className="font-semibold text-foreground mb-1.5">New tracking number:</p>
                             <Input
