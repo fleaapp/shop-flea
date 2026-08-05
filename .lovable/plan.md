@@ -10,11 +10,18 @@ Both the order details drawer (buyer) and the sale details drawer (seller) show 
 2. **Shipped** - seller marked shipped
 3. **In transit** - first real carrier scan from 17track (falls back to the latest carrier event time)
 4. **Delivered** - carrier delivery scan, buyer confirmation, or admin approval
-5. **Completed** - funds released to the seller 48h after delivery. Before that point this step shows a live countdown line: "Funds release Aug 7, 9:27pm". Seller wording is payout-focused ("Payout released"), buyer wording is "Order complete".
+5. **Completed** - the buyer confirms the order (or reports an issue) after delivery. Confirming releases the seller's payout straight away; the 48h window is only the fallback if the buyer never responds.
+
+Once delivered and not yet completed:
+- Buyer sees a prompt line on the Completed step: "Confirm your order or report an issue - auto-completes Aug 7, 9:27pm". The existing Complete / Report Issue buttons and dialog stay as they are.
+- Seller sees "Payout releases when the buyer confirms, or automatically Aug 7, 9:27pm".
+
+After completion the step shows the actual completion date, worded "Order complete" for the buyer and "Payout released" for the seller.
 
 If the order is **refunded or cancelled**, the timeline stops and shows a final red-marked **Refunded** step with the refund date instead of Delivered/Completed.
 
 Carrier Updates (the expandable scan history) stays below the tracker as it is today.
+
 
 ## Technical notes
 
