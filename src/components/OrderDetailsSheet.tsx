@@ -442,12 +442,15 @@ const OrderDetailsSheet = ({
 
             {/* Shipping Status Tracker */}
             {!isRefunded && effectiveStatus !== 'completed' && (
-              <ShippingStatusTracker
-                createdAt={primaryOrder.created_at}
-                shippedAt={primaryOrder.shipped_at}
-                deliveredAt={primaryOrder.delivered_at}
-                status={effectiveStatus as 'awaiting' | 'shipped' | 'delivered'}
-              />
+              <>
+                <ShippingStatusTracker
+                  createdAt={primaryOrder.created_at}
+                  shippedAt={primaryOrder.shipped_at}
+                  deliveredAt={primaryOrder.delivered_at}
+                  status={effectiveStatus as 'awaiting' | 'shipped' | 'delivered'}
+                />
+                <TrackingEvents orderGroupId={primaryOrder.order_group_id ?? primaryOrder.id} />
+              </>
             )}
             <div className="flex flex-col items-center space-y-3 pt-4">
               <div className="flex items-center gap-3 w-full px-4">
