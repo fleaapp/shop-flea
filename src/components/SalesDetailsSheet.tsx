@@ -192,19 +192,38 @@ const SalesDetailsSheet = ({
   const bundleText = orders.length >= 2 ? getBundleBreakdownText(orders.length, sellerShippingSettings || undefined) : null;
 
 
-  const handleMarkShipped = () => {
-    // Validate tracking details
-    if (!serviceProvider.trim()) {
-      setValidationError('Please enter a service provider');
-      return;
-    }
-    if (!trackingNumber.trim()) {
-      setValidationError('Please enter a tracking number');
+  const handleMarkShipped = async () => {
+    if (verifyingTracking) return;
+    const formatError = validateTrackingFormat(serviceProvider, trackingNumber);
+    if (formatError) {
+      setValidationError(formatError);
       return;
     }
     setValidationError('');
-    onMarkShipped?.({ serviceProvider: serviceProvider.trim(), trackingNumber: trackingNumber.trim() });
+    const cleanNumber = normaliseTrackingNumber(trackingNumber);
+
+    // Live check with the carrier before the order flips to shipped.
+    setVerifyingTracking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('tracking-register', {
+        body: { validate_only: true, carrier: serviceProvider, tracking_number: cleanNumber },
+      });
+      if (!error && data && data.valid === false) {
+        setValidationError(
+          data.message ||
+            `That tracking number wasn't recognised by ${serviceProvider}. Check it and try again.`,
+        );
+        setVerifyingTracking(false);
+        return;
+      }
+    } catch (err) {
+      // Never block shipping on a provider outage - the daily sync will catch up.
+      console.warn('Tracking validation unavailable:', err);
+    }
+    setVerifyingTracking(false);
+    onMarkShipped?.({ serviceProvider: serviceProvider.trim(), trackingNumber: cleanNumber });
   };
+
 
   const rawBuyerUsername = primaryOrder.buyer_profile?.username || 'Unknown';
   const buyerUsername = rawBuyerUsername.startsWith('@') ? rawBuyerUsername.slice(1) : rawBuyerUsername;
