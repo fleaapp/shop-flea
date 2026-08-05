@@ -85,6 +85,40 @@ const SectionHeader = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
+/**
+ * Inline carrier chips. A Radix Select popup does not open reliably inside the
+ * drag-enabled drawer on touch, so the options are always visible instead.
+ */
+const CarrierPicker = ({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (name: string) => void;
+}) => (
+  <div className="grid grid-cols-2 gap-2">
+    {AU_CARRIERS.map((c) => {
+      const selected = value === c.name;
+      return (
+        <button
+          key={c.name}
+          type="button"
+          onClick={() => onChange(c.name)}
+          className={cn(
+            'rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors',
+            selected
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-border bg-background text-foreground',
+          )}
+        >
+          {c.name}
+        </button>
+      );
+    })}
+  </div>
+);
+
+
 const SalesDetailsSheet = ({
   orders,
   open,
