@@ -374,7 +374,7 @@ const SellerOnboardingSheet = ({
                 <SheetTitle className="text-xl">Start selling on Flea</SheetTitle>
                 <div className="text-sm text-muted-foreground leading-relaxed max-w-[300px] mx-auto space-y-5">
                   <p>
-                    Start selling in minutes with quick identity verification and secure payouts set up.
+                    Get verified, set up payouts and start listing in minutes.
                   </p>
                   <div className="space-y-2 text-foreground">
                     <p className="text-base font-semibold">Selling on Flea is free.</p>
