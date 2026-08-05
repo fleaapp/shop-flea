@@ -36,12 +36,44 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const orderGroupId = typeof body.order_group_id === 'string' ? body.order_group_id : null;
     const orderId = typeof body.order_id === 'string' ? body.order_id : null;
-    if (!orderGroupId && !orderId) return json({ error: 'order_group_id or order_id required' }, 400);
 
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
+
+    // ---- Validate-only: check a number with the carrier before shipping ----
+    if (body.validate_only === true) {
+      const candidate = String(body.tracking_number ?? '').replace(/[\s-]+/g, '').toUpperCase();
+      const carrierName = typeof body.carrier === 'string' ? body.carrier : null;
+      if (!candidate) return json({ valid: false, message: 'Please enter a tracking number' }, 200);
+      const code = carrierCode(carrierName);
+      if (!code) {
+        return json({ valid: false, message: 'Please choose a carrier from the list' }, 200);
+      }
+      try {
+        const res = await registerNumbers([{ number: candidate, carrier: code }]);
+        const rejected = res?.data?.rejected?.[0];
+        const errCode = Number(rejected?.error?.code ?? 0);
+        // -18019901 = already registered (fine). Anything in the invalid-number
+        // family means the carrier will never recognise this number.
+        const invalidCodes = [-18010012, -18010013, -18010014, -18010015];
+        if (rejected && invalidCodes.includes(errCode)) {
+          return json({
+            valid: false,
+            message: `That tracking number wasn't recognised by ${carrierName}. Check it and try again.`,
+          }, 200);
+        }
+      } catch (e) {
+        // Provider outage: don't block the seller, daily sync reconciles later.
+        console.warn('[tracking-register] validation unavailable:', (e as Error).message);
+      }
+      return json({ valid: true }, 200);
+    }
+
+    if (!orderGroupId && !orderId) return json({ error: 'order_group_id or order_id required' }, 400);
+
+
 
     let q = admin
       .from('orders')
