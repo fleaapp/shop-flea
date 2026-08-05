@@ -97,6 +97,8 @@ const SalesDetailsSheet = ({
   const [serviceProvider, setServiceProvider] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [validationError, setValidationError] = useState('');
+  const [verifyingTracking, setVerifyingTracking] = useState(false);
+
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [refundConfirmOpen, setRefundConfirmOpen] = useState(false);
