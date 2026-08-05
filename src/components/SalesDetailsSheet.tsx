@@ -538,10 +538,19 @@ const SalesDetailsSheet = ({
               <div className="flex flex-col items-center space-y-3 w-full px-4">
                 <Button
                   onClick={handleMarkShipped}
+                  disabled={verifyingTracking}
                   className="w-full rounded-full bg-charcoal text-white hover:bg-charcoal-light h-12"
                 >
-                  Mark as shipped
+                  {verifyingTracking ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Checking tracking
+                    </span>
+                  ) : (
+                    'Mark as shipped'
+                  )}
                 </Button>
+
                 {refundableOrders.length > 0 && (
                   <Button
                     onClick={() => {
