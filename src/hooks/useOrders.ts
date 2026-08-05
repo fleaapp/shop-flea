@@ -424,6 +424,16 @@ export function useOrders() {
       });
       if (error) throw error;
 
+      // Register the parcel with the carrier tracking provider so live scans
+      // flow back in and can confirm delivery automatically.
+      try {
+        await supabase.functions.invoke('tracking-register', {
+          body: { order_id: orderId ?? null, order_group_id: orderGroupId ?? null },
+        });
+      } catch (err) {
+        console.warn('Tracking registration failed:', err);
+      }
+
       // Push the buyer(s). DB trigger notify_on_order_status_change already
       // inserted the notification row synchronously, so send-push-notification
       // will find matching proof.
