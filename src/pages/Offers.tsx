@@ -197,7 +197,9 @@ const Offers = () => {
                     ? `Pay within ${offerTimeLeft(offer.expires_at).replace(' left', '')}`
                     : acceptedLapsed
                       ? 'Expired'
-                      : STATUS_LABEL[offer.status] || 'Closed'}
+                      : offer.status === 'pending'
+                        ? 'Expired'
+                        : STATUS_LABEL[offer.status] || 'Closed'}
               </span>
             </div>
             <p className="mt-0.5 text-xs text-muted-foreground">
