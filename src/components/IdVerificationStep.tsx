@@ -274,7 +274,7 @@ const IdVerificationStep = ({ onBack, onDone, onEditName, verificationError }: I
         </button>
         {showWhy && (
           <p className="w-full max-w-[340px] mx-auto text-xs text-muted-foreground leading-relaxed text-left -mt-2">
-            Australian law requires our payment provider to verify the identity of anyone receiving payouts. This protects buyers from fraud and keeps the marketplace safe. Your ID is sent encrypted, straight to the payment provider, and Flea never stores a copy. If you'd rather not, you can close this screen — you just won't be able to sell until it's completed.
+            Australian law requires our payment provider to verify the identity of anyone receiving payouts. This protects buyers from fraud and keeps the marketplace safe. Your ID is sent encrypted, straight to the payment provider, and Flea never stores a copy. If you'd rather not, you can close this screen - you just won't be able to sell until it's completed.
           </p>
         )}
 

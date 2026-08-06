@@ -562,7 +562,7 @@ const OrderDetailsSheet = ({
             for (const sel of selections) {
               const order = orders.find((o) => o.id === sel.orderId);
               const combinedReason = [sel.reason, sel.note].filter(Boolean).join(' - ');
-              const messageDetails = [details, sel.note].filter(Boolean).join(' — ');
+              const messageDetails = [details, sel.note].filter(Boolean).join(' - ');
               try {
                 const { data, error } = await invokeCloudFunction('order-messages', {
                   method: 'POST',

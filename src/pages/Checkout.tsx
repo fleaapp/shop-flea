@@ -39,9 +39,8 @@ import applePayLogo from '@/assets/cards/apple-pay.svg';
 import { mapCardDeclineMessage, logCardDecline } from '@/lib/cardDeclineHandler';
 import { categoriseApplePayError, logApplePayDiagnostic, runApplePayPreflight } from '@/lib/applePayDiagnostics';
 
-// Apple App Review demo account — bypasses the seller-Stripe-connected check
-// so the reviewer can complete a purchase against demo listings.
-const REVIEWER_USER_ID = '5883f33c-07f3-4f6a-9a2d-a7e0ea864142';
+// The Apple App Review demo bypass lives server-side only (profiles.is_apple_reviewer).
+// Nothing identifying it is shipped in the client bundle.
 const APPLE_PAY_MERCHANT_ID = import.meta.env.VITE_APPLE_PAY_MERCHANT_ID || 'merchant.com.finditonflea.app';
 
 const isNative = () => Capacitor.isNativePlatform();
@@ -349,7 +348,7 @@ const Checkout = () => {
 
   const preflight = () => {
     if (!isOnline) {
-      showCheckoutError('offline', "You're offline, so we couldn't reach the network. Your card has not been charged — reconnect and try again.");
+      showCheckoutError('offline', "You're offline, so we couldn't reach the network. Your card has not been charged - reconnect and try again.");
       return false;
     }
     if (!user) { toast.error('You must be logged in to place an order'); return false; }

@@ -767,7 +767,7 @@ const SalesDetailsSheet = ({
                         )}
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold text-foreground">
-                            {multi ? `Refund requested — ${o.listing?.title || 'Item'}` : 'Buyer requested a refund'}
+                            {multi ? `Refund requested - ${o.listing?.title || 'Item'}` : 'Buyer requested a refund'}
                           </p>
                           {o.refund_request_reason && (
                             <p className="text-xs text-muted-foreground mt-1">"{o.refund_request_reason}"</p>
@@ -866,9 +866,11 @@ const SalesDetailsSheet = ({
       <AlertDialog open={refundConfirmOpen} onOpenChange={(o) => !refunding && setRefundConfirmOpen(o)}>
         <AlertDialogContent className="max-w-[320px] rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Refund this sale?</AlertDialogTitle>
+            <AlertDialogTitle>Refund this item?</AlertDialogTitle>
             <AlertDialogDescription>
-              The full amount will be returned to the buyer and taken out of your Flea balance. This cannot be undone.
+              {(orders?.length ?? 0) > 1
+                ? `Only "${primaryOrder?.listing?.title || 'this item'}" will be refunded. Other items in this sale are not affected. This cannot be undone.`
+                : 'The full amount will be returned to the buyer and taken out of your Flea balance. This cannot be undone.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row gap-2">
@@ -884,7 +886,7 @@ const SalesDetailsSheet = ({
                 try {
                   const res: any = await invokeCloudFunction(
                     'stripe-connect-refund',
-                    { orderId: primaryOrder.id, reason: 'requested_by_customer' }
+                    { orderId: primaryOrder.id, reason: 'requested_by_customer', mode: 'single' }
                   );
                   if (res?.error || !res?.data?.success) {
                     throw new Error(res?.error?.message || res?.data?.error || 'Refund failed');

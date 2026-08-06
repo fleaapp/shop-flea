@@ -298,8 +298,8 @@ const PaymentMethodsSection = ({ hideHeading = false }: { hideHeading?: boolean 
               </span>
               {stripeFullyConnected ? (
                 <div className="mt-0.5 space-y-0.5">
-                  <p className="text-xs text-foreground">Available: {balanceLabel ?? '—'}</p>
-                  <p className="text-xs text-muted-foreground">Pending: {pendingLabel ?? '—'}</p>
+                  <p className="text-xs text-foreground">Available: {balanceLabel ?? '-'}</p>
+                  <p className="text-xs text-muted-foreground">Pending: {pendingLabel ?? '-'}</p>
                 </div>
               ) : (
                 <p className={`text-xs mt-0.5 ${stripeStatus.color}`}>
