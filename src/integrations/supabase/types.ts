@@ -1096,6 +1096,7 @@ export type Database = {
           gst_alert_60k_sent_at: string | null
           gst_alert_75k_sent_at: string | null
           id: string
+          is_apple_reviewer: boolean
           last_name: string | null
           last_sign_in_at: string | null
           legal_name: string | null
@@ -1144,6 +1145,7 @@ export type Database = {
           gst_alert_60k_sent_at?: string | null
           gst_alert_75k_sent_at?: string | null
           id?: string
+          is_apple_reviewer?: boolean
           last_name?: string | null
           last_sign_in_at?: string | null
           legal_name?: string | null
@@ -1192,6 +1194,7 @@ export type Database = {
           gst_alert_60k_sent_at?: string | null
           gst_alert_75k_sent_at?: string | null
           id?: string
+          is_apple_reviewer?: boolean
           last_name?: string | null
           last_sign_in_at?: string | null
           legal_name?: string | null
