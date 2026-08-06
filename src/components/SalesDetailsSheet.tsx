@@ -884,7 +884,7 @@ const SalesDetailsSheet = ({
                 try {
                   const res: any = await invokeCloudFunction(
                     'stripe-connect-refund',
-                    { orderId: primaryOrder.id, reason: 'requested_by_customer' }
+                    { orderId: primaryOrder.id, reason: 'requested_by_customer', mode: 'single' }
                   );
                   if (res?.error || !res?.data?.success) {
                     throw new Error(res?.error?.message || res?.data?.error || 'Refund failed');
