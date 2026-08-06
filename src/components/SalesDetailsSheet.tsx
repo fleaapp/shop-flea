@@ -866,9 +866,11 @@ const SalesDetailsSheet = ({
       <AlertDialog open={refundConfirmOpen} onOpenChange={(o) => !refunding && setRefundConfirmOpen(o)}>
         <AlertDialogContent className="max-w-[320px] rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Refund this sale?</AlertDialogTitle>
+            <AlertDialogTitle>Refund this item?</AlertDialogTitle>
             <AlertDialogDescription>
-              The full amount will be returned to the buyer and taken out of your Flea balance. This cannot be undone.
+              {multi
+                ? `Only "${primaryOrder?.listing?.title || 'this item'}" will be refunded. Other items in this sale are not affected. This cannot be undone.`
+                : 'The full amount will be returned to the buyer and taken out of your Flea balance. This cannot be undone.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row gap-2">
