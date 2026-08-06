@@ -88,6 +88,8 @@ const EditListing = () => {
   const [shippingPrice, setShippingPrice] = useState('');
   const [autoAcceptPrice, setAutoAcceptPrice] = useState('');
   const [description, setDescription] = useState('');
+  const [baseline, setBaseline] = useState<string | null>(null);
+  const [discardOpen, setDiscardOpen] = useState(false);
 
   // Reset dependent fields when parent selection changes
   const handleFitChange = (value: string) => {
@@ -155,6 +157,23 @@ const EditListing = () => {
       // Align existing thumbnails to existing images by index (fallback: null).
       const dbThumbs: string[] = Array.isArray((data as any).thumbnails) ? (data as any).thumbnails : [];
       setExistingThumbnails((data.images || []).map((_: string, i: number) => dbThumbs[i] ?? null));
+      setBaseline(JSON.stringify({
+        productName: data.title,
+        fit: data.gender || '',
+        category: data.category,
+        subcategory: hasSubcategoryColumn ? (data as any).subcategory || '' : '',
+        size: data.size,
+        brand: data.brand,
+        condition: data.condition,
+        colours: data.colour ? data.colour.split(', ').map((c: string) => c.toLowerCase()) : [],
+        styles: data.style ? data.style.split(', ').map((sv: string) => sv.toLowerCase()) : [],
+        itemPrice: data.price.toString(),
+        shippingPrice: data.shipping_price?.toString() || '',
+        autoAcceptPrice: (data as any).auto_accept_offer_price?.toString() || '',
+        description: data.description || '',
+        existingImages: data.images || [],
+        newImages: 0,
+      }));
       setIsFetching(false);
     };
     
