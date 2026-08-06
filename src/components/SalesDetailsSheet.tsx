@@ -182,6 +182,10 @@ const SalesDetailsSheet = ({
   const primaryOrder = orders?.[0];
 
   const { data: existingReview } = useExistingReview(primaryOrder?.id);
+  const { data: shipmentData } = useShipmentTracking(
+    primaryOrder?.order_group_id ?? primaryOrder?.id ?? null,
+  );
+
 
   const { data: sellerShippingSettings } = useQuery({
     queryKey: ['seller-shipping-settings', primaryOrder?.seller_id],
