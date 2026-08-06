@@ -316,7 +316,7 @@ async function verifyPayment(opts: {
       ? pi.amount_received / 100
       : pi.amount / 100;
     if (opts.expectedAmountAud != null) {
-      if (Math.abs(amountTotal - opts.expectedAmountAud) > 0.05) {
+      if (Math.abs(amountTotal - opts.expectedAmountAud) > 0.02) {
         throw new Error(`Stripe paid amount mismatch: paid ${amountTotal} expected ${opts.expectedAmountAud}`);
       }
     }

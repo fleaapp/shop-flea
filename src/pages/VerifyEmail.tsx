@@ -9,7 +9,10 @@ import { supabase } from '@/integrations/supabase/client';
 const VerifyEmail = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const email = location.state?.email;
+  // Router state is lost on reload, so the address is also stashed locally
+  // at signup - otherwise "Resend" dead-ends after a refresh.
+  const email: string | undefined =
+    location.state?.email || localStorage.getItem('flea_pending_verify_email') || undefined;
   const [resending, setResending] = useState(false);
 
   const handleResend = async () => {
