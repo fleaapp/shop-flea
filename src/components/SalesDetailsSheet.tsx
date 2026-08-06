@@ -767,7 +767,7 @@ const SalesDetailsSheet = ({
                         )}
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold text-foreground">
-                            {multi ? `Refund requested — ${o.listing?.title || 'Item'}` : 'Buyer requested a refund'}
+                            {multi ? `Refund requested - ${o.listing?.title || 'Item'}` : 'Buyer requested a refund'}
                           </p>
                           {o.refund_request_reason && (
                             <p className="text-xs text-muted-foreground mt-1">"{o.refund_request_reason}"</p>

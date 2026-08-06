@@ -349,7 +349,7 @@ const Checkout = () => {
 
   const preflight = () => {
     if (!isOnline) {
-      showCheckoutError('offline', "You're offline, so we couldn't reach the network. Your card has not been charged — reconnect and try again.");
+      showCheckoutError('offline', "You're offline, so we couldn't reach the network. Your card has not been charged - reconnect and try again.");
       return false;
     }
     if (!user) { toast.error('You must be logged in to place an order'); return false; }

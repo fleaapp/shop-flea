@@ -127,7 +127,7 @@ const fmtMoney = (cents: number, currency = 'aud') =>
   }).format((cents ?? 0) / 100);
 
 const fmtDate = (unix: number) => {
-  if (!unix) return '—';
+  if (!unix) return '-';
   return new Date(unix * 1000).toLocaleDateString('en-AU', {
     day: 'numeric',
     month: 'short',
