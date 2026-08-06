@@ -1,50 +1,12 @@
-import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { supabase } from '@/integrations/supabase/client';
+import { useShipmentTracking } from '@/hooks/useShipmentTracking';
 
 interface TrackingEventsProps {
   orderGroupId?: string | null;
 }
 
-interface ShipmentRow {
-  id: string;
-  provider_status: string | null;
-  latest_event_summary: string | null;
-  latest_event_at: string | null;
-  is_exception: boolean;
-}
-
-interface EventRow {
-  id: string;
-  event_at: string;
-  description: string;
-  location: string | null;
-}
-
 const TrackingEvents = ({ orderGroupId }: TrackingEventsProps) => {
-  const { data } = useQuery({
-    queryKey: ['tracking-events', orderGroupId],
-    enabled: !!orderGroupId,
-    staleTime: 60_000,
-    queryFn: async () => {
-      const { data: shipments } = await supabase
-        .from('tracking_shipments')
-        .select('id, provider_status, latest_event_summary, latest_event_at, is_exception')
-        .eq('order_group_id', orderGroupId!)
-        .order('created_at', { ascending: false })
-        .limit(1);
-      const shipment = (shipments?.[0] ?? null) as ShipmentRow | null;
-      if (!shipment) return { shipment: null, events: [] as EventRow[] };
-
-      const { data: events } = await supabase
-        .from('tracking_events')
-        .select('id, event_at, description, location')
-        .eq('shipment_id', shipment.id)
-        .order('event_at', { ascending: false })
-        .limit(30);
-      return { shipment, events: (events ?? []) as EventRow[] };
-    },
-  });
+  const { data } = useShipmentTracking(orderGroupId);
 
   const shipment = data?.shipment;
   const events = data?.events ?? [];
