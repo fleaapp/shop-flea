@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import BottomNav from '@/components/BottomNav';
 import SizeSelectionDrawer from '@/components/SizeSelectionDrawer';
 import CategorySelectionDrawer from '@/components/CategorySelectionDrawer';
@@ -250,6 +251,23 @@ const CreateListing = () => {
     });
     setDraftRestored(false);
   }, [clearTextDraft, imageDraftKey]);
+
+  // Exit guard: the form autosaves, but leaving should still be a deliberate
+  // choice so nobody wonders whether their half-built listing survived.
+  const [exitPromptOpen, setExitPromptOpen] = useState(false);
+  const hasListingContent =
+    imageFiles.length > 0 ||
+    Boolean(productName || category || subcategory || size || brand || condition || itemPrice || shippingPrice || description) ||
+    colours.length > 0 ||
+    styles.length > 0;
+
+  const handleBack = () => {
+    if (hasListingContent) {
+      setExitPromptOpen(true);
+      return;
+    }
+    safeNavigateBack(navigate, "/profile");
+  };
 
   // Reset dependent fields when parent selection changes
   const handleFitChange = (value: string) => {
@@ -670,12 +688,35 @@ const CreateListing = () => {
       />
 
       {/* Header */}
+      <AlertDialog open={exitPromptOpen} onOpenChange={setExitPromptOpen}>
+        <AlertDialogContent className="w-[88vw] max-w-[320px] rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-center text-base">Leave this listing?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              Your draft is saved automatically, so you can pick up right where you left off.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel className="flex-1 h-9 rounded-lg mt-0">Keep editing</AlertDialogCancel>
+            <AlertDialogAction
+              className="flex-1 h-9 rounded-lg"
+              onClick={() => {
+                setExitPromptOpen(false);
+                safeNavigateBack(navigate, "/profile");
+              }}
+            >
+              Save & exit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <header className="shrink-0 relative flex items-center justify-center px-4 py-4">
         <Button
           variant="ghost"
           size="icon"
           aria-label="Back"
-          onClick={() => safeNavigateBack(navigate, "/profile")}
+          onClick={handleBack}
           className="absolute left-4 h-10 w-10 rounded-full"
         >
           <ChevronLeft className="h-5 w-5" />
