@@ -559,7 +559,13 @@ const Index = () => {
           data-onboarding="swipe-card-stack"
         >
           {loading ? (
-            <div className="h-full w-full" />
+            <div className="h-full w-full flex flex-col gap-3">
+              <Skeleton className="flex-1 w-full rounded-3xl" />
+              <div className="space-y-2 px-1">
+                <Skeleton className="h-4 w-2/3 rounded-md" />
+                <Skeleton className="h-3 w-1/3 rounded-md" />
+              </div>
+            </div>
           ) : currentListings.length > 0 ? (
             <>
               {currentListings.map((dbListing, index) => (
@@ -611,6 +617,21 @@ const Index = () => {
               <span className="text-5xl mb-3">😢</span>
               <p className="text-lg font-medium text-muted-foreground">No more listings!</p>
               <p className="mt-2 text-sm text-muted-foreground">Check back later for new items</p>
+              <div className="mt-6 flex items-center gap-2">
+                <Button
+                  onClick={() => navigate('/favorites')}
+                  className="rounded-full bg-primary text-primary-foreground"
+                >
+                  Wishlist
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/cart')}
+                  className="rounded-full"
+                >
+                  Cart
+                </Button>
+              </div>
             </div>
           )}
         </div>
