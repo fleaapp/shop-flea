@@ -868,7 +868,7 @@ const SalesDetailsSheet = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Refund this item?</AlertDialogTitle>
             <AlertDialogDescription>
-              {multi
+              {(orders?.length ?? 0) > 1
                 ? `Only "${primaryOrder?.listing?.title || 'this item'}" will be refunded. Other items in this sale are not affected. This cannot be undone.`
                 : 'The full amount will be returned to the buyer and taken out of your Flea balance. This cannot be undone.'}
             </AlertDialogDescription>
