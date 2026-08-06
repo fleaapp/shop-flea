@@ -29,6 +29,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import ShippingStatusTracker from '@/components/ShippingStatusTracker';
 import TrackingEvents from '@/components/TrackingEvents';
+import { useShipmentTracking } from '@/hooks/useShipmentTracking';
+
 import { openTrackingUrl } from '@/lib/tracking';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { supabase } from '@/integrations/supabase/client';
@@ -182,6 +184,10 @@ const SalesDetailsSheet = ({
   const primaryOrder = orders?.[0];
 
   const { data: existingReview } = useExistingReview(primaryOrder?.id);
+  const { data: shipmentData } = useShipmentTracking(
+    primaryOrder?.order_group_id ?? primaryOrder?.id ?? null,
+  );
+
 
   const { data: sellerShippingSettings } = useQuery({
     queryKey: ['seller-shipping-settings', primaryOrder?.seller_id],
@@ -669,18 +675,20 @@ const SalesDetailsSheet = ({
               </div>
             </div>
 
-            {/* Shipping Status Tracker - visible once shipped, hidden if refunded */}
-            {!isRefunded && (effectiveStatus === 'shipped' || effectiveStatus === 'delivered') && (
-              <>
-                <ShippingStatusTracker
-                  createdAt={primaryOrder.created_at}
-                  shippedAt={primaryOrder.shipped_at}
-                  deliveredAt={primaryOrder.delivered_at}
-                  status={effectiveStatus}
-                />
-                <TrackingEvents orderGroupId={primaryOrder.order_group_id ?? primaryOrder.id} />
-              </>
-            )}
+            {/* Order status tracker */}
+            <ShippingStatusTracker
+              createdAt={primaryOrder.created_at}
+              shippedAt={primaryOrder.shipped_at}
+              inTransitAt={shipmentData?.shipment?.first_scan_at ?? null}
+              deliveredAt={primaryOrder.delivered_at}
+              completedAt={primaryOrder.completed_at ?? null}
+              disputeWindowEndsAt={primaryOrder.dispute_window_ends_at ?? null}
+              refundedAt={primaryOrder.refunded_at ?? null}
+              role="seller"
+              status={effectiveStatus as 'awaiting' | 'shipped' | 'delivered' | 'completed' | 'refunded'}
+            />
+            <TrackingEvents orderGroupId={primaryOrder.order_group_id ?? primaryOrder.id} />
+
             {!isRefunded && effectiveStatus === 'awaiting' && (
               <div className="flex flex-col items-center space-y-3 w-full px-4">
                 <Button
