@@ -70,7 +70,7 @@ export function ConversationView({ thread, messages, loading, sending, onSendMes
             <p className="text-sm font-medium text-foreground/80">{thread.title}</p>
             <div className="mt-1 hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
               <span>ID: {thread.user_id.slice(0, 8)}...</span>
-              <button onClick={copyId} className="rounded p-0.5 hover:bg-accent" title="Copy User ID">
+              <button aria-label="Copy" onClick={copyId} className="rounded p-0.5 hover:bg-accent" title="Copy User ID">
                 <Copy className="h-3 w-3" />
               </button>
               <span>•</span>

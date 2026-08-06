@@ -53,7 +53,7 @@ const SuggestionBox = () => {
     <div className="native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden">
       {/* Header */}
       <header className="px-4 py-4 flex items-center flex-shrink-0">
-        <button onClick={() => safeNavigateBack(navigate, '/profile')} className="p-1">
+        <button aria-label="Back" onClick={() => safeNavigateBack(navigate, '/profile')} className="p-1">
           <ChevronLeft className="h-5 w-5 text-foreground" />
         </button>
         <h1 className="text-xl font-bold text-foreground flex-1 text-center pr-6">📮 Suggestion Box</h1>

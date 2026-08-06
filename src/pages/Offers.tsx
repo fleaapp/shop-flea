@@ -319,7 +319,7 @@ const Offers = () => {
   return (
     <div className="native-safe-top fixed inset-0 flex flex-col bg-background pb-24">
       <div className="relative flex h-10 shrink-0 items-center justify-center px-4 pt-4">
-        <button
+        <button aria-label="Back"
           onClick={() => safeNavigateBack(navigate, '/profile')}
           className="absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-card card-shadow"
         >

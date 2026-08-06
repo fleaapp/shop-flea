@@ -282,7 +282,7 @@ const EditProfile = () => {
       {/* Header */}
       <header className="shrink-0 bg-background px-4 py-4">
         <div className="flex items-center">
-          <button onClick={() => safeNavigateBack(navigate, '/profile')} className="p-2 -ml-2">
+          <button aria-label="Back" onClick={() => safeNavigateBack(navigate, '/profile')} className="p-2 -ml-2">
             <ChevronLeft className="h-6 w-6 text-foreground" />
           </button>
           <h1 className="flex-1 text-center text-lg font-bold text-foreground pr-8">Edit Profile</h1>
@@ -300,7 +300,7 @@ const EditProfile = () => {
                 className="h-full w-full rounded-full bg-card object-cover" 
               />
             </div>
-            <button 
+            <button aria-label="Change profile photo" 
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
               className="absolute -bottom-1 -right-1 flex h-10 w-10 items-center justify-center rounded-full bg-card shadow-md"

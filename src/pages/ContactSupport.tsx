@@ -42,7 +42,7 @@ const ContactSupport = () => {
   return <div className="native-safe-top fixed inset-0 bg-background flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background px-4 py-4 flex items-center shrink-0">
-        <button onClick={() => navigate('/settings')} className="text-foreground absolute left-4">
+        <button aria-label="Back" onClick={() => navigate('/settings')} className="text-foreground absolute left-4">
           <ChevronLeft className="h-6 w-6" />
         </button>
         <h1 className="text-xl font-bold text-foreground text-center w-full">Contact Support</h1>

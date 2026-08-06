@@ -233,7 +233,7 @@ const ChatConversation = () => {
     <div className="native-safe-top fixed inset-0 flex flex-col bg-background">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background px-4 py-4 flex items-center border-b border-border">
-        <button onClick={() => navigate('/contact-support')} className="text-foreground absolute left-4 z-10">
+        <button aria-label="Back" onClick={() => navigate('/contact-support')} className="text-foreground absolute left-4 z-10">
           <ChevronLeft className="h-6 w-6" />
         </button>
         <div className="flex-1 text-center">
@@ -291,7 +291,7 @@ const ChatConversation = () => {
                 rows={2}
               />
             </div>
-            <button
+            <button aria-label="Send message"
               onClick={handleSend}
               disabled={sending || (!newMsg.trim() && !file)}
               className="rounded-full bg-charcoal p-2.5 text-card disabled:opacity-40"

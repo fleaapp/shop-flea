@@ -61,7 +61,7 @@ const CategorySelectionDrawer = ({
         <DrawerHeader className="pb-2">
           <div className="flex items-center justify-center relative">
             {viewingCategory && (
-              <button
+              <button aria-label="Back"
                 onClick={handleBack}
                 className="absolute left-0 p-2 -ml-2 rounded-full hover:bg-muted"
               >

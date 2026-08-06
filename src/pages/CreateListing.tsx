@@ -760,7 +760,7 @@ const CreateListing = () => {
                   className="h-16 w-16 rounded-lg object-cover cursor-pointer active:scale-95 transition-transform"
                   onClick={() => setExpandedImageIndex(index)}
                 />
-                <button
+                <button aria-label="Remove photo"
                   type="button"
                   onClick={(e) => { e.stopPropagation(); removeImage(index); }}
                   className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-foreground/80 text-background"

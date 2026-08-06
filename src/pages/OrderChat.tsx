@@ -304,7 +304,7 @@ const OrderChat = () => {
   return (
     <div className="native-safe-top fixed inset-0 flex flex-col bg-background">
       <header className="sticky top-0 z-40 bg-background px-4 py-3 flex items-center gap-3 border-b border-border">
-        <button onClick={() => safeNavigateBack(navigate, '/cart')}>
+        <button aria-label="Back" onClick={() => safeNavigateBack(navigate, '/cart')}>
           <ChevronLeft className="h-6 w-6 text-foreground" />
         </button>
         <Avatar className="h-8 w-8">
@@ -453,7 +453,7 @@ const OrderChat = () => {
       {!isReadOnly && !messagesError && (
         <div className="native-keyboard-lift sticky bottom-0 bg-background border-t border-border px-4 pt-3 pb-8 flex items-center gap-2">
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
-          <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-muted transition-colors shrink-0" disabled={sending}>
+          <button aria-label="Attach a photo" onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-muted transition-colors shrink-0" disabled={sending}>
             <Image className="h-5 w-5 text-muted-foreground" />
           </button>
           <textarea
@@ -469,7 +469,7 @@ const OrderChat = () => {
             disabled={sending}
             rows={2}
           />
-          <button onClick={handleSend} disabled={!newMessage.trim() || sending}
+          <button aria-label="Send message" onClick={handleSend} disabled={!newMessage.trim() || sending}
             className="p-2 rounded-full bg-charcoal text-white disabled:opacity-40 transition-colors shrink-0">
             <Send className="h-5 w-5" />
           </button>

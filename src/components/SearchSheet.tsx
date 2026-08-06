@@ -271,7 +271,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings, currentFilters, o
         <div className="shrink-0 bg-background pt-[env(safe-area-inset-top,12px)]">
           {/* Header */}
           <div className="flex items-center px-6 py-4">
-            <button onClick={() => onOpenChange(false)} className="p-1 w-8 flex-shrink-0">
+            <button aria-label="Back" onClick={() => onOpenChange(false)} className="p-1 w-8 flex-shrink-0">
               <ChevronLeft className="h-6 w-6 text-foreground" />
             </button>
             <div className="flex-1 flex items-center justify-center">
@@ -294,7 +294,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings, currentFilters, o
                 className="pl-12 pr-12 h-12 bg-card border border-muted-foreground/30 rounded-xl text-base focus-visible:ring-muted-foreground/50"
               />
               {query && (
-                <button
+                <button aria-label="Clear search"
                   onClick={clearQuery}
                   className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full bg-muted"
                 >
@@ -397,7 +397,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings, currentFilters, o
                       <Clock className="h-5 w-5 text-muted-foreground" />
                       <span className="text-foreground font-medium">{search}</span>
                     </button>
-                    <button onClick={() => handleRemoveRecent(search)} className="p-1">
+                    <button aria-label="Remove recent search" onClick={() => handleRemoveRecent(search)} className="p-1">
                       <X className="h-4 w-4 text-muted-foreground" />
                     </button>
                   </div>
@@ -432,7 +432,7 @@ const SearchSheet = ({ open, onOpenChange, onSearch, listings, currentFilters, o
                           </span>
                         )}
                       </button>
-                      <button onClick={() => removeSaved(s.id)} className="p-1 shrink-0">
+                      <button aria-label="Remove recent search" onClick={() => removeSaved(s.id)} className="p-1 shrink-0">
                         <X className="h-4 w-4 text-muted-foreground" />
                       </button>
                     </div>
