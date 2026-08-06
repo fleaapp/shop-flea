@@ -547,7 +547,8 @@ serve(async (req) => {
         && (!c.starts_at || new Date(c.starts_at).getTime() <= now)
         && (!c.expires_at || new Date(c.expires_at).getTime() >= now)
         && (c.max_redemptions === null || c.redemption_count < c.max_redemptions)
-        && c.type === "waive_buyer_fee") {
+        && c.type === "waive_buyer_fee"
+        && !(await couponAlreadyUsed(serviceClient, c.id as string, userId))) {
         secureCheckoutFee = 0;
         appliedCoupon = { id: c.id as string, code: c.code as string, type: c.type as string };
       }
