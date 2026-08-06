@@ -9,7 +9,7 @@ const FAQ = () => {
   return (
     <div className="native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden">
       <header className="shrink-0 bg-background px-4 py-4 flex items-center">
-        <button onClick={() => safeNavigateBack(navigate, '/profile')} className="absolute left-4">
+        <button aria-label="Back" onClick={() => safeNavigateBack(navigate, '/profile')} className="absolute left-4">
           <ChevronLeft className="h-6 w-6 text-foreground" />
         </button>
         <h1 className="text-xl font-bold text-foreground text-center w-full">❓ FAQ</h1>

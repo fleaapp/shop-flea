@@ -315,7 +315,7 @@ const SellerProfile = () => {
         className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 z-20"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}
       >
-        <button
+        <button aria-label="Back"
           onClick={() => safeNavigateBack(navigate, '/')}
           className="h-10 w-10 flex items-center justify-center rounded-full bg-card card-shadow"
         >
@@ -324,7 +324,7 @@ const SellerProfile = () => {
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="h-10 w-10 flex items-center justify-center rounded-full bg-card card-shadow">
+            <button aria-label="More options" className="h-10 w-10 flex items-center justify-center rounded-full bg-card card-shadow">
               <MoreVertical className="h-5 w-5 text-foreground" />
             </button>
           </DropdownMenuTrigger>

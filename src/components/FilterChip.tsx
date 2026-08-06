@@ -21,7 +21,7 @@ const FilterChip = ({ label, onRemove, colourSwatch }: FilterChipProps) => {
         />
       )}
       <span>{label}</span>
-      <button
+      <button aria-label="Remove filter"
         onClick={onRemove}
         className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-muted"
       >

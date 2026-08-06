@@ -159,7 +159,7 @@ const Sales = () => {
     <div className="native-safe-top fixed inset-0 bg-background flex flex-col overflow-hidden">
       {/* Header */}
       <header className="shrink-0 bg-background px-4 py-4 flex items-center">
-        <button onClick={() => safeNavigateBack(navigate, '/profile')} className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-border bg-card hover:bg-secondary">
+        <button aria-label="Back" onClick={() => safeNavigateBack(navigate, '/profile')} className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-border bg-card hover:bg-secondary">
           <ChevronLeft className="h-5 w-5" />
         </button>
         <h1 className="flex-1 text-center text-xl font-bold text-foreground pr-10">💸 Sales</h1>

@@ -32,7 +32,7 @@ function PhotoLightbox({ src, onClose }: { src: string; onClose: () => void }) {
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-[90vw] max-h-[90dvh] p-0 bg-black border-0 rounded-2xl overflow-hidden flex items-center justify-center">
-        <button
+        <button aria-label="Close reviews"
           onClick={onClose}
           className="absolute top-3 right-3 z-10 bg-black/60 rounded-full p-1.5 text-white"
         >

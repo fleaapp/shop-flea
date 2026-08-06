@@ -550,7 +550,7 @@ const ListingDetails = () => {
               {/* 3-dot menu */}
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
-                  <button
+                  <button aria-label="More options"
                     data-vaul-no-drag
                     onPointerDown={(e) => e.stopPropagation()}
                     className="absolute top-3 right-3 h-8 w-8 rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center hover:bg-background/90 transition-colors"

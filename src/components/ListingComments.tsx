@@ -438,7 +438,7 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
               {replyingTo && (
                 <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
                   <span>Replying to <span className="font-medium text-foreground">{replyingTo.username}</span></span>
-                  <button
+                  <button aria-label="Cancel reply"
                     onClick={() => setReplyingTo(null)}
                     className="ml-auto hover:text-foreground"
                   >

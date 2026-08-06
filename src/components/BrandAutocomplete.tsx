@@ -169,7 +169,7 @@ const BrandAutocomplete = ({ value, onChange, className = '', placeholder = 'Bra
           autoComplete="off"
         />
         {query && (
-          <button
+          <button aria-label="Clear brand"
             type="button"
             onClick={handleClear}
             className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 flex items-center justify-center rounded-full hover:bg-muted"

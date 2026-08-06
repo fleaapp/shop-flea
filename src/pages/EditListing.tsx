@@ -88,6 +88,8 @@ const EditListing = () => {
   const [shippingPrice, setShippingPrice] = useState('');
   const [autoAcceptPrice, setAutoAcceptPrice] = useState('');
   const [description, setDescription] = useState('');
+  const [baseline, setBaseline] = useState<string | null>(null);
+  const [discardOpen, setDiscardOpen] = useState(false);
 
   // Reset dependent fields when parent selection changes
   const handleFitChange = (value: string) => {
@@ -155,6 +157,23 @@ const EditListing = () => {
       // Align existing thumbnails to existing images by index (fallback: null).
       const dbThumbs: string[] = Array.isArray((data as any).thumbnails) ? (data as any).thumbnails : [];
       setExistingThumbnails((data.images || []).map((_: string, i: number) => dbThumbs[i] ?? null));
+      setBaseline(JSON.stringify({
+        productName: data.title,
+        fit: data.gender || '',
+        category: data.category,
+        subcategory: hasSubcategoryColumn ? (data as any).subcategory || '' : '',
+        size: data.size,
+        brand: data.brand,
+        condition: data.condition,
+        colours: data.colour ? data.colour.split(', ').map((c: string) => c.toLowerCase()) : [],
+        styles: data.style ? data.style.split(', ').map((sv: string) => sv.toLowerCase()) : [],
+        itemPrice: data.price.toString(),
+        shippingPrice: data.shipping_price?.toString() || '',
+        autoAcceptPrice: (data as any).auto_accept_offer_price?.toString() || '',
+        description: data.description || '',
+        existingImages: data.images || [],
+        newImages: 0,
+      }));
       setIsFetching(false);
     };
     
@@ -172,6 +191,35 @@ const EditListing = () => {
   }, [user, authLoading, navigate]);
 
   // Bundle shipping no longer prefills the listing's shipping price; nothing to load here.
+
+  // Unsaved-changes guard: compare the live form against the fetched listing so
+  // tapping back never silently throws away edits.
+  const currentSnapshot = JSON.stringify({
+    productName,
+    fit,
+    category,
+    subcategory,
+    size,
+    brand,
+    condition,
+    colours,
+    styles,
+    itemPrice,
+    shippingPrice,
+    autoAcceptPrice,
+    description,
+    existingImages,
+    newImages: newImageFiles.length,
+  });
+  const isDirty = baseline !== null && baseline !== currentSnapshot;
+
+  const handleBack = () => {
+    if (isDirty) {
+      setDiscardOpen(true);
+      return;
+    }
+    safeNavigateBack(navigate, '/profile');
+  };
 
   // Crop queue state
   const [cropQueue, setCropQueue] = useState<string[]>([]);
@@ -525,13 +573,36 @@ const EditListing = () => {
           variant="ghost"
           size="icon"
           aria-label="Back"
-          onClick={() => safeNavigateBack(navigate, '/profile')}
+          onClick={handleBack}
           className="absolute left-4 h-10 w-10 rounded-full"
         >
           <ChevronLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-xl font-bold text-foreground">Edit Listing</h1>
       </header>
+
+      <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}>
+        <AlertDialogContent className="w-[88vw] max-w-[320px] rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-center text-base">Discard changes?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              You have unsaved changes to this listing. Leaving now will lose them.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel className="flex-1 h-9 rounded-lg mt-0">Keep editing</AlertDialogCancel>
+            <AlertDialogAction
+              className="flex-1 h-9 rounded-lg"
+              onClick={() => {
+                setDiscardOpen(false);
+                safeNavigateBack(navigate, '/profile');
+              }}
+            >
+              Discard
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-24">
         <form onSubmit={handleSubmit} className="px-4 space-y-4">
@@ -557,7 +628,7 @@ const EditListing = () => {
                   className="h-16 w-16 rounded-lg object-cover cursor-pointer active:scale-95 transition-transform"
                   onClick={() => setExpandedImageSrc(url)}
                 />
-                <button
+                <button aria-label="Remove photo"
                   type="button"
                   onClick={(e) => { e.stopPropagation(); removeExistingImage(index); }}
                   className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-foreground/80 text-background"
@@ -575,7 +646,7 @@ const EditListing = () => {
                   className="h-16 w-16 rounded-lg object-cover cursor-pointer active:scale-95 transition-transform"
                   onClick={() => setExpandedImageSrc(img.preview)}
                 />
-                <button
+                <button aria-label="Remove photo"
                   type="button"
                   onClick={(e) => { e.stopPropagation(); removeNewImage(index); }}
                   className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-foreground/80 text-background"

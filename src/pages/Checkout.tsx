@@ -918,7 +918,7 @@ const Checkout = () => {
               <div className="bg-muted-foreground/20 px-4 py-2 flex items-center justify-between">
                 <span className="text-sm font-medium text-muted-foreground">Shipping details</span>
                 {detailsSaved && !isEditing && (
-                  <button onClick={() => setIsEditing(true)} className="text-muted-foreground hover:text-foreground transition-colors">
+                  <button aria-label="Edit delivery address" onClick={() => setIsEditing(true)} className="text-muted-foreground hover:text-foreground transition-colors">
                     <Pencil size={14} />
                   </button>
                 )}

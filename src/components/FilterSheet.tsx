@@ -108,7 +108,7 @@ const BrandFilterSection = ({ selectedBrands, onToggleBrand, onClearBrands }: {
               autoFocus
             />
             {brandSearch && (
-              <button
+              <button aria-label="Close filters"
                 type="button"
                 onClick={() => setBrandSearch('')}
                 className="absolute right-4 top-1/2 -translate-y-1/2"

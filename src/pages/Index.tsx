@@ -531,7 +531,7 @@ const Index = () => {
               >
                 ({activeFilterChips.length}) Filters
               </button>
-              <button
+              <button aria-label="Close"
                 onClick={() => setAppliedFilters({
                   preferences: false,
                   hideSoldItems: false,

@@ -232,7 +232,7 @@ const Profile = () => {
           <div className="h-20 w-20 max-[430px]:h-16 max-[430px]:w-16 max-[375px]:h-14 max-[375px]:w-14 rounded-full p-0.5 bg-gradient-to-br from-muted to-border">
             <img src={getAvatarUrl(profile?.avatar_url) || getDefaultAvatar(user.id)} alt="Profile" className="h-full w-full rounded-full bg-card object-cover" loading="eager" decoding="async" />
           </div>
-          <button 
+          <button aria-label="Change profile photo" 
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-card shadow-md"
@@ -267,7 +267,7 @@ const Profile = () => {
       </div>
 
       <div className="mt-5 max-[430px]:mt-4 max-[393px]:mt-3 max-[375px]:mt-2 flex justify-center items-center gap-2">
-        <button 
+        <button aria-label="Add a new listing" 
           onClick={handleNewListing} 
           className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground"
         >

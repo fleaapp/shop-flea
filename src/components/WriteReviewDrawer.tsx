@@ -218,7 +218,7 @@ function WriteReviewDrawer({
                     alt="Review photo"
                     className="h-24 w-24 rounded-lg object-cover"
                   />
-                  <button
+                  <button aria-label="Remove photo"
                     type="button"
                     onClick={handleRemovePhoto}
                     className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5"

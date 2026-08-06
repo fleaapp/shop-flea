@@ -278,13 +278,13 @@ const OrderReceiptDialog = ({ orders, open, onOpenChange, viewAs }: OrderReceipt
           </svg>
 
           {/* Action buttons overlaid on the receipt */}
-          <button
+          <button aria-label="Close receipt"
             onClick={() => onOpenChange(false)}
             className="absolute top-6 left-3 p-1.5"
           >
             <X className="h-4 w-4 text-gray-500" />
           </button>
-          <button
+          <button aria-label="Download receipt"
             onClick={handleDownload}
             className="absolute top-6 right-3 p-1.5"
           >

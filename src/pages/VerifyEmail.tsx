@@ -30,7 +30,7 @@ const VerifyEmail = () => {
   return (
     <div className="native-safe-top fixed inset-0 bg-primary flex flex-col overflow-hidden">
       {/* Back button */}
-      <button
+      <button aria-label="Back"
         onClick={() => navigate('/auth')}
         className="absolute top-6 left-6 text-foreground hover:opacity-70 transition-opacity"
       >
