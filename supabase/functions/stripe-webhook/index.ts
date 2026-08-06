@@ -117,6 +117,69 @@ async function findOrdersByPaymentIntent(piId: string) {
   return [];
 }
 
+// Recompute a seller's owed balance straight from their connected account and
+// mirror it onto the profile. Without this the figure only refreshes when the
+// seller happens to open a screen that calls stripe-connect-status, so a
+// refund landing after a payout leaves them trading on a stale balance.
+async function syncSellerBalance(sellerId: string) {
+  if (!sellerId) return;
+  try {
+    const { data: profile } = await serviceClient
+      .from("profiles")
+      .select("stripe_account_id, negative_balance_cents, device_ids")
+      .eq("user_id", sellerId)
+      .maybeSingle();
+    const accountId = profile?.stripe_account_id;
+    if (!accountId) return;
+
+    const balance = await stripe.balance.retrieve({ stripeAccount: accountId });
+    const sumAud = (arr?: Array<{ amount: number; currency: string }>) =>
+      (arr ?? [])
+        .filter((b) => b.currency === "aud")
+        .reduce((s, b) => s + (b.amount || 0), 0);
+    const total = sumAud(balance.available) + sumAud(balance.pending);
+    const owedCents = total < 0 ? Math.abs(total) : 0;
+    const previousOwed = Number(profile?.negative_balance_cents ?? 0);
+
+    await serviceClient
+      .from("profiles")
+      .update({
+        negative_balance_cents: owedCents,
+        negative_balance_updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", sellerId);
+
+    if (owedCents > 0) {
+      const deviceIds: string[] = Array.isArray(profile?.device_ids) ? profile!.device_ids : [];
+      if (deviceIds.length > 0) {
+        await serviceClient.from("blocked_devices").upsert(
+          deviceIds.map((d) => ({
+            device_id: d,
+            reason: "negative_balance",
+            associated_user_id: sellerId,
+            amount_cents: owedCents,
+            updated_at: new Date().toISOString(),
+          })),
+          { onConflict: "device_id" },
+        );
+      }
+      if (previousOwed === 0 && !(await wasNotifiedRecently(sellerId, "payment_action_required", 24))) {
+        const amountStr = `$${(owedCents / 100).toFixed(2)}`;
+        await notify(
+          sellerId,
+          "payment_action_required",
+          "Balance owed",
+          `⚠️ A refund or dispute left your Flea balance at -${amountStr}. Settle it in your Seller Dashboard to keep buying, listing, and receiving payouts.`,
+        );
+      }
+    }
+  } catch (e) {
+    console.error("[stripe-webhook] syncSellerBalance failed", e);
+  }
+}
+
+
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") {
