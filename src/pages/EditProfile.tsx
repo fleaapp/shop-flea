@@ -493,19 +493,19 @@ const EditProfile = () => {
                 autoCorrect="off"
               />
             </div>
-            <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
+            <AlertDialogFooter className="flex-row gap-2">
+              <AlertDialogCancel
+                onClick={() => setDeleteDialogOpen(false)}
+                className="flex-1 h-9 rounded-lg mt-0"
+              >
+                Cancel
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleConfirmDelete}
                 disabled={deleteConfirmText.toLowerCase() !== 'delete account'}
-                className="w-full h-11 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-40"
+                className="flex-1 h-9 rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-40"
               >
-                Delete My Account
-              </AlertDialogAction>
-              <AlertDialogAction
-                onClick={() => setDeleteDialogOpen(false)}
-                className="w-full h-11 rounded-full bg-muted text-foreground hover:bg-muted/80"
-              >
-                Cancel
+                Delete
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
