@@ -305,6 +305,9 @@ serve(async (req) => {
           await notify(o.seller_id, "refund_processed_seller", "Refund issued",
             "A refund was issued for one of your sales. Tap for details.", o.id);
         }
+        for (const sellerId of new Set(orders.map((o) => o.seller_id).filter(Boolean))) {
+          await syncSellerBalance(sellerId);
+        }
         await logEvent(event, {
           order_id: orders[0]?.id ?? null,
           buyer_id: orders[0]?.buyer_id ?? null,
@@ -322,6 +325,9 @@ serve(async (req) => {
         for (const o of orders) {
           await notify(o.seller_id, "dispute_opened", "⚠️ Payment disputed",
             "A buyer has disputed a payment. Please contact support immediately.", o.id);
+        }
+        for (const sellerId of new Set(orders.map((o: any) => o.seller_id).filter(Boolean))) {
+          await syncSellerBalance(sellerId as string);
         }
         await logEvent(event, {
           order_id: orders[0]?.id ?? null,
