@@ -16,6 +16,7 @@ import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { checkRateLimit, callerKey, tooManyRequests } from "../_shared/rateLimit.ts";
 import { logEdgeError } from "../_shared/logError.ts";
 import { calculateSecureCheckoutFee, calculateTransactionFee } from "../_shared/fees.ts";
+import { couponAlreadyUsed } from "../_shared/coupons.ts";
 
 
 const corsHeaders = {
