@@ -26,9 +26,6 @@ const corsHeaders = {
   Vary: "Origin",
 };
 
-const REVIEWER_USER_IDS = new Set<string>([
-  "5883f33c-07f3-4f6a-9a2d-a7e0ea864142",
-]);
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_CART_ITEMS = 50;
@@ -219,7 +216,13 @@ serve(async (req) => {
     const publishableKey = Deno.env.get("STRIPE_PUBLISHABLE_KEY") || "";
 
     // -------- DEMO BYPASS --------
-    if (REVIEWER_USER_IDS.has(user.id)) {
+    // Server-only flag. Never referenced in the client bundle.
+    const { data: reviewerRow } = await serviceClient
+      .from("profiles")
+      .select("is_apple_reviewer")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (reviewerRow?.is_apple_reviewer === true) {
       const orderGroupId = crypto.randomUUID();
       const shippingPerItem = (Number(shipping) || 0) / Math.max(authoritativeItems.length, 1);
       const { data: addr } = await serviceClient
