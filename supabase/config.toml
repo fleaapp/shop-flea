@@ -65,5 +65,3 @@ project_id = "teaicrimlqdayqpmxasc"
     verify_jwt = false
   [functions.tracking-sync]
     verify_jwt = false
-  [functions.tracking-register]
-    verify_jwt = true
