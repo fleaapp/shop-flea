@@ -95,9 +95,9 @@ const PrivacyPolicy = () => {
           <section className={SECTION}>
             <h2 className="text-base font-bold mb-2">3. How we collect personal information</h2>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li><strong>Directly from you</strong> — when you sign up, complete your profile, list an item, place an order, message a user, contact support, or change your settings.</li>
-              <li><strong>Automatically</strong> — when you use the Platform (device data, IP address, approximate region, page interactions, push token).</li>
-              <li><strong>From third parties</strong> — Google (if you sign in with Google), Stripe (account verification and payout status), AfterShip (delivery tracking), and OpenStreetMap (address autocomplete).</li>
+              <li><strong>Directly from you</strong> - when you sign up, complete your profile, list an item, place an order, message a user, contact support, or change your settings.</li>
+              <li><strong>Automatically</strong> - when you use the Platform (device data, IP address, approximate region, page interactions, push token).</li>
+              <li><strong>From third parties</strong> - Google (if you sign in with Google), Stripe (account verification and payout status), 17TRACK (delivery tracking), and OpenStreetMap (address autocomplete).</li>
             </ul>
           </section>
 
@@ -106,14 +106,14 @@ const PrivacyPolicy = () => {
             <p>We use your personal information to:</p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>Create and manage your account and authenticate you;</li>
-              <li>Operate the marketplace — show listings to the right region, route messages, process orders, calculate shipping and platform fees;</li>
+              <li>Operate the marketplace - show listings to the right region, route messages, process orders, calculate shipping and platform fees;</li>
               <li>Process payments, payouts, refunds (including partial refunds on multi-item orders), chargebacks and disputes through our payment partners;</li>
               <li>Send transactional communications (order updates, shipping reminders, refund notices, security alerts, replies to your support requests);</li>
               <li>Send you marketing about Flea (with your consent, which you can withdraw at any time);</li>
               <li>Detect, prevent and respond to fraud, abuse, spam, prohibited listings, infringement, account takeover and other security threats;</li>
               <li>Prevent the creation of duplicate accounts and enforce settlement of any outstanding balance owing to Flea, including by recording a device identifier linked to your account;</li>
               <li>Moderate content and enforce our <button onClick={() => navigate('/terms')} className="underline font-medium">Terms & Conditions</button>;</li>
-              <li>Improve the Platform — fix bugs, measure feature performance, develop new features;</li>
+              <li>Improve the Platform - fix bugs, measure feature performance, develop new features;</li>
               <li>Comply with our legal obligations including under the Australian Consumer Law, the Spam Act 2003 (Cth) and tax laws.</li>
             </ul>
           </section>
@@ -122,11 +122,11 @@ const PrivacyPolicy = () => {
             <h2 className="text-base font-bold mb-2">5. When we share your information</h2>
             <p>We share personal information only as needed to operate the Platform or as required by law:</p>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li><strong>With other users</strong> — your username, profile photo, listings, ratings and reviews are public to other Flea users in your region. Buyers and sellers exchange shipping address and contact details necessary to complete an order.</li>
-              <li><strong>With our service providers</strong> — including Supabase (hosting, database, authentication, storage), Lovable (app delivery), Stripe (card payments and seller payouts), AfterShip (parcel tracking), Resend (transactional email), Google (sign-in), web push services run by Apple, Google and Mozilla, and OpenStreetMap (address lookup). These providers process data only on our instructions and under their own privacy obligations.</li>
-              <li><strong>For legal reasons</strong> — to comply with a law, court order, regulator's request, or to protect our rights, property or safety, or those of our users or the public.</li>
-              <li><strong>In a corporate transaction</strong> — if Flea is involved in a merger, acquisition or sale of assets, your information may be transferred subject to confidentiality obligations.</li>
-              <li><strong>With your consent</strong> — for any other purpose disclosed at the time of collection.</li>
+              <li><strong>With other users</strong> - your username, profile photo, listings, ratings and reviews are public to other Flea users in your region. Buyers and sellers exchange shipping address and contact details necessary to complete an order.</li>
+              <li><strong>With our service providers</strong> - including Supabase (hosting, database, authentication, storage), Lovable (app delivery), Stripe (card payments and seller payouts), 17TRACK (parcel tracking), Resend (transactional email), Google (sign-in), web push services run by Apple, Google and Mozilla, and OpenStreetMap (address lookup). These providers process data only on our instructions and under their own privacy obligations.</li>
+              <li><strong>For legal reasons</strong> - to comply with a law, court order, regulator's request, or to protect our rights, property or safety, or those of our users or the public.</li>
+              <li><strong>In a corporate transaction</strong> - if Flea is involved in a merger, acquisition or sale of assets, your information may be transferred subject to confidentiality obligations.</li>
+              <li><strong>With your consent</strong> - for any other purpose disclosed at the time of collection.</li>
             </ul>
             <p>We do <strong>not</strong> sell your personal information to advertisers or data brokers.</p>
           </section>
@@ -158,11 +158,11 @@ const PrivacyPolicy = () => {
               We retain personal information for as long as you have an active account and for as long as we need it to fulfil the purposes set out in this Policy, comply with our legal, tax, accounting, dispute-resolution and audit obligations, and enforce our Terms.
             </p>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li><strong>Order, payment and refund records</strong> — retained for at least 7 years to comply with Australian tax and consumer law requirements.</li>
-              <li><strong>Listings of deleted users</strong> — archived (hidden from discovery) but retained where they are linked to past transactions.</li>
-              <li><strong>Messages tied to past orders</strong> — retained so both parties have access to a record of their transaction.</li>
-              <li><strong>Reviews</strong> — public reviews you have posted may remain visible after your account is deleted, in anonymised form where reasonable.</li>
-              <li><strong>Marketing data</strong> — deleted promptly after you unsubscribe.</li>
+              <li><strong>Order, payment and refund records</strong> - retained for at least 7 years to comply with Australian tax and consumer law requirements.</li>
+              <li><strong>Listings of deleted users</strong> - archived (hidden from discovery) but retained where they are linked to past transactions.</li>
+              <li><strong>Messages tied to past orders</strong> - retained so both parties have access to a record of their transaction.</li>
+              <li><strong>Reviews</strong> - public reviews you have posted may remain visible after your account is deleted, in anonymised form where reasonable.</li>
+              <li><strong>Marketing data</strong> - deleted promptly after you unsubscribe.</li>
             </ul>
             <p>When personal information is no longer needed, we delete or de-identify it.</p>
           </section>
@@ -195,7 +195,7 @@ const PrivacyPolicy = () => {
               We send transactional messages (order updates, security alerts, support replies, refund notices, payment alerts) that are necessary to operate your account; you cannot opt out of these while you have an active account, although you can disable push delivery via your device settings.
             </p>
             <p>
-              We send marketing messages (e.g. product news, feature launches) only with your consent. You can opt out at any time using the unsubscribe link in any marketing email or by contacting us. We comply with the <em>Spam Act 2003</em> (Cth) — every commercial electronic message we send identifies us as the sender and includes a working unsubscribe option.
+              We send marketing messages (e.g. product news, feature launches) only with your consent. You can opt out at any time using the unsubscribe link in any marketing email or by contacting us. We comply with the <em>Spam Act 2003</em> (Cth) - every commercial electronic message we send identifies us as the sender and includes a working unsubscribe option.
             </p>
           </section>
 
@@ -233,13 +233,13 @@ const PrivacyPolicy = () => {
               The Platform integrates with third-party services for specific functions. These services have their own privacy policies which we encourage you to read:
             </p>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li><strong>Stripe</strong> (card payments and seller payouts) — <a href="https://stripe.com/au/privacy" target="_blank" rel="noreferrer" className="underline">stripe.com/au/privacy</a></li>
+              <li><strong>Stripe</strong> (card payments and seller payouts) - <a href="https://stripe.com/au/privacy" target="_blank" rel="noreferrer" className="underline">stripe.com/au/privacy</a></li>
               
-              <li><strong>Supabase</strong> (database, authentication, storage) — <a href="https://supabase.com/privacy" target="_blank" rel="noreferrer" className="underline">supabase.com/privacy</a></li>
-              <li><strong>Google</strong> (Google sign-in) — <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">policies.google.com/privacy</a></li>
-              <li><strong>AfterShip</strong> (parcel tracking) — <a href="https://www.aftership.com/legal/privacy" target="_blank" rel="noreferrer" className="underline">aftership.com/legal/privacy</a></li>
-              <li><strong>Resend</strong> (transactional email) — <a href="https://resend.com/legal/privacy-policy" target="_blank" rel="noreferrer" className="underline">resend.com/legal/privacy-policy</a></li>
-              <li><strong>OpenStreetMap</strong> (address lookup) — <a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noreferrer" className="underline">osmfoundation.org/wiki/Privacy_Policy</a></li>
+              <li><strong>Supabase</strong> (database, authentication, storage) - <a href="https://supabase.com/privacy" target="_blank" rel="noreferrer" className="underline">supabase.com/privacy</a></li>
+              <li><strong>Google</strong> (Google sign-in) - <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">policies.google.com/privacy</a></li>
+              <li><strong>17TRACK</strong> (parcel tracking) - <a href="https://www.17track.net/en/privacy" target="_blank" rel="noreferrer" className="underline">17track.net/en/privacy</a></li>
+              <li><strong>Resend</strong> (transactional email) - <a href="https://resend.com/legal/privacy-policy" target="_blank" rel="noreferrer" className="underline">resend.com/legal/privacy-policy</a></li>
+              <li><strong>OpenStreetMap</strong> (address lookup) - <a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noreferrer" className="underline">osmfoundation.org/wiki/Privacy_Policy</a></li>
             </ul>
           </section>
 
