@@ -336,7 +336,7 @@ async function verifyPayment(opts: {
   }
   const amountTotal = typeof session.amount_total === "number" ? session.amount_total / 100 : undefined;
   if (opts.expectedAmountAud != null && amountTotal != null) {
-    if (Math.abs(amountTotal - opts.expectedAmountAud) > 0.05) {
+    if (Math.abs(amountTotal - opts.expectedAmountAud) > 0.02) {
       throw new Error(`Stripe paid amount mismatch: paid ${amountTotal} expected ${opts.expectedAmountAud}`);
     }
   }
