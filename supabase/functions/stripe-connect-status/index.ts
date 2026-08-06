@@ -136,7 +136,7 @@ serve(async (req) => {
       });
     }
 
-    const body = await req.json();
+    const body = await req.json().catch(() => ({} as any));
     const { stripeAccountId, sellerUserId } = body;
 
     const stripe = new Stripe(getStripeSecretKey(), {
@@ -255,7 +255,37 @@ serve(async (req) => {
       }
     }
 
-    const account = await stripe.accounts.retrieve(accountId);
+    let account: Stripe.Account;
+    try {
+      account = await stripe.accounts.retrieve(accountId);
+    } catch (e: any) {
+      const msg = String(e?.message ?? "");
+      const missing =
+        e?.statusCode === 404 ||
+        e?.code === "account_invalid" ||
+        e?.code === "resource_missing" ||
+        /no such account/i.test(msg);
+      if (missing) {
+        console.warn(`[stripe-connect-status] Stale stripe_account_id ${accountId} for user ${lookupUserId}; clearing.`);
+        await clearStripeStatus(lookupUserId);
+        return new Response(
+          JSON.stringify({
+            chargesEnabled: false,
+            detailsSubmitted: false,
+            payoutsEnabled: false,
+            accountId: null,
+            accountExists: false,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
+      // Upstream Stripe blip — report as unavailable rather than a hard 500.
+      console.error(`[stripe-connect-status] Stripe unavailable for ${accountId}: ${msg}`);
+      return new Response(
+        JSON.stringify({ error: "Stripe unavailable", retryable: true, accountId, accountExists: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 503 }
+      );
+    }
 
     console.log(`[stripe-connect-status] Account ${accountId} state: charges_enabled=${account.charges_enabled}, details_submitted=${account.details_submitted}, payouts_enabled=${account.payouts_enabled}`);
 

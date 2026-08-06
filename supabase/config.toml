@@ -61,3 +61,9 @@ project_id = "teaicrimlqdayqpmxasc"
     verify_jwt = true
   [functions.reconcile-orphan-payments]
     verify_jwt = false
+  [functions.tracking-webhook]
+    verify_jwt = false
+  [functions.tracking-sync]
+    verify_jwt = false
+  [functions.tracking-register]
+    verify_jwt = true
