@@ -192,6 +192,35 @@ const EditListing = () => {
 
   // Bundle shipping no longer prefills the listing's shipping price; nothing to load here.
 
+  // Unsaved-changes guard: compare the live form against the fetched listing so
+  // tapping back never silently throws away edits.
+  const currentSnapshot = JSON.stringify({
+    productName,
+    fit,
+    category,
+    subcategory,
+    size,
+    brand,
+    condition,
+    colours,
+    styles,
+    itemPrice,
+    shippingPrice,
+    autoAcceptPrice,
+    description,
+    existingImages,
+    newImages: newImageFiles.length,
+  });
+  const isDirty = baseline !== null && baseline !== currentSnapshot;
+
+  const handleBack = () => {
+    if (isDirty) {
+      setDiscardOpen(true);
+      return;
+    }
+    safeNavigateBack(navigate, '/profile');
+  };
+
   // Crop queue state
   const [cropQueue, setCropQueue] = useState<string[]>([]);
   const [currentCropSrc, setCurrentCropSrc] = useState<string | null>(null);
@@ -544,13 +573,36 @@ const EditListing = () => {
           variant="ghost"
           size="icon"
           aria-label="Back"
-          onClick={() => safeNavigateBack(navigate, '/profile')}
+          onClick={handleBack}
           className="absolute left-4 h-10 w-10 rounded-full"
         >
           <ChevronLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-xl font-bold text-foreground">Edit Listing</h1>
       </header>
+
+      <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}>
+        <AlertDialogContent className="w-[88vw] max-w-[320px] rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-center text-base">Discard changes?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              You have unsaved changes to this listing. Leaving now will lose them.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel className="flex-1 h-9 rounded-lg mt-0">Keep editing</AlertDialogCancel>
+            <AlertDialogAction
+              className="flex-1 h-9 rounded-lg"
+              onClick={() => {
+                setDiscardOpen(false);
+                safeNavigateBack(navigate, '/profile');
+              }}
+            >
+              Discard
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-24">
         <form onSubmit={handleSubmit} className="px-4 space-y-4">
