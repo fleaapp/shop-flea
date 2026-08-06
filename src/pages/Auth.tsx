@@ -293,6 +293,7 @@ const Auth = () => {
       }
       setIsLoading(false);
     } else {
+      try { localStorage.setItem('flea_pending_verify_email', signupEmail); } catch (_) { /* private mode */ }
       navigate('/verify-email', { state: { email: signupEmail } });
     }
   };

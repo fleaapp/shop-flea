@@ -88,7 +88,7 @@ export function installGlobalErrorHandlers() {
     const err = event.error;
     const message = err?.message || event.message || 'Unknown error';
     // Filter out noisy vite HMR / dynamic import errors that only occur during dev.
-    if (/Importing a module script failed/i.test(message)) return;
+    if (/Importing a module script failed|Failed to fetch dynamically imported module|error loading dynamically imported module|ChunkLoadError|^Load failed$/i.test(message)) return;
     void logError({
       title: 'Uncaught error',
       message,

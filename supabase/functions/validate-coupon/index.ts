@@ -19,6 +19,16 @@ Deno.serve(async (req) => {
       return tooManyRequests(corsHeaders, "Too many coupon attempts. Please wait a moment.");
     }
 
+    // Identify the caller so a code can be capped to one use per account.
+    let callerId: string | null = null;
+    try {
+      const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+      if (token && token.split(".").length === 3) {
+        const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+        callerId = typeof payload?.sub === "string" ? payload.sub : null;
+      }
+    } catch (_) { callerId = null; }
+
     const { code } = await req.json();
     const normalized = String(code || "").trim().toUpperCase();
     if (!normalized || normalized.length > 40) {
@@ -35,7 +45,7 @@ Deno.serve(async (req) => {
 
     const { data: c } = await supabase
       .from("coupons")
-      .select("code, type, active, starts_at, expires_at, max_redemptions, redemption_count, description")
+      .select("id, code, type, active, starts_at, expires_at, max_redemptions, redemption_count, description")
       .eq("code", normalized)
       .maybeSingle();
 
@@ -51,6 +61,17 @@ Deno.serve(async (req) => {
     }
     if (c.max_redemptions !== null && c.redemption_count >= c.max_redemptions) {
       return json({ valid: false, message: "This code has reached its limit." });
+    }
+
+    if (callerId) {
+      const { count } = await supabase
+        .from("coupon_redemptions")
+        .select("id", { count: "exact", head: true })
+        .eq("coupon_id", (c as any).id)
+        .eq("user_id", callerId);
+      if ((count ?? 0) > 0) {
+        return json({ valid: false, message: "You have already used this code." });
+      }
     }
 
     const message =

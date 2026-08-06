@@ -184,9 +184,12 @@ const isTransportError = (error: unknown) => {
 };
 
 const invokePayoutWithRetry = async (method: 'standard' | 'instant') => {
+  // One id per user-initiated payout. The transport retry below reuses it so
+  // Stripe collapses the duplicate, while a genuinely new payout gets a new id.
+  const requestId = crypto.randomUUID();
   let firstResult: Awaited<ReturnType<typeof invokeCloudFunction>> | null = null;
   try {
-    firstResult = await invokeCloudFunction('stripe-connect-payout', { method });
+    firstResult = await invokeCloudFunction('stripe-connect-payout', { method, requestId });
     if (!firstResult.error || !isTransportError(firstResult.error)) return firstResult;
   } catch (firstError) {
     if (!isTransportError(firstError)) throw firstError;
@@ -199,7 +202,7 @@ const invokePayoutWithRetry = async (method: 'standard' | 'instant') => {
 
   try {
     const retry = await supabase.functions.invoke('stripe-connect-payout', {
-      body: { method },
+      body: { method, requestId },
     });
     if (!retry.error || !isTransportError(retry.error)) return retry;
     throw retry.error;

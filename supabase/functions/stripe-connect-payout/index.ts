@@ -47,17 +47,21 @@ Deno.serve(async (req) => {
 
 
 
-    const { method } = await req.json();
+    const body = await req.json().catch(() => ({} as any));
+    const method = body?.method;
     console.log(`[stripe-connect-payout] payout method=${method === "instant" ? "instant" : method === "standard" ? "standard" : "invalid"}`);
     if (method !== "standard" && method !== "instant") {
       return json({ error: "Invalid payout method" }, 400);
     }
 
-    // Idempotency: a client retry (or a double tap) within the same 10-minute
-    // window reuses the same Stripe idempotency key, so Stripe returns the
-    // original payout instead of creating a duplicate one.
-    const idemWindow = Math.floor(Date.now() / (10 * 60 * 1000));
-    const idemBase = `payout:${userId}:${method}:${idemWindow}`;
+    // Idempotency: derived from a client-supplied request id so a retry of the
+    // SAME request reuses the key, while a genuinely new payout always gets a
+    // fresh one. A rolling time window was previously used, which could either
+    // merge two intentional payouts or split one retry across the boundary.
+    const requestId = typeof body?.requestId === "string" && body.requestId.length <= 64
+      ? body.requestId.replace(/[^a-zA-Z0-9_-]/g, "")
+      : crypto.randomUUID();
+    const idemBase = `payout:${userId}:${method}:${requestId}`;
 
 
     const supabase = createClient(

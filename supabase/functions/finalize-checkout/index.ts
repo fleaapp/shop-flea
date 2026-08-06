@@ -22,6 +22,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { logEdgeError } from "../_shared/logError.ts";
 import { calculateSecureCheckoutFee, calculateTransactionFee } from "../_shared/fees.ts";
+import { couponAlreadyUsed } from "../_shared/coupons.ts";
 
 
 const corsHeaders = {
@@ -315,7 +316,7 @@ async function verifyPayment(opts: {
       ? pi.amount_received / 100
       : pi.amount / 100;
     if (opts.expectedAmountAud != null) {
-      if (Math.abs(amountTotal - opts.expectedAmountAud) > 0.05) {
+      if (Math.abs(amountTotal - opts.expectedAmountAud) > 0.02) {
         throw new Error(`Stripe paid amount mismatch: paid ${amountTotal} expected ${opts.expectedAmountAud}`);
       }
     }
@@ -335,7 +336,7 @@ async function verifyPayment(opts: {
   }
   const amountTotal = typeof session.amount_total === "number" ? session.amount_total / 100 : undefined;
   if (opts.expectedAmountAud != null && amountTotal != null) {
-    if (Math.abs(amountTotal - opts.expectedAmountAud) > 0.05) {
+    if (Math.abs(amountTotal - opts.expectedAmountAud) > 0.02) {
       throw new Error(`Stripe paid amount mismatch: paid ${amountTotal} expected ${opts.expectedAmountAud}`);
     }
   }
@@ -547,7 +548,8 @@ serve(async (req) => {
         && (!c.starts_at || new Date(c.starts_at).getTime() <= now)
         && (!c.expires_at || new Date(c.expires_at).getTime() >= now)
         && (c.max_redemptions === null || c.redemption_count < c.max_redemptions)
-        && c.type === "waive_buyer_fee") {
+        && c.type === "waive_buyer_fee"
+        && !(await couponAlreadyUsed(serviceClient, c.id as string, userId))) {
         secureCheckoutFee = 0;
         appliedCoupon = { id: c.id as string, code: c.code as string, type: c.type as string };
       }

@@ -64,7 +64,7 @@ const Terms = () => {
           </section>
 
           <section className={SECTION}>
-            <h2 className="text-base font-bold mb-2">4. The marketplace — our role</h2>
+            <h2 className="text-base font-bold mb-2">4. The marketplace - our role</h2>
             <p>
               Flea is a venue that connects independent buyers and sellers of secondhand fashion items. We are <strong>not</strong> the seller, manufacturer, importer, owner or possessor of any item listed. Each contract of sale is formed directly between the buyer and the seller. Flea facilitates the listing, payment, messaging and dispute communication, but is not a party to the underlying sale contract except where expressly stated (for example, where we process a refund on a seller's behalf).
             </p>
@@ -201,7 +201,7 @@ const Terms = () => {
           <section className={SECTION}>
             <h2 className="text-base font-bold mb-2">13. Notifications and communications</h2>
             <p>
-              By creating an account, you consent to receive transactional communications from us — including order updates, shipping reminders, payment alerts, security notices, refund updates and replies to your support requests — by in-app notification, push notification, email or SMS. These are necessary for the operation of your account and you cannot opt out while you have an active account, although you can disable push notifications via your device settings.
+              By creating an account, you consent to receive transactional communications from us - including order updates, shipping reminders, payment alerts, security notices, refund updates and replies to your support requests - by in-app notification, push notification, email or SMS. These are necessary for the operation of your account and you cannot opt out while you have an active account, although you can disable push notifications via your device settings.
             </p>
             <p>
               You consent to receive marketing communications from us (e.g. product news and feature updates) by email or push. You can opt out at any time by using the unsubscribe link in any marketing email or turning off push notifications in <em>Settings</em>. We comply with the <em>Spam Act 2003</em> (Cth).

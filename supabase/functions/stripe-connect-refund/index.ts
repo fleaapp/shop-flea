@@ -339,15 +339,21 @@ async function resolvePaymentIntentId(stripe: Stripe, order: any) {
   }
 
   const createdAt = order.created_at ? Math.floor(new Date(order.created_at).getTime() / 1000) : null;
-  const earliestCreated = Math.max(0, (createdAt ?? Math.floor(Date.now() / 1000)) - 30 * 24 * 60 * 60);
-  const latestCreated = (createdAt ?? Math.floor(Date.now() / 1000)) + 2 * 24 * 60 * 60;
+  // Fail closed: without a stored checkout_reference we only accept a charge
+  // created within a few hours of the order AND carrying this exact listing id.
+  // A wide window could otherwise refund a different order between the same pair.
+  if (!createdAt || !order.listing_id) {
+    throw new Error("Payment reference could not be found for this order. Please contact support.");
+  }
+  const earliestCreated = Math.max(0, createdAt - 6 * 60 * 60);
+  const latestCreated = createdAt + 6 * 60 * 60;
 
   const matchesOrder = (pi: Stripe.PaymentIntent) => {
     const metadata = pi.metadata ?? {};
     const itemIds = String(metadata.item_ids ?? "").split(",").map((id) => id.trim()).filter(Boolean);
     return metadata.flea_buyer_id === order.buyer_id
       && metadata.flea_seller_id === order.seller_id
-      && (!order.listing_id || itemIds.includes(order.listing_id))
+      && itemIds.includes(order.listing_id)
       && pi.created >= earliestCreated
       && pi.created <= latestCreated
       && ["succeeded", "requires_capture", "processing"].includes(pi.status);
@@ -376,7 +382,7 @@ async function resolvePaymentIntentId(stripe: Stripe, order: any) {
       const metadata = session.metadata ?? {};
       const itemIds = String(metadata.item_ids ?? "").split(",").map((id) => id.trim()).filter(Boolean);
       return metadata.flea_buyer_id === order.buyer_id
-        && (!order.listing_id || itemIds.includes(order.listing_id))
+        && itemIds.includes(order.listing_id)
         && session.created >= earliestCreated
         && session.created <= latestCreated
         && ["paid", "no_payment_required"].includes(session.payment_status);

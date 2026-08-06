@@ -16,6 +16,7 @@ import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { checkRateLimit, callerKey, tooManyRequests } from "../_shared/rateLimit.ts";
 import { logEdgeError } from "../_shared/logError.ts";
 import { calculateSecureCheckoutFee, calculateTransactionFee } from "../_shared/fees.ts";
+import { couponAlreadyUsed } from "../_shared/coupons.ts";
 
 
 const corsHeaders = {
@@ -319,7 +320,8 @@ serve(async (req) => {
       if (c && c.active
         && (!c.starts_at || new Date(c.starts_at).getTime() <= now)
         && (!c.expires_at || new Date(c.expires_at).getTime() >= now)
-        && (c.max_redemptions === null || c.redemption_count < c.max_redemptions)) {
+        && (c.max_redemptions === null || c.redemption_count < c.max_redemptions)
+        && !(await couponAlreadyUsed(serviceClient, c.id, user.id))) {
         if (c.type === "waive_buyer_fee") secureCheckoutFee = 0;
         appliedCoupon = { id: c.id, code: c.code, type: c.type };
       }

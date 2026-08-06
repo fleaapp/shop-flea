@@ -65,3 +65,45 @@ project_id = "teaicrimlqdayqpmxasc"
     verify_jwt = false
   [functions.tracking-sync]
     verify_jwt = false
+
+# Functions below validate the caller's bearer token in code (getVerifiedUserId /
+# manual JWT parse), which is the supported pattern under signing keys. They are
+# declared here so every deployed function has explicit config.
+  [functions.add-listing-comment]
+    verify_jwt = false
+  [functions.admin-error-logs]
+    verify_jwt = false
+  [functions.admin-restore-seller]
+    verify_jwt = false
+  [functions.auto-refund-unshipped]
+    verify_jwt = false
+  [functions.check-device-eligibility]
+    verify_jwt = false
+  [functions.forward-report-to-hub]
+    verify_jwt = false
+  [functions.log-error]
+    verify_jwt = false
+  [functions.push-status]
+    verify_jwt = false
+  [functions.register-device]
+    verify_jwt = false
+  [functions.stripe-config]
+    verify_jwt = false
+  [functions.stripe-connect-account-session]
+    verify_jwt = false
+  [functions.stripe-connect-payment-intent]
+    verify_jwt = false
+  [functions.stripe-connect-payout]
+    verify_jwt = false
+  [functions.stripe-connect-topup]
+    verify_jwt = false
+  [functions.stripe-connect-upload-id]
+    verify_jwt = false
+  [functions.stripe-detach-card]
+    verify_jwt = false
+  [functions.stripe-list-saved-cards]
+    verify_jwt = false
+  [functions.tracking-register]
+    verify_jwt = false
+  [functions.validate-coupon]
+    verify_jwt = false
