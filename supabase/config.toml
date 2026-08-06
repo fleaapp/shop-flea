@@ -65,3 +65,41 @@ project_id = "teaicrimlqdayqpmxasc"
     verify_jwt = false
   [functions.tracking-sync]
     verify_jwt = false
+  [functions.add-listing-comment]
+    verify_jwt = true
+  [functions.admin-error-logs]
+    verify_jwt = true
+  [functions.admin-restore-seller]
+    verify_jwt = true
+  [functions.auto-refund-unshipped]
+    verify_jwt = false
+  [functions.check-device-eligibility]
+    verify_jwt = false
+  [functions.forward-report-to-hub]
+    verify_jwt = false
+  [functions.log-error]
+    verify_jwt = false
+  [functions.push-status]
+    verify_jwt = true
+  [functions.register-device]
+    verify_jwt = true
+  [functions.stripe-config]
+    verify_jwt = false
+  [functions.stripe-connect-account-session]
+    verify_jwt = true
+  [functions.stripe-connect-payment-intent]
+    verify_jwt = true
+  [functions.stripe-connect-payout]
+    verify_jwt = true
+  [functions.stripe-connect-topup]
+    verify_jwt = true
+  [functions.stripe-connect-upload-id]
+    verify_jwt = true
+  [functions.stripe-detach-card]
+    verify_jwt = true
+  [functions.stripe-list-saved-cards]
+    verify_jwt = true
+  [functions.tracking-register]
+    verify_jwt = true
+  [functions.validate-coupon]
+    verify_jwt = false
