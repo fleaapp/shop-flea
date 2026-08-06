@@ -26,6 +26,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import ShippingStatusTracker from '@/components/ShippingStatusTracker';
 import TrackingEvents from '@/components/TrackingEvents';
+import { useShipmentTracking } from '@/hooks/useShipmentTracking';
+
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { supabase } from '@/lib/supabase';
 import { openTrackingUrl } from '@/lib/tracking';
