@@ -1,54 +1,40 @@
-# Remaining Critical and High Audit Items
+# Flea - Full Product Audit Report
 
-All four Critical items are now closed (offer race, funds releasing mid-dispute, reviewer bypass, blank home feed), along with H1, H2, H3, H6 and H9.
+Four parallel specialist passes: Payments/Security, Marketplace/Offers/Orders/Shipping, UX/UI/A11y/Performance, Copy/Legal/Notifications.
 
-Four High items remain. H4 and H7 are the ones with real user impact.
+## Critical
+1. Terms/Privacy back button hardcodes `/settings`. Guests who open them from signup get bounced into a protected route and lose the signup flow. Fix: `safeNavigateBack`.
+2. Seller Dashboard back button hardcodes `/settings` despite entries from onboarding, push and deep links. Fix: `safeNavigateBack`.
 
----
+No critical money-path defects. Webhook signatures, server-side Stripe re-verification, idempotency keys, one-order-per-listing unique index and pro-rata refund fee snapshots all verified correct.
 
-## H4. Seller balance goes stale after a refund (money risk)
+## High
+3. `stripe-connect-status` returns another seller's `negative_balance_cents` / held funds to any authenticated caller. Fix: return only `ready: boolean` when the target is not the caller.
+4. `validate-coupon` derives caller identity by base64-decoding the JWT without verification. Fix: use `auth.getUser()` (charge-time check is already safe).
+5. Accepted offers do not reserve the listing - another buyer can buy at full price during the 24h window. Fix: soft-reserve (`reserved_for`/`reserved_until`) checked at checkout, plus a "you lost the item" notification.
+6. `SidebarTrigger` icon button has no accessible name.
+7. 35+ icon buttons overridden to h-6/h-7/h-8, below the 44pt touch target.
+8. 12 files hardcode raw Tailwind colours instead of design tokens (incl. user-facing SellerDashboard, PaymentMethodsSection, OrderReceiptDialog).
 
-Today the refund webhook marks the order refunded and notifies both sides, but it never touches the seller's owed balance. That figure is only recalculated when the seller happens to open a screen that calls the status function. A seller can withdraw their money, get refunded against afterwards, and keep trading against a balance that is wrong.
+## Medium
+9. `auto-approve-refund-requests` has `verify_jwt = false` and no `x-cron-secret` check - anyone can trigger the refund batch.
+10. Money-moving functions still emit `Access-Control-Allow-Origin: *` instead of `buildCorsHeaders`.
+11. Tracking sync can move an `awaiting` order straight to `delivered`, skipping `shipped` and its notification.
+12. No `payout.paid` / `payout.failed` webhook handler, so sellers never get payout confirmation.
+13. Privacy Policy lacks a Notifiable Data Breaches clause; Terms lack a complaints/dispute-resolution clause with an SLA.
+14. `blast` offers duplicate `create_offer` validation in a second code path (drift risk).
+15. `useOffers` caps at 300 rows with no pagination.
+16. `Offers.tsx` polls every 60s even when backgrounded.
+17. Account-deletion eligibility logic duplicated client and server.
+18. Disputes notify but never set a `disputed` order status, so sellers still see "delivered".
 
-Build:
-- In the refund and dispute branches of the payment webhook, recalculate the seller's owed amount and write it back immediately.
-- Same recalculation on a successful payout, so the two paths can never disagree.
-- If the seller ends up owing money, raise the existing "action required" state so the dashboard reflects it on next open rather than on next status poll.
-
-## H7. Listing forms lose everything on back
-
-The back chevron on Create Listing and Edit Listing navigates away immediately. Photos, price, brand and description are gone in one tap, with no warning.
-
-Build:
-- Track whether the form has been touched since it loaded (or since last save).
-- If it has, the back chevron and the hardware/swipe back open a "Discard changes?" confirm in the house dialog style - Cancel left, destructive right.
-- Untouched forms keep the current instant-back behaviour.
-
-## H8. Icon-only buttons: no accessible name, tap targets under 44px
-
-Sixteen buttons across chat, support, profile and settings screens are bare icons with no label, several with no padding. Screen readers announce only "button", and the smallest targets are hard to hit accurately.
-
-Build:
-- Standardise every icon-only control on the pattern already used correctly in the admin screens: ghost icon button, explicit `aria-label`, minimum 44x44 tap area.
-- No visual change intended beyond slightly larger touch padding on the worst offenders (order chat send/attach, suggestion box, edit profile).
-
-## H5. "Stripe" is named in the Privacy Policy - needs your call
-
-The brand rule says never name the payment provider in user-facing copy, but a privacy policy arguably has to name the actual data processor to be a truthful disclosure under APP 6 and APP 8.
-
-Default in this plan: rename the four visible mentions to "our card-payment provider" and keep the working link to the provider's privacy policy, so the disclosure is still complete. Tell me if you would rather keep the entity name and treat the Privacy Policy as a standing exception.
-
----
-
-## Not fixable from here
-
-Storage buckets still have no server-side size or file-type limits (M7). That setting is locked from the migration tooling on this project, so uploads keep relying on client-side checks. Worth raising with support if you want it enforced before launch.
-
----
-
-## Technical notes
-
-- `supabase/functions/stripe-webhook/index.ts` - `charge.refunded` / `refund.created` / `charge.dispute.*` branches gain a `profiles.negative_balance_cents` recompute via the service client; mirrored in `stripe-connect-payout`.
-- `src/pages/CreateListing.tsx`, `src/pages/EditListing.tsx` - dirty flag plus `AlertDialog` gate in front of `safeNavigateBack`.
-- Accessibility sweep across `OrderChat.tsx`, `SuggestionBox.tsx`, `EditProfile.tsx`, `ChatConversation.tsx`, `ContactSupport.tsx`, `FAQ.tsx` and the other flagged files.
-- `src/pages/PrivacyPolicy.tsx` lines 63, 100, 126, 236.
+## Low
+19. Em dashes in `shipping-reminders` push copy (lines 222, 235).
+20. Inconsistent notification title casing (Title Case vs sentence case, ~15 sites).
+21. Missing/inconsistent punctuation in shipping reminder copy.
+22. FAQ does not distinguish the 48h dispute window from the 48h auto-release window.
+23. Fee math duplicated across 3 files (constants currently consistent).
+24. Schema-drift fallbacks silently drop columns with no telemetry.
+25. Sales.tsx does not surface the bundle shipping/fee breakdown to sellers.
+26. Mint palette contrast not measured; run axe/Lighthouse.
+27. Ad hoc Android/`max-[375px]` CSS hacks and hardcoded px in toast styles.
