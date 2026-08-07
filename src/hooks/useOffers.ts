@@ -153,7 +153,7 @@ export function useOffers() {
     return { sent: res.sent as number, reason: (res.reason ?? null) as string | null };
   }, []);
 
-  return { offers, received, sent, pendingReceivedCount, loading, refresh: fetchOffers, create, respond, withdraw, blast };
+  return { offers, received, sent, pendingReceivedCount, loading, loadingMore, hasMore, loadMore, refresh: fetchOffers, create, respond, withdraw, blast };
 }
 
 /** Accepted, unexpired offers for the signed-in buyer, keyed by listing id. */
