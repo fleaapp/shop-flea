@@ -439,7 +439,18 @@ const Offers = () => {
             minHeightClass="min-h-[55vh]"
           />
         ) : (
-          <div className="space-y-3">{list.map((o) => renderCard(o, tab))}</div>
+          <div className="space-y-3">
+            {list.map((o) => renderCard(o, tab))}
+            {hasMore && (
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="w-full rounded-xl border border-border bg-card py-3 text-sm font-medium text-foreground disabled:opacity-60"
+              >
+                {loadingMore ? 'Loading...' : 'Load older offers'}
+              </button>
+            )}
+          </div>
         )}
       </div>
 
