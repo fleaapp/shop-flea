@@ -75,7 +75,34 @@ const Profile = () => {
   };
   
   const { listings: activeListings, loading: activeLoading } = useUserListings('active');
-  const { listings: soldListings, loading: soldLoading } = useUserListings('sold');
+  const { listings: soldListings, loading: soldLoading, removeLocal: removeSoldCard } = useUserListings('sold');
+  const [soldDeleteTarget, setSoldDeleteTarget] = useState<{ cardId: string; listingId: string; orderId?: string; title: string } | null>(null);
+  const [deletingSold, setDeletingSold] = useState(false);
+
+  // A sale can only be removed from the profile once it is finished.
+  const canDeleteSold = (listing: any) => {
+    if (activeTab !== 'sold') return false;
+    if (!listing.order_id) return true; // sold elsewhere
+    return ['completed', 'refunded', 'cancelled'].includes(String(listing.order_status || '').toLowerCase());
+  };
+
+  const confirmDeleteSold = async () => {
+    if (!soldDeleteTarget) return;
+    setDeletingSold(true);
+    const { cardId, listingId, orderId } = soldDeleteTarget;
+    const { error } = orderId
+      ? await (supabase as any).rpc('seller_hide_sale', { p_order_id: orderId })
+      : await (supabase as any).rpc('seller_hide_sold_listing', { p_listing_id: listingId });
+    setDeletingSold(false);
+    if (error) {
+      toast.error(error.message || 'Could not remove this item.');
+      return;
+    }
+    removeSoldCard(cardId);
+    setSoldDeleteTarget(null);
+    toast.success('Removed from your profile 🗑️');
+  };
+
   const { sellerOrders, sellerOrderGroups, markAsShipped } = useOrders();
   const { perOrder } = useUnreadOrderMessages();
 
