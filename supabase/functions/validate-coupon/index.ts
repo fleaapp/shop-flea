@@ -23,9 +23,14 @@ Deno.serve(async (req) => {
     let callerId: string | null = null;
     try {
       const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
-      if (token && token.split(".").length === 3) {
-        const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
-        callerId = typeof payload?.sub === "string" ? payload.sub : null;
+      if (token) {
+        const verifier = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          { auth: { persistSession: false, autoRefreshToken: false } },
+        );
+        const { data } = await verifier.auth.getUser(token);
+        callerId = data?.user?.id ?? null;
       }
     } catch (_) { callerId = null; }
 
