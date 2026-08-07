@@ -14,9 +14,11 @@ interface ProfileGridCardProps {
     thumbnails?: string[] | null;
     source_listing_id?: string;
     order_id?: string;
+    order_status?: string;
   };
   activeTab: 'listings' | 'sold';
   getOrderStatusButton?: (listingId: string, orderId?: string) => React.ReactNode;
+  onDelete?: () => void;
 }
 
 const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton }: ProfileGridCardProps) => {
