@@ -536,6 +536,58 @@ const SellerDashboard = () => {
               </section>
             )}
 
+            {payoutRisk?.payoutFailureReason && (
+              <section className="rounded-2xl bg-red-50 border-2 border-red-300 p-4 mt-2">
+                <div className="flex items-center gap-2 text-[11px] font-semibold text-red-700 uppercase tracking-wide">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Payout failed
+                </div>
+                <p className="text-[13px] text-charcoal mt-1.5 leading-relaxed">
+                  We couldn't send your payout. Please double-check your bank details and try again. Your money is safe and back in your available balance.
+                </p>
+                <Button
+                  onClick={() => setActionRequiredOpen(true)}
+                  className="w-full mt-3 h-11 rounded-xl bg-red-600 text-white hover:bg-red-700 font-semibold"
+                >
+                  Update bank details
+                </Button>
+              </section>
+            )}
+
+            {!payoutRisk?.payoutFailureReason && payoutRisk?.bankStatus === 'errored' && (
+              <section className="rounded-2xl bg-red-50 border-2 border-red-300 p-4 mt-2">
+                <div className="flex items-center gap-2 text-[11px] font-semibold text-red-700 uppercase tracking-wide">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Bank details rejected
+                </div>
+                <p className="text-[13px] text-charcoal mt-1.5 leading-relaxed">
+                  Your bank details were rejected - please re-enter them. Payouts are paused until they're accepted.
+                </p>
+                <Button
+                  onClick={() => setActionRequiredOpen(true)}
+                  className="w-full mt-3 h-11 rounded-xl bg-red-600 text-white hover:bg-red-700 font-semibold"
+                >
+                  Re-enter bank details
+                </Button>
+              </section>
+            )}
+
+            {payoutRisk?.bankStatus === 'new' && payoutRisk?.hasBankAccount && !payoutRisk?.payoutFailureReason && (
+              <section className="rounded-2xl bg-amber-50 border border-amber-200 p-4 mt-2">
+                <p className="text-[13px] text-charcoal leading-relaxed">
+                  🔍 Bank account being checked. Payouts unlock as soon as this finishes - usually within a day.
+                </p>
+              </section>
+            )}
+
+            {payoutRisk?.payoutReviewFlag && (
+              <section className="rounded-2xl bg-amber-50 border border-amber-200 p-4 mt-2">
+                <p className="text-[13px] text-charcoal leading-relaxed">
+                  🔎 Payouts are paused while we run a quick check on your account. You can keep selling - we'll let you know as soon as it's cleared.
+                </p>
+              </section>
+            )}
+
+
+
             {/* Balance breakdown: Held for unshipped → Clearing → First payout hold */}
             {!isNegative && (() => {
               const pendingCents = data?.pending ?? 0;
