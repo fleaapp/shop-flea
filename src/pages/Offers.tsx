@@ -118,9 +118,32 @@ const Offers = () => {
     if (listingIdsKey) load();
   }, [listingIdsKey, userIdsKey]);
 
+  // Poll only while the screen is actually visible - background timers on
+  // native keep firing and drain battery for no benefit.
   useEffect(() => {
-    const timer = window.setInterval(() => void refresh(), 60_000);
-    return () => window.clearInterval(timer);
+    let timer: number | undefined;
+    const start = () => {
+      if (timer) return;
+      timer = window.setInterval(() => void refresh(), 60_000);
+    };
+    const stop = () => {
+      if (timer) window.clearInterval(timer);
+      timer = undefined;
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void refresh();
+        start();
+      } else {
+        stop();
+      }
+    };
+    if (document.visibilityState === 'visible') start();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [refresh]);
 
 
