@@ -317,12 +317,50 @@ serve(async (req) => {
         break;
       }
 
+      case "payout.paid":
+      case "payout.failed": {
+        const payout = event.data.object as Stripe.Payout;
+        const acctId = (event as any).account as string | undefined;
+        if (acctId) {
+          const { data: profile } = await serviceClient
+            .from("profiles")
+            .select("user_id")
+            .eq("stripe_account_id", acctId)
+            .maybeSingle();
+          if (profile?.user_id) {
+            const amountStr = `$${((payout.amount ?? 0) / 100).toFixed(2)}`;
+            if (event.type === "payout.paid") {
+              await notify(
+                profile.user_id,
+                "payout_paid",
+                "Payout sent",
+                `💸 ${amountStr} is on its way to your bank account.`,
+              );
+            } else {
+              await notify(
+                profile.user_id,
+                "payout_failed",
+                "Payout failed",
+                `⚠️ Your ${amountStr} payout could not be sent. Check your bank details in your Seller Dashboard.`,
+              );
+            }
+            await syncSellerBalance(profile.user_id);
+          }
+        }
+        await logEvent(event, { amount: (payout.amount ?? 0) / 100 });
+        break;
+      }
+
       case "charge.dispute.created":
       case "charge.dispute.funds_withdrawn": {
         const dispute = event.data.object as Stripe.Dispute;
         const piId = dispute.payment_intent as string;
         const orders = piId ? await findOrdersByPaymentIntent(piId) : [];
         for (const o of orders) {
+          await serviceClient
+            .from("orders")
+            .update({ disputed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+            .eq("id", o.id);
           await notify(o.seller_id, "dispute_opened", "⚠️ Payment disputed",
             "A buyer has disputed a payment. Please contact support immediately.", o.id);
         }
@@ -337,6 +375,24 @@ serve(async (req) => {
         });
         break;
       }
+
+      case "charge.dispute.closed": {
+        const dispute = event.data.object as Stripe.Dispute;
+        const piId = dispute.payment_intent as string;
+        const orders = piId ? await findOrdersByPaymentIntent(piId) : [];
+        for (const o of orders) {
+          await serviceClient
+            .from("orders")
+            .update({ disputed_at: null, updated_at: new Date().toISOString() })
+            .eq("id", o.id);
+        }
+        for (const sellerId of new Set(orders.map((o: any) => o.seller_id).filter(Boolean))) {
+          await syncSellerBalance(sellerId as string);
+        }
+        await logEvent(event, { order_id: orders[0]?.id ?? null, amount: (dispute.amount ?? 0) / 100 });
+        break;
+      }
+
 
       case "account.updated": {
         // Sync stripe_onboarding_complete + notify seller when verification state flips.
