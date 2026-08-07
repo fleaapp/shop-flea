@@ -1877,6 +1877,10 @@ Deno.serve(async (req) => {
         return response(await deleteBrand(payload));
       case "listRefunds":
         return response(await listRefunds(payload));
+      case "listPayoutReviews":
+        return response(await listPayoutReviews());
+      case "clearPayoutReview":
+        return response(await clearPayoutReview(payload));
       default:
         return response({ error: "Unknown admin action" }, 400);
     }
