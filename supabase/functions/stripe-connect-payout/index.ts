@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
     const { data: profile } = await supabase
       .from("profiles")
       .select(
-        "stripe_account_id, stripe_onboarding_complete, bank_status, bank_last_changed_at, payout_review_flag, payout_review_reason, payout_failure_reason",
+        "stripe_account_id, stripe_onboarding_complete, bank_status, bank_last_changed_at, payout_review_flag, payout_review_reason, payout_failure_reason, payout_failure_count",
       )
       .eq("user_id", userId)
       .maybeSingle();
