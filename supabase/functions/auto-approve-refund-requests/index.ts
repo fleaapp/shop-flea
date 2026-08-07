@@ -32,6 +32,17 @@ serve(async (req) => {
     return json({ error: "Service not configured" }, 500);
   }
 
+  // Cron-only endpoint: require the service-role bearer or the cron secret.
+  const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const providedCron = req.headers.get("x-cron-secret") ?? "";
+  const authorized =
+    authHeader === `Bearer ${serviceKey}` ||
+    (!!cronSecret && providedCron === cronSecret);
+  if (!authorized) {
+    return json({ error: "Unauthorized" }, 401);
+  }
+
   // Order rows that are past the 72h deadline and still awaiting a seller response.
   const nowIso = new Date().toISOString();
   const url =
