@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { safeNavigateBack } from '@/utils/safeBack';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Loader2, AlertTriangle, Info, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -417,7 +418,7 @@ const SellerDashboard = () => {
       <header className="shrink-0 bg-background">
         <div className="relative flex items-center px-4 py-3">
           <button
-            onClick={() => navigate('/settings')}
+            onClick={() => safeNavigateBack(navigate, '/settings')}
             aria-label="Back"
             className="w-9 h-9 flex items-center justify-center -ml-2 rounded-full hover:bg-muted/60 active:bg-muted"
           >

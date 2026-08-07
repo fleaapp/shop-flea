@@ -45,6 +45,19 @@ export async function applyTracking(
 
   let deliveredOrders = 0;
   if (t.deliveredAt) {
+    // A carrier scan can land before the seller pressed "Mark as shipped".
+    // Stamp the shipped state first so buyers never skip that step (and the
+    // shipped timeline entry stays accurate).
+    await supabase
+      .from('orders')
+      .update({
+        status: 'shipped',
+        shipped_at: t.firstScanAt ?? t.deliveredAt,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('order_group_id', shipment.order_group_id)
+      .eq('status', 'awaiting');
+
     // Carrier-confirmed delivery: stamp delivery, open the 48h dispute window.
     const { data, error } = await supabase
       .from('orders')
@@ -59,7 +72,7 @@ export async function applyTracking(
         updated_at: new Date().toISOString(),
       })
       .eq('order_group_id', shipment.order_group_id)
-      .in('status', ['awaiting', 'shipped'])
+      .eq('status', 'shipped')
       .select('id');
     if (error) console.error('[tracking] delivery update failed:', error.message);
     deliveredOrders = data?.length ?? 0;

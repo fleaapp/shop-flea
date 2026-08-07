@@ -154,7 +154,7 @@ serve(async (req) => {
       return {
         user_id: o.seller_id,
         type: "item_sold",
-        title: "Item Sold",
+        title: "Item sold",
         message: listing?.title ?? "Your item",
         related_listing_id: o.listing_id,
         related_user_id: buyerId,
@@ -181,7 +181,7 @@ serve(async (req) => {
             user_id: (o as any).seller_id,
             notification: {
               type: "item_sold",
-              title: "Item Sold",
+              title: "Item sold",
               message: `🎉🤑 Cha-ching! Your item "${listing?.title ?? ""}" has just sold.`,
               related_listing_id: (o as any).listing_id,
               related_order_id: (o as any).id,

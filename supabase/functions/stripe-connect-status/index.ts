@@ -438,6 +438,21 @@ serve(async (req) => {
     ) || errors[0] || null;
     const nameMismatch = !!docError && /name/i.test(docError.code || '');
 
+    // Never leak another seller's financial state. Checkout only needs to know
+    // whether the seller can accept a payment.
+    if (sellerUserId && sellerUserId !== userId) {
+      return new Response(
+        JSON.stringify({
+          chargesEnabled: account.charges_enabled,
+          detailsSubmitted: account.details_submitted,
+          payoutsEnabled: account.payouts_enabled,
+          accountExists: true,
+          ready: !!(account.charges_enabled && negativeBalanceCents === 0),
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
     return new Response(
       JSON.stringify({
         chargesEnabled: account.charges_enabled,

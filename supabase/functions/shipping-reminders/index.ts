@@ -78,8 +78,8 @@ Deno.serve(async (req) => {
         .insert({
           user_id: order.seller_id,
           type: 'shipping_reminder_3d',
-          title: 'Shipping Reminder',
-          message: '🚨 Reminder: Your buyer is waiting 👀 Ship now & update tracking. 📦',
+          title: 'Shipping reminder',
+          message: '🚨 Reminder: your buyer is waiting. Ship now and update tracking. ✈️',
           related_listing_id: order.listing_id,
           related_user_id: order.buyer_id,
         });
@@ -91,8 +91,8 @@ Deno.serve(async (req) => {
         console.log(`[3d] Sent reminder for order ${order.id}`);
         await firePushNotification(order.seller_id, {
           type: 'shipping_reminder_3d',
-          title: 'Shipping Reminder',
-          message: '🚨 Reminder: Your buyer is waiting 👀 Ship now & update tracking. 📦',
+          title: 'Shipping reminder',
+          message: '🚨 Reminder: your buyer is waiting. Ship now and update tracking. ✈️',
           related_listing_id: order.listing_id,
         });
       }
@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
         .insert({
           user_id: order.seller_id,
           type: 'shipping_reminder_6d',
-          title: 'Urgent Shipping Reminder',
+          title: 'Urgent shipping reminder',
           message: '🚨 Urgent action needed: Your sale is 6 days overdue. Ship today to avoid issues. 🚚',
           related_listing_id: order.listing_id,
           related_user_id: order.buyer_id,
@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
         console.log(`[6d] Sent reminder for order ${order.id}`);
         await firePushNotification(order.seller_id, {
           type: 'shipping_reminder_6d',
-          title: 'Urgent Shipping Reminder',
+          title: 'Urgent shipping reminder',
           message: '🚨 Urgent action needed: Your sale is 6 days overdue. Ship today to avoid issues. 🚚',
           related_listing_id: order.listing_id,
         });
@@ -219,7 +219,7 @@ Deno.serve(async (req) => {
           user_id: order.buyer_id,
           type: 'order_overdue_buyer',
           title: 'Order overdue',
-          message: "⏰ Your order is overdue — the seller hasn't shipped yet. Tap for options.",
+          message: "⏰ Your order is overdue - the seller hasn't shipped yet. Tap for options.",
           related_listing_id: order.listing_id,
           related_user_id: order.seller_id,
           related_order_id: order.id,
@@ -232,7 +232,7 @@ Deno.serve(async (req) => {
         await firePushNotification(order.buyer_id, {
           type: 'order_overdue_buyer',
           title: 'Order overdue',
-          message: "Your order is overdue — the seller hasn't shipped yet. Tap for options.",
+          message: "Your order is overdue - the seller hasn't shipped yet. Tap for options.",
           related_listing_id: order.listing_id,
           related_order_id: order.id,
         });

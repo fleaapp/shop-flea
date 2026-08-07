@@ -136,7 +136,7 @@ serve(async (req) => {
       notifications.push({
         user_id: parentAuthorId,
         type: "comment_reply",
-        title: "New Reply",
+        title: "New reply",
         message: `${username} replied to your comment on "${listingTitle}".`,
         related_listing_id: listingId,
         related_user_id: userId,
@@ -147,7 +147,7 @@ serve(async (req) => {
       notifications.push({
         user_id: listing.user_id,
         type: "new_comment",
-        title: "New Comment",
+        title: "New comment",
         message: `${username} commented on your listing "${listingTitle}".`,
         related_listing_id: listingId,
         related_user_id: userId,

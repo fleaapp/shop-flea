@@ -718,7 +718,7 @@ Deno.serve(async (req) => {
           await insertNotificationWithFallback(external, {
             user_id: orderInfo.buyerId,
             type: "refund_rejected",
-            title: "Refund Rejected",
+            title: "Refund rejected",
             message: `${formattedUsername} has rejected your refund request.`,
             related_listing_id: orderInfo.listingId,
             related_user_id: userId,
@@ -873,7 +873,7 @@ Deno.serve(async (req) => {
           await insertNotificationWithFallback(external, {
             user_id: recipientId,
             type: notifType,
-            title: "New Message",
+            title: "New message",
             message: notifMessage,
             related_listing_id: orderInfo.listingId,
             related_user_id: userId,

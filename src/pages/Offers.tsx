@@ -37,7 +37,7 @@ const Offers = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, profile, refreshProfile } = useAuth();
-  const { received, sent, loading, create, respond, withdraw, refresh } = useOffers();
+  const { received, sent, loading, loadingMore, hasMore, loadMore, create, respond, withdraw, refresh } = useOffers();
   const { sellerReady, gate: sellerGate, setGateOpen: setSellerGateOpen } = useSellerGate();
   const requestedRole = (location.state as any)?.role;
   const [role, setRole] = useState<'buyer' | 'seller'>(
@@ -118,9 +118,32 @@ const Offers = () => {
     if (listingIdsKey) load();
   }, [listingIdsKey, userIdsKey]);
 
+  // Poll only while the screen is actually visible - background timers on
+  // native keep firing and drain battery for no benefit.
   useEffect(() => {
-    const timer = window.setInterval(() => void refresh(), 60_000);
-    return () => window.clearInterval(timer);
+    let timer: number | undefined;
+    const start = () => {
+      if (timer) return;
+      timer = window.setInterval(() => void refresh(), 60_000);
+    };
+    const stop = () => {
+      if (timer) window.clearInterval(timer);
+      timer = undefined;
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void refresh();
+        start();
+      } else {
+        stop();
+      }
+    };
+    if (document.visibilityState === 'visible') start();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [refresh]);
 
 
@@ -416,7 +439,18 @@ const Offers = () => {
             minHeightClass="min-h-[55vh]"
           />
         ) : (
-          <div className="space-y-3">{list.map((o) => renderCard(o, tab))}</div>
+          <div className="space-y-3">
+            {list.map((o) => renderCard(o, tab))}
+            {hasMore && (
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="w-full rounded-xl border border-border bg-card py-3 text-sm font-medium text-foreground disabled:opacity-60"
+              >
+                {loadingMore ? 'Loading...' : 'Load older offers'}
+              </button>
+            )}
+          </div>
         )}
       </div>
 

@@ -209,7 +209,7 @@ export function useCreateReview() {
           .maybeSingle();
         await sendPushNotification(reviewedUserId, {
           type: 'new_review',
-          title: 'New Review',
+          title: 'New review',
           message: `You just got a ${rating}-star review.`,
           related_listing_id: orderRow?.listing_id ?? undefined,
           related_user_id: user.id,

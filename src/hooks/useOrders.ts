@@ -451,7 +451,7 @@ export function useOrders() {
           seen.add(row.buyer_id);
           await sendPushNotification(row.buyer_id, {
             type: 'order_shipped',
-            title: 'Order Shipped',
+            title: 'Order shipped',
             message: '✈️ Your order is on the way. Tap for details.',
             related_listing_id: row.listing_id ?? undefined,
             related_order_id: row.id,
@@ -493,7 +493,7 @@ export function useOrders() {
       try {
         await sendPushNotification(user.id, {
           type: 'order_delivered',
-          title: 'Order Delivered',
+          title: 'Order delivered',
           message: 'Your order is home safe 🏠 Tap for details.',
           related_order_id: orderId ?? undefined,
         });
@@ -511,7 +511,7 @@ export function useOrders() {
           seen.add(row.seller_id);
           await sendPushNotification(row.seller_id, {
             type: 'sale_delivered',
-            title: 'Sale Delivered',
+            title: 'Sale delivered',
             message: 'Your item was delivered. Funds release in 48 hours.',
             related_listing_id: row.listing_id ?? undefined,
             related_order_id: row.id,

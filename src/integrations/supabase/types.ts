@@ -896,6 +896,7 @@ export type Database = {
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
+          disputed_at: string | null
           id: string
           listing_id: string
           order_group_id: string | null
@@ -943,6 +944,7 @@ export type Database = {
           created_at?: string
           delivered_at?: string | null
           dispute_window_ends_at?: string | null
+          disputed_at?: string | null
           id?: string
           listing_id: string
           order_group_id?: string | null
@@ -990,6 +992,7 @@ export type Database = {
           created_at?: string
           delivered_at?: string | null
           dispute_window_ends_at?: string | null
+          disputed_at?: string | null
           id?: string
           listing_id?: string
           order_group_id?: string | null
@@ -1771,6 +1774,7 @@ export type Database = {
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
+          disputed_at: string | null
           id: string
           listing_id: string
           order_group_id: string | null
@@ -1827,6 +1831,7 @@ export type Database = {
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
+          disputed_at: string | null
           id: string
           listing_id: string
           order_group_id: string | null
@@ -1887,6 +1892,7 @@ export type Database = {
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
+          disputed_at: string | null
           id: string
           listing_id: string
           order_group_id: string | null
@@ -1943,6 +1949,7 @@ export type Database = {
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
+          disputed_at: string | null
           id: string
           listing_id: string
           order_group_id: string | null
@@ -2005,6 +2012,7 @@ export type Database = {
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
+          disputed_at: string | null
           id: string
           listing_id: string
           order_group_id: string | null
@@ -2229,6 +2237,7 @@ export type Database = {
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
+          disputed_at: string | null
           id: string
           listing_id: string
           order_group_id: string | null
@@ -2290,6 +2299,7 @@ export type Database = {
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
+          disputed_at: string | null
           id: string
           listing_id: string
           order_group_id: string | null
@@ -2377,6 +2387,7 @@ export type Database = {
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
+          disputed_at: string | null
           id: string
           listing_id: string
           order_group_id: string | null
@@ -2465,6 +2476,7 @@ export type Database = {
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
+          disputed_at: string | null
           id: string
           listing_id: string
           order_group_id: string | null
@@ -2522,6 +2534,7 @@ export type Database = {
           created_at: string
           delivered_at: string | null
           dispute_window_ends_at: string | null
+          disputed_at: string | null
           id: string
           listing_id: string
           order_group_id: string | null

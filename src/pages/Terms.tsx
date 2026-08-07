@@ -1,5 +1,6 @@
 import { ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { safeNavigateBack } from '@/utils/safeBack';
 import BottomNav from '@/components/BottomNav';
 
 const SECTION = "scroll-mt-20";
@@ -11,9 +12,9 @@ const Terms = () => {
     <div className="native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden">
       <header className="shrink-0 bg-background px-4 py-4 flex items-center relative">
         <button
-          onClick={() => navigate('/settings')}
+          onClick={() => safeNavigateBack(navigate, '/settings')}
           className="text-foreground absolute left-4"
-          aria-label="Back to Settings"
+          aria-label="Back"
         >
           <ChevronLeft className="h-6 w-6" />
         </button>
@@ -253,14 +254,25 @@ const Terms = () => {
           </section>
 
           <section className={SECTION}>
-            <h2 className="text-base font-bold mb-2">19. Governing law and disputes</h2>
+            <h2 className="text-base font-bold mb-2">19. Complaints and dispute resolution</h2>
             <p>
-              These Terms are governed by the laws of New South Wales, Australia. You and Flea submit to the non-exclusive jurisdiction of the courts of New South Wales and the Commonwealth of Australia. Before commencing any court action, you agree to first contact us at <a href="mailto:hello@finditonflea.com" className="underline">hello@finditonflea.com</a> and attempt in good faith to resolve the dispute.
+              If you have a complaint about Flea, another user, an order or a decision we have made, contact us at <a href="mailto:hello@finditonflea.com" className="underline">hello@finditonflea.com</a> or via <em>Settings → Help Centre → Contact Support</em>. We will acknowledge your complaint within 2 business days and aim to give you a decision within 10 business days. If we need longer, we will tell you why and give you an expected timeframe.
+            </p>
+            <p className="mt-2">
+              If you are not satisfied with our decision, you can escalate it by replying to our response and asking for an internal review, which is handled by someone who was not involved in the original decision. You may also raise the matter with the Australian Competition and Consumer Commission or your state or territory consumer protection agency, and nothing in these Terms limits your rights under the Australian Consumer Law, including the statutory unfair contract terms regime.
             </p>
           </section>
 
           <section className={SECTION}>
-            <h2 className="text-base font-bold mb-2">20. Contact</h2>
+            <h2 className="text-base font-bold mb-2">20. Governing law</h2>
+            <p>
+              These Terms are governed by the laws of New South Wales, Australia. You and Flea submit to the non-exclusive jurisdiction of the courts of New South Wales and the Commonwealth of Australia. Before commencing any court action, you agree to first use the complaints process above and attempt in good faith to resolve the dispute.
+            </p>
+          </section>
+
+
+          <section className={SECTION}>
+            <h2 className="text-base font-bold mb-2">21. Contact</h2>
             <p>
               Questions about these Terms? Contact us at <a href="mailto:hello@finditonflea.com" className="underline">hello@finditonflea.com</a> or via <em>Settings → Help Centre → Contact Support</em>.
             </p>

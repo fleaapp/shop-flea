@@ -209,7 +209,7 @@ async function createCheckoutNotifications(
       notification: {
         user_id: sellerId,
         type: "item_sold",
-        title: "Item Sold",
+        title: "Item sold",
         message,
         related_listing_id: first.listing_id,
         related_user_id: buyerId,

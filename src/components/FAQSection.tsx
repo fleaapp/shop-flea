@@ -36,7 +36,7 @@ const faqItems = [
       },
       {
         q: 'Can I get a refund?',
-        a: 'If there\'s an issue with your order, start by messaging the seller through the order chat. You can request a refund directly in the chat within 48 hours of the order being marked as delivered. For multi-item orders, you can choose which items to refund; shipping and fees are split fairly between the refunded items and the items you keep. Once a request is submitted, the seller has 72 hours to approve or decline. If they don\'t respond in time, the refund is issued automatically. If the seller declines, Flea reviews the request and may still issue the refund at our discretion.',
+        a: 'If there\'s an issue with your order, start by messaging the seller through the order chat. You can request a refund directly in the chat within 48 hours of the order being marked as delivered. That 48 hour window is the same window the seller waits for their money: if you raise an issue before it ends, funds stay held while it is sorted, and if you raise nothing, the order auto-completes and the seller is paid. Requests made after the window closes are handled case by case by Flea. For multi-item orders, you can choose which items to refund; shipping and fees are split fairly between the refunded items and the items you keep. Once a request is submitted, the seller has 72 hours to approve or decline. If they don\'t respond in time, the refund is issued automatically. If the seller declines, Flea reviews the request and may still issue the refund at our discretion.',
       },
       {
         q: 'How do I confirm I\'ve received an order?',
