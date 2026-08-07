@@ -1,5 +1,6 @@
 import { ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { safeNavigateBack } from '@/utils/safeBack';
 import BottomNav from '@/components/BottomNav';
 
 const SECTION = "scroll-mt-20";
@@ -11,9 +12,9 @@ const Terms = () => {
     <div className="native-safe-top fixed inset-0 flex flex-col bg-background overflow-hidden">
       <header className="shrink-0 bg-background px-4 py-4 flex items-center relative">
         <button
-          onClick={() => navigate('/settings')}
+          onClick={() => safeNavigateBack(navigate, '/settings')}
           className="text-foreground absolute left-4"
-          aria-label="Back to Settings"
+          aria-label="Back"
         >
           <ChevronLeft className="h-6 w-6" />
         </button>
