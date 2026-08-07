@@ -25,6 +25,16 @@ import { Button } from '@/components/ui/button';
 import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
 import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
 import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 
 
