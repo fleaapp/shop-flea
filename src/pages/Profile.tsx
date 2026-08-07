@@ -421,6 +421,12 @@ const Profile = () => {
                     listing={listing}
                     activeTab={activeTab}
                     getOrderStatusButton={getOrderStatusButton}
+                    onDelete={canDeleteSold(listing) ? () => setSoldDeleteTarget({
+                      cardId: listing.id,
+                      listingId: ((listing as any).source_listing_id || listing.id).split('::')[0],
+                      orderId: (listing as any).order_id,
+                      title: listing.title,
+                    }) : undefined}
                   />
                 ))}
               </div>
