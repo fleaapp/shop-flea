@@ -517,6 +517,12 @@ serve(async (req) => {
         currentlyDue,
         pastDue,
         needsIdDocument,
+        stripeAsksForId,
+        idRequiredByRisk: riskRequiresId,
+        bankStatus,
+        hasBankAccount: !!defaultBank,
+        ...payoutRisk,
+
         balanceAvailableCents,
         balancePendingCents,
         negativeBalanceCents,
