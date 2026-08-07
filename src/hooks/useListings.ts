@@ -31,6 +31,9 @@ export interface DbListing {
   updated_at: string;
   source_listing_id?: string;
   order_id?: string;
+  order_status?: string;
+  seller_hidden_at?: string | null;
+  admin_removed_at?: string | null;
   // Joined profile data
   profiles?: {
     username: string;
@@ -44,8 +47,12 @@ export interface DbListing {
 
 const HIDDEN_FROM_PROFILE_STATUSES = new Set(['hidden', 'removed', 'archived', 'blocked', 'deleted']);
 
-const isHiddenFromProfile = (listing: Pick<DbListing, 'status'>) =>
-  HIDDEN_FROM_PROFILE_STATUSES.has((listing.status || '').toLowerCase());
+const isHiddenFromProfile = (
+  listing: Pick<DbListing, 'status'> & { seller_hidden_at?: string | null; admin_removed_at?: string | null },
+) =>
+  HIDDEN_FROM_PROFILE_STATUSES.has((listing.status || '').toLowerCase()) ||
+  !!listing.seller_hidden_at ||
+  !!listing.admin_removed_at;
 
 export interface ListingFilters {
   category?: string;
