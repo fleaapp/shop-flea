@@ -21,7 +21,7 @@ interface ProfileGridCardProps {
   onDelete?: () => void;
 }
 
-const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton }: ProfileGridCardProps) => {
+const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton, onDelete }: ProfileGridCardProps) => {
   const navigate = useNavigate();
   const thumb = listing.thumbnails?.[0] || listing.images[0];
 
