@@ -291,103 +291,108 @@ export const useUserListings = (status?: 'active' | 'sold' | 'archived') => {
   const [listings, setListings] = useState<DbListing[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchUserListings = useCallback(async () => {
     if (!user) {
       setListings([]);
       setLoading(false);
       return;
     }
+    setLoading(true);
 
-    const fetchUserListings = async () => {
-      setLoading(true);
-
-      if (status === 'sold') {
-        // Fetch orders AND listings marked as sold (includes "sold elsewhere")
-        const [ordersResult, soldListingsResult] = await Promise.all([
-          supabase
-            .from('orders')
-            .select('id, listing_id, created_at')
-            .eq('seller_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(500),
-          supabase
-            .from('listings')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('status', 'sold')
-            .order('updated_at', { ascending: false }),
-        ]);
-
-        const orders = ordersResult.data || [];
-        const allSoldListings = soldListingsResult.data || [];
-
-        // Build order-based sold cards
-        const orderListingIds = new Set(orders.map(o => o.listing_id));
-        let orderedSoldListings: DbListing[] = [];
-
-        if (orders.length > 0) {
-          const listingIds = [...orderListingIds];
-          const { data } = await supabase
-            .from('listings')
-            .select('*')
-            .in('id', listingIds)
-            .eq('user_id', user.id);
-
-          if (data) {
-            const listingMap = new Map(
-              data
-                .filter((listing) => !isHiddenFromProfile(listing))
-                .map((listing) => [listing.id, listing])
-            );
-            orderedSoldListings = orders
-              .map((order) => {
-                const listing = listingMap.get(order.listing_id);
-                if (!listing) return null;
-                return {
-                  ...listing,
-                  id: `${listing.id}::${order.id}`,
-                  source_listing_id: listing.id,
-                  order_id: order.id,
-                  created_at: order.created_at,
-                };
-              })
-              .filter((listing): listing is DbListing => !!listing);
-          }
-        }
-
-        // Add "sold elsewhere" listings (sold status but no order)
-        const soldElsewhere = allSoldListings
-          .filter(l => !orderListingIds.has(l.id))
-          .map(l => ({
-            ...l,
-            source_listing_id: l.id,
-          }));
-
-        const combined = [...orderedSoldListings, ...soldElsewhere];
-        combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        setListings(combined);
-      } else {
-        let query = supabase
+    if (status === 'sold') {
+      // Fetch orders AND listings marked as sold (includes "sold elsewhere")
+      const [ordersResult, soldListingsResult] = await Promise.all([
+        supabase
+          .from('orders')
+          .select('id, listing_id, created_at, status, seller_hidden_at')
+          .eq('seller_id', user.id)
+          .is('seller_hidden_at', null)
+          .order('created_at', { ascending: false })
+          .limit(500),
+        supabase
           .from('listings')
           .select('*')
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+          .eq('status', 'sold')
+          .order('updated_at', { ascending: false }),
+      ]);
 
-        if (status) {
-          query = query.eq('status', status);
-        }
+      const orders = ordersResult.data || [];
+      const allSoldListings = soldListingsResult.data || [];
 
-        const { data, error } = await query;
+      // Build order-based sold cards
+      const orderListingIds = new Set(orders.map(o => o.listing_id));
+      let orderedSoldListings: DbListing[] = [];
 
-        if (!error && data) {
-          setListings(data);
+      if (orders.length > 0) {
+        const listingIds = [...orderListingIds];
+        const { data } = await supabase
+          .from('listings')
+          .select('*')
+          .in('id', listingIds)
+          .eq('user_id', user.id);
+
+        if (data) {
+          const listingMap = new Map(
+            data
+              .filter((listing) => !isHiddenFromProfile(listing as DbListing))
+              .map((listing) => [listing.id, listing])
+          );
+          orderedSoldListings = orders
+            .map((order) => {
+              const listing = listingMap.get(order.listing_id);
+              if (!listing) return null;
+              return {
+                ...listing,
+                id: `${listing.id}::${order.id}`,
+                source_listing_id: listing.id,
+                order_id: order.id,
+                order_status: (order as { status?: string }).status,
+                created_at: order.created_at,
+              };
+            })
+            .filter((listing): listing is DbListing => !!listing);
         }
       }
-      setLoading(false);
-    };
 
-    fetchUserListings();
+      // Add "sold elsewhere" listings (sold status but no order)
+      const soldElsewhere = allSoldListings
+        .filter(l => !orderListingIds.has(l.id) && !isHiddenFromProfile(l as DbListing))
+        .map(l => ({
+          ...l,
+          source_listing_id: l.id,
+        }));
+
+      const combined = [...orderedSoldListings, ...soldElsewhere];
+      combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setListings(combined as DbListing[]);
+    } else {
+      let query = supabase
+        .from('listings')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (status) {
+        query = query.eq('status', status);
+      }
+
+      const { data, error } = await query;
+
+      if (!error && data) {
+        setListings((data as DbListing[]).filter((l) => !l.seller_hidden_at && !l.admin_removed_at));
+      }
+    }
+    setLoading(false);
   }, [user, status]);
+
+  useEffect(() => {
+    fetchUserListings();
+  }, [fetchUserListings]);
+
+  const removeLocal = useCallback((cardId: string) => {
+    setListings((prev) => prev.filter((l) => l.id !== cardId));
+  }, []);
 
   // Drop invalidated listings from the current user's grid instantly.
   useEffect(() => {
@@ -398,5 +403,5 @@ export const useUserListings = (status?: 'active' | 'sold' | 'archived') => {
     });
   }, []);
 
-  return { listings, loading };
+  return { listings, loading, refetch: fetchUserListings, removeLocal };
 };
