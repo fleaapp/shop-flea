@@ -506,6 +506,27 @@ const Profile = () => {
         }}
       />
 
+      <AlertDialog open={!!soldDeleteTarget} onOpenChange={(o) => { if (!o) setSoldDeleteTarget(null); }}>
+        <AlertDialogContent className="max-w-[320px] rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this item?</AlertDialogTitle>
+            <AlertDialogDescription>
+              It will be removed from your profile. Your sale record, payout and buyer's order history stay exactly as they are.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel className="h-9 flex-1 rounded-lg mt-0">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletingSold}
+              onClick={(e) => { e.preventDefault(); confirmDeleteSold(); }}
+              className="h-9 flex-1 rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingSold ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <BottomNav />
     </div>
   );
