@@ -44,14 +44,20 @@ async function callOffers(payload: Record<string, unknown>) {
 }
 
 /** Live offers for the signed-in user, both directions. */
+const PAGE_SIZE = 300;
+
 export function useOffers() {
   const { user } = useAuth();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const [hasMore, setHasMore] = useState(false);
 
   const fetchOffers = useCallback(async () => {
     if (!user) {
       setOffers([]);
+      setHasMore(false);
       setLoading(false);
       return;
     }
@@ -60,10 +66,20 @@ export function useOffers() {
       .select('*')
       .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
       .order('created_at', { ascending: false })
-      .limit(300);
-    if (!error && data) setOffers(data as unknown as Offer[]);
+      .limit(limit + 1);
+    if (!error && data) {
+      const rows = data as unknown as Offer[];
+      setHasMore(rows.length > limit);
+      setOffers(rows.slice(0, limit));
+    }
     setLoading(false);
-  }, [user]);
+    setLoadingMore(false);
+  }, [user, limit]);
+
+  const loadMore = useCallback(() => {
+    setLoadingMore(true);
+    setLimit((l) => l + PAGE_SIZE);
+  }, []);
 
   useEffect(() => {
     fetchOffers();
