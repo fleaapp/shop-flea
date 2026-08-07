@@ -71,13 +71,49 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("stripe_account_id, stripe_onboarding_complete")
+      .select(
+        "stripe_account_id, stripe_onboarding_complete, bank_status, bank_last_changed_at, payout_review_flag, payout_review_reason, payout_failure_reason",
+      )
       .eq("user_id", userId)
       .maybeSingle();
 
     const accountId = (profile as any)?.stripe_account_id;
     if (!accountId || !(profile as any)?.stripe_onboarding_complete) {
       return json({ error: "Seller account not ready." }, 400);
+    }
+
+    // ── Bank health + churn guards ──────────────────────────────────────────
+    if ((profile as any)?.bank_status === "errored") {
+      return json({
+        error:
+          (profile as any)?.payout_failure_reason
+            ? "We couldn't send your last payout. Please re-enter your bank details before trying again."
+            : "Your bank details were rejected. Please re-enter them before trying again.",
+        reason: "bank_errored",
+      }, 409);
+    }
+
+    if ((profile as any)?.payout_review_flag) {
+      return json({
+        error:
+          "Your payouts are paused while we run a quick check on your account. We'll let you know as soon as it's cleared.",
+        reason: "payout_review",
+      }, 409);
+    }
+
+    const bankChangedAt = (profile as any)?.bank_last_changed_at
+      ? new Date((profile as any).bank_last_changed_at).getTime()
+      : 0;
+    const coolingMs = 24 * 60 * 60 * 1000;
+    if (bankChangedAt && Date.now() - bankChangedAt < coolingMs) {
+      const hoursLeft = Math.max(
+        1,
+        Math.ceil((coolingMs - (Date.now() - bankChangedAt)) / (60 * 60 * 1000)),
+      );
+      return json({
+        error: `You recently changed your bank details, so this payout is held for another ${hoursLeft} hour${hoursLeft === 1 ? "" : "s"}. This keeps your money safe.`,
+        reason: "bank_cooling_off",
+      }, 409);
     }
 
     const stripe = new Stripe(getStripeSecretKey(), { apiVersion: "2025-08-27.basil" });
@@ -90,6 +126,24 @@ Deno.serve(async (req) => {
     if (!account.charges_enabled || !account.payouts_enabled) {
       return json({ error: "Your account isn't fully verified yet." }, 400);
     }
+
+    // Live bank-account validation state from Stripe.
+    const extAccounts = ((account as any).external_accounts?.data ?? []) as Array<any>;
+    const defaultBank = extAccounts.find((a) => a?.default_for_currency) || extAccounts[0] || null;
+    if (defaultBank?.status === "errored") {
+      await supabase.from("profiles").update({ bank_status: "errored" }).eq("user_id", userId);
+      return json({
+        error: "Your bank details were rejected. Please re-enter them before trying again.",
+        reason: "bank_errored",
+      }, 409);
+    }
+    if (defaultBank?.status === "new") {
+      return json({
+        error: "We're still checking your bank account. Payouts unlock once that finishes.",
+        reason: "bank_checking",
+      }, 409);
+    }
+
 
     const currency = (balance.available?.[0]?.currency ||
       balance.pending?.[0]?.currency ||
