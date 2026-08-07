@@ -66,6 +66,19 @@ const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton, onDelete }:
             </div>
           )}
 
+          {/* Delete button - finished sales only */}
+          {activeTab === 'sold' && onDelete && (
+            <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-10">
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                className="h-7 w-7 flex items-center justify-center rounded-full bg-card/90 backdrop-blur-sm hover:bg-card text-xs"
+                aria-label="Delete sold item"
+              >
+                🗑️
+              </button>
+            </div>
+          )}
+
           {/* Order status for sold items */}
           {activeTab === 'sold' && getOrderStatusButton?.(
             (listing as any).source_listing_id || listing.id,
