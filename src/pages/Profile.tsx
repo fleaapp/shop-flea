@@ -25,6 +25,16 @@ import { Button } from '@/components/ui/button';
 import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
 import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
 import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 
 
@@ -75,7 +85,34 @@ const Profile = () => {
   };
   
   const { listings: activeListings, loading: activeLoading } = useUserListings('active');
-  const { listings: soldListings, loading: soldLoading } = useUserListings('sold');
+  const { listings: soldListings, loading: soldLoading, removeLocal: removeSoldCard } = useUserListings('sold');
+  const [soldDeleteTarget, setSoldDeleteTarget] = useState<{ cardId: string; listingId: string; orderId?: string; title: string } | null>(null);
+  const [deletingSold, setDeletingSold] = useState(false);
+
+  // A sale can only be removed from the profile once it is finished.
+  const canDeleteSold = (listing: any) => {
+    if (activeTab !== 'sold') return false;
+    if (!listing.order_id) return true; // sold elsewhere
+    return ['completed', 'refunded', 'cancelled'].includes(String(listing.order_status || '').toLowerCase());
+  };
+
+  const confirmDeleteSold = async () => {
+    if (!soldDeleteTarget) return;
+    setDeletingSold(true);
+    const { cardId, listingId, orderId } = soldDeleteTarget;
+    const { error } = orderId
+      ? await (supabase as any).rpc('seller_hide_sale', { p_order_id: orderId })
+      : await (supabase as any).rpc('seller_hide_sold_listing', { p_listing_id: listingId });
+    setDeletingSold(false);
+    if (error) {
+      toast.error(error.message || 'Could not remove this item.');
+      return;
+    }
+    removeSoldCard(cardId);
+    setSoldDeleteTarget(null);
+    toast.success('Removed from your profile 🗑️');
+  };
+
   const { sellerOrders, sellerOrderGroups, markAsShipped } = useOrders();
   const { perOrder } = useUnreadOrderMessages();
 
@@ -336,6 +373,23 @@ const Profile = () => {
                       <span className="text-sm max-[430px]:text-xs max-[375px]:text-[10px]">✏️</span>
                     </button>
                   )}
+                  {canDeleteSold(listing) && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSoldDeleteTarget({
+                          cardId: listing.id,
+                          listingId: realId,
+                          orderId: (listing as any).order_id,
+                          title: listing.title,
+                        });
+                      }}
+                      aria-label="Delete sold item"
+                      className="absolute right-4 max-[430px]:right-3 max-[375px]:right-2.5 top-4 max-[430px]:top-3 max-[375px]:top-2.5 z-10 flex h-8 w-8 max-[430px]:h-7 max-[430px]:w-7 max-[375px]:h-6 max-[375px]:w-6 items-center justify-center rounded-lg max-[375px]:rounded-md bg-card/80 backdrop-blur-sm"
+                    >
+                      <span className="text-sm max-[430px]:text-xs max-[375px]:text-[10px]">🗑️</span>
+                    </button>
+                  )}
                   <div 
                     className="relative aspect-[3/4] max-[430px]:aspect-[3/4] max-[393px]:aspect-[4/5] max-[375px]:aspect-[1/1] w-full overflow-hidden rounded-2xl max-[375px]:rounded-xl cursor-pointer"
                     onClick={() => navigate(`/listing/${realId}`, activeTab === 'sold' ? { state: { isSold: true, orderId: (listing as any).order_id } } : undefined)}
@@ -377,6 +431,12 @@ const Profile = () => {
                     listing={listing}
                     activeTab={activeTab}
                     getOrderStatusButton={getOrderStatusButton}
+                    onDelete={canDeleteSold(listing) ? () => setSoldDeleteTarget({
+                      cardId: listing.id,
+                      listingId: ((listing as any).source_listing_id || listing.id).split('::')[0],
+                      orderId: (listing as any).order_id,
+                      title: listing.title,
+                    }) : undefined}
                   />
                 ))}
               </div>
@@ -455,6 +515,27 @@ const Profile = () => {
           navigate('/create');
         }}
       />
+
+      <AlertDialog open={!!soldDeleteTarget} onOpenChange={(o) => { if (!o) setSoldDeleteTarget(null); }}>
+        <AlertDialogContent className="max-w-[320px] rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this item?</AlertDialogTitle>
+            <AlertDialogDescription>
+              It will be removed from your profile. Your sale record, payout and buyer's order history stay exactly as they are.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel className="h-9 flex-1 rounded-lg mt-0">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletingSold}
+              onClick={(e) => { e.preventDefault(); confirmDeleteSold(); }}
+              className="h-9 flex-1 rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingSold ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <BottomNav />
     </div>

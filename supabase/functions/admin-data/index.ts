@@ -950,7 +950,8 @@ function refundedOrderListingFallback(order: any, status = "refunded") {
 }
 
 async function deleteListingAndOrders(listingId: string, reason: string) {
-  // Notify buyers/sellers of any active orders that are about to be deleted.
+  // Soft-remove: the listing disappears from every public surface but the row,
+  // its orders, payouts and message history all stay stored for the record.
   const activeOrders = await safeSelect("orders", {
     listing_id: `eq.${listingId}`,
     select: "id,buyer_id,seller_id,listing_id,status",
@@ -960,39 +961,33 @@ async function deleteListingAndOrders(listingId: string, reason: string) {
     if (o.status === "awaiting" || o.status === "shipped") {
       await safeInsert("notifications", {
         user_id: o.buyer_id,
-        type: "order_refunded",
-        title: "Order cancelled",
-        message: "↩️ Your order was cancelled because the listing was removed by Flea admin. The amount will be returned to your original payment method.",
+        type: "listing_removed",
+        title: "Listing removed",
+        message: "⚠️ A listing from your order was removed by Flea admin. Your order details are still available in your orders.",
         related_listing_id: o.listing_id,
         related_user_id: o.seller_id,
       });
       await safeInsert("notifications", {
         user_id: o.seller_id,
-        type: "order_refunded",
-        title: "Order removed",
-        message: "⚠️ An order was removed because your listing was deleted by Flea admin.",
+        type: "listing_removed",
+        title: "Listing removed",
+        message: "⚠️ Your listing was removed by Flea admin. Your existing orders are unaffected.",
         related_listing_id: o.listing_id,
         related_user_id: o.buyer_id,
       });
     }
   }
 
-  // Delete order messages, then orders themselves.
-  const orderIds = (activeOrders as any[]).map((o) => o.id).filter(Boolean);
-  if (orderIds.length) {
-    await safeDelete("order_messages", { order_id: `in.(${orderIds.join(",")})` });
-    await safeDelete("orders", { id: `in.(${orderIds.join(",")})` });
-  }
-
-  // Purge listing side-tables so nothing references the row.
+  // Pull it out of live shopping surfaces.
   await safeDelete("cart_items", { listing_id: `eq.${listingId}` });
   await safeDelete("favorites", { listing_id: `eq.${listingId}` });
-  await safeDelete("discarded_listings", { listing_id: `eq.${listingId}` });
-  await safeDelete("listing_comments", { listing_id: `eq.${listingId}` });
-  await safeDelete("notifications", { related_listing_id: `eq.${listingId}` });
 
-  // Finally hard-delete the listing itself.
-  await safeDelete("listings", { id: `eq.${listingId}` });
+  // Stamp the removal marker so buyer/seller profiles and feeds hide it.
+  await safePatch(
+    "listings",
+    { id: `eq.${listingId}` },
+    { admin_removed_at: new Date().toISOString(), status: "removed" },
+  );
   void reason;
 }
 
@@ -1010,14 +1005,13 @@ async function listingAction(payload: any) {
     case "approve":
     case "restore":
     case "activate":
-      await safePatch("listings", { id: `eq.${listingId}` }, { status: "active" });
+      await safePatch("listings", { id: `eq.${listingId}` }, { status: "active", admin_removed_at: null });
       return { ok: true };
     case "reject":
     case "remove":
     case "soft_delete":
     case "delete":
-      // Hard-delete: admin removals wipe the listing and any related orders
-      // rather than flipping them to refunded, per product decision.
+      // Soft-remove: hidden everywhere, but the listing and its history stay stored.
       await deleteListingAndOrders(listingId, "Listing removed by admin");
       return { ok: true };
     case "archive":

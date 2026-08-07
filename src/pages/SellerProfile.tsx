@@ -175,7 +175,9 @@ const SellerProfile = () => {
       .from('listings')
       .select(LISTING_CARD_COLUMNS)
       .eq('user_id', resolvedId)
-      .eq('status', 'active');
+      .eq('status', 'active')
+      .is('seller_hidden_at', null)
+      .is('admin_removed_at', null);
 
     if (activeData) {
       setActiveListings(activeData as unknown as DbListing[]);
@@ -186,6 +188,7 @@ const SellerProfile = () => {
       .from('orders')
       .select('id, listing_id, created_at')
       .eq('seller_id', resolvedId)
+      .is('seller_hidden_at', null)
       .order('created_at', { ascending: false })
       .limit(500);
 
@@ -195,7 +198,9 @@ const SellerProfile = () => {
         .from('listings')
         .select(LISTING_CARD_COLUMNS)
         .in('id', listingIds)
-        .eq('user_id', resolvedId);
+        .eq('user_id', resolvedId)
+        .is('seller_hidden_at', null)
+        .is('admin_removed_at', null);
 
       if (soldData) {
         const listingMap = new Map(

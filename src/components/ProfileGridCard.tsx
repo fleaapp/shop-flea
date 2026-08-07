@@ -14,12 +14,14 @@ interface ProfileGridCardProps {
     thumbnails?: string[] | null;
     source_listing_id?: string;
     order_id?: string;
+    order_status?: string;
   };
   activeTab: 'listings' | 'sold';
   getOrderStatusButton?: (listingId: string, orderId?: string) => React.ReactNode;
+  onDelete?: () => void;
 }
 
-const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton }: ProfileGridCardProps) => {
+const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton, onDelete }: ProfileGridCardProps) => {
   const navigate = useNavigate();
   const thumb = listing.thumbnails?.[0] || listing.images[0];
 
@@ -60,6 +62,19 @@ const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton }: ProfileGr
                 aria-label="Edit listing"
               >
                 ✏️
+              </button>
+            </div>
+          )}
+
+          {/* Delete button - finished sales only */}
+          {activeTab === 'sold' && onDelete && (
+            <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-10">
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                className="h-7 w-7 flex items-center justify-center rounded-full bg-card/90 backdrop-blur-sm hover:bg-card text-xs"
+                aria-label="Delete sold item"
+              >
+                🗑️
               </button>
             </div>
           )}
