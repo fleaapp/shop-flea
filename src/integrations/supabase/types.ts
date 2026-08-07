@@ -649,6 +649,7 @@ export type Database = {
       }
       listings: {
         Row: {
+          admin_removed_at: string | null
           auto_accept_offer_price: number | null
           brand: string
           category: string
@@ -663,6 +664,7 @@ export type Database = {
           price: number
           region_id: string | null
           report_count: number
+          seller_hidden_at: string | null
           shipping_price: number | null
           size: string
           status: string
@@ -675,6 +677,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          admin_removed_at?: string | null
           auto_accept_offer_price?: number | null
           brand: string
           category: string
@@ -689,6 +692,7 @@ export type Database = {
           price: number
           region_id?: string | null
           report_count?: number
+          seller_hidden_at?: string | null
           shipping_price?: number | null
           size: string
           status?: string
@@ -701,6 +705,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          admin_removed_at?: string | null
           auto_accept_offer_price?: number | null
           brand?: string
           category?: string
@@ -715,6 +720,7 @@ export type Database = {
           price?: number
           region_id?: string | null
           report_count?: number
+          seller_hidden_at?: string | null
           shipping_price?: number | null
           size?: string
           status?: string
@@ -913,6 +919,7 @@ export type Database = {
           refund_requested_by: string | null
           refunded_at: string | null
           secure_checkout_fee: number
+          seller_hidden_at: string | null
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -961,6 +968,7 @@ export type Database = {
           refund_requested_by?: string | null
           refunded_at?: string | null
           secure_checkout_fee?: number
+          seller_hidden_at?: string | null
           seller_id: string
           shipped_at?: string | null
           shipping_address?: string | null
@@ -1009,6 +1017,7 @@ export type Database = {
           refund_requested_by?: string | null
           refunded_at?: string | null
           secure_checkout_fee?: number
+          seller_hidden_at?: string | null
           seller_id?: string
           shipped_at?: string | null
           shipping_address?: string | null
@@ -1791,6 +1800,7 @@ export type Database = {
           refund_requested_by: string | null
           refunded_at: string | null
           secure_checkout_fee: number
+          seller_hidden_at: string | null
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -1848,6 +1858,7 @@ export type Database = {
           refund_requested_by: string | null
           refunded_at: string | null
           secure_checkout_fee: number
+          seller_hidden_at: string | null
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -1909,6 +1920,7 @@ export type Database = {
           refund_requested_by: string | null
           refunded_at: string | null
           secure_checkout_fee: number
+          seller_hidden_at: string | null
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -1966,6 +1978,7 @@ export type Database = {
           refund_requested_by: string | null
           refunded_at: string | null
           secure_checkout_fee: number
+          seller_hidden_at: string | null
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -2029,6 +2042,7 @@ export type Database = {
           refund_requested_by: string | null
           refunded_at: string | null
           secure_checkout_fee: number
+          seller_hidden_at: string | null
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -2120,6 +2134,7 @@ export type Database = {
       get_home_feed: {
         Args: { p_limit?: number; p_offset?: number }
         Returns: {
+          admin_removed_at: string | null
           auto_accept_offer_price: number | null
           brand: string
           category: string
@@ -2134,6 +2149,7 @@ export type Database = {
           price: number
           region_id: string | null
           report_count: number
+          seller_hidden_at: string | null
           shipping_price: number | null
           size: string
           status: string
@@ -2254,6 +2270,7 @@ export type Database = {
           refund_requested_by: string | null
           refunded_at: string | null
           secure_checkout_fee: number
+          seller_hidden_at: string | null
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -2316,6 +2333,7 @@ export type Database = {
           refund_requested_by: string | null
           refunded_at: string | null
           secure_checkout_fee: number
+          seller_hidden_at: string | null
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -2404,6 +2422,7 @@ export type Database = {
           refund_requested_by: string | null
           refunded_at: string | null
           secure_checkout_fee: number
+          seller_hidden_at: string | null
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -2493,6 +2512,7 @@ export type Database = {
           refund_requested_by: string | null
           refunded_at: string | null
           secure_checkout_fee: number
+          seller_hidden_at: string | null
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -2551,6 +2571,7 @@ export type Database = {
           refund_requested_by: string | null
           refunded_at: string | null
           secure_checkout_fee: number
+          seller_hidden_at: string | null
           seller_id: string
           shipped_at: string | null
           shipping_address: string | null
@@ -2576,6 +2597,11 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      seller_hide_sale: { Args: { p_order_id: string }; Returns: undefined }
+      seller_hide_sold_listing: {
+        Args: { p_listing_id: string }
+        Returns: undefined
       }
       seller_relist_cancelled_listing: {
         Args: { p_order_id: string }
