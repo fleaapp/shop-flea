@@ -1005,7 +1005,7 @@ async function listingAction(payload: any) {
     case "approve":
     case "restore":
     case "activate":
-      await safePatch("listings", { id: `eq.${listingId}` }, { status: "active" });
+      await safePatch("listings", { id: `eq.${listingId}` }, { status: "active", admin_removed_at: null });
       return { ok: true };
     case "reject":
     case "remove":
