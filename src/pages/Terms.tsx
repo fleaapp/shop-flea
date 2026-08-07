@@ -264,7 +264,7 @@ const Terms = () => {
           </section>
 
           <section className={SECTION}>
-            <h2 className="text-base font-bold mb-2">19a. Governing law</h2>
+            <h2 className="text-base font-bold mb-2">20. Governing law</h2>
             <p>
               These Terms are governed by the laws of New South Wales, Australia. You and Flea submit to the non-exclusive jurisdiction of the courts of New South Wales and the Commonwealth of Australia. Before commencing any court action, you agree to first use the complaints process above and attempt in good faith to resolve the dispute.
             </p>
@@ -272,7 +272,7 @@ const Terms = () => {
 
 
           <section className={SECTION}>
-            <h2 className="text-base font-bold mb-2">20. Contact</h2>
+            <h2 className="text-base font-bold mb-2">21. Contact</h2>
             <p>
               Questions about these Terms? Contact us at <a href="mailto:hello@finditonflea.com" className="underline">hello@finditonflea.com</a> or via <em>Settings → Help Centre → Contact Support</em>.
             </p>
