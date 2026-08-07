@@ -236,6 +236,16 @@ const SellerDashboard = () => {
   const [pendingOpen, setPendingOpen] = useState(false);
   const [verificationError, setVerificationError] = useState<any>(null);
   const [needsIdDocument, setNeedsIdDocument] = useState(false);
+  const [payoutRisk, setPayoutRisk] = useState<{
+    bankStatus: string | null;
+    hasBankAccount: boolean;
+    payoutFailureCount: number;
+    payoutFailureReason: string | null;
+    payoutReviewFlag: boolean;
+    payoutReviewReason: string | null;
+    bankLastChangedAt: string | null;
+    idRequiredByRisk: boolean;
+  } | null>(null);
   const [stripeStatus, setStripeStatus] = useState<{
     chargesEnabled: boolean;
     payoutsEnabled: boolean;
