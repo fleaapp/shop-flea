@@ -1011,8 +1011,7 @@ async function listingAction(payload: any) {
     case "remove":
     case "soft_delete":
     case "delete":
-      // Hard-delete: admin removals wipe the listing and any related orders
-      // rather than flipping them to refunded, per product decision.
+      // Soft-remove: hidden everywhere, but the listing and its history stay stored.
       await deleteListingAndOrders(listingId, "Listing removed by admin");
       return { ok: true };
     case "archive":
