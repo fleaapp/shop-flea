@@ -381,7 +381,17 @@ const SalesDetailsSheet = ({
           </DrawerHeader>
 
           <div className="px-4 pb-8 space-y-4">
+            {orders.some((o) => !!(o as any).disputed_at) && (
+              <div className="rounded-xl bg-destructive/10 border border-destructive/30 p-4">
+                <p className="font-bold text-destructive">⚠️ Payment disputed</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  The buyer's bank is reviewing this payment. Funds stay on hold until it's resolved - our team will be in touch.
+                </p>
+              </div>
+            )}
+
             {/* Buyer Section */}
+
             <div className="rounded-xl bg-card overflow-hidden">
               <SectionHeader>Buyer</SectionHeader>
               <div
