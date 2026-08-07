@@ -144,6 +144,20 @@ Deno.serve(async (req) => {
       }, 409);
     }
 
+    // Identity anchor: once a payout has failed, the seller can keep selling
+    // but cannot withdraw until their ID document has been accepted.
+    const idStatus = (account as any).individual?.verification?.status ?? null;
+    const failureCount = Number((profile as any)?.payout_failure_count ?? 0);
+    if (failureCount > 0 && idStatus !== "verified") {
+      return json({
+        error:
+          "Before we can send this payout, we need to confirm it's you. Please add a photo of your ID in your seller settings.",
+        reason: "id_required",
+      }, 409);
+    }
+
+
+
 
     const currency = (balance.available?.[0]?.currency ||
       balance.pending?.[0]?.currency ||
