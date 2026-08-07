@@ -330,6 +330,16 @@ serve(async (req) => {
           if (profile?.user_id) {
             const amountStr = `$${((payout.amount ?? 0) / 100).toFixed(2)}`;
             if (event.type === "payout.paid") {
+              // A successful payout clears any previous failure state.
+              await serviceClient
+                .from("profiles")
+                .update({
+                  payout_failure_count: 0,
+                  payout_failure_reason: null,
+                  payout_failure_at: null,
+                  bank_status: "validated",
+                })
+                .eq("user_id", profile.user_id);
               await notify(
                 profile.user_id,
                 "payout_paid",
