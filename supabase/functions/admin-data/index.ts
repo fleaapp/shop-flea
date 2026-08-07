@@ -1727,6 +1727,35 @@ async function updateBrand(payload: any = {}) {
   return { ok: true };
 }
 
+// ── Payout review queue ────────────────────────────────────────────────────
+async function listPayoutReviews() {
+  const rows = await safeSelect("profiles", {
+    payout_review_flag: "is.true",
+    select:
+      "user_id,username,display_name,payout_review_flag,payout_review_reason,payout_failure_count,payout_failure_reason,payout_failure_at,bank_status,bank_last_changed_at,bank_change_count_30d",
+    order: "payout_failure_at.desc",
+    limit: 200,
+  });
+  return { reviews: rows };
+}
+
+async function clearPayoutReview(payload: any = {}) {
+  const userId = payload?.userId;
+  if (!userId) throw new Error("userId required");
+  await cloudRest(query("profiles", { user_id: `eq.${userId}`, select: "user_id" }), {
+    method: "PATCH",
+    body: {
+      payout_review_flag: false,
+      payout_review_reason: null,
+      payout_failure_count: 0,
+      payout_failure_reason: null,
+      bank_change_count_30d: 0,
+    },
+  });
+  return { ok: true };
+}
+
+
 async function deleteBrand(payload: any = {}) {
   const { id } = payload ?? {};
   if (!id) throw new Error("id required");
@@ -1848,6 +1877,10 @@ Deno.serve(async (req) => {
         return response(await deleteBrand(payload));
       case "listRefunds":
         return response(await listRefunds(payload));
+      case "listPayoutReviews":
+        return response(await listPayoutReviews());
+      case "clearPayoutReview":
+        return response(await clearPayoutReview(payload));
       default:
         return response({ error: "Unknown admin action" }, 400);
     }

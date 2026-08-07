@@ -87,6 +87,44 @@ async function markOnboardingSubmitted(userId: string, accountId: string) {
   }
 }
 
+// Records a bank-detail change on the seller profile. Keeps a rolling 30 day
+// counter and raises the admin review flag at 3+ changes in that window.
+async function recordBankChange(userId: string) {
+  try {
+    const svc = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
+    const { data: prof } = await svc
+      .from("profiles")
+      .select("bank_change_count_30d, bank_change_window_start, payout_review_flag")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const now = new Date();
+    const windowStart = (prof as any)?.bank_change_window_start
+      ? new Date((prof as any).bank_change_window_start)
+      : null;
+    const windowActive =
+      !!windowStart && now.getTime() - windowStart.getTime() < 30 * 24 * 60 * 60 * 1000;
+    const count = windowActive ? Number((prof as any)?.bank_change_count_30d ?? 0) + 1 : 1;
+
+    const patch: Record<string, unknown> = {
+      bank_status: "new",
+      bank_last_changed_at: now.toISOString(),
+      bank_change_count_30d: count,
+      bank_change_window_start: windowActive ? windowStart!.toISOString() : now.toISOString(),
+    };
+    if (count >= 3) {
+      patch.payout_review_flag = true;
+      patch.payout_review_reason = "Bank details changed 3 or more times in 30 days";
+    }
+    await svc.from("profiles").update(patch).eq("user_id", userId);
+  } catch (e) {
+    console.warn("[stripe-connect-add-bank] recordBankChange failed:", (e as Error).message);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   const originBlock = rejectUntrustedOrigin(req);
@@ -165,6 +203,10 @@ serve(async (req) => {
     } catch (e) {
       console.warn("[stripe-connect-add-bank] TOS update warn:", (e as Error).message);
     }
+
+    // Track bank-detail churn: stamp the change and count changes in a rolling
+    // 30 day window. Three or more changes flags the account for admin review.
+    await recordBankChange(user.id);
 
     // Create bank account as external account
     await stripe.accounts.createExternalAccount(accountId, {

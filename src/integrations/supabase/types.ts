@@ -1097,6 +1097,10 @@ export type Database = {
         Row: {
           auth_provider: string | null
           avatar_url: string | null
+          bank_change_count_30d: number
+          bank_change_window_start: string | null
+          bank_last_changed_at: string | null
+          bank_status: string | null
           bundle_item_discount_percent: number | null
           bundle_shipping_discount_percent: number | null
           bundle_shipping_mode: string
@@ -1119,6 +1123,11 @@ export type Database = {
           offers_enabled: boolean
           password_set: boolean
           pause_selling: boolean
+          payout_failure_at: string | null
+          payout_failure_count: number
+          payout_failure_reason: string | null
+          payout_review_flag: boolean
+          payout_review_reason: string | null
           paypal_merchant_id: string | null
           paypal_onboarding_complete: boolean
           preferred_gender: string[] | null
@@ -1146,6 +1155,10 @@ export type Database = {
         Insert: {
           auth_provider?: string | null
           avatar_url?: string | null
+          bank_change_count_30d?: number
+          bank_change_window_start?: string | null
+          bank_last_changed_at?: string | null
+          bank_status?: string | null
           bundle_item_discount_percent?: number | null
           bundle_shipping_discount_percent?: number | null
           bundle_shipping_mode?: string
@@ -1168,6 +1181,11 @@ export type Database = {
           offers_enabled?: boolean
           password_set?: boolean
           pause_selling?: boolean
+          payout_failure_at?: string | null
+          payout_failure_count?: number
+          payout_failure_reason?: string | null
+          payout_review_flag?: boolean
+          payout_review_reason?: string | null
           paypal_merchant_id?: string | null
           paypal_onboarding_complete?: boolean
           preferred_gender?: string[] | null
@@ -1195,6 +1213,10 @@ export type Database = {
         Update: {
           auth_provider?: string | null
           avatar_url?: string | null
+          bank_change_count_30d?: number
+          bank_change_window_start?: string | null
+          bank_last_changed_at?: string | null
+          bank_status?: string | null
           bundle_item_discount_percent?: number | null
           bundle_shipping_discount_percent?: number | null
           bundle_shipping_mode?: string
@@ -1217,6 +1239,11 @@ export type Database = {
           offers_enabled?: boolean
           password_set?: boolean
           pause_selling?: boolean
+          payout_failure_at?: string | null
+          payout_failure_count?: number
+          payout_failure_reason?: string | null
+          payout_review_flag?: boolean
+          payout_review_reason?: string | null
           paypal_merchant_id?: string | null
           paypal_onboarding_complete?: boolean
           preferred_gender?: string[] | null

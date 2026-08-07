@@ -424,7 +424,7 @@ serve(async (req) => {
       reason?: string;
       requirement?: string;
     }>;
-    const needsIdDocument =
+    const stripeAsksForId =
       [...currentlyDue, ...pastDue].some((r) =>
         r?.startsWith('individual.verification.document') ||
         r?.startsWith('individual.verification.additional_document')
@@ -437,6 +437,59 @@ serve(async (req) => {
       (e.code || '').startsWith('verification_document_')
     ) || errors[0] || null;
     const nameMismatch = !!docError && /name/i.test(docError.code || '');
+
+    // ── Bank account health + payout risk ─────────────────────────────────
+    // Stripe's own validation state for the default external account. This is
+    // part of the normal account read, so there is no extra API cost.
+    const externalAccounts = ((account as any).external_accounts?.data ?? []) as Array<any>;
+    const defaultBank =
+      externalAccounts.find((a) => a?.default_for_currency) || externalAccounts[0] || null;
+    const bankStatus: string | null = defaultBank?.status ?? null;
+
+    let payoutRisk = {
+      payoutFailureCount: 0,
+      payoutFailureReason: null as string | null,
+      payoutFailureAt: null as string | null,
+      payoutReviewFlag: false,
+      payoutReviewReason: null as string | null,
+      bankLastChangedAt: null as string | null,
+      bankChangeCount30d: 0,
+    };
+    try {
+      const externalUrl = Deno.env.get("SUPABASE_URL") ?? "";
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+      const svc = createClient(externalUrl, serviceKey);
+      if (bankStatus) {
+        await svc.from("profiles").update({ bank_status: bankStatus }).eq("user_id", lookupUserId);
+      }
+      const { data: riskRow } = await svc
+        .from("profiles")
+        .select(
+          "payout_failure_count, payout_failure_reason, payout_failure_at, payout_review_flag, payout_review_reason, bank_last_changed_at, bank_change_count_30d",
+        )
+        .eq("user_id", lookupUserId)
+        .maybeSingle();
+      if (riskRow) {
+        payoutRisk = {
+          payoutFailureCount: Number((riskRow as any).payout_failure_count ?? 0),
+          payoutFailureReason: (riskRow as any).payout_failure_reason ?? null,
+          payoutFailureAt: (riskRow as any).payout_failure_at ?? null,
+          payoutReviewFlag: !!(riskRow as any).payout_review_flag,
+          payoutReviewReason: (riskRow as any).payout_review_reason ?? null,
+          bankLastChangedAt: (riskRow as any).bank_last_changed_at ?? null,
+          bankChangeCount30d: Number((riskRow as any).bank_change_count_30d ?? 0),
+        };
+      }
+    } catch (riskErr: any) {
+      console.warn(`[stripe-connect-status] payout risk read failed: ${riskErr?.message}`);
+    }
+
+    // Identity anchor: ask for ID when Stripe requests it OR when our own risk
+    // signals fire (failed payout, or the account is flagged for review).
+    const riskRequiresId =
+      payoutRisk.payoutReviewFlag || payoutRisk.payoutFailureCount > 0;
+    const needsIdDocument = stripeAsksForId || riskRequiresId;
+
 
     // Never leak another seller's financial state. Checkout only needs to know
     // whether the seller can accept a payment.
@@ -464,6 +517,12 @@ serve(async (req) => {
         currentlyDue,
         pastDue,
         needsIdDocument,
+        stripeAsksForId,
+        idRequiredByRisk: riskRequiresId,
+        bankStatus,
+        hasBankAccount: !!defaultBank,
+        ...payoutRisk,
+
         balanceAvailableCents,
         balancePendingCents,
         negativeBalanceCents,

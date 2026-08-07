@@ -330,6 +330,16 @@ serve(async (req) => {
           if (profile?.user_id) {
             const amountStr = `$${((payout.amount ?? 0) / 100).toFixed(2)}`;
             if (event.type === "payout.paid") {
+              // A successful payout clears any previous failure state.
+              await serviceClient
+                .from("profiles")
+                .update({
+                  payout_failure_count: 0,
+                  payout_failure_reason: null,
+                  payout_failure_at: null,
+                  bank_status: "validated",
+                })
+                .eq("user_id", profile.user_id);
               await notify(
                 profile.user_id,
                 "payout_paid",
@@ -337,13 +347,38 @@ serve(async (req) => {
                 `💸 ${amountStr} is on its way to your bank account.`,
               );
             } else {
+              // Record the failure so the dashboard can show a persistent
+              // banner and the payout guard can hold future attempts.
+              const reason =
+                (payout as any).failure_message ||
+                (payout as any).failure_code ||
+                "Your bank rejected the transfer.";
+              const { data: riskRow } = await serviceClient
+                .from("profiles")
+                .select("payout_failure_count")
+                .eq("user_id", profile.user_id)
+                .maybeSingle();
+              const failureCount = Number((riskRow as any)?.payout_failure_count ?? 0) + 1;
+              const patch: Record<string, unknown> = {
+                payout_failure_count: failureCount,
+                payout_failure_reason: reason,
+                payout_failure_at: new Date().toISOString(),
+                bank_status: "errored",
+              };
+              if (failureCount >= 2) {
+                patch.payout_review_flag = true;
+                patch.payout_review_reason = "Two or more failed payouts";
+              }
+              await serviceClient.from("profiles").update(patch).eq("user_id", profile.user_id);
+
               await notify(
                 profile.user_id,
                 "payout_failed",
                 "Payout failed",
-                `⚠️ Your ${amountStr} payout could not be sent. Check your bank details in your Seller Dashboard.`,
+                `⚠️ We couldn't send your ${amountStr} payout. Please double-check your bank details and try again.`,
               );
             }
+
             await syncSellerBalance(profile.user_id);
           }
         }
