@@ -188,7 +188,7 @@ export const useNotifications = () => {
           fallbackNotifications.push({
             id: `fallback-support-${message.id}`,
             type: 'support_message',
-            title: 'Support Message',
+            title: 'Support message',
             message: '🛎️ New message from Flea support. Tap to view.',
             is_read: false,
             created_at: message.created_at,

@@ -961,7 +961,7 @@ async function deleteListingAndOrders(listingId: string, reason: string) {
       await safeInsert("notifications", {
         user_id: o.buyer_id,
         type: "order_refunded",
-        title: "Order Cancelled",
+        title: "Order cancelled",
         message: "↩️ Your order was cancelled because the listing was removed by Flea admin. The amount will be returned to your original payment method.",
         related_listing_id: o.listing_id,
         related_user_id: o.seller_id,
@@ -969,7 +969,7 @@ async function deleteListingAndOrders(listingId: string, reason: string) {
       await safeInsert("notifications", {
         user_id: o.seller_id,
         type: "order_refunded",
-        title: "Order Removed",
+        title: "Order removed",
         message: "⚠️ An order was removed because your listing was deleted by Flea admin.",
         related_listing_id: o.listing_id,
         related_user_id: o.buyer_id,
