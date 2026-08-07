@@ -316,6 +316,16 @@ const SellerDashboard = () => {
         accountId: (data as any).accountId || null,
       });
       setNeedsIdDocument(!!(data as any).needsIdDocument);
+      setPayoutRisk({
+        bankStatus: (data as any).bankStatus ?? null,
+        hasBankAccount: !!(data as any).hasBankAccount,
+        payoutFailureCount: Number((data as any).payoutFailureCount ?? 0),
+        payoutFailureReason: (data as any).payoutFailureReason ?? null,
+        payoutReviewFlag: !!(data as any).payoutReviewFlag,
+        payoutReviewReason: (data as any).payoutReviewReason ?? null,
+        bankLastChangedAt: (data as any).bankLastChangedAt ?? null,
+        idRequiredByRisk: !!(data as any).idRequiredByRisk,
+      });
       setVerificationError((data as any).verificationError ?? null);
     } catch {
       // Non-blocking. Banner stays hidden if we can't reach Stripe.
