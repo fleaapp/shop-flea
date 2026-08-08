@@ -147,7 +147,7 @@ const PaymentMethodsSection = ({ hideHeading = false }: { hideHeading?: boolean 
     } finally {
       setIsChecking(false);
     }
-  }, [clearLocalStripeState, onboardingSetupComplete, refreshProfile, stripeAccountId, user]);
+  }, [clearLocalStripeState, localAccountId, onboardingSetupComplete, profile?.stripe_account_id, refreshProfile, stripeAccountId, user]);
 
   // Auto-verify on return from Stripe (detected via URL param)
   useEffect(() => {
