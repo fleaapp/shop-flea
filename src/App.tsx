@@ -12,6 +12,8 @@ import { forceRestoreRouteAppChrome } from "@/lib/appChrome";
 import { getRouteFromNativeAuthUrl } from "@/lib/authRedirects";
 import { PushNotificationSubscriber } from "@/components/PushNotificationSubscriber";
 import OfflineBanner from "@/components/OfflineBanner";
+import useKeyboardInputScroll from "@/hooks/useKeyboardInputScroll";
+
 
 // Critical path – auth is loaded eagerly; app/feed routes are lazy so /auth paints first.
 import Auth from "./pages/Auth";
@@ -190,6 +192,10 @@ const AppContent = () => {
   const location = useLocation();
   const isStandaloneSite = false;
   const isAuthRoute = /^\/(auth|forgot-password|reset-password|verify-email)(\/|$)/.test(location.pathname);
+
+  // Keeps focused inputs visible above the on-screen keyboard (sheets/drawers included).
+  useKeyboardInputScroll();
+
 
   useEffect(() => {
     const currentRoute = `${location.pathname}${location.search}${location.hash}`;

@@ -627,13 +627,25 @@ const BankDetailsStep = ({ firstName, lastName, onBack, onDone }: BankDetailsSte
   const canSubmit = bsb.replace(/\D/g, '').length === 6 && account.replace(/\D/g, '').length >= 5;
 
   const handleSubmit = async () => {
-    const accountId = (profile as any)?.stripe_account_id;
-    if (!accountId) {
-      toast.error('Payment account not ready. Please go back and try again.');
-      return;
-    }
     setSubmitting(true);
     try {
+      // Coming back into the app (e.g. after checking a banking app for the
+      // BSB) can leave the in-memory profile stale. Re-read it before deciding
+      // the account is missing so we never error just because they switched away.
+      let accountId = (profile as any)?.stripe_account_id;
+      if (!accountId) {
+        try { await refreshProfile?.(); } catch {}
+        const { data: fresh } = await supabase
+          .from('profiles')
+          .select('stripe_account_id')
+          .eq('user_id', user?.id)
+          .maybeSingle();
+        accountId = (fresh as any)?.stripe_account_id;
+      }
+      if (!accountId) {
+        toast.error('Payment account not ready. Please go back and try again.');
+        return;
+      }
       const { data, error } = await invokeCloudFunction('stripe-connect-add-bank', {
         accountId,
         bsb: bsb.replace(/\D/g, ''),
@@ -651,11 +663,19 @@ const BankDetailsStep = ({ firstName, lastName, onBack, onDone }: BankDetailsSte
       onDone();
     } catch (err: any) {
       console.error('add-bank error:', err);
-      toast.error(err?.message || 'Could not save bank details. Please check and try again.');
+      const raw = String(err?.message || '');
+      const isNetwork = /failed to fetch|network|timeout|aborted|load failed/i.test(raw);
+      if (isNetwork) {
+        // Transient (often caused by the app being backgrounded mid-request).
+        toast('Connection interrupted. Tap save again.');
+      } else {
+        toast.error(raw || 'Could not save bank details. Please check and try again.');
+      }
     } finally {
       setSubmitting(false);
     }
   };
+
 
   return (
     <>
