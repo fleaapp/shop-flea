@@ -93,6 +93,12 @@ const Index = () => {
   });
   const [passwordCompleted, setPasswordCompleted] = useState(false);
 
+  // Keep the session "consumed" deck set scoped to the signed-in user.
+  useEffect(() => {
+    syncConsumedOwner(user?.id ?? null);
+  }, [user?.id]);
+
+
   // Sync welcomeCompleted from user-scoped localStorage once user is available
   useEffect(() => {
     if (user) {

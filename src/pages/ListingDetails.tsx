@@ -454,6 +454,7 @@ const ListingDetails = () => {
     });
 
     if (success) {
+      markListingConsumed(listing.id, user?.id ?? null);
       toast.success('Added to wishlist!');
       handleClose();
     }
