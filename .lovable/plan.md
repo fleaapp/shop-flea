@@ -1,49 +1,47 @@
-# Tighten seller payout and bank-detail safety
+# Fixes: card stack, keyboard, welcome push, payment error
 
-You already have the core protections: all seller funds are held until the order is delivered and the 48-hour buyer protection window closes, tracking is required, unshipped orders auto-refund at day 8, and payouts are blocked while any sale is still in protection. This plan closes the four remaining gaps around bank details and identity.
+## 1. Card stack continuity
 
-## 1. Proactively validate the bank account (no extra cost)
+Today, opening a listing from Home navigates to `/listing/:id`, which unmounts Home. When the user taps Wishlist, Cart or Discard in the listing footer, Home remounts and rebuilds the stack from a fresh fetch, so the user lands back at the start of the deck instead of the next card.
 
-When a seller adds or changes bank details, and on each dashboard load, read the bank account's validation status from the payment provider (part of the normal account read - no per-call fee).
+Changes:
+- Persist the Home deck (ordered listing IDs plus the current position) in a module-level session store, so returning from a listing resumes the same deck rather than refetching and reshuffling.
+- When a listing is actioned (wishlist, cart, discard) from the detail footer, mark that listing as consumed in the same store before navigating back; Home then removes it and shows the next card with no reordering.
+- Swipe actions write to the same store so both paths behave identically.
+- Keep the existing exit animation for swipes; the return-from-detail case advances silently to the next card.
 
-- `new` - show "Bank account being checked" and keep payouts held.
-- `validated` / `verified` - normal state.
-- `errored` - show a clear "Your bank details were rejected - please re-enter them" banner and block payout attempts until fixed.
+Wishlist button appearance: the un-favorited state uses a muted background and muted foreground, which reads as disabled. Restyle the default state to the same solid, active treatment used by the Cart button (only the genuinely blocked sold state keeps the dimmed look).
 
-This catches typos and dead accounts before a payout ever fails.
+## 2. Keyboard-covered inputs
 
-## 2. Handle failed payouts properly
+Capacitor is set to `KeyboardResize.Body`, which only scrolls the document body. Fields inside sheets and drawers (their own scroll containers) are not scrolled into view - the Seller Onboarding phone field is one case.
 
-Today a failed payout only sends a generic notification. Add:
+Changes:
+- Add a small shared hook that listens to the Capacitor `keyboardWillShow` / `keyboardDidHide` events and, while the keyboard is open, scrolls the focused element into a comfortable position above the keyboard inside whichever scroll container holds it.
+- Apply it globally (mounted once in the app shell) so any focused input in any sheet, drawer or page is handled, including Seller Onboarding, checkout and messaging.
+- No permanent padding or coloured footer: the temporary bottom offset is applied only while the keyboard is visible and removed on hide.
 
-- A persistent "Payout failed - check your bank details" banner on the Seller Dashboard with a direct button to update the account.
-- Store the failure reason and count on the seller profile.
-- Funds automatically return to Available so the seller can retry after fixing details.
+## 3. Welcome push notification
 
-## 3. Limit bank-detail churn
+New users currently receive no welcome notification.
 
-- Record every bank-detail change with a timestamp.
-- After a bank change, the next payout is held for 24 hours (a "cooling off" window) rather than paying instantly.
-- Two or more failed payouts, or three or more bank changes in 30 days, flags the account for admin review and pauses instant payout until cleared. The flag surfaces in the Admin Dashboard.
+Changes:
+- Fire a one-time welcome push when profile setup completes (the same point that already shows the "Profile setup complete" toast), guarded by a per-user flag so it can never repeat.
+- Copy: "Welcome to Flea! 👉👚👟♻️ Use code 'FREEFLEA' for no fees on your first purchase!"
+- If push permission has not been granted yet, queue it so it is sent once the user enables notifications, and also record it as an in-app alert so it appears in the Alerts list either way.
 
-## 4. Identity anchor when risk signals appear
+## 4. Payment details error on returning to the app
 
-Keep onboarding light (Vinted/Depop style) but require the ID document upload automatically when any of these are true, not just when the provider asks:
+When a user leaves the app to look up bank details, the resume handler reopens the seller onboarding sheet and re-runs a payment status check; a failed or incomplete check surfaces an error toast even though the user has not submitted anything.
 
-- A payout has failed for a name/account mismatch.
-- The account has been flagged by rule 3 above.
-- The seller has an active report strike or dispute.
-
-Until the ID is uploaded and accepted, the seller can still sell but cannot withdraw.
-
-## Seller-facing copy
-
-All messages stay plain and non-accusatory - e.g. "We couldn't send your payout. Please double-check your bank details and try again." No jargon, no external links, everything handled in-app.
+Changes:
+- Make the resume path silent: reopening the sheet restores the saved step and re-checks status without any error toast.
+- Only show an error after an actual submit attempt, and only when the backend rejects the submitted details (invalid account, name or details mismatch), using the specific reason returned rather than a generic message.
+- Transient failures (network, timeout, backgrounded request) retry quietly instead of surfacing an error.
 
 ## Technical notes
 
-- New profile columns: `bank_status`, `bank_last_changed_at`, `bank_change_count_30d`, `payout_failure_count`, `payout_failure_reason`, `payout_review_flag`.
-- `stripe-connect-status` extended to return the external account status; `stripe-connect-add-bank` stamps the change timestamp/count.
-- `stripe-webhook` `payout.failed` handler writes the failure reason, increments the counter, and restores balance.
-- `stripe-connect-payout` gains guards for `bank_status !== errored`, the 24h post-change cooling window, and `payout_review_flag`.
-- Seller Dashboard gains the bank-status and payout-failure banners; Admin Dashboard gains a "Payout review" list with a clear-flag action.
+- Deck store: lightweight module singleton (ids, index, consumed set) read by `src/pages/Index.tsx` and written by `src/pages/ListingDetails.tsx` footer handlers and swipe handlers; invalidated when filters or the user change.
+- Keyboard: new `src/hooks/useKeyboardScrollIntoView.ts` using `@capacitor/keyboard` events with a web fallback on `focusin` plus `visualViewport`; mounted in `src/App.tsx`.
+- Welcome push: client call to `send-push-notification` on profile-setup completion with a `welcome_sent` marker on the profile so it is idempotent.
+- Payment error: gate the toasts in `SellerOnboardingSheet.tsx` behind an explicit submit flag; `SellerOnboardingResumeMount.tsx` performs a quiet re-check only.
