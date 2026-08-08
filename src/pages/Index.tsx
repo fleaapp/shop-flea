@@ -27,6 +27,12 @@ import { supabase } from '@/lib/supabase';
 import { formatSizeKeyLabel } from '@/utils/sizeKeys';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { sendWelcomeNotification } from '@/utils/welcomeNotification';
+import {
+  markListingConsumed,
+  unmarkListingConsumed,
+  isListingConsumed,
+  syncConsumedOwner,
+} from '@/utils/consumedListings';
 
 
 // Convert DbListing to Listing format for components that expect it
