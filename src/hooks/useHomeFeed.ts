@@ -168,10 +168,17 @@ export const useHomeFeed = () => {
   );
 
   useEffect(() => {
+    // Resume the cached deck for this user instead of re-running the RPC,
+    // which would reshuffle the stack and send the user back to the top.
+    if (feedCache && feedCache.userId === (user?.id ?? null) && feedCache.listings.length > 0) {
+      setLoading(false);
+      return;
+    }
     setOffset(0);
     setHasMore(true);
     fetchPage('reset');
   }, [user, fetchPage]);
+
 
   // Drop any listing that the global realtime channel reports as deleted /
   // removed / archived / blocked / sold so the swipe stack updates instantly
