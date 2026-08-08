@@ -337,6 +337,7 @@ const Index = () => {
     if (pendingExitId) return;
 
     setPendingExitId(listingId);
+    markListingConsumed(listingId, user?.id ?? null);
     await addDiscarded(listingId);
     setPassedIds((prev) => {
       const next = new Set(prev);
@@ -350,15 +351,16 @@ const Index = () => {
       return next;
     });
     setLastAction({ listingId, type: 'discard' });
-  }, [addDiscarded, pendingExitId]);
+  }, [addDiscarded, pendingExitId, user?.id]);
 
   const handleSwipeRight = useCallback(async (listing: DbListing) => {
     if (pendingExitId) return;
 
     setPendingExitId(listing.id);
+    markListingConsumed(listing.id, user?.id ?? null);
     await addFavorite(listing.id, toDisplayListing(listing));
     setLastAction({ listingId: listing.id, type: 'favorite' });
-  }, [addFavorite, pendingExitId]);
+  }, [addFavorite, pendingExitId, user?.id]);
 
   const handleSwipeUp = useCallback((listing: DbListing): boolean | void => {
     if (pendingExitId) return false;
@@ -369,9 +371,10 @@ const Index = () => {
     if (!requireAuth()) return false;
 
     setPendingExitId(listing.id);
+    markListingConsumed(listing.id, user?.id ?? null);
     addToCart(toDisplayListing(listing));
     setLastAction({ listingId: listing.id, type: 'cart' });
-  }, [addToCart, pendingExitId, requireAuth]);
+  }, [addToCart, pendingExitId, requireAuth, user?.id]);
 
   // MAYBE (swipe down) handler disabled — kept for future re-enable.
   // const handleSwipeDown = useCallback(async (listingId: string) => {
@@ -399,6 +402,8 @@ const Index = () => {
     if (!lastAction) return;
 
     const { listingId, type } = lastAction;
+    unmarkListingConsumed(listingId);
+    
     
     if (type === 'discard') {
       await removeDiscarded(listingId);
