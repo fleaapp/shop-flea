@@ -191,6 +191,10 @@ const AppContent = () => {
   const isStandaloneSite = false;
   const isAuthRoute = /^\/(auth|forgot-password|reset-password|verify-email)(\/|$)/.test(location.pathname);
 
+  // Keeps focused inputs visible above the on-screen keyboard (sheets/drawers included).
+  useKeyboardInputScroll();
+
+
   useEffect(() => {
     const currentRoute = `${location.pathname}${location.search}${location.hash}`;
     if (!location.pathname.startsWith("/listing/")) {
