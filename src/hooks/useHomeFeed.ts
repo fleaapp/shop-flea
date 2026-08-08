@@ -23,14 +23,29 @@ const PAGE_SIZE = 50;
  * Returns the same shape as useListings so it's a drop-in replacement for the
  * unfiltered home swipe stack.
  */
+// Session-scoped deck cache. Opening a listing unmounts Index (separate
+// route), so without this the RPC re-runs on return and re-shuffles the deck,
+// dumping the user back at the top of the stack. Caching the ordered rows lets
+// the stack resume exactly where the user left off; actioned listings are
+// filtered out by Index, so the next card shows immediately.
+type FeedCache = { userId: string | null; listings: DbListing[]; offset: number; hasMore: boolean };
+let feedCache: FeedCache | null = null;
+
 export const useHomeFeed = () => {
   const { user, profile } = useAuth();
-  const [listings, setListings] = useState<DbListing[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedForUser = feedCache && feedCache.userId === (user?.id ?? null) ? feedCache : null;
+  const [listings, setListings] = useState<DbListing[]>(cachedForUser?.listings ?? []);
+  const [loading, setLoading] = useState(!cachedForUser);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMore, setHasMore] = useState(cachedForUser?.hasMore ?? true);
   const [error, setError] = useState<string | null>(null);
-  const [offset, setOffset] = useState(0);
+  const [offset, setOffset] = useState(cachedForUser?.offset ?? 0);
+
+  // Keep the module cache in sync with the live deck.
+  useEffect(() => {
+    feedCache = { userId: user?.id ?? null, listings, offset, hasMore };
+  }, [user?.id, listings, offset, hasMore]);
+
 
   const fetchPage = useCallback(
     async (mode: 'reset' | 'append', offsetOverride?: number) => {
