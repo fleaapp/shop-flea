@@ -909,7 +909,7 @@ const ListingDetails = () => {
                       ? 'bg-tint border-tint' 
                       : isSold 
                         ? 'bg-muted/50 border-muted opacity-50' 
-                        : 'bg-muted/25 border-muted/50 text-muted-foreground active:bg-tint active:border-tint'
+                        : 'bg-transparent active:bg-tint active:border-tint'
                   }`}
                 >
                   💌
