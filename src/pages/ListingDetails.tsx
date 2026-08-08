@@ -52,6 +52,7 @@ import { buildListingShareUrl } from '@/utils/shareLink';
 import InstallAppBanner from '@/components/InstallAppBanner';
 import { useIsWebSharedPreview } from '@/hooks/useIsWebSharedPreview';
 import type { Listing } from '@/types/listing';
+import { markListingConsumed, unmarkListingConsumed } from '@/utils/consumedListings';
 
 interface DbListing {
   id: string;
