@@ -27,6 +27,12 @@ import { supabase } from '@/lib/supabase';
 import { formatSizeKeyLabel } from '@/utils/sizeKeys';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { sendWelcomeNotification } from '@/utils/welcomeNotification';
+import {
+  markListingConsumed,
+  unmarkListingConsumed,
+  isListingConsumed,
+  syncConsumedOwner,
+} from '@/utils/consumedListings';
 
 
 // Convert DbListing to Listing format for components that expect it
@@ -86,6 +92,12 @@ const Index = () => {
     return false; // initialised properly in the user-scoped effect below
   });
   const [passwordCompleted, setPasswordCompleted] = useState(false);
+
+  // Keep the session "consumed" deck set scoped to the signed-in user.
+  useEffect(() => {
+    syncConsumedOwner(user?.id ?? null);
+  }, [user?.id]);
+
 
   // Sync welcomeCompleted from user-scoped localStorage once user is available
   useEffect(() => {
@@ -268,6 +280,10 @@ const Index = () => {
 
     const newOnes = dbListings.filter((l) => {
       if (keepPending(l.id)) return true;
+      // Consumed = actioned this session (swipe or listing-details footer).
+      // Checked synchronously so the deck never flashes an actioned card
+      // while favourites/discards re-fetch after a remount.
+      if (isListingConsumed(l.id)) return false;
       if (!isInteractable(l.id)) return false;
       if (discardedIds.has(l.id) || passedIds.has(l.id)) return false;
       if (maybeIds.has(l.id)) return false;
@@ -327,6 +343,7 @@ const Index = () => {
     if (pendingExitId) return;
 
     setPendingExitId(listingId);
+    markListingConsumed(listingId, user?.id ?? null);
     await addDiscarded(listingId);
     setPassedIds((prev) => {
       const next = new Set(prev);
@@ -340,15 +357,16 @@ const Index = () => {
       return next;
     });
     setLastAction({ listingId, type: 'discard' });
-  }, [addDiscarded, pendingExitId]);
+  }, [addDiscarded, pendingExitId, user?.id]);
 
   const handleSwipeRight = useCallback(async (listing: DbListing) => {
     if (pendingExitId) return;
 
     setPendingExitId(listing.id);
+    markListingConsumed(listing.id, user?.id ?? null);
     await addFavorite(listing.id, toDisplayListing(listing));
     setLastAction({ listingId: listing.id, type: 'favorite' });
-  }, [addFavorite, pendingExitId]);
+  }, [addFavorite, pendingExitId, user?.id]);
 
   const handleSwipeUp = useCallback((listing: DbListing): boolean | void => {
     if (pendingExitId) return false;
@@ -359,9 +377,10 @@ const Index = () => {
     if (!requireAuth()) return false;
 
     setPendingExitId(listing.id);
+    markListingConsumed(listing.id, user?.id ?? null);
     addToCart(toDisplayListing(listing));
     setLastAction({ listingId: listing.id, type: 'cart' });
-  }, [addToCart, pendingExitId, requireAuth]);
+  }, [addToCart, pendingExitId, requireAuth, user?.id]);
 
   // MAYBE (swipe down) handler disabled — kept for future re-enable.
   // const handleSwipeDown = useCallback(async (listingId: string) => {
@@ -389,6 +408,8 @@ const Index = () => {
     if (!lastAction) return;
 
     const { listingId, type } = lastAction;
+    unmarkListingConsumed(listingId);
+    
     
     if (type === 'discard') {
       await removeDiscarded(listingId);

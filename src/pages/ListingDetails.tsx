@@ -52,6 +52,7 @@ import { buildListingShareUrl } from '@/utils/shareLink';
 import InstallAppBanner from '@/components/InstallAppBanner';
 import { useIsWebSharedPreview } from '@/hooks/useIsWebSharedPreview';
 import type { Listing } from '@/types/listing';
+import { markListingConsumed, unmarkListingConsumed } from '@/utils/consumedListings';
 
 interface DbListing {
   id: string;
@@ -454,6 +455,7 @@ const ListingDetails = () => {
     });
 
     if (success) {
+      markListingConsumed(listing.id, user?.id ?? null);
       toast.success('Added to wishlist!');
       handleClose();
     }
@@ -462,6 +464,8 @@ const ListingDetails = () => {
   const handleRemoveFromWishlist = async () => {
     const success = await removeFavorite(listing.id);
     if (success) {
+      // Un-consume so it can reappear in the home deck.
+      unmarkListingConsumed(listing.id);
       toast.success('Removed from wishlist');
     }
     setShowRemoveFromWishlistDialog(false);
@@ -498,6 +502,7 @@ const ListingDetails = () => {
       createdAt: new Date(),
       condition: listing.condition as 'new' | 'like-new' | 'good' | 'fair',
     });
+    markListingConsumed(listing.id, user?.id ?? null);
     toast.success('Added to cart!');
     handleClose();
   };
@@ -505,6 +510,7 @@ const ListingDetails = () => {
   const handleRemoveFromCart = async () => {
     const success = await removeFromCart(listing.id);
     if (success) {
+      unmarkListingConsumed(listing.id);
       toast.success('Removed from cart');
     }
     setShowRemoveFromCartDialog(false);
@@ -515,9 +521,11 @@ const ListingDetails = () => {
     if (isFavorite(listing.id)) {
       const success = await removeFavorite(listing.id);
       if (success) {
+        unmarkListingConsumed(listing.id);
         toast.success('Removed from wishlist');
       }
     } else {
+      markListingConsumed(listing.id, user?.id ?? null);
       await addDiscarded(listing.id);
       toast.success('Item discarded');
     }

@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { useGuestMode } from '@/context/GuestModeContext';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
+import { clearConsumedListings } from '@/utils/consumedListings';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/lib/supabase';
@@ -167,6 +168,7 @@ const Settings = () => {
   const handleRefreshDiscarded = async () => {
     const success = await clearDiscarded();
     if (success) {
+      clearConsumedListings();
       toast.success('🔁 Passed listings refreshed! You can browse them again.');
     } else {
       toast.error('🔁 Failed to refresh passed listings');
