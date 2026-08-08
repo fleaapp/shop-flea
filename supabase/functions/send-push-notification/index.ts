@@ -33,6 +33,8 @@ const ALERT_TITLES: Record<string, string> = {
   wishlist_item_sold: "😢 Wishlist Item Sold",
   cart_wishlist_item_sold: "💔 Item Sold",
   payment_action_required: "⚠️ Payment Action Required",
+  welcome: "👋 Welcome to Flea!",
+
 };
 
 serve(async (req) => {
