@@ -127,11 +127,19 @@ const PaymentMethodsSection = ({ hideHeading = false }: { hideHeading?: boolean 
         if (!silent) toast('Seller setup incomplete. Please finish setup.');
         return 'incomplete' as const;
       } else {
+        // No account in the response. If the profile still holds an account id,
+        // this is almost always a transient/empty response (e.g. the request was
+        // fired while the app was backgrounded while the user checked their bank
+        // details). Never wipe local state or show an error on that path.
+        if (profile?.stripe_account_id || localAccountId) {
+          return 'pending' as const;
+        }
         clearLocalStripeState();
         await refreshProfile();
         if (!silent) toast('No seller account found. Please become a seller first.');
         return 'pending' as const;
       }
+
     } catch (error) {
       console.error('Status check error:', error);
       if (!silent) toast.error('Failed to check seller status.');
