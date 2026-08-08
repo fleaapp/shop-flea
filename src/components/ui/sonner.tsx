@@ -1,10 +1,26 @@
+import { useEffect } from "react"
 import { useTheme } from "next-themes"
-import { Toaster as Sonner } from "sonner"
+import { Toaster as Sonner, toast } from "sonner"
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme()
+
+  // Sonner pauses dismiss timers while the page/app is hidden, so toasts that
+  // were on screen when the app backgrounded can stick around forever after
+  // resuming. Clear anything outstanding on hide and on resume.
+  useEffect(() => {
+    const clearAll = () => toast.dismiss()
+    const onVisibility = () => clearAll()
+    document.addEventListener("visibilitychange", onVisibility)
+    window.addEventListener("pagehide", clearAll)
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility)
+      window.removeEventListener("pagehide", clearAll)
+    }
+  }, [])
+
 
   // Push toasts below the iOS status bar / Dynamic Island. `env(safe-area-inset-top)`
   // resolves to 0 on browsers/devices without a notch, so this is safe everywhere.
