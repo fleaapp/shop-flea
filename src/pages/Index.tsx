@@ -274,6 +274,10 @@ const Index = () => {
 
     const newOnes = dbListings.filter((l) => {
       if (keepPending(l.id)) return true;
+      // Consumed = actioned this session (swipe or listing-details footer).
+      // Checked synchronously so the deck never flashes an actioned card
+      // while favourites/discards re-fetch after a remount.
+      if (isListingConsumed(l.id)) return false;
       if (!isInteractable(l.id)) return false;
       if (discardedIds.has(l.id) || passedIds.has(l.id)) return false;
       if (maybeIds.has(l.id)) return false;
