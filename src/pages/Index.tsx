@@ -26,6 +26,8 @@ import { Listing } from '@/types/listing';
 import { supabase } from '@/lib/supabase';
 import { formatSizeKeyLabel } from '@/utils/sizeKeys';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
+import { sendWelcomeNotification } from '@/utils/welcomeNotification';
+
 
 // Convert DbListing to Listing format for components that expect it
 const toDisplayListing = (dbListing: DbListing): Listing => ({
