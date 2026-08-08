@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { clearStripeConnectionState, getStripeConnectedStorageKey } from '@/utils/stripeConnectionState';
 import { getSignupRedirectUrl } from '@/lib/authRedirects';
+import { clearConsumedListings } from '@/utils/consumedListings';
 
 interface Profile {
   id: string;
