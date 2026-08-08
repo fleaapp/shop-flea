@@ -1,47 +1,35 @@
-# Fixes: card stack, keyboard, welcome push, payment error
+# Fix card-stack flashes and sticky toasts
 
-## 1. Card stack continuity
+## What's happening
 
-Today, opening a listing from Home navigates to `/listing/:id`, which unmounts Home. When the user taps Wishlist, Cart or Discard in the listing footer, Home remounts and rebuilds the stack from a fresh fetch, so the user lands back at the start of the deck instead of the next card.
+Confirmed from the code:
 
-Changes:
-- Persist the Home deck (ordered listing IDs plus the current position) in a module-level session store, so returning from a listing resumes the same deck rather than refetching and reshuffling.
-- When a listing is actioned (wishlist, cart, discard) from the detail footer, mark that listing as consumed in the same store before navigating back; Home then removes it and shows the next card with no reordering.
-- Swipe actions write to the same store so both paths behave identically.
-- Keep the existing exit animation for swipes; the return-from-detail case advances silently to the next card.
+- Wishlist and passed/discarded state live in per-screen hooks (`useFavorites`, `useDiscardedListings`) that start **empty** on every mount of Home and then fetch from the database. The cart, by contrast, lives in an app-level context and survives navigation.
+- Since the swipe deck is now cached in memory, Home paints cards instantly on return from a listing - but for the few hundred milliseconds before wishlist/discard data comes back, those filters are empty, so items already wishlisted, carted or discarded briefly render again. That is the flash after tapping a footer button, and the suede jacket flashing after "Refresh passed listings" (returning from Settings remounts Home the same way).
+- Swiping feels fine because the screen never unmounts, so the filters stay populated.
 
-Wishlist button appearance: the un-favorited state uses a muted background and muted foreground, which reads as disabled. Restyle the default state to the same solid, active treatment used by the Cart button (only the genuinely blocked sold state keeps the dimmed look).
+For the sticky toasts the cause is not yet confirmed: all toasts share an 1800ms duration, so a toast that stays on screen means its dismiss timer is being paused (Sonner pauses timers while the page is hidden/unfocused, which happens as a drawer closes or the app backgrounds). First step is to reproduce and confirm before hardening.
 
-## 2. Keyboard-covered inputs
+## The fix
 
-Capacitor is set to `KeyboardResize.Body`, which only scrolls the document body. Fields inside sheets and drawers (their own scroll containers) are not scrolled into view - the Seller Onboarding phone field is one case.
+**1. Make wishlist and passed state survive navigation**
 
-Changes:
-- Add a small shared hook that listens to the Capacitor `keyboardWillShow` / `keyboardDidHide` events and, while the keyboard is open, scrolls the focused element into a comfortable position above the keyboard inside whichever scroll container holds it.
-- Apply it globally (mounted once in the app shell) so any focused input in any sheet, drawer or page is handled, including Seller Onboarding, checkout and messaging.
-- No permanent padding or coloured footer: the temporary bottom offset is applied only while the keyboard is visible and removed on hide.
+- Give `useFavorites` and `useDiscardedListings` a shared in-memory cache (same pattern already used for the feed deck) so a remount starts with the last known IDs instead of an empty set, and a `hydrated` flag that flips true once the first fetch settles.
+- Home holds back the deck (keeps showing the existing top card / skeleton) until wishlist, passed and cart state are hydrated, so no already-actioned card can paint.
+- Clear the caches on sign-out and on user change so accounts never share state.
 
-## 3. Welcome push notification
+**2. Keep the deck in sync with footer actions**
 
-New users currently receive no welcome notification.
+- When Home remounts, drop any listing from the cached deck whose ID is now in wishlist, cart or discarded, before the first render - so the next card shows immediately instead of the actioned one reappearing.
+- "Refresh passed listings" clears the passed cache too, so the refreshed deck rebuilds from current data.
 
-Changes:
-- Fire a one-time welcome push when profile setup completes (the same point that already shows the "Profile setup complete" toast), guarded by a per-user flag so it can never repeat.
-- Copy: "Welcome to Flea! 👉👚👟♻️ Use code 'FREEFLEA' for no fees on your first purchase!"
-- If push permission has not been granted yet, queue it so it is sent once the user enables notifications, and also record it as an in-app alert so it appears in the Alerts list either way.
+**3. Toasts**
 
-## 4. Payment details error on returning to the app
-
-When a user leaves the app to look up bank details, the resume handler reopens the seller onboarding sheet and re-runs a payment status check; a failed or incomplete check surfaces an error toast even though the user has not submitted anything.
-
-Changes:
-- Make the resume path silent: reopening the sheet restores the saved step and re-checks status without any error toast.
-- Only show an error after an actual submit attempt, and only when the backend rejects the submitted details (invalid account, name or details mismatch), using the specific reason returned rather than a generic message.
-- Transient failures (network, timeout, backgrounded request) retry quietly instead of surfacing an error.
+- Reproduce first: tap a footer action, close the sheet, confirm which toast lingers.
+- Then harden: dismiss any outstanding toasts on route change, and resume/expire toast timers when the app returns to the foreground so a paused timer can't leave a toast on screen indefinitely.
 
 ## Technical notes
 
-- Deck store: lightweight module singleton (ids, index, consumed set) read by `src/pages/Index.tsx` and written by `src/pages/ListingDetails.tsx` footer handlers and swipe handlers; invalidated when filters or the user change.
-- Keyboard: new `src/hooks/useKeyboardScrollIntoView.ts` using `@capacitor/keyboard` events with a web fallback on `focusin` plus `visualViewport`; mounted in `src/App.tsx`.
-- Welcome push: client call to `send-push-notification` on profile-setup completion with a `welcome_sent` marker on the profile so it is idempotent.
-- Payment error: gate the toasts in `SellerOnboardingSheet.tsx` behind an explicit submit flag; `SellerOnboardingResumeMount.tsx` performs a quiet re-check only.
+- Files: `src/hooks/useFavorites.ts`, `src/hooks/useDiscardedListings.ts`, `src/hooks/useHomeFeed.ts`, `src/pages/Index.tsx`, `src/components/ui/sonner.tsx` (plus a small route-change dismiss in `src/App.tsx`).
+- Caches are module-level and user-scoped (`{ userId, ids }`), mirroring `feedCache`; guest mode continues to read `sessionStorage` as it does today.
+- No database, RLS or edge-function changes.
