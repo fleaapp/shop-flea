@@ -169,6 +169,7 @@ const Settings = () => {
     const success = await clearDiscarded();
     if (success) {
       clearConsumedListings();
+      clearActionedIds('discarded', user?.id ?? null);
       toast.success('🔁 Passed listings refreshed! You can browse them again.');
     } else {
       toast.error('🔁 Failed to refresh passed listings');
