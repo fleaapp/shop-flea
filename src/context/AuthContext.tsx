@@ -5,6 +5,7 @@ import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { clearStripeConnectionState, getStripeConnectedStorageKey } from '@/utils/stripeConnectionState';
 import { getSignupRedirectUrl } from '@/lib/authRedirects';
 import { clearConsumedListings } from '@/utils/consumedListings';
+import { clearAllActionedIds } from '@/utils/actionedListingCache';
 
 interface Profile {
   id: string;
