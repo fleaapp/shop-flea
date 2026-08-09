@@ -400,7 +400,7 @@ const Offers = () => {
               checked={offersEnabled}
               disabled={savingOffersToggle}
               onCheckedChange={handleToggleOffers}
-              className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime"
+             
             />
           </div>
         </div>

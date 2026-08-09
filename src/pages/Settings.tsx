@@ -398,7 +398,7 @@ const Settings = () => {
             <Switch
               checked={item.checked}
               onCheckedChange={item.onToggle}
-              className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime"
+             
             />
           ) : item.expandable ? (
             item.isExpanded ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -432,7 +432,7 @@ const Settings = () => {
                     checked={subItem.checked}
                     disabled={subItem.disabled}
                     onCheckedChange={subItem.onToggle}
-                    className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-muted [&>span]:data-[state=checked]:bg-lime"
+                   
                   />
                 ) : (
                   <ChevronRight className="h-5 w-5 text-muted-foreground" />
