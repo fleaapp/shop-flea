@@ -184,7 +184,7 @@ const Index = () => {
   
 
   // Store the full filter state from FilterSheet
-  const [appliedFilters, setAppliedFilters] = useState<FilterState>({
+  const DEFAULT_FILTERS: FilterState = {
     preferences: false,
     hideSoldItems: false,
     sizes: [],
@@ -195,10 +195,17 @@ const Index = () => {
     styles: [],
     brands: [],
     priceRange: [0, 1000],
-  });
-  
+  };
+
+  const persistedSearch = useMemo(() => loadSearchState<FilterState>(), []);
+
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>(
+    persistedSearch?.filters ? { ...DEFAULT_FILTERS, ...persistedSearch.filters } : DEFAULT_FILTERS
+  );
+
   // Search query state
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>(persistedSearch?.query ?? '');
+
   
   // Track the last action for undo functionality
   const [lastAction, setLastAction] = useState<{
