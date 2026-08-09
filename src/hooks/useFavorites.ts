@@ -10,24 +10,40 @@ import {
   saveSavedListingSnapshots,
 } from '@/utils/savedListingSnapshots';
 import { addGuestFavorite, removeGuestFavorite, getGuestFavorites } from '@/utils/guestWishlist';
+import { getActionedIds, setActionedIds } from '@/utils/actionedListingCache';
 
 
 const conditionValues: Listing['condition'][] = ['new', 'like-new', 'good', 'fair'];
 
 export const useFavorites = () => {
   const { user } = useAuth();
-  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(
-    () => new Set(getGuestFavorites().map((l) => l.id)),
+  // Seed from the user-scoped cache so a remount (e.g. returning from a
+  // listing) already knows what is wishlisted and the deck never flashes an
+  // already-saved card while the fetch is in flight.
+  const [favoriteIds, setFavoriteIdsState] = useState<Set<string>>(() =>
+    user ? getActionedIds('fav', user.id) : new Set(getGuestFavorites().map((l) => l.id)),
   );
   const [loading, setLoading] = useState(false);
 
+  const setFavoriteIds = useCallback(
+    (updater: Set<string> | ((prev: Set<string>) => Set<string>)) => {
+      setFavoriteIdsState((prev) => {
+        const next = typeof updater === 'function' ? updater(prev) : updater;
+        setActionedIds('fav', user?.id ?? null, next);
+        return next;
+      });
+    },
+    [user?.id],
+  );
+
   useEffect(() => {
     if (user) {
+      setFavoriteIdsState(getActionedIds('fav', user.id));
       fetchFavorites();
     } else {
       // Guest: rehydrate from sessionStorage so swipe-right state survives
       // navigation away and back to Home.
-      setFavoriteIds(new Set(getGuestFavorites().map((l) => l.id)));
+      setFavoriteIdsState(new Set(getGuestFavorites().map((l) => l.id)));
     }
   }, [user]);
 
