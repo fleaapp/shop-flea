@@ -204,10 +204,6 @@ serve(async (req) => {
       console.warn("[stripe-connect-add-bank] TOS update warn:", (e as Error).message);
     }
 
-    // Track bank-detail churn: stamp the change and count changes in a rolling
-    // 30 day window. Three or more changes flags the account for admin review.
-    await recordBankChange(user.id);
-
     // Create bank account as external account
     await stripe.accounts.createExternalAccount(accountId, {
       external_account: {
@@ -221,6 +217,11 @@ serve(async (req) => {
       } as any,
       default_for_currency: true,
     } as any);
+
+    // Track bank-detail churn only after Stripe actually accepted the new bank
+    // account. A rejected/typo attempt must not start a hold or count towards
+    // the 30 day churn limit.
+    await recordBankChange(user.id);
 
     // Re-fetch to determine payout readiness
     const refreshed = await stripe.accounts.retrieve(accountId);
