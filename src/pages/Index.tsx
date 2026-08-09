@@ -27,6 +27,8 @@ import { supabase } from '@/lib/supabase';
 import { formatSizeKeyLabel } from '@/utils/sizeKeys';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { sendWelcomeNotification } from '@/utils/welcomeNotification';
+import { loadSearchState, saveSearchState, clearSearchState } from '@/utils/searchPersistence';
+
 import {
   markListingConsumed,
   unmarkListingConsumed,
