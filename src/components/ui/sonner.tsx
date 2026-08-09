@@ -52,6 +52,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
         className="toaster group"
         position="top-center"
         closeButton
+        visibleToasts={1}
+        pauseWhenPageIsHidden={false}
         offset={topOffset}
         mobileOffset={topOffset}
         style={{

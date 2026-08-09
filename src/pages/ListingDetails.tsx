@@ -456,7 +456,7 @@ const ListingDetails = () => {
 
     if (success) {
       markListingConsumed(listing.id, user?.id ?? null);
-      toast.success('Added to wishlist!');
+      toast('Added to wishlist!', { id: 'listing-footer-action', icon: '💌' });
       handleClose();
     }
   };
@@ -466,7 +466,7 @@ const ListingDetails = () => {
     if (success) {
       // Un-consume so it can reappear in the home deck.
       unmarkListingConsumed(listing.id);
-      toast.success('Removed from wishlist');
+      toast('Removed from wishlist', { id: 'listing-footer-action', icon: '❌' });
     }
     setShowRemoveFromWishlistDialog(false);
   };
@@ -503,7 +503,7 @@ const ListingDetails = () => {
       condition: listing.condition as 'new' | 'like-new' | 'good' | 'fair',
     });
     markListingConsumed(listing.id, user?.id ?? null);
-    toast.success('Added to cart!');
+    toast('Added to cart!', { id: 'listing-footer-action', icon: '🛒' });
     handleClose();
   };
 
@@ -511,7 +511,7 @@ const ListingDetails = () => {
     const success = await removeFromCart(listing.id);
     if (success) {
       unmarkListingConsumed(listing.id);
-      toast.success('Removed from cart');
+      toast('Removed from cart', { id: 'listing-footer-action', icon: '❌' });
     }
     setShowRemoveFromCartDialog(false);
   };
@@ -522,12 +522,12 @@ const ListingDetails = () => {
       const success = await removeFavorite(listing.id);
       if (success) {
         unmarkListingConsumed(listing.id);
-        toast.success('Removed from wishlist');
+        toast('Removed from wishlist', { id: 'listing-footer-action', icon: '❌' });
       }
     } else {
       markListingConsumed(listing.id, user?.id ?? null);
       await addDiscarded(listing.id);
-      toast.success('Item discarded');
+      toast('Item discarded', { id: 'listing-footer-action', icon: '❌' });
     }
     handleClose();
   };
