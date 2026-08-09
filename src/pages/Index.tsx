@@ -259,6 +259,18 @@ const Index = () => {
     return listingFilters;
   }, [listingFilters, searchQuery]);
 
+  // Persist the active search + filters so they survive navigating away and back.
+  useEffect(() => {
+    const hasState = !!searchQuery || Object.keys(listingFilters).length > 0;
+    if (hasState) {
+      saveSearchState<FilterState>(searchQuery, appliedFilters);
+    } else {
+      clearSearchState();
+    }
+  }, [searchQuery, listingFilters, appliedFilters]);
+
+
+
   // Use the personalised home feed (cart+wishlist signals, 70/30 mix) when no
   // filters or search are active. When the user filters or searches, fall back
   // to the standard filtered listings query so filtering keeps working.
