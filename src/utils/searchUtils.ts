@@ -167,7 +167,7 @@ export function filterBySearch<T extends SearchableItem>(
       item,
       score: scoreSearchMatch(item, query)
     }))
-    .filter(({ score }) => score > 0);
+    .filter(({ score }) => score >= RELEVANCE_FLOOR);
   
   // Sort by score (highest first)
   scored.sort((a, b) => b.score - a.score);
