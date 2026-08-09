@@ -93,17 +93,23 @@ serve(async (req) => {
     const context = clampJson(body.context);
     const dedupe = truncate(body.dedupe_key, 200);
 
-    // For client source, attribute to the authed user only.
+    // Attribution rules:
+    //  - client/auth: only from the caller's own verified-shape JWT (never body).
+    //  - edge_function/payment: a body-supplied user_id is only trusted when the
+    //    caller proves it is server-side by presenting the service-role key.
+    const authHeader = req.headers.get("Authorization");
+    const bearer = (authHeader ?? "").replace(/^Bearer\s+/i, "").trim();
+    const isTrustedServer = !!SERVICE_KEY && bearer === SERVICE_KEY;
+
     let userId: string | null = null;
     let username: string | null = null;
     if (source === "client" || source === "auth") {
-      userId = parseUserId(req.headers.get("Authorization"));
-    } else {
-      // edge_function / payment can pass a user id in the payload (validated as uuid shape).
+      userId = parseUserId(authHeader);
+    } else if (isTrustedServer) {
       const candidate = typeof body.user_id === "string" ? body.user_id : null;
       if (candidate && /^[0-9a-f-]{36}$/i.test(candidate)) userId = candidate;
     }
-    if (typeof body.username === "string") username = truncate(body.username, 80);
+    if (isTrustedServer && typeof body.username === "string") username = truncate(body.username, 80);
 
     const sql = postgres(DB_URL, { max: 1 });
     try {
