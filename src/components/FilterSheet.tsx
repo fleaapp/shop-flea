@@ -351,7 +351,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
               <Switch
                 checked={filters.hideSoldItems}
                 onCheckedChange={(checked) => setFilters({ ...filters, hideSoldItems: checked })}
-                className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-input [&>span]:data-[state=checked]:bg-primary [&>span]:data-[state=unchecked]:bg-charcoal"
+               
               />
             </div>
           )}
@@ -368,7 +368,7 @@ const FilterSheet = ({ open, onOpenChange, onApplyFilters, showHideSoldItems = f
                   sizes: checked ? normalizeSizeKeys(preferredSizes) : prev.sizes,
                 }));
               }}
-              className="data-[state=checked]:bg-charcoal data-[state=unchecked]:bg-input [&>span]:data-[state=checked]:bg-primary [&>span]:data-[state=unchecked]:bg-charcoal"
+             
             />
           </div>
 
