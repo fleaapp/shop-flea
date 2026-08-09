@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
 <h2 style="margin:0 0 16px;font-size:18px;">New contact form submission</h2>
 <p style="margin:0 0 8px;"><strong>From:</strong> ${safeName} &lt;<a href="mailto:${safeEmail}" style="color:#1a1a1a;">${safeEmail}</a>&gt;</p>
 <p style="margin:16px 0 8px;"><strong>Message:</strong></p>
-<div style="background:#f6f6f3;padding:14px;border-radius:8px;white-space:pre-wrap;font-size:14px;line-height:1.5;">${safeMsg}</div>
+<div style="background:#ddfed7;padding:14px;border-radius:8px;white-space:pre-wrap;font-size:14px;line-height:1.5;">${safeMsg}</div>
 <p style="margin:20px 0 0;font-size:12px;color:#888;">Reply directly to this email to respond to ${safeName}.</p>
 </div></body></html>`;
 
