@@ -6,17 +6,34 @@ import {
   removeGuestDiscard,
   getGuestDiscards,
 } from '@/utils/guestDiscards';
+import { getActionedIds, setActionedIds } from '@/utils/actionedListingCache';
 
 export const useDiscardedListings = () => {
   const { user } = useAuth();
-  const [discardedIds, setDiscardedIds] = useState<Set<string>>(() => new Set(getGuestDiscards()));
+  // Seed from the user-scoped cache so the swipe deck never re-shows a passed
+  // listing while the fetch is in flight after a remount.
+  const [discardedIds, setDiscardedIdsState] = useState<Set<string>>(() =>
+    user ? getActionedIds('discarded', user.id) : new Set(getGuestDiscards()),
+  );
   const [loading, setLoading] = useState(false);
+
+  const setDiscardedIds = useCallback(
+    (updater: Set<string> | ((prev: Set<string>) => Set<string>)) => {
+      setDiscardedIdsState((prev) => {
+        const next = typeof updater === 'function' ? updater(prev) : updater;
+        setActionedIds('discarded', user?.id ?? null, next);
+        return next;
+      });
+    },
+    [user?.id],
+  );
 
   useEffect(() => {
     if (user) {
+      setDiscardedIdsState(getActionedIds('discarded', user.id));
       fetchDiscarded();
     } else {
-      setDiscardedIds(new Set(getGuestDiscards()));
+      setDiscardedIdsState(new Set(getGuestDiscards()));
     }
   }, [user]);
 
