@@ -403,6 +403,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     clearConsumedListings();
+    clearAllActionedIds(user?.id ?? null);
     localStorage.removeItem('flea_stripe_connected');
     localStorage.removeItem('flea_oauth_signup');
 
