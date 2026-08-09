@@ -1,4 +1,5 @@
-import { isSimilar } from './fuzzyMatch';
+
+
 
 interface SearchableItem {
   title: string;
