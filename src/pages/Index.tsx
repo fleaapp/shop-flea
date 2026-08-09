@@ -27,6 +27,8 @@ import { supabase } from '@/lib/supabase';
 import { formatSizeKeyLabel } from '@/utils/sizeKeys';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { sendWelcomeNotification } from '@/utils/welcomeNotification';
+import { loadSearchState, saveSearchState, clearSearchState } from '@/utils/searchPersistence';
+
 import {
   markListingConsumed,
   unmarkListingConsumed,
@@ -184,7 +186,7 @@ const Index = () => {
   
 
   // Store the full filter state from FilterSheet
-  const [appliedFilters, setAppliedFilters] = useState<FilterState>({
+  const DEFAULT_FILTERS: FilterState = {
     preferences: false,
     hideSoldItems: false,
     sizes: [],
@@ -195,10 +197,17 @@ const Index = () => {
     styles: [],
     brands: [],
     priceRange: [0, 1000],
-  });
-  
+  };
+
+  const persistedSearch = useMemo(() => loadSearchState<FilterState>(), []);
+
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>(
+    persistedSearch?.filters ? { ...DEFAULT_FILTERS, ...persistedSearch.filters } : DEFAULT_FILTERS
+  );
+
   // Search query state
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>(persistedSearch?.query ?? '');
+
   
   // Track the last action for undo functionality
   const [lastAction, setLastAction] = useState<{
@@ -249,6 +258,18 @@ const Index = () => {
     }
     return listingFilters;
   }, [listingFilters, searchQuery]);
+
+  // Persist the active search + filters so they survive navigating away and back.
+  useEffect(() => {
+    const hasState = !!searchQuery || Object.keys(listingFilters).length > 0;
+    if (hasState) {
+      saveSearchState<FilterState>(searchQuery, appliedFilters);
+    } else {
+      clearSearchState();
+    }
+  }, [searchQuery, listingFilters, appliedFilters]);
+
+
 
   // Use the personalised home feed (cart+wishlist signals, 70/30 mix) when no
   // filters or search are active. When the user filters or searches, fall back

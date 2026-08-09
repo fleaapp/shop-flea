@@ -1,4 +1,5 @@
-import { isSimilar } from './fuzzyMatch';
+
+
 
 interface SearchableItem {
   title: string;
@@ -24,72 +25,25 @@ export function tokenizeQuery(query: string): string[] {
 }
 
 /**
- * Gets all searchable text fields from an item as lowercase strings
+ * High-signal fields (title, brand, category, tags) vs. low-signal (description, size, condition).
+ * Fuzzy/typo matching is only ever applied to high-signal fields.
  */
-function getSearchableFields(item: SearchableItem): string[] {
-  const fields: string[] = [];
-  
-  // Add main text fields
-  if (item.title) fields.push(item.title.toLowerCase());
-  if (item.description) fields.push(item.description.toLowerCase());
-  if (item.category) fields.push(item.category.toLowerCase());
-  if (item.brand) fields.push(item.brand.toLowerCase());
-  if (item.colour) fields.push(item.colour.toLowerCase());
-  if (item.style) fields.push(item.style.toLowerCase());
-  if (item.size) fields.push(item.size.toLowerCase());
-  if (item.condition) fields.push(item.condition.toLowerCase());
-  
-  // Add individual tags
-  if (item.tags) {
-    item.tags.forEach(tag => fields.push(tag.toLowerCase()));
-  }
-  
-  return fields;
-}
+function getSearchableFields(item: SearchableItem): { strong: string[]; weak: string[] } {
+  const strong: string[] = [];
+  const weak: string[] = [];
 
-/**
- * Checks if a single token matches any of the searchable fields
- * Returns a score indicating match quality (0 = no match, higher = better match)
- */
-function tokenMatchScore(token: string, fields: string[]): number {
-  let bestScore = 0;
-  
-  for (const field of fields) {
-    // Exact match in field
-    if (field === token) {
-      bestScore = Math.max(bestScore, 100);
-      continue;
-    }
-    
-    // Field contains token as a complete word
-    const wordBoundaryRegex = new RegExp(`\\b${escapeRegex(token)}\\b`, 'i');
-    if (wordBoundaryRegex.test(field)) {
-      bestScore = Math.max(bestScore, 90);
-      continue;
-    }
-    
-    // Field contains token (partial match)
-    if (field.includes(token)) {
-      bestScore = Math.max(bestScore, 70);
-      continue;
-    }
-    
-    // Token is a prefix of a word in the field (for partial typing like "snea" -> "sneakers")
-    const words = field.split(/\s+/);
-    for (const word of words) {
-      if (word.startsWith(token)) {
-        bestScore = Math.max(bestScore, 60);
-        break;
-      }
-    }
-    
-    // Fuzzy match (handles typos)
-    if (isSimilar(field, token)) {
-      bestScore = Math.max(bestScore, 40);
-    }
-  }
-  
-  return bestScore;
+  if (item.title) strong.push(item.title.toLowerCase());
+  if (item.brand) strong.push(item.brand.toLowerCase());
+  if (item.category) strong.push(item.category.toLowerCase());
+  if (item.colour) strong.push(item.colour.toLowerCase());
+  if (item.style) strong.push(item.style.toLowerCase());
+  if (item.tags) item.tags.forEach(tag => strong.push(tag.toLowerCase()));
+
+  if (item.description) weak.push(item.description.toLowerCase());
+  if (item.size) weak.push(item.size.toLowerCase());
+  if (item.condition) weak.push(item.condition.toLowerCase());
+
+  return { strong, weak };
 }
 
 /**
@@ -99,40 +53,105 @@ function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function hasWholeWord(field: string, token: string): boolean {
+  return new RegExp(`(^|[^a-z0-9])${escapeRegex(token)}([^a-z0-9]|$)`, 'i').test(field);
+}
+
+function hasWordPrefix(field: string, token: string): boolean {
+  return field.split(/[^a-z0-9]+/).some(word => word.length > 0 && word.startsWith(token));
+}
+
 /**
- * Scores how well an item matches a search query
- * Returns 0 if the item doesn't match, or a positive score indicating relevance
- * 
- * Matching logic:
- * - All tokens must match at least one field (AND between tokens)
- * - Each token can match any field (OR within a token)
- * - Word order doesn't matter
- * - Partial matches and fuzzy matching are supported
+ * Levenshtein distance, capped for short strings.
+ */
+function editDistance(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  if (Math.abs(m - n) > 2) return 3;
+  let prev = Array.from({ length: n + 1 }, (_, i) => i);
+  for (let i = 1; i <= m; i++) {
+    const curr = [i];
+    for (let j = 1; j <= n; j++) {
+      curr[j] = Math.min(
+        prev[j] + 1,
+        curr[j - 1] + 1,
+        prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+      );
+    }
+    prev = curr;
+  }
+  return prev[n];
+}
+
+/**
+ * Scores a single token against an item's fields.
+ * Rules:
+ * - Short tokens (< 4 chars) must match a whole word - no partials, no fuzzy.
+ * - Medium tokens may match a word prefix.
+ * - Only tokens of 5+ chars get typo tolerance, and only on strong fields.
+ * - Description/size/condition only ever match on a whole word.
+ */
+function tokenMatchScore(token: string, fields: { strong: string[]; weak: string[] }): number {
+  let best = 0;
+
+  for (const field of fields.strong) {
+    if (field === token) return 100;
+    if (hasWholeWord(field, token)) best = Math.max(best, 90);
+    else if (token.length >= 4 && hasWordPrefix(field, token)) best = Math.max(best, 70);
+  }
+
+  if (best === 0) {
+    for (const field of fields.weak) {
+      if (hasWholeWord(field, token)) best = Math.max(best, 55);
+      else if (token.length >= 5 && hasWordPrefix(field, token)) best = Math.max(best, 45);
+    }
+  }
+
+  // Typo tolerance: long tokens only, strong fields only.
+  if (best === 0 && token.length >= 5) {
+    for (const field of fields.strong) {
+      const words = field.split(/[^a-z0-9]+/);
+      for (const word of words) {
+        if (word.length < 4) continue;
+        const allowed = token.length >= 8 ? 2 : 1;
+        if (editDistance(word, token) <= allowed) {
+          best = Math.max(best, 40);
+          break;
+        }
+      }
+      if (best > 0) break;
+    }
+  }
+
+  return best;
+}
+
+/**
+ * Scores how well an item matches a search query.
+ * Returns 0 if the item doesn't match, or a positive relevance score.
+ * All tokens must match (AND); each token may match any field (OR).
  */
 export function scoreSearchMatch(item: SearchableItem, query: string): number {
   const tokens = tokenizeQuery(query);
-  
+
   if (tokens.length === 0) return 0;
-  
+
   const fields = getSearchableFields(item);
-  
+
   let totalScore = 0;
-  
-  // Each token must match at least one field
+
   for (const token of tokens) {
     const score = tokenMatchScore(token, fields);
-    
-    // If any token doesn't match, the item doesn't match
-    if (score === 0) {
-      return 0;
-    }
-    
+    if (score === 0) return 0;
     totalScore += score;
   }
-  
-  // Normalize by number of tokens so longer queries don't automatically score higher
+
   return totalScore / tokens.length;
 }
+
+/** Minimum average relevance required for an item to be shown. */
+const RELEVANCE_FLOOR = 40;
+
 
 /**
  * Filters and sorts items by search relevance
@@ -149,7 +168,7 @@ export function filterBySearch<T extends SearchableItem>(
       item,
       score: scoreSearchMatch(item, query)
     }))
-    .filter(({ score }) => score > 0);
+    .filter(({ score }) => score >= RELEVANCE_FLOOR);
   
   // Sort by score (highest first)
   scored.sort((a, b) => b.score - a.score);
