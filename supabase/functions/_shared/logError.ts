@@ -53,8 +53,8 @@ export async function logEdgeError(input: LogInput): Promise<void> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        apikey: ANON_KEY,
-        Authorization: `Bearer ${ANON_KEY}`,
+        apikey: AUTH_KEY,
+        Authorization: `Bearer ${AUTH_KEY}`,
       },
       body,
     }).catch(() => {});
