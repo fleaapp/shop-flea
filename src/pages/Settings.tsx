@@ -20,6 +20,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useGuestMode } from '@/context/GuestModeContext';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 import { clearConsumedListings } from '@/utils/consumedListings';
+import { clearActionedIds } from '@/utils/actionedListingCache';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/lib/supabase';
@@ -169,6 +170,7 @@ const Settings = () => {
     const success = await clearDiscarded();
     if (success) {
       clearConsumedListings();
+      clearActionedIds('discarded', user?.id ?? null);
       toast.success('🔁 Passed listings refreshed! You can browse them again.');
     } else {
       toast.error('🔁 Failed to refresh passed listings');
