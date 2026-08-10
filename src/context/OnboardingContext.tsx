@@ -125,6 +125,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     if (currentIndex === -1 || currentIndex >= ONBOARDING_STEPS.length - 1) {
       setCurrentStep(null);
       setHasCompletedOnboarding(true);
+      setWalkthroughDone(true);
       localStorage.setItem(STORAGE_KEY, 'true');
       return;
     }
