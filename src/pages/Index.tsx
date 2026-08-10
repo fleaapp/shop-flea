@@ -196,25 +196,32 @@ const Index = () => {
   useEffect(() => {
     if (!readyForWalkthrough) return;
     if (walkthroughOpenedRef.current) return;
-    if (localStorage.getItem('flea-new-user-pending-onboarding') !== 'true') return;
+    const pending = localStorage.getItem('flea-new-user-pending-onboarding') === 'true';
+    if (!pending && !justSignedUp) return;
     walkthroughOpenedRef.current = true;
     completionAtOpenRef.current = walkthroughCompletionCount;
     openCarousel();
-  }, [openCarousel, readyForWalkthrough, walkthroughCompletionCount]);
+  }, [openCarousel, readyForWalkthrough, walkthroughCompletionCount, justSignedUp]);
 
   // Stage 4: the welcome alert + toast only fires after this session's
   // walkthrough is finished or skipped, never alongside the setup dialogs.
+  // If the walkthrough could not be opened at all, a fresh signup still gets
+  // its welcome alert so the coupon is never lost.
   useEffect(() => {
     if (!user || welcomeNotifiedRef.current) return;
     if (!readyForWalkthrough) return;
-    if (!walkthroughOpenedRef.current || completionAtOpenRef.current === null) return;
-    if (walkthroughCompletionCount <= completionAtOpenRef.current) return;
+    const walkthroughFinished =
+      walkthroughOpenedRef.current &&
+      completionAtOpenRef.current !== null &&
+      walkthroughCompletionCount > completionAtOpenRef.current;
+    const walkthroughUnavailable = justSignedUp && !walkthroughOpenedRef.current;
+    if (!walkthroughFinished && !walkthroughUnavailable) return;
     const key = `flea_welcome_notified_${user.id}`;
     welcomeNotifiedRef.current = true;
     if (localStorage.getItem(key) === '1') return;
     localStorage.setItem(key, '1');
     void sendWelcomeNotification();
-  }, [user, readyForWalkthrough, walkthroughCompletionCount]);
+  }, [user, readyForWalkthrough, walkthroughCompletionCount, justSignedUp]);
 
 
 
