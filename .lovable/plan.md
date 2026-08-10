@@ -72,7 +72,7 @@ Budget 1-2% of GMV for fraud/refund losses and treat that, not hosting, as the m
 
 ## What to change now (cheap fixes, large payoff)
 
-1. Purge `cron.job_run_details` and add a nightly job that deletes rows older than 7 days. Recovers ~3.4 GB immediately and permanently caps the growth.
+1. Purge `cron.job_run_details` and add a nightly job that deletes rows older than 7 days. Recovers ~3.4 GB immediately and permanently caps the growth. This table only stores execution logs (start time, status, return text) of scheduled jobs; it does not contain order, payment, or user data, so nothing business-critical is lost. Keep 7 days for debugging recent job failures.
 2. Unschedule the orphaned jobid 2 dispatcher if it is still registered, and prune `net._http_response` on the same schedule.
 3. Compress and resize listing images on upload (WebP, max ~1200px on the long edge). Cuts egress and storage 50-70% for no visible quality loss at the app's 4:5 card size.
 4. Serve listing images with long cache headers so repeat card-stack views hit the CDN rather than storage.
