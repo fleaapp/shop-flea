@@ -63,7 +63,7 @@ const Index = () => {
   const { addToCart, removeFromCart, isInCart } = useCart();
   const { addFavorite, removeFavorite, favoriteIds } = useFavorites();
   const { addDiscarded, removeDiscarded, discardedIds } = useDiscardedListings();
-  const { checkAndTriggerOnboarding, openCarousel, walkthroughDone, setSignupDialogOpen } = useOnboarding();
+  const { openCarousel, walkthroughCompletionCount, setSignupDialogOpen } = useOnboarding();
   const { user, profile, loading: authLoading, profileLoaded, refreshProfile } = useAuth();
   const { isGuest, requireAuth } = useGuestMode();
 
