@@ -40,31 +40,31 @@ const PasswordSetupDialog = ({ open, onComplete }: PasswordSetupDialogProps) => 
     setIsLoading(true);
     setError('');
 
-    // Transition UI immediately, update password in background
-    toast.success('Password created successfully! 🔒');
-    onComplete();
+    // Wait for the password to actually save before handing control back.
+    // Advancing early is what allowed the walkthrough to appear on top of
+    // this dialog while the request was still in flight.
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({ password });
+      if (updateError) throw updateError;
 
-    // Fire password update in background — don't block the UI
-    supabase.auth.updateUser({ password }).then(async ({ error: updateError }) => {
-      if (updateError) {
-        console.error('Error setting password:', updateError);
-        toast.error('Password failed to save. Please set it in Settings.');
-        return;
-      }
-      // Update metadata and profile DB column in background
+      const { data } = await supabase.auth.getUser();
       await Promise.all([
         supabase.auth.updateUser({ data: { password_set: true } }),
-        supabase.auth.getUser().then(({ data }) => {
-          if (data?.user?.id) {
-            return supabase.from('profiles').update({ password_set: true }).eq('user_id', data.user.id);
-          }
-        }),
+        data?.user?.id
+          ? supabase.from('profiles').update({ password_set: true }).eq('user_id', data.user.id)
+          : Promise.resolve(),
       ]);
-    }).catch((err) => {
+
+      toast.success('Password created successfully! 🔒');
+      await onComplete();
+    } catch (err) {
       console.error('Error setting password:', err);
-      toast.error('Password failed to save. Please set it in Settings.');
-    });
+      setError('Password failed to save. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
+
 
   const isValid = password.length >= 8 && password === confirmPassword;
 
