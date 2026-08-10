@@ -4,12 +4,10 @@ import { Capacitor } from '@capacitor/core';
 import App from "./App.tsx";
 import "./index.css";
 import { restoreRouteAppChrome } from "./lib/appChrome.ts";
-import { installIosGoogleSafariGuard } from "./lib/iosGoogleSafariGuard.ts";
 import { installGlobalErrorHandlers } from "./lib/errorLogger.ts";
 import { installStaleChunkGuard } from "./lib/staleChunkRecovery.ts";
 
 restoreRouteAppChrome();
-installIosGoogleSafariGuard();
 installStaleChunkGuard();
 installGlobalErrorHandlers();
 

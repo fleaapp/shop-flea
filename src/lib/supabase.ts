@@ -1,18 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { authStorage } from "@/lib/authStorage";
 
-function isIosRuntime(): boolean {
-  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
-  const cap = (window as any).Capacitor;
-  return (
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1) ||
-    window.location.protocol === 'capacitor:' ||
-    cap?.getPlatform?.() === 'ios' ||
-    !!cap?.isNativePlatform?.() ||
-    !!(window as any).webkit?.messageHandlers?.bridge
-  );
-}
+
 
 // Lovable Cloud (Supabase) project credentials — read from Vite env at build time
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
@@ -31,17 +20,3 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
   },
 });
-
-const originalSignInWithOAuth = supabase.auth.signInWithOAuth.bind(supabase.auth);
-
-supabase.auth.signInWithOAuth = ((credentials: any) => {
-  if (credentials?.provider === 'google' && isIosRuntime()) {
-    console.error('[supabase] Blocked Google web OAuth on iOS runtime');
-    return Promise.resolve({
-      data: { provider: 'google', url: null },
-      error: new Error('Google web OAuth is blocked on iOS because it opens Safari. Use Apple or email sign-in.'),
-    } as any);
-  }
-
-  return originalSignInWithOAuth(credentials);
-}) as typeof supabase.auth.signInWithOAuth;
