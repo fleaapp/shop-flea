@@ -20,17 +20,3 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
   },
 });
-
-const originalSignInWithOAuth = supabase.auth.signInWithOAuth.bind(supabase.auth);
-
-supabase.auth.signInWithOAuth = ((credentials: any) => {
-  if (credentials?.provider === 'google' && isIosRuntime()) {
-    console.error('[supabase] Blocked Google web OAuth on iOS runtime');
-    return Promise.resolve({
-      data: { provider: 'google', url: null },
-      error: new Error('Google web OAuth is blocked on iOS because it opens Safari. Use Apple or email sign-in.'),
-    } as any);
-  }
-
-  return originalSignInWithOAuth(credentials);
-}) as typeof supabase.auth.signInWithOAuth;
