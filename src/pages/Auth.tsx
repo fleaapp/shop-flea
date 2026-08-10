@@ -294,6 +294,11 @@ const Auth = () => {
       setIsLoading(false);
     } else {
       try { localStorage.setItem('flea_pending_verify_email', signupEmail); } catch (_) { /* private mode */ }
+      // A brand new account always gets the walkthrough + welcome alert.
+      try {
+        localStorage.removeItem('flea-onboarding-completed');
+        localStorage.setItem('flea-new-user-pending-onboarding', 'true');
+      } catch (_) { /* private mode */ }
       navigate('/verify-email', { state: { email: signupEmail } });
     }
   };
