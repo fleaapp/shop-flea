@@ -1,28 +1,52 @@
-# Fix "Error 400: redirect_uri_mismatch" on Google sign-in
+# Fix Google "redirect_uri_mismatch"
 
-## What the error means
+## Why it still fails
 
-This one is coming from Google, not from our code. Sign-in now goes straight to the app's own auth endpoint (that was the change that removed the "Lovable" hop). Google only lets an OAuth client return to redirect URLs that are listed on that client. Your Flea OAuth client in Google Cloud still lists the old broker callback, so Google rejects the new one before showing the account picker.
+Your screenshots show the three URIs Lovable's managed broker uses:
 
-Nothing in the app is broken - the allow-list in Google Cloud just needs the app's callback URL added.
+```text
+https://oauth.lovable.app/callback
+https://shop-flea.lovable.app/~oauth/callback
+https://app.finditonflea.com/~oauth/callback
+```
 
-## Fix (one setting, done by you)
+Those are correct - for the broker. But we changed the Google button to call the app's own
+auth endpoint directly (to remove the "lovable" address from the sheet). That path does not
+use any of those URIs. It uses the backend auth callback instead:
 
-1. Open the backend Users -> Auth Settings -> Sign In Methods -> Google section. Expand it and copy the **Callback URL** shown there.
-2. In Google Cloud Console -> APIs & Services -> Credentials, open the Flea Web application OAuth client.
-3. Under **Authorised redirect URIs**, add that exact callback URL (keep any existing entries).
-4. Under **Authorised JavaScript origins**, make sure `https://app.finditonflea.com` is listed.
-5. Save. Google can take a few minutes to propagate, then retry sign-in.
+```text
+https://teaicrimlqdayqpmxasc.supabase.co/auth/v1/callback
+```
 
-## If you'd rather not touch Google Cloud
+That one is not in the Google client's list, so Google rejects it before the account picker.
 
-I can switch the Google button back to the managed broker, which works immediately with no console changes - the trade-off is the brief "lovable" address showing in the sheet before Google loads. Say the word and I'll do that instead.
+## Two ways forward - pick one
 
-## What I'll do in the app
+### Option A - keep the current direct flow (no "lovable" text anywhere)
 
-- Nothing is required if the redirect URI is added. If you want a safety net, I can add a friendlier error message so a `redirect_uri_mismatch` shows "Google sign-in isn't configured yet - try Apple or email" instead of the raw Google page being the last thing the user sees.
+Add one more entry in Google Cloud Console -> Credentials -> your Web OAuth client ->
+Authorised redirect URIs, keeping the existing three:
+
+```text
+https://teaicrimlqdayqpmxasc.supabase.co/auth/v1/callback
+```
+
+Save, wait a few minutes, retry. No code change needed.
+
+### Option B - go back to the managed broker (works right now, no console change)
+
+I switch the Google button back to the managed OAuth helper, which uses the three URIs you
+already have listed. Trade-off: the in-app sheet briefly shows the `oauth.lovable.app`
+address before Google loads. The Google consent screen itself still shows Flea branding.
+
+## Small code change either way
+
+Add a friendlier failure message on the auth screen so a Google configuration error reads
+"Google sign-in isn't available right now - try Apple or email" instead of leaving the user
+on Google's raw error page.
 
 ## Technical notes
 
-- Files that would change only for the friendlier error: `src/pages/Auth.tsx`.
+- Option B touches `src/pages/Auth.tsx` and `src/lib/oauthPopup.ts`.
+- Error-message tweak touches `src/pages/Auth.tsx` only.
 - No database or edge function changes.
