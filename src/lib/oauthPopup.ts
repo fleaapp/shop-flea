@@ -4,34 +4,26 @@ import { supabase } from '@/lib/supabase';
 /**
  * In-app OAuth sign-in.
  *
- * Web: opens the Lovable Cloud OAuth broker in a small popup window using the
- * `web_message` response mode, so the user picks their Google account in a
- * normal popup and lands straight back on the app (no full-page redirect).
+ * The authorize URL is built by the app's own auth endpoint (Supabase auth
+ * domain) rather than a third-party broker, so no other brand ever appears
+ * in the address bar of the popup / in-app browser sheet.
  *
- * Native (iOS/Android): opens the same broker URL in an in-app browser sheet
- * (SFSafariViewController / Chrome Custom Tab). The broker redirects back to
+ * Web: opens the authorize URL in a small popup. The popup lands back on
+ * `/auth/callback?opener=1`, applies the session and messages the opener.
+ *
+ * Native (iOS/Android): opens the same URL in an in-app browser sheet
+ * (SFSafariViewController / Chrome Custom Tab). The provider redirects back to
  * the universal-link origin, `appUrlOpen` in App.tsx closes the sheet and
  * routes to /auth/callback which applies the session.
  */
 
-const BROKER_PATH = '/~oauth/initiate';
 const NATIVE_ORIGIN = 'https://app.finditonflea.com';
-const MESSAGE_TYPE = 'authorization_response';
-const ALLOWED_MESSAGE_ORIGINS = ['https://oauth.lovable.app', 'https://lovable.dev'];
+export const OAUTH_COMPLETE_MESSAGE = 'flea-oauth-complete';
 const POPUP_CHECK_INTERVAL_MS = 500;
 
 export type OAuthPopupResult =
   | { error: null; redirected?: boolean; cancelled?: false }
   | { error: Error; cancelled?: boolean };
-
-const randomState = () => {
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    return [...crypto.getRandomValues(new Uint8Array(16))]
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
-  }
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
-};
 
 const isNative = () => {
   try {
@@ -41,38 +33,37 @@ const isNative = () => {
   }
 };
 
-const buildBrokerUrl = (
-  origin: string,
-  provider: string,
-  redirectUri: string,
-  state: string,
+const buildAuthorizeUrl = async (
+  provider: 'google' | 'apple',
+  redirectTo: string,
   extraParams: Record<string, string>,
-  webMessage: boolean,
-) => {
-  const params = new URLSearchParams({
-    ...extraParams,
+): Promise<{ url?: string; error?: Error }> => {
+  const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
-    redirect_uri: redirectUri,
-    state,
+    options: {
+      redirectTo,
+      skipBrowserRedirect: true,
+      queryParams: extraParams,
+    },
   });
-  if (webMessage) params.set('response_mode', 'web_message');
-  return `${origin}${BROKER_PATH}?${params.toString()}`;
+  if (error) return { error };
+  if (!data?.url) return { error: new Error('Could not start sign in') };
+  return { url: data.url };
 };
 
 export async function signInWithOAuthPopup(
   provider: 'google' | 'apple',
   extraParams: Record<string, string> = {},
 ): Promise<OAuthPopupResult> {
-  const state = randomState();
-
   // ---- Native: in-app browser sheet, session applied via /auth/callback ----
   if (isNative()) {
-    const url = buildBrokerUrl(NATIVE_ORIGIN, provider, NATIVE_ORIGIN, state, extraParams, false);
+    const { url, error } = await buildAuthorizeUrl(provider, NATIVE_ORIGIN, extraParams);
+    if (error || !url) return { error: error ?? new Error('Could not start sign in') };
     try {
       const { Browser } = await import('@capacitor/browser');
       await Browser.open({ url, presentationStyle: 'popover' });
       return { error: null, redirected: true };
-    } catch (err) {
+    } catch {
       // If the in-app browser is unavailable, fall back to a full redirect so
       // sign-in still works rather than failing outright.
       window.location.href = url;
@@ -80,19 +71,24 @@ export async function signInWithOAuthPopup(
     }
   }
 
-  // ---- Web: popup window with web_message response ----
+  // ---- Web: popup window that returns via /auth/callback ----
   const origin = window.location.origin;
-  const url = buildBrokerUrl(origin, provider, origin, state, extraParams, true);
+  const { url, error: urlError } = await buildAuthorizeUrl(
+    provider,
+    `${origin}/auth/callback?opener=1`,
+    extraParams,
+  );
+  if (urlError || !url) return { error: urlError ?? new Error('Could not start sign in') };
 
-  let resolveMessage: (data: any) => void = () => {};
-  const messagePromise = new Promise<any>((resolve) => {
+  let resolveMessage: () => void = () => {};
+  const messagePromise = new Promise<void>((resolve) => {
     resolveMessage = resolve;
   });
   const onMessage = (event: MessageEvent) => {
-    if (![...ALLOWED_MESSAGE_ORIGINS, origin].includes(event.origin)) return;
+    if (event.origin !== origin) return;
     const data: any = event.data;
-    if (!data || typeof data !== 'object' || data.type !== MESSAGE_TYPE) return;
-    resolveMessage(data.response);
+    if (!data || typeof data !== 'object' || data.type !== OAUTH_COMPLETE_MESSAGE) return;
+    resolveMessage();
   };
   window.addEventListener('message', onMessage);
 
@@ -105,7 +101,8 @@ export async function signInWithOAuthPopup(
   if (!popup) {
     window.removeEventListener('message', onMessage);
     // Popup blocked (or an embedded webview) — fall back to a full redirect.
-    window.location.href = buildBrokerUrl(origin, provider, origin, state, extraParams, false);
+    const { url: redirectUrl } = await buildAuthorizeUrl(provider, `${origin}/auth/callback`, extraParams);
+    window.location.href = redirectUrl ?? url;
     return { error: null, redirected: true };
   }
 
@@ -122,17 +119,13 @@ export async function signInWithOAuthPopup(
   });
 
   try {
-    const data = await Promise.race([messagePromise, closedPromise]);
+    await Promise.race([messagePromise, closedPromise]);
 
-    if (data?.state !== state) return { error: new Error('State is invalid') };
-    if (data?.error) return { error: new Error(data.error_description ?? 'Sign in failed') };
-    if (!data?.access_token || !data?.refresh_token) return { error: new Error('No tokens received') };
-
-    const { error } = await supabase.auth.setSession({
-      access_token: data.access_token,
-      refresh_token: data.refresh_token,
-    });
+    // The popup shares this origin's storage, so the session is already
+    // persisted — just pull it into this client instance.
+    const { data, error } = await supabase.auth.getSession();
     if (error) return { error };
+    if (!data.session) return { error: new Error('No session received') };
     return { error: null };
   } catch (err: any) {
     return { error: err instanceof Error ? err : new Error(String(err)), cancelled: !!err?.cancelled };
