@@ -101,7 +101,7 @@ const WelcomeSetupDialog = ({ open, onComplete, isGoogleUser = false }: WelcomeS
       if (updateError) throw updateError;
 
       await refreshProfile();
-      toast.success('Profile setup complete! Welcome to Flea! 🎉');
+      toast.success('Profile setup complete! 🎉');
       onComplete();
     } catch (err) {
       console.error('Error setting up profile:', err);

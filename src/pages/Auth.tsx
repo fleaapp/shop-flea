@@ -306,6 +306,8 @@ const Auth = () => {
   const handleGoogleSignIn = async () => {
     try {
       localStorage.setItem('flea_oauth_signup', '1');
+      localStorage.removeItem('flea-onboarding-completed');
+      localStorage.setItem('flea-new-user-pending-onboarding', 'true');
 
       // Native (iOS/Android): deliberately fall through to the in-app browser
       // OAuth path. The native Google plugin was removed because it generated a
@@ -315,6 +317,7 @@ const Auth = () => {
         if (result.handled) {
           if (result.error) {
             localStorage.removeItem('flea_oauth_signup');
+            localStorage.removeItem('flea-new-user-pending-onboarding');
             if (!result.cancelled) {
               console.error('Native Google sign-in error:', result.error);
               logError({ title: 'Google sign-in failed (native)', message: result.error.message, stack: result.error.stack ?? null, severity: 'error', source: 'auth' });
@@ -344,6 +347,7 @@ const Auth = () => {
         });
         if (result.error) {
           localStorage.removeItem('flea_oauth_signup');
+          localStorage.removeItem('flea-new-user-pending-onboarding');
           console.error('Google sign-in error:', result.error);
           logError({ title: 'Google sign-in failed (managed OAuth)', message: result.error.message || String(result.error), severity: 'error', source: 'auth' });
           toast.error(`Google sign-in failed: ${result.error.message || 'Please try again.'}`);
@@ -359,6 +363,7 @@ const Auth = () => {
 
       if (result.error) {
         localStorage.removeItem('flea_oauth_signup');
+        localStorage.removeItem('flea-new-user-pending-onboarding');
         if (!result.cancelled) {
           console.error('Google sign-in error:', result.error);
           logError({ title: 'Google sign-in failed (managed OAuth)', message: result.error.message || String(result.error), severity: 'error', source: 'auth' });
@@ -371,6 +376,7 @@ const Auth = () => {
       // onAuthStateChange redirects via the useEffect above.
     } catch (err: any) {
       localStorage.removeItem('flea_oauth_signup');
+      localStorage.removeItem('flea-new-user-pending-onboarding');
       console.error('Google sign-in exception:', err);
       logError({ title: 'Google sign-in exception', message: err?.message || String(err), stack: err?.stack ?? null, severity: 'error', source: 'auth' });
       toast.error(`Google sign-in failed: ${err?.message || 'Please try again.'}`);
@@ -383,6 +389,8 @@ const Auth = () => {
   const handleAppleSignIn = async () => {
     try {
       localStorage.setItem('flea_oauth_signup', '1');
+      localStorage.removeItem('flea-onboarding-completed');
+      localStorage.setItem('flea-new-user-pending-onboarding', 'true');
 
       // iOS native: use the system Sign in with Apple sheet (no Safari bounce).
       if (isAppleIosNative()) {
@@ -390,6 +398,7 @@ const Auth = () => {
         if (result.handled) {
           if (result.error) {
             localStorage.removeItem('flea_oauth_signup');
+            localStorage.removeItem('flea-new-user-pending-onboarding');
             if (!result.cancelled) {
               console.error('Native Apple sign-in error:', result.error);
               // Surface the real reason so we can debug TestFlight failures
@@ -407,11 +416,13 @@ const Auth = () => {
 
       // Non-native (web/PWA/Android): Apple Sign-In is iOS-app-only.
       localStorage.removeItem('flea_oauth_signup');
+      localStorage.removeItem('flea-new-user-pending-onboarding');
       toast.info('Sign in with Apple is only available in the Flea iOS app.');
       return;
 
     } catch (err) {
       localStorage.removeItem('flea_oauth_signup');
+      localStorage.removeItem('flea-new-user-pending-onboarding');
       console.error('Apple sign-in exception:', err);
       toast.error('Apple sign-in failed. Please try again.');
     }
