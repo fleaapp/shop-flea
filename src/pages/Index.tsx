@@ -179,15 +179,8 @@ const Index = () => {
       return;
     }
     if (!signupFlowStage) {
-      const pending = localStorage.getItem('flea-new-user-pending-onboarding') === 'true';
-      const passwordWasJustCompleted = localStorage.getItem(`flea_pw_done_${user.id}`) === '1';
-      // Recover accounts that completed the password under the previous
-      // effect-based implementation but lost the final handoff on remount.
-      if (pending && passwordWasJustCompleted) {
-        setSignupFlowStage('walkthrough');
-        return;
-      }
-      // A completed returning account must not inherit a stale OAuth intent.
+      // A completed returning account must not inherit the generic OAuth
+      // intent set before we know whether Google/Apple returned a new account.
       localStorage.removeItem('flea-new-user-pending-onboarding');
     }
   }, [user, profileLoaded, authLoading, showWelcomeDialog, showPasswordDialog, signupFlowStage, setSignupFlowStage]);
