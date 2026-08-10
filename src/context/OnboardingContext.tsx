@@ -75,8 +75,14 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   const [showCarousel, setShowCarousel] = useState(false);
   // True once the walkthrough has been finished or skipped in this session.
   const [walkthroughDone, setWalkthroughDone] = useState(false);
+  const [walkthroughCompletionCount, setWalkthroughCompletionCount] = useState(0);
   // Signup dialogs (username / password) own the screen exclusively.
-  const [signupDialogOpen, setSignupDialogOpen] = useState(false);
+  const [signupDialogOpen, setSignupDialogOpenState] = useState(false);
+
+  const markWalkthroughComplete = useCallback(() => {
+    setWalkthroughDone(true);
+    setWalkthroughCompletionCount((n) => n + 1);
+  }, []);
 
   const openCarousel = useCallback(() => {
     setWalkthroughDone(false);
@@ -84,8 +90,19 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   }, []);
   const closeCarousel = useCallback(() => {
     setShowCarousel(false);
-    setWalkthroughDone(true);
+    markWalkthroughComplete();
+  }, [markWalkthroughComplete]);
+
+  // A signup dialog owns the screen exclusively: opening one closes any
+  // onboarding surface synchronously so the two can never overlap.
+  const setSignupDialogOpen = useCallback((open: boolean) => {
+    setSignupDialogOpenState(open);
+    if (open) {
+      setShowCarousel(false);
+      setCurrentStep(null);
+    }
   }, []);
+
 
   useEffect(() => {
     const completed = localStorage.getItem(STORAGE_KEY);
