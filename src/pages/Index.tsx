@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -63,7 +63,7 @@ const Index = () => {
   const { addToCart, removeFromCart, isInCart } = useCart();
   const { addFavorite, removeFavorite, favoriteIds } = useFavorites();
   const { addDiscarded, removeDiscarded, discardedIds } = useDiscardedListings();
-  const { checkAndTriggerOnboarding, openCarousel } = useOnboarding();
+  const { checkAndTriggerOnboarding, openCarousel, walkthroughDone } = useOnboarding();
   const { user, profile, loading: authLoading, profileLoaded, refreshProfile } = useAuth();
   const { isGuest, requireAuth } = useGuestMode();
 
@@ -165,12 +165,33 @@ const Index = () => {
   // Password dialog: once locked, stays open until explicitly completed
   const showPasswordDialog = passwordDialogLocked && !passwordCompleted;
 
-  // Check if we should start onboarding (for new users after signup)
-  // Delay for OAuth users until password is set so onboarding doesn't appear behind password dialog
+  // Signup runs as one ordered sequence so the dialogs can never overlap:
+  //   1. username / name  ->  2. password (OAuth only)  ->  3. walkthrough  ->  4. welcome alert
+  // Onboarding is only allowed to start once stages 1 and 2 are done.
+  const profileStageDone = !!user && profileLoaded && !showWelcomeDialog;
+  const passwordStageDone = !isOAuthUser || passwordCompleted || passwordAlreadySet;
+  const readyForWalkthrough = profileStageDone && passwordStageDone && !showPasswordDialog;
+
   useEffect(() => {
-    if (isOAuthUser && !passwordCompleted && !passwordAlreadySet) return;
+    if (!readyForWalkthrough) return;
     checkAndTriggerOnboarding();
-  }, [checkAndTriggerOnboarding, isOAuthUser, passwordCompleted, passwordAlreadySet]);
+  }, [checkAndTriggerOnboarding, readyForWalkthrough]);
+
+  // Stage 4: the welcome alert + toast only fires after the walkthrough is
+  // finished or skipped, never alongside the setup dialogs.
+  const welcomeNotifiedRef = useRef(false);
+  useEffect(() => {
+    if (!user || welcomeNotifiedRef.current) return;
+    if (!readyForWalkthrough || !walkthroughDone) return;
+    const key = `flea_welcome_notified_${user.id}`;
+    if (localStorage.getItem(key) === '1') {
+      welcomeNotifiedRef.current = true;
+      return;
+    }
+    welcomeNotifiedRef.current = true;
+    localStorage.setItem(key, '1');
+    void sendWelcomeNotification();
+  }, [user, readyForWalkthrough, walkthroughDone]);
 
   const [pendingExitId, setPendingExitId] = useState<string | null>(null);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
@@ -716,8 +737,6 @@ const Index = () => {
         onComplete={() => {
           setWelcomeCompleted(true);
           if (user) localStorage.setItem(`flea_welcome_done_${user.id}`, '1');
-          // Welcome alert (+ push if enabled). Server-side idempotent.
-          void sendWelcomeNotification();
 
           // Use the localStorage flag — it was set BEFORE the OAuth redirect and survives cross-origin redirects
           const isOAuth = localStorage.getItem('flea_oauth_signup') === '1';

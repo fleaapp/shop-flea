@@ -22,6 +22,7 @@ interface OnboardingContextValue {
   hasCompletedOnboarding: boolean;
   isNewUser: boolean;
   showCarousel: boolean;
+  walkthroughDone: boolean;
   openCarousel: () => void;
   closeCarousel: () => void;
   startOnboarding: () => void;
@@ -61,9 +62,17 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
   const [showCarousel, setShowCarousel] = useState(false);
+  // True once the walkthrough has been finished or skipped in this session.
+  const [walkthroughDone, setWalkthroughDone] = useState(false);
 
-  const openCarousel = useCallback(() => setShowCarousel(true), []);
-  const closeCarousel = useCallback(() => setShowCarousel(false), []);
+  const openCarousel = useCallback(() => {
+    setWalkthroughDone(false);
+    setShowCarousel(true);
+  }, []);
+  const closeCarousel = useCallback(() => {
+    setShowCarousel(false);
+    setWalkthroughDone(true);
+  }, []);
 
   useEffect(() => {
     const completed = localStorage.getItem(STORAGE_KEY);
@@ -116,6 +125,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     if (currentIndex === -1 || currentIndex >= ONBOARDING_STEPS.length - 1) {
       setCurrentStep(null);
       setHasCompletedOnboarding(true);
+      setWalkthroughDone(true);
       localStorage.setItem(STORAGE_KEY, 'true');
       return;
     }
@@ -124,6 +134,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   }, [currentStep]);
 
   const skipOnboarding = useCallback(() => {
+    setWalkthroughDone(true);
     setCurrentStep(null);
     setHasCompletedOnboarding(true);
     localStorage.setItem(STORAGE_KEY, 'true');
@@ -151,6 +162,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
          hasCompletedOnboarding,
          isNewUser,
          showCarousel,
+         walkthroughDone,
          openCarousel,
          closeCarousel,
          startOnboarding,
