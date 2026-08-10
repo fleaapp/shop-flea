@@ -63,7 +63,7 @@ const Index = () => {
   const { addToCart, removeFromCart, isInCart } = useCart();
   const { addFavorite, removeFavorite, favoriteIds } = useFavorites();
   const { addDiscarded, removeDiscarded, discardedIds } = useDiscardedListings();
-  const { checkAndTriggerOnboarding, openCarousel, walkthroughDone, setSignupDialogOpen } = useOnboarding();
+  const { openCarousel, walkthroughCompletionCount, setSignupDialogOpen } = useOnboarding();
   const { user, profile, loading: authLoading, profileLoaded, refreshProfile } = useAuth();
   const { isGuest, requireAuth } = useGuestMode();
 
@@ -171,33 +171,47 @@ const Index = () => {
 
   const readyForWalkthrough = signupStage === 'walkthrough';
 
-  // Stage 3: the walkthrough is opened from here and nowhere else.
+  // Stage 3: the walkthrough is opened from here and nowhere else. We record
+  // the completion counter at open time so a walkthrough finished earlier
+  // (e.g. during guest browsing) can never be read as "this one just ended".
   const walkthroughOpenedRef = useRef(false);
+  const completionAtOpenRef = useRef<number | null>(null);
+  const welcomeNotifiedRef = useRef(false);
+
+  // Everything above is per-account: reset when the signed-in user changes.
+  const lastUserIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const id = user?.id ?? null;
+    if (lastUserIdRef.current === id) return;
+    lastUserIdRef.current = id;
+    walkthroughOpenedRef.current = false;
+    completionAtOpenRef.current = null;
+    welcomeNotifiedRef.current = false;
+  }, [user?.id]);
+
   useEffect(() => {
     if (!readyForWalkthrough) return;
-    checkAndTriggerOnboarding();
     if (walkthroughOpenedRef.current) return;
-    if (localStorage.getItem('flea-new-user-pending-onboarding') === 'true') {
-      walkthroughOpenedRef.current = true;
-      openCarousel();
-    }
-  }, [checkAndTriggerOnboarding, openCarousel, readyForWalkthrough]);
+    if (localStorage.getItem('flea-new-user-pending-onboarding') !== 'true') return;
+    walkthroughOpenedRef.current = true;
+    completionAtOpenRef.current = walkthroughCompletionCount;
+    openCarousel();
+  }, [openCarousel, readyForWalkthrough, walkthroughCompletionCount]);
 
-  // Stage 4: the welcome alert + toast only fires after the walkthrough is
-  // finished or skipped, never alongside the setup dialogs.
-  const welcomeNotifiedRef = useRef(false);
+  // Stage 4: the welcome alert + toast only fires after this session's
+  // walkthrough is finished or skipped, never alongside the setup dialogs.
   useEffect(() => {
     if (!user || welcomeNotifiedRef.current) return;
-    if (!readyForWalkthrough || !walkthroughDone) return;
+    if (!readyForWalkthrough) return;
+    if (!walkthroughOpenedRef.current || completionAtOpenRef.current === null) return;
+    if (walkthroughCompletionCount <= completionAtOpenRef.current) return;
     const key = `flea_welcome_notified_${user.id}`;
-    if (localStorage.getItem(key) === '1') {
-      welcomeNotifiedRef.current = true;
-      return;
-    }
     welcomeNotifiedRef.current = true;
+    if (localStorage.getItem(key) === '1') return;
     localStorage.setItem(key, '1');
     void sendWelcomeNotification();
-  }, [user, readyForWalkthrough, walkthroughDone]);
+  }, [user, readyForWalkthrough, walkthroughCompletionCount]);
+
 
 
   const [pendingExitId, setPendingExitId] = useState<string | null>(null);

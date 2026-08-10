@@ -367,6 +367,17 @@ html.is-installed .native-keyboard-lift {
   will-change: transform;
 }
 
+/* App-wide keyboard awareness: a fixed surface (dialog, sheet, page shell)
+   is lifted by exactly the amount needed to reveal the focused field while
+   the keyboard is open. `translate` composes with existing `transform`
+   centring/drag animations instead of overwriting them, and is removed
+   entirely when the keyboard closes - no padding, no leftover space. */
+.kb-shifted {
+  translate: 0 var(--kb-shift, 0px);
+  transition: translate 180ms ease;
+}
+
+
 /* Native only: reserve the Dynamic Island / notch height on every screen
    via the `native-safe-top` utility. #root no longer receives this padding
    so the document itself cannot become taller than the viewport. */

@@ -23,6 +23,13 @@ interface OnboardingContextValue {
   isNewUser: boolean;
   showCarousel: boolean;
   walkthroughDone: boolean;
+  /**
+   * Increments every time the walkthrough is finished or skipped. Callers that
+   * need to react to "this walkthrough just ended" compare against the value
+   * they saw when they opened it, so a completion from an earlier session can
+   * never be mistaken for the current one.
+   */
+  walkthroughCompletionCount: number;
   /** True while a signup dialog (username / password) is open. Blocks the walkthrough. */
   signupDialogOpen: boolean;
   setSignupDialogOpen: (open: boolean) => void;
@@ -37,6 +44,7 @@ interface OnboardingContextValue {
   markUserAsOnboarded: () => void;
   checkAndTriggerOnboarding: () => void;
 }
+
 
 const OnboardingContext = createContext<OnboardingContextValue | undefined>(undefined);
 
@@ -67,8 +75,14 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   const [showCarousel, setShowCarousel] = useState(false);
   // True once the walkthrough has been finished or skipped in this session.
   const [walkthroughDone, setWalkthroughDone] = useState(false);
+  const [walkthroughCompletionCount, setWalkthroughCompletionCount] = useState(0);
   // Signup dialogs (username / password) own the screen exclusively.
-  const [signupDialogOpen, setSignupDialogOpen] = useState(false);
+  const [signupDialogOpen, setSignupDialogOpenState] = useState(false);
+
+  const markWalkthroughComplete = useCallback(() => {
+    setWalkthroughDone(true);
+    setWalkthroughCompletionCount((n) => n + 1);
+  }, []);
 
   const openCarousel = useCallback(() => {
     setWalkthroughDone(false);
@@ -76,8 +90,19 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   }, []);
   const closeCarousel = useCallback(() => {
     setShowCarousel(false);
-    setWalkthroughDone(true);
+    markWalkthroughComplete();
+  }, [markWalkthroughComplete]);
+
+  // A signup dialog owns the screen exclusively: opening one closes any
+  // onboarding surface synchronously so the two can never overlap.
+  const setSignupDialogOpen = useCallback((open: boolean) => {
+    setSignupDialogOpenState(open);
+    if (open) {
+      setShowCarousel(false);
+      setCurrentStep(null);
+    }
   }, []);
+
 
   useEffect(() => {
     const completed = localStorage.getItem(STORAGE_KEY);
@@ -130,22 +155,23 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     if (currentIndex === -1 || currentIndex >= ONBOARDING_STEPS.length - 1) {
       setCurrentStep(null);
       setHasCompletedOnboarding(true);
-      setWalkthroughDone(true);
+      markWalkthroughComplete();
       localStorage.setItem(STORAGE_KEY, 'true');
       return;
     }
     
     setCurrentStep(ONBOARDING_STEPS[currentIndex + 1]);
-  }, [currentStep]);
+  }, [currentStep, markWalkthroughComplete]);
 
   const skipOnboarding = useCallback(() => {
-    setWalkthroughDone(true);
+    markWalkthroughComplete();
     setCurrentStep(null);
     setHasCompletedOnboarding(true);
     localStorage.setItem(STORAGE_KEY, 'true');
     localStorage.removeItem(NEW_USER_KEY);
     setIsNewUser(false);
-  }, []);
+  }, [markWalkthroughComplete]);
+
 
   const resetOnboarding = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
@@ -168,6 +194,8 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
          isNewUser,
          showCarousel,
          walkthroughDone,
+         walkthroughCompletionCount,
+
          signupDialogOpen,
          setSignupDialogOpen,
          openCarousel,
