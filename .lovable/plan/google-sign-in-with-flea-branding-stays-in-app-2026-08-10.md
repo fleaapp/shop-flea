@@ -22,10 +22,13 @@ https://app.finditonflea.com
 https://shop-flea.lovable.app
 ```
 
-Authorised redirect URIs (this exact one is required — it is the backend auth callback):
+Authorised redirect URIs — copy **all three** of these from the Lovable auth settings
+screen (you cannot edit them there; they are managed automatically):
 
 ```text
-https://teaicrimlqdayqpmxasc.supabase.co/auth/v1/callback
+https://oauth.lovable.app/callback
+https://shop-flea.lovable.app/~oauth/callback
+https://app.finditonflea.com/~oauth/callback
 ```
 
 Then copy the **Client ID** and **Client secret** from that same screen.
@@ -35,16 +38,9 @@ Then copy the **Client ID** and **Client secret** from that same screen.
 Open Cloud → Users → Auth Settings → Sign-in methods → Google, switch it to your own
 credentials, and paste the Client ID and Client secret from step 1. Save.
 
-I will confirm the exact callback URL shown there matches the one above before you save.
-
-### 3. Redirect allow-list
-
-Add these as allowed redirect URLs in the same auth settings screen:
-
-```text
-https://app.finditonflea.com/**
-https://shop-flea.lovable.app/**
-```
+The redirect URL list in that screen is managed automatically by Lovable Cloud and is
+read-only — that is normal. You only need to make sure the same URLs are listed in Google
+Cloud Console.
 
 ## Code changes
 
