@@ -178,8 +178,18 @@ const Index = () => {
       setSignupFlowStage('walkthrough');
       return;
     }
-    // A completed returning account must not inherit a stale generic intent.
-    if (!signupFlowStage) localStorage.removeItem('flea-new-user-pending-onboarding');
+    if (!signupFlowStage) {
+      const pending = localStorage.getItem('flea-new-user-pending-onboarding') === 'true';
+      const passwordWasJustCompleted = localStorage.getItem(`flea_pw_done_${user.id}`) === '1';
+      // Recover accounts that completed the password under the previous
+      // effect-based implementation but lost the final handoff on remount.
+      if (pending && passwordWasJustCompleted) {
+        setSignupFlowStage('walkthrough');
+        return;
+      }
+      // A completed returning account must not inherit a stale OAuth intent.
+      localStorage.removeItem('flea-new-user-pending-onboarding');
+    }
   }, [user, profileLoaded, authLoading, showWelcomeDialog, showPasswordDialog, signupFlowStage, setSignupFlowStage]);
 
   // Tell the app chrome that a signup dialog owns the screen.

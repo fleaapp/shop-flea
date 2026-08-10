@@ -120,17 +120,12 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     markWalkthroughComplete();
     if (!user || signupFlowStage !== 'walkthrough') return;
 
-    // Persist the final stage before the request. If the app is interrupted,
-    // mounting again retries the idempotent backend call rather than losing it.
+    // Persist the final stage before the request. The welcome-stage effect is
+    // the single sender, so completion can never start two client requests.
+    localStorage.setItem(STORAGE_KEY, 'true');
+    setHasCompletedOnboarding(true);
     localStorage.setItem(signupFlowKey(user.id), 'welcome');
     setSignupFlowStageState('welcome');
-    void sendWelcomeNotification().finally(() => {
-      localStorage.setItem(`flea_welcome_notified_${user.id}`, '1');
-      localStorage.removeItem(signupFlowKey(user.id));
-      localStorage.removeItem(NEW_USER_KEY);
-      setSignupFlowStageState(null);
-      setIsNewUser(false);
-    });
   }, [markWalkthroughComplete, signupFlowStage, user]);
 
   // A signup dialog owns the screen exclusively: opening one closes any
