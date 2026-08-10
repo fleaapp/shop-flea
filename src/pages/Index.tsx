@@ -63,7 +63,7 @@ const Index = () => {
   const { addToCart, removeFromCart, isInCart } = useCart();
   const { addFavorite, removeFavorite, favoriteIds } = useFavorites();
   const { addDiscarded, removeDiscarded, discardedIds } = useDiscardedListings();
-  const { checkAndTriggerOnboarding, openCarousel, walkthroughDone } = useOnboarding();
+  const { checkAndTriggerOnboarding, openCarousel, walkthroughDone, setSignupDialogOpen } = useOnboarding();
   const { user, profile, loading: authLoading, profileLoaded, refreshProfile } = useAuth();
   const { isGuest, requireAuth } = useGuestMode();
 
@@ -123,59 +123,65 @@ const Index = () => {
     }
   }, [user, profile]);
   
-  // PRIMARY detection: localStorage flag set BEFORE Google OAuth redirect (survives redirects unlike sessionStorage)
-  const oauthSignupFlag = localStorage.getItem('flea_oauth_signup') === '1';
-  
-  // SECONDARY detection: app_metadata checks (fallback for returning users)
+  // ---- Identity-based OAuth detection (single source of truth) ----
+  // The localStorage flag is only a hint for the very first render after the
+  // OAuth redirect; the account's identities are authoritative and never get
+  // cleared out from under us, so both code paths always agree.
   const hasEmailIdentity = user?.identities?.some((id: any) => id.provider === 'email') ?? false;
-  
-  // Only treat as OAuth if they actually signed up via Google/Apple AND have no email identity
-  const isOAuthUserFromMeta = 
+
+  const isOAuthUser =
     !hasEmailIdentity && (
       user?.app_metadata?.provider === 'google' ||
       user?.app_metadata?.provider === 'apple' ||
       user?.app_metadata?.providers?.includes('google') ||
       user?.app_metadata?.providers?.includes('apple') ||
-      user?.identities?.some((id: any) => id.provider === 'google' || id.provider === 'apple')
+      (user?.identities?.some((id: any) => id.provider === 'google' || id.provider === 'apple') ?? false) ||
+      localStorage.getItem('flea_oauth_signup') === '1'
     );
-  
-  // Combined: either the localStorage flag OR metadata detection — but never for email-signup users
-  const isOAuthUser = !hasEmailIdentity && (oauthSignupFlag || isOAuthUserFromMeta);
   const isGoogleUser = isOAuthUser;
-  
+
   const passwordSetInMeta = user?.user_metadata?.password_set === true;
   const passwordSetInProfile = profile?.password_set === true;
   const passwordAlreadySet = passwordSetInMeta || passwordSetInProfile;
 
-  // Once we determine the password dialog needs to show, lock it so reactive changes can't dismiss it
-  const [passwordDialogLocked, setPasswordDialogLocked] = useState(false);
-
-  // Effect for returning OAuth users who already have a profile (not fresh signups)
-  useEffect(() => {
-    if (passwordDialogLocked || passwordCompleted || passwordAlreadySet) return;
-    if (!isOAuthUser || !profileLoaded) return;
-    if (!needsProfileSetup) {
-      console.log('[PW_DEBUG] ✅ LOCKING password dialog (returning OAuth user)');
-      setPasswordDialogLocked(true);
-    }
-  }, [profileLoaded, needsProfileSetup, isOAuthUser, passwordAlreadySet, passwordCompleted, passwordDialogLocked]);
-
-  // Welcome dialog shows when profile needs setup
-  const showWelcomeDialog = needsProfileSetup && !welcomeCompleted;
-  // Password dialog: once locked, stays open until explicitly completed
-  const showPasswordDialog = passwordDialogLocked && !passwordCompleted;
-
-  // Signup runs as one ordered sequence so the dialogs can never overlap:
+  // ---- Ordered signup state machine ----
   //   1. username / name  ->  2. password (OAuth only)  ->  3. walkthrough  ->  4. welcome alert
-  // Onboarding is only allowed to start once stages 1 and 2 are done.
-  const profileStageDone = !!user && profileLoaded && !showWelcomeDialog;
-  const passwordStageDone = !isOAuthUser || passwordCompleted || passwordAlreadySet;
-  const readyForWalkthrough = profileStageDone && passwordStageDone && !showPasswordDialog;
+  // Exactly one stage is active at a time; nothing else may open the walkthrough.
+  const needsPasswordSetup =
+    !!user && profileLoaded && isOAuthUser && !passwordAlreadySet && !passwordCompleted;
 
+  const showWelcomeDialog = needsProfileSetup && !welcomeCompleted;
+  const showPasswordDialog = !showWelcomeDialog && needsPasswordSetup;
+
+  const signupStage: 'username' | 'password' | 'walkthrough' | null = !user
+    ? null
+    : showWelcomeDialog
+      ? 'username'
+      : showPasswordDialog
+        ? 'password'
+        : profileLoaded
+          ? 'walkthrough'
+          : null;
+
+  // Tell the app chrome that a signup dialog owns the screen.
+  useEffect(() => {
+    setSignupDialogOpen(signupStage === 'username' || signupStage === 'password');
+    return () => setSignupDialogOpen(false);
+  }, [signupStage, setSignupDialogOpen]);
+
+  const readyForWalkthrough = signupStage === 'walkthrough';
+
+  // Stage 3: the walkthrough is opened from here and nowhere else.
+  const walkthroughOpenedRef = useRef(false);
   useEffect(() => {
     if (!readyForWalkthrough) return;
     checkAndTriggerOnboarding();
-  }, [checkAndTriggerOnboarding, readyForWalkthrough]);
+    if (walkthroughOpenedRef.current) return;
+    if (localStorage.getItem('flea-new-user-pending-onboarding') === 'true') {
+      walkthroughOpenedRef.current = true;
+      openCarousel();
+    }
+  }, [checkAndTriggerOnboarding, openCarousel, readyForWalkthrough]);
 
   // Stage 4: the welcome alert + toast only fires after the walkthrough is
   // finished or skipped, never alongside the setup dialogs.
@@ -192,6 +198,7 @@ const Index = () => {
     localStorage.setItem(key, '1');
     void sendWelcomeNotification();
   }, [user, readyForWalkthrough, walkthroughDone]);
+
 
   const [pendingExitId, setPendingExitId] = useState<string | null>(null);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
@@ -737,15 +744,7 @@ const Index = () => {
         onComplete={() => {
           setWelcomeCompleted(true);
           if (user) localStorage.setItem(`flea_welcome_done_${user.id}`, '1');
-
-          // Use the localStorage flag — it was set BEFORE the OAuth redirect and survives cross-origin redirects
-          const isOAuth = localStorage.getItem('flea_oauth_signup') === '1';
-          console.log('[PW_DEBUG] onComplete fired:', { isOAuth, passwordCompleted, passwordAlreadySet, oauthSignupFlag });
-          if (isOAuth && !passwordCompleted && !passwordAlreadySet) {
-            setPasswordDialogLocked(true);
-          } else {
-            openCarousel();
-          }
+          // The stage machine decides what comes next (password, then walkthrough).
           refreshProfile();
         }}
       />
@@ -755,7 +754,6 @@ const Index = () => {
           if (user) localStorage.setItem(`flea_pw_done_${user.id}`, '1');
           localStorage.removeItem('flea_oauth_signup'); // Clean up OAuth flag
           setPasswordCompleted(true);
-          openCarousel();
           await refreshProfile();
           supabase.auth.refreshSession();
         }}

@@ -61,6 +61,7 @@ const Auth = () => {
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [conflictProvider, setConflictProvider] = useState<ConflictProvider | null>(null);
+  const [connectingProvider, setConnectingProvider] = useState<'Google' | null>(null);
 
   // Listen for OAuth conflicts surfaced by AuthContext after redirect.
   useEffect(() => {
@@ -346,8 +347,9 @@ const Auth = () => {
       }
 
       // Web: account-picker popup. Native: in-app browser sheet.
-      // Both use Lovable Cloud's managed OAuth broker with the project's own
-      // Google Cloud credentials (BYOK) so the consent screen shows Flea.
+      // Both go straight to the app's own auth endpoint using the project's
+      // Google Cloud credentials, so only Flea branding is shown.
+      setConnectingProvider('Google');
       const result = await signInWithOAuthPopup('google', { prompt: 'select_account' });
 
       if (result.error) {
@@ -367,6 +369,8 @@ const Auth = () => {
       console.error('Google sign-in exception:', err);
       logError({ title: 'Google sign-in exception', message: err?.message || String(err), stack: err?.stack ?? null, severity: 'error', source: 'auth' });
       toast.error(`Google sign-in failed: ${err?.message || 'Please try again.'}`);
+    } finally {
+      setConnectingProvider(null);
     }
   };
 
@@ -695,6 +699,14 @@ const Auth = () => {
           }
         }}
       />
+
+      {connectingProvider && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-primary">
+          <span className="text-3xl font-extrabold tracking-tight text-primary-foreground">FLEA</span>
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
+          <p className="text-sm text-primary-foreground/80">Connecting to {connectingProvider}...</p>
+        </div>
+      )}
     </div>
   );
 };

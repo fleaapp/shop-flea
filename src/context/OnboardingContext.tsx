@@ -23,6 +23,9 @@ interface OnboardingContextValue {
   isNewUser: boolean;
   showCarousel: boolean;
   walkthroughDone: boolean;
+  /** True while a signup dialog (username / password) is open. Blocks the walkthrough. */
+  signupDialogOpen: boolean;
+  setSignupDialogOpen: (open: boolean) => void;
   openCarousel: () => void;
   closeCarousel: () => void;
   startOnboarding: () => void;
@@ -64,6 +67,8 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   const [showCarousel, setShowCarousel] = useState(false);
   // True once the walkthrough has been finished or skipped in this session.
   const [walkthroughDone, setWalkthroughDone] = useState(false);
+  // Signup dialogs (username / password) own the screen exclusively.
+  const [signupDialogOpen, setSignupDialogOpen] = useState(false);
 
   const openCarousel = useCallback(() => {
     setWalkthroughDone(false);
@@ -163,6 +168,8 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
          isNewUser,
          showCarousel,
          walkthroughDone,
+         signupDialogOpen,
+         setSignupDialogOpen,
          openCarousel,
          closeCarousel,
          startOnboarding,
