@@ -26,7 +26,6 @@ import { Listing } from '@/types/listing';
 import { supabase } from '@/lib/supabase';
 import { formatSizeKeyLabel } from '@/utils/sizeKeys';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
-import { sendWelcomeNotification } from '@/utils/welcomeNotification';
 import { loadSearchState, saveSearchState, clearSearchState } from '@/utils/searchPersistence';
 
 import {
@@ -63,7 +62,7 @@ const Index = () => {
   const { addToCart, removeFromCart, isInCart } = useCart();
   const { addFavorite, removeFavorite, favoriteIds } = useFavorites();
   const { addDiscarded, removeDiscarded, discardedIds } = useDiscardedListings();
-  const { openCarousel, walkthroughCompletionCount, setSignupDialogOpen } = useOnboarding();
+  const { signupFlowStage, setSignupFlowStage, setSignupDialogOpen } = useOnboarding();
   const { user, profile, loading: authLoading, profileLoaded, refreshProfile } = useAuth();
   const { isGuest, requireAuth } = useGuestMode();
 
@@ -94,10 +93,6 @@ const Index = () => {
     return false; // initialised properly in the user-scoped effect below
   });
   const [passwordCompleted, setPasswordCompleted] = useState(false);
-  // True once a signup dialog (profile or password) was completed in this
-  // session. A fresh signup always earns the walkthrough, even when the
-  // legacy "pending onboarding" flag was never written.
-  const [justSignedUp, setJustSignedUp] = useState(false);
 
   // Keep the session "consumed" deck set scoped to the signed-in user.
   useEffect(() => {
@@ -167,63 +162,31 @@ const Index = () => {
           ? 'walkthrough'
           : null;
 
+  // Reconcile the durable controller with the account's actual setup state.
+  // This also self-heals an app close between a successful save and its UI callback.
+  useEffect(() => {
+    if (!user || !profileLoaded || authLoading) return;
+    if (showWelcomeDialog) {
+      if (signupFlowStage !== 'profile') setSignupFlowStage('profile');
+      return;
+    }
+    if (showPasswordDialog) {
+      if (signupFlowStage !== 'password') setSignupFlowStage('password');
+      return;
+    }
+    if (signupFlowStage === 'profile' || signupFlowStage === 'password') {
+      setSignupFlowStage('walkthrough');
+      return;
+    }
+    // A completed returning account must not inherit a stale generic intent.
+    if (!signupFlowStage) localStorage.removeItem('flea-new-user-pending-onboarding');
+  }, [user, profileLoaded, authLoading, showWelcomeDialog, showPasswordDialog, signupFlowStage, setSignupFlowStage]);
+
   // Tell the app chrome that a signup dialog owns the screen.
   useEffect(() => {
     setSignupDialogOpen(signupStage === 'username' || signupStage === 'password');
     return () => setSignupDialogOpen(false);
   }, [signupStage, setSignupDialogOpen]);
-
-  const readyForWalkthrough = signupStage === 'walkthrough';
-
-  // Stage 3: the walkthrough is opened from here and nowhere else. We record
-  // the completion counter at open time so a walkthrough finished earlier
-  // (e.g. during guest browsing) can never be read as "this one just ended".
-  const walkthroughOpenedRef = useRef(false);
-  const completionAtOpenRef = useRef<number | null>(null);
-  const welcomeNotifiedRef = useRef(false);
-
-  // Everything above is per-account: reset when the signed-in user changes.
-  const lastUserIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    const id = user?.id ?? null;
-    if (lastUserIdRef.current === id) return;
-    lastUserIdRef.current = id;
-    walkthroughOpenedRef.current = false;
-    completionAtOpenRef.current = null;
-    welcomeNotifiedRef.current = false;
-  }, [user?.id]);
-
-  useEffect(() => {
-    if (!readyForWalkthrough) return;
-    if (walkthroughOpenedRef.current) return;
-    const pending = localStorage.getItem('flea-new-user-pending-onboarding') === 'true';
-    if (!pending && !justSignedUp) return;
-    walkthroughOpenedRef.current = true;
-    completionAtOpenRef.current = walkthroughCompletionCount;
-    openCarousel();
-  }, [openCarousel, readyForWalkthrough, walkthroughCompletionCount, justSignedUp]);
-
-  // Stage 4: the welcome alert + toast only fires after this session's
-  // walkthrough is finished or skipped, never alongside the setup dialogs.
-  // If the walkthrough could not be opened at all, a fresh signup still gets
-  // its welcome alert so the coupon is never lost.
-  useEffect(() => {
-    if (!user || welcomeNotifiedRef.current) return;
-    if (!readyForWalkthrough) return;
-    const walkthroughFinished =
-      walkthroughOpenedRef.current &&
-      completionAtOpenRef.current !== null &&
-      walkthroughCompletionCount > completionAtOpenRef.current;
-    const walkthroughUnavailable = justSignedUp && !walkthroughOpenedRef.current;
-    if (!walkthroughFinished && !walkthroughUnavailable) return;
-    const key = `flea_welcome_notified_${user.id}`;
-    welcomeNotifiedRef.current = true;
-    if (localStorage.getItem(key) === '1') return;
-    localStorage.setItem(key, '1');
-    void sendWelcomeNotification();
-  }, [user, readyForWalkthrough, walkthroughCompletionCount, justSignedUp]);
-
-
 
   const [pendingExitId, setPendingExitId] = useState<string | null>(null);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
@@ -768,10 +731,9 @@ const Index = () => {
         isGoogleUser={isGoogleUser}
         onComplete={() => {
           setWelcomeCompleted(true);
-          setJustSignedUp(true);
           if (user) localStorage.setItem(`flea_welcome_done_${user.id}`, '1');
-          // The stage machine decides what comes next (password, then walkthrough).
-          refreshProfile();
+          setSignupFlowStage(isOAuthUser ? 'password' : 'walkthrough');
+          void refreshProfile();
         }}
       />
       <PasswordSetupDialog
@@ -780,9 +742,9 @@ const Index = () => {
           if (user) localStorage.setItem(`flea_pw_done_${user.id}`, '1');
           localStorage.removeItem('flea_oauth_signup'); // Clean up OAuth flag
           setPasswordCompleted(true);
-          setJustSignedUp(true);
           await refreshProfile();
-          supabase.auth.refreshSession();
+          setSignupFlowStage('walkthrough');
+          void supabase.auth.refreshSession();
         }}
       />
       <BottomNav />

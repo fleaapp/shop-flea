@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { sendWelcomeNotification } from '@/utils/welcomeNotification';
 
 export type OnboardingStep = 
   | 'welcome'
@@ -16,6 +18,8 @@ export type OnboardingStep =
   | 'edit-profile'
   | 'complete';
 
+export type SignupFlowStage = 'profile' | 'password' | 'walkthrough' | 'welcome' | null;
+
 interface OnboardingContextValue {
   currentStep: OnboardingStep | null;
   isOnboardingActive: boolean;
@@ -32,7 +36,9 @@ interface OnboardingContextValue {
   walkthroughCompletionCount: number;
   /** True while a signup dialog (username / password) is open. Blocks the walkthrough. */
   signupDialogOpen: boolean;
+  signupFlowStage: SignupFlowStage;
   setSignupDialogOpen: (open: boolean) => void;
+  setSignupFlowStage: (stage: SignupFlowStage) => void;
   openCarousel: () => void;
   closeCarousel: () => void;
   startOnboarding: () => void;
@@ -67,8 +73,10 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
 
 const STORAGE_KEY = 'flea-onboarding-completed';
 const NEW_USER_KEY = 'flea-new-user-pending-onboarding';
+const signupFlowKey = (userId: string) => `flea_signup_flow_${userId}`;
 
 export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState<OnboardingStep | null>(null);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
@@ -78,6 +86,25 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   const [walkthroughCompletionCount, setWalkthroughCompletionCount] = useState(0);
   // Signup dialogs (username / password) own the screen exclusively.
   const [signupDialogOpen, setSignupDialogOpenState] = useState(false);
+  const [signupFlowStage, setSignupFlowStageState] = useState<SignupFlowStage>(null);
+
+  const setSignupFlowStage = useCallback((stage: SignupFlowStage) => {
+    setSignupFlowStageState(stage);
+    if (!user) return;
+    const key = signupFlowKey(user.id);
+    if (stage) localStorage.setItem(key, stage);
+    else localStorage.removeItem(key);
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      setSignupFlowStageState(null);
+      return;
+    }
+    const saved = localStorage.getItem(signupFlowKey(user.id));
+    const validStages: SignupFlowStage[] = ['profile', 'password', 'walkthrough', 'welcome'];
+    setSignupFlowStageState(validStages.includes(saved as SignupFlowStage) ? saved as SignupFlowStage : null);
+  }, [user?.id]);
 
   const markWalkthroughComplete = useCallback(() => {
     setWalkthroughDone(true);
@@ -91,7 +118,20 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   const closeCarousel = useCallback(() => {
     setShowCarousel(false);
     markWalkthroughComplete();
-  }, [markWalkthroughComplete]);
+    if (!user || signupFlowStage !== 'walkthrough') return;
+
+    // Persist the final stage before the request. If the app is interrupted,
+    // mounting again retries the idempotent backend call rather than losing it.
+    localStorage.setItem(signupFlowKey(user.id), 'welcome');
+    setSignupFlowStageState('welcome');
+    void sendWelcomeNotification().finally(() => {
+      localStorage.setItem(`flea_welcome_notified_${user.id}`, '1');
+      localStorage.removeItem(signupFlowKey(user.id));
+      localStorage.removeItem(NEW_USER_KEY);
+      setSignupFlowStageState(null);
+      setIsNewUser(false);
+    });
+  }, [markWalkthroughComplete, signupFlowStage, user]);
 
   // A signup dialog owns the screen exclusively: opening one closes any
   // onboarding surface synchronously so the two can never overlap.
@@ -102,6 +142,32 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
       setCurrentStep(null);
     }
   }, []);
+
+  // A persisted walkthrough stage is authoritative. Open only after the
+  // profile/password dialog has actually released the screen.
+  useEffect(() => {
+    if (signupFlowStage !== 'walkthrough' || signupDialogOpen || showCarousel) return;
+    const frame = requestAnimationFrame(() => {
+      setWalkthroughDone(false);
+      setShowCarousel(true);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [signupFlowStage, signupDialogOpen, showCarousel]);
+
+  // Resume a welcome request interrupted by navigation/backgrounding.
+  useEffect(() => {
+    if (!user || signupFlowStage !== 'welcome') return;
+    let cancelled = false;
+    void sendWelcomeNotification().finally(() => {
+      if (cancelled) return;
+      localStorage.setItem(`flea_welcome_notified_${user.id}`, '1');
+      localStorage.removeItem(signupFlowKey(user.id));
+      localStorage.removeItem(NEW_USER_KEY);
+      setSignupFlowStageState(null);
+      setIsNewUser(false);
+    });
+    return () => { cancelled = true; };
+  }, [signupFlowStage, user]);
 
 
   useEffect(() => {
@@ -197,7 +263,9 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
          walkthroughCompletionCount,
 
          signupDialogOpen,
+         signupFlowStage,
          setSignupDialogOpen,
+         setSignupFlowStage,
          openCarousel,
          closeCarousel,
          startOnboarding,
