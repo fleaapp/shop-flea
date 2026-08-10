@@ -243,7 +243,7 @@ const EditListing = () => {
   };
 
   const handleCropComplete = useCallback(async (croppedBlob: Blob) => {
-    const croppedFile = new File([croppedBlob], `cropped-${Date.now()}.jpg`, { type: 'image/jpeg' });
+    const croppedFile = new File([croppedBlob], `cropped-${Date.now()}.webp`, { type: 'image/webp' });
     try {
       const compressedFile = await compressImage(croppedFile);
       const thumbFile = await createThumbnail(compressedFile).catch(() => undefined);
