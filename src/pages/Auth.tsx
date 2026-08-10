@@ -347,7 +347,6 @@ const Auth = () => {
       }
 
       // Web: account-picker popup. Native: in-app browser sheet.
-      // Web: account-picker popup. Native: in-app browser sheet.
       // Both go straight to the app's own auth endpoint using the project's
       // Google Cloud credentials, so only Flea branding is shown.
       setConnectingProvider('Google');
@@ -370,6 +369,8 @@ const Auth = () => {
       console.error('Google sign-in exception:', err);
       logError({ title: 'Google sign-in exception', message: err?.message || String(err), stack: err?.stack ?? null, severity: 'error', source: 'auth' });
       toast.error(`Google sign-in failed: ${err?.message || 'Please try again.'}`);
+    } finally {
+      setConnectingProvider(null);
     }
   };
 
