@@ -23,6 +23,13 @@ interface OnboardingContextValue {
   isNewUser: boolean;
   showCarousel: boolean;
   walkthroughDone: boolean;
+  /**
+   * Increments every time the walkthrough is finished or skipped. Callers that
+   * need to react to "this walkthrough just ended" compare against the value
+   * they saw when they opened it, so a completion from an earlier session can
+   * never be mistaken for the current one.
+   */
+  walkthroughCompletionCount: number;
   /** True while a signup dialog (username / password) is open. Blocks the walkthrough. */
   signupDialogOpen: boolean;
   setSignupDialogOpen: (open: boolean) => void;
@@ -37,6 +44,7 @@ interface OnboardingContextValue {
   markUserAsOnboarded: () => void;
   checkAndTriggerOnboarding: () => void;
 }
+
 
 const OnboardingContext = createContext<OnboardingContextValue | undefined>(undefined);
 
