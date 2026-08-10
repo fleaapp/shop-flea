@@ -179,6 +179,15 @@ const Index = () => {
       return;
     }
     if (!signupFlowStage) {
+      const pending = localStorage.getItem('flea-new-user-pending-onboarding') === 'true';
+      const passwordWasSaved = localStorage.getItem(`flea_pw_done_${user.id}`) === '1';
+      const welcomeWasSent = localStorage.getItem(`flea_welcome_notified_${user.id}`) === '1';
+      // One-time recovery for accounts stranded by the previous implementation
+      // after password save. Completed users are excluded by the welcome marker.
+      if (pending && passwordWasSaved && !welcomeWasSent) {
+        setSignupFlowStage('walkthrough');
+        return;
+      }
       // A completed returning account must not inherit the generic OAuth
       // intent set before we know whether Google/Apple returned a new account.
       localStorage.removeItem('flea-new-user-pending-onboarding');
