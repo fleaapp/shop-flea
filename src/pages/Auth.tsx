@@ -699,6 +699,14 @@ const Auth = () => {
           }
         }}
       />
+
+      {connectingProvider && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-primary">
+          <span className="text-3xl font-extrabold tracking-tight text-primary-foreground">FLEA</span>
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
+          <p className="text-sm text-primary-foreground/80">Connecting to {connectingProvider}...</p>
+        </div>
+      )}
     </div>
   );
 };
