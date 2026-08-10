@@ -63,7 +63,7 @@ const Index = () => {
   const { addToCart, removeFromCart, isInCart } = useCart();
   const { addFavorite, removeFavorite, favoriteIds } = useFavorites();
   const { addDiscarded, removeDiscarded, discardedIds } = useDiscardedListings();
-  const { checkAndTriggerOnboarding, openCarousel, walkthroughDone } = useOnboarding();
+  const { checkAndTriggerOnboarding, openCarousel, walkthroughDone, setSignupDialogOpen } = useOnboarding();
   const { user, profile, loading: authLoading, profileLoaded, refreshProfile } = useAuth();
   const { isGuest, requireAuth } = useGuestMode();
 
@@ -744,15 +744,7 @@ const Index = () => {
         onComplete={() => {
           setWelcomeCompleted(true);
           if (user) localStorage.setItem(`flea_welcome_done_${user.id}`, '1');
-
-          // Use the localStorage flag — it was set BEFORE the OAuth redirect and survives cross-origin redirects
-          const isOAuth = localStorage.getItem('flea_oauth_signup') === '1';
-          console.log('[PW_DEBUG] onComplete fired:', { isOAuth, passwordCompleted, passwordAlreadySet, oauthSignupFlag });
-          if (isOAuth && !passwordCompleted && !passwordAlreadySet) {
-            setPasswordDialogLocked(true);
-          } else {
-            openCarousel();
-          }
+          // The stage machine decides what comes next (password, then walkthrough).
           refreshProfile();
         }}
       />
@@ -762,7 +754,6 @@ const Index = () => {
           if (user) localStorage.setItem(`flea_pw_done_${user.id}`, '1');
           localStorage.removeItem('flea_oauth_signup'); // Clean up OAuth flag
           setPasswordCompleted(true);
-          openCarousel();
           await refreshProfile();
           supabase.auth.refreshSession();
         }}
