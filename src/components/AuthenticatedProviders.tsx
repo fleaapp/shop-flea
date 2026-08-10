@@ -10,7 +10,7 @@ import SellerOnboardingResumeMount from "@/components/SellerOnboardingResumeMoun
 import useListingsRealtime from "@/hooks/useListingsRealtime";
 
 const OnboardingChrome = ({ enabled }: { enabled: boolean }) => {
-  const { showCarousel, closeCarousel } = useOnboarding();
+  const { showCarousel, closeCarousel, signupDialogOpen } = useOnboarding();
   const { user } = useAuth();
   const { isGuest } = useGuestMode();
 
@@ -25,8 +25,13 @@ const OnboardingChrome = ({ enabled }: { enabled: boolean }) => {
     <>
       {user && <RealtimeAlerts />}
       {user && <SellerOnboardingResumeMount />}
-      <OnboardingOverlay />
-      <OnboardingCarousel open={showCarousel} onComplete={closeCarousel} />
+      {/* Hard guard: the walkthrough can never render over a signup dialog. */}
+      {!signupDialogOpen && (
+        <>
+          <OnboardingOverlay />
+          <OnboardingCarousel open={showCarousel} onComplete={closeCarousel} />
+        </>
+      )}
     </>
   );
 };
