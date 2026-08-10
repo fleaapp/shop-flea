@@ -11,9 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { lovable } from '@/integrations/lovable';
 import { nativeAppleSignIn, isIosNative as isAppleIosNative } from '@/lib/appleSignIn';
 import { nativeGoogleSignIn, isNativeRuntime } from '@/lib/googleSignIn';
-import { openInAppUrl } from '@/lib/openInAppUrl';
 import { logError } from '@/lib/errorLogger';
-import { getSignupRedirectUrl } from '@/lib/authRedirects';
 import ProviderConflictDialog, { type ConflictProvider } from '@/components/ProviderConflictDialog';
 import { useAdminRole } from '@/hooks/useAdminRole';
 
@@ -302,9 +300,9 @@ const Auth = () => {
     try {
       localStorage.setItem('flea_oauth_signup', '1');
 
-      // Native (iOS/Android): use the platform Google account-picker sheet.
-      // The plugin returns an ID token that we hand directly to Supabase, so
-      // the user never leaves the app — no Safari, no universal-link bounce.
+      // Native (iOS/Android): deliberately fall through to the in-app browser
+      // OAuth path. The native Google plugin was removed because it generated a
+      // placeholder URL scheme that caused an App Store archive rejection.
       if (isNativeRuntime()) {
         const result = await nativeGoogleSignIn();
         if (result.handled) {
@@ -323,27 +321,36 @@ const Auth = () => {
         }
       }
 
-      // Web / PWA fallback: standard OAuth redirect.
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: getSignupRedirectUrl(),
-          queryParams: { prompt: 'select_account' },
-          skipBrowserRedirect: true,
-        },
+      // Use Lovable Cloud's managed OAuth broker so the user's own Google Cloud
+      // credentials (BYOK) are used and the consent screen shows Flea branding.
+      // On native the redirect_uri is the universal-link origin so the in-app
+      // browser hands the session back to the app.
+      const redirectUri = isNativeRuntime()
+        ? 'https://app.finditonflea.com'
+        : window.location.origin;
+
+      const result = await lovable.auth.signInWithOAuth('google', {
+        redirect_uri: redirectUri,
+        extraParams: { prompt: 'select_account' },
       });
 
-      if (error) {
+      if (result.error) {
         localStorage.removeItem('flea_oauth_signup');
-        console.error('Google sign-in error:', error);
-        logError({ title: 'Google sign-in failed (web)', message: error.message, severity: 'error', source: 'auth' });
-        toast.error(`Google sign-in failed: ${error.message || 'Please try again.'}`);
+        console.error('Google sign-in error:', result.error);
+        logError({ title: 'Google sign-in failed (managed OAuth)', message: result.error.message || String(result.error), severity: 'error', source: 'auth' });
+        toast.error(`Google sign-in failed: ${result.error.message || 'Please try again.'}`);
         return;
       }
 
-      if (data?.url) {
-        await openInAppUrl(data.url);
+      if (result.redirected) {
+        // The managed OAuth helper has opened the provider flow. On web it
+        // navigates the current window; on native it opens the in-app browser.
+        // The session will be set by the helper or by the callback route.
+        return;
       }
+
+      // Tokens were returned directly and the helper has already set the session.
+      // onAuthStateChange will redirect via the useEffect above.
     } catch (err: any) {
       localStorage.removeItem('flea_oauth_signup');
       console.error('Google sign-in exception:', err);
