@@ -194,6 +194,8 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
          isNewUser,
          showCarousel,
          walkthroughDone,
+         walkthroughCompletionCount,
+
          signupDialogOpen,
          setSignupDialogOpen,
          openCarousel,
