@@ -9,8 +9,14 @@ import { Capacitor } from '@capacitor/core';
  * `[REVERSED_IOS_CLIENT_ID]` placeholder URL scheme in Info.plist on
  * `npx cap sync ios`, which caused an App Store archive rejection.
  *
+ * The OAuth flow is handled by Lovable Cloud's managed OAuth broker, using the
+ * project's own Google Cloud OAuth credentials (BYOK). This shows Flea branding
+ * on the Google consent screen and routes the callback through the universal
+ * link origin (`https://app.finditonflea.com`) on native so the session is
+ * handed back to the app.
+ *
  * `nativeGoogleSignIn` therefore always returns `{ handled: false }` so every
- * platform falls through to the OAuth path in `Auth.tsx`.
+ * platform falls through to the managed OAuth path in `Auth.tsx`.
  */
 
 export type NativeGoogleResult =
