@@ -41,6 +41,6 @@ export function isNativeRuntime(): boolean {
 }
 
 export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
-  // Paused. Always let the caller fall through to the web OAuth path.
+  // Always let the caller fall through to the in-app browser OAuth path.
   return { handled: false };
 }
