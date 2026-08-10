@@ -153,8 +153,9 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!user || signupFlowStage !== 'welcome') return;
     let cancelled = false;
-    void sendWelcomeNotification().finally(() => {
+    void sendWelcomeNotification().then((sent) => {
       if (cancelled) return;
+      if (!sent) return;
       localStorage.setItem(`flea_welcome_notified_${user.id}`, '1');
       localStorage.removeItem(signupFlowKey(user.id));
       localStorage.removeItem(NEW_USER_KEY);
