@@ -12,6 +12,19 @@ export const getRouteFromNativeAuthUrl = (url: string): string | null => {
 
     if (parsed.host !== 'app.finditonflea.com') return null;
 
+    // OAuth broker returns tokens on the app origin (any path). Always route
+    // those to /auth/callback so the session is applied instead of dropping
+    // the user on the home screen with tokens still in the URL.
+    const hashParams = new URLSearchParams(parsed.hash.replace(/^#/, ''));
+    const hasTokens =
+      !!parsed.searchParams.get('code') ||
+      !!parsed.searchParams.get('access_token') ||
+      !!hashParams.get('access_token');
+
+    if (hasTokens && parsed.pathname !== AUTH_CALLBACK_PATH) {
+      return `${AUTH_CALLBACK_PATH}${parsed.search}${parsed.hash}`;
+    }
+
     return `${parsed.pathname || '/'}${parsed.search}${parsed.hash}`;
   } catch {
     return null;
