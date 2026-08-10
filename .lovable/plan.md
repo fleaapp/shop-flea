@@ -48,17 +48,14 @@ The current dialog calls `onComplete()` before `auth.updateUser({ password })` r
 
 ## Verification
 
-- Native-sized test: focus username, first name, last name, password, and confirm password; each focused field and the next relevant content remain visible without a new footer or permanent padding.
+- Keyboard sweep across the app: signup dialogs, checkout and address fields, listing create/edit, profile edit, search, comments, and order chat. Every focused field stays visible, and nothing leaves extra space once the keyboard closes.
 - Fresh Google/Apple signup: verify profile only, then password only, then walkthrough only, then the welcome alert/toast.
 - Background and resume during every stage: verify the same stage resumes without duplicate overlays or welcome notifications.
 - Existing user and guest walkthrough: verify normal onboarding still works and no signup dialogs appear.
 
 ## Technical scope
 
-- `src/components/WelcomeSetupDialog.tsx`
-- `src/components/PasswordSetupDialog.tsx`
-- `src/pages/Index.tsx`
-- `src/context/OnboardingContext.tsx`
-- `src/components/AuthenticatedProviders.tsx`
-- A small reusable keyboard-shift hook may be added for the two dialogs.
+- One shared keyboard-awareness implementation replacing the logic in `src/main.tsx` and `src/hooks/useKeyboardInputScroll.ts`, applied globally.
+- Shift support for fixed surfaces in `src/components/ui/dialog.tsx`, `drawer.tsx`, and `sheet.tsx`.
+- `src/pages/Index.tsx`, `src/components/PasswordSetupDialog.tsx`, `src/context/OnboardingContext.tsx`, `src/components/AuthenticatedProviders.tsx` for the signup sequencing.
 - No database migration or backend change is required.
