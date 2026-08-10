@@ -1,0 +1,226 @@
+/**
+ * App-wide keyboard awareness.
+ *
+ * One implementation for every screen, dialog, drawer and sheet:
+ *
+ *  - When the on-screen keyboard covers the focused field, the field is brought
+ *    back into view by exactly the overlap (plus a small margin) and nothing more.
+ *  - If the field lives inside a real scroll container, we scroll that container.
+ *  - If there is no scrollable ancestor (centred dialogs, `fixed inset-0` shells),
+ *    we translate the owning surface upward using the CSS `translate` property,
+ *    which composes with — and therefore never clobbers — existing `transform`
+ *    based centring/drag animations.
+ *  - Everything is reverted when the keyboard hides, focus moves to a visible
+ *    field, or the surface unmounts.
+ *
+ * There is deliberately NO padding, NO reserved footer strip and NO permanent
+ * empty space anywhere: the shift exists only while the keyboard is up.
+ */
+
+const MARGIN = 16;
+const SHIFT_CLASS = 'kb-shifted';
+const FOCUSABLE_SKIP_TYPES = ['checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'color', 'file'];
+
+let installed = false;
+let shiftedSurface: HTMLElement | null = null;
+let lastFocused: HTMLElement | null = null;
+let nativeKeyboardHeight = 0;
+let rafId = 0;
+
+const isEditable = (el: EventTarget | null): el is HTMLElement => {
+  if (!(el instanceof HTMLElement)) return false;
+  if (el instanceof HTMLInputElement) {
+    return !FOCUSABLE_SKIP_TYPES.includes((el.type || '').toLowerCase());
+  }
+  if (el instanceof HTMLTextAreaElement) return true;
+  return el.isContentEditable;
+};
+
+const activeField = (): HTMLElement | null => {
+  const el = document.activeElement as HTMLElement | null;
+  return el && isEditable(el) ? el : null;
+};
+
+/** Height of the keyboard in CSS px, from the native plugin or visualViewport. */
+const keyboardHeight = (): number => {
+  if (nativeKeyboardHeight > 0) return nativeKeyboardHeight;
+  const vv = window.visualViewport;
+  if (!vv) return 0;
+  const covered = window.innerHeight - (vv.height + vv.offsetTop);
+  return covered > 80 ? covered : 0;
+};
+
+const getScrollParent = (el: HTMLElement): HTMLElement | null => {
+  let node: HTMLElement | null = el.parentElement;
+  while (node && node !== document.body) {
+    const { overflowY } = window.getComputedStyle(node);
+    const scrollable = overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay';
+    if (scrollable && node.scrollHeight > node.clientHeight + 1) return node;
+    node = node.parentElement;
+  }
+  return null;
+};
+
+/**
+ * The nearest fixed/absolute surface that owns the field — a dialog, sheet or
+ * a `fixed inset-0` page shell. This is what we translate when scrolling is
+ * not possible.
+ */
+const getShiftSurface = (el: HTMLElement): HTMLElement | null => {
+  let node: HTMLElement | null = el.parentElement;
+  let lastFixed: HTMLElement | null = null;
+  while (node && node !== document.body) {
+    const { position } = window.getComputedStyle(node);
+    if (position === 'fixed') lastFixed = node;
+    node = node.parentElement;
+  }
+  return lastFixed;
+};
+
+const clearShift = () => {
+  if (!shiftedSurface) return;
+  shiftedSurface.classList.remove(SHIFT_CLASS);
+  shiftedSurface.style.removeProperty('--kb-shift');
+  shiftedSurface = null;
+};
+
+const applyShift = (surface: HTMLElement, amount: number) => {
+  if (shiftedSurface && shiftedSurface !== surface) clearShift();
+  surface.style.setProperty('--kb-shift', `${-Math.round(amount)}px`);
+  surface.classList.add(SHIFT_CLASS);
+  shiftedSurface = surface;
+};
+
+const ensureVisible = () => {
+  const el = activeField();
+  if (!el) {
+    clearShift();
+    return;
+  }
+
+  // Chat composers lift themselves above the keyboard already.
+  if (el.closest('.native-keyboard-lift')) return;
+
+  const kb = keyboardHeight();
+  if (kb <= 0) {
+    clearShift();
+    return;
+  }
+
+  const surface = getShiftSurface(el);
+  const currentShift = surface && surface === shiftedSurface
+    ? Math.abs(parseFloat(surface.style.getPropertyValue('--kb-shift')) || 0)
+    : 0;
+
+  const rect = el.getBoundingClientRect();
+  const safeBottom = window.innerHeight - kb - MARGIN;
+  const overlap = rect.bottom - safeBottom;
+
+  if (overlap <= 0) {
+    // Field is comfortably visible. If our own shift is no longer needed
+    // (keyboard closed on a different field, user scrolled), release it.
+    if (currentShift > 0 && rect.top - currentShift > MARGIN && rect.bottom - currentShift <= safeBottom) {
+      clearShift();
+    }
+    return;
+  }
+
+  const scrollParent = getScrollParent(el);
+  if (scrollParent) {
+    clearShift();
+    scrollParent.scrollBy({ top: overlap, behavior: 'smooth' });
+    return;
+  }
+
+  if (!surface) {
+    window.scrollBy({ top: overlap, behavior: 'smooth' });
+    return;
+  }
+
+  // Never push the surface past the top of the viewport.
+  const surfaceRect = surface.getBoundingClientRect();
+  const surfaceTop = surfaceRect.top + currentShift;
+  const maxShift = Math.max(0, surfaceTop - MARGIN);
+  const next = Math.min(currentShift + overlap, currentShift + maxShift);
+
+  if (next <= 0) return;
+  applyShift(surface, next);
+};
+
+const schedule = () => {
+  cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(() => ensureVisible());
+};
+
+export const installKeyboardAware = (): (() => void) => {
+  if (typeof window === 'undefined') return () => undefined;
+  if (installed) return () => undefined;
+  installed = true;
+
+  const onFocusIn = (e: Event) => {
+    if (!isEditable(e.target)) return;
+    lastFocused = e.target as HTMLElement;
+    schedule();
+    // Second pass once the keyboard animation has settled.
+    window.setTimeout(() => {
+      if (document.activeElement === lastFocused) ensureVisible();
+    }, 300);
+  };
+
+  const onFocusOut = () => {
+    lastFocused = null;
+    // If nothing else takes focus, drop the shift.
+    window.setTimeout(() => {
+      if (!activeField()) clearShift();
+    }, 60);
+  };
+
+  const onViewportChange = () => schedule();
+
+  document.addEventListener('focusin', onFocusIn, true);
+  document.addEventListener('focusout', onFocusOut, true);
+  window.visualViewport?.addEventListener('resize', onViewportChange);
+
+  let removeNative: (() => void) | undefined;
+  const cap = (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+  if (cap?.isNativePlatform?.()) {
+    void import('@capacitor/keyboard')
+      .then(async ({ Keyboard }) => {
+        const show = await Keyboard.addListener('keyboardWillShow', (info) => {
+          nativeKeyboardHeight = Math.max(0, Number(info.keyboardHeight) || 0);
+          document.documentElement.style.setProperty(
+            '--native-keyboard-height',
+            `${nativeKeyboardHeight}px`,
+          );
+          schedule();
+        });
+        const didShow = await Keyboard.addListener('keyboardDidShow', () => ensureVisible());
+        const reset = () => {
+          nativeKeyboardHeight = 0;
+          document.documentElement.style.setProperty('--native-keyboard-height', '0px');
+          clearShift();
+        };
+        const willHide = await Keyboard.addListener('keyboardWillHide', reset);
+        const didHide = await Keyboard.addListener('keyboardDidHide', reset);
+        removeNative = () => {
+          void show.remove();
+          void didShow.remove();
+          void willHide.remove();
+          void didHide.remove();
+        };
+      })
+      .catch(() => undefined);
+  }
+
+  return () => {
+    cancelAnimationFrame(rafId);
+    document.removeEventListener('focusin', onFocusIn, true);
+    document.removeEventListener('focusout', onFocusOut, true);
+    window.visualViewport?.removeEventListener('resize', onViewportChange);
+    removeNative?.();
+    clearShift();
+    installed = false;
+  };
+};
+
+export default installKeyboardAware;
