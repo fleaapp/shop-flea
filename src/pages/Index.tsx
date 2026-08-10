@@ -768,6 +768,7 @@ const Index = () => {
         isGoogleUser={isGoogleUser}
         onComplete={() => {
           setWelcomeCompleted(true);
+          setJustSignedUp(true);
           if (user) localStorage.setItem(`flea_welcome_done_${user.id}`, '1');
           // The stage machine decides what comes next (password, then walkthrough).
           refreshProfile();
@@ -779,6 +780,7 @@ const Index = () => {
           if (user) localStorage.setItem(`flea_pw_done_${user.id}`, '1');
           localStorage.removeItem('flea_oauth_signup'); // Clean up OAuth flag
           setPasswordCompleted(true);
+          setJustSignedUp(true);
           await refreshProfile();
           supabase.auth.refreshSession();
         }}
