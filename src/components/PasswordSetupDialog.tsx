@@ -9,7 +9,7 @@ import { Eye, EyeOff } from 'lucide-react';
 
 interface PasswordSetupDialogProps {
   open: boolean;
-  onComplete: () => void;
+  onComplete: () => void | Promise<void>;
 }
 
 const PasswordSetupDialog = ({ open, onComplete }: PasswordSetupDialogProps) => {
