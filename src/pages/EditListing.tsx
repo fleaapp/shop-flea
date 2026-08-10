@@ -243,7 +243,7 @@ const EditListing = () => {
   };
 
   const handleCropComplete = useCallback(async (croppedBlob: Blob) => {
-    const croppedFile = new File([croppedBlob], `cropped-${Date.now()}.jpg`, { type: 'image/jpeg' });
+    const croppedFile = new File([croppedBlob], `cropped-${Date.now()}.webp`, { type: 'image/webp' });
     try {
       const compressedFile = await compressImage(croppedFile);
       const thumbFile = await createThumbnail(compressedFile).catch(() => undefined);
@@ -296,11 +296,14 @@ const EditListing = () => {
     const thumbnails: string[] = [];
 
     for (const imageFile of newImageFiles) {
-      const fileExt = imageFile.file.name.split('.').pop();
+      const fileExt = 'webp';
       const stem = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}`;
       const fileName = `${stem}.${fileExt}`;
 
-      const { error } = await supabase.storage.from('listings').upload(fileName, imageFile.file);
+      const { error } = await supabase.storage.from('listings').upload(fileName, imageFile.file, {
+        contentType: 'image/webp',
+        cacheControl: 'public, max-age=31536000, immutable',
+      });
       if (error) {
         console.error('Upload error:', error);
         throw new Error('Failed to upload image');
@@ -311,10 +314,13 @@ const EditListing = () => {
 
       let thumbUrl = publicUrl;
       if (imageFile.thumb) {
-        const thumbName = `${stem}.thumb.jpg`;
+        const thumbName = `${stem}.thumb.webp`;
         const { error: thumbErr } = await supabase.storage
           .from('listings')
-          .upload(thumbName, imageFile.thumb, { contentType: 'image/jpeg' });
+          .upload(thumbName, imageFile.thumb, {
+            contentType: 'image/webp',
+            cacheControl: 'public, max-age=31536000, immutable',
+          });
         if (!thumbErr) thumbUrl = supabase.storage.from('listings').getPublicUrl(thumbName).data.publicUrl;
       }
       thumbnails.push(thumbUrl);

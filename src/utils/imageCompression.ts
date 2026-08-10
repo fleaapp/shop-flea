@@ -14,7 +14,7 @@ const DEFAULT_OPTIONS: CompressionOptions = {
   maxWidth: 1200,
   maxHeight: 1200,
   quality: 0.80,
-  mimeType: 'image/jpeg',
+  mimeType: 'image/webp',
 };
 
 /**
@@ -77,7 +77,7 @@ export const compressImage = (
           // Create a new file from the blob
           const compressedFile = new File(
             [blob],
-            file.name.replace(/\.[^/.]+$/, '.jpg'),
+            file.name.replace(/\.[^/.]+$/, '.webp'),
             {
               type: mimeType,
               lastModified: Date.now(),
@@ -133,8 +133,8 @@ export const compressImages = async (
 export const createThumbnail = (file: File): Promise<File> =>
   compressImage(file, { maxWidth: 600, maxHeight: 750, quality: 0.72 }).then((thumb) => {
     // Rename to make it obvious in storage.
-    return new File([thumb], file.name.replace(/(\.[^./\\]+)?$/, '.thumb.jpg'), {
-      type: 'image/jpeg',
+    return new File([thumb], file.name.replace(/(\.[^./\\]+)?$/, '.thumb.webp'), {
+      type: 'image/webp',
       lastModified: Date.now(),
     });
   });
