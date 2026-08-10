@@ -1,44 +1,71 @@
-# Re-enable Google sign up / login
+# Google sign-in with Flea branding (stays in-app)
 
-## What you need to do (the short version)
+Goal: users tap "Continue with Google", see **Flea** on the Google consent screen, and never leave the app.
 
-Nothing in the Google Cloud console, and nothing in Xcode. Google sign-in runs on Lovable Cloud's managed Google credentials, so there is no client ID, secret, or reversed URL scheme to copy anywhere. The only reason it was switched off was the old native Google plugin writing a placeholder URL scheme into `Info.plist`, which Apple rejected - that plugin stays removed.
+## Approach
 
-Your steps:
+Use your own Google Cloud OAuth client (so Google shows Flea, not Lovable) with the
+**in-app browser** flow (SFSafariViewController on iOS / Chrome Custom Tab on Android,
+already used for Apple and Stripe via `openInAppUrl`). Google explicitly allows
+SFSafariViewController — it blocks only embedded WKWebViews — so this is the compliant
+"stays in app" path and needs **no** native Google plugin and **no** URL scheme in
+Info.plist (which is what got the archive rejected before).
 
-1. Approve this plan.
-2. I enable the managed Google provider on the backend and put the Google button back on the login and sign up tabs.
-3. You test: tap the Google button on the Flea preview, pick an account, and confirm you land back in the app signed in.
+## What you paste where
 
-The only thing you may want to copy later is nothing at all - if you ever decide you want Google's consent screen to show "Flea" instead of Lovable's default, that is a separate, optional branding job with your own Google Cloud client.
+### 1. In Google Cloud Console → Credentials → your **Web application** OAuth client
 
-## How it stays in the app
-
-The flow reuses exactly the same in-app path Apple sign-in already uses:
+Authorised JavaScript origins:
 
 ```text
-Google button
-  -> Supabase builds the OAuth URL (skipBrowserRedirect: true)
-  -> opened in the in-app browser sheet (openInAppUrl)
-  -> Google account picker inside that sheet
-  -> redirect to https://app.finditonflea.com/auth/callback
-  -> universal link hands control straight back to Flea
-  -> sheet closes, onAuthStateChange signs the user in
+https://app.finditonflea.com
+https://shop-flea.lovable.app
 ```
 
-No Safari bounce, no custom URL scheme, no deep link out of the app. On web/PWA the same button does a normal in-page OAuth redirect.
+Authorised redirect URIs (this exact one is required — it is the backend auth callback):
 
-## What I will build
+```text
+https://teaicrimlqdayqpmxasc.supabase.co/auth/v1/callback
+```
 
-- Enable the managed Google provider for this project's backend (keeps email and Apple enabled).
-- Restore the Google button in `src/pages/Auth.tsx` next to the Apple button, using the existing lime/charcoal social button styling and a Google glyph, with an `aria-label` for accessibility. It sits under "Or login with" / "Or sign up with" on both tabs.
-- Keep `handleGoogleSignIn` as-is (it already handles `prompt: select_account`, error toasts, and `flea_oauth_signup` for the password-setup step) and let it fall through to the web OAuth path, which is the in-app browser path on native.
-- Leave `src/lib/googleSignIn.ts` returning `handled: false` so no native Google plugin is reintroduced and `Info.plist` is untouched - your Apple archive stays clean.
-- Confirm the existing duplicate-account guard (`check-email-provider` / `ProviderConflictDialog`) still fires when someone who signed up with email tries Google with the same address.
+Then copy the **Client ID** and **Client secret** from that same screen.
 
-## Technical notes
+### 2. In the app backend auth settings
 
-- Files touched: `src/pages/Auth.tsx` only.
-- Backend: managed Google provider enabled via the social auth configuration tool in the same step, so the first tap does not error with "Unsupported provider".
-- Redirect target stays `getSignupRedirectUrl()` -> `https://app.finditonflea.com/auth/callback`, already in the allow-list and already covered by the universal-link handler in `authRedirects.ts`.
-- No new packages, no Capacitor sync, no Xcode change needed.
+Open Cloud → Users → Auth Settings → Sign-in methods → Google, switch it to your own
+credentials, and paste the Client ID and Client secret from step 1. Save.
+
+I will confirm the exact callback URL shown there matches the one above before you save.
+
+### 3. Redirect allow-list
+
+Add these as allowed redirect URLs in the same auth settings screen:
+
+```text
+https://app.finditonflea.com/**
+https://shop-flea.lovable.app/**
+```
+
+## Code changes
+
+- `src/pages/Auth.tsx` — restore the "Continue with Google" button on both the login and
+  signup tabs, styled to match the existing Apple button. `handleGoogleSignIn` already
+  exists and already falls through to the web OAuth path; keep `prompt: 'select_account'`
+  per the existing preference.
+- `src/lib/googleSignIn.ts` — leave `nativeGoogleSignIn` returning `{ handled: false }`
+  so every platform uses the in-app browser path. Update the stale "paused" comment to
+  explain the deliberate SFSafariViewController choice.
+- Confirm the OAuth return lands back in the app: `getSignupRedirectUrl()` must resolve to
+  the universal-link origin (`https://app.finditonflea.com`) on native so the in-app browser
+  hands the session back and closes, matching the existing Apple flow.
+- Provider-conflict handling (`ProviderConflictDialog`, `check-email-provider`) already
+  covers Google; no change needed.
+
+## Notes
+
+- Your Google Cloud consent screen branding (app name, logo, domain) is what users see —
+  nothing from Lovable appears.
+- If the consent screen is still in "Testing", only your added test users can sign in;
+  publish it to production when you are ready.
+- No Xcode change, no Google plugin, no `[REVERSED_IOS_CLIENT_ID]` placeholder, so the
+  previous App Store rejection cause does not return.
