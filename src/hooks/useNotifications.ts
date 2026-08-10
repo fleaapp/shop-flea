@@ -455,6 +455,8 @@ export const getNotificationMessage = (type: string, username?: string, listingT
       return rawMessage || '⏳ Your accepted offer expires soon. Check out now to keep the price.';
     case 'saved_search_match':
       return rawMessage || '🔔 A new item matches one of your saved searches. Tap to view.';
+    case 'welcome':
+      return rawMessage || "Welcome to Flea! 👉👚👟♻️ Use code 'FREEFLEA' for no fees on your first purchase!";
     default:
       return 'New notification';
   }
@@ -527,6 +529,8 @@ export const getNotificationEmoji = (type: string): string => {
       return '⏳';
     case 'saved_search_match':
       return '🔔';
+    case 'welcome':
+      return '👋';
     default:
       return '🔔';
   }
