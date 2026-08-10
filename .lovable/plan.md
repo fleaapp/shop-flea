@@ -10,14 +10,19 @@ Profile details -> Password saved -> Walkthrough finished/skipped -> Welcome ale
 
 Only one layer may be visible at a time.
 
-## 1. Move signup dialogs above the native keyboard
+## 1. App-wide keyboard awareness (no footer, padding, or added space)
 
-- Add keyboard-aware positioning to the profile and password dialogs so the whole dialog shifts upward only as far as needed when a focused field would be covered.
-- Calculate the shift from the focused input and the visible keyboard boundary, then restore the original centred position when focus changes or the keyboard closes.
-- Do not add bottom padding, a footer, or permanent empty space.
-- Keep the dialog within the visible top safe area and allow its existing content to remain usable on smaller iPhones.
+One global behaviour for every screen, dialog, drawer, and sheet in the app:
 
-This targets the confirmed issue in `WelcomeSetupDialog`: its fixed, centred `DialogContent` has no scrollable ancestor, while the app root is locked against document scrolling on native. The current keyboard helper therefore cannot move the last-name field into view.
+- Whenever a field is focused and the keyboard covers it, shift the surface that owns the field upward by exactly the overlap plus a small margin - nothing more.
+- Prefer scrolling when the field sits inside a real scroll container; when there is no scrollable ancestor (centred dialogs, fixed shells), translate the surface itself upward instead.
+- Reverse the shift completely when focus moves to a visible field, the keyboard closes, or the surface unmounts, so nothing is left displaced.
+- Remove the existing bottom-padding injection used by the current native keyboard handler. No padding, no reserved footer strip, no permanent empty space anywhere.
+- Consolidate the duplicated keyboard logic (the global handler and the separate hook) into one implementation so the two can no longer fight each other.
+- Respect existing composer lifts so chat inputs are not double-shifted.
+
+This addresses the confirmed cause of the cut-off Last Name field: centred `DialogContent` is fixed-position with no scrollable ancestor, and the app root is locked against document scrolling on native, so the current scroll-based helper has nothing to move.
+
 
 ## 2. Replace the race-prone signup triggers with one coordinator
 
