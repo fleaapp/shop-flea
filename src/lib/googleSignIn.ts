@@ -1,13 +1,18 @@
 import { Capacitor } from '@capacitor/core';
 
 /**
- * Google sign-in is currently paused. The native plugin
- * (`@codetrix-studio/capacitor-google-auth`) has been removed so that
- * `npx cap sync ios` no longer generates Google URL schemes in Info.plist
- * (which caused Apple to reject archives due to the `[REVERSED_IOS_CLIENT_ID]`
- * placeholder). When we re-enable Google auth, restore the native plugin
- * and the initialize/signIn logic here.
+ * Google sign-in deliberately uses the in-app browser flow
+ * (SFSafariViewController on iOS / Chrome Custom Tab on Android) rather than a
+ * native Google plugin. Google allows SFSafariViewController and blocks only
+ * embedded WKWebViews, so this keeps the user inside the app while avoiding the
+ * `@codetrix-studio/capacitor-google-auth` plugin — that plugin generated a
+ * `[REVERSED_IOS_CLIENT_ID]` placeholder URL scheme in Info.plist on
+ * `npx cap sync ios`, which caused an App Store archive rejection.
+ *
+ * `nativeGoogleSignIn` therefore always returns `{ handled: false }` so every
+ * platform falls through to the OAuth path in `Auth.tsx`.
  */
+
 export type NativeGoogleResult =
   | { handled: false }
   | { handled: true; error: null; cancelled?: false }
