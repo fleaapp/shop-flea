@@ -94,6 +94,10 @@ const Index = () => {
     return false; // initialised properly in the user-scoped effect below
   });
   const [passwordCompleted, setPasswordCompleted] = useState(false);
+  // True once a signup dialog (profile or password) was completed in this
+  // session. A fresh signup always earns the walkthrough, even when the
+  // legacy "pending onboarding" flag was never written.
+  const [justSignedUp, setJustSignedUp] = useState(false);
 
   // Keep the session "consumed" deck set scoped to the signed-in user.
   useEffect(() => {
