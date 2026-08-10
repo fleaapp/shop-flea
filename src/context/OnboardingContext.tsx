@@ -155,22 +155,23 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     if (currentIndex === -1 || currentIndex >= ONBOARDING_STEPS.length - 1) {
       setCurrentStep(null);
       setHasCompletedOnboarding(true);
-      setWalkthroughDone(true);
+      markWalkthroughComplete();
       localStorage.setItem(STORAGE_KEY, 'true');
       return;
     }
     
     setCurrentStep(ONBOARDING_STEPS[currentIndex + 1]);
-  }, [currentStep]);
+  }, [currentStep, markWalkthroughComplete]);
 
   const skipOnboarding = useCallback(() => {
-    setWalkthroughDone(true);
+    markWalkthroughComplete();
     setCurrentStep(null);
     setHasCompletedOnboarding(true);
     localStorage.setItem(STORAGE_KEY, 'true');
     localStorage.removeItem(NEW_USER_KEY);
     setIsNewUser(false);
-  }, []);
+  }, [markWalkthroughComplete]);
+
 
   const resetOnboarding = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
