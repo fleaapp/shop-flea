@@ -394,7 +394,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
 
       {/* Controls pinned above bottom nav */}
       <div className="relative w-full px-6 pb-[calc(84px+env(safe-area-inset-bottom))] max-[375px]:pb-[calc(76px+env(safe-area-inset-bottom))]">
-        <div className="mx-auto w-full max-w-sm -translate-y-12">
+        <div className="mx-auto w-full max-w-sm -translate-y-10">
           {/* Pagination dots */}
           <div className="flex justify-center gap-2.5 mb-4">
             {slides.map((_, index) => (
