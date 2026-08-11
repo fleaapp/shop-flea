@@ -359,27 +359,12 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
         </p>
       )}
 
-      {/* Main content area */}
-      <div className="relative flex-1 w-full flex flex-col items-center justify-end pb-10 px-6">
-        {isSpotlightSlide ? (
-          <motion.div
-            key={currentSlide}
-            className="flex flex-col items-center justify-center"
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.2}
-            onDragEnd={handleDragEnd}
-          >
-            {slideContent}
-          </motion.div>
-        ) : (
-          <AnimatePresence mode="wait">
+      {/* Main content + controls — centred as a group */}
+      <div className="relative flex-1 w-full flex flex-col items-center justify-center px-6 pb-[calc(84px+env(safe-area-inset-bottom))] max-[375px]:pb-[calc(76px+env(safe-area-inset-bottom))]">
+        <div className="flex flex-col items-center">
+          {isSpotlightSlide ? (
             <motion.div
               key={currentSlide}
-              initial={{ opacity: 0, x: direction * 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: direction * -50 }}
-              transition={{ duration: 0.3 }}
               className="flex flex-col items-center justify-center"
               drag="x"
               dragConstraints={{ left: 0, right: 0 }}
@@ -388,13 +373,28 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
             >
               {slideContent}
             </motion.div>
-          </AnimatePresence>
-        )}
-      </div>
+          ) : (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentSlide}
+                initial={{ opacity: 0, x: direction * 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: direction * -50 }}
+                transition={{ duration: 0.3 }}
+                className="flex flex-col items-center justify-center"
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.2}
+                onDragEnd={handleDragEnd}
+              >
+                {slideContent}
+              </motion.div>
+            </AnimatePresence>
+          )}
+        </div>
 
-      {/* Controls pinned above bottom nav */}
-      <div className="relative w-full px-6 pb-[calc(84px+env(safe-area-inset-bottom))] max-[375px]:pb-[calc(76px+env(safe-area-inset-bottom))]">
-        <div className="mx-auto w-full max-w-sm -translate-y-10">
+        {/* Controls */}
+        <div className="mt-8 w-full max-w-sm">
           {/* Pagination dots */}
           <div className="flex justify-center gap-2.5 mb-4">
             {slides.map((_, index) => (
