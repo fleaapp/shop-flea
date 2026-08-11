@@ -5,8 +5,10 @@
       {
         "appID": "MAYU87849K.com.finditonflea.app",
         "paths": [
+          "/",
           "/auth/callback",
           "/auth/callback/*",
+          "/auth/*",
           "/reset-password",
           "/reset-password/*"
         ]
