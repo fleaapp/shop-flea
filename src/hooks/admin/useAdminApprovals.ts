@@ -97,8 +97,13 @@ export function useAdminApprovals(kind: ApprovalKind) {
         // Buyer marked an untracked order as delivered — held pending admin review.
         q = q.eq('pending_admin_delivery_review', true);
       } else {
-        // Dispute queue: refund requests the seller has declined, awaiting Flea arbitration.
-        q = q.not('refund_declined_at', 'is', null).is('refunded_at', null);
+        // Dispute queue: refund requests the seller declined, plus requests
+        // that lapsed the 14 day window and were escalated to Flea.
+        q = q
+          .or('refund_declined_at.not.is.null,refund_escalated_at.not.is.null')
+          .is('refunded_at', null)
+          .is('return_required_at', null)
+          .is('return_closed_at', null);
       }
       const { data, error } = await q;
       if (error) throw error;
