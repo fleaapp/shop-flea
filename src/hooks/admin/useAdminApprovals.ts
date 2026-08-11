@@ -32,6 +32,14 @@ export type AdminApprovalOrder = {
   refund_request_deadline_at: string | null;
   refund_declined_at: string | null;
   refund_declined_reason: string | null;
+  refund_escalated_at?: string | null;
+  refund_path?: string | null;
+  return_required_at?: string | null;
+  return_deadline_at?: string | null;
+  return_tracking_provider?: string | null;
+  return_tracking_number?: string | null;
+  return_delivered_at?: string | null;
+  refund_seller_at_fault?: boolean | null;
   created_at: string;
   updated_at: string;
   listing: { title: string; images: string[] } | null;
@@ -45,7 +53,9 @@ const BASE_SELECT = `
   tracking_provider, tracking_number, tracking_approved_at, tracking_rejected_at, tracking_rejection_reason,
   shipped_at, delivered_at, admin_marked_delivered, dispute_window_ends_at, pending_admin_delivery_review, refunded_at,
   refund_requested_at, refund_requested_by, refund_request_reason, refund_request_deadline_at,
-  refund_declined_at, refund_declined_reason,
+  refund_declined_at, refund_declined_reason, refund_escalated_at,
+  refund_path, return_required_at, return_deadline_at,
+  return_tracking_provider, return_tracking_number, return_delivered_at, refund_seller_at_fault,
   created_at, updated_at
 `;
 
