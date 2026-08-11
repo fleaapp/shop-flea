@@ -29,6 +29,7 @@ export default defineConfig(({ mode }) => ({
         // don't force users to re-download unchanged vendor code.
         manualChunks: (id: string) => {
           if (id.includes('node_modules')) {
+            if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) return 'vendor-react';
             if (id.includes('framer-motion')) return 'vendor-motion';
             if (id.includes('@stripe')) return 'vendor-stripe';
             if (id.includes('@supabase')) return 'vendor-supabase';
