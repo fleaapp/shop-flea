@@ -41,6 +41,7 @@ const loadSellerDashboard = () => import("./pages/SellerDashboard");
 
 const loadInstall = () => import("./pages/Install");
 const loadSuggestionBox = () => import("./pages/SuggestionBox");
+const loadOnboardingTest = () => import("./pages/OnboardingTest");
 const loadForgotPassword = () => import("./pages/ForgotPassword");
 const loadResetPassword = () => import("./pages/ResetPassword");
 const loadVerifyEmail = () => import("./pages/VerifyEmail");
