@@ -9,11 +9,19 @@ import { normaliseTrackInfo, latestSummary, humanStatus, type NormalisedTracking
  */
 export async function applyTracking(
   supabase: any,
-  shipment: { id: string; order_group_id: string; seller_id: string; buyer_id: string },
+  shipment: {
+    id: string;
+    order_group_id: string;
+    seller_id: string;
+    buyer_id: string;
+    kind?: string | null;
+    tracking_number?: string | null;
+  },
   trackInfo: any,
   rawPayload: unknown,
 ) {
   const t: NormalisedTracking = normaliseTrackInfo('', trackInfo);
+  const isReturn = shipment.kind === 'return';
 
   if (t.events.length) {
     const rows = t.events.map((e) => ({
