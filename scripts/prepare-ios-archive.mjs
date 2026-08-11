@@ -35,6 +35,22 @@ function run(command, args, extraEnv = {}) {
   }
 }
 
+// Runs a command while capturing its output so we can assert on build warnings.
+function runCaptured(command, args, extraEnv = {}) {
+  const result = spawnSync(command, args, {
+    cwd: root,
+    env: { ...process.env, ...extraEnv },
+    encoding: 'utf8',
+    shell: false,
+  });
+  const output = `${result.stdout ?? ''}${result.stderr ?? ''}`;
+  process.stdout.write(output);
+  if (result.status !== 0) {
+    throw new Error(`${command} ${args.join(' ')} failed with exit code ${result.status ?? 'unknown'}.`);
+  }
+  return output;
+}
+
 function filesUnder(directory) {
   const files = [];
   for (const entry of readdirSync(directory)) {
@@ -97,10 +113,15 @@ function assertNativeBundle() {
 try {
   console.log(`Preparing Flea iOS bundle ${buildId} (${buildDate})...`);
   rmSync(distDir, { recursive: true, force: true });
-  run(process.execPath, [join(root, 'node_modules', 'vite', 'bin', 'vite.js'), 'build'], {
+  const buildOutput = runCaptured(process.execPath, [join(root, 'node_modules', 'vite', 'bin', 'vite.js'), 'build'], {
     FLEA_BUILD_ID: buildId,
     FLEA_BUILD_DATE: buildDate,
   });
+  if (buildOutput.includes('Circular chunk:')) {
+    throw new Error(
+      'Vite reported circular chunks. A bundle with circular chunks fails to evaluate at runtime and boots to a blank screen. Fix manualChunks in vite.config.ts. Do not archive.',
+    );
+  }
   run(process.execPath, [join(root, 'node_modules', '@capacitor', 'cli', 'bin', 'capacitor'), 'sync', 'ios']);
   run('/bin/bash', [join(root, 'scripts', 'setup-ios-native.sh')]);
   assertNativeBundle();
