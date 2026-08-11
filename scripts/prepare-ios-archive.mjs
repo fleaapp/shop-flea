@@ -9,6 +9,20 @@ const buildId = Date.now().toString();
 const buildDate = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ' UTC');
 const marker = 'flea-google-auth-control';
 
+function assertProjectRoot() {
+  if (!existsSync(join(root, 'package.json'))) {
+    throw new Error('package.json not found. Run this script from the project root.');
+  }
+  if (!existsSync(join(root, 'capacitor.config.ts'))) {
+    throw new Error('capacitor.config.ts not found. Run this script from the project root.');
+  }
+  if (!existsSync(join(root, 'scripts', 'prepare-ios-archive.mjs'))) {
+    throw new Error('prepare-ios-archive.mjs is missing. Run "git pull" to sync the latest cloud changes.');
+  }
+}
+
+assertProjectRoot();
+
 function run(command, args, extraEnv = {}) {
   const result = spawnSync(command, args, {
     cwd: root,
@@ -47,7 +61,7 @@ function assertNativeBundle() {
     return readFileSync(path, 'utf8').includes(marker);
   });
   if (!markerFile) {
-    throw new Error(`The copied iOS bundle does not contain ${marker}. Do not archive.`);
+    throw new Error(`The copied iOS bundle does not contain ${marker}. The Google sign-in button was not included. Do not archive.`);
   }
 
   const indexHtml = readFileSync(indexPath, 'utf8');
@@ -64,7 +78,20 @@ function assertNativeBundle() {
     }
   }
 
+  // Surface which social-auth code paths are present in the bundle.
+  const bundleText = nativeFiles
+    .filter((path) => /\.(?:js|html)$/.test(path))
+    .map((path) => readFileSync(path, 'utf8'))
+    .join('\n');
+  const hasGoogle = bundleText.includes('handleGoogleSignIn');
+  const hasApple = bundleText.includes('handleAppleSignIn');
+  const hasOAuthPopup = bundleText.includes('signInWithOAuthPopup');
+
   console.log(`\nVerified Google control marker in ${relative(root, markerFile)}.`);
+  console.log('Bundle social-auth paths:');
+  console.log(`  Google handler: ${hasGoogle ? 'yes' : 'NO'}`);
+  console.log(`  Apple handler:  ${hasApple ? 'yes' : 'NO'}`);
+  console.log(`  OAuth popup:    ${hasOAuthPopup ? 'yes' : 'NO'}`);
 }
 
 try {
