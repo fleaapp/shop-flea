@@ -18,8 +18,12 @@ import { supabase } from '@/lib/supabase';
  */
 
 const NATIVE_ORIGIN = 'https://app.finditonflea.com';
+const NATIVE_CALLBACK_PATH = '/auth/callback';
+const NATIVE_SHEET_TIMEOUT_MS = 5 * 60 * 1000;
+const NATIVE_SESSION_GRACE_MS = 6000;
 export const OAUTH_COMPLETE_MESSAGE = 'flea-oauth-complete';
 const POPUP_CHECK_INTERVAL_MS = 500;
+
 
 export type OAuthPopupResult =
   | { error: null; redirected?: boolean; cancelled?: false }
