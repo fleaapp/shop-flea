@@ -61,7 +61,7 @@ function assertNativeBundle() {
     return readFileSync(path, 'utf8').includes(marker);
   });
   if (!markerFile) {
-    throw new Error(`The copied iOS bundle does not contain ${marker}. Do not archive.`);
+    throw new Error(`The copied iOS bundle does not contain ${marker}. The Google sign-in button was not included. Do not archive.`);
   }
 
   const indexHtml = readFileSync(indexPath, 'utf8');
@@ -78,7 +78,20 @@ function assertNativeBundle() {
     }
   }
 
+  // Surface which social-auth code paths are present in the bundle.
+  const bundleText = nativeFiles
+    .filter((path) => /\.(?:js|html)$/.test(path))
+    .map((path) => readFileSync(path, 'utf8'))
+    .join('\n');
+  const hasGoogle = bundleText.includes('handleGoogleSignIn');
+  const hasApple = bundleText.includes('handleAppleSignIn');
+  const hasOAuthPopup = bundleText.includes('signInWithOAuthPopup');
+
   console.log(`\nVerified Google control marker in ${relative(root, markerFile)}.`);
+  console.log('Bundle social-auth paths:');
+  console.log(`  Google handler: ${hasGoogle ? 'yes' : 'NO'}`);
+  console.log(`  Apple handler:  ${hasApple ? 'yes' : 'NO'}`);
+  console.log(`  OAuth popup:    ${hasOAuthPopup ? 'yes' : 'NO'}`);
 }
 
 try {
