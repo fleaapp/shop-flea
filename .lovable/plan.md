@@ -1,34 +1,57 @@
-# iOS TestFlight archive process
+# Fix duplicate `applicationDidBecomeActive` in AppDelegate
 
-Answer the user's immediate question: yes, clean first, then archive — but the `ios:archive-ready` script already performs a clean production build, so the Xcode Clean step is mainly to clear stale DerivedData and simulator artifacts.
+## What went wrong
 
-## Recommended sequence
+`scripts/setup-ios-native.sh` appends a block containing `applicationDidBecomeActive` into `ios/App/App/AppDelegate.swift`. Capacitor's stock AppDelegate already declares `applicationDidBecomeActive`, so the file now has two, which Xcode rejects:
+
+- line 28: existing Capacitor `applicationDidBecomeActive`
+- line 61: the one the script added (invalid redeclaration)
+- line 68: the added code uses `UIApplication.shared.windows`, deprecated since iOS 15
+
+The script's "already patched" guard only checks for `clearWebViewBackgrounds`, so it never noticed the clash.
+
+## Fix
+
+### 1. Stop the script from adding a second `applicationDidBecomeActive`
+
+Rewrite the patch logic in `scripts/setup-ios-native.sh`:
+
+- Insert only `clearWebViewBackgrounds()` and `clearBackgroundsRecursively(view:)` as private helpers, plus the two APNs delegate methods.
+- Detect whether `applicationDidBecomeActive` already exists in the file:
+  - If it exists, insert `DispatchQueue.main.async { self.clearWebViewBackgrounds() }` inside that existing method body rather than declaring a new one.
+  - If it does not exist, add the method as today.
+- Make the idempotency guard check for each piece separately so re-runs never duplicate.
+
+### 2. Replace the deprecated `windows` API
+
+Use the scene-based lookup instead:
 
 ```text
-1. git pull origin main
-2. npm install
-3. npm run ios:archive-ready      (or: bash scripts/archive-ready.sh if package.json is stale)
-4. Product → Clean Build Folder   (Cmd+Shift+K)
-5. Product → Archive              (Cmd+Shift+A)
-6. Distribute app via TestFlight
+UIApplication.shared.connectedScenes
+  -> compactMap as UIWindowScene
+  -> flatMap windows
+  -> first where isKeyWindow (fallback: first)
 ```
 
-## What `ios:archive-ready` does
+This clears the iOS 15 deprecation warning and works on all supported iOS versions.
 
-- Runs `npm run build` to generate a fresh `dist/` bundle.
-- Fails the pipeline if Vite emits circular-chunk warnings (the cause of the recent lime screen).
-- Asserts that the Google auth control marker (`data-native-bundle-marker="flea-google-auth-control"`) exists in the built assets.
-- Runs `npx cap sync ios` so the native iOS project copies the fresh web bundle.
-- Opens Xcode when everything passes.
+### 3. Repair the already-broken local file
 
-## Why Clean Build Folder matters
+The script must be able to heal a file that already has the duplicate. Before patching, strip any previously injected block (the `clearWebViewBackgrounds` helpers and any script-added `applicationDidBecomeActive`) using a precise marker comment, then re-insert cleanly. Wrap the injected code in `// FLEA-NATIVE-PATCH BEGIN/END` markers so future runs can remove and re-apply it reliably.
 
-DerivedData can hold an old web bundle or stale native binaries. Cleaning before Archive guarantees the archive contains exactly what `npx cap sync ios` just wrote into `ios/App/App/public`.
+## What you run afterwards
 
-## Verification on device
+```text
+git pull
+npm install
+bash scripts/setup-ios-native.sh
+npx cap sync ios
+npm run ios:archive-ready
+Xcode: Clean Build Folder, then Archive
+```
 
-After the new build launches, the native build label below "Browse as Guest" should show:
-- Build date matching today.
-- `Google control: present`.
+## Verification
 
-If either is missing, do not archive — the bundle is stale.
+- `AppDelegate.swift` contains exactly one `applicationDidBecomeActive`.
+- No `UIApplication.shared.windows` reference remains.
+- Running `bash scripts/setup-ios-native.sh` twice in a row produces an identical file.
