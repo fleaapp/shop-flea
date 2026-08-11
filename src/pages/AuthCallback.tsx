@@ -19,7 +19,12 @@ const AuthCallback = () => {
   useEffect(() => {
     let cancelled = false;
 
+    // Warm the home-screen chunk while the code exchange is in flight so the
+    // first authenticated screen paints as soon as the session lands.
+    void import('./Index').catch(() => undefined);
+
     const complete = async () => {
+
       const search = new URLSearchParams(window.location.search);
       const isPopup = search.get('opener') === '1' && !!window.opener;
 
