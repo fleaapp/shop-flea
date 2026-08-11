@@ -9,6 +9,20 @@ const buildId = Date.now().toString();
 const buildDate = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ' UTC');
 const marker = 'flea-google-auth-control';
 
+function assertProjectRoot() {
+  if (!existsSync(join(root, 'package.json'))) {
+    throw new Error('package.json not found. Run this script from the project root.');
+  }
+  if (!existsSync(join(root, 'capacitor.config.ts'))) {
+    throw new Error('capacitor.config.ts not found. Run this script from the project root.');
+  }
+  if (!existsSync(join(root, 'scripts', 'prepare-ios-archive.mjs'))) {
+    throw new Error('prepare-ios-archive.mjs is missing. Run "git pull" to sync the latest cloud changes.');
+  }
+}
+
+assertProjectRoot();
+
 function run(command, args, extraEnv = {}) {
   const result = spawnSync(command, args, {
     cwd: root,
