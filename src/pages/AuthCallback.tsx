@@ -1,8 +1,17 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { completeAuthSessionFromUrl } from '@/lib/authRedirects';
+import { completeAuthSessionFromUrl, NATIVE_APP_SCHEME } from '@/lib/authRedirects';
 import { OAUTH_COMPLETE_MESSAGE } from '@/lib/oauthPopup';
+
+const isNativeShell = (): boolean => {
+  try {
+    const cap = (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+    return !!cap?.isNativePlatform?.();
+  } catch {
+    return false;
+  }
+};
 
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -11,11 +20,26 @@ const AuthCallback = () => {
     let cancelled = false;
 
     const complete = async () => {
-      const isPopup =
-        new URLSearchParams(window.location.search).get('opener') === '1' && !!window.opener;
+      const search = new URLSearchParams(window.location.search);
+      const isPopup = search.get('opener') === '1' && !!window.opener;
+
+      // Native sign-in lands here inside the in-app browser sheet. The OAuth
+      // code can only be exchanged by the app itself (it holds the PKCE
+      // verifier), so hand the parameters straight to the app's URL scheme -
+      // iOS closes the sheet and opens the app.
+      if (search.get('native') === '1' && !isNativeShell()) {
+        const params = new URLSearchParams(window.location.search);
+        params.delete('native');
+        const query = params.toString();
+        window.location.replace(
+          `${NATIVE_APP_SCHEME}:/auth/callback${query ? `?${query}` : ''}${window.location.hash}`,
+        );
+        return;
+      }
 
       try {
         const { data } = await completeAuthSessionFromUrl();
+
 
         if (cancelled) return;
 

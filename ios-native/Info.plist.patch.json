@@ -12,6 +12,11 @@
     "ITSAppUsesNonExemptEncryption": false
   },
   "arrays": {
-    "UIBackgroundModes": ["remote-notification"]
-  }
+    "UIBackgroundModes": [
+      "remote-notification"
+    ]
+  },
+  "urlSchemes": [
+    "com.finditonflea.app"
+  ]
 }

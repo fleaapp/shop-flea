@@ -1,5 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/lib/supabase';
+import { NATIVE_OAUTH_BOUNCE_URL } from '@/lib/authRedirects';
+
 
 /**
  * In-app OAuth sign-in.
@@ -13,12 +15,11 @@ import { supabase } from '@/lib/supabase';
  *
  * Native (iOS/Android): opens the same URL in an in-app browser sheet
  * (SFSafariViewController / Chrome Custom Tab). The provider redirects back to
- * the universal-link origin, `appUrlOpen` in App.tsx closes the sheet and
+ * the app's custom URL scheme, `appUrlOpen` in App.tsx closes the sheet and
  * routes to /auth/callback which applies the session.
  */
 
-const NATIVE_ORIGIN = 'https://app.finditonflea.com';
-const NATIVE_CALLBACK_PATH = '/auth/callback';
+
 const NATIVE_SHEET_TIMEOUT_MS = 5 * 60 * 1000;
 const NATIVE_SESSION_GRACE_MS = 6000;
 export const OAUTH_COMPLETE_MESSAGE = 'flea-oauth-complete';
@@ -61,15 +62,17 @@ export async function signInWithOAuthPopup(
 ): Promise<OAuthPopupResult> {
   // ---- Native: in-app browser sheet, session applied via /auth/callback ----
   if (isNative()) {
-    // Must be a path claimed by the universal-link association file, otherwise
-    // iOS keeps the user inside the browser sheet and the app never receives
-    // the session.
+    // Returns to the https callback page, which immediately bounces to the
+    // app's custom URL scheme. iOS ignores universal links reached through a
+    // server redirect, so an https-only return keeps the user in the sheet.
     const { url, error } = await buildAuthorizeUrl(
       provider,
-      `${NATIVE_ORIGIN}${NATIVE_CALLBACK_PATH}`,
+      NATIVE_OAUTH_BOUNCE_URL,
       extraParams,
     );
     if (error || !url) return { error: error ?? new Error('Could not start sign in') };
+
+
     try {
       const { Browser } = await import('@capacitor/browser');
       await Browser.open({ url, presentationStyle: 'popover' });
