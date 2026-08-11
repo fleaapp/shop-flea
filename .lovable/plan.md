@@ -1,77 +1,81 @@
-# Dispute and refund hardening - launch prioritisation
+# Vinted-style dispute and refund process
 
-## Short answer
+Move Flea from "refund or nothing" to Vinted's model: the buyer must return the item before a "not as described" refund is paid, and the seller gets 14 days to respond.
 
-No - not all of it needs to be fixed before launch. The current escrow / refund system is already sound and, in one area, stronger than the previous audit suggested. The right approach is a **phased fix**: plug the two real pre-launch risks, then build the rest in the first weeks after go-live.
+## Current behaviour (verified in the database and edge functions)
 
-## What Flea does today (corrected from the earlier audit)
+- Buyer can request a refund within 48h of delivery, or any time after 10 days in transit with no delivery (lost parcel). Live camera/video proof required.
+- Seller has 72h to approve or decline (`refund_request_deadline_at`).
+- No seller response in 72h: `auto-approve-refund-requests` refunds the buyer automatically.
+- Seller declines: the order lands in the admin Dispute queue, where the admin can force a refund or dismiss.
+- `auto_complete_delivered_orders` already holds funds while a refund request is open.
+- There is no return leg anywhere - a buyer who wins keeps the item and the money.
 
-- Funds are held in escrow until delivery + a 48h dispute window passes.
-- Refund requests require live camera/video proof and a reason.
-- Sellers have 72h to approve or decline. No response triggers an automatic refund.
-- Seller declines land in the admin Dispute queue where you can force-refund or dismiss.
-- Never-shipped orders are auto-refunded after 8 days.
-- **Chargebacks are already handled** in `stripe-webhook` (`charge.dispute.created`, `funds_withdrawn`, `closed`). The order is marked `disputed_at`, the seller is notified, and the seller balance is re-synced. The gap is that payouts are not explicitly frozen during an open dispute - but the negative-balance guard already blocks the device/account once the balance turns negative.
+## Target behaviour
 
-## Real gaps, ranked by launch risk
+```text
+Delivered -> buyer has 48h to report an issue (unchanged)
+   |
+   v
+Refund requested (photo/video proof)
+   |
+   +-- Seller approves  -> return required -> refund on return delivery
+   +-- Seller declines  -> admin dispute   -> admin picks outcome
+   +-- No response 14d  -> admin dispute   -> admin picks outcome
+```
 
-### Must fix before launch
+### Refund reasons split into two paths
 
-1. **Evidence-gated auto-approval (HIGH risk)**  
-   Today, if a seller does not respond within 72h, the buyer is refunded automatically with no review of the photo/video evidence. A slow, travelling, or unaware seller can lose the full sale value with no human check. This is the biggest fairness and abuse risk.
+- **Return required** (item not as described, wrong item, damaged, quality not as expected): the buyer must post the item back with tracked AU postage before any money moves.
+- **No return** (item never arrived / lost parcel): refunded directly, exactly as today. There is nothing to send back.
 
-2. **Dispute status visibility (HIGH risk)**  
-   Once a refund request is declined and reaches the admin queue, neither buyer nor seller sees an "under review" state or a deadline. Both parties are left guessing, which drives support messages and erodes trust.
+### Seller response window
 
-### Important, but safe to ship without
+- The 72h deadline becomes **14 days**.
+- Reminder notifications to the seller at day 7, day 12 and day 13.
+- If the 14 days lapse with no response, the order goes to the **admin Dispute queue** rather than auto-refunding. The admin then decides: order a return, refund outright, or dismiss.
 
-3. **Seller counter-evidence** - Decline is currently text-only. Letting sellers attach photos would reduce admin burden and improve fairness, but text is workable at low volume.
-4. **Partial refunds** - Useful for minor faults, but all-or-nothing refunds are acceptable for an MVP marketplace.
-5. **Return-required resolution** - Vinted-style "return the item before refund" is the fairest long-term model, but it requires tracked-return plumbing that can be added post-launch.
-6. **Buyer refund-rate counter / abuse tracking** - Important as volume scales, but not needed for day one.
+### Return flow
 
-### Already covered, minor hardening only
+1. Once a return is required, the buyer gets 5 days to post the item and enter a tracking number, using the existing AU carrier picker and validation.
+2. If the buyer does not enter tracking within 5 days, the request is closed, the seller keeps the money, and funds release normally.
+3. 17track monitors the return parcel exactly as it monitors outbound parcels.
+4. When the return is scanned as **delivered back to the seller**, the refund fires automatically through `stripe-connect-refund` (single mode, reverse transfer, fee clawback) - same money path as today.
+5. Both parties get notifications at each step: return required, return posted, return delivered, refund paid.
 
-7. **Chargeback handling** - The webhook already reacts to Stripe disputes. The only missing piece is an explicit payout freeze while a dispute is open.
+### Return postage
 
-## Proposed work
+Default: the **buyer pays return postage** for change-of-mind-style claims, and the refund covers item + original shipping. If the admin rules the seller at fault (counterfeit, wrong item, clearly damaged), the admin can tick "seller at fault", which refunds the buyer's return postage on top. This is the one decision worth confirming - tell me if you would rather always cover return postage or never cover it.
 
-### Phase 1 - Pre-launch (this build)
+### Admin dispute outcomes
 
-1. **Route unanswered refund requests to admin review instead of auto-refunding.**
-   - Change `auto-approve-refund-requests` so that, when the 72h deadline passes, it sets the order to an `admin_review` status and notifies the admin queue, rather than calling `stripe-connect-refund` immediately.
-   - Add a 24h admin SLA; if the admin has not acted after 24h, only then auto-refund.
-   - Add a small migration for `orders.admin_review_at` and update the dispute tab query to include `admin_review` rows.
+The dispute row gains four buttons instead of two:
 
-2. **Show a clear "under review" state to both parties.**
-   - Add a `RefundStatusRow` to the buyer's order details and the seller's sale details when `refund_declined_at` or `admin_review_at` is set.
-   - Copy: "Your refund request is being reviewed by Flea. We'll let you know within 24 hours."
-   - Send a push/alert to both parties when the status changes to `admin_review`, `refunded`, or `dispute_dismissed`.
+- Require return (starts the return clock)
+- Refund without return (fraud, lost item, unsafe to post back)
+- Dismiss (seller keeps the money)
+- Seller at fault toggle (covers return postage)
 
-3. **Harden chargeback payout freeze.**
-   - In `stripe-webhook`, when `charge.dispute.created` / `funds_withdrawn` fires, set the seller's `payout_review_flag = true` and `payout_review_reason = 'Open payment dispute'` so the dashboard blocks manual payouts until `charge.dispute.closed` clears it.
+### Status visibility
 
-### Phase 2 - First month post-launch
+Both buyer and seller see a clear state on the order/sale screen with a deadline: "Awaiting seller response - 14 days", "Return required - post by X", "Return in transit", "Under Flea review", "Refunded".
 
-4. **Seller counter-evidence on decline.**
-   - Allow photo/video capture when a seller declines a refund request.
-   - Store via the existing `order-attachments` pattern and show buyer + seller evidence side-by-side in the admin dispute row.
+## Technical notes
 
-5. **Partial refund support.**
-   - Add `orders.refund_amount` (default full amount).
-   - Update `stripe-connect-refund` to accept an optional `amount` and pass it to Stripe's `refund.create`.
-   - Add an admin input field in the dispute row for the refund amount.
+- Migration: add `orders.return_required_at`, `return_deadline_at`, `return_tracking_provider`, `return_tracking_number`, `return_delivered_at`, `return_postage_covered`, `refund_path` (`return` or `direct`).
+- `request_refund`: set `refund_request_deadline_at` to `now() + 14 days`; set `refund_path` from the selected reason.
+- `respond_to_refund_request`: on approve with `refund_path = 'return'`, set `return_required_at` and `return_deadline_at` instead of refunding immediately.
+- `auto-approve-refund-requests`: stop refunding on lapse; move the order into the dispute queue and notify admin.
+- New cron `close-stale-returns`: closes returns whose 5-day posting deadline passed with no tracking.
+- 17track: register return tracking numbers under a `return` shipment kind in `tracking_shipments`; the delivered webhook triggers the refund.
+- Admin: extend `useAdminApprovals` dispute tab with the new outcomes; extend the dispute query to include lapsed 14-day requests.
+- UI: new return-tracking entry sheet for the buyer reusing `auCarriers.ts`, plus a `RefundStatusRow` on order and sale details.
+- Copy updates: FAQ and Terms need the 14-day seller window and the return requirement spelled out.
 
-### Phase 3 - Later
+## Build order
 
-6. **Return-required resolution.**
-   - Add `orders.return_required_at`, `return_tracking_provider`, `return_tracking_number`.
-   - Admin can choose "Refund on return" outcome; buyer uploads a return tracking number; refund is released when 17track reports the return as delivered.
-
-7. **Buyer refund-rate counter and admin flag.**
-   - Add `profiles.refund_request_count` incremented in `request_refund`.
-   - Surface a badge in the admin dispute row when a buyer has >2 refund requests in 90 days.
-
-## Why this ordering
-
-Phase 1 fixes the two defects that can actively hurt sellers and create support load on day one. Everything else improves fairness and reduces manual work, but the current system already collects evidence, holds funds in escrow, reverses transfers, and routes disputes to you. Launch is reasonable once Phase 1 is in place.
+1. Migration and `request_refund` / `respond_to_refund_request` changes (14 days, refund path).
+2. Return required state, buyer return-tracking sheet, 17track registration.
+3. Refund-on-return-delivered trigger and notifications.
+4. Admin dispute outcomes and lapsed-request routing.
+5. Status rows for both parties, reminder crons, FAQ and Terms copy.
