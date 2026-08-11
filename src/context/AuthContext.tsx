@@ -175,44 +175,47 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           // Post-OAuth duplicate-account guard. Only runs when an OAuth flow
           // initiated by the Auth page just completed (flag set pre-redirect).
+          // Runs alongside the profile fetch below - awaiting it here added a
+          // full cold-start round trip before the first screen could paint.
           if (event === 'SIGNED_IN' && localStorage.getItem('flea_oauth_signup') === '1') {
             localStorage.removeItem('flea_oauth_signup');
             const accessToken = session.access_token;
             const providerNow = (session.user.app_metadata as any)?.provider;
             // Only OAuth providers are relevant here.
             if (providerNow === 'google' || providerNow === 'apple') {
-              try {
-                const resp = await fetch(
-                  `https://teaicrimlqdayqpmxasc.supabase.co/functions/v1/resolve-oauth-conflict`,
-                  {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      Authorization: `Bearer ${accessToken}`,
+              void (async () => {
+                try {
+                  const resp = await fetch(
+                    `https://teaicrimlqdayqpmxasc.supabase.co/functions/v1/resolve-oauth-conflict`,
+                    {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${accessToken}`,
+                      },
                     },
-                  },
-                );
-                const result = await resp.json().catch(() => null);
-                if (result?.conflict && result?.provider) {
-                  // Sign out the duplicate session and surface dialog on Auth page.
-                  await supabase.auth.signOut({ scope: 'local' });
-                  setSession(null);
-                  setUser(null);
-                  setProfile(null);
-                  setLoading(false);
-                  window.dispatchEvent(
-                    new CustomEvent('flea-auth-conflict', {
-                      detail: { provider: result.provider },
-                    }),
                   );
-                  if (!window.location.pathname.startsWith('/auth')) {
-                    window.location.replace('/auth');
+                  const result = await resp.json().catch(() => null);
+                  if (result?.conflict && result?.provider) {
+                    // Sign out the duplicate session and surface dialog on Auth page.
+                    await supabase.auth.signOut({ scope: 'local' });
+                    setSession(null);
+                    setUser(null);
+                    setProfile(null);
+                    setLoading(false);
+                    window.dispatchEvent(
+                      new CustomEvent('flea-auth-conflict', {
+                        detail: { provider: result.provider },
+                      }),
+                    );
+                    if (!window.location.pathname.startsWith('/auth')) {
+                      window.location.replace('/auth');
+                    }
                   }
-                  return;
+                } catch (e) {
+                  console.error('[auth] conflict resolver failed:', e);
                 }
-              } catch (e) {
-                console.error('[auth] conflict resolver failed:', e);
-              }
+              })();
             }
           }
 
@@ -223,6 +226,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               setLoading(false);
             });
           }, 0);
+
         } else {
           setProfile(null);
           setProfileLoaded(true);

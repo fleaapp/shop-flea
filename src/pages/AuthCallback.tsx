@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { completeAuthSessionFromUrl, NATIVE_APP_SCHEME } from '@/lib/authRedirects';
 import { OAUTH_COMPLETE_MESSAGE } from '@/lib/oauthPopup';
+import BrandedLoadingScreen from '@/components/BrandedLoadingScreen';
 
 const isNativeShell = (): boolean => {
   try {
@@ -19,7 +20,12 @@ const AuthCallback = () => {
   useEffect(() => {
     let cancelled = false;
 
+    // Warm the home-screen chunk while the code exchange is in flight so the
+    // first authenticated screen paints as soon as the session lands.
+    void import('./Index').catch(() => undefined);
+
     const complete = async () => {
+
       const search = new URLSearchParams(window.location.search);
       const isPopup = search.get('opener') === '1' && !!window.opener;
 
@@ -80,7 +86,7 @@ const AuthCallback = () => {
     };
   }, [navigate]);
 
-  return <div className="fixed inset-0 bg-primary" />;
+  return <BrandedLoadingScreen />;
 };
 
 export default AuthCallback;
