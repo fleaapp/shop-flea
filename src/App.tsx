@@ -41,6 +41,7 @@ const loadSellerDashboard = () => import("./pages/SellerDashboard");
 
 const loadInstall = () => import("./pages/Install");
 const loadSuggestionBox = () => import("./pages/SuggestionBox");
+const loadOnboardingTest = () => import("./pages/OnboardingTest");
 const loadForgotPassword = () => import("./pages/ForgotPassword");
 const loadResetPassword = () => import("./pages/ResetPassword");
 const loadVerifyEmail = () => import("./pages/VerifyEmail");
@@ -83,6 +84,7 @@ const SellerDashboard = lazy(loadSellerDashboard);
 
 const Install = lazy(loadInstall);
 const SuggestionBox = lazy(loadSuggestionBox);
+const OnboardingTest = lazy(loadOnboardingTest);
 const ForgotPassword = lazy(loadForgotPassword);
 const ResetPassword = lazy(loadResetPassword);
 const VerifyEmail = lazy(loadVerifyEmail);
@@ -264,6 +266,7 @@ const AppContent = () => {
           <Route path="/install" element={<Install />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/app" element={<Navigate to="/" replace />} />
+          <Route path="/onboarding-test" element={<OnboardingTest />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
