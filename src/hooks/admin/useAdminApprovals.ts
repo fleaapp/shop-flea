@@ -172,6 +172,17 @@ export function useAdminApprovals(kind: ApprovalKind) {
     load();
   };
 
+  const requireReturn = async (orderId: string, sellerAtFault: boolean) => {
+    const { error } = await (supabase as any).rpc('admin_require_return', {
+      p_order_id: orderId,
+      p_seller_at_fault: sellerAtFault,
+    });
+    if (error) return toast.error(error.message);
+    toast.success('Return required. The buyer has 5 days to post the item back.');
+    load();
+  };
+
+
   const approveUntrackedDelivery = async (orderId: string) => {
     const { error } = await (supabase as any).rpc('admin_approve_untracked_delivery', { p_order_id: orderId });
     if (error) return toast.error(error.message);
