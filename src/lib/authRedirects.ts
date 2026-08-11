@@ -2,6 +2,10 @@ import { supabase } from '@/lib/supabase';
 
 export const AUTH_LINK_BASE_URL = 'https://app.finditonflea.com';
 export const AUTH_CALLBACK_PATH = '/auth/callback';
+// Custom URL scheme registered in Info.plist. iOS honours this from a server
+// redirect (unlike universal links), so it is what OAuth returns to on native.
+export const NATIVE_APP_SCHEME = 'com.finditonflea.app';
+export const NATIVE_OAUTH_REDIRECT_URL = `${NATIVE_APP_SCHEME}:/${AUTH_CALLBACK_PATH}`;
 
 export const getSignupRedirectUrl = () => `${AUTH_LINK_BASE_URL}${AUTH_CALLBACK_PATH}`;
 export const getPasswordResetRedirectUrl = () => `${AUTH_LINK_BASE_URL}/reset-password`;
@@ -10,7 +14,8 @@ export const getRouteFromNativeAuthUrl = (url: string): string | null => {
   try {
     const parsed = new URL(url);
 
-    if (parsed.host !== 'app.finditonflea.com') return null;
+    const isAppScheme = parsed.protocol === `${NATIVE_APP_SCHEME}:`;
+    if (!isAppScheme && parsed.host !== 'app.finditonflea.com') return null;
 
     // OAuth broker returns tokens on the app origin (any path). Always route
     // those to /auth/callback so the session is applied instead of dropping
@@ -21,6 +26,12 @@ export const getRouteFromNativeAuthUrl = (url: string): string | null => {
       !!parsed.searchParams.get('access_token') ||
       !!hashParams.get('access_token');
 
+    if (isAppScheme) {
+      // Custom-scheme URLs have no meaningful host/path guarantees; always
+      // hand them to the callback route so the session is applied.
+      return `${AUTH_CALLBACK_PATH}${parsed.search}${parsed.hash}`;
+    }
+
     if (hasTokens && parsed.pathname !== AUTH_CALLBACK_PATH) {
       return `${AUTH_CALLBACK_PATH}${parsed.search}${parsed.hash}`;
     }
@@ -30,6 +41,7 @@ export const getRouteFromNativeAuthUrl = (url: string): string | null => {
     return null;
   }
 };
+
 
 export const completeAuthSessionFromUrl = async () => {
   const searchParams = new URLSearchParams(window.location.search);
