@@ -210,6 +210,7 @@ export function useAdminApprovals(kind: ApprovalKind) {
     completeOrder,
     forceRefund,
     dismissDispute,
+    requireReturn,
     approveUntrackedDelivery,
     rejectUntrackedDelivery,
   };
