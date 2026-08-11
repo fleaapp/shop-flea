@@ -77,6 +77,8 @@ project_id = "teaicrimlqdayqpmxasc"
     verify_jwt = false
   [functions.auto-refund-unshipped]
     verify_jwt = false
+  [functions.return-register]
+    verify_jwt = false
   [functions.check-device-eligibility]
     verify_jwt = false
   [functions.forward-report-to-hub]
