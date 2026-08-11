@@ -1,8 +1,8 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useGuestMode } from '@/context/GuestModeContext';
 import GuestGate from '@/components/GuestGate';
+import BrandedLoadingScreen from '@/components/BrandedLoadingScreen';
 
 
 type ProtectedMode = 'account' | 'public' | 'guest-gate' | 'guest-or-auth';
@@ -36,11 +36,7 @@ const ProtectedRoute = ({ children, mode = 'account' }: ProtectedRouteProps) => 
 
   if (mode === 'guest-gate') {
     if (loading) {
-      return (
-        <div className="flex min-h-dvh items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      );
+      return <BrandedLoadingScreen />;
     }
     if (user) return <>{children}</>;
     if (isGuest) return <GuestGate />;
@@ -49,11 +45,7 @@ const ProtectedRoute = ({ children, mode = 'account' }: ProtectedRouteProps) => 
 
   if (mode === 'guest-or-auth') {
     if (loading) {
-      return (
-        <div className="flex min-h-dvh items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      );
+      return <BrandedLoadingScreen />;
     }
     if (user || isGuest) return <>{children}</>;
     return <Navigate to={authRedirectTo()} replace />;
@@ -61,11 +53,7 @@ const ProtectedRoute = ({ children, mode = 'account' }: ProtectedRouteProps) => 
 
   // account mode
   if (loading) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <BrandedLoadingScreen />;
   }
   if (!user) return <Navigate to={authRedirectTo()} replace />;
   return <>{children}</>;
