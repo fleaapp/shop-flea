@@ -1,46 +1,77 @@
-# Dispute and refund hardening
+# Dispute and refund hardening - launch prioritisation
 
-## What Flea does today (verified in code)
+## Short answer
 
-Buyer protection is escrow-style: money is held and only released after delivery plus a dispute window.
+No - not all of it needs to be fixed before launch. The current escrow / refund system is already sound and, in one area, stronger than the previous audit suggested. The right approach is a **phased fix**: plug the two real pre-launch risks, then build the rest in the first weeks after go-live.
 
-- Funds release: delivery is stamped by 17track carrier scan (or admin approval for untracked), which opens a 48h dispute window. Orders auto-complete and pay out after that window (`auto_complete_delivered_orders`).
-- Refund request (`request_refund`): allowed within 48h of delivery, or any time once an order has been in transit 10+ days with no delivery (lost parcel). Reason capped at 500 chars. Refund requests require live camera/video proof in the app.
-- Seller response (`respond_to_refund_request`): 72h to approve or decline. Approve triggers `stripe-connect-refund`.
-- No response in 72h: `auto-approve-refund-requests` cron refunds the buyer automatically, with `reverse_transfer` and `refund_application_fee` so the seller's balance and the platform fee are both clawed back.
-- Seller declines: the order enters the admin dispute queue (`useAdminApprovals` kind `dispute`), where an admin can force a refund or dismiss.
-- Never shipped: `auto-refund-unshipped` refunds in full 8 days after purchase.
-- Orphan charges: `reconcile-orphan-payments` refunds any successful payment with no order row.
+## What Flea does today (corrected from the earlier audit)
 
-## How this compares
+- Funds are held in escrow until delivery + a 48h dispute window passes.
+- Refund requests require live camera/video proof and a reason.
+- Sellers have 72h to approve or decline. No response triggers an automatic refund.
+- Seller declines land in the admin Dispute queue where you can force-refund or dismiss.
+- Never-shipped orders are auto-refunded after 8 days.
+- **Chargebacks are already handled** in `stripe-webhook` (`charge.dispute.created`, `funds_withdrawn`, `closed`). The order is marked `disputed_at`, the seller is notified, and the seller balance is re-synced. The gap is that payouts are not explicitly frozen during an open dispute - but the negative-balance guard already blocks the device/account once the balance turns negative.
 
-- Vinted: Buyer Protection fee, 2 days after delivery to report an issue, evidence photos required, funds held in escrow, Vinted arbitrates and can order a tracked return before refunding. Flea matches this shape closely.
-- Depop: buyer has up to 30 days (Depop Payments / PayPal rails), disputes are pushed to the payment provider, sellers can lose chargebacks months later.
+## Real gaps, ranked by launch risk
 
-Flea sits closer to Vinted, which is the right model for a small AU marketplace. The core money mechanics are sound: escrow, reverse transfers, fee clawback, idempotency, cron safety nets.
+### Must fix before launch
 
-## Real gaps
+1. **Evidence-gated auto-approval (HIGH risk)**  
+   Today, if a seller does not respond within 72h, the buyer is refunded automatically with no review of the photo/video evidence. A slow, travelling, or unaware seller can lose the full sale value with no human check. This is the biggest fairness and abuse risk.
 
-1. No return leg. Every resolution is refund-or-nothing, so a buyer who wins a "not as described" dispute keeps both the item and the money. Vinted requires a tracked return for most non-fraud cases.
-2. No partial refunds. Minor faults force an all-or-nothing outcome, which pushes sellers to decline and admins to arbitrate.
-3. Auto-approve at 72h has no evidence gate. A seller who is asleep, travelling, or slow loses the full sale value with no review, and the buyer's photo proof is never checked by anyone.
-4. Sellers cannot submit counter-evidence. Decline is just a 500 char text field; admins arbitrate with buyer photos only.
-5. No dispute SLA or status visibility. Once a dispute reaches the admin queue there is no deadline, no buyer/seller-facing "under review" state, and no notification cadence.
-6. No abuse tracking. Nothing counts refund requests per buyer, so serial claimants are invisible.
-7. Chargebacks are unhandled. There is no `charge.dispute.created` handler in `stripe-webhook`, so a card chargeback after payout leaves Flea absorbing the loss silently.
+2. **Dispute status visibility (HIGH risk)**  
+   Once a refund request is declined and reaches the admin queue, neither buyer nor seller sees an "under review" state or a deadline. Both parties are left guessing, which drives support messages and erodes trust.
 
-## Proposed work (in priority order)
+### Important, but safe to ship without
 
-1. Chargeback handling: add `charge.dispute.created` / `closed` to `stripe-webhook`, mark the order disputed, freeze the seller's payout, notify admin.
-2. Evidence-gated auto-approval: instead of silent auto-refund at 72h, route unanswered requests into the admin queue with a 24h SLA, auto-refunding only if admin does not act.
-3. Seller counter-evidence: allow photos on decline, shown side by side with buyer proof in the admin dispute view.
-4. Partial refund support in `stripe-connect-refund` plus an admin amount field.
-5. Return-required resolution: an admin outcome that asks the buyer for tracked return, refunding on carrier delivery scan.
-6. Buyer refund-rate counter on the profile, surfaced to admins and used to flag serial claimants.
-7. Dispute status surfaced to both parties with deadline copy, plus reminder notifications.
+3. **Seller counter-evidence** - Decline is currently text-only. Letting sellers attach photos would reduce admin burden and improve fairness, but text is workable at low volume.
+4. **Partial refunds** - Useful for minor faults, but all-or-nothing refunds are acceptable for an MVP marketplace.
+5. **Return-required resolution** - Vinted-style "return the item before refund" is the fairest long-term model, but it requires tracked-return plumbing that can be added post-launch.
+6. **Buyer refund-rate counter / abuse tracking** - Important as volume scales, but not needed for day one.
 
-## Technical notes
+### Already covered, minor hardening only
 
-- Items 1, 2, 4 are edge function and cron changes plus small migrations (`orders.disputed_at` already exists; add `refund_amount`, `return_required_at`, `return_tracking_number`).
-- Item 3 reuses the existing order-attachments storage hierarchy and the compressed base64 to edge function pattern.
-- Item 6 is a counter column on `profiles` incremented in `request_refund`.
+7. **Chargeback handling** - The webhook already reacts to Stripe disputes. The only missing piece is an explicit payout freeze while a dispute is open.
+
+## Proposed work
+
+### Phase 1 - Pre-launch (this build)
+
+1. **Route unanswered refund requests to admin review instead of auto-refunding.**
+   - Change `auto-approve-refund-requests` so that, when the 72h deadline passes, it sets the order to an `admin_review` status and notifies the admin queue, rather than calling `stripe-connect-refund` immediately.
+   - Add a 24h admin SLA; if the admin has not acted after 24h, only then auto-refund.
+   - Add a small migration for `orders.admin_review_at` and update the dispute tab query to include `admin_review` rows.
+
+2. **Show a clear "under review" state to both parties.**
+   - Add a `RefundStatusRow` to the buyer's order details and the seller's sale details when `refund_declined_at` or `admin_review_at` is set.
+   - Copy: "Your refund request is being reviewed by Flea. We'll let you know within 24 hours."
+   - Send a push/alert to both parties when the status changes to `admin_review`, `refunded`, or `dispute_dismissed`.
+
+3. **Harden chargeback payout freeze.**
+   - In `stripe-webhook`, when `charge.dispute.created` / `funds_withdrawn` fires, set the seller's `payout_review_flag = true` and `payout_review_reason = 'Open payment dispute'` so the dashboard blocks manual payouts until `charge.dispute.closed` clears it.
+
+### Phase 2 - First month post-launch
+
+4. **Seller counter-evidence on decline.**
+   - Allow photo/video capture when a seller declines a refund request.
+   - Store via the existing `order-attachments` pattern and show buyer + seller evidence side-by-side in the admin dispute row.
+
+5. **Partial refund support.**
+   - Add `orders.refund_amount` (default full amount).
+   - Update `stripe-connect-refund` to accept an optional `amount` and pass it to Stripe's `refund.create`.
+   - Add an admin input field in the dispute row for the refund amount.
+
+### Phase 3 - Later
+
+6. **Return-required resolution.**
+   - Add `orders.return_required_at`, `return_tracking_provider`, `return_tracking_number`.
+   - Admin can choose "Refund on return" outcome; buyer uploads a return tracking number; refund is released when 17track reports the return as delivered.
+
+7. **Buyer refund-rate counter and admin flag.**
+   - Add `profiles.refund_request_count` incremented in `request_refund`.
+   - Surface a badge in the admin dispute row when a buyer has >2 refund requests in 90 days.
+
+## Why this ordering
+
+Phase 1 fixes the two defects that can actively hurt sellers and create support load on day one. Everything else improves fairness and reduces manual work, but the current system already collects evidence, holds funds in escrow, reverses transfers, and routes disputes to you. Launch is reasonable once Phase 1 is in place.
