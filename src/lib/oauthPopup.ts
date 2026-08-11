@@ -127,9 +127,7 @@ export async function signInWithOAuthPopup(
         await new Promise((r) => setTimeout(r, 300));
       }
 
-      const err = new Error('Sign in was not completed');
-      (err as any).cancelled = true;
-      return { error: err, cancelled: true };
+      return { error: new Error('Sign in was not completed'), cancelled: false };
     } catch {
       // If the in-app browser is unavailable, fall back to a full redirect so
       // sign-in still works rather than failing outright.
