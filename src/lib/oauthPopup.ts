@@ -57,12 +57,75 @@ export async function signInWithOAuthPopup(
 ): Promise<OAuthPopupResult> {
   // ---- Native: in-app browser sheet, session applied via /auth/callback ----
   if (isNative()) {
-    const { url, error } = await buildAuthorizeUrl(provider, NATIVE_ORIGIN, extraParams);
+    // Must be a path claimed by the universal-link association file, otherwise
+    // iOS keeps the user inside the browser sheet and the app never receives
+    // the session.
+    const { url, error } = await buildAuthorizeUrl(
+      provider,
+      `${NATIVE_ORIGIN}${NATIVE_CALLBACK_PATH}`,
+      extraParams,
+    );
     if (error || !url) return { error: error ?? new Error('Could not start sign in') };
     try {
       const { Browser } = await import('@capacitor/browser');
       await Browser.open({ url, presentationStyle: 'popover' });
-      return { error: null, redirected: true };
+
+      // Safety net: if the sheet is dismissed (either by the user or by the
+      // universal-link handler in App.tsx), give the session a moment to land
+      // and report a clear failure if it never does.
+      const finished = await new Promise<boolean>((resolve) => {
+        let settled = false;
+        const done = (value: boolean) => {
+          if (settled) return;
+          settled = true;
+          try {
+            handle?.remove();
+          } catch {
+            /* noop */
+          }
+          clearTimeout(timer);
+          resolve(value);
+        };
+        let handle: { remove: () => void } | undefined;
+        const timer = setTimeout(() => done(false), NATIVE_SHEET_TIMEOUT_MS);
+        Browser.addListener('browserFinished', () => done(true))
+          .then((listener) => {
+            handle = listener;
+            if (settled) {
+              try {
+                listener.remove();
+              } catch {
+                /* noop */
+              }
+            }
+          })
+          .catch(() => {
+            /* listener unsupported - fall back to the timeout */
+          });
+      });
+
+      if (!finished) {
+        // Sheet still open (slow provider) - let the deep link finish the job.
+        return { error: null, redirected: true };
+      }
+
+      const deadline = Date.now() + NATIVE_SESSION_GRACE_MS;
+      while (Date.now() < deadline) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          try {
+            await Browser.close();
+          } catch {
+            /* noop */
+          }
+          return { error: null };
+        }
+        await new Promise((r) => setTimeout(r, 300));
+      }
+
+      const err = new Error('Sign in was not completed');
+      (err as any).cancelled = true;
+      return { error: err, cancelled: true };
     } catch {
       // If the in-app browser is unavailable, fall back to a full redirect so
       // sign-in still works rather than failing outright.
@@ -70,6 +133,7 @@ export async function signInWithOAuthPopup(
       return { error: null, redirected: true };
     }
   }
+
 
   // ---- Web: popup window that returns via /auth/callback ----
   const origin = window.location.origin;
