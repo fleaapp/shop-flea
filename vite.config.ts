@@ -21,4 +21,32 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Split heavy third-party libraries into their own chunks so the
+        // initial index chunk stays small on mobile networks and updates
+        // don't force users to re-download unchanged vendor code.
+        manualChunks: (id: string) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) return 'vendor-react';
+            if (id.includes('framer-motion')) return 'vendor-motion';
+            if (id.includes('@stripe')) return 'vendor-stripe';
+            if (id.includes('@supabase')) return 'vendor-supabase';
+            if (id.includes('@tanstack')) return 'vendor-query';
+            if (
+              id.includes('@radix-ui') ||
+              id.includes('@floating-ui') ||
+              id.includes('class-variance-authority') ||
+              id.includes('clsx') ||
+              id.includes('tailwind-merge')
+            ) {
+              return 'vendor-ui';
+            }
+            return 'vendor';
+          }
+        },
+      },
+    },
+  },
 }));
