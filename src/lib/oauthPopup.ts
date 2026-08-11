@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/lib/supabase';
-import { NATIVE_OAUTH_REDIRECT_URL } from '@/lib/authRedirects';
+import { NATIVE_OAUTH_BOUNCE_URL } from '@/lib/authRedirects';
 
 
 /**
