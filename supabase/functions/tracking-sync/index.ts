@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     const cutoff = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString();
     let sq = admin
       .from('tracking_shipments')
-      .select('id, order_group_id, seller_id, buyer_id, tracking_number, carrier_code, registered_at, not_found_notified_at')
+      .select('id, order_group_id, seller_id, buyer_id, tracking_number, carrier_code, registered_at, not_found_notified_at, kind')
       .is('delivered_at', null)
       .gte('created_at', cutoff)
       .limit(100);
