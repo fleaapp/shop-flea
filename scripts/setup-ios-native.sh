@@ -89,6 +89,7 @@ if [ ! -f "$APP_DELEGATE" ]; then
   exit 1
 fi
 /usr/bin/python3 - "$APP_DELEGATE" <<'PY'
+import re
 import sys
 
 path = sys.argv[1]
@@ -98,8 +99,54 @@ with open(path, encoding="utf-8") as f:
 if "import Capacitor" not in text:
     text = text.replace("import UIKit\n", "import UIKit\nimport Capacitor\n", 1)
 
-methods = """
+BEGIN = "    // FLEA-NATIVE-PATCH BEGIN"
+END = "    // FLEA-NATIVE-PATCH END"
 
+# 1. Remove any previously injected marker block so this script is idempotent.
+text = re.sub(
+    re.escape(BEGIN) + r".*?" + re.escape(END) + r"\n?",
+    "",
+    text,
+    flags=re.DOTALL,
+)
+
+# 2. Remove legacy (pre-marker) injections, which appended their own
+#    applicationDidBecomeActive and caused "Invalid redeclaration".
+if "capacitorDidRegisterForRemoteNotifications" in text:
+    text = re.sub(
+        r"\n[ \t]*func application\(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken.*?(?=\n\}\s*$)",
+        "",
+        text,
+        count=1,
+        flags=re.DOTALL,
+    )
+
+# Clean up any orphaned helpers left behind by an older partial patch.
+for helper in ("clearWebViewBackgrounds", "clearBackgroundsRecursively"):
+    text = re.sub(
+        r"\n[ \t]*private func " + helper + r"\([^\n]*\{.*?\n[ \t]*\}\n",
+        "\n",
+        text,
+        flags=re.DOTALL,
+    )
+
+CALL = "        DispatchQueue.main.async { self.clearWebViewBackgrounds() }"
+
+has_existing_active = re.search(
+    r"func applicationDidBecomeActive\(_ \w+: UIApplication\) \{", text
+) is not None
+
+own_active = """
+    // Make the WebView + host view transparent so the page's own background
+    // (lime on auth, cream in-app, dimmed backdrops behind drawers) fills any
+    // area the WebView temporarily exposes around the keyboard, instead of
+    // showing UIKit's default black window background.
+    func applicationDidBecomeActive(_ application: UIApplication) {
+%s
+    }
+""" % CALL
+
+block = BEGIN + """
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)
     }
@@ -107,19 +154,11 @@ methods = """
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
         NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
     }
-
-    // Make the WebView + host view transparent so the page's own background
-    // (lime on auth, cream in-app, dimmed backdrops behind drawers) fills any
-    // area the WebView temporarily exposes around the keyboard, instead of
-    // showing UIKit's default black window background.
-    func applicationDidBecomeActive(_ application: UIApplication) {
-        DispatchQueue.main.async {
-            self.clearWebViewBackgrounds()
-        }
-    }
-
+""" + ("" if has_existing_active else own_active) + """
     private func clearWebViewBackgrounds() {
-        guard let window = UIApplication.shared.windows.first else { return }
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let windows = scenes.flatMap { $0.windows }
+        guard let window = windows.first(where: { $0.isKeyWindow }) ?? windows.first else { return }
         window.backgroundColor = .clear
         self.clearBackgroundsRecursively(view: window)
     }
@@ -137,30 +176,41 @@ methods = """
             self.clearBackgroundsRecursively(view: sub)
         }
     }
-"""
+""" + END + "\n"
 
-if "capacitorDidRegisterForRemoteNotifications" not in text or "clearWebViewBackgrounds" not in text:
-    # Strip any previous partial patch so we insert a clean, up-to-date block.
-    import re
+insert_at = text.rstrip().rfind("}")
+if insert_at == -1:
+    print("ERROR: Could not patch AppDelegate.swift", file=sys.stderr)
+    sys.exit(1)
+
+head = text.rstrip()[:insert_at].rstrip()
+text = head + "\n\n" + block + "}\n"
+
+# 3. If Capacitor already declares applicationDidBecomeActive, call our helper
+#    from inside that existing method instead of redeclaring it.
+if has_existing_active and CALL.strip() not in text:
     text = re.sub(
-        r"\n\s*func application\(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken.*?(?=\n\}\s*$)",
-        "",
+        r"(func applicationDidBecomeActive\(_ \w+: UIApplication\) \{)",
+        r"\1\n" + CALL,
         text,
         count=1,
-        flags=re.DOTALL,
     )
-    insert_at = text.rfind("}")
-    if insert_at == -1:
-        print("ERROR: Could not patch AppDelegate.swift", file=sys.stderr)
-        sys.exit(1)
-    text = text[:insert_at].rstrip() + methods + "\n" + text[insert_at:]
-    print("   APNs delegate callbacks + WebView transparency added")
-else:
-    print("   APNs delegate + WebView transparency already present")
+    print("   WebView transparency hooked into existing applicationDidBecomeActive")
+
+active_count = len(re.findall(r"func applicationDidBecomeActive\(", text))
+if active_count != 1:
+    print(f"ERROR: expected 1 applicationDidBecomeActive, found {active_count}", file=sys.stderr)
+    sys.exit(1)
+if "UIApplication.shared.windows" in text:
+    print("ERROR: deprecated UIApplication.shared.windows still present", file=sys.stderr)
+    sys.exit(1)
 
 with open(path, "w", encoding="utf-8") as f:
     f.write(text)
+
+print("   APNs delegate callbacks + WebView transparency applied")
 PY
+
 
 
 echo
