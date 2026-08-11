@@ -1,0 +1,84 @@
+import { existsSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { join, relative } from 'node:path';
+import { spawnSync } from 'node:child_process';
+
+const root = process.cwd();
+const distDir = join(root, 'dist');
+const iosPublicDir = join(root, 'ios', 'App', 'App', 'public');
+const buildId = Date.now().toString();
+const buildDate = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ' UTC');
+const marker = 'flea-google-auth-control';
+
+function run(command, args, extraEnv = {}) {
+  const result = spawnSync(command, args, {
+    cwd: root,
+    env: { ...process.env, ...extraEnv },
+    stdio: 'inherit',
+    shell: false,
+  });
+  if (result.status !== 0) {
+    throw new Error(`${command} ${args.join(' ')} failed with exit code ${result.status ?? 'unknown'}.`);
+  }
+}
+
+function filesUnder(directory) {
+  const files = [];
+  for (const entry of readdirSync(directory)) {
+    const path = join(directory, entry);
+    if (statSync(path).isDirectory()) files.push(...filesUnder(path));
+    else files.push(path);
+  }
+  return files;
+}
+
+function assertNativeBundle() {
+  if (!existsSync(iosPublicDir)) {
+    throw new Error('Capacitor did not create ios/App/App/public. Do not archive.');
+  }
+
+  const indexPath = join(iosPublicDir, 'index.html');
+  if (!existsSync(indexPath)) {
+    throw new Error('The copied iOS bundle has no index.html. Do not archive.');
+  }
+
+  const nativeFiles = filesUnder(iosPublicDir);
+  const markerFile = nativeFiles.find((path) => {
+    if (!/\.(?:js|html)$/.test(path)) return false;
+    return readFileSync(path, 'utf8').includes(marker);
+  });
+  if (!markerFile) {
+    throw new Error(`The copied iOS bundle does not contain ${marker}. Do not archive.`);
+  }
+
+  const indexHtml = readFileSync(indexPath, 'utf8');
+  const assetRefs = [...indexHtml.matchAll(/(?:src|href)=["']([^"']+\.(?:js|css))["']/g)]
+    .map((match) => match[1])
+    .filter((asset) => !/^https?:/.test(asset));
+  if (assetRefs.length === 0) {
+    throw new Error('The copied iOS index.html contains no local JavaScript or CSS assets. Do not archive.');
+  }
+  for (const assetRef of assetRefs) {
+    const normalized = assetRef.replace(/^\.\//, '').replace(/^\//, '');
+    if (!existsSync(join(iosPublicDir, normalized))) {
+      throw new Error(`The copied iOS index references missing asset ${assetRef}. Do not archive.`);
+    }
+  }
+
+  console.log(`\nVerified Google control marker in ${relative(root, markerFile)}.`);
+}
+
+try {
+  console.log(`Preparing Flea iOS bundle ${buildId} (${buildDate})...`);
+  rmSync(distDir, { recursive: true, force: true });
+  run(process.execPath, [join(root, 'node_modules', 'vite', 'bin', 'vite.js'), 'build'], {
+    FLEA_BUILD_ID: buildId,
+    FLEA_BUILD_DATE: buildDate,
+  });
+  run(process.execPath, [join(root, 'node_modules', '@capacitor', 'cli', 'bin', 'capacitor'), 'sync', 'ios']);
+  run('/bin/bash', [join(root, 'scripts', 'setup-ios-native.sh')]);
+  assertNativeBundle();
+  console.log(`\nSAFE TO ARCHIVE - Flea build ${buildId} - ${buildDate}`);
+} catch (error) {
+  console.error(`\nARCHIVE PREPARATION FAILED: ${error instanceof Error ? error.message : String(error)}`);
+  process.exit(1);
+}

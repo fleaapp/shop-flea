@@ -15,9 +15,20 @@ import { signInWithOAuthPopup } from '@/lib/oauthPopup';
 import { logError } from '@/lib/errorLogger';
 import ProviderConflictDialog, { type ConflictProvider } from '@/components/ProviderConflictDialog';
 import { useAdminRole } from '@/hooks/useAdminRole';
+import { Capacitor } from '@capacitor/core';
 
 const CHECK_EMAIL_PROVIDER_URL =
   `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/check-email-provider`;
+
+const isPackagedNative = (() => {
+  try {
+    return Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
+})();
+
+const nativeBuildLabel = `Build ${import.meta.env.VITE_BUILD_ID.slice(-8)} - ${import.meta.env.VITE_BUILD_DATE}`;
 
 
 async function checkEmailProvider(email: string): Promise<ConflictProvider | null> {
@@ -84,6 +95,12 @@ const Auth = () => {
         toast('Your session expired. Please sign in again.');
       }
     } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    if (isPackagedNative) {
+      console.info(`[auth] Native social controls enabled: google, apple - ${nativeBuildLabel}`);
+    }
   }, []);
 
   const redirectParam = new URLSearchParams(location.search).get('redirect');
@@ -641,6 +658,7 @@ const Auth = () => {
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
+                data-native-bundle-marker="flea-google-auth-control"
                 className="w-10 h-10 rounded-lg bg-ink flex items-center justify-center hover:bg-ink/90 transition-colors"
                 aria-label="Continue with Google"
               >
@@ -691,6 +709,11 @@ const Auth = () => {
               Browse as Guest
             </button>
           </div>
+          {isPackagedNative && (
+            <p className="mt-3 text-center text-[9px] text-foreground/40" aria-label="App build">
+              {nativeBuildLabel}
+            </p>
+          )}
         </div>
       </div>
       </div>

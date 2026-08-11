@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "ios:fresh": "rm -rf dist && vite build && npx cap sync ios && npx cap open ios",
+    "ios:archive-ready": "node scripts/prepare-ios-archive.mjs",
     "ios:repair-spm": "node scripts/repair-ios-spm.mjs",
     "postinstall": "node scripts/fix-apple-sign-in-spm.mjs && node scripts/patch-native-capacitor-packages.mjs"
   },
