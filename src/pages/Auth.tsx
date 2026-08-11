@@ -28,7 +28,7 @@ const isPackagedNative = (() => {
   }
 })();
 
-const nativeBuildLabel = `Build ${import.meta.env.VITE_BUILD_ID.slice(-8)} - ${import.meta.env.VITE_BUILD_DATE}`;
+
 
 
 async function checkEmailProvider(email: string): Promise<ConflictProvider | null> {
@@ -100,7 +100,7 @@ const Auth = () => {
   useEffect(() => {
     if (isPackagedNative) {
       const markerPresent = typeof document !== 'undefined' && !!document.querySelector('[data-native-bundle-marker="flea-google-auth-control"]');
-      console.info(`[auth] Native social controls enabled: google, apple - ${nativeBuildLabel}`);
+      console.info(`[auth] Native social controls enabled: google, apple`);
       console.info(`[auth] Google control marker in DOM: ${markerPresent ? 'yes' : 'NO'}`);
     }
   }, []);
@@ -711,17 +711,6 @@ const Auth = () => {
               Browse as Guest
             </button>
           </div>
-          {isPackagedNative && (
-            <div className="mt-3 text-center" aria-label="App build">
-              <p className="text-[9px] text-foreground/40">{nativeBuildLabel}</p>
-              <p className="text-[9px] text-foreground/40">
-                Google control:{' '}
-                {typeof document !== 'undefined' && document.querySelector('[data-native-bundle-marker="flea-google-auth-control"]')
-                  ? 'present'
-                  : 'missing'}
-              </p>
-            </div>
-          )}
         </div>
       </div>
       </div>
