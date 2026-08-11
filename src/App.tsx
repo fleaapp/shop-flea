@@ -266,6 +266,7 @@ const AppContent = () => {
           <Route path="/install" element={<Install />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/app" element={<Navigate to="/" replace />} />
+          <Route path="/onboarding-test" element={<OnboardingTest />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
