@@ -215,33 +215,83 @@ serve(async (req) => {
     });
     const publishableKey = Deno.env.get("STRIPE_PUBLISHABLE_KEY") || "";
 
-    // -------- DEMO BYPASS --------
-    // Server-only flag. Never referenced in the client bundle.
+    // -------- APPLE REVIEWER REAL APPLE PAY --------
+    // Apple reviewers must see and complete the REAL Apple Pay sheet. Stripe
+    // test mode cannot process real Apple Pay tokens, so we use a live
+    // authorize-only (manual-capture) PaymentIntent on the platform account.
+    // The authorization is voided in finalize-checkout immediately after — no
+    // funds are captured, no transfer to the seller, no payout. The reviewer
+    // never sees the demo short-circuit; they go through the genuine flow.
     const { data: reviewerRow } = await serviceClient
       .from("profiles")
       .select("is_apple_reviewer")
       .eq("user_id", user.id)
       .maybeSingle();
     if (reviewerRow?.is_apple_reviewer === true) {
-      const orderGroupId = crypto.randomUUID();
-      const shippingPerItem = (Number(shipping) || 0) / Math.max(authoritativeItems.length, 1);
-      const { data: addr } = await serviceClient
-        .from("buyer_addresses")
-        .select("first_name,last_name,address,suburb,state,postcode")
-        .eq("user_id", user.id).maybeSingle();
-      const orderRows = authoritativeItems.map((it) => ({
-        listing_id: it.id, buyer_id: user.id, seller_id: sellerId, status: "awaiting",
-        price: it.price, shipping_price: shippingPerItem, order_group_id: orderGroupId,
-        payment_method: "demo", checkout_reference: `demo-${orderGroupId}`,
-        shipping_first_name: addr?.first_name ?? "App", shipping_last_name: addr?.last_name ?? "Reviewer",
-        shipping_address: addr?.address ?? "1 Apple Park Way", shipping_city: addr?.suburb ?? "Sydney",
-        shipping_state: addr?.state ?? "NSW", shipping_postcode: addr?.postcode ?? "2000",
-      }));
-      await serviceClient.from("orders").insert(orderRows);
+      const r2 = (n: number) => Math.round(n * 100) / 100;
+      const reviewerItemsTotal = authoritativeItems.reduce((s, i) => s + i.price, 0);
+      const reviewerRawShipping = authoritativeItems.reduce((s, i) => s + (Number(i.shippingPrice) || 0), 0);
+      const reviewerIsBundle = authoritativeItems.length >= 2;
+      const reviewerBundleMode = String((sellerProfile as any)?.bundle_shipping_mode || "none");
+      const reviewerBundlePct = Number((sellerProfile as any)?.bundle_shipping_discount_percent || 0);
+      let reviewerShipping = reviewerRawShipping;
+      if (reviewerIsBundle && reviewerBundleMode === "free") reviewerShipping = 0;
+      else if (reviewerIsBundle && reviewerBundleMode === "discounted" && reviewerBundlePct > 0) {
+        reviewerShipping = reviewerRawShipping * (1 - Math.max(0, Math.min(100, reviewerBundlePct)) / 100);
+      }
+      reviewerShipping = r2(reviewerShipping);
+      const reviewerSubtotal = reviewerItemsTotal + reviewerShipping;
+      const reviewerSecureFee = calculateSecureCheckoutFee(reviewerSubtotal);
+      const reviewerAmountCents = Math.round((reviewerSubtotal + reviewerSecureFee) * 100);
+
+      // Find or create the reviewer's Stripe customer (for ephemeral key).
+      let reviewerCustomerId: string | undefined;
+      const reviewerExisting = await stripe.customers.list({ email: user.email, limit: 1 });
+      if (reviewerExisting.data.length > 0) {
+        reviewerCustomerId = reviewerExisting.data[0].id;
+      } else {
+        const created = await stripe.customers.create({
+          email: user.email,
+          metadata: { flea_user_id: user.id, is_apple_reviewer: "true" },
+        });
+        reviewerCustomerId = created.id;
+      }
+
+      const reviewerPi = await stripe.paymentIntents.create({
+        amount: reviewerAmountCents,
+        currency: "aud",
+        customer: reviewerCustomerId,
+        capture_method: "manual",
+        automatic_payment_methods: { enabled: true },
+        description: "Flea - App Store Review",
+        statement_descriptor_suffix: "FLEA",
+        metadata: {
+          is_apple_reviewer: "true",
+          item_ids: itemIds.join(","),
+          flea_buyer_id: user.id,
+          flea_seller_id: sellerId,
+          buyer_total_aud: (reviewerSubtotal + reviewerSecureFee).toFixed(2),
+          secure_checkout_fee_aud: reviewerSecureFee.toFixed(2),
+        },
+      });
+
+      const reviewerEphemeralKey = await stripe.ephemeralKeys.create(
+        { customer: reviewerCustomerId },
+        { apiVersion: "2025-08-27.basil" },
+      );
+
       return new Response(JSON.stringify({
-        demo: true,
-        orderGroupId,
-        checkoutReference: `demo-${orderGroupId}`,
+        clientSecret: reviewerPi.client_secret,
+        paymentIntentId: reviewerPi.id,
+        ephemeralKey: reviewerEphemeralKey.secret,
+        customerId: reviewerCustomerId,
+        publishableKey,
+        livemode: Boolean(reviewerPi.livemode),
+        amount: reviewerAmountCents,
+        currency: "aud",
+        merchantDisplayName: "Flea",
+        sellerAccountId: null,
+        clientStripeAccountId: null,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
     }
 
