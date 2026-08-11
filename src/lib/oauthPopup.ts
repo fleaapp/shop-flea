@@ -1,5 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/lib/supabase';
+import { NATIVE_OAUTH_REDIRECT_URL } from '@/lib/authRedirects';
+
 
 /**
  * In-app OAuth sign-in.
