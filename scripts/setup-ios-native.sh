@@ -61,10 +61,11 @@ for k, v in patch.get("arrays", {}).items():
     plist[k] = list(v)
     print(f"   array   {k} = {v}")
 
-# Strip any Google URL scheme dict.
+# Strip any Google URL scheme dict, then ensure our own app scheme is present
+# (used as the OAuth return address so iOS hands the session back to the app).
 url_types = plist.get("CFBundleURLTypes")
+cleaned = []
 if isinstance(url_types, list):
-    cleaned = []
     dropped = 0
     for entry in url_types:
         schemes = entry.get("CFBundleURLSchemes", []) if isinstance(entry, dict) else []
@@ -74,10 +75,29 @@ if isinstance(url_types, list):
         cleaned.append(entry)
     if dropped:
         print(f"   removed {dropped} Google URL scheme block(s)")
-    if cleaned:
-        plist["CFBundleURLTypes"] = cleaned
-    else:
-        plist.pop("CFBundleURLTypes", None)
+
+existing = {
+    str(s)
+    for entry in cleaned
+    if isinstance(entry, dict)
+    for s in entry.get("CFBundleURLSchemes", [])
+}
+for scheme in patch.get("urlSchemes", []):
+    if scheme in existing:
+        print(f"   scheme  {scheme} already present")
+        continue
+    cleaned.append({
+        "CFBundleURLName": scheme,
+        "CFBundleTypeRole": "Editor",
+        "CFBundleURLSchemes": [scheme],
+    })
+    print(f"   scheme  {scheme} added")
+
+if cleaned:
+    plist["CFBundleURLTypes"] = cleaned
+else:
+    plist.pop("CFBundleURLTypes", None)
+
 
 with open(plist_path, "wb") as f:
     plistlib.dump(plist, f)
