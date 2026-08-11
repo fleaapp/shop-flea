@@ -15,12 +15,11 @@ import { NATIVE_OAUTH_REDIRECT_URL } from '@/lib/authRedirects';
  *
  * Native (iOS/Android): opens the same URL in an in-app browser sheet
  * (SFSafariViewController / Chrome Custom Tab). The provider redirects back to
- * the universal-link origin, `appUrlOpen` in App.tsx closes the sheet and
+ * the app's custom URL scheme, `appUrlOpen` in App.tsx closes the sheet and
  * routes to /auth/callback which applies the session.
  */
 
-const NATIVE_ORIGIN = 'https://app.finditonflea.com';
-const NATIVE_CALLBACK_PATH = '/auth/callback';
+
 const NATIVE_SHEET_TIMEOUT_MS = 5 * 60 * 1000;
 const NATIVE_SESSION_GRACE_MS = 6000;
 export const OAUTH_COMPLETE_MESSAGE = 'flea-oauth-complete';
