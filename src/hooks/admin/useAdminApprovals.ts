@@ -32,6 +32,14 @@ export type AdminApprovalOrder = {
   refund_request_deadline_at: string | null;
   refund_declined_at: string | null;
   refund_declined_reason: string | null;
+  refund_escalated_at?: string | null;
+  refund_path?: string | null;
+  return_required_at?: string | null;
+  return_deadline_at?: string | null;
+  return_tracking_provider?: string | null;
+  return_tracking_number?: string | null;
+  return_delivered_at?: string | null;
+  refund_seller_at_fault?: boolean | null;
   created_at: string;
   updated_at: string;
   listing: { title: string; images: string[] } | null;
@@ -45,7 +53,9 @@ const BASE_SELECT = `
   tracking_provider, tracking_number, tracking_approved_at, tracking_rejected_at, tracking_rejection_reason,
   shipped_at, delivered_at, admin_marked_delivered, dispute_window_ends_at, pending_admin_delivery_review, refunded_at,
   refund_requested_at, refund_requested_by, refund_request_reason, refund_request_deadline_at,
-  refund_declined_at, refund_declined_reason,
+  refund_declined_at, refund_declined_reason, refund_escalated_at,
+  refund_path, return_required_at, return_deadline_at,
+  return_tracking_provider, return_tracking_number, return_delivered_at, refund_seller_at_fault,
   created_at, updated_at
 `;
 
@@ -87,8 +97,13 @@ export function useAdminApprovals(kind: ApprovalKind) {
         // Buyer marked an untracked order as delivered — held pending admin review.
         q = q.eq('pending_admin_delivery_review', true);
       } else {
-        // Dispute queue: refund requests the seller has declined, awaiting Flea arbitration.
-        q = q.not('refund_declined_at', 'is', null).is('refunded_at', null);
+        // Dispute queue: refund requests the seller declined, plus requests
+        // that lapsed the 14 day window and were escalated to Flea.
+        q = q
+          .or('refund_declined_at.not.is.null,refund_escalated_at.not.is.null')
+          .is('refunded_at', null)
+          .is('return_required_at', null)
+          .is('return_closed_at', null);
       }
       const { data, error } = await q;
       if (error) throw error;
@@ -157,6 +172,17 @@ export function useAdminApprovals(kind: ApprovalKind) {
     load();
   };
 
+  const requireReturn = async (orderId: string, sellerAtFault: boolean) => {
+    const { error } = await (supabase as any).rpc('admin_require_return', {
+      p_order_id: orderId,
+      p_seller_at_fault: sellerAtFault,
+    });
+    if (error) return toast.error(error.message);
+    toast.success('Return required. The buyer has 5 days to post the item back.');
+    load();
+  };
+
+
   const approveUntrackedDelivery = async (orderId: string) => {
     const { error } = await (supabase as any).rpc('admin_approve_untracked_delivery', { p_order_id: orderId });
     if (error) return toast.error(error.message);
@@ -184,6 +210,7 @@ export function useAdminApprovals(kind: ApprovalKind) {
     completeOrder,
     forceRefund,
     dismissDispute,
+    requireReturn,
     approveUntrackedDelivery,
     rejectUntrackedDelivery,
   };

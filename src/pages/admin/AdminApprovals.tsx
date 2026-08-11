@@ -24,6 +24,7 @@ export default function AdminApprovals() {
     completeOrder,
     forceRefund,
     dismissDispute,
+    requireReturn,
     approveUntrackedDelivery,
     rejectUntrackedDelivery,
   } = useAdminApprovals(tab);
@@ -73,6 +74,7 @@ export default function AdminApprovals() {
                 onComplete={() => completeOrder(o.id, o.order_group_id)}
                 onForceRefund={() => forceRefund(o.id)}
                 onDismissDispute={() => dismissDispute(o.id)}
+                onRequireReturn={(atFault) => requireReturn(o.id, atFault)}
                 onApproveUntracked={() => approveUntrackedDelivery(o.id)}
                 onRejectUntracked={(reason) => rejectUntrackedDelivery(o.id, reason)}
               />
@@ -94,6 +96,7 @@ function ApprovalRow({
   onComplete,
   onForceRefund,
   onDismissDispute,
+  onRequireReturn,
   onApproveUntracked,
   onRejectUntracked,
 }: {
@@ -105,10 +108,12 @@ function ApprovalRow({
   onComplete: () => void;
   onForceRefund: () => void;
   onDismissDispute: () => void;
+  onRequireReturn: (sellerAtFault: boolean) => void;
   onApproveUntracked: () => void;
   onRejectUntracked: (reason: string) => void;
 }) {
   const [rejecting, setRejecting] = useState(false);
+  const [sellerAtFault, setSellerAtFault] = useState(false);
   const [reason, setReason] = useState('');
   const image = order.listing?.images?.[0];
   const disputeCountdown = useMemo(() => {
@@ -306,6 +311,33 @@ function ApprovalRow({
               )}
             </div>
           )}
+          {order.refund_escalated_at && !order.refund_declined_at && (
+            <div className="rounded-lg bg-muted/60 px-2 py-1.5 text-xs">
+              <p className="font-semibold text-foreground">Seller never responded</p>
+              <p className="mt-0.5 text-muted-foreground">
+                The 14 day response window lapsed{' '}
+                {formatDistanceToNow(new Date(order.refund_escalated_at), { addSuffix: true })}.
+              </p>
+            </div>
+          )}
+          <label className="flex items-center gap-2 rounded-lg bg-muted/60 px-2 py-1.5 text-xs">
+            <input
+              type="checkbox"
+              checked={sellerAtFault}
+              onChange={(e) => setSellerAtFault(e.target.checked)}
+              className="h-4 w-4 accent-primary"
+            />
+            <span className="text-muted-foreground">
+              Seller at fault - Flea covers the buyer's return postage
+            </span>
+          </label>
+          <Button
+            size="sm"
+            className="w-full bg-charcoal text-white hover:bg-charcoal/90"
+            onClick={() => onRequireReturn(sellerAtFault)}
+          >
+            Require return (buyer posts back in 5 days)
+          </Button>
           <div className="flex gap-2">
             <Button
               size="sm"
@@ -320,7 +352,7 @@ function ApprovalRow({
               className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={onForceRefund}
             >
-              Refund buyer
+              Refund without return
             </Button>
           </div>
         </div>
