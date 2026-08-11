@@ -97,6 +97,39 @@
 
   <body>
     <div id="root"></div>
+    <script>
+      // Boot watchdog: if React has not mounted anything into #root a few
+      // seconds after load, the bundle failed to evaluate. Show a readable
+      // message with the underlying error instead of a silent blank screen.
+      (function () {
+        var firstError = null;
+        window.addEventListener('error', function (event) {
+          if (!firstError) firstError = (event && event.message) || 'Unknown script error';
+        });
+        window.addEventListener('unhandledrejection', function (event) {
+          if (!firstError) {
+            var reason = event && event.reason;
+            firstError = (reason && (reason.message || String(reason))) || 'Unhandled promise rejection';
+          }
+        });
+        setTimeout(function () {
+          var root = document.getElementById('root');
+          if (!root || root.childElementCount > 0) return;
+          root.innerHTML =
+            '<div style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:32px;text-align:center;font-family:Inter,-apple-system,system-ui,sans-serif;color:#2b2b2b">' +
+            '<div style="font-size:34px">🧺</div>' +
+            '<div style="font-size:17px;font-weight:700">Flea could not start</div>' +
+            '<div style="font-size:14px;opacity:.75;max-width:280px">Something went wrong while loading the app. Tap below to try again.</div>' +
+            '<button id="flea-boot-retry" style="margin-top:8px;border:0;border-radius:12px;padding:12px 22px;font-size:15px;font-weight:600;background:#2b2b2b;color:#ddfed7">Try again</button>' +
+            '<div style="margin-top:10px;font-size:11px;opacity:.5;max-width:300px;word-break:break-word">' +
+            (firstError ? String(firstError).slice(0, 300) : 'No error was reported.') +
+            '</div>' +
+            '</div>';
+          var retry = document.getElementById('flea-boot-retry');
+          if (retry) retry.addEventListener('click', function () { location.reload(); });
+        }, 8000);
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
