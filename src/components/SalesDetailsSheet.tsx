@@ -823,6 +823,15 @@ const SalesDetailsSheet = ({
               );
             })()}
 
+            {/* Return / escalation state for the seller */}
+            {orders
+              .filter((o: any) => o.return_required_at || o.refund_escalated_at)
+              .map((o: any) => (
+                <RefundStatusRow key={`ret-${o.id}`} order={o} role="seller" />
+              ))}
+
+
+
             {/* Actions */}
             <div className="flex flex-col items-center space-y-3 pt-4">
               <div className="flex items-center justify-center gap-3 w-full px-4">
