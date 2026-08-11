@@ -1,11 +1,12 @@
 // auto-approve-refund-requests
-// Cron entrypoint. Finds refund requests whose 72h seller-response window
-// has elapsed without an approve or decline, and issues the refund on the
-// seller's behalf via stripe-connect-refund (called with the service-role
-// key so it treats us as a system caller).
+// Cron entrypoint for the Vinted-style dispute clock. It no longer refunds
+// automatically. Each run it:
+//   1. Reminds sellers whose 14 day response window is running out.
+//   2. Escalates lapsed requests into the admin dispute queue.
+//   3. Closes returns the buyer never posted within their 5 day window.
 //
-// Refunds are processed per order row so that multi-item bundles only refund
-// the specific items whose buyers requested a refund.
+// Money only ever moves through stripe-connect-refund, triggered either by a
+// seller/admin decision or by a return parcel being scanned as delivered.
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { logEdgeError } from "../_shared/logError.ts";
@@ -43,70 +44,93 @@ serve(async (req) => {
     return json({ error: "Unauthorized" }, 401);
   }
 
-  // Order rows that are past the 72h deadline and still awaiting a seller response.
-  const nowIso = new Date().toISOString();
-  const url =
-    `${supabaseUrl}/rest/v1/orders?select=id,order_group_id,refund_request_deadline_at` +
-    `&refund_requested_at=not.is.null` +
-    `&refund_declined_at=is.null` +
-    `&refunded_at=is.null` +
-    `&refund_request_deadline_at=lt.${encodeURIComponent(nowIso)}` +
-    `&order=refund_request_deadline_at.asc&limit=100`;
+  const headers = {
+    apikey: serviceKey,
+    Authorization: `Bearer ${serviceKey}`,
+    "Content-Type": "application/json",
+  };
 
-  const listRes = await fetch(url, {
-    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
-  });
-  if (!listRes.ok) {
-    const text = await listRes.text();
-    console.error("[auto-approve-refund-requests] list failed:", listRes.status, text);
-    return json({ error: "Failed to list refund requests", detail: text }, 500);
-  }
-  const rows: Array<{ id: string; order_group_id: string | null }> = await listRes.json();
+  const rpc = async (fn: string) => {
+    const res = await fetch(`${supabaseUrl}/rest/v1/rpc/${fn}`, {
+      method: "POST",
+      headers,
+      body: "{}",
+    });
+    if (!res.ok) throw new Error(`${fn}: ${await res.text()}`);
+    return await res.json().catch(() => 0);
+  };
 
-  // Process each row individually. stripe-connect-refund in "single" mode only
-  // refunds the requested item and reverses only that item's share of the
-  // seller transfer, leaving the rest of the bundle intact.
-  const results: Array<{ orderId: string; ok: boolean; error?: string }> = [];
-  for (const row of rows) {
-    try {
-      const refundRes = await fetch(`${supabaseUrl}/functions/v1/stripe-connect-refund`, {
+  try {
+    // ---- 1. Seller reminders while the 14 day window is still open ----
+    const nowIso = new Date().toISOString();
+    const soonIso = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const pendingUrl =
+      `${supabaseUrl}/rest/v1/orders?select=id,seller_id,order_number,refund_request_deadline_at` +
+      `&refund_requested_at=not.is.null&refund_declined_at=is.null&refunded_at=is.null` +
+      `&refund_escalated_at=is.null&return_required_at=is.null` +
+      `&refund_request_deadline_at=gt.${encodeURIComponent(nowIso)}` +
+      `&refund_request_deadline_at=lt.${encodeURIComponent(soonIso)}&limit=200`;
+    const pendingRes = await fetch(pendingUrl, { headers });
+    const pending: Array<{
+      id: string;
+      seller_id: string;
+      order_number: string | null;
+      refund_request_deadline_at: string;
+    }> = pendingRes.ok ? await pendingRes.json() : [];
+
+    let reminded = 0;
+    for (const order of pending) {
+      const daysLeft = Math.ceil(
+        (new Date(order.refund_request_deadline_at).getTime() - Date.now()) / 86400000,
+      );
+      if (![7, 2, 1].includes(daysLeft)) continue;
+
+      // Never send the same reminder twice in a day.
+      const sinceIso = new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString();
+      const dupUrl =
+        `${supabaseUrl}/rest/v1/notifications?select=id&type=eq.refund_response_reminder` +
+        `&related_order_id=eq.${order.id}&created_at=gt.${encodeURIComponent(sinceIso)}&limit=1`;
+      const dupRes = await fetch(dupUrl, { headers });
+      const dup = dupRes.ok ? await dupRes.json() : [];
+      if (Array.isArray(dup) && dup.length) continue;
+
+      await fetch(`${supabaseUrl}/rest/v1/notifications`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${serviceKey}`,
-          apikey: serviceKey,
-        },
-        body: JSON.stringify({ orderId: row.id, reason: "requested_by_customer", mode: "single" }),
-      });
-      const body = await refundRes.json().catch(() => ({}));
-      if (!refundRes.ok || (body && body.error)) {
-        const err = (body && body.error) || `HTTP ${refundRes.status}`;
-        results.push({ orderId: row.id, ok: false, error: String(err) });
-        console.error("[auto-approve-refund-requests] refund failed", row.id, err);
-        await fetch(`${supabaseUrl}/rest/v1/error_logs`, {
-          method: "POST",
-          headers: {
-            apikey: serviceKey,
-            Authorization: `Bearer ${serviceKey}`,
-            "Content-Type": "application/json",
-            Prefer: "return=minimal",
-          },
-          body: JSON.stringify({
-            error_message: `auto-approve-refund-requests: ${err}`,
-            error_stack: JSON.stringify({ orderId: row.id, body }),
-            severity: "error",
-            source: "auto-approve-refund-requests",
-          }),
-        }).catch(() => {});
-        continue;
-      }
-      results.push({ orderId: row.id, ok: true });
-    } catch (e: any) {
-      await logEdgeError({ functionName: "auto-approve-refund-requests", error: e, title: "Scheduled job failed: refund auto-approval", severity: "error", source: "payment" });
-      console.error("[auto-approve-refund-requests] exception", row.id, e);
-      results.push({ orderId: row.id, ok: false, error: e?.message || String(e) });
+        headers: { ...headers, Prefer: "return=minimal" },
+        body: JSON.stringify({
+          user_id: order.seller_id,
+          type: "refund_response_reminder",
+          title: "⏳ Refund request needs your response.",
+          message:
+            daysLeft === 1
+              ? "You have 1 day left to respond before Flea reviews this refund request."
+              : `You have ${daysLeft} days left to respond before Flea reviews this refund request.`,
+          related_order_id: order.id,
+        }),
+      }).catch(() => {});
+      reminded++;
     }
-  }
 
-  return json({ scanned: rows.length, processed: results.length, results });
+    // ---- 2. Escalate lapsed requests to the admin dispute queue ----
+    const escalated = await rpc("escalate_lapsed_refund_requests");
+
+    // ---- 3. Close returns the buyer never posted ----
+    const closedReturns = await rpc("close_stale_returns");
+
+    return json({
+      reminded,
+      escalated,
+      closedReturns,
+    });
+  } catch (e: any) {
+    await logEdgeError({
+      functionName: "auto-approve-refund-requests",
+      error: e,
+      title: "Scheduled job failed: refund dispute clock",
+      severity: "error",
+      source: "payment",
+    });
+    console.error("[auto-approve-refund-requests] error:", e);
+    return json({ error: e?.message || String(e) }, 500);
+  }
 });

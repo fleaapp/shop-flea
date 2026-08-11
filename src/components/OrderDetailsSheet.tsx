@@ -26,6 +26,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import ShippingStatusTracker from '@/components/ShippingStatusTracker';
 import TrackingEvents from '@/components/TrackingEvents';
+import RefundStatusRow from '@/components/RefundStatusRow';
 import { useShipmentTracking } from '@/hooks/useShipmentTracking';
 
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
@@ -461,6 +462,20 @@ const OrderDetailsSheet = ({
             />
             <TrackingEvents orderGroupId={primaryOrder.order_group_id ?? primaryOrder.id} />
 
+            {/* Refund / return state for every item with an open request */}
+            {orders
+              .filter((o) => o.refund_requested_at || o.return_required_at)
+              .map((o) => (
+                <RefundStatusRow
+                  key={`refund-${o.id}`}
+                  order={o}
+                  role="buyer"
+                  onUpdated={() => queryClient.invalidateQueries({ queryKey: ['orders'] })}
+                />
+              ))}
+
+
+
             <div className="flex flex-col items-center space-y-3 pt-4">
               <div className="flex items-center gap-3 w-full px-4">
                 {!isRefunded && (effectiveStatus === 'awaiting' || effectiveStatus === 'shipped') && (
@@ -594,8 +609,8 @@ const OrderDetailsSheet = ({
             if (failures.length === 0) {
               toast.success(
                 selections.length === 1
-                  ? 'Refund request submitted. Seller has 72 hours to respond.'
-                  : `${succeeded} refund requests submitted. Seller has 72 hours to respond.`,
+                  ? 'Refund request submitted. The seller has 14 days to respond.'
+                  : `${succeeded} refund requests submitted. The seller has 14 days to respond.`,
               );
             } else if (succeeded > 0) {
               toast.warning(`${succeeded} of ${selections.length} refund requests submitted. Please retry: ${failures.join(', ')}`);

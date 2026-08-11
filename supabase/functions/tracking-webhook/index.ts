@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
 
     const { data: shipments, error } = await admin
       .from('tracking_shipments')
-      .select('id, order_group_id, seller_id, buyer_id')
+      .select('id, order_group_id, seller_id, buyer_id, kind, tracking_number')
       .eq('tracking_number', number);
     if (error) throw new Error(error.message);
     if (!shipments?.length) {

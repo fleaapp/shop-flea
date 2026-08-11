@@ -21,6 +21,7 @@ import { Order, OrderStatus, useOrders } from '@/hooks/useOrders';
 import { format } from 'date-fns';
 import { useExistingReview } from '@/hooks/useReviews';
 import WriteReviewDrawer from '@/components/WriteReviewDrawer';
+import RefundStatusRow from '@/components/RefundStatusRow';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import OrderReceiptDialog from '@/components/OrderReceiptDialog';
 import CancelItemDialog from '@/components/CancelItemDialog';
@@ -784,7 +785,7 @@ const SalesDetailsSheet = ({
                           )}
                           {o.refund_request_deadline_at && (
                             <p className="text-[11px] text-muted-foreground mt-1">
-                              Auto-approves {format(new Date(o.refund_request_deadline_at), 'MMM d, h:mma')}
+                              Flea reviews this {format(new Date(o.refund_request_deadline_at), 'MMM d, h:mma')} if you do not respond
                             </p>
                           )}
                         </div>
@@ -813,7 +814,7 @@ const SalesDetailsSheet = ({
                           }}
                           disabled={respondToRefund.isPending}
                         >
-                          {respondToRefund.isPending && refundActionOrderId === o.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Approve refund'}
+                          {respondToRefund.isPending && refundActionOrderId === o.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Approve request'}
                         </Button>
                       </div>
                     </div>
@@ -821,6 +822,15 @@ const SalesDetailsSheet = ({
                 </div>
               );
             })()}
+
+            {/* Return / escalation state for the seller */}
+            {orders
+              .filter((o: any) => o.return_required_at || o.refund_escalated_at)
+              .map((o: any) => (
+                <RefundStatusRow key={`ret-${o.id}`} order={o} role="seller" />
+              ))}
+
+
 
             {/* Actions */}
             <div className="flex flex-col items-center space-y-3 pt-4">

@@ -9,11 +9,19 @@ import { normaliseTrackInfo, latestSummary, humanStatus, type NormalisedTracking
  */
 export async function applyTracking(
   supabase: any,
-  shipment: { id: string; order_group_id: string; seller_id: string; buyer_id: string },
+  shipment: {
+    id: string;
+    order_group_id: string;
+    seller_id: string;
+    buyer_id: string;
+    kind?: string | null;
+    tracking_number?: string | null;
+  },
   trackInfo: any,
   rawPayload: unknown,
 ) {
   const t: NormalisedTracking = normaliseTrackInfo('', trackInfo);
+  const isReturn = shipment.kind === 'return';
 
   if (t.events.length) {
     const rows = t.events.map((e) => ({
@@ -44,6 +52,79 @@ export async function applyTracking(
     .eq('id', shipment.id);
 
   let deliveredOrders = 0;
+  let refundedOrders = 0;
+
+  // ---- Return leg: the buyer posting the item back to the seller ----
+  if (isReturn) {
+    if (t.deliveredAt && shipment.tracking_number) {
+      const { data: returned, error: retErr } = await supabase
+        .from('orders')
+        .update({
+          return_delivered_at: t.deliveredAt,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('return_tracking_number', shipment.tracking_number)
+        .is('return_delivered_at', null)
+        .is('refunded_at', null)
+        .select('id, buyer_id, seller_id');
+      if (retErr) console.error('[tracking] return delivery update failed:', retErr.message);
+
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      for (const order of returned ?? []) {
+        try {
+          const res = await fetch(`${supabaseUrl}/functions/v1/stripe-connect-refund`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              apikey: serviceKey,
+              Authorization: `Bearer ${serviceKey}`,
+            },
+            body: JSON.stringify({
+              orderId: order.id,
+              reason: 'requested_by_customer',
+              mode: 'single',
+            }),
+          });
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok || body?.error) {
+            console.error('[tracking] return refund failed', order.id, body?.error ?? res.status);
+            continue;
+          }
+          refundedOrders++;
+          await supabase.from('notifications').insert([
+            {
+              user_id: order.buyer_id,
+              type: 'refund_completed',
+              title: '💸 Your refund is on its way.',
+              message: 'Your return was delivered, so your refund has been issued.',
+              related_order_id: order.id,
+            },
+            {
+              user_id: order.seller_id,
+              type: 'refund_completed',
+              title: '📦 A return was delivered back to you.',
+              message: 'The buyer has been refunded for this item.',
+              related_order_id: order.id,
+            },
+          ]);
+        } catch (e) {
+          console.error('[tracking] return refund exception', order.id, (e as Error).message);
+        }
+      }
+    }
+
+    return {
+      status: t.status,
+      human: humanStatus(t.status),
+      events: t.events.length,
+      deliveredOrders: 0,
+      refundedOrders,
+      notFound: t.notFound,
+      kind: 'return',
+    };
+  }
+
   if (t.deliveredAt) {
     // A carrier scan can land before the seller pressed "Mark as shipped".
     // Stamp the shipped state first so buyers never skip that step (and the

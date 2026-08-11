@@ -912,12 +912,22 @@ export type Database = {
           price: number
           refund_declined_at: string | null
           refund_declined_reason: string | null
+          refund_escalated_at: string | null
+          refund_path: string | null
           refund_reason: string | null
           refund_request_deadline_at: string | null
           refund_request_reason: string | null
           refund_requested_at: string | null
           refund_requested_by: string | null
+          refund_seller_at_fault: boolean
           refunded_at: string | null
+          return_closed_at: string | null
+          return_deadline_at: string | null
+          return_delivered_at: string | null
+          return_posted_at: string | null
+          return_required_at: string | null
+          return_tracking_number: string | null
+          return_tracking_provider: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -961,12 +971,22 @@ export type Database = {
           price: number
           refund_declined_at?: string | null
           refund_declined_reason?: string | null
+          refund_escalated_at?: string | null
+          refund_path?: string | null
           refund_reason?: string | null
           refund_request_deadline_at?: string | null
           refund_request_reason?: string | null
           refund_requested_at?: string | null
           refund_requested_by?: string | null
+          refund_seller_at_fault?: boolean
           refunded_at?: string | null
+          return_closed_at?: string | null
+          return_deadline_at?: string | null
+          return_delivered_at?: string | null
+          return_posted_at?: string | null
+          return_required_at?: string | null
+          return_tracking_number?: string | null
+          return_tracking_provider?: string | null
           secure_checkout_fee?: number
           seller_hidden_at?: string | null
           seller_id: string
@@ -1010,12 +1030,22 @@ export type Database = {
           price?: number
           refund_declined_at?: string | null
           refund_declined_reason?: string | null
+          refund_escalated_at?: string | null
+          refund_path?: string | null
           refund_reason?: string | null
           refund_request_deadline_at?: string | null
           refund_request_reason?: string | null
           refund_requested_at?: string | null
           refund_requested_by?: string | null
+          refund_seller_at_fault?: boolean
           refunded_at?: string | null
+          return_closed_at?: string | null
+          return_deadline_at?: string | null
+          return_delivered_at?: string | null
+          return_posted_at?: string | null
+          return_required_at?: string | null
+          return_tracking_number?: string | null
+          return_tracking_provider?: string | null
           secure_checkout_fee?: number
           seller_hidden_at?: string | null
           seller_id?: string
@@ -1673,6 +1703,7 @@ export type Database = {
           first_scan_at: string | null
           id: string
           is_exception: boolean
+          kind: string
           last_synced_at: string | null
           latest_event_at: string | null
           latest_event_summary: string | null
@@ -1695,6 +1726,7 @@ export type Database = {
           first_scan_at?: string | null
           id?: string
           is_exception?: boolean
+          kind?: string
           last_synced_at?: string | null
           latest_event_at?: string | null
           latest_event_summary?: string | null
@@ -1717,6 +1749,7 @@ export type Database = {
           first_scan_at?: string | null
           id?: string
           is_exception?: boolean
+          kind?: string
           last_synced_at?: string | null
           latest_event_at?: string | null
           latest_event_summary?: string | null
@@ -1820,12 +1853,22 @@ export type Database = {
           price: number
           refund_declined_at: string | null
           refund_declined_reason: string | null
+          refund_escalated_at: string | null
+          refund_path: string | null
           refund_reason: string | null
           refund_request_deadline_at: string | null
           refund_request_reason: string | null
           refund_requested_at: string | null
           refund_requested_by: string | null
+          refund_seller_at_fault: boolean
           refunded_at: string | null
+          return_closed_at: string | null
+          return_deadline_at: string | null
+          return_delivered_at: string | null
+          return_posted_at: string | null
+          return_required_at: string | null
+          return_tracking_number: string | null
+          return_tracking_provider: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -1878,12 +1921,22 @@ export type Database = {
           price: number
           refund_declined_at: string | null
           refund_declined_reason: string | null
+          refund_escalated_at: string | null
+          refund_path: string | null
           refund_reason: string | null
           refund_request_deadline_at: string | null
           refund_request_reason: string | null
           refund_requested_at: string | null
           refund_requested_by: string | null
+          refund_seller_at_fault: boolean
           refunded_at: string | null
+          return_closed_at: string | null
+          return_deadline_at: string | null
+          return_delivered_at: string | null
+          return_posted_at: string | null
+          return_required_at: string | null
+          return_tracking_number: string | null
+          return_tracking_provider: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -1940,12 +1993,22 @@ export type Database = {
           price: number
           refund_declined_at: string | null
           refund_declined_reason: string | null
+          refund_escalated_at: string | null
+          refund_path: string | null
           refund_reason: string | null
           refund_request_deadline_at: string | null
           refund_request_reason: string | null
           refund_requested_at: string | null
           refund_requested_by: string | null
+          refund_seller_at_fault: boolean
           refunded_at: string | null
+          return_closed_at: string | null
+          return_deadline_at: string | null
+          return_delivered_at: string | null
+          return_posted_at: string | null
+          return_required_at: string | null
+          return_tracking_number: string | null
+          return_tracking_provider: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -1998,12 +2061,90 @@ export type Database = {
           price: number
           refund_declined_at: string | null
           refund_declined_reason: string | null
+          refund_escalated_at: string | null
+          refund_path: string | null
           refund_reason: string | null
           refund_request_deadline_at: string | null
           refund_request_reason: string | null
           refund_requested_at: string | null
           refund_requested_by: string | null
+          refund_seller_at_fault: boolean
           refunded_at: string | null
+          return_closed_at: string | null
+          return_deadline_at: string | null
+          return_delivered_at: string | null
+          return_posted_at: string | null
+          return_required_at: string | null
+          return_tracking_number: string | null
+          return_tracking_provider: string | null
+          secure_checkout_fee: number
+          seller_hidden_at: string | null
+          seller_id: string
+          shipped_at: string | null
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_first_name: string | null
+          shipping_last_name: string | null
+          shipping_postcode: string | null
+          shipping_price: number
+          shipping_state: string | null
+          status: string
+          tracking_approved_at: string | null
+          tracking_approved_by: string | null
+          tracking_number: string | null
+          tracking_provider: string | null
+          tracking_rejected_at: string | null
+          tracking_rejection_reason: string | null
+          transaction_fee: number
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_require_return: {
+        Args: { p_order_id: string; p_seller_at_fault?: boolean }
+        Returns: {
+          admin_marked_delivered: boolean
+          buyer_id: string
+          cancelled_by_seller: boolean
+          checkout_reference: string | null
+          completed_at: string | null
+          coupon_code: string | null
+          coupon_id: string | null
+          coupon_type: string | null
+          created_at: string
+          delivered_at: string | null
+          dispute_window_ends_at: string | null
+          disputed_at: string | null
+          id: string
+          listing_id: string
+          order_group_id: string | null
+          order_number: string | null
+          payment_method: string
+          pending_admin_delivery_review: boolean
+          price: number
+          refund_declined_at: string | null
+          refund_declined_reason: string | null
+          refund_escalated_at: string | null
+          refund_path: string | null
+          refund_reason: string | null
+          refund_request_deadline_at: string | null
+          refund_request_reason: string | null
+          refund_requested_at: string | null
+          refund_requested_by: string | null
+          refund_seller_at_fault: boolean
+          refunded_at: string | null
+          return_closed_at: string | null
+          return_deadline_at: string | null
+          return_delivered_at: string | null
+          return_posted_at: string | null
+          return_required_at: string | null
+          return_tracking_number: string | null
+          return_tracking_provider: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -2038,6 +2179,7 @@ export type Database = {
         Args: { _key: string; _max: number; _window_seconds: number }
         Returns: boolean
       }
+      close_stale_returns: { Args: never; Returns: number }
       complete_order: {
         Args: { p_order_group_id?: string; p_order_id?: string }
         Returns: {
@@ -2062,12 +2204,22 @@ export type Database = {
           price: number
           refund_declined_at: string | null
           refund_declined_reason: string | null
+          refund_escalated_at: string | null
+          refund_path: string | null
           refund_reason: string | null
           refund_request_deadline_at: string | null
           refund_request_reason: string | null
           refund_requested_at: string | null
           refund_requested_by: string | null
+          refund_seller_at_fault: boolean
           refunded_at: string | null
+          return_closed_at: string | null
+          return_deadline_at: string | null
+          return_delivered_at: string | null
+          return_posted_at: string | null
+          return_required_at: string | null
+          return_tracking_number: string | null
+          return_tracking_provider: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -2146,6 +2298,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      escalate_lapsed_refund_requests: { Args: never; Returns: number }
       expire_stale_offers: { Args: never; Returns: number }
       get_accepted_offer_prices: {
         Args: { _buyer_id: string; _listing_ids: string[] }
@@ -2290,12 +2443,22 @@ export type Database = {
           price: number
           refund_declined_at: string | null
           refund_declined_reason: string | null
+          refund_escalated_at: string | null
+          refund_path: string | null
           refund_reason: string | null
           refund_request_deadline_at: string | null
           refund_request_reason: string | null
           refund_requested_at: string | null
           refund_requested_by: string | null
+          refund_seller_at_fault: boolean
           refunded_at: string | null
+          return_closed_at: string | null
+          return_deadline_at: string | null
+          return_delivered_at: string | null
+          return_posted_at: string | null
+          return_required_at: string | null
+          return_tracking_number: string | null
+          return_tracking_provider: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -2353,12 +2516,22 @@ export type Database = {
           price: number
           refund_declined_at: string | null
           refund_declined_reason: string | null
+          refund_escalated_at: string | null
+          refund_path: string | null
           refund_reason: string | null
           refund_request_deadline_at: string | null
           refund_request_reason: string | null
           refund_requested_at: string | null
           refund_requested_by: string | null
+          refund_seller_at_fault: boolean
           refunded_at: string | null
+          return_closed_at: string | null
+          return_deadline_at: string | null
+          return_delivered_at: string | null
+          return_posted_at: string | null
+          return_required_at: string | null
+          return_tracking_number: string | null
+          return_tracking_provider: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -2442,12 +2615,22 @@ export type Database = {
           price: number
           refund_declined_at: string | null
           refund_declined_reason: string | null
+          refund_escalated_at: string | null
+          refund_path: string | null
           refund_reason: string | null
           refund_request_deadline_at: string | null
           refund_request_reason: string | null
           refund_requested_at: string | null
           refund_requested_by: string | null
+          refund_seller_at_fault: boolean
           refunded_at: string | null
+          return_closed_at: string | null
+          return_deadline_at: string | null
+          return_delivered_at: string | null
+          return_posted_at: string | null
+          return_required_at: string | null
+          return_tracking_number: string | null
+          return_tracking_provider: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -2532,12 +2715,22 @@ export type Database = {
           price: number
           refund_declined_at: string | null
           refund_declined_reason: string | null
+          refund_escalated_at: string | null
+          refund_path: string | null
           refund_reason: string | null
           refund_request_deadline_at: string | null
           refund_request_reason: string | null
           refund_requested_at: string | null
           refund_requested_by: string | null
+          refund_seller_at_fault: boolean
           refunded_at: string | null
+          return_closed_at: string | null
+          return_deadline_at: string | null
+          return_delivered_at: string | null
+          return_posted_at: string | null
+          return_required_at: string | null
+          return_tracking_number: string | null
+          return_tracking_provider: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -2591,12 +2784,22 @@ export type Database = {
           price: number
           refund_declined_at: string | null
           refund_declined_reason: string | null
+          refund_escalated_at: string | null
+          refund_path: string | null
           refund_reason: string | null
           refund_request_deadline_at: string | null
           refund_request_reason: string | null
           refund_requested_at: string | null
           refund_requested_by: string | null
+          refund_seller_at_fault: boolean
           refunded_at: string | null
+          return_closed_at: string | null
+          return_deadline_at: string | null
+          return_delivered_at: string | null
+          return_posted_at: string | null
+          return_required_at: string | null
+          return_tracking_number: string | null
+          return_tracking_provider: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -2633,6 +2836,74 @@ export type Database = {
       seller_relist_cancelled_listing: {
         Args: { p_order_id: string }
         Returns: boolean
+      }
+      submit_return_tracking: {
+        Args: { p_number: string; p_order_id: string; p_provider: string }
+        Returns: {
+          admin_marked_delivered: boolean
+          buyer_id: string
+          cancelled_by_seller: boolean
+          checkout_reference: string | null
+          completed_at: string | null
+          coupon_code: string | null
+          coupon_id: string | null
+          coupon_type: string | null
+          created_at: string
+          delivered_at: string | null
+          dispute_window_ends_at: string | null
+          disputed_at: string | null
+          id: string
+          listing_id: string
+          order_group_id: string | null
+          order_number: string | null
+          payment_method: string
+          pending_admin_delivery_review: boolean
+          price: number
+          refund_declined_at: string | null
+          refund_declined_reason: string | null
+          refund_escalated_at: string | null
+          refund_path: string | null
+          refund_reason: string | null
+          refund_request_deadline_at: string | null
+          refund_request_reason: string | null
+          refund_requested_at: string | null
+          refund_requested_by: string | null
+          refund_seller_at_fault: boolean
+          refunded_at: string | null
+          return_closed_at: string | null
+          return_deadline_at: string | null
+          return_delivered_at: string | null
+          return_posted_at: string | null
+          return_required_at: string | null
+          return_tracking_number: string | null
+          return_tracking_provider: string | null
+          secure_checkout_fee: number
+          seller_hidden_at: string | null
+          seller_id: string
+          shipped_at: string | null
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_first_name: string | null
+          shipping_last_name: string | null
+          shipping_postcode: string | null
+          shipping_price: number
+          shipping_state: string | null
+          status: string
+          tracking_approved_at: string | null
+          tracking_approved_by: string | null
+          tracking_number: string | null
+          tracking_provider: string | null
+          tracking_rejected_at: string | null
+          tracking_rejection_reason: string | null
+          transaction_fee: number
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       withdraw_offer: {
         Args: { p_offer_id: string }
