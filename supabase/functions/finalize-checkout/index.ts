@@ -680,6 +680,19 @@ serve(async (req) => {
 
     await serviceClient.from("cart_items").delete().eq("user_id", userId).in("listing_id", itemIds);
 
+    // Apple reviewer: void the authorize-only PaymentIntent so the card
+    // authorization hold releases and no charge ever posts. Best-effort: if
+    // the cancel call fails, the auth still expires on its own within days.
+    if (isReviewer && checkoutReference.startsWith("pi_")) {
+      try {
+        const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
+        await stripe.paymentIntents.cancel(checkoutReference, { cancellation_reason: "abandoned" });
+        console.log("[finalize-checkout] reviewer PI voided:", checkoutReference);
+      } catch (e) {
+        console.error("[finalize-checkout] reviewer PI cancel failed:", (e as Error)?.message);
+      }
+    }
+
     return new Response(JSON.stringify({ ok: true, alreadyProcessed: false }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
