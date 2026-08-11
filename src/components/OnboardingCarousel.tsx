@@ -360,7 +360,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
       )}
 
       {/* Main content area */}
-      <div className="relative flex-1 w-full flex flex-col items-center justify-center px-6">
+      <div className="relative flex-1 w-full flex flex-col items-center justify-end pb-12 px-6">
         {isSpotlightSlide ? (
           <motion.div
             key={currentSlide}
@@ -394,7 +394,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
 
       {/* Controls pinned above bottom nav */}
       <div className="relative w-full px-6 pb-[calc(84px+env(safe-area-inset-bottom))] max-[375px]:pb-[calc(76px+env(safe-area-inset-bottom))]">
-        <div className="mx-auto w-full max-w-sm -translate-y-16">
+        <div className="mx-auto w-full max-w-sm -translate-y-12">
           {/* Pagination dots */}
           <div className="flex justify-center gap-2.5 mb-4">
             {slides.map((_, index) => (
