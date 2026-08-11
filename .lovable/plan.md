@@ -1,34 +1,40 @@
-# npm audit findings - assessment and action
+# Fix: TestFlight build boots to a blank lime screen
 
-## Verdict: safe to ship this TestFlight build
+## What the green screen actually is
 
-Lovable's own dependency scan of this project reports **no high or critical vulnerabilities**. The 16 entries `npm audit` printed on your Mac come from your locally regenerated `package-lock.json`, which resolves a slightly different set of transitive packages than the cloud lockfile.
+`index.html` paints `#DDFED7` before React mounts, on native when there is no stored session at the root path. So a plain lime screen with nothing on it means the boot paint worked and **React never mounted** - the JavaScript bundle failed during load.
 
-## Why the count jumped
+## Confirmed cause in this build
 
-Nothing in Flea's app code became less secure. Two causes:
+Your build output printed, for the first time:
 
-1. The pull rewrote `package-lock.json` (348 changed lines), so `npm install` pulled fresh transitive versions and npm re-evaluated them against today's advisory database.
-2. Several of these advisories (node-tar, brace-expansion, postcss, @babel/core) were published very recently and now match versions that were considered clean a week ago.
+```text
+Circular chunk: vendor -> vendor-react -> vendor
+Circular chunk: vendor -> vendor-ui -> vendor
+```
 
-## Every flagged package is build-time only
+The `manualChunks` splitting in `vite.config.ts` puts everything else from `node_modules` into a catch-all `vendor` chunk while pulling React and the Radix/clsx group into separate chunks. Packages in `vendor` import from `vendor-react`/`vendor-ui`, and those chunks in turn import back into `vendor`. Rollup cannot order circular chunks, so on load one chunk evaluates before its dependency is initialised and throws a `Cannot access ... before initialization` style error at the very first line of app startup. Nothing renders; the lime boot paint stays on screen forever.
 
-| Package | Where it runs |
-| --- | --- |
-| `tar` (critical) | npm/Capacitor CLI package extraction on your Mac |
-| `@babel/core`, `postcss`, `yaml`, `brace-expansion` | Vite/Tailwind build toolchain |
-| `@xmldom/xmldom` | Capacitor CLI reading iOS/Android XML config |
+This did not show up in the Lovable preview because the dev server serves unbundled modules - the fault only exists in a production build, which is exactly what TestFlight ships.
 
-None of these are bundled into `dist/`, so none reach the iOS app users install. They are only exploitable if you deliberately feed a malicious archive or stylesheet into your own local build.
+## The fix
 
-## The one runtime package, and why it does not apply
+Remove the circularity by making the vendor split non-overlapping rather than catch-all-plus-exceptions:
 
-`react-router-dom` 7.18.1 is flagged for **GHSA-qwww-vcr4-c8h2 - RSC Mode CSRF Bypass**. That advisory only affects React Server Components mode. Flea is a client-side SPA with no RSC server, so the vulnerable code path does not exist in this app.
+1. In `vite.config.ts`, drop the trailing `return 'vendor'` catch-all so unmatched `node_modules` code stays in the entry chunk that already imports it, eliminating the back-edge into `vendor`.
+2. Fold `class-variance-authority`, `clsx` and `tailwind-merge` out of `vendor-ui` - they are tiny and are imported by nearly every chunk, which is what creates the second cycle. Leave only `@radix-ui` and `@floating-ui` in `vendor-ui`.
+3. Keep `vendor-react`, `vendor-motion`, `vendor-stripe`, `vendor-supabase` and `vendor-query` as-is - none of those create cycles.
 
-## Recommended action now
+## Guard so this cannot ship again
 
-Proceed with the archive. Do **not** run `npm audit fix` before this build - it can bump build-tool majors and produce a different bundle than the one already verified.
+4. Extend `scripts/prepare-ios-archive.mjs` to capture the Vite build output and fail the archive if it contains `Circular chunk:`. A build that emits that warning must never reach Xcode.
+5. Add a boot watchdog in `index.html`: if React has not mounted after roughly 8 seconds, replace the blank screen with a short "Couldn't start - tap to retry" message and log the underlying `window.onerror` value. This turns any future startup failure into something diagnosable instead of a silent green screen.
 
-## Optional follow-up after launch
+## How you will verify
 
-Bump `react-router-dom` to the latest 7.x patch and let the build toolchain pick up patched `postcss` / `tar` on a routine dependency refresh, then re-run the build and the archive checks. This is housekeeping, not a launch blocker.
+- Run `npm run ios:archive-ready`. It must complete with no `Circular chunk:` line and print `SAFE TO ARCHIVE`.
+- Archive and install. The auth screen should appear with the Google and Apple buttons and the native build label.
+
+## Immediate workaround while this is being fixed
+
+The currently installed TestFlight build is broken for everyone on it, so hold off distributing it further until the replacement build is up.
