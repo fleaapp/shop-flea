@@ -35,6 +35,22 @@ function run(command, args, extraEnv = {}) {
   }
 }
 
+// Runs a command while capturing its output so we can assert on build warnings.
+function runCaptured(command, args, extraEnv = {}) {
+  const result = spawnSync(command, args, {
+    cwd: root,
+    env: { ...process.env, ...extraEnv },
+    encoding: 'utf8',
+    shell: false,
+  });
+  const output = `${result.stdout ?? ''}${result.stderr ?? ''}`;
+  process.stdout.write(output);
+  if (result.status !== 0) {
+    throw new Error(`${command} ${args.join(' ')} failed with exit code ${result.status ?? 'unknown'}.`);
+  }
+  return output;
+}
+
 function filesUnder(directory) {
   const files = [];
   for (const entry of readdirSync(directory)) {
