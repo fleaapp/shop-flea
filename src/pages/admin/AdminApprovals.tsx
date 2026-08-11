@@ -24,6 +24,7 @@ export default function AdminApprovals() {
     completeOrder,
     forceRefund,
     dismissDispute,
+    requireReturn,
     approveUntrackedDelivery,
     rejectUntrackedDelivery,
   } = useAdminApprovals(tab);
@@ -73,6 +74,7 @@ export default function AdminApprovals() {
                 onComplete={() => completeOrder(o.id, o.order_group_id)}
                 onForceRefund={() => forceRefund(o.id)}
                 onDismissDispute={() => dismissDispute(o.id)}
+                onRequireReturn={(atFault) => requireReturn(o.id, atFault)}
                 onApproveUntracked={() => approveUntrackedDelivery(o.id)}
                 onRejectUntracked={(reason) => rejectUntrackedDelivery(o.id, reason)}
               />
@@ -94,6 +96,7 @@ function ApprovalRow({
   onComplete,
   onForceRefund,
   onDismissDispute,
+  onRequireReturn,
   onApproveUntracked,
   onRejectUntracked,
 }: {
@@ -105,10 +108,12 @@ function ApprovalRow({
   onComplete: () => void;
   onForceRefund: () => void;
   onDismissDispute: () => void;
+  onRequireReturn: (sellerAtFault: boolean) => void;
   onApproveUntracked: () => void;
   onRejectUntracked: (reason: string) => void;
 }) {
   const [rejecting, setRejecting] = useState(false);
+  const [sellerAtFault, setSellerAtFault] = useState(false);
   const [reason, setReason] = useState('');
   const image = order.listing?.images?.[0];
   const disputeCountdown = useMemo(() => {
