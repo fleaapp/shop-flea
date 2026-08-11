@@ -50,6 +50,17 @@ export interface Order {
   refund_request_deadline_at?: string | null;
   refund_declined_at?: string | null;
   refund_declined_reason?: string | null;
+  // Return-before-refund workflow
+  refund_path?: 'return' | 'direct' | null;
+  return_required_at?: string | null;
+  return_deadline_at?: string | null;
+  return_tracking_provider?: string | null;
+  return_tracking_number?: string | null;
+  return_posted_at?: string | null;
+  return_delivered_at?: string | null;
+  return_closed_at?: string | null;
+  refund_seller_at_fault?: boolean | null;
+  refund_escalated_at?: string | null;
   // Shipping address fields
   shipping_first_name: string | null;
   shipping_last_name: string | null;
