@@ -1,23 +1,24 @@
 # Auth screen layout tweak
 
 ## Goal
-Adjust the auth screen so the Flea logo sits a little higher and every element below it (toggle, forms, social buttons, footer links) is cleanly centred.
+Move the Flea logo higher on the auth screen, then re-centre the entire auth content group (logo, toggle, forms, social buttons, and "browse as guest" link) so the space above the logo matches the space below the bottom link.
 
 ## Current state
 - `src/pages/Auth.tsx` renders the auth page.
-- The logo is inside `.auth-stack` with `justify-start` and a top padding of `clamp(112px,20svh,180px)`.
-- The logo has `mb-10` (or `mb-7` on small screens) pushing the rest of the content down.
-- All child containers use `flex flex-col items-center`, so horizontal centring is already present.
+- The content stack uses `justify-start pt-[clamp(112px,20svh,180px)]`, which top-aligns the content with a large fixed top gap.
+- The logo has `mb-10` (or `mb-7` on small screens), pushing the toggle and form down from the logo.
+- Horizontal centring is already in place via `items-center` on each flex container.
 
 ## Proposed change
-1. Reduce the top padding of the main stack so the logo moves up slightly.
-2. Reduce the logo bottom margin so the gap between the logo and the login/signup toggle is tighter.
-3. Keep the content vertically centred as a group by switching the stack from `justify-start` to `justify-center` and using a smaller, balanced top offset.
-4. Verify the social-login row and bottom links remain centred and do not overflow on small screens.
+1. Switch the main auth stack from top-aligned to vertically centred (`justify-center`) so the whole content group sits in the middle of the screen.
+2. Move the logo to the top of the centred content group by reducing/removing the internal top padding and keeping the logo as the first child.
+3. Keep the gap between the logo and the login/signup toggle generous so it does not feel cramped.
+4. Ensure the bottom "browse as guest" link remains part of the centred group so the whitespace below it balances the whitespace above the logo.
+5. Verify on mobile and desktop viewports that nothing clips and the layout feels balanced.
 
 ## Files to edit
 - `src/pages/Auth.tsx` — adjust the `.auth-stack` and `.auth-logo` Tailwind classes only.
 
 ## Verification
 - Open `/auth` in the preview on mobile and desktop viewports.
-- Confirm the logo is higher, the toggle is centred under it, and the form/social buttons stay vertically balanced without clipping the bottom links.
+- Confirm the logo is visibly higher, the whole auth card is vertically centred, and the space above the logo roughly equals the space below the bottom link.
