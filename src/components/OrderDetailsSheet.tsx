@@ -609,8 +609,8 @@ const OrderDetailsSheet = ({
             if (failures.length === 0) {
               toast.success(
                 selections.length === 1
-                  ? 'Refund request submitted. Seller has 72 hours to respond.'
-                  : `${succeeded} refund requests submitted. Seller has 72 hours to respond.`,
+                  ? 'Refund request submitted. The seller has 14 days to respond.'
+                  : `${succeeded} refund requests submitted. The seller has 14 days to respond.`,
               );
             } else if (succeeded > 0) {
               toast.warning(`${succeeded} of ${selections.length} refund requests submitted. Please retry: ${failures.join(', ')}`);

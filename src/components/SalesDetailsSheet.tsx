@@ -784,7 +784,7 @@ const SalesDetailsSheet = ({
                           )}
                           {o.refund_request_deadline_at && (
                             <p className="text-[11px] text-muted-foreground mt-1">
-                              Auto-approves {format(new Date(o.refund_request_deadline_at), 'MMM d, h:mma')}
+                              Flea reviews this {format(new Date(o.refund_request_deadline_at), 'MMM d, h:mma')} if you do not respond
                             </p>
                           )}
                         </div>
@@ -813,7 +813,7 @@ const SalesDetailsSheet = ({
                           }}
                           disabled={respondToRefund.isPending}
                         >
-                          {respondToRefund.isPending && refundActionOrderId === o.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Approve refund'}
+                          {respondToRefund.isPending && refundActionOrderId === o.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Approve request'}
                         </Button>
                       </div>
                     </div>
