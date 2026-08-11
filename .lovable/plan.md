@@ -1,51 +1,53 @@
-# Google button still missing on TestFlight - make it unmissable and verifiable
+# Google button missing from TestFlight - fix the native packaging path
 
-## What the code actually does today
+## Confirmed from the screenshot
 
-In `src/pages/Auth.tsx` the social row renders two identical 40x40 dark (`bg-ink`) squares side by side - Google first, Apple second - with no platform check, no flag, and no CSS that hides either one. The only difference between them is the inline SVG glyph inside. There is no text label on either button, and the row has no visible border, so an unpainted glyph leaves a dark square that reads as empty padding rather than a button.
+The screenshot rules out an icon-rendering problem. Apple is centered by itself; if Google's SVG had merely failed to paint, the two-button flex row would still reserve Google's 40px square and Apple would sit to the right. The Google React node is not in the JavaScript bundle running on TestFlight.
 
-Two ships with no change points at one of two things, and this plan removes both at once instead of guessing.
+The current `src/pages/Auth.tsx` always renders Google before Apple with no native/platform condition. `capacitor.config.ts` also confirms native must load bundled `dist/`, not a remote URL. However, this repository does not contain `ios/App/App/public`, so the generated native bundle lives only in the local Xcode checkout and cannot be validated or refreshed by Git alone.
 
-## 1. Replace the icon-only squares with labelled buttons
+This identifies the actual fault boundary: the TestFlight archive is receiving an older generated Capacitor web bundle, even though the TypeScript source is current.
 
-Icon-only dark squares are the weak point: if the Google glyph does not paint in the iOS WebView, there is literally nothing left to see.
+## 1. Make one command produce an archive-ready iOS bundle
 
-- Swap both social controls for full-width pill buttons stacked vertically: "Continue with Google" and "Continue with Apple".
-- Keep the existing `bg-ink` / `text-card` styling, rounded-full shape and the same 40px height so the screen still looks like Flea.
-- Keep the icon inside each button to the left of the label, so a glyph failure costs the icon, not the whole control.
-- No change to `handleGoogleSignIn` / `handleAppleSignIn` or the OAuth flow.
+- Replace the loose manual build sequence with an `ios:archive-ready` script that deletes `dist`, creates a production Vite build, runs `cap sync ios`, applies the existing native iOS setup/entitlement patches, and then validates the copied files.
+- Fail the command if `ios/App/App/public` is missing, if its generated assets do not contain the current Google control marker, or if the copied native `index.html` does not point at the just-built assets.
+- Print a clear "safe to archive" result only after those checks pass.
 
-After this, if the button is genuinely on screen you will see the words "Continue with Google" - there is no longer an ambiguous dark square.
+This prevents Xcode from archiving stale web files again.
 
-## 2. Add a build stamp so we can prove which bundle is on the device
+## 2. Add a visible native build stamp
 
-Capacitor serves whatever copy of `dist/` was inside the iOS project at archive time. If the archive was made from a stale `dist/` (build ran before the pull, or `npx cap sync ios` did not re-copy), the device silently shows an older auth screen - exactly this symptom, with no error anywhere.
+- Use the existing Vite build ID and add a readable build date.
+- Show a subtle version/build stamp beneath "Browse as Guest" only in native builds, so the web auth screen stays unchanged.
+- Print the same stamp from `ios:archive-ready`, allowing the TestFlight screen to be matched directly to the local archive inputs.
 
-- Bake a short build id and date into the bundle at build time (Vite already injects `VITE_BUILD_ID`; expose a readable short form).
-- Render it as small muted text under "Browse as Guest".
-- On the next TestFlight build, read the stamp on the auth screen. If it does not match the build you just shipped, the problem is the archive pipeline, not the app code - and we will know instead of shipping a third time blind.
+## 3. Preserve the current auth design and flow
+
+- Keep the existing two square Google/Apple icon controls shown in the screenshot; no unnecessary redesign to labelled pills.
+- Keep the current Flea-branded in-app OAuth sheet and `prompt: select_account` behavior unchanged.
+- Add a native-only console marker listing the enabled social controls, useful if a future archive differs from source again.
 
 ## Build steps for the next TestFlight
 
-Run in this order from the project root after pulling the change:
+Run one command from the project root after pulling the change:
 
 ```text
-npm run build
-npx cap sync ios
-open ios/App/App.xcworkspace   # then Product > Archive
+npm run ios:archive-ready
 ```
 
-If `npm run build` is skipped, or Xcode archives without a fresh `cap sync`, the old bundle ships again.
+Only archive after that command reports that the Google marker is present in the copied iOS bundle. Then bump the Xcode build number and archive without running any command that overwrites the generated public folder.
 
 ## Then verify on device
 
-1. Auth screen shows the build stamp matching the build you shipped.
-2. "Continue with Google" and "Continue with Apple" are both visible on the login and signup tabs.
+1. Auth screen shows the build stamp printed by `ios:archive-ready`.
+2. Google and Apple icons are both visible on the login and signup tabs.
 3. Tapping Google opens the in-app browser sheet with the Flea-branded consent screen.
 
 ## Technical notes
 
-- `src/pages/Auth.tsx`: restructure the social block (lines around 634-673) into stacked labelled buttons; add the build stamp under the guest link.
-- `vite.config.ts`: add a build-time define for a human-readable build date alongside the existing `VITE_BUILD_ID`.
-- `src/vite-env.d.ts`: declare the injected constant.
+- `scripts/prepare-ios-archive.mjs`: perform clean build, sync, native patching, and copied-bundle assertions.
+- `package.json`: add `ios:archive-ready`; keep `ios:fresh` as a development shortcut.
+- `src/pages/Auth.tsx`: add the native-only build stamp and diagnostic marker without changing the social-button layout.
+- `vite.config.ts` / `src/vite-env.d.ts`: expose the readable build date alongside the existing build ID.
 - No backend, auth-config, Google Cloud, or OAuth-flow changes.
