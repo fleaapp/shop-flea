@@ -83,7 +83,6 @@ const SellerDashboard = lazy(loadSellerDashboard);
 
 const Install = lazy(loadInstall);
 const SuggestionBox = lazy(loadSuggestionBox);
-const OnboardingTest = lazy(loadOnboardingTest);
 const ForgotPassword = lazy(loadForgotPassword);
 const ResetPassword = lazy(loadResetPassword);
 const VerifyEmail = lazy(loadVerifyEmail);
@@ -265,7 +264,6 @@ const AppContent = () => {
           <Route path="/install" element={<Install />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/app" element={<Navigate to="/" replace />} />
-          <Route path="/onboarding-test" element={<OnboardingTest />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
