@@ -712,9 +712,15 @@ const Auth = () => {
             </button>
           </div>
           {isPackagedNative && (
-            <p className="mt-3 text-center text-[9px] text-foreground/40" aria-label="App build">
-              {nativeBuildLabel}
-            </p>
+            <div className="mt-3 text-center" aria-label="App build">
+              <p className="text-[9px] text-foreground/40">{nativeBuildLabel}</p>
+              <p className="text-[9px] text-foreground/40">
+                Google control:{' '}
+                {typeof document !== 'undefined' && document.querySelector('[data-native-bundle-marker="flea-google-auth-control"]')
+                  ? 'present'
+                  : 'missing'}
+              </p>
+            </div>
           )}
         </div>
       </div>
