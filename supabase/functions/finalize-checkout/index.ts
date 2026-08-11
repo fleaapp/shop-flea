@@ -433,6 +433,19 @@ serve(async (req) => {
       });
     }
 
+    // Apple reviewer path: the reviewer completes the REAL Apple Pay sheet on
+    // a platform-account authorize-only PaymentIntent. We still verify the
+    // payment with Stripe (requires_capture counts as paid), then create the
+    // orders as "demo" (no seller transfer/payout) and void the authorization
+    // hold so no charge ever posts. Detected here so the insert loop can mark
+    // orders demo and the tail can cancel the PI.
+    const { data: reviewerRow } = await serviceClient
+      .from("profiles")
+      .select("is_apple_reviewer")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const isReviewer = reviewerRow?.is_apple_reviewer === true;
+
     const itemIds = [...new Set(items.map((i) => i.id))];
     const { data: listingRows, error: listingError } = await serviceClient
       .from("listings")
@@ -595,7 +608,7 @@ serve(async (req) => {
           coupon_code: appliedCoupon?.code ?? null,
           coupon_type: appliedCoupon?.type ?? null,
           status: "awaiting",
-          payment_method: "stripe",
+          payment_method: isReviewer ? "demo" : "stripe",
           shipping_first_name: shipping.shippingFirstName,
           shipping_last_name: shipping.shippingLastName,
           shipping_address: shipping.shippingAddress,
@@ -666,6 +679,19 @@ serve(async (req) => {
     );
 
     await serviceClient.from("cart_items").delete().eq("user_id", userId).in("listing_id", itemIds);
+
+    // Apple reviewer: void the authorize-only PaymentIntent so the card
+    // authorization hold releases and no charge ever posts. Best-effort: if
+    // the cancel call fails, the auth still expires on its own within days.
+    if (isReviewer && checkoutReference.startsWith("pi_")) {
+      try {
+        const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
+        await stripe.paymentIntents.cancel(checkoutReference, { cancellation_reason: "abandoned" });
+        console.log("[finalize-checkout] reviewer PI voided:", checkoutReference);
+      } catch (e) {
+        console.error("[finalize-checkout] reviewer PI cancel failed:", (e as Error)?.message);
+      }
+    }
 
     return new Response(JSON.stringify({ ok: true, alreadyProcessed: false }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
