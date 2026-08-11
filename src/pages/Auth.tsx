@@ -441,7 +441,7 @@ const Auth = () => {
     <div className="auth-screen native-safe-top fixed inset-0 bg-primary flex flex-col items-center overflow-hidden px-6 max-[375px]:px-4 pb-8">
       <div className="auth-stack flex w-full flex-1 flex-col items-center justify-center pt-6 max-[375px]:pt-4">
         {/* Logo — stays in the same stack as the form so it moves with it */}
-        <div className="auth-logo flex justify-center mb-10 max-[375px]:mb-7">
+        <div className="auth-logo flex justify-center mb-14 max-[375px]:mb-10">
           <img
             src={fleaLogoAuth}
             alt="FLEA"
