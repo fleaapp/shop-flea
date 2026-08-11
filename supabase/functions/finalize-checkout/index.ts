@@ -608,7 +608,7 @@ serve(async (req) => {
           coupon_code: appliedCoupon?.code ?? null,
           coupon_type: appliedCoupon?.type ?? null,
           status: "awaiting",
-          payment_method: "stripe",
+          payment_method: isReviewer ? "demo" : "stripe",
           shipping_first_name: shipping.shippingFirstName,
           shipping_last_name: shipping.shippingLastName,
           shipping_address: shipping.shippingAddress,
