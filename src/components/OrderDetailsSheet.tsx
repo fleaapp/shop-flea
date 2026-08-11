@@ -462,6 +462,20 @@ const OrderDetailsSheet = ({
             />
             <TrackingEvents orderGroupId={primaryOrder.order_group_id ?? primaryOrder.id} />
 
+            {/* Refund / return state for every item with an open request */}
+            {orders
+              .filter((o) => o.refund_requested_at || o.return_required_at)
+              .map((o) => (
+                <RefundStatusRow
+                  key={`refund-${o.id}`}
+                  order={o}
+                  role="buyer"
+                  onUpdated={() => queryClient.invalidateQueries({ queryKey: ['orders'] })}
+                />
+              ))}
+
+
+
             <div className="flex flex-col items-center space-y-3 pt-4">
               <div className="flex items-center gap-3 w-full px-4">
                 {!isRefunded && (effectiveStatus === 'awaiting' || effectiveStatus === 'shipped') && (
