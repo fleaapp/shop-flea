@@ -630,10 +630,15 @@ export function useOrders() {
       });
       if (error) throw error;
 
+      let returnRequired = false;
       if (decision === 'approve') {
         const rows = (data as any[]) || [];
+        // Return-path requests do not pay out now: the buyer must post the
+        // item back first and the refund fires on the return delivery scan.
+        const directRows = rows.filter((r) => (r.refund_path ?? 'return') !== 'return');
+        returnRequired = rows.some((r) => (r.refund_path ?? 'return') === 'return');
         const targetIds = rows.length
-          ? [...new Set(rows.map((r) => r.id as string))]
+          ? [...new Set(directRows.map((r) => r.id as string))]
           : orderId
           ? [orderId]
           : [];
@@ -644,10 +649,17 @@ export function useOrders() {
           if (refundError) throw refundError;
         }
       }
+      return { returnRequired };
     },
-    onSuccess: (_data, vars) => {
+    onSuccess: (result, vars) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
-      toast.success(vars.decision === 'approve' ? 'Refund approved and issued' : 'Refund declined');
+      toast.success(
+        vars.decision !== 'approve'
+          ? 'Refund declined'
+          : result?.returnRequired
+            ? 'Return requested. The buyer has 5 days to post the item back.'
+            : 'Refund approved and issued',
+      );
     },
     onError: (error: any) => {
       console.error('Error responding to refund:', error);
