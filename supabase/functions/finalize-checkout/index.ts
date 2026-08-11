@@ -433,6 +433,19 @@ serve(async (req) => {
       });
     }
 
+    // Apple reviewer path: the reviewer completes the REAL Apple Pay sheet on
+    // a platform-account authorize-only PaymentIntent. We still verify the
+    // payment with Stripe (requires_capture counts as paid), then create the
+    // orders as "demo" (no seller transfer/payout) and void the authorization
+    // hold so no charge ever posts. Detected here so the insert loop can mark
+    // orders demo and the tail can cancel the PI.
+    const { data: reviewerRow } = await serviceClient
+      .from("profiles")
+      .select("is_apple_reviewer")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const isReviewer = reviewerRow?.is_apple_reviewer === true;
+
     const itemIds = [...new Set(items.map((i) => i.id))];
     const { data: listingRows, error: listingError } = await serviceClient
       .from("listings")
