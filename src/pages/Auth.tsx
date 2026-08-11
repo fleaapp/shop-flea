@@ -99,7 +99,9 @@ const Auth = () => {
 
   useEffect(() => {
     if (isPackagedNative) {
+      const markerPresent = typeof document !== 'undefined' && !!document.querySelector('[data-native-bundle-marker="flea-google-auth-control"]');
       console.info(`[auth] Native social controls enabled: google, apple - ${nativeBuildLabel}`);
+      console.info(`[auth] Google control marker in DOM: ${markerPresent ? 'yes' : 'NO'}`);
     }
   }, []);
 
