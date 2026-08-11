@@ -360,7 +360,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
       )}
 
       {/* Main content area */}
-      <div className="relative flex-1 w-full flex flex-col items-center justify-end pb-12 px-6">
+      <div className="relative flex-1 w-full flex flex-col items-center justify-end pb-10 px-6">
         {isSpotlightSlide ? (
           <motion.div
             key={currentSlide}
