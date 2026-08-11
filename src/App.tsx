@@ -84,6 +84,7 @@ const SellerDashboard = lazy(loadSellerDashboard);
 
 const Install = lazy(loadInstall);
 const SuggestionBox = lazy(loadSuggestionBox);
+const OnboardingTest = lazy(loadOnboardingTest);
 const ForgotPassword = lazy(loadForgotPassword);
 const ResetPassword = lazy(loadResetPassword);
 const VerifyEmail = lazy(loadVerifyEmail);
