@@ -62,15 +62,16 @@ export async function signInWithOAuthPopup(
 ): Promise<OAuthPopupResult> {
   // ---- Native: in-app browser sheet, session applied via /auth/callback ----
   if (isNative()) {
-    // Must be the custom app URL scheme: iOS ignores universal links reached
-    // via a server redirect (which is exactly how OAuth returns), so an https
-    // return address would keep the user inside the browser sheet.
+    // Returns to the https callback page, which immediately bounces to the
+    // app's custom URL scheme. iOS ignores universal links reached through a
+    // server redirect, so an https-only return keeps the user in the sheet.
     const { url, error } = await buildAuthorizeUrl(
       provider,
-      NATIVE_OAUTH_REDIRECT_URL,
+      NATIVE_OAUTH_BOUNCE_URL,
       extraParams,
     );
     if (error || !url) return { error: error ?? new Error('Could not start sign in') };
+
 
     try {
       const { Browser } = await import('@capacitor/browser');
