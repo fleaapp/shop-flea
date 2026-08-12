@@ -296,8 +296,9 @@ Deno.serve(async (req) => {
           .update({ status: "refunded", updated_at: new Date().toISOString() })
           .eq("id", order.listing_id);
 
-        // Notify buyer and seller.
-        await admin.from("notifications").insert([
+        // Notify buyer and seller. The insert result MUST be checked - a
+        // silently failed write is how refunds ended up with no alert at all.
+        const notificationRows = [
           {
             user_id: order.buyer_id,
             type: "order_auto_refunded",
@@ -316,10 +317,15 @@ Deno.serve(async (req) => {
             related_user_id: order.buyer_id,
             related_order_id: order.id,
           },
-        ]);
+        ];
 
-        firePush(order.buyer_id, { type: "order_auto_refunded", title: "Order refunded", message: "Your order was automatically refunded because the seller didn't ship within 8 days." });
-        firePush(order.seller_id, { type: "sale_auto_refunded", title: "Sale auto-refunded", message: "Your sale was auto-refunded because tracking wasn't added within 8 days." });
+        const alertsWritten = await insertNotificationsWithRetry(admin, notificationRows, order.id);
+
+        if (alertsWritten) {
+          firePush(order.buyer_id, { type: "order_auto_refunded", title: "Order refunded", message: "Your order was automatically refunded because the seller didn't ship within 8 days." });
+          firePush(order.seller_id, { type: "sale_auto_refunded", title: "Sale auto-refunded", message: "Your sale was auto-refunded because tracking wasn't added within 8 days." });
+        }
+
 
         // Audit trail.
         try {
