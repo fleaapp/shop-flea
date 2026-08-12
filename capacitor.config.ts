@@ -39,6 +39,14 @@ const config: CapacitorConfig = {
       splashFullScreen: true,
       splashImmersive: true,
     },
+    SocialLogin: {
+      providers: {
+        google: true,
+        apple: true,
+        facebook: false,
+        twitter: false,
+      },
+    },
   },
   ios: {
     // Edge-to-edge: WebView draws under the home indicator so the page's own

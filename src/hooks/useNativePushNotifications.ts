@@ -42,12 +42,13 @@ const logNativePushState = (
 };
 
 /**
- * Registers the iOS device with APNs and stores the token in push_subscriptions
- * with platform = 'ios'. The send-push-notification edge function reads the
- * platform column and dispatches via APNs HTTP/2 instead of web-push.
+ * Registers the native device with APNs (iOS) or FCM (Android) and stores the
+ * token in push_subscriptions with platform = 'ios' | 'android'. The
+ * send-push-notification edge function reads the platform column and dispatches
+ * via the correct provider (APNs HTTP/2, FCM v1, or web-push).
  *
- * Web push (PWA) is handled by usePushNotifications; this hook is iOS-only
- * and is a no-op on web/Android-browser.
+ * Web push (PWA) is handled by usePushNotifications; this hook is native-only
+ * and is a no-op on web.
  */
 export function useNativePushNotifications() {
   const { user } = useAuth();
@@ -117,27 +118,29 @@ export function useNativePushNotifications() {
     }
   }, [user?.id]);
 
-  const saveNativeToken = useCallback(async (apnsToken: string, reason: string) => {
-    if (!user?.id || !apnsToken) return;
+  const saveNativeToken = useCallback(async (deviceToken: string, reason: string) => {
+    if (!user?.id || !deviceToken) return;
 
     if (saveInFlightRef.current) {
       return;
     }
 
+    const platform = (Capacitor.getPlatform() === 'android' ? 'android' : 'ios') as 'ios' | 'android';
+
     saveInFlightRef.current = true;
     try {
-      console.log('[NativePush] Saving APNs token:', { reason, userId: user.id });
+      console.log(`[NativePush] Saving ${platform} token:`, { reason, userId: user.id });
       logNativePushState('token-save-started', {
         reason,
         user_id: user.id,
-        platform: Capacitor.getPlatform(),
-        token_prefix: apnsToken.slice(0, 12),
+        platform,
+        token_prefix: deviceToken.slice(0, 12),
       });
 
       const { error } = await invokeCloudFunction('register-push-subscription', {
         body: {
-          endpoint: apnsToken,
-          platform: 'ios',
+          endpoint: deviceToken,
+          platform,
         },
       });
 
@@ -157,16 +160,16 @@ export function useNativePushNotifications() {
         return;
       }
 
-      lastSavedTokenRef.current = apnsToken;
+      lastSavedTokenRef.current = deviceToken;
       lastSavedAtRef.current = Date.now();
-      try { localStorage.setItem('flea_native_push_endpoint', apnsToken); } catch {}
-      console.log('[NativePush] APNs token saved');
+      try { localStorage.setItem('flea_native_push_endpoint', deviceToken); } catch {}
+      console.log(`[NativePush] ${platform} token saved`);
 
       logNativePushState('token-save-succeeded', {
         reason,
         user_id: user.id,
-        platform: Capacitor.getPlatform(),
-        token_prefix: apnsToken.slice(0, 12),
+        platform,
+        token_prefix: deviceToken.slice(0, 12),
       });
 
       const verified = await checkCloudTokenStatus(`${reason}-post-save`);
@@ -202,11 +205,12 @@ export function useNativePushNotifications() {
 
     if (!user?.id) return;
     if (!Capacitor.isNativePlatform()) return;
-    if (Capacitor.getPlatform() !== 'ios') return;
+    const platform = Capacitor.getPlatform();
+    if (platform !== 'ios' && platform !== 'android') return;
 
     logNativePushState('setup-started', {
       user_id: user.id,
-      platform: Capacitor.getPlatform(),
+      platform,
     });
 
     let registrationListener: { remove: () => void } | null = null;
@@ -252,19 +256,21 @@ export function useNativePushNotifications() {
 
         if (!opts?.force) {
           const cloudStatus = await checkCloudTokenStatus(reason);
-          if (cloudStatus.checked && cloudStatus.hasIosToken) {
+          // The cloud-status check (`has_ios_token`) only reflects iOS tokens
+          // today, so on Android we always re-register to be safe.
+          if (platform === 'ios' && cloudStatus.checked && cloudStatus.hasIosToken) {
             console.log('[NativePush] Cloud iOS token already present:', reason);
             return;
           }
           // No token registered for the CURRENT user on the backend. Before
-          // waiting on APNs (which may never re-fire the `registration`
+          // waiting on APNs/FCM (which may never re-fire the `registration`
           // callback if permission was granted in a previous session), try to
           // take over the cached device endpoint under this user id right
           // away. This is what stops account A's device from continuing to
           // receive account B's pushes after switching users.
           try {
             const cachedEndpoint = localStorage.getItem('flea_native_push_endpoint');
-            if (cachedEndpoint && cloudStatus.checked && !cloudStatus.hasIosToken) {
+            if (cachedEndpoint && platform === 'ios' && cloudStatus.checked && !cloudStatus.hasIosToken) {
               console.log('[NativePush] Reclaiming cached endpoint for current user:', reason);
               await invokeCloudFunction('register-push-subscription', {
                 body: { endpoint: cachedEndpoint, platform: 'ios' },
@@ -275,7 +281,7 @@ export function useNativePushNotifications() {
           }
         }
 
-        console.log('[NativePush] Registering with APNs:', reason);
+        console.log(`[NativePush] Registering with ${platform === 'android' ? 'FCM' : 'APNs'}:`, reason);
         logNativePushState('registration-requested', {
           reason,
           user_id: user.id,
@@ -306,15 +312,15 @@ export function useNativePushNotifications() {
     const setup = async () => {
       registrationListener = await PushNotifications.addListener('registration', (token) => {
         clearRegistrationTimeout();
-        const apnsToken = token.value;
-        if (!apnsToken) return;
-        console.log('[NativePush] APNs token received:', apnsToken.slice(0, 12) + '…');
+        const deviceToken = token.value;
+        if (!deviceToken) return;
+        console.log(`[NativePush] Token received:`, deviceToken.slice(0, 12) + '…');
         logNativePushState('token-received', {
           user_id: user.id,
           platform: Capacitor.getPlatform(),
-          token_prefix: apnsToken.slice(0, 12),
+          token_prefix: deviceToken.slice(0, 12),
         });
-        void saveNativeToken(apnsToken, 'registration');
+        void saveNativeToken(deviceToken, 'registration');
       });
 
       errorListener = await PushNotifications.addListener('registrationError', (err) => {
