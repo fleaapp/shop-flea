@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { lovable } from '@/integrations/lovable';
 import { nativeAppleSignIn, isIosNative as isAppleIosNative } from '@/lib/appleSignIn';
 import { nativeGoogleSignIn, isNativeRuntime } from '@/lib/googleSignIn';
-import { signInWithOAuthPopup } from '@/lib/oauthPopup';
+import { signInWithOAuthPopup, OAUTH_PENDING_KEY } from '@/lib/oauthPopup';
 import { logError } from '@/lib/errorLogger';
 import ProviderConflictDialog, { type ConflictProvider } from '@/components/ProviderConflictDialog';
 import { useAdminRole } from '@/hooks/useAdminRole';
