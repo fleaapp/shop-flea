@@ -312,15 +312,15 @@ export function useNativePushNotifications() {
     const setup = async () => {
       registrationListener = await PushNotifications.addListener('registration', (token) => {
         clearRegistrationTimeout();
-        const apnsToken = token.value;
-        if (!apnsToken) return;
-        console.log('[NativePush] APNs token received:', apnsToken.slice(0, 12) + '…');
+        const deviceToken = token.value;
+        if (!deviceToken) return;
+        console.log(`[NativePush] Token received:`, deviceToken.slice(0, 12) + '…');
         logNativePushState('token-received', {
           user_id: user.id,
           platform: Capacitor.getPlatform(),
-          token_prefix: apnsToken.slice(0, 12),
+          token_prefix: deviceToken.slice(0, 12),
         });
-        void saveNativeToken(apnsToken, 'registration');
+        void saveNativeToken(deviceToken, 'registration');
       });
 
       errorListener = await PushNotifications.addListener('registrationError', (err) => {
