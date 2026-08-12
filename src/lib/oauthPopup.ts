@@ -21,7 +21,9 @@ import { NATIVE_OAUTH_BOUNCE_URL } from '@/lib/authRedirects';
 
 
 const NATIVE_SHEET_TIMEOUT_MS = 5 * 60 * 1000;
-const NATIVE_SESSION_GRACE_MS = 6000;
+/** How long we keep waiting for the session after the in-app sheet closes. */
+const NATIVE_SESSION_GRACE_MS = 20000;
+export const OAUTH_PENDING_KEY = 'flea_oauth_pending';
 export const OAUTH_COMPLETE_MESSAGE = 'flea-oauth-complete';
 const POPUP_CHECK_INTERVAL_MS = 500;
 
