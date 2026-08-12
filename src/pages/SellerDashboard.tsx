@@ -160,7 +160,7 @@ const statusClass = (s: string) => {
   return 'bg-muted text-charcoal';
 };
 
-const activityMeta = (type: string): { emoji: string; label: string } => {
+const activityMeta = (type: string, amount = 0): { emoji: string; label: string } => {
   switch (type) {
     case 'charge':
     case 'payment':
@@ -168,8 +168,16 @@ const activityMeta = (type: string): { emoji: string; label: string } => {
     case 'refund':
     case 'payment_refund':
       return { emoji: '↩️', label: 'Refund' };
+    case 'application_fee_refund':
+      return { emoji: '🧾', label: 'Seller fee refunded' };
+    case 'stripe_fee':
+      return { emoji: '🧾', label: 'Processing fee' };
     case 'adjustment':
-      return { emoji: '⚖️', label: 'Adjustment' };
+      // A positive adjustment on a seller balance is the seller transaction fee
+      // coming back after a refund - show that in plain English.
+      return amount >= 0
+        ? { emoji: '🧾', label: 'Seller fee refunded' }
+        : { emoji: '⚖️', label: 'Balance adjustment' };
     case 'transfer':
       return { emoji: '🔁', label: 'Transfer' };
     case 'topup':
@@ -178,6 +186,7 @@ const activityMeta = (type: string): { emoji: string; label: string } => {
       return { emoji: '•', label: type.replace(/_/g, ' ') };
   }
 };
+
 
 const isTransportError = (error: unknown) => {
   const message = String((error as any)?.message || error || '').toLowerCase();
@@ -570,13 +579,8 @@ const SellerDashboard = () => {
               </section>
             )}
 
-            {payoutRisk?.bankStatus === 'new' && payoutRisk?.hasBankAccount && !payoutRisk?.payoutFailureReason && (
-              <section className="rounded-2xl bg-amber-50 border border-amber-200 p-4 mt-2">
-                <p className="text-[13px] text-charcoal leading-relaxed">
-                  🔍 Bank account being checked. Payouts unlock as soon as this finishes - usually within a day.
-                </p>
-              </section>
-            )}
+
+
 
             {payoutRisk?.payoutReviewFlag && (
               <section className="rounded-2xl bg-amber-50 border border-amber-200 p-4 mt-2">
@@ -930,7 +934,7 @@ const SellerDashboard = () => {
                     {visible.map((a) => {
                       const displayAmount = a.net ?? (a.amount - (a.fee || 0));
                       const isOut = displayAmount < 0;
-                      const meta = activityMeta(a.type);
+                      const meta = activityMeta(a.type, displayAmount);
                       return (
                         <li key={a.id} className="flex items-center justify-between px-4 py-3">
                           <div className="min-w-0 flex-1 pr-3">

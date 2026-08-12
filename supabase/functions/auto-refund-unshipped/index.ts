@@ -213,7 +213,54 @@ async function resolvePaymentIntentId(stripe: Stripe, order: any) {
   throw new Error("payment reference not found");
 }
 
+// Writes the alert rows and reports whether they actually landed. supabase-js
+// returns errors instead of throwing, so an unchecked insert fails invisibly.
+// Rows are written one at a time: a deleted counterparty used to break a
+// foreign key on the batch and silently wipe out BOTH alerts.
+async function insertNotificationsWithRetry(
+  admin: ReturnType<typeof createClient>,
+  rows: Record<string, unknown>[],
+  orderId: string,
+) {
+  let allOk = true;
+
+  for (const row of rows) {
+    let saved = false;
+    let lastMessage = "";
+
+    // Attempt 1: as-is. Attempt 2: without the related links, which are the
+    // only foreign keys here (a deleted buyer/seller/listing must not stop
+    // the alert from reaching the other side).
+    const variants = [row, { ...row, related_user_id: null, related_listing_id: null }];
+
+    for (const variant of variants) {
+      const { error } = await admin.from("notifications").insert(variant);
+      if (!error) { saved = true; break; }
+      lastMessage = error.message;
+      console.error(`[auto-refund-unshipped] notification insert failed for ${orderId}`, error.message);
+    }
+
+    if (!saved) {
+      allOk = false;
+      try {
+        await admin.from("error_logs").insert({
+          source: "auto-refund-unshipped",
+          severity: "error",
+          title: "Refund alert not delivered",
+          message: `Order ${orderId} was refunded but an alert could not be saved: ${lastMessage}`,
+          context: { order_id: orderId, user_id: row.user_id, type: row.type },
+          dedupe_key: `auto-refund-notify-${orderId}-${String(row.type ?? "alert")}`,
+        });
+      } catch (_) { /* logging must never break the refund loop */ }
+    }
+  }
+
+  return allOk;
+}
+
+
 async function firePush(userId: string, notification: Record<string, unknown>) {
+
   try {
     const url = Deno.env.get("SUPABASE_URL") ?? "https://teaicrimlqdayqpmxasc.supabase.co";
     const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -296,8 +343,9 @@ Deno.serve(async (req) => {
           .update({ status: "refunded", updated_at: new Date().toISOString() })
           .eq("id", order.listing_id);
 
-        // Notify buyer and seller.
-        await admin.from("notifications").insert([
+        // Notify buyer and seller. The insert result MUST be checked - a
+        // silently failed write is how refunds ended up with no alert at all.
+        const notificationRows = [
           {
             user_id: order.buyer_id,
             type: "order_auto_refunded",
@@ -316,10 +364,16 @@ Deno.serve(async (req) => {
             related_user_id: order.buyer_id,
             related_order_id: order.id,
           },
-        ]);
+        ];
+
+        // Push is independent of the in-app alert rows - it must go out even
+        // if one of the rows could not be stored.
+        await insertNotificationsWithRetry(admin, notificationRows, order.id);
 
         firePush(order.buyer_id, { type: "order_auto_refunded", title: "Order refunded", message: "Your order was automatically refunded because the seller didn't ship within 8 days." });
         firePush(order.seller_id, { type: "sale_auto_refunded", title: "Sale auto-refunded", message: "Your sale was auto-refunded because tracking wasn't added within 8 days." });
+
+
 
         // Audit trail.
         try {

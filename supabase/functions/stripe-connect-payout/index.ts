@@ -137,12 +137,17 @@ Deno.serve(async (req) => {
         reason: "bank_errored",
       }, 409);
     }
-    if (defaultBank?.status === "new") {
+    // NOTE: Stripe leaves AU bank accounts permanently marked `new` - that is
+    // not a review state and it never flips to `validated`, so it must never
+    // block a payout. Only genuine rejections stop us here.
+    if (defaultBank?.status === "verification_failed") {
+      await supabase.from("profiles").update({ bank_status: "errored" }).eq("user_id", userId);
       return json({
-        error: "We're still checking your bank account. Payouts unlock once that finishes.",
-        reason: "bank_checking",
+        error: "Your bank details couldn't be verified. Please re-enter them before trying again.",
+        reason: "bank_errored",
       }, 409);
     }
+
 
     // Identity anchor: once a payout has failed, the seller can keep selling
     // but cannot withdraw until their ID document has been accepted.
