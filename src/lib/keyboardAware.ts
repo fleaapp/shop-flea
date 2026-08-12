@@ -273,6 +273,7 @@ export const installKeyboardAware = (): (() => void) => {
     window.visualViewport?.removeEventListener('resize', onViewportChange);
     removeNative?.();
     clearShift();
+    clearFit();
     installed = false;
   };
 };
