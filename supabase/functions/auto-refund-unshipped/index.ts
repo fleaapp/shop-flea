@@ -213,7 +213,35 @@ async function resolvePaymentIntentId(stripe: Stripe, order: any) {
   throw new Error("payment reference not found");
 }
 
+// Writes the alert rows and reports whether they actually landed. supabase-js
+// returns errors instead of throwing, so an unchecked insert fails invisibly.
+async function insertNotificationsWithRetry(
+  admin: ReturnType<typeof createClient>,
+  rows: Record<string, unknown>[],
+  orderId: string,
+) {
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const { error } = await admin.from("notifications").insert(rows);
+    if (!error) return true;
+    console.error(`[auto-refund-unshipped] notification insert attempt ${attempt} failed for ${orderId}`, error.message);
+    if (attempt === 2) {
+      try {
+        await admin.from("error_logs").insert({
+          source: "auto-refund-unshipped",
+          severity: "error",
+          title: "Refund alerts not delivered",
+          message: `Order ${orderId} was refunded but its buyer/seller alerts could not be saved: ${error.message}`,
+          context: { order_id: orderId },
+          dedupe_key: `auto-refund-notify-${orderId}`,
+        });
+      } catch (_) { /* logging must never break the refund loop */ }
+    }
+  }
+  return false;
+}
+
 async function firePush(userId: string, notification: Record<string, unknown>) {
+
   try {
     const url = Deno.env.get("SUPABASE_URL") ?? "https://teaicrimlqdayqpmxasc.supabase.co";
     const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
