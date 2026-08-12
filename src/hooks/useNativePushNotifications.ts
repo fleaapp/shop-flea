@@ -42,12 +42,13 @@ const logNativePushState = (
 };
 
 /**
- * Registers the iOS device with APNs and stores the token in push_subscriptions
- * with platform = 'ios'. The send-push-notification edge function reads the
- * platform column and dispatches via APNs HTTP/2 instead of web-push.
+ * Registers the native device with APNs (iOS) or FCM (Android) and stores the
+ * token in push_subscriptions with platform = 'ios' | 'android'. The
+ * send-push-notification edge function reads the platform column and dispatches
+ * via the correct provider (APNs HTTP/2, FCM v1, or web-push).
  *
- * Web push (PWA) is handled by usePushNotifications; this hook is iOS-only
- * and is a no-op on web/Android-browser.
+ * Web push (PWA) is handled by usePushNotifications; this hook is native-only
+ * and is a no-op on web.
  */
 export function useNativePushNotifications() {
   const { user } = useAuth();
