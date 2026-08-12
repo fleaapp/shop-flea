@@ -400,16 +400,20 @@ const Auth = () => {
       }
 
       // Session is set (popup) or will be set by the callback route (native).
-      // onAuthStateChange redirects via the useEffect above.
+      // onAuthStateChange redirects via the useEffect above. When the flow
+      // handed off to a redirect, keep the branded overlay up so the user
+      // never sees a bare auth screen mid-handoff.
+      if (result.redirected) return;
     } catch (err: any) {
       localStorage.removeItem('flea_oauth_signup');
       localStorage.removeItem('flea-new-user-pending-onboarding');
       console.error('Google sign-in exception:', err);
       logError({ title: 'Google sign-in exception', message: err?.message || String(err), stack: err?.stack ?? null, severity: 'error', source: 'auth' });
       toast.error(`Google sign-in failed: ${err?.message || 'Please try again.'}`);
-    } finally {
       setConnectingProvider(null);
+      return;
     }
+    setConnectingProvider(null);
   };
 
 
