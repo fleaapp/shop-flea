@@ -277,7 +277,15 @@ export const installKeyboardAware = (): (() => void) => {
     }, 60);
   };
 
-  const onViewportChange = () => schedule();
+  const onViewportChange = () => {
+    if (nativeKeyboardHeight === 0) {
+      // Web / PWA: publish the live keyboard height so keyboard-aware CSS
+      // (bottom-anchored surfaces) works outside native too.
+      document.documentElement.style.setProperty('--native-keyboard-height', `${keyboardHeight()}px`);
+    }
+    schedule();
+  };
+
 
   document.addEventListener('focusin', onFocusIn, true);
   document.addEventListener('focusout', onFocusOut, true);
