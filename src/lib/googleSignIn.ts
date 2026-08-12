@@ -61,12 +61,27 @@ const isCancellation = (message: string): boolean =>
   /cancel|dismiss|user closed|-5\b|12501/i.test(message);
 
 /**
- * The Google SDK always mints its own nonce and stamps it into the ID token.
- * The backend rejects the exchange unless the very same value is sent along
- * with the token, so we read the claim straight out of the token rather than
- * guessing whether the platform hashed anything.
+ * The auth server does NOT compare the nonce we send against the token claim
+ * directly — it hashes ours with SHA-256 (hex) and compares that to the claim.
+ * Google copies whatever value it was given into the token verbatim, so the
+ * app must own the nonce: hand Google the *hash*, hand the backend the *raw*
+ * value. Reading the claim back out of the token and resending it (the
+ * previous approach) makes the server hash it a second time — guaranteed
+ * "Nonces mismatch".
  */
-const nonceFromIdToken = (token: string): string | undefined => {
+const randomNonce = (): string => {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+};
+
+const sha256Hex = async (value: string): Promise<string> => {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+};
+
+/** Reads the `nonce` claim so we can verify Google echoed our hash unchanged. */
+const nonceClaimFromIdToken = (token: string): string | undefined => {
   try {
     const payload = token.split('.')[1];
     if (!payload) return undefined;
@@ -77,6 +92,7 @@ const nonceFromIdToken = (token: string): string | undefined => {
     return undefined;
   }
 };
+
 
 export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
   if (!nativeGoogleAvailable()) return { handled: false };
@@ -111,9 +127,15 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
       /* no cached session — fine */
     }
 
+    // We own the nonce: Google receives the hash, the backend receives the raw
+    // value and hashes it itself. `forcePrompt` must stay true — without it the
+    // iOS plugin silently reuses a cached token that carries an older nonce.
+    const rawNonce = randomNonce();
+    const hashedNonce = await sha256Hex(rawNonce);
+
     const login = await SocialLogin.login({
       provider: 'google',
-      options: { scopes: ['email', 'profile'], forcePrompt: true },
+      options: { scopes: ['email', 'profile'], forcePrompt: true, nonce: hashedNonce },
     });
 
     const result = (login as any)?.result ?? {};
@@ -126,14 +148,21 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
       return { handled: false };
     }
 
-    const nonce = nonceFromIdToken(idToken);
+    // If Google did not echo our hash back, the exchange is guaranteed to be
+    // rejected. Fall back to the browser flow instead of showing an error.
+    const claim = nonceClaimFromIdToken(idToken);
+    if (claim !== hashedNonce) {
+      console.warn('Native Google sign-in returned an unexpected nonce, falling back.');
+      return { handled: false };
+    }
 
     const { error } = await supabase.auth.signInWithIdToken({
       provider: 'google',
       token: idToken,
-      ...(nonce ? { nonce } : {}),
+      nonce: rawNonce,
     });
     if (error) return { handled: true, error, cancelled: false };
+
 
     return { handled: true, error: null };
   } catch (err: any) {
