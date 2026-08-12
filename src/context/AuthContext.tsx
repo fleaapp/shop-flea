@@ -52,6 +52,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  // Tracks the user id we last loaded a profile for, so a USER_UPDATED event
+  // or token refresh never re-triggers the full-screen loading state.
+  const loadedUserIdRef = useRef<string | null>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [isBanned, setIsBanned] = useState(false);
 
