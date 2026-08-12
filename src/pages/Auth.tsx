@@ -13,6 +13,8 @@ import { nativeAppleSignIn, isIosNative as isAppleIosNative } from '@/lib/appleS
 import { nativeGoogleSignIn, isNativeRuntime } from '@/lib/googleSignIn';
 import { signInWithOAuthPopup, OAUTH_PENDING_KEY } from '@/lib/oauthPopup';
 import { logError } from '@/lib/errorLogger';
+import BrandedLoadingScreen from '@/components/BrandedLoadingScreen';
+
 import ProviderConflictDialog, { type ConflictProvider } from '@/components/ProviderConflictDialog';
 import { useAdminRole } from '@/hooks/useAdminRole';
 import { Capacitor } from '@capacitor/core';
@@ -339,10 +341,11 @@ const Auth = () => {
       // Native (iOS/Android): Google's own system account sheet. Falls through
       // to the in-app browser flow when the plugin is unavailable.
       if (isNativeRuntime()) {
+        setConnectingProvider('Google');
         const result = await nativeGoogleSignIn();
         if (result.handled) {
-          setConnectingProvider(null);
           if (result.error) {
+            setConnectingProvider(null);
             localStorage.removeItem('flea_oauth_signup');
             localStorage.removeItem('flea-new-user-pending-onboarding');
             if (!result.cancelled) {
@@ -353,10 +356,14 @@ const Auth = () => {
               );
             }
           }
-          // On success onAuthStateChange redirects via the useEffect above.
+          // On success keep the branded overlay up: the session is still
+          // hydrating and onboarding mounts a moment later. Clearing it here
+          // flashes the bare auth screen and looks like a failure.
           return;
         }
+        setConnectingProvider(null);
       }
+
 
 
       // Inside the Lovable editor preview iframe the managed helper already
@@ -390,6 +397,7 @@ const Auth = () => {
       const result = await signInWithOAuthPopup('google', { prompt: 'select_account' });
 
       if (result.error) {
+        setConnectingProvider(null);
         localStorage.removeItem('flea_oauth_signup');
         localStorage.removeItem('flea-new-user-pending-onboarding');
         if (!result.cancelled) {
@@ -401,10 +409,9 @@ const Auth = () => {
       }
 
       // Session is set (popup) or will be set by the callback route (native).
-      // onAuthStateChange redirects via the useEffect above. When the flow
-      // handed off to a redirect, keep the branded overlay up so the user
-      // never sees a bare auth screen mid-handoff.
-      if (result.redirected) return;
+      // Keep the branded overlay up either way — it stays until this screen
+      // unmounts on redirect, so there is no flash of the bare auth screen.
+      return;
     } catch (err: any) {
       localStorage.removeItem('flea_oauth_signup');
       localStorage.removeItem('flea-new-user-pending-onboarding');
@@ -414,7 +421,7 @@ const Auth = () => {
       setConnectingProvider(null);
       return;
     }
-    setConnectingProvider(null);
+
   };
 
 
@@ -468,6 +475,14 @@ const Auth = () => {
   // supabase.auth.getSession() can hang and leave the user stuck on lime.
   // Render the login form immediately; the redirect effect above will
   // navigate away once a session resolves.
+
+  // A session has arrived but the redirect (and onboarding) hasn't mounted
+  // yet — hold the branded screen so the auth form never flashes back.
+  if (user) {
+    return <BrandedLoadingScreen message="Signing you in" />;
+  }
+
+
 
   return (
     <div className="auth-screen native-safe-top fixed inset-0 bg-primary flex flex-col items-center overflow-hidden px-6 max-[375px]:px-4 pb-8">
