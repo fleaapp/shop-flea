@@ -53,9 +53,12 @@ Change to a layout-driven approach instead of a measurement-driven one:
   tappable - you scroll to them and tap straight into them, with no need to dismiss the keyboard.
 - The focused field is always scrolled fully clear of the keyboard, and moving focus to the next
   field keeps it clear too.
-- Nothing is added when the keyboard is closed: no padding, no spacer, no footer strip. The
-  constraint resolves to the normal height when the keyboard height is zero, so every screen looks
-  exactly as it does now.
+- Nothing is added when the keyboard is closed: no padding, no spacer, no footer strip, and no
+  coloured band of any kind. When the keyboard opens the dialog simply reflows shorter and its body
+  scrolls, against the same background colour it always had - the surface blends into the screen,
+  there is no visible gap or strip. The constraint resolves to the normal height when the keyboard
+  height is zero, so every screen looks exactly as it does now.
+
 
 This is applied once at the shared dialog / drawer / sheet level, so it covers the username and
 last name step, the password step, seller onboarding and every other form app-wide.
