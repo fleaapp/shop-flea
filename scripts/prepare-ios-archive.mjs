@@ -110,6 +110,25 @@ function assertNativeBundle() {
   console.log(`  OAuth popup:    ${hasOAuthPopup ? 'yes' : 'NO'}`);
 }
 
+/**
+ * The Google Sign-In SDK injects a `[REVERSED_IOS_CLIENT_ID]` placeholder URL
+ * scheme into Info.plist on `cap sync`. Archiving with that placeholder is what
+ * caused the earlier App Store rejection, so fail loudly if it survives the
+ * native setup step.
+ */
+function assertNoPlaceholderUrlScheme() {
+  const plistPath = join(root, 'ios', 'App', 'App', 'Info.plist');
+  if (!existsSync(plistPath)) return;
+  const plist = readFileSync(plistPath, 'utf8');
+  if (/REVERSED_IOS_CLIENT_ID|REVERSED_CLIENT_ID/.test(plist)) {
+    throw new Error(
+      'Info.plist still contains a placeholder Google URL scheme (REVERSED_IOS_CLIENT_ID). Add the real reversed iOS client id to ios-native/Info.plist.patch.json. Do not archive.',
+    );
+  }
+  console.log('Info.plist URL schemes: no placeholders.');
+}
+
+
 try {
   console.log(`Preparing Flea iOS bundle ${buildId} (${buildDate})...`);
   rmSync(distDir, { recursive: true, force: true });
