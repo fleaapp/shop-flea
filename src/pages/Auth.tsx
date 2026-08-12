@@ -13,6 +13,8 @@ import { nativeAppleSignIn, isIosNative as isAppleIosNative } from '@/lib/appleS
 import { nativeGoogleSignIn, isNativeRuntime } from '@/lib/googleSignIn';
 import { signInWithOAuthPopup, OAUTH_PENDING_KEY } from '@/lib/oauthPopup';
 import { logError } from '@/lib/errorLogger';
+import BrandedLoadingScreen from '@/components/BrandedLoadingScreen';
+
 import ProviderConflictDialog, { type ConflictProvider } from '@/components/ProviderConflictDialog';
 import { useAdminRole } from '@/hooks/useAdminRole';
 import { Capacitor } from '@capacitor/core';
