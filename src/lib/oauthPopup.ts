@@ -123,8 +123,8 @@ export async function signInWithOAuthPopup(
 
       await Browser.open({ url, presentationStyle: 'popover' });
 
-      const first = await Promise.race([
-        sessionArrived.then((ok) => (ok ? 'session' : 'timeout') as const),
+      const first = await Promise.race<'session' | 'timeout' | 'closed'>([
+        sessionArrived.then((ok): 'session' | 'timeout' => (ok ? 'session' : 'timeout')),
         sheetClosed,
       ]);
 
