@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { lovable } from '@/integrations/lovable';
 import { nativeAppleSignIn, isIosNative as isAppleIosNative } from '@/lib/appleSignIn';
 import { nativeGoogleSignIn, isNativeRuntime } from '@/lib/googleSignIn';
-import { signInWithOAuthPopup } from '@/lib/oauthPopup';
+import { signInWithOAuthPopup, OAUTH_PENDING_KEY } from '@/lib/oauthPopup';
 import { logError } from '@/lib/errorLogger';
 import ProviderConflictDialog, { type ConflictProvider } from '@/components/ProviderConflictDialog';
 import { useAdminRole } from '@/hooks/useAdminRole';
@@ -72,7 +72,15 @@ const Auth = () => {
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [conflictProvider, setConflictProvider] = useState<ConflictProvider | null>(null);
-  const [connectingProvider, setConnectingProvider] = useState<'Google' | null>(null);
+  const [connectingProvider, setConnectingProvider] = useState<'Google' | null>(() => {
+    // If the app was re-mounted while a native provider sheet was open, keep
+    // showing the branded waiting state instead of a bare auth screen.
+    try {
+      return sessionStorage.getItem(OAUTH_PENDING_KEY) === 'google' ? 'Google' : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Listen for OAuth conflicts surfaced by AuthContext after redirect.
   useEffect(() => {
@@ -392,16 +400,20 @@ const Auth = () => {
       }
 
       // Session is set (popup) or will be set by the callback route (native).
-      // onAuthStateChange redirects via the useEffect above.
+      // onAuthStateChange redirects via the useEffect above. When the flow
+      // handed off to a redirect, keep the branded overlay up so the user
+      // never sees a bare auth screen mid-handoff.
+      if (result.redirected) return;
     } catch (err: any) {
       localStorage.removeItem('flea_oauth_signup');
       localStorage.removeItem('flea-new-user-pending-onboarding');
       console.error('Google sign-in exception:', err);
       logError({ title: 'Google sign-in exception', message: err?.message || String(err), stack: err?.stack ?? null, severity: 'error', source: 'auth' });
       toast.error(`Google sign-in failed: ${err?.message || 'Please try again.'}`);
-    } finally {
       setConnectingProvider(null);
+      return;
     }
+    setConnectingProvider(null);
   };
 
 

@@ -283,7 +283,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
 
       {/* Text */}
       {Array.isArray(slide.text) ? (
-        <div className={`flex flex-col items-center gap-0.5 ${!isSpotlightSlide && (slide.gesture || slide.image || slide.video) ? 'mt-14' : ''}`}>
+        <div className={`flex flex-col items-center gap-0.5 ${!isSpotlightSlide && (slide.gesture || slide.image || slide.video) ? 'mt-8' : ''}`}>
           {slide.text.map((line, i) => (
             <p key={i} className={`text-cream text-center leading-snug max-[375px]:text-xs ${i === 0 && !slide.video ? 'text-lg font-bold max-[375px]:text-base' : 'text-base font-bold text-cream/80 max-[375px]:text-sm'}`}>
               {line}
@@ -360,7 +360,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
       )}
 
       {/* Main content + controls — centred as a group */}
-      <div className="relative flex-1 w-full flex flex-col items-center justify-center px-6 pb-[calc(84px+env(safe-area-inset-bottom))] max-[375px]:pb-[calc(76px+env(safe-area-inset-bottom))]">
+      <div className="relative flex-1 w-full flex flex-col items-center justify-center px-6 py-[max(24px,env(safe-area-inset-bottom))]">
         <div className="flex flex-col items-center">
           {isSpotlightSlide ? (
             <motion.div

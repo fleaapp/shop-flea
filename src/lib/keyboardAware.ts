@@ -23,6 +23,7 @@ const FOCUSABLE_SKIP_TYPES = ['checkbox', 'radio', 'button', 'submit', 'reset', 
 
 let installed = false;
 let shiftedSurface: HTMLElement | null = null;
+let fittedSurface: { el: HTMLElement; maxHeight: string; overflowY: string } | null = null;
 let lastFocused: HTMLElement | null = null;
 let nativeKeyboardHeight = 0;
 let rafId = 0;
@@ -84,6 +85,34 @@ const clearShift = () => {
   shiftedSurface = null;
 };
 
+/**
+ * Temporary height cap. When a surface (a centred dialog, for example) is
+ * taller than the space left above the keyboard, no amount of lifting can
+ * reveal its lower fields — so while the keyboard is open we cap the surface
+ * to the visible area and let it scroll internally. Fully reverted the moment
+ * the keyboard closes: no padding, no spacer, nothing left behind.
+ */
+const clearFit = () => {
+  if (!fittedSurface) return;
+  const { el, maxHeight, overflowY } = fittedSurface;
+  el.style.maxHeight = maxHeight;
+  el.style.overflowY = overflowY;
+  fittedSurface = null;
+};
+
+const applyFit = (surface: HTMLElement, available: number) => {
+  if (fittedSurface && fittedSurface.el !== surface) clearFit();
+  if (!fittedSurface) {
+    fittedSurface = {
+      el: surface,
+      maxHeight: surface.style.maxHeight,
+      overflowY: surface.style.overflowY,
+    };
+  }
+  surface.style.maxHeight = `${Math.round(available)}px`;
+  surface.style.overflowY = 'auto';
+};
+
 const applyShift = (surface: HTMLElement, amount: number) => {
   if (shiftedSurface && shiftedSurface !== surface) clearShift();
   surface.style.setProperty('--kb-shift', `${-Math.round(amount)}px`);
@@ -95,6 +124,7 @@ const ensureVisible = () => {
   const el = activeField();
   if (!el) {
     clearShift();
+    clearFit();
     return;
   }
 
@@ -104,6 +134,7 @@ const ensureVisible = () => {
   const kb = keyboardHeight();
   if (kb <= 0) {
     clearShift();
+    clearFit();
     return;
   }
 
@@ -126,8 +157,9 @@ const ensureVisible = () => {
   }
 
   const scrollParent = getScrollParent(el);
-  if (scrollParent) {
+  if (scrollParent && scrollParent !== fittedSurface?.el) {
     clearShift();
+    clearFit();
     scrollParent.scrollBy({ top: overlap, behavior: 'smooth' });
     return;
   }
@@ -137,15 +169,33 @@ const ensureVisible = () => {
     return;
   }
 
+  // If the surface itself cannot fit above the keyboard, cap it to the visible
+  // area (temporarily) so its lower fields become reachable by scrolling.
+  const available = window.innerHeight - kb - MARGIN * 2;
+  const naturalHeight = surface.scrollHeight;
+  if (available > 120 && naturalHeight > available) {
+    applyFit(surface, available);
+  } else {
+    clearFit();
+  }
+
   // Never push the surface past the top of the viewport.
   const surfaceRect = surface.getBoundingClientRect();
   const surfaceTop = surfaceRect.top + currentShift;
   const maxShift = Math.max(0, surfaceTop - MARGIN);
   const next = Math.min(currentShift + overlap, currentShift + maxShift);
 
-  if (next <= 0) return;
-  applyShift(surface, next);
+  if (next > 0) applyShift(surface, next);
+
+  // With the cap applied the surface scrolls internally — bring the focused
+  // field the rest of the way into view.
+  if (fittedSurface?.el === surface) {
+    const after = el.getBoundingClientRect();
+    const remaining = after.bottom - safeBottom;
+    if (remaining > 0) surface.scrollBy({ top: remaining, behavior: 'smooth' });
+  }
 };
+
 
 const schedule = () => {
   cancelAnimationFrame(rafId);
@@ -169,9 +219,12 @@ export const installKeyboardAware = (): (() => void) => {
 
   const onFocusOut = () => {
     lastFocused = null;
-    // If nothing else takes focus, drop the shift.
+    // If nothing else takes focus, drop the shift and the temporary cap.
     window.setTimeout(() => {
-      if (!activeField()) clearShift();
+      if (!activeField()) {
+        clearShift();
+        clearFit();
+      }
     }, 60);
   };
 
@@ -199,6 +252,7 @@ export const installKeyboardAware = (): (() => void) => {
           nativeKeyboardHeight = 0;
           document.documentElement.style.setProperty('--native-keyboard-height', '0px');
           clearShift();
+          clearFit();
         };
         const willHide = await Keyboard.addListener('keyboardWillHide', reset);
         const didHide = await Keyboard.addListener('keyboardDidHide', reset);
@@ -219,6 +273,7 @@ export const installKeyboardAware = (): (() => void) => {
     window.visualViewport?.removeEventListener('resize', onViewportChange);
     removeNative?.();
     clearShift();
+    clearFit();
     installed = false;
   };
 };

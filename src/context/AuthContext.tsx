@@ -52,6 +52,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  // Tracks the user id we last loaded a profile for, so a USER_UPDATED event
+  // or token refresh never re-triggers the full-screen loading state.
+  const loadedUserIdRef = useRef<string | null>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [isBanned, setIsBanned] = useState(false);
 
@@ -142,11 +145,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         if (session?.user) {
-          // Mark loading until profile fetch completes so consumers don't
-          // briefly see (user && !profile) and flash onboarding UI.
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+          // Mark loading until the profile fetch completes so consumers don't
+          // briefly see (user && !profile) and flash onboarding UI. Only do
+          // this for the FIRST sign-in of a session: a USER_UPDATED event
+          // (e.g. the user setting their password mid-signup) or a silent
+          // token refresh must refresh the profile in the background, never
+          // blank the app out to the branded loading screen.
+          const isSameUser = loadedUserIdRef.current === session.user.id;
+          if (!isSameUser) {
             setLoading(true);
           }
+          loadedUserIdRef.current = session.user.id;
+
 
           // Register the current device against the profile so we can gate re-registration
           // on unsettled balances. Fire-and-forget; failure must never block auth.
@@ -283,6 +293,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
 
       if (session?.user) {
+        loadedUserIdRef.current = session.user.id;
         fetchProfile(session.user.id).finally(() => {
           clearTimeout(safetyTimer);
           setLoading(false);
@@ -453,6 +464,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setProfile(null);
     setProfileLoaded(false);
+    loadedUserIdRef.current = null;
     setIsBanned(false);
     try {
       await supabase.auth.signOut({ scope: 'local' });
