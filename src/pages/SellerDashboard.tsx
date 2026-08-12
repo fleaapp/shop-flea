@@ -570,13 +570,8 @@ const SellerDashboard = () => {
               </section>
             )}
 
-            {payoutRisk?.bankStatus === 'new' && payoutRisk?.hasBankAccount && !payoutRisk?.payoutFailureReason && (
-              <section className="rounded-2xl bg-amber-50 border border-amber-200 p-4 mt-2">
-                <p className="text-[13px] text-charcoal leading-relaxed">
-                  🔍 Bank account being checked. Payouts unlock as soon as this finishes - usually within a day.
-                </p>
-              </section>
-            )}
+
+
 
             {payoutRisk?.payoutReviewFlag && (
               <section className="rounded-2xl bg-amber-50 border border-amber-200 p-4 mt-2">
