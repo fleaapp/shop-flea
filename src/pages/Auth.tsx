@@ -339,10 +339,11 @@ const Auth = () => {
       // Native (iOS/Android): Google's own system account sheet. Falls through
       // to the in-app browser flow when the plugin is unavailable.
       if (isNativeRuntime()) {
+        setConnectingProvider('Google');
         const result = await nativeGoogleSignIn();
         if (result.handled) {
-          setConnectingProvider(null);
           if (result.error) {
+            setConnectingProvider(null);
             localStorage.removeItem('flea_oauth_signup');
             localStorage.removeItem('flea-new-user-pending-onboarding');
             if (!result.cancelled) {
@@ -353,10 +354,14 @@ const Auth = () => {
               );
             }
           }
-          // On success onAuthStateChange redirects via the useEffect above.
+          // On success keep the branded overlay up: the session is still
+          // hydrating and onboarding mounts a moment later. Clearing it here
+          // flashes the bare auth screen and looks like a failure.
           return;
         }
+        setConnectingProvider(null);
       }
+
 
 
       // Inside the Lovable editor preview iframe the managed helper already
