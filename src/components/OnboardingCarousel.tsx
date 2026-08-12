@@ -360,7 +360,7 @@ const OnboardingCarousel = ({ open, onComplete }: OnboardingCarouselProps) => {
       )}
 
       {/* Main content + controls — centred as a group */}
-      <div className="relative flex-1 w-full flex flex-col items-center justify-center px-6 pb-[calc(84px+env(safe-area-inset-bottom))] max-[375px]:pb-[calc(76px+env(safe-area-inset-bottom))]">
+      <div className="relative flex-1 w-full flex flex-col items-center justify-center px-6 py-[max(24px,env(safe-area-inset-bottom))]">
         <div className="flex flex-col items-center">
           {isSpotlightSlide ? (
             <motion.div
