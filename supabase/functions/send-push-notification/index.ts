@@ -412,8 +412,9 @@ serve(async (req) => {
             notification_type: notification.type,
           },
         });
-        // APNs 410 = unregistered, 400 BadDeviceToken; web-push 404/410 = gone
-        if (e?.statusCode === 404 || e?.statusCode === 410 || /BadDeviceToken/i.test(e?.body || "")) {
+        // APNs 410 = unregistered, 400 BadDeviceToken; FCM "UNREGISTERED"/"not-registered"; web-push 404/410 = gone
+        const errMsg = String(e?.message || e?.body || "");
+        if (e?.statusCode === 404 || e?.statusCode === 410 || /BadDeviceToken/i.test(e?.body || "") || /UNREGISTERED|not-registered|invalid-registration/i.test(errMsg)) {
           staleEndpoints.push(sub.endpoint);
         }
       }
