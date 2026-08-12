@@ -13,14 +13,13 @@
  * browser OAuth flow, so sign-in keeps working either way.
  */
 
-export const GOOGLE_IOS_CLIENT_ID = '';
-export const GOOGLE_WEB_CLIENT_ID = '';
-export const GOOGLE_ANDROID_CLIENT_ID = '';
+export const GOOGLE_IOS_CLIENT_ID: string = '';
+export const GOOGLE_WEB_CLIENT_ID: string = '';
+export const GOOGLE_ANDROID_CLIENT_ID: string = '';
 
 /** Reversed iOS client id — this must also be an Info.plist URL scheme. */
 export const googleIosUrlScheme = (): string => {
-  if (!GOOGLE_IOS_CLIENT_ID) return '';
-  const [id, domain] = GOOGLE_IOS_CLIENT_ID.split('.apps.googleusercontent.com');
-  if (domain !== undefined && id) return `com.googleusercontent.apps.${id}`;
-  return '';
+  const id = GOOGLE_IOS_CLIENT_ID.split('.apps.googleusercontent.com')[0];
+  return id ? `com.googleusercontent.apps.${id}` : '';
 };
+
