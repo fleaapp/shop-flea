@@ -366,12 +366,13 @@ Deno.serve(async (req) => {
           },
         ];
 
-        const alertsWritten = await insertNotificationsWithRetry(admin, notificationRows, order.id);
+        // Push is independent of the in-app alert rows - it must go out even
+        // if one of the rows could not be stored.
+        await insertNotificationsWithRetry(admin, notificationRows, order.id);
 
-        if (alertsWritten) {
-          firePush(order.buyer_id, { type: "order_auto_refunded", title: "Order refunded", message: "Your order was automatically refunded because the seller didn't ship within 8 days." });
-          firePush(order.seller_id, { type: "sale_auto_refunded", title: "Sale auto-refunded", message: "Your sale was auto-refunded because tracking wasn't added within 8 days." });
-        }
+        firePush(order.buyer_id, { type: "order_auto_refunded", title: "Order refunded", message: "Your order was automatically refunded because the seller didn't ship within 8 days." });
+        firePush(order.seller_id, { type: "sale_auto_refunded", title: "Sale auto-refunded", message: "Your sale was auto-refunded because tracking wasn't added within 8 days." });
+
 
 
         // Audit trail.
