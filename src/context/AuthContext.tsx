@@ -151,10 +151,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // (e.g. the user setting their password mid-signup) or a silent
           // token refresh must refresh the profile in the background, never
           // blank the app out to the branded loading screen.
-          const isSameUser = user?.id === session.user.id;
-          if (event === 'SIGNED_IN' && !isSameUser) {
+          const isSameUser = loadedUserIdRef.current === session.user.id;
+          if (!isSameUser) {
             setLoading(true);
           }
+          loadedUserIdRef.current = session.user.id;
 
 
           // Register the current device against the profile so we can gate re-registration
