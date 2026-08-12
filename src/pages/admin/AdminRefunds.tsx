@@ -13,6 +13,17 @@ import { AdminEmptyState } from '@/components/admin/shell/AdminEmptyState';
 
 const initials = (s?: string | null) => (s ?? '?').replace('@', '').slice(0, 2).toUpperCase();
 
+const REFUND_REASON_LABELS: Record<string, string> = {
+  auto_unshipped_8d: "Auto-refunded - seller didn't ship within 8 days",
+  seller_cancelled: 'Seller cancelled the order',
+  buyer_request: 'Buyer requested a refund',
+  return_delivered: 'Refunded after the return was delivered',
+  admin_refund: 'Refunded by an admin',
+};
+
+const refundReasonLabel = (reason: string) => REFUND_REASON_LABELS[reason] ?? reason;
+
+
 export default function AdminRefunds() {
   const navigate = useNavigate();
   const { orders, loading, filter, setFilter } = useAdminRefunds();
