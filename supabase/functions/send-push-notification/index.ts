@@ -318,6 +318,53 @@ serve(async (req) => {
       }
     };
 
+    // --- FCM (Android) via Firebase Admin SDK ---
+    const fcmServiceAccountJson = Deno.env.get("FCM_SERVICE_ACCOUNT_JSON") ?? "";
+    let fcmApp: any = null;
+    const getFcmApp = () => {
+      if (fcmApp) return fcmApp;
+      if (!fcmServiceAccountJson) {
+        throw new Error("FCM not configured: missing FCM_SERVICE_ACCOUNT_JSON");
+      }
+      const admin = (window as any).admin ?? null; // placeholder, replaced below
+      return null;
+    };
+
+    // Lazy-load firebase-admin only when an Android subscription is present.
+    let firebaseMessaging: any = null;
+    const getFirebaseMessaging = async () => {
+      if (firebaseMessaging) return firebaseMessaging;
+      const { initializeApp, cert } = await import("npm:firebase-admin@12.1.0/app");
+      const { getMessaging } = await import("npm:firebase-admin@12.1.0/messaging");
+      if (!fcmServiceAccountJson) {
+        throw new Error("FCM not configured: missing FCM_SERVICE_ACCOUNT_JSON");
+      }
+      const serviceAccount = JSON.parse(fcmServiceAccountJson);
+      const appName = `flea-push-${Date.now()}`;
+      const app = initializeApp({ credential: cert(serviceAccount) }, appName);
+      firebaseMessaging = getMessaging(app);
+      return firebaseMessaging;
+    };
+
+    const sendFcm = async (deviceToken: string) => {
+      const messaging = await getFirebaseMessaging();
+      const message = {
+        token: deviceToken,
+        notification: { title, body },
+        data: {
+          type: String(notification.type ?? ""),
+          related_listing_id: String(notification.related_listing_id ?? ""),
+          related_order_id: String(notification.related_order_id ?? ""),
+          related_thread_id: String(notification.related_thread_id ?? ""),
+        },
+        android: {
+          priority: "high" as const,
+          notification: { channelId: "flea_notifications", sound: "default" },
+        },
+      };
+      await messaging.send(message);
+    };
+
     for (const sub of subscriptions) {
       try {
         if (sub.platform === "ios") {
@@ -327,6 +374,16 @@ serve(async (req) => {
           console.log(`[Push] APNs success via ${apnsResult.host}`);
           continue;
         }
+
+        if (sub.platform === "android") {
+          console.log(`[Push] FCM → ${sub.endpoint.slice(0, 16)}…`);
+          await sendFcm(sub.endpoint);
+          sent++;
+          console.log(`[Push] FCM success`);
+          continue;
+        }
+
+
 
         if (!vapidPrivateKey) {
           throw new Error("VAPID_PRIVATE_KEY not configured for web push");
