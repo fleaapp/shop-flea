@@ -934,7 +934,7 @@ const SellerDashboard = () => {
                     {visible.map((a) => {
                       const displayAmount = a.net ?? (a.amount - (a.fee || 0));
                       const isOut = displayAmount < 0;
-                      const meta = activityMeta(a.type);
+                      const meta = activityMeta(a.type, displayAmount);
                       return (
                         <li key={a.id} className="flex items-center justify-between px-4 py-3">
                           <div className="min-w-0 flex-1 pr-3">
