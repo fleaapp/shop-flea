@@ -249,6 +249,7 @@ export const installKeyboardAware = (): (() => void) => {
           nativeKeyboardHeight = 0;
           document.documentElement.style.setProperty('--native-keyboard-height', '0px');
           clearShift();
+          clearFit();
         };
         const willHide = await Keyboard.addListener('keyboardWillHide', reset);
         const didHide = await Keyboard.addListener('keyboardDidHide', reset);
