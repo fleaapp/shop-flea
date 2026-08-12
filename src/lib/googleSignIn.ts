@@ -61,12 +61,27 @@ const isCancellation = (message: string): boolean =>
   /cancel|dismiss|user closed|-5\b|12501/i.test(message);
 
 /**
- * The Google SDK always mints its own nonce and stamps it into the ID token.
- * The backend rejects the exchange unless the very same value is sent along
- * with the token, so we read the claim straight out of the token rather than
- * guessing whether the platform hashed anything.
+ * The auth server does NOT compare the nonce we send against the token claim
+ * directly — it hashes ours with SHA-256 (hex) and compares that to the claim.
+ * Google copies whatever value it was given into the token verbatim, so the
+ * app must own the nonce: hand Google the *hash*, hand the backend the *raw*
+ * value. Reading the claim back out of the token and resending it (the
+ * previous approach) makes the server hash it a second time — guaranteed
+ * "Nonces mismatch".
  */
-const nonceFromIdToken = (token: string): string | undefined => {
+const randomNonce = (): string => {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+};
+
+const sha256Hex = async (value: string): Promise<string> => {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+};
+
+/** Reads the `nonce` claim so we can verify Google echoed our hash unchanged. */
+const nonceClaimFromIdToken = (token: string): string | undefined => {
   try {
     const payload = token.split('.')[1];
     if (!payload) return undefined;
@@ -77,6 +92,7 @@ const nonceFromIdToken = (token: string): string | undefined => {
     return undefined;
   }
 };
+
 
 export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
   if (!nativeGoogleAvailable()) return { handled: false };
