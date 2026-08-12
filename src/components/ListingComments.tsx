@@ -69,6 +69,11 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
   }, [onComposerFocusChange]);
 
   const handleComposerFocus = () => {
+    // Pin the composer above the keyboard, keeping the space it left behind
+    // so the comment list does not jump.
+    const block = composerRef.current?.parentElement;
+    if (block) setSlotHeight(block.getBoundingClientRect().height);
+    setComposerPinned(true);
     onComposerFocusChange?.(true);
   };
 
@@ -76,9 +81,11 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
     requestAnimationFrame(() => {
       const activeElement = document.activeElement;
       const isStillWithinComposer = !!(activeElement instanceof Node && composerRef.current?.contains(activeElement));
+      if (!isStillWithinComposer) setComposerPinned(false);
       onComposerFocusChange?.(isStillWithinComposer);
     });
   };
+
 
   // Always fetch comment count (for badge visibility when collapsed)
   const { data: commentCount = 0 } = useQuery({
