@@ -127,9 +127,15 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
       /* no cached session — fine */
     }
 
+    // We own the nonce: Google receives the hash, the backend receives the raw
+    // value and hashes it itself. `forcePrompt` must stay true — without it the
+    // iOS plugin silently reuses a cached token that carries an older nonce.
+    const rawNonce = randomNonce();
+    const hashedNonce = await sha256Hex(rawNonce);
+
     const login = await SocialLogin.login({
       provider: 'google',
-      options: { scopes: ['email', 'profile'], forcePrompt: true },
+      options: { scopes: ['email', 'profile'], forcePrompt: true, nonce: hashedNonce },
     });
 
     const result = (login as any)?.result ?? {};
@@ -142,14 +148,21 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
       return { handled: false };
     }
 
-    const nonce = nonceFromIdToken(idToken);
+    // If Google did not echo our hash back, the exchange is guaranteed to be
+    // rejected. Fall back to the browser flow instead of showing an error.
+    const claim = nonceClaimFromIdToken(idToken);
+    if (claim !== hashedNonce) {
+      console.warn('Native Google sign-in returned an unexpected nonce, falling back.');
+      return { handled: false };
+    }
 
     const { error } = await supabase.auth.signInWithIdToken({
       provider: 'google',
       token: idToken,
-      ...(nonce ? { nonce } : {}),
+      nonce: rawNonce,
     });
     if (error) return { handled: true, error, cancelled: false };
+
 
     return { handled: true, error: null };
   } catch (err: any) {
