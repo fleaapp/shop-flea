@@ -320,15 +320,6 @@ serve(async (req) => {
 
     // --- FCM (Android) via Firebase Admin SDK ---
     const fcmServiceAccountJson = Deno.env.get("FCM_SERVICE_ACCOUNT_JSON") ?? "";
-    let fcmApp: any = null;
-    const getFcmApp = () => {
-      if (fcmApp) return fcmApp;
-      if (!fcmServiceAccountJson) {
-        throw new Error("FCM not configured: missing FCM_SERVICE_ACCOUNT_JSON");
-      }
-      const admin = (window as any).admin ?? null; // placeholder, replaced below
-      return null;
-    };
 
     // Lazy-load firebase-admin only when an Android subscription is present.
     let firebaseMessaging: any = null;
