@@ -215,30 +215,49 @@ async function resolvePaymentIntentId(stripe: Stripe, order: any) {
 
 // Writes the alert rows and reports whether they actually landed. supabase-js
 // returns errors instead of throwing, so an unchecked insert fails invisibly.
+// Rows are written one at a time: a deleted counterparty used to break a
+// foreign key on the batch and silently wipe out BOTH alerts.
 async function insertNotificationsWithRetry(
   admin: ReturnType<typeof createClient>,
   rows: Record<string, unknown>[],
   orderId: string,
 ) {
-  for (let attempt = 1; attempt <= 2; attempt += 1) {
-    const { error } = await admin.from("notifications").insert(rows);
-    if (!error) return true;
-    console.error(`[auto-refund-unshipped] notification insert attempt ${attempt} failed for ${orderId}`, error.message);
-    if (attempt === 2) {
+  let allOk = true;
+
+  for (const row of rows) {
+    let saved = false;
+    let lastMessage = "";
+
+    // Attempt 1: as-is. Attempt 2: without the related links, which are the
+    // only foreign keys here (a deleted buyer/seller/listing must not stop
+    // the alert from reaching the other side).
+    const variants = [row, { ...row, related_user_id: null, related_listing_id: null }];
+
+    for (const variant of variants) {
+      const { error } = await admin.from("notifications").insert(variant);
+      if (!error) { saved = true; break; }
+      lastMessage = error.message;
+      console.error(`[auto-refund-unshipped] notification insert failed for ${orderId}`, error.message);
+    }
+
+    if (!saved) {
+      allOk = false;
       try {
         await admin.from("error_logs").insert({
           source: "auto-refund-unshipped",
           severity: "error",
-          title: "Refund alerts not delivered",
-          message: `Order ${orderId} was refunded but its buyer/seller alerts could not be saved: ${error.message}`,
-          context: { order_id: orderId },
-          dedupe_key: `auto-refund-notify-${orderId}`,
+          title: "Refund alert not delivered",
+          message: `Order ${orderId} was refunded but an alert could not be saved: ${lastMessage}`,
+          context: { order_id: orderId, user_id: row.user_id, type: row.type },
+          dedupe_key: `auto-refund-notify-${orderId}-${String(row.type ?? "alert")}`,
         });
       } catch (_) { /* logging must never break the refund loop */ }
     }
   }
-  return false;
+
+  return allOk;
 }
+
 
 async function firePush(userId: string, notification: Record<string, unknown>) {
 
