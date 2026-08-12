@@ -118,27 +118,29 @@ export function useNativePushNotifications() {
     }
   }, [user?.id]);
 
-  const saveNativeToken = useCallback(async (apnsToken: string, reason: string) => {
-    if (!user?.id || !apnsToken) return;
+  const saveNativeToken = useCallback(async (deviceToken: string, reason: string) => {
+    if (!user?.id || !deviceToken) return;
 
     if (saveInFlightRef.current) {
       return;
     }
 
+    const platform = (Capacitor.getPlatform() === 'android' ? 'android' : 'ios') as 'ios' | 'android';
+
     saveInFlightRef.current = true;
     try {
-      console.log('[NativePush] Saving APNs token:', { reason, userId: user.id });
+      console.log(`[NativePush] Saving ${platform} token:`, { reason, userId: user.id });
       logNativePushState('token-save-started', {
         reason,
         user_id: user.id,
-        platform: Capacitor.getPlatform(),
-        token_prefix: apnsToken.slice(0, 12),
+        platform,
+        token_prefix: deviceToken.slice(0, 12),
       });
 
       const { error } = await invokeCloudFunction('register-push-subscription', {
         body: {
-          endpoint: apnsToken,
-          platform: 'ios',
+          endpoint: deviceToken,
+          platform,
         },
       });
 
