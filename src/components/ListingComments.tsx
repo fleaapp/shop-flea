@@ -54,6 +54,9 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
   const [cursorPosition, setCursorPosition] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
+  const [composerPinned, setComposerPinned] = useState(false);
+  const [slotHeight, setSlotHeight] = useState(0);
+
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { requireAuth, exitGuestMode } = useGuestMode();
