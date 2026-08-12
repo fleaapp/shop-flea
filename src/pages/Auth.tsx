@@ -72,7 +72,15 @@ const Auth = () => {
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [conflictProvider, setConflictProvider] = useState<ConflictProvider | null>(null);
-  const [connectingProvider, setConnectingProvider] = useState<'Google' | null>(null);
+  const [connectingProvider, setConnectingProvider] = useState<'Google' | null>(() => {
+    // If the app was re-mounted while a native provider sheet was open, keep
+    // showing the branded waiting state instead of a bare auth screen.
+    try {
+      return sessionStorage.getItem(OAUTH_PENDING_KEY) === 'google' ? 'Google' : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Listen for OAuth conflicts surfaced by AuthContext after redirect.
   useEffect(() => {
