@@ -464,6 +464,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setProfile(null);
     setProfileLoaded(false);
+    loadedUserIdRef.current = null;
     setIsBanned(false);
     try {
       await supabase.auth.signOut({ scope: 'local' });
