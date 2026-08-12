@@ -10,14 +10,15 @@ Change: label these lines in plain English instead of the raw provider wording -
 
 ## 2. "Pay out to bank" error / "Bank account being checked"
 
-Confirmed cause: your connected account has a valid bank account, but the provider reports its status as `new`. For Australian accounts that status is normal and usually never changes until a payout is actually attempted - it does not mean anything is wrong or under review.
+Nothing new is being checked, and nothing changed on your account. Verified in the backend: no bank detail change is recorded, no payout failure is recorded, and no review flag is set. The bank account itself is fine.
 
-Our payout function treats `new` as "still checking" and returns an error, so the first payout can never succeed. That is the bug.
+What is happening: for Australian accounts the payment provider leaves a bank account permanently marked `new`. That marker never flips to "validated", even after money has already paid out - it is not a review state. Earlier payouts landed because they went out on the provider's own automatic schedule, which never passes through our button. The manual "Pay out to bank" button is the only path that reads that marker, and it treats `new` as "still checking", so it has never been able to succeed.
 
 Fix:
-- Only block payouts when the bank account is genuinely rejected (`errored` / `verification_failed`) or when the account itself has payouts disabled.
+- Only block payouts when the bank account is genuinely rejected (`errored` / `verification_failed`) or when the account has payouts disabled.
 - Remove the "Bank account being checked" banner for the `new` state.
 - If a payout still fails, show the real provider message and disable the button rather than leaving a dead button that errors.
+
 
 ## 3. No alert when the sale was auto-refunded
 
