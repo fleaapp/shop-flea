@@ -402,7 +402,7 @@ serve(async (req) => {
         console.error(`[Push] Failed (${sub.platform || "web"}):`, e?.statusCode, e?.body || e?.message);
         await logEdgeError({
           functionName: "send-push-notification",
-          title: `${sub.platform === "ios" ? "APNs" : "Web push"} delivery failed`,
+          title: `${sub.platform === "ios" ? "APNs" : sub.platform === "android" ? "FCM" : "Web push"} delivery failed`,
           error: e,
           severity: "warning",
           userId: user_id,
