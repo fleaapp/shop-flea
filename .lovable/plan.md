@@ -33,6 +33,9 @@ archive script will fail loudly if a placeholder is ever found in Info.plist.
 
 ## 2. Text boxes that actually adapt (username / last name step)
 
+Goal, stated plainly: the keyboard must never cover the field you are typing in, and any field
+below the current one must still be reachable and tappable while the keyboard is up.
+
 The current approach measures and lifts the dialog after the keyboard appears. On native the
 measurement races the keyboard animation, so the dialog frequently stays where it is - which is
 what you are seeing. It works in the PWA because the browser resizes the viewport for us.
@@ -42,16 +45,17 @@ Change to a layout-driven approach instead of a measurement-driven one:
 - The live keyboard height is already published as a CSS variable. Dialogs, drawers and sheets will
   use it directly in their own height constraint, so the surface is bounded by the space above the
   keyboard as a matter of layout - no timers, no post-hoc measuring, nothing to race.
-- The dialog body becomes the scroll area, so when the surface shrinks the fields below stay
-  reachable and are visibly cut off mid-field (so you can tell there is more underneath), instead
-  of being hidden entirely.
-- The focused field is scrolled into view within that body.
+- The dialog body becomes the scroll area, so fields below the current one stay on screen and
+  tappable - you scroll to them and tap straight into them, with no need to dismiss the keyboard.
+- The focused field is always scrolled fully clear of the keyboard, and moving focus to the next
+  field keeps it clear too.
 - Nothing is added when the keyboard is closed: no padding, no spacer, no footer strip. The
   constraint resolves to the normal height when the keyboard height is zero, so every screen looks
   exactly as it does now.
 
 This is applied once at the shared dialog / drawer / sheet level, so it covers the username and
 last name step, the password step, seller onboarding and every other form app-wide.
+
 
 ## Technical scope
 
