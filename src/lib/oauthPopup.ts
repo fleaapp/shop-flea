@@ -74,66 +74,88 @@ export async function signInWithOAuthPopup(
     );
     if (error || !url) return { error: error ?? new Error('Could not start sign in') };
 
+    // Durable marker: the app may be backgrounded / re-mounted while the
+    // provider sheet is open. Anything that renders the auth screen can use
+    // this to keep showing the branded waiting state instead of a dead end.
+    try { sessionStorage.setItem(OAUTH_PENDING_KEY, provider); } catch { /* noop */ }
+    const clearPending = () => {
+      try { sessionStorage.removeItem(OAUTH_PENDING_KEY); } catch { /* noop */ }
+    };
 
     try {
       const { Browser } = await import('@capacitor/browser');
-      await Browser.open({ url, presentationStyle: 'popover' });
 
-      // Safety net: if the sheet is dismissed (either by the user or by the
-      // universal-link handler in App.tsx), give the session a moment to land
-      // and report a clear failure if it never does.
-      const finished = await new Promise<boolean>((resolve) => {
+      // Resolves as soon as a session exists — whether it was applied by the
+      // deep-link callback, a token refresh, or was already there.
+      const sessionArrived = new Promise<boolean>((resolve) => {
         let settled = false;
-        const done = (value: boolean) => {
+        const finish = (value: boolean) => {
           if (settled) return;
           settled = true;
-          try {
-            handle?.remove();
-          } catch {
-            /* noop */
-          }
-          clearTimeout(timer);
+          try { sub?.data.subscription.unsubscribe(); } catch { /* noop */ }
+          clearInterval(poll);
           resolve(value);
         };
-        let handle: { remove: () => void } | undefined;
-        const timer = setTimeout(() => done(false), NATIVE_SHEET_TIMEOUT_MS);
-        Browser.addListener('browserFinished', () => done(true))
-          .then((listener) => {
-            handle = listener;
-            if (settled) {
-              try {
-                listener.remove();
-              } catch {
-                /* noop */
-              }
-            }
-          })
-          .catch(() => {
-            /* listener unsupported - fall back to the timeout */
+        const sub = supabase.auth.onAuthStateChange((_event, session) => {
+          if (session) finish(true);
+        });
+        // Belt and braces: some native returns apply the session without
+        // emitting an event in this webview instance.
+        const poll = setInterval(() => {
+          void supabase.auth.getSession().then(({ data }) => {
+            if (data.session) finish(true);
           });
+        }, 400);
+        setTimeout(() => finish(false), NATIVE_SHEET_TIMEOUT_MS);
       });
 
-      if (!finished) {
-        // Sheet still open (slow provider) - let the deep link finish the job.
-        return { error: null, redirected: true };
+      // Fires when the sheet closes — by the user, or by our own deep-link
+      // handler after a successful return.
+      const sheetClosed = new Promise<'closed'>((resolve) => {
+        let handle: { remove: () => void } | undefined;
+        Browser.addListener('browserFinished', () => {
+          try { handle?.remove(); } catch { /* noop */ }
+          resolve('closed');
+        })
+          .then((listener) => { handle = listener; })
+          .catch(() => { /* listener unsupported */ });
+      });
+
+      await Browser.open({ url, presentationStyle: 'popover' });
+
+      const first = await Promise.race([
+        sessionArrived.then((ok) => (ok ? 'session' : 'timeout') as const),
+        sheetClosed,
+      ]);
+
+      if (first === 'session') {
+        clearPending();
+        try { await Browser.close(); } catch { /* noop */ }
+        return { error: null };
       }
 
-      const deadline = Date.now() + NATIVE_SESSION_GRACE_MS;
-      while (Date.now() < deadline) {
-        const { data } = await supabase.auth.getSession();
-        if (data.session) {
-          try {
-            await Browser.close();
-          } catch {
-            /* noop */
-          }
-          return { error: null };
-        }
-        await new Promise((r) => setTimeout(r, 300));
+      if (first === 'timeout') {
+        clearPending();
+        return { error: new Error('Sign in was not completed'), cancelled: false };
       }
 
-      return { error: new Error('Sign in was not completed'), cancelled: false };
+      // Sheet closed. It may have been closed by the deep-link handler a beat
+      // before the session lands, so keep waiting rather than declaring
+      // failure immediately.
+      const graced = await Promise.race([
+        sessionArrived,
+        new Promise<boolean>((r) => setTimeout(() => r(false), NATIVE_SESSION_GRACE_MS)),
+      ]);
+
+      clearPending();
+      if (graced) return { error: null };
+
+      // No session after the sheet closed: treat as a user cancellation so the
+      // auth screen simply returns to normal without a scary error.
+      const cancelledErr = new Error('Sign in was cancelled');
+      return { error: cancelledErr, cancelled: true };
     } catch {
+      clearPending();
       // If the in-app browser is unavailable, fall back to a full redirect so
       // sign-in still works rather than failing outright.
       window.location.href = url;
