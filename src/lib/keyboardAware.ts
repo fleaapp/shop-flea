@@ -23,6 +23,7 @@ const FOCUSABLE_SKIP_TYPES = ['checkbox', 'radio', 'button', 'submit', 'reset', 
 
 let installed = false;
 let shiftedSurface: HTMLElement | null = null;
+let fittedSurface: { el: HTMLElement; maxHeight: string; overflowY: string } | null = null;
 let lastFocused: HTMLElement | null = null;
 let nativeKeyboardHeight = 0;
 let rafId = 0;
