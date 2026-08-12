@@ -203,11 +203,12 @@ export function useNativePushNotifications() {
 
     if (!user?.id) return;
     if (!Capacitor.isNativePlatform()) return;
-    if (Capacitor.getPlatform() !== 'ios') return;
+    const platform = Capacitor.getPlatform();
+    if (platform !== 'ios' && platform !== 'android') return;
 
     logNativePushState('setup-started', {
       user_id: user.id,
-      platform: Capacitor.getPlatform(),
+      platform,
     });
 
     let registrationListener: { remove: () => void } | null = null;
