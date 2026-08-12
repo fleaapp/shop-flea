@@ -395,6 +395,7 @@ const Auth = () => {
       const result = await signInWithOAuthPopup('google', { prompt: 'select_account' });
 
       if (result.error) {
+        setConnectingProvider(null);
         localStorage.removeItem('flea_oauth_signup');
         localStorage.removeItem('flea-new-user-pending-onboarding');
         if (!result.cancelled) {
@@ -406,10 +407,9 @@ const Auth = () => {
       }
 
       // Session is set (popup) or will be set by the callback route (native).
-      // onAuthStateChange redirects via the useEffect above. When the flow
-      // handed off to a redirect, keep the branded overlay up so the user
-      // never sees a bare auth screen mid-handoff.
-      if (result.redirected) return;
+      // Keep the branded overlay up either way — it stays until this screen
+      // unmounts on redirect, so there is no flash of the bare auth screen.
+      return;
     } catch (err: any) {
       localStorage.removeItem('flea_oauth_signup');
       localStorage.removeItem('flea-new-user-pending-onboarding');
@@ -419,7 +419,7 @@ const Auth = () => {
       setConnectingProvider(null);
       return;
     }
-    setConnectingProvider(null);
+
   };
 
 
