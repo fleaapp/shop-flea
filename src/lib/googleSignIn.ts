@@ -55,12 +55,32 @@ export function nativeGoogleAvailable(): boolean {
 }
 
 let initialised = false;
+let inFlight = false;
 
 const isCancellation = (message: string): boolean =>
   /cancel|dismiss|user closed|-5\b|12501/i.test(message);
 
+/**
+ * The Google SDK always mints its own nonce and stamps it into the ID token.
+ * The backend rejects the exchange unless the very same value is sent along
+ * with the token, so we read the claim straight out of the token rather than
+ * guessing whether the platform hashed anything.
+ */
+const nonceFromIdToken = (token: string): string | undefined => {
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return undefined;
+    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    const claims = JSON.parse(json) as { nonce?: string };
+    return typeof claims.nonce === 'string' && claims.nonce ? claims.nonce : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
   if (!nativeGoogleAvailable()) return { handled: false };
+  if (inFlight) return { handled: true, error: new Error('Sign in already in progress'), cancelled: true };
 
   let SocialLogin: typeof import('@capgo/capacitor-social-login').SocialLogin;
   try {
@@ -69,6 +89,7 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
     return { handled: false };
   }
 
+  inFlight = true;
   try {
     if (!initialised) {
       await SocialLogin.initialize({
@@ -82,9 +103,17 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
       initialised = true;
     }
 
+    // Drop any account the SDK is still holding on to, so the picker always
+    // opens and a different Google account can be chosen.
+    try {
+      await SocialLogin.logout({ provider: 'google' });
+    } catch {
+      /* no cached session — fine */
+    }
+
     const login = await SocialLogin.login({
       provider: 'google',
-      options: { scopes: ['email', 'profile'] },
+      options: { scopes: ['email', 'profile'], forcePrompt: true },
     });
 
     const result = (login as any)?.result ?? {};
@@ -97,9 +126,12 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
       return { handled: false };
     }
 
+    const nonce = nonceFromIdToken(idToken);
+
     const { error } = await supabase.auth.signInWithIdToken({
       provider: 'google',
       token: idToken,
+      ...(nonce ? { nonce } : {}),
     });
     if (error) return { handled: true, error, cancelled: false };
 
@@ -109,8 +141,13 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
     if (isCancellation(message)) {
       return { handled: true, error: new Error('Sign in was cancelled'), cancelled: true };
     }
-    // Any configuration/runtime problem: fall back to the browser flow.
+    // A configuration/runtime problem: reset so the next tap re-initialises
+    // cleanly, and fall back to the browser flow.
+    initialised = false;
     console.warn('Native Google sign-in unavailable, falling back:', message);
     return { handled: false };
+  } finally {
+    inFlight = false;
   }
 }
+

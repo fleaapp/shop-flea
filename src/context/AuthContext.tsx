@@ -267,8 +267,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             msg.includes('unverifiable') ||
             msg.includes('invalid jwt') ||
             msg.includes('jwt') && msg.includes('kid');
-          if (verifyError && isBadJwt) {
-            console.warn('[auth] stored token rejected by server — clearing local session:', verifyError);
+          // The account itself is gone (deleted in the backend) or the refresh
+          // token no longer exists — same outcome: this device holds a dead
+          // session and must be signed out instead of prompting "sign back in".
+          const isDeadSession =
+            code === 'user_not_found' ||
+            code === 'refresh_token_not_found' ||
+            code === 'session_not_found' ||
+            msg.includes('user not found') ||
+            msg.includes('refresh token not found') ||
+            msg.includes('session not found');
+          if (verifyError && (isBadJwt || isDeadSession)) {
+            console.warn('[auth] stored session no longer valid — clearing locally:', verifyError);
+
             try {
               // Lets the login screen explain why the user landed there.
               sessionStorage.setItem('flea_session_expired', '1');

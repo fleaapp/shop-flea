@@ -336,12 +336,12 @@ const Auth = () => {
       localStorage.removeItem('flea-onboarding-completed');
       localStorage.setItem('flea-new-user-pending-onboarding', 'true');
 
-      // Native (iOS/Android): deliberately fall through to the in-app browser
-      // OAuth path. The native Google plugin was removed because it generated a
-      // placeholder URL scheme that caused an App Store archive rejection.
+      // Native (iOS/Android): Google's own system account sheet. Falls through
+      // to the in-app browser flow when the plugin is unavailable.
       if (isNativeRuntime()) {
         const result = await nativeGoogleSignIn();
         if (result.handled) {
+          setConnectingProvider(null);
           if (result.error) {
             localStorage.removeItem('flea_oauth_signup');
             localStorage.removeItem('flea-new-user-pending-onboarding');
@@ -357,6 +357,7 @@ const Auth = () => {
           return;
         }
       }
+
 
       // Inside the Lovable editor preview iframe the managed helper already
       // handles the popup + web_message handshake, so keep using it there.

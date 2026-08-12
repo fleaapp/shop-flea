@@ -54,6 +54,8 @@ const EditProfile = () => {
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
 
 
 
@@ -242,11 +244,14 @@ const EditProfile = () => {
   const handleConfirmDelete = async () => {
     if (deleteConfirmText.toLowerCase() !== 'delete account') return;
     if (!user) return;
+    if (isDeletingAccount) return;
+    setIsDeletingAccount(true);
     try {
       const { error } = await invokeCloudFunction('delete-account', {});
 
       if (error) {
         toast.error(error.message || 'Failed to delete account');
+        setIsDeletingAccount(false);
         return;
       }
 
@@ -256,8 +261,10 @@ const EditProfile = () => {
       navigate('/auth');
     } catch (err: any) {
       toast.error(err.message || 'Failed to delete account');
+      setIsDeletingAccount(false);
     }
   };
+
 
   // Helper to get country name from code
   const getCountryName = (code: string): string => {
@@ -475,7 +482,7 @@ const EditProfile = () => {
         )}
 
         {/* Delete Account Confirmation Dialog */}
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialog open={deleteDialogOpen} onOpenChange={(open) => { if (!isDeletingAccount) setDeleteDialogOpen(open); }}>
           <AlertDialogContent className="max-w-[320px] rounded-2xl">
             <AlertDialogHeader>
               <AlertDialogTitle className="text-center">Delete Account</AlertDialogTitle>
@@ -492,25 +499,28 @@ const EditProfile = () => {
                 className="h-11 rounded-2xl bg-muted border-0 text-center"
                 autoCapitalize="none"
                 autoCorrect="off"
+                disabled={isDeletingAccount}
               />
             </div>
             <AlertDialogFooter className="flex-row gap-2">
               <AlertDialogCancel
                 onClick={() => setDeleteDialogOpen(false)}
+                disabled={isDeletingAccount}
                 className="flex-1 h-9 rounded-lg mt-0"
               >
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
-                onClick={handleConfirmDelete}
-                disabled={deleteConfirmText.toLowerCase() !== 'delete account'}
+                onClick={(e) => { e.preventDefault(); handleConfirmDelete(); }}
+                disabled={deleteConfirmText.toLowerCase() !== 'delete account' || isDeletingAccount}
                 className="flex-1 h-9 rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-40"
               >
-                Delete
+                {isDeletingAccount ? 'Deleting...' : 'Delete'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
       </div>
     </div>
   );
