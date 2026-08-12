@@ -35,29 +35,30 @@ The previous archive rejection was caused by the plugin writing a placeholder
 will be extended to write the real reversed client ID every sync, so that cannot recur, and the
 archive script will fail loudly if a placeholder is ever found in Info.plist.
 
-## 2. Text boxes that actually adapt (username / last name step)
+## 2. Text boxes that move out of the keyboard's way
 
-Goal, stated plainly: the keyboard must never cover the field you are typing in, and any field
-below the current one must still be reachable and tappable while the keyboard is up.
+Behaviour you want, and what will be built: when you tap a field, the whole form slides up just far
+enough that the field you are typing in **and the next field or button under it** sit above the
+keyboard - exactly like a normal app. No scrollbars appear, nothing becomes scrollable, and you
+never have to close the keyboard to reach the thing below.
 
-The current approach measures and lifts the dialog after the keyboard appears. On native the
-measurement races the keyboard animation, so the dialog frequently stays where it is - which is
-what you are seeing. It works in the PWA because the browser resizes the viewport for us.
+Why it fails today: the current code lifts the surface only by the amount the focused field itself
+is covered, then clamps that lift so the surface never passes the top of the screen. On a tall
+signup dialog the clamp wins, so it barely moves and the field below stays hidden.
 
-Change to a layout-driven approach instead of a measurement-driven one:
+The change:
 
-- The live keyboard height is already published as a CSS variable. Dialogs, drawers and sheets will
-  use it directly in their own height constraint, so the surface is bounded by the space above the
-  keyboard as a matter of layout - no timers, no post-hoc measuring, nothing to race.
-- The dialog body becomes the scroll area, so fields below the current one stay on screen and
-  tappable - you scroll to them and tap straight into them, with no need to dismiss the keyboard.
-- The focused field is always scrolled fully clear of the keyboard, and moving focus to the next
-  field keeps it clear too.
-- Nothing is added when the keyboard is closed: no padding, no spacer, no footer strip, and no
-  coloured band of any kind. When the keyboard opens the dialog simply reflows shorter and its body
-  scrolls, against the same background colour it always had - the surface blends into the screen,
-  there is no visible gap or strip. The constraint resolves to the normal height when the keyboard
-  height is zero, so every screen looks exactly as it does now.
+- Lift by enough to clear the focused field **plus** whatever comes immediately after it (the next
+  input, or the primary button if the focused field is the last one), not just the focused field.
+- Drive the lift from the live keyboard height the OS reports as it animates, so the form moves with
+  the keyboard rather than after it - no lag, no race, no missed lift.
+- Allow the lift to go as far as it needs; only clamp at the point where the top of the form would
+  leave the screen. In the rare case where a form is genuinely taller than the space left, and only
+  then, the form's body becomes scrollable as a last resort so nothing is unreachable.
+- Purely a movement: no padding, no spacer, no footer strip, no coloured band. The form slides on
+  the same background it already sits on, and slides straight back the moment the keyboard closes,
+  so nothing looks different from today when no field is focused.
+
 
 
 This is applied once at the shared dialog / drawer / sheet level, so it covers the username and
