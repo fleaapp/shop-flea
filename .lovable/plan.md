@@ -10,12 +10,14 @@ Fix: only enter the global loading state when there is no profile loaded yet (tr
 
 Current behaviour: the shared handler in `src/lib/keyboardAware.ts` tries to lift the whole dialog by the overlap amount, but it clamps the lift so the surface never passes the top of the screen. The signup dialog is taller than the space left above the keyboard, so the clamp wins and the lower fields (Last Name, Confirm password) stay hidden.
 
-Fix - make the surface fit instead of only sliding it:
+Fix - make the surface fit instead of only sliding it, with no permanent space added:
 
 - Publish the live keyboard height as a CSS variable on `<html>` for both native and browser (already partially done for native).
-- Give dialog, drawer and sheet content a max height of the visible area above the keyboard, with the body scrollable, so a tall form always has somewhere to scroll to.
+- While the keyboard is open, cap dialog, drawer and sheet content to the visible area above the keyboard and let its body scroll, so a tall form always has somewhere to scroll to.
 - Keep the existing lift logic as the secondary step: with a real scroll container present, the focused field is scrolled into view rather than clamped.
+- No reserved padding, no spacer, no footer strip, and nothing that stays behind: the cap and the scroll are applied only while the keyboard is up and fully removed the moment it closes, so every screen looks exactly as it does today when no field is focused.
 - Apply this at the shared `ui/dialog`, `ui/drawer` and `ui/sheet` level so it is genuinely app-wide, not per-screen.
+
 
 ## 3. Walkthrough group not centred
 
