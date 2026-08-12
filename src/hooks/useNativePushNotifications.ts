@@ -256,19 +256,21 @@ export function useNativePushNotifications() {
 
         if (!opts?.force) {
           const cloudStatus = await checkCloudTokenStatus(reason);
-          if (cloudStatus.checked && cloudStatus.hasIosToken) {
+          // The cloud-status check (`has_ios_token`) only reflects iOS tokens
+          // today, so on Android we always re-register to be safe.
+          if (platform === 'ios' && cloudStatus.checked && cloudStatus.hasIosToken) {
             console.log('[NativePush] Cloud iOS token already present:', reason);
             return;
           }
           // No token registered for the CURRENT user on the backend. Before
-          // waiting on APNs (which may never re-fire the `registration`
+          // waiting on APNs/FCM (which may never re-fire the `registration`
           // callback if permission was granted in a previous session), try to
           // take over the cached device endpoint under this user id right
           // away. This is what stops account A's device from continuing to
           // receive account B's pushes after switching users.
           try {
             const cachedEndpoint = localStorage.getItem('flea_native_push_endpoint');
-            if (cachedEndpoint && cloudStatus.checked && !cloudStatus.hasIosToken) {
+            if (cachedEndpoint && platform === 'ios' && cloudStatus.checked && !cloudStatus.hasIosToken) {
               console.log('[NativePush] Reclaiming cached endpoint for current user:', reason);
               await invokeCloudFunction('register-push-subscription', {
                 body: { endpoint: cachedEndpoint, platform: 'ios' },
@@ -279,7 +281,7 @@ export function useNativePushNotifications() {
           }
         }
 
-        console.log('[NativePush] Registering with APNs:', reason);
+        console.log(`[NativePush] Registering with ${platform === 'android' ? 'FCM' : 'APNs'}:`, reason);
         logNativePushState('registration-requested', {
           reason,
           user_id: user.id,
