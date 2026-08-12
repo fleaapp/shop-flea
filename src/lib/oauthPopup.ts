@@ -30,7 +30,7 @@ const POPUP_CHECK_INTERVAL_MS = 500;
 
 export type OAuthPopupResult =
   | { error: null; redirected?: boolean; cancelled?: false }
-  | { error: Error; cancelled?: boolean };
+  | { error: Error; cancelled?: boolean; redirected?: boolean };
 
 const isNative = () => {
   try {
