@@ -242,11 +242,14 @@ const EditProfile = () => {
   const handleConfirmDelete = async () => {
     if (deleteConfirmText.toLowerCase() !== 'delete account') return;
     if (!user) return;
+    if (isDeletingAccount) return;
+    setIsDeletingAccount(true);
     try {
       const { error } = await invokeCloudFunction('delete-account', {});
 
       if (error) {
         toast.error(error.message || 'Failed to delete account');
+        setIsDeletingAccount(false);
         return;
       }
 
@@ -256,8 +259,10 @@ const EditProfile = () => {
       navigate('/auth');
     } catch (err: any) {
       toast.error(err.message || 'Failed to delete account');
+      setIsDeletingAccount(false);
     }
   };
+
 
   // Helper to get country name from code
   const getCountryName = (code: string): string => {
