@@ -9,18 +9,20 @@ back into the app), and why it sometimes returns to the app having done nothing 
 before the session lands).
 
 Since the iOS OAuth client ID already exists in Google Cloud, we switch native iOS/Android to the
-real native Google sign-in:
+real native Google sign-in. **This includes iOS** - Google ships an official iOS SDK and the
+account chooser is the same system sheet iPhone users see in Gmail, YouTube and other apps:
 
 - Add the native Google Sign-In plugin and initialise it with the iOS client ID plus the existing
   web client ID (the web client ID is what mints the ID token the backend trusts).
-- Tapping "Continue with Google" opens Apple's native Google account sheet - one tap on an
-  existing account, no typing, no browser, no redirect.
+- On iPhone, tapping "Continue with Google" opens the native Google account sheet - one tap on an
+  existing account, no typing, no browser, no redirect. Android gets the same via its own picker.
 - The returned ID token is exchanged for a session directly with the backend
   (`signInWithIdToken`), so there is no callback page, no bounce URL and no polling window.
   This removes the whole class of "came back and nothing happened" failures.
 - Web and PWA keep the current popup flow unchanged.
 - The in-app browser flow stays as an automatic fallback if the native sheet is unavailable, so a
   device that cannot use it still signs in.
+
 
 **On App Review:** this is the flow Apple expects for Google sign-in, and it does not affect the
 Sign in with Apple requirement (Apple sign-in is already implemented, which is what Apple checks).
