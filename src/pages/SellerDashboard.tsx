@@ -160,7 +160,7 @@ const statusClass = (s: string) => {
   return 'bg-muted text-charcoal';
 };
 
-const activityMeta = (type: string): { emoji: string; label: string } => {
+const activityMeta = (type: string, amount = 0): { emoji: string; label: string } => {
   switch (type) {
     case 'charge':
     case 'payment':
@@ -168,8 +168,16 @@ const activityMeta = (type: string): { emoji: string; label: string } => {
     case 'refund':
     case 'payment_refund':
       return { emoji: '↩️', label: 'Refund' };
+    case 'application_fee_refund':
+      return { emoji: '🧾', label: 'Seller fee refunded' };
+    case 'stripe_fee':
+      return { emoji: '🧾', label: 'Processing fee' };
     case 'adjustment':
-      return { emoji: '⚖️', label: 'Adjustment' };
+      // A positive adjustment on a seller balance is the seller transaction fee
+      // coming back after a refund - show that in plain English.
+      return amount >= 0
+        ? { emoji: '🧾', label: 'Seller fee refunded' }
+        : { emoji: '⚖️', label: 'Balance adjustment' };
     case 'transfer':
       return { emoji: '🔁', label: 'Transfer' };
     case 'topup':
@@ -178,6 +186,7 @@ const activityMeta = (type: string): { emoji: string; label: string } => {
       return { emoji: '•', label: type.replace(/_/g, ' ') };
   }
 };
+
 
 const isTransportError = (error: unknown) => {
   const message = String((error as any)?.message || error || '').toLowerCase();
