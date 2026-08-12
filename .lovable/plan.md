@@ -23,6 +23,10 @@ account chooser is the same system sheet iPhone users see in Gmail, YouTube and 
 - The in-app browser flow stays as an automatic fallback if the native sheet is unavailable, so a
   device that cannot use it still signs in.
 
+**Branding:** the native Google sheet is Google's own UI (the Google logo plus the app name and icon
+from the Google Cloud OAuth consent screen you already configured with Flea branding). It never
+shows "Lovable" - that text only appeared because the old flow routed through the Lovable OAuth
+broker. We now go direct to Google with your own credentials, so the sheet says Flea.
 
 **On App Review:** this is the flow Apple expects for Google sign-in, and it does not affect the
 Sign in with Apple requirement (Apple sign-in is already implemented, which is what Apple checks).
