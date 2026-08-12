@@ -27,7 +27,7 @@ const DrawerContent = React.forwardRef<React.ElementRef<typeof DrawerPrimitive.C
   ...props
 }, ref) => <DrawerPortal>
     <DrawerOverlay />
-    <DrawerPrimitive.Content ref={ref} onOpenAutoFocus={(e) => e.preventDefault()} className={cn("fixed inset-x-0 bottom-0 z-[60] flex flex-col rounded-t-3xl bg-background outline-none focus:outline-none focus-visible:outline-none", className)} style={{ top: 'calc(env(safe-area-inset-top, 0px) + 24px)' }} {...props}>
+    <DrawerPrimitive.Content ref={ref} onOpenAutoFocus={(e) => e.preventDefault()} className={cn("kb-surface fixed inset-x-0 bottom-0 z-[60] flex flex-col rounded-t-3xl bg-background outline-none focus:outline-none focus-visible:outline-none", className)} style={{ top: 'calc(env(safe-area-inset-top, 0px) + 24px)' }} {...props}>
       <div className="mx-auto my-3 h-2 w-[80px] shrink-0 rounded-full bg-muted-foreground/30" />
       {children}
     </DrawerPrimitive.Content>

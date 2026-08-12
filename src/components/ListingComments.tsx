@@ -54,6 +54,9 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
   const [cursorPosition, setCursorPosition] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
+  const [composerPinned, setComposerPinned] = useState(false);
+  const [slotHeight, setSlotHeight] = useState(0);
+
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { requireAuth, exitGuestMode } = useGuestMode();
@@ -69,6 +72,11 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
   }, [onComposerFocusChange]);
 
   const handleComposerFocus = () => {
+    // Pin the composer above the keyboard, keeping the space it left behind
+    // so the comment list does not jump.
+    const block = composerRef.current?.parentElement;
+    if (block) setSlotHeight(block.getBoundingClientRect().height);
+    setComposerPinned(true);
     onComposerFocusChange?.(true);
   };
 
@@ -76,9 +84,11 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
     requestAnimationFrame(() => {
       const activeElement = document.activeElement;
       const isStillWithinComposer = !!(activeElement instanceof Node && composerRef.current?.contains(activeElement));
+      if (!isStillWithinComposer) setComposerPinned(false);
       onComposerFocusChange?.(isStillWithinComposer);
     });
   };
+
 
   // Always fetch comment count (for badge visibility when collapsed)
   const { data: commentCount = 0 } = useQuery({
@@ -434,7 +444,14 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
         <CollapsibleContent className="mt-3 space-y-3">
           {/* Comment Input */}
           {user ? (
-            <div className="space-y-2">
+            <div style={composerPinned && slotHeight ? { height: slotHeight } : undefined}>
+              <div
+                className={
+                  composerPinned
+                    ? 'fixed inset-x-0 bottom-0 z-[70] space-y-2 border-t border-border bg-background px-4 pt-3 pb-8'
+                    : 'space-y-2'
+                }
+              >
               {replyingTo && (
                 <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
                   <span>Replying to <span className="font-medium text-foreground">{replyingTo.username}</span></span>
@@ -497,8 +514,10 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
                   Your account is restricted and cannot post comments.
                 </p>
               )}
+              </div>
             </div>
           ) : (
+
             <p className="py-2 text-center text-sm text-muted-foreground">
               <button
                 onClick={() => {

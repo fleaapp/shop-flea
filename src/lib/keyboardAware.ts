@@ -190,11 +190,30 @@ const ensureVisible = () => {
 
   const scrollParent = getScrollParent(el);
   if (scrollParent && scrollParent !== fittedSurface?.el) {
-    clearShift();
     clearFit();
-    scrollParent.scrollBy({ top: overlap, behavior: 'smooth' });
+    const before = scrollParent.scrollTop;
+    scrollParent.scrollTop = Math.min(
+      scrollParent.scrollHeight - scrollParent.clientHeight,
+      before + overlap,
+    );
+    const moved = scrollParent.scrollTop - before;
+    const residual = overlap - moved;
+    if (residual <= 1) {
+      clearShift();
+      return;
+    }
+    // The container hit its limit — lift the owning surface by the remainder.
+    if (surface) {
+      const rect = surface.getBoundingClientRect();
+      const headroomLeft = Math.max(0, rect.top + currentShift - MARGIN);
+      const lift = currentShift + Math.min(residual, headroomLeft);
+      if (lift > 0) applyShift(surface, lift);
+    } else {
+      window.scrollBy({ top: residual, behavior: 'smooth' });
+    }
     return;
   }
+
 
   if (!surface) {
     window.scrollBy({ top: overlap, behavior: 'smooth' });
@@ -258,7 +277,15 @@ export const installKeyboardAware = (): (() => void) => {
     }, 60);
   };
 
-  const onViewportChange = () => schedule();
+  const onViewportChange = () => {
+    if (nativeKeyboardHeight === 0) {
+      // Web / PWA: publish the live keyboard height so keyboard-aware CSS
+      // (bottom-anchored surfaces) works outside native too.
+      document.documentElement.style.setProperty('--native-keyboard-height', `${keyboardHeight()}px`);
+    }
+    schedule();
+  };
+
 
   document.addEventListener('focusin', onFocusIn, true);
   document.addEventListener('focusout', onFocusOut, true);
