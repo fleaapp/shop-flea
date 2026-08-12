@@ -482,7 +482,7 @@ const EditProfile = () => {
         )}
 
         {/* Delete Account Confirmation Dialog */}
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialog open={deleteDialogOpen} onOpenChange={(open) => { if (!isDeletingAccount) setDeleteDialogOpen(open); }}>
           <AlertDialogContent className="max-w-[320px] rounded-2xl">
             <AlertDialogHeader>
               <AlertDialogTitle className="text-center">Delete Account</AlertDialogTitle>
@@ -499,25 +499,28 @@ const EditProfile = () => {
                 className="h-11 rounded-2xl bg-muted border-0 text-center"
                 autoCapitalize="none"
                 autoCorrect="off"
+                disabled={isDeletingAccount}
               />
             </div>
             <AlertDialogFooter className="flex-row gap-2">
               <AlertDialogCancel
                 onClick={() => setDeleteDialogOpen(false)}
+                disabled={isDeletingAccount}
                 className="flex-1 h-9 rounded-lg mt-0"
               >
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
-                onClick={handleConfirmDelete}
-                disabled={deleteConfirmText.toLowerCase() !== 'delete account'}
+                onClick={(e) => { e.preventDefault(); handleConfirmDelete(); }}
+                disabled={deleteConfirmText.toLowerCase() !== 'delete account' || isDeletingAccount}
                 className="flex-1 h-9 rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-40"
               >
-                Delete
+                {isDeletingAccount ? 'Deleting...' : 'Delete'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
       </div>
     </div>
   );
