@@ -377,6 +377,15 @@ html.is-installed .native-keyboard-lift {
   transition: translate 180ms ease;
 }
 
+/* Bottom-anchored surfaces (drawers, bottom sheets) end above the keyboard
+   while it is open, so any pinned composer or footer inside them sits just
+   above the keys. Reverts to 0 the moment the keyboard closes. */
+body .kb-surface {
+  bottom: var(--native-keyboard-height, 0px);
+  transition: bottom 180ms ease;
+}
+
+
 
 /* Native only: reserve the Dynamic Island / notch height on every screen
    via the `native-safe-top` utility. #root no longer receives this padding
