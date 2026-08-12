@@ -1,0 +1,13 @@
+# Properties for signing the Android release bundle.
+# Copy this file to signing.properties (NOT committed) and fill in your
+# keystore details. The setup-android-native.sh script reads these and writes
+# a signingConfigs block into android/app/build.gradle.
+#
+# Create a keystore once with:
+#   keytool -genkey -v -keystore flea-release.keystore -alias flea \
+#     -keyalg RSA -keysize 2048 -validity 10000
+#
+storeFile=/absolute/path/to/flea-release.keystore
+storePassword=YOUR_STORE_PASSWORD
+keyAlias=flea
+keyPassword=YOUR_KEY_PASSWORD
