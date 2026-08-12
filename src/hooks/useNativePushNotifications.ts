@@ -160,16 +160,16 @@ export function useNativePushNotifications() {
         return;
       }
 
-      lastSavedTokenRef.current = apnsToken;
+      lastSavedTokenRef.current = deviceToken;
       lastSavedAtRef.current = Date.now();
-      try { localStorage.setItem('flea_native_push_endpoint', apnsToken); } catch {}
-      console.log('[NativePush] APNs token saved');
+      try { localStorage.setItem('flea_native_push_endpoint', deviceToken); } catch {}
+      console.log(`[NativePush] ${platform} token saved`);
 
       logNativePushState('token-save-succeeded', {
         reason,
         user_id: user.id,
-        platform: Capacitor.getPlatform(),
-        token_prefix: apnsToken.slice(0, 12),
+        platform,
+        token_prefix: deviceToken.slice(0, 12),
       });
 
       const verified = await checkCloudTokenStatus(`${reason}-post-save`);
