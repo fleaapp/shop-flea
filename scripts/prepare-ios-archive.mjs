@@ -143,7 +143,9 @@ try {
   }
   run(process.execPath, [join(root, 'node_modules', '@capacitor', 'cli', 'bin', 'capacitor'), 'sync', 'ios']);
   run('/bin/bash', [join(root, 'scripts', 'setup-ios-native.sh')]);
+  assertNoPlaceholderUrlScheme();
   assertNativeBundle();
+
   console.log(`\nSAFE TO ARCHIVE - Flea build ${buildId} - ${buildDate}`);
 } catch (error) {
   console.error(`\nARCHIVE PREPARATION FAILED: ${error instanceof Error ? error.message : String(error)}`);
