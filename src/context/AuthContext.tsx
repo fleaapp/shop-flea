@@ -293,6 +293,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
 
       if (session?.user) {
+        loadedUserIdRef.current = session.user.id;
         fetchProfile(session.user.id).finally(() => {
           clearTimeout(safetyTimer);
           setLoading(false);
