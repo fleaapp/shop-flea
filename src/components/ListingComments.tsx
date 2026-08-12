@@ -434,7 +434,14 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
         <CollapsibleContent className="mt-3 space-y-3">
           {/* Comment Input */}
           {user ? (
-            <div className="space-y-2">
+            <div style={composerPinned && slotHeight ? { height: slotHeight } : undefined}>
+              <div
+                className={
+                  composerPinned
+                    ? 'fixed inset-x-0 bottom-0 z-[70] space-y-2 border-t border-border bg-background px-4 pt-3 pb-8'
+                    : 'space-y-2'
+                }
+              >
               {replyingTo && (
                 <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
                   <span>Replying to <span className="font-medium text-foreground">{replyingTo.username}</span></span>
@@ -497,8 +504,10 @@ const ListingComments = ({ listingId, sellerId, onComposerFocusChange }: Listing
                   Your account is restricted and cannot post comments.
                 </p>
               )}
+              </div>
             </div>
           ) : (
+
             <p className="py-2 text-center text-sm text-muted-foreground">
               <button
                 onClick={() => {
