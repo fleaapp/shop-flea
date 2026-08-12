@@ -142,11 +142,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         if (session?.user) {
-          // Mark loading until profile fetch completes so consumers don't
-          // briefly see (user && !profile) and flash onboarding UI.
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+          // Mark loading until the profile fetch completes so consumers don't
+          // briefly see (user && !profile) and flash onboarding UI. Only do
+          // this for the FIRST sign-in of a session: a USER_UPDATED event
+          // (e.g. the user setting their password mid-signup) or a silent
+          // token refresh must refresh the profile in the background, never
+          // blank the app out to the branded loading screen.
+          const isSameUser = user?.id === session.user.id;
+          if (event === 'SIGNED_IN' && !isSameUser) {
             setLoading(true);
           }
+
 
           // Register the current device against the profile so we can gate re-registration
           // on unsettled balances. Fire-and-forget; failure must never block auth.
