@@ -120,6 +120,40 @@ const applyShift = (surface: HTMLElement, amount: number) => {
   shiftedSurface = surface;
 };
 
+/**
+ * The element that should end up visible along with the focused field: the
+ * next input/button after it, so the user can tap straight through without
+ * closing the keyboard. Falls back to the field itself.
+ */
+const nextInteractive = (el: HTMLElement): HTMLElement | null => {
+  const surface = el.closest('form, [role="dialog"], [data-kb-form]') || document.body;
+  const candidates = Array.from(
+    surface.querySelectorAll<HTMLElement>('input, textarea, select, button, [contenteditable="true"], a[href]'),
+  ).filter((c) => c.offsetParent !== null || c === el);
+  const index = candidates.indexOf(el);
+  if (index === -1) return null;
+  for (let i = index + 1; i < candidates.length; i += 1) {
+    const c = candidates[i];
+    const r = c.getBoundingClientRect();
+    // Ignore zero-size or visually-above elements (close buttons in headers).
+    if (r.height < 8 || r.bottom <= el.getBoundingClientRect().bottom) continue;
+    return c;
+  }
+  return null;
+};
+
+/** Bottom edge we need above the keyboard: focused field, plus what follows it. */
+const targetBottom = (el: HTMLElement): number => {
+  const own = el.getBoundingClientRect().bottom;
+  const next = nextInteractive(el);
+  if (!next) return own;
+  const nb = next.getBoundingClientRect().bottom;
+  // Only chase the next element when it is plausibly part of the same form
+  // block (within a screen height), never something far down the page.
+  if (nb - own > window.innerHeight * 0.5) return own;
+  return Math.max(own, nb);
+};
+
 const ensureVisible = () => {
   const el = activeField();
   if (!el) {
@@ -143,16 +177,14 @@ const ensureVisible = () => {
     ? Math.abs(parseFloat(surface.style.getPropertyValue('--kb-shift')) || 0)
     : 0;
 
-  const rect = el.getBoundingClientRect();
   const safeBottom = window.innerHeight - kb - MARGIN;
-  const overlap = rect.bottom - safeBottom;
+  const wanted = targetBottom(el);
+  const overlap = wanted - safeBottom;
 
   if (overlap <= 0) {
-    // Field is comfortably visible. If our own shift is no longer needed
-    // (keyboard closed on a different field, user scrolled), release it.
-    if (currentShift > 0 && rect.top - currentShift > MARGIN && rect.bottom - currentShift <= safeBottom) {
-      clearShift();
-    }
+    // Everything that matters is visible. Release our own shift only if the
+    // content would still be clear without it.
+    if (currentShift > 0 && wanted + currentShift <= safeBottom) clearShift();
     return;
   }
 
@@ -169,32 +201,30 @@ const ensureVisible = () => {
     return;
   }
 
-  // If the surface itself cannot fit above the keyboard, cap it to the visible
-  // area (temporarily) so its lower fields become reachable by scrolling.
-  const available = window.innerHeight - kb - MARGIN * 2;
-  const naturalHeight = surface.scrollHeight;
-  if (available > 120 && naturalHeight > available) {
-    applyFit(surface, available);
+  // Lift as far as needed, stopping only when the top of the surface would
+  // leave the screen.
+  const surfaceRect = surface.getBoundingClientRect();
+  const surfaceTop = surfaceRect.top + currentShift;
+  const headroom = Math.max(0, surfaceTop - MARGIN);
+  const next = currentShift + Math.min(overlap, headroom);
+  if (next > 0) applyShift(surface, next);
+
+  // Last resort only: the surface is genuinely taller than the space left, so
+  // even a full lift cannot reveal everything. Cap it and let it scroll.
+  const stillHidden = overlap - headroom;
+  if (stillHidden > 0) {
+    const available = window.innerHeight - kb - MARGIN * 2;
+    if (available > 120 && surface.scrollHeight > available) {
+      applyFit(surface, available);
+      const after = el.getBoundingClientRect().bottom;
+      const remaining = after - safeBottom;
+      if (remaining > 0) surface.scrollBy({ top: remaining, behavior: 'smooth' });
+    }
   } else {
     clearFit();
   }
-
-  // Never push the surface past the top of the viewport.
-  const surfaceRect = surface.getBoundingClientRect();
-  const surfaceTop = surfaceRect.top + currentShift;
-  const maxShift = Math.max(0, surfaceTop - MARGIN);
-  const next = Math.min(currentShift + overlap, currentShift + maxShift);
-
-  if (next > 0) applyShift(surface, next);
-
-  // With the cap applied the surface scrolls internally — bring the focused
-  // field the rest of the way into view.
-  if (fittedSurface?.el === surface) {
-    const after = el.getBoundingClientRect();
-    const remaining = after.bottom - safeBottom;
-    if (remaining > 0) surface.scrollBy({ top: remaining, behavior: 'smooth' });
-  }
 };
+
 
 
 const schedule = () => {
