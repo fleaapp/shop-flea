@@ -26,7 +26,7 @@ export function MessageInput({ onSend, sending, disabled }: Props) {
   };
 
   return (
-    <div className="border-t border-border bg-card p-4">
+    <div className="native-keyboard-lift sticky bottom-0 border-t border-border bg-card p-4">
       <div className="flex gap-2">
         <Textarea
           ref={ref}
