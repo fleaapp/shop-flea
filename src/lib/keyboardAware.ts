@@ -219,9 +219,12 @@ export const installKeyboardAware = (): (() => void) => {
 
   const onFocusOut = () => {
     lastFocused = null;
-    // If nothing else takes focus, drop the shift.
+    // If nothing else takes focus, drop the shift and the temporary cap.
     window.setTimeout(() => {
-      if (!activeField()) clearShift();
+      if (!activeField()) {
+        clearShift();
+        clearFit();
+      }
     }, 60);
   };
 
