@@ -24,7 +24,7 @@
                             <constraint firstItem="Spl-As-h01" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="cx1-aa-001"/>
                             <constraint firstItem="Spl-As-h01" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="cy1-aa-002"/>
                             <constraint firstAttribute="width" relation="greaterThanOrEqual" firstItem="Spl-As-h01" secondAttribute="width" multiplier="1" constant="200" id="w1-aa-003" placeholder="YES"/>
-                            <constraint firstItem="Spl-As-h01" firstAttribute="width" secondItem="Ze5-6b-2t3" secondAttribute="width" multiplier="0.5" id="w2-aa-004"/>
+                            <constraint firstItem="Spl-As-h01" firstAttribute="width" secondItem="Ze5-6b-2t3" secondAttribute="width" multiplier="0.62" id="w2-aa-004"/>
                             <constraint firstItem="Spl-As-h01" firstAttribute="height" secondItem="Spl-As-h01" secondAttribute="width" id="h1-aa-005"/>
                         </constraints>
                     </view>
