@@ -2,7 +2,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useGuestMode } from '@/context/GuestModeContext';
 import GuestGate from '@/components/GuestGate';
-import BrandedLoadingScreen from '@/components/BrandedLoadingScreen';
+import SplashScreen from '@/components/SplashScreen';
 
 
 type ProtectedMode = 'account' | 'public' | 'guest-gate' | 'guest-or-auth';
@@ -36,7 +36,7 @@ const ProtectedRoute = ({ children, mode = 'account' }: ProtectedRouteProps) => 
 
   if (mode === 'guest-gate') {
     if (loading) {
-      return <BrandedLoadingScreen />;
+      return <SplashScreen />;
     }
     if (user) return <>{children}</>;
     if (isGuest) return <GuestGate />;
@@ -45,7 +45,7 @@ const ProtectedRoute = ({ children, mode = 'account' }: ProtectedRouteProps) => 
 
   if (mode === 'guest-or-auth') {
     if (loading) {
-      return <BrandedLoadingScreen />;
+      return <SplashScreen />;
     }
     if (user || isGuest) return <>{children}</>;
     return <Navigate to={authRedirectTo()} replace />;
@@ -53,7 +53,7 @@ const ProtectedRoute = ({ children, mode = 'account' }: ProtectedRouteProps) => 
 
   // account mode
   if (loading) {
-    return <BrandedLoadingScreen />;
+    return <SplashScreen />;
   }
   if (!user) return <Navigate to={authRedirectTo()} replace />;
   return <>{children}</>;
