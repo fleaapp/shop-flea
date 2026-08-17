@@ -275,6 +275,9 @@ Deno.serve(async (req) => {
             related_user_id: userId,
           },
         ]);
+        if (recipient === offer.buyer_id) {
+          await sendOfferEmail(offer.buyer_id, offer, "accepted", title, actor);
+        }
       } else {
         await notify(admin, [
           {
@@ -286,6 +289,9 @@ Deno.serve(async (req) => {
             related_user_id: userId,
           },
         ]);
+        if (recipient === offer.buyer_id) {
+          await sendOfferEmail(offer.buyer_id, offer, "declined", title, actor);
+        }
       }
 
       return json({ offer });
