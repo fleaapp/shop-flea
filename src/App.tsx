@@ -45,6 +45,7 @@ const loadForgotPassword = () => import("./pages/ForgotPassword");
 const loadResetPassword = () => import("./pages/ResetPassword");
 const loadVerifyEmail = () => import("./pages/VerifyEmail");
 const loadAuthCallback = () => import("./pages/AuthCallback");
+const loadUnsubscribe = () => import("./pages/Unsubscribe");
 const loadNotFound = () => import("./pages/NotFound");
 const loadTerms = () => import("./pages/Terms");
 const loadPrivacyPolicy = () => import("./pages/PrivacyPolicy");
@@ -87,6 +88,7 @@ const ForgotPassword = lazy(loadForgotPassword);
 const ResetPassword = lazy(loadResetPassword);
 const VerifyEmail = lazy(loadVerifyEmail);
 const AuthCallback = lazy(loadAuthCallback);
+const Unsubscribe = lazy(loadUnsubscribe);
 const NotFound = lazy(loadNotFound);
 const Terms = lazy(loadTerms);
 const PrivacyPolicy = lazy(loadPrivacyPolicy);
@@ -268,6 +270,7 @@ const AppContent = () => {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/listing/:id" element={<ProtectedRoute mode="public"><ListingDetails /></ProtectedRoute>} />
           <Route path="/favorites" element={<ProtectedRoute mode="public"><Favorites /></ProtectedRoute>} />
           <Route path="/cart" element={<ProtectedRoute mode="public"><Cart /></ProtectedRoute>} />

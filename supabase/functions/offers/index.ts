@@ -7,6 +7,7 @@
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { logEdgeError } from "../_shared/logError.ts";
+import { sendTransactionalEmail, getUserEmail, wantsOrderEmails } from "../_shared/sendTransactionalEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -81,6 +82,35 @@ async function notify(admin: ReturnType<typeof svc>, rows: Notif[]) {
       }
     }),
   );
+}
+
+async function sendOfferEmail(
+  buyerId: string,
+  offer: any,
+  status: "accepted" | "declined",
+  title: string,
+  sellerUsername: string,
+) {
+  try {
+    const email = await getUserEmail(SUPABASE_URL, SERVICE_KEY, buyerId);
+    if (!email || !(await wantsOrderEmails(SUPABASE_URL, SERVICE_KEY, buyerId))) return;
+    await sendTransactionalEmail({
+      supabaseUrl: SUPABASE_URL,
+      serviceKey: SERVICE_KEY,
+      templateName: "buyer-offer-status",
+      recipientEmail: email,
+      idempotencyKey: `buyer-offer-status-${offer.id}-${status}`,
+      templateData: {
+        offerAmount: money(offer.amount),
+        itemTitle: title,
+        status,
+        sellerUsername: sellerUsername.startsWith("@") ? sellerUsername : `@${sellerUsername}`,
+        listingUrl: `https://app.finditonflea.com/listing/${offer.listing_id}`,
+      },
+    });
+  } catch (e) {
+    console.error("[offers] offer email error:", e);
+  }
 }
 
 Deno.serve(async (req) => {
@@ -183,6 +213,8 @@ Deno.serve(async (req) => {
             related_user_id: offer.buyer_id,
           },
         ]);
+        const sellerUsername = await usernameOf(offer.seller_id);
+        await sendOfferEmail(offer.buyer_id, offer, "accepted", title, sellerUsername);
       } else if (offer.direction === "buyer_to_seller") {
         await notify(admin, [
           {
@@ -243,6 +275,9 @@ Deno.serve(async (req) => {
             related_user_id: userId,
           },
         ]);
+        if (recipient === offer.buyer_id) {
+          await sendOfferEmail(offer.buyer_id, offer, "accepted", title, actor);
+        }
       } else {
         await notify(admin, [
           {
@@ -254,6 +289,9 @@ Deno.serve(async (req) => {
             related_user_id: userId,
           },
         ]);
+        if (recipient === offer.buyer_id) {
+          await sendOfferEmail(offer.buyer_id, offer, "declined", title, actor);
+        }
       }
 
       return json({ offer });

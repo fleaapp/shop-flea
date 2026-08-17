@@ -4,6 +4,7 @@ import { logEdgeError } from "../_shared/logError.ts";
 import { getVerifiedUserId } from "../_shared/auth.ts";
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { checkRateLimit, callerKey, tooManyRequests } from "../_shared/rateLimit.ts";
+import { sendTransactionalEmail, getUserEmail, wantsOrderEmails } from "../_shared/sendTransactionalEmail.ts";
 
 
 const corsHeaders = {
@@ -290,6 +291,27 @@ Deno.serve(async (req) => {
         { stripeAccount: accountId, idempotencyKey: `${idemBase}:instant:${netAmount}` },
       );
 
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+        const email = await getUserEmail(supabaseUrl, serviceKey, userId);
+        if (email && (await wantsOrderEmails(supabaseUrl, serviceKey, userId))) {
+          await sendTransactionalEmail({
+            supabaseUrl,
+            serviceKey,
+            templateName: "seller-payout-available",
+            recipientEmail: email,
+            idempotencyKey: `seller-payout-available-${payout.id}`,
+            templateData: {
+              amount: `$${(payout.amount / 100).toFixed(2)}`,
+              dashboardUrl: "https://app.finditonflea.com/seller-dashboard",
+            },
+          });
+        }
+      } catch (e) {
+        console.error("[stripe-connect-payout] payout email error:", e);
+      }
+
       return json({ ok: true, payout: { id: payout.id, amount: payout.amount, method: "instant" } });
     }
 
@@ -310,6 +332,27 @@ Deno.serve(async (req) => {
       { amount: available, currency, method: "standard", description: "Flea payout" },
       { stripeAccount: accountId, idempotencyKey: `${idemBase}:standard:${available}` },
     );
+
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+      const email = await getUserEmail(supabaseUrl, serviceKey, userId);
+      if (email && (await wantsOrderEmails(supabaseUrl, serviceKey, userId))) {
+        await sendTransactionalEmail({
+          supabaseUrl,
+          serviceKey,
+          templateName: "seller-payout-available",
+          recipientEmail: email,
+          idempotencyKey: `seller-payout-available-${payout.id}`,
+          templateData: {
+            amount: `$${(payout.amount / 100).toFixed(2)}`,
+            dashboardUrl: "https://app.finditonflea.com/seller-dashboard",
+          },
+        });
+      }
+    } catch (e) {
+      console.error("[stripe-connect-payout] payout email error:", e);
+    }
 
     return json({ ok: true, payout: { id: payout.id, amount: payout.amount, method: "standard" } });
   } catch (e: any) {

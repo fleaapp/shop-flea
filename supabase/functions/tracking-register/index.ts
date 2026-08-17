@@ -5,6 +5,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { buildCorsHeaders, rejectUntrustedOrigin } from '../_shared/cors.ts';
 import { carrierCode, registerNumbers, getTrackInfo } from '../_shared/tracking.ts';
 import { applyTracking } from '../_shared/applyTracking.ts';
+import { sendTransactionalEmail, getUserEmail, wantsOrderEmails } from '../_shared/sendTransactionalEmail.ts';
 
 Deno.serve(async (req) => {
   const corsHeaders = buildCorsHeaders(req);
@@ -187,6 +188,45 @@ Deno.serve(async (req) => {
       }
     } catch (e) {
       console.warn('[tracking-register] initial sync failed:', (e as Error).message);
+    }
+
+    // Notify buyer by email that their order has shipped.
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+      const buyerEmail = await getUserEmail(supabaseUrl, serviceKey, order.buyer_id);
+      if (buyerEmail && (await wantsOrderEmails(supabaseUrl, serviceKey, order.buyer_id))) {
+        const { data: orderRow } = await admin
+          .from('orders')
+          .select('order_number, listing_id')
+          .eq('id', order.id)
+          .maybeSingle();
+        const { data: listingRow } = await admin
+          .from('listings')
+          .select('title')
+          .eq('id', orderRow?.listing_id ?? order.listing_id)
+          .maybeSingle();
+        const carrierName = order.tracking_provider ?? '';
+        const trackingUrl = carrierName.toLowerCase().includes('auspost') || carrierName.toLowerCase().includes('australia post')
+          ? `https://auspost.com.au/mypost/track/#/details/${number}`
+          : undefined;
+        await sendTransactionalEmail({
+          supabaseUrl,
+          serviceKey,
+          templateName: 'buyer-order-shipped',
+          recipientEmail: buyerEmail,
+          idempotencyKey: `buyer-order-shipped-${groupId}`,
+          templateData: {
+            orderNumber: orderRow?.order_number ?? '',
+            itemTitle: listingRow?.title ?? '',
+            trackingNumber: number,
+            carrier: carrierName,
+            trackingUrl,
+          },
+        });
+      }
+    } catch (e) {
+      console.error('[tracking-register] shipped email error:', e);
     }
 
     return json({ success: true, shipment_id: shipment.id });
