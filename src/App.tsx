@@ -45,6 +45,7 @@ const loadForgotPassword = () => import("./pages/ForgotPassword");
 const loadResetPassword = () => import("./pages/ResetPassword");
 const loadVerifyEmail = () => import("./pages/VerifyEmail");
 const loadAuthCallback = () => import("./pages/AuthCallback");
+const loadUnsubscribe = () => import("./pages/Unsubscribe");
 const loadNotFound = () => import("./pages/NotFound");
 const loadTerms = () => import("./pages/Terms");
 const loadPrivacyPolicy = () => import("./pages/PrivacyPolicy");
