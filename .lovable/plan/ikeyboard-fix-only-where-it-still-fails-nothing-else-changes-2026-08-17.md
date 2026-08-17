@@ -1,4 +1,4 @@
-# Keyboard fix: only where it still fails, nothing else changes
+# IKeyboard fix: only where it still fails, nothing else changes
 
 ## The rule we are aiming for
 
@@ -15,11 +15,8 @@ So this is not a "redo the app-wide system" problem. It is a "the last screenful
 ## The fix
 
 1. **Only when the scroll area runs out of room**, and only for the amount it is short by, give it that much extra scroll distance so the focused field and the element under it clear the keyboard. This space is behind the keyboard, never visible, and is removed the instant the keyboard closes. No footer, no gap, no colour.
-
 2. **Where the handler already succeeds today, nothing changes.** The new step is a fallback that only runs after the existing scroll attempt still leaves the field covered.
-
 3. **Include the next element below** in the target the handler tries to reveal, so you can see the following field or button, not just the field you are in. Today it aims at the field alone.
-
 4. **Drawers and pinned composers** (comments, order chat, admin chat, offer, review) keep their current pinned behaviour untouched - they are explicitly skipped by the fallback.
 
 ## Check, do not assume
