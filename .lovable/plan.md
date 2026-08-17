@@ -1,45 +1,39 @@
-# Fix keyboard covering fields - properly, app wide
+# Keyboard fix: only where it still fails, nothing else changes
 
-## What is actually wrong
+## The rule we are aiming for
 
-There is one app-wide keyboard handler (`src/lib/keyboardAware.ts`, mounted in `App.tsx`). It works on short forms, but it fails exactly where you hit it - long forms near the bottom of a scroll area, like Add New Listing (description, price, bundle, offers rows).
+Tap any text box anywhere in the app and you see: the box you are typing in, plus whatever field or button sits directly below it. Nothing else moves, no extra footer, no padding, no coloured strip - the screen just slides up in place.
 
-Why it fails on that screen:
+## Why most screens already work, and Add New Listing does not
 
-- Add New Listing is a `fixed inset-0 ... overflow-hidden` shell with an inner scrolling area that ends in `pb-24` (96px).
-- The iOS keyboard is roughly 300-350px tall. When you focus a field near the bottom, the scroll area is already at its end, so it physically cannot scroll the field any higher - there is no space below it to scroll into.
-- The handler then tries to lift the whole page instead, but a full-screen fixed shell has almost no headroom (about 40px under the notch), so the field stays behind the keys.
-- Native keyboard mode is `resize: Body`, which pads `<body>`. Fixed-position shells ignore body padding entirely, so that safety net does nothing on any of these screens.
+The shared handler (`src/lib/keyboardAware.ts`, installed once in `App.tsx`) already does the right thing on short forms and on drawers: it scrolls the focused field into view, and if the surface can be lifted, it lifts it. Those screens stay exactly as they are.
 
-So the fix is not "scroll harder" - the screens need real space to scroll into while the keyboard is up.
+Add New Listing fails for one specific reason: the field being typed into is near the bottom of a long scroll area whose content ends only 96px below it. The handler asks the scroll area to scroll further, and it physically cannot - it is already at the end. There is no room left below the field, so the field stays behind the keys. Lifting the whole page is not available either, because that screen is a full-height fixed shell with only the notch gap above it.
+
+So this is not a "redo the app-wide system" problem. It is a "the last screenful of a long form has nowhere to scroll to" problem.
 
 ## The fix
 
-1. **Shrink full-screen shells while the keyboard is open.** Any fixed full-height surface gets its bottom edge pulled up by the live keyboard height, so the app shell simply becomes shorter, exactly like Instagram/Messages. Everything inside it (header, scroll area, footer buttons) re-lays out into the smaller area and scrolls normally. Reverted to zero the instant the keyboard closes - no padding, no colour strip, no leftover gap.
+1. **Only when the scroll area runs out of room**, and only for the amount it is short by, give it that much extra scroll distance so the focused field and the element under it clear the keyboard. This space is behind the keyboard, never visible, and is removed the instant the keyboard closes. No footer, no gap, no colour.
 
-2. **Give scroll areas room to scroll into - invisibly.** While the keyboard is open, the scroll container holding the focused field gets extra scrollable room equal to the keyboard height, so even the very last field can be scrolled clear of the keys along with the next field or button under it. This room sits behind the keyboard and is never visible: no footer, no visible gap, no coloured strip. It disappears the moment the keyboard closes, and any area that briefly shows through keeps the same background as the screen or drawer it belongs to, so everything blends.
+2. **Where the handler already succeeds today, nothing changes.** The new step is a fallback that only runs after the existing scroll attempt still leaves the field covered.
 
-3. **Keep the lift as a fallback only** for surfaces that genuinely cannot shrink (centred dialogs), which already works today.
+3. **Include the next element below** in the target the handler tries to reveal, so you can see the following field or button, not just the field you are in. Today it aims at the field alone.
 
-4. **Bottom sheets and drawers** already sit above the keyboard via `.kb-surface`; they will be re-checked against the new shell behaviour so nothing double-shifts.
+4. **Drawers and pinned composers** (comments, order chat, admin chat, offer, review) keep their current pinned behaviour untouched - they are explicitly skipped by the fallback.
 
-## Verifying it is genuinely app wide
+## Check, do not assume
 
-Rather than trusting one screen, every text-entry surface gets checked against the same rule - focused field visible, plus the next field or button below it:
+Each surface gets checked against the one rule above, and only ones that fail get touched:
 
-- Add New Listing / Edit Listing (all fields, including description and the price fields at the bottom)
-- Checkout (address, coupon code)
-- Auth: login, signup, create username, create password, forgot password
+- Add New Listing and Edit Listing (description, price fields, bundle/offers rows at the bottom) - known failing
+- Checkout address and coupon code
+- Auth: login, signup, username, password, forgot password
 - Profile edit, Settings fields, Shipping settings sheet
-- Make an offer drawer, Review drawer, Refund request, Support/contact form
-- Comments composer and order/admin chat (already pinned - confirm no regression)
-- Search sheet, Admin dashboard forms
-
-Anything failing that check gets fixed by the same shared mechanism, not by a one-off patch on that screen.
+- Offer, review, refund request, support form
+- Comments and chat composers - confirm no regression
 
 ## Technical notes
 
-- `src/lib/keyboardAware.ts`: add a shell-resize path - when the owning fixed surface is full-height, set a `--kb-inset` custom property on it and let CSS shrink it, instead of translating it. Add a temporary `padding-bottom` on the focused field's scroll parent equal to the keyboard height, tracked and reverted with the existing clear logic.
-- `src/index.css`: add the `.kb-inset` rule (`bottom: var(--native-keyboard-height)` style shrink with the existing 180ms transition) and a scroll-padding rule, alongside the current `.kb-shifted` / `.kb-surface` rules.
-- Keyboard height already comes from `@capacitor/keyboard` on native and `visualViewport` on web, so web/PWA gets the same behaviour.
-- No page-level layout changes and no business logic changes.
+- `src/lib/keyboardAware.ts`: after `ensureVisible` scrolls, measure the residual overlap. If the scroll parent is at `scrollTop === scrollHeight - clientHeight` and residual > 0, set a temporary `padding-bottom` on that scroll parent equal to the residual (not the full keyboard height), scroll again, and record it for teardown in the existing keyboard-hide/blur cleanup. Extend the visibility target from the focused element's rect to include its next focusable sibling/button when one exists within a small distance.
+- No change to `.kb-shifted`, `.kb-surface`, or `resize: Body`; no page-level layout edits; no business logic changes.
