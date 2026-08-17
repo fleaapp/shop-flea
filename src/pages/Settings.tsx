@@ -214,10 +214,16 @@ const Settings = () => {
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [marketingOptIn, setMarketingOptIn] = useState<boolean>((profile as any)?.marketing_opt_in ?? true);
   const [marketingSaving, setMarketingSaving] = useState(false);
+  const [orderEmails, setOrderEmails] = useState<boolean>((profile as any)?.email_order_notifications ?? true);
+  const [orderEmailsSaving, setOrderEmailsSaving] = useState(false);
 
   useEffect(() => {
     setMarketingOptIn((profile as any)?.marketing_opt_in ?? true);
   }, [(profile as any)?.marketing_opt_in]);
+
+  useEffect(() => {
+    setOrderEmails((profile as any)?.email_order_notifications ?? true);
+  }, [(profile as any)?.email_order_notifications]);
 
   const handleToggleMarketing = async (checked: boolean) => {
     if (!user) {
@@ -239,6 +245,28 @@ const Settings = () => {
     }
     await refreshProfile();
     toast.success(checked ? 'Marketing emails on' : 'Marketing emails off');
+  };
+
+  const handleToggleOrderEmails = async (checked: boolean) => {
+    if (!user) {
+      promptGuest();
+      return;
+    }
+    const prev = orderEmails;
+    setOrderEmails(checked);
+    setOrderEmailsSaving(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ email_order_notifications: checked } as any)
+      .eq('user_id', user.id);
+    setOrderEmailsSaving(false);
+    if (error) {
+      setOrderEmails(prev);
+      toast.error('Failed to update preference');
+      return;
+    }
+    await refreshProfile();
+    toast.success(checked ? 'Order emails on' : 'Order emails off');
   };
 
   const helpCentreItems: SettingsItem[] = [{
