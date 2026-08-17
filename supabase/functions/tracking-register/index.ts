@@ -5,6 +5,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { buildCorsHeaders, rejectUntrustedOrigin } from '../_shared/cors.ts';
 import { carrierCode, registerNumbers, getTrackInfo } from '../_shared/tracking.ts';
 import { applyTracking } from '../_shared/applyTracking.ts';
+import { sendTransactionalEmail, getUserEmail, wantsOrderEmails } from '../_shared/sendTransactionalEmail.ts';
 
 Deno.serve(async (req) => {
   const corsHeaders = buildCorsHeaders(req);
