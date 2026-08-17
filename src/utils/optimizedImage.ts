@@ -31,12 +31,14 @@ export const getAvatarUrl = (url: string | null | undefined): string => {
 };
 
 /**
- * Listing card thumbnail — pass-through (CDN transforms too slow on this plan).
+ * Listing card thumbnail — used as a fallback when no stored .thumb.jpg exists.
+ * Requests a CDN-resized version so grids don't download full-size photos.
  */
 export const getCardImageUrl = (url: string | null | undefined): string => {
   if (!url) return '';
-  return url;
+  return getTransformedUrl(url, 400, 70);
 };
+
 
 /**
  * Full listing detail image — pass-through.
