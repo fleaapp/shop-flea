@@ -31,13 +31,23 @@ export const getAvatarUrl = (url: string | null | undefined): string => {
 };
 
 /**
- * Listing card thumbnail — used as a fallback when no stored .thumb.jpg exists.
- * Requests a CDN-resized version so grids don't download full-size photos.
+ * Listing card thumbnail — pass-through (CDN transforms too slow on this plan).
  */
 export const getCardImageUrl = (url: string | null | undefined): string => {
   if (!url) return '';
+  return url;
+};
+
+/**
+ * Grid fallback — only for listings with no stored .thumb.jpg.
+ * Requests a CDN-resized version (~5x smaller) instead of the full-size photo.
+ */
+export const getGridFallbackUrl = (url: string | null | undefined): string => {
+  if (!url) return '';
   return getTransformedUrl(url, 400, 70);
 };
+
+
 
 
 /**
