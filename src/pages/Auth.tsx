@@ -55,7 +55,7 @@ async function checkEmailProvider(email: string): Promise<ConflictProvider | nul
 const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, signIn, signUp, loading: authLoading } = useAuth();
+  const { user, signIn, signUp, loading: authLoading, signingOut } = useAuth();
   const routeState = (location.state as { initialTab?: 'login' | 'signup' } | null) ?? null;
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>(routeState?.initialTab ?? 'login');
   const [showPassword, setShowPassword] = useState(false);
@@ -478,6 +478,10 @@ const Auth = () => {
 
   // A session has arrived but the redirect (and onboarding) hasn't mounted
   // yet — hold the branded screen so the auth form never flashes back.
+  if (signingOut) {
+    return <BrandedLoadingScreen message="Signing you out" />;
+  }
+
   if (user) {
     return <BrandedLoadingScreen message="Signing you in" />;
   }

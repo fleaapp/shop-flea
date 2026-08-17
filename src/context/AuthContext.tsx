@@ -42,6 +42,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, username: string, countryCode?: string, regionId?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  signingOut: boolean;
   refreshProfile: () => Promise<void>;
 }
 
@@ -57,6 +58,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loadedUserIdRef = useRef<string | null>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [isBanned, setIsBanned] = useState(false);
+  // True from the moment logout starts until the session is fully cleared, so
+  // the auth screen can say "Signing you out" instead of "Signing you in".
+  const [signingOut, setSigningOut] = useState(false);
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
@@ -429,6 +433,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    setSigningOut(true);
     clearConsumedListings();
     clearAllActionedIds(user?.id ?? null);
     localStorage.removeItem('flea_stripe_connected');
@@ -488,11 +493,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .filter((k) => k.startsWith('sb-') && k.endsWith('-auth-token'))
         .forEach((k) => localStorage.removeItem(k));
     } catch {}
+    setSigningOut(false);
   };
 
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, profileLoaded, isBanned, signUp, signIn, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, profileLoaded, isBanned, signUp, signIn, signOut, signingOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

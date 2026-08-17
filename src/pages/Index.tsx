@@ -690,17 +690,17 @@ const Index = () => {
               <span className="text-5xl mb-3">😢</span>
               <p className="text-lg font-medium text-muted-foreground">No more listings!</p>
               <p className="mt-2 text-sm text-muted-foreground">Check back later for new items</p>
-              <div className="mt-6 flex items-center gap-2">
+              <div className="mt-6 grid w-[260px] grid-cols-2 gap-2">
                 <Button
                   onClick={() => navigate('/favorites')}
-                  className="rounded-full bg-primary text-primary-foreground"
+                  className="w-full rounded-full bg-primary text-primary-foreground"
                 >
                   Wishlist
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => navigate('/cart')}
-                  className="rounded-full"
+                  className="w-full rounded-full"
                 >
                   Cart
                 </Button>
