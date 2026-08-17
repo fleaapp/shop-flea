@@ -17,7 +17,7 @@ So the fix is not "scroll harder" - the screens need real space to scroll into w
 
 1. **Shrink full-screen shells while the keyboard is open.** Any fixed full-height surface gets its bottom edge pulled up by the live keyboard height, so the app shell simply becomes shorter, exactly like Instagram/Messages. Everything inside it (header, scroll area, footer buttons) re-lays out into the smaller area and scrolls normally. Reverted to zero the instant the keyboard closes - no padding, no colour strip, no leftover gap.
 
-2. **Give scroll areas room to scroll into.** While the keyboard is open, the scroll container holding the focused field gets a temporary bottom inset equal to the keyboard height, so even the very last field in a form can be scrolled clear of the keys - along with the next input or button under it. Removed on keyboard close.
+2. **Give scroll areas room to scroll into - invisibly.** While the keyboard is open, the scroll container holding the focused field gets extra scrollable room equal to the keyboard height, so even the very last field can be scrolled clear of the keys along with the next field or button under it. This room sits behind the keyboard and is never visible: no footer, no visible gap, no coloured strip. It disappears the moment the keyboard closes, and any area that briefly shows through keeps the same background as the screen or drawer it belongs to, so everything blends.
 
 3. **Keep the lift as a fallback only** for surfaces that genuinely cannot shrink (centred dialogs), which already works today.
 
