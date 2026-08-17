@@ -487,11 +487,12 @@ const SellerProfile = () => {
           ) : (
             <div className="w-full px-4 pt-2">
               <div className="grid grid-cols-2 gap-3">
-                {displayListings.map((listing) => (
+                {displayListings.map((listing, index) => (
                   <ProfileGridCard
                     key={listing.id}
                     listing={listing}
                     activeTab={activeTab}
+                    index={index}
                   />
                 ))}
               </div>

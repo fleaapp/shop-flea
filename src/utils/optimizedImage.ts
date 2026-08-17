@@ -39,6 +39,18 @@ export const getCardImageUrl = (url: string | null | undefined): string => {
 };
 
 /**
+ * Grid fallback — only for listings with no stored .thumb.jpg.
+ * Requests a CDN-resized version (~5x smaller) instead of the full-size photo.
+ */
+export const getGridFallbackUrl = (url: string | null | undefined): string => {
+  if (!url) return '';
+  return getTransformedUrl(url, 400, 70);
+};
+
+
+
+
+/**
  * Full listing detail image — pass-through.
  */
 export const getDetailImageUrl = (url: string | null | undefined): string => {

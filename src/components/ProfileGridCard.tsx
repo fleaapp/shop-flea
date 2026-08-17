@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { formatTagLabel } from '@/components/ListingTag';
 import EngagementBadges from '@/components/EngagementBadges';
+import { getGridFallbackUrl } from '@/utils/optimizedImage';
+
 
 interface ProfileGridCardProps {
   listing: {
@@ -19,11 +21,15 @@ interface ProfileGridCardProps {
   activeTab: 'listings' | 'sold';
   getOrderStatusButton?: (listingId: string, orderId?: string) => React.ReactNode;
   onDelete?: () => void;
+  isOwner?: boolean;
+  index?: number;
 }
 
-const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton, onDelete }: ProfileGridCardProps) => {
+const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton, onDelete, isOwner = false, index = 99 }: ProfileGridCardProps) => {
   const navigate = useNavigate();
-  const thumb = listing.thumbnails?.[0] || listing.images[0];
+  const stored = listing.thumbnails?.[0];
+  const thumb = stored || getGridFallbackUrl(listing.images[0]);
+  const priority = index < 4;
 
   return (
     <div className="w-full cursor-pointer" onClick={() => {
@@ -38,9 +44,12 @@ const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton, onDelete }:
             src={thumb}
             alt={listing.title}
             className="h-full w-full object-cover block rounded-xl"
-            loading="lazy"
+            loading={priority ? 'eager' : 'lazy'}
+            // @ts-expect-error fetchpriority is valid HTML
+            fetchpriority={priority ? 'high' : 'auto'}
             decoding="async"
           />
+
 
           <EngagementBadges
             listingId={(listing as any).source_listing_id?.split?.('::')?.[0] || listing.id}
@@ -51,7 +60,7 @@ const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton, onDelete }:
 
 
           {/* Edit button - only for active listings */}
-          {activeTab === 'listings' && (
+          {activeTab === 'listings' && isOwner && (
             <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-10">
               <button
                 onClick={(e) => {
