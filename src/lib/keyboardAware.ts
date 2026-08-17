@@ -140,12 +140,17 @@ const clearPad = () => {
 const applyPad = (el: HTMLElement, extra: number) => {
   if (paddedScroller && paddedScroller.el !== el) clearPad();
   if (!paddedScroller) {
-    paddedScroller = { el, paddingBottom: el.style.paddingBottom, extra: 0 };
+    paddedScroller = {
+      el,
+      // Inline value to restore, plus the effective padding coming from
+      // classes so we never shrink the container's existing bottom space.
+      paddingBottom: el.style.paddingBottom,
+      extra: parseFloat(window.getComputedStyle(el).paddingBottom) || 0,
+    };
   }
   const total = Math.round(paddedScroller.extra + extra);
   paddedScroller.extra = total;
-  const base = paddedScroller.paddingBottom;
-  el.style.paddingBottom = base ? `calc(${base} + ${total}px)` : `${total}px`;
+  el.style.paddingBottom = `${total}px`;
 };
 
 /**
