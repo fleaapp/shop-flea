@@ -322,6 +322,7 @@ export const installKeyboardAware = (): (() => void) => {
       if (!activeField()) {
         clearShift();
         clearFit();
+        clearPad();
       }
     }, 60);
   };
