@@ -1,20 +1,27 @@
-# Remaining keyboard gap: Suggestion Box
+# Shorter archive command without the Apple ID re-sign-in
 
-## Where things stand
+## Why the current command makes Xcode ask for your Apple ID
 
-The shared handler in `src/lib/keyboardAware.ts` is installed app-wide and already includes the fallback that gives a scroll area exactly the missing distance behind the keyboard when it has run out of room. Any screen whose fields live inside a real scroll container is covered by it - Edit Listing, Edit Profile, Checkout, Contact Support, the Seller Onboarding sheet, the Refund Request dialog and the Write Review drawer all qualify structurally.
+Two of the four steps are redundant and both are the ones that disturb Xcode:
 
-One screen cannot benefit from it: Suggestion Box (`src/pages/SuggestionBox.tsx`) is a `fixed inset-0` shell with no scrollable body, so there is no container to pad and no headroom to lift into. Its textarea and Submit button can still be covered.
+- `npm install` runs the `postinstall` hook (`scripts/fix-apple-sign-in-spm.mjs` and `scripts/patch-native-capacitor-packages.mjs`), which rewrites the Swift packages inside `node_modules`. Xcode sees the local Swift Package Manager checkouts change, re-resolves them, and that re-resolution plus signing re-check is what prompts for the Apple ID again.
+- `bash scripts/setup-ios-native.sh` is already run for you: `npm run ios:archive-ready` calls it as its own step (`scripts/prepare-ios-archive.mjs` runs build, `cap sync ios`, then the native setup script, then the safety assertions). Running it separately just touches `project.pbxproj` an extra time before Xcode reopens it.
 
-## The fix
+## The command to use instead
 
-1. Wrap the Suggestion Box content in the standard scrollable body used by the other pages (`flex-1 min-h-0 overflow-y-auto overscroll-contain`) between the header and the bottom nav. With the keyboard closed nothing changes visually.
-2. With a scroll parent present, the existing fallback handles the rest: the textarea and the Submit button below it clear the keys, and the temporary room disappears on blur.
-3. No change to the shared handler, no padding strip, no footer, no colour.
+```text
+git pull && npm run ios:archive-ready
+```
 
-## Verification
+Then in Xcode: bump the Build number and Archive. No Clean Build Folder needed unless the run reports a problem.
 
-Check at a phone viewport with the keyboard height mocked:
+## When you do still need the long version
 
-- Suggestion Box - textarea plus Submit visible while typing, no leftover space after blur
-- Spot-check Edit Listing, Edit Profile, Checkout and Contact Support to confirm the existing fallback behaves and nothing regressed
+Run `npm install` only when `git pull` changed `package.json` or `package-lock.json` - that is, when a dependency was added or upgraded. If you are unsure, `git pull` prints the changed files; look for those two.
+
+Run `bash scripts/setup-ios-native.sh` on its own only when you are recovering a wiped or corrupted `ios/` folder as described in `README-IOS.md`.
+
+## What I will change in the repo
+
+- Add a short "routine rebuild vs full rebuild" section to `README-IOS.md` and `TESTFLIGHT.md` documenting the two-command routine path, so this does not get re-introduced.
+- No changes to the scripts themselves, no native or app behaviour changes.
