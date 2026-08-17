@@ -143,6 +143,39 @@ Deno.serve(async (req) => {
           message: '🚨 Urgent action needed: Your sale is 6 days overdue. Ship today to avoid issues. 🚚',
           related_listing_id: order.listing_id,
         });
+
+        try {
+          const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+          const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+          const sellerEmail = await getUserEmail(supabaseUrl, serviceKey, order.seller_id);
+          if (sellerEmail && (await wantsOrderEmails(supabaseUrl, serviceKey, order.seller_id))) {
+            const { data: listingRow } = await supabaseAdmin
+              .from('listings')
+              .select('title')
+              .eq('id', order.listing_id)
+              .maybeSingle();
+            const { data: orderRow } = await supabaseAdmin
+              .from('orders')
+              .select('order_number')
+              .eq('id', order.id)
+              .maybeSingle();
+            await sendTransactionalEmail({
+              supabaseUrl,
+              serviceKey,
+              templateName: 'seller-shipping-reminder',
+              recipientEmail: sellerEmail,
+              idempotencyKey: `seller-shipping-reminder-${order.id}`,
+              templateData: {
+                orderNumber: orderRow?.order_number ?? '',
+                itemTitle: listingRow?.title ?? '',
+                daysSinceSold: 6,
+                orderUrl: `https://app.finditonflea.com/order-chat/${order.id}`,
+              },
+            });
+          }
+        } catch (e) {
+          console.error('[shipping-reminders] email error:', e);
+        }
       }
     }
 
