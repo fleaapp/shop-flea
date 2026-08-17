@@ -1,27 +1,23 @@
-# Shorter archive command without the Apple ID re-sign-in
+# Sign-out wording and matching empty-state buttons
 
-## Why the current command makes Xcode ask for your Apple ID
+## 1. "Signing you in" shows while signing out
 
-Two of the four steps are redundant and both are the ones that disturb Xcode:
+Logging out from Settings navigates to `/auth` first and then clears the session. For the moment in between, the auth screen still sees a user and renders the branded screen with the message "Signing you in" (`src/pages/Auth.tsx`, line 482), which is the wrong direction.
 
-- `npm install` runs the `postinstall` hook (`scripts/fix-apple-sign-in-spm.mjs` and `scripts/patch-native-capacitor-packages.mjs`), which rewrites the Swift packages inside `node_modules`. Xcode sees the local Swift Package Manager checkouts change, re-resolves them, and that re-resolution plus signing re-check is what prompts for the Apple ID again.
-- `bash scripts/setup-ios-native.sh` is already run for you: `npm run ios:archive-ready` calls it as its own step (`scripts/prepare-ios-archive.mjs` runs build, `cap sync ios`, then the native setup script, then the safety assertions). Running it separately just touches `project.pbxproj` an extra time before Xcode reopens it.
+Fix: track the sign-out in progress and show "Signing you out" instead.
 
-## The command to use instead
+- `src/context/AuthContext.tsx`: expose a `signingOut` flag that is set true at the start of `signOut` and cleared once the session is gone.
+- `src/pages/Auth.tsx`: when that flag is set, render `BrandedLoadingScreen` with `message="Signing you out"`; otherwise keep "Signing you in" exactly as now.
 
-```text
-git pull && npm run ios:archive-ready
-```
+No change to the logout sequence itself.
 
-Then in Xcode: bump the Build number and Archive. No Clean Build Folder needed unless the run reports a problem.
+## 2. Wishlist and Cart buttons on the empty home state
 
-## When you do still need the long version
+In `src/pages/Index.tsx` the "No more listings!" state renders the two buttons side by side with their natural widths, so "Wishlist" is wider than "Cart".
 
-Run `npm install` only when `git pull` changed `package.json` or `package-lock.json` - that is, when a dependency was added or upgraded. If you are unsure, `git pull` prints the changed files; look for those two.
+Fix: give the pair a fixed-width container and let each button take an equal share, so both are the same width regardless of label length. Styling, colours and behaviour stay as they are.
 
-Run `bash scripts/setup-ios-native.sh` on its own only when you are recovering a wiped or corrupted `ios/` folder as described in `README-IOS.md`.
+## Verification
 
-## What I will change in the repo
-
-- Add a short "routine rebuild vs full rebuild" section to `README-IOS.md` and `TESTFLIGHT.md` documenting the two-command routine path, so this does not get re-introduced.
-- No changes to the scripts themselves, no native or app behaviour changes.
+- Log out from Settings: the loading screen reads "Signing you out", and a normal sign-in still reads "Signing you in".
+- Swipe through to the empty home state: Wishlist and Cart are equal width and centred.
