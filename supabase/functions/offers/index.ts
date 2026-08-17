@@ -84,6 +84,35 @@ async function notify(admin: ReturnType<typeof svc>, rows: Notif[]) {
   );
 }
 
+async function sendOfferEmail(
+  buyerId: string,
+  offer: any,
+  status: "accepted" | "declined",
+  title: string,
+  sellerUsername: string,
+) {
+  try {
+    const email = await getUserEmail(SUPABASE_URL, SERVICE_KEY, buyerId);
+    if (!email || !(await wantsOrderEmails(SUPABASE_URL, SERVICE_KEY, buyerId))) return;
+    await sendTransactionalEmail({
+      supabaseUrl: SUPABASE_URL,
+      serviceKey: SERVICE_KEY,
+      templateName: "buyer-offer-status",
+      recipientEmail: email,
+      idempotencyKey: `buyer-offer-status-${offer.id}-${status}`,
+      templateData: {
+        offerAmount: money(offer.amount),
+        itemTitle: title,
+        status,
+        sellerUsername: sellerUsername.startsWith("@") ? sellerUsername : `@${sellerUsername}`,
+        listingUrl: `https://app.finditonflea.com/listing/${offer.listing_id}`,
+      },
+    });
+  } catch (e) {
+    console.error("[offers] offer email error:", e);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const originBlock = rejectUntrustedOrigin(req);
