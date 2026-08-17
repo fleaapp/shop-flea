@@ -213,6 +213,8 @@ Deno.serve(async (req) => {
             related_user_id: offer.buyer_id,
           },
         ]);
+        const sellerUsername = await usernameOf(offer.seller_id);
+        await sendOfferEmail(offer.buyer_id, offer, "accepted", title, sellerUsername);
       } else if (offer.direction === "buyer_to_seller") {
         await notify(admin, [
           {
