@@ -225,12 +225,31 @@ const ensureVisible = () => {
       before + overlap,
     );
     const moved = scrollParent.scrollTop - before;
-    const residual = overlap - moved;
+    let residual = overlap - moved;
     if (residual <= 1) {
       clearShift();
       return;
     }
-    // The container hit its limit — lift the owning surface by the remainder.
+
+    // The container is at the end of its content — there is nothing below the
+    // field to scroll into. Add exactly the missing distance behind the
+    // keyboard and scroll again. Invisible, and removed on keyboard close.
+    const atEnd = scrollParent.scrollTop >= scrollParent.scrollHeight - scrollParent.clientHeight - 1;
+    if (atEnd) {
+      applyPad(scrollParent, residual + MARGIN);
+      const beforePad = scrollParent.scrollTop;
+      scrollParent.scrollTop = Math.min(
+        scrollParent.scrollHeight - scrollParent.clientHeight,
+        beforePad + residual,
+      );
+      residual -= scrollParent.scrollTop - beforePad;
+      if (residual <= 1) {
+        clearShift();
+        return;
+      }
+    }
+
+    // Still short — lift the owning surface by whatever remains.
     if (surface) {
       const rect = surface.getBoundingClientRect();
       const headroomLeft = Math.max(0, rect.top + currentShift - MARGIN);
