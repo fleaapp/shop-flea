@@ -4,6 +4,7 @@ import { logEdgeError } from "../_shared/logError.ts";
 import { getVerifiedUserId } from "../_shared/auth.ts";
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { checkRateLimit, callerKey, tooManyRequests } from "../_shared/rateLimit.ts";
+import { sendTransactionalEmail, getUserEmail, wantsOrderEmails } from "../_shared/sendTransactionalEmail.ts";
 
 
 const corsHeaders = {
