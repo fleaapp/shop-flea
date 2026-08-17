@@ -23,6 +23,7 @@ import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { logEdgeError } from "../_shared/logError.ts";
 import { calculateSecureCheckoutFee, calculateTransactionFee } from "../_shared/fees.ts";
 import { couponAlreadyUsed } from "../_shared/coupons.ts";
+import { sendTransactionalEmail, getUserEmail, wantsOrderEmails } from "../_shared/sendTransactionalEmail.ts";
 
 
 const corsHeaders = {
