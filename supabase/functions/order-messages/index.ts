@@ -700,6 +700,35 @@ Deno.serve(async (req) => {
           console.error("[order-messages] Refund notification error:", e);
         }
 
+        try {
+          const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+          const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+          const sellerEmail = await getUserEmail(supabaseUrl, serviceKey, orderInfo.sellerId);
+          if (sellerEmail && (await wantsOrderEmails(supabaseUrl, serviceKey, orderInfo.sellerId))) {
+            const { data: orderRow } = await external
+              .from("orders")
+              .select("order_number")
+              .eq("id", orderInfo.matchedOrderId ?? threadOrderId)
+              .maybeSingle();
+            await sendTransactionalEmail({
+              supabaseUrl,
+              serviceKey,
+              templateName: "buyer-refund-requested",
+              recipientEmail: sellerEmail,
+              idempotencyKey: `buyer-refund-requested-${orderInfo.matchedOrderId ?? threadOrderId}`,
+              templateData: {
+                orderNumber: orderRow?.order_number ?? "",
+                itemTitle,
+                buyerUsername: senderUsername ?? "",
+                reason: (reason || "").trim().slice(0, 200),
+                orderUrl: `https://app.finditonflea.com/order-chat/${orderInfo.matchedOrderId ?? threadOrderId}`,
+              },
+            });
+          }
+        } catch (e) {
+          console.error("[order-messages] refund request email error:", e);
+        }
+
         return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
