@@ -206,6 +206,10 @@ Deno.serve(async (req) => {
           .select('title')
           .eq('id', orderRow?.listing_id ?? order.listing_id)
           .maybeSingle();
+        const carrierName = order.tracking_provider ?? '';
+        const trackingUrl = carrierName.toLowerCase().includes('auspost') || carrierName.toLowerCase().includes('australia post')
+          ? `https://auspost.com.au/mypost/track/#/details/${number}`
+          : undefined;
         await sendTransactionalEmail({
           supabaseUrl,
           serviceKey,
@@ -216,8 +220,8 @@ Deno.serve(async (req) => {
             orderNumber: orderRow?.order_number ?? '',
             itemTitle: listingRow?.title ?? '',
             trackingNumber: number,
-            carrier: order.tracking_provider ?? '',
-            orderUrl: `https://app.finditonflea.com/order-chat/${order.id}`,
+            carrier: carrierName,
+            trackingUrl,
           },
         });
       }
