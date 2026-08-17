@@ -7,6 +7,7 @@
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { logEdgeError } from "../_shared/logError.ts";
+import { sendTransactionalEmail, getUserEmail, wantsOrderEmails } from "../_shared/sendTransactionalEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
