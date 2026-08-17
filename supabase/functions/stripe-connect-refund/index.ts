@@ -784,6 +784,50 @@ async function insertRefundNotifications(
       });
       await pushRes.text().catch(() => "");
     }));
+
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+      const emailServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+      const [buyerEmail, sellerEmail] = await Promise.all([
+        getUserEmail(supabaseUrl, emailServiceKey, order.buyer_id),
+        getUserEmail(supabaseUrl, emailServiceKey, order.seller_id),
+      ]);
+      const [buyerWants, sellerWants] = await Promise.all([
+        wantsOrderEmails(supabaseUrl, emailServiceKey, order.buyer_id),
+        wantsOrderEmails(supabaseUrl, emailServiceKey, order.seller_id),
+      ]);
+      const amount = ((Number(order.price || 0) + Number(order.shipping_price || 0))).toFixed(2);
+      const itemTitle = subject;
+      const orderNumber = order.order_number ?? "";
+
+      if (buyerEmail && buyerWants) {
+        await sendTransactionalEmail({
+          supabaseUrl,
+          serviceKey: emailServiceKey,
+          templateName: "buyer-refund-sent",
+          recipientEmail: buyerEmail,
+          idempotencyKey: `buyer-refund-sent-${order.id}`,
+          templateData: { orderNumber, itemTitle, amount: `$${amount}` },
+        });
+      }
+      if (sellerEmail && sellerWants) {
+        await sendTransactionalEmail({
+          supabaseUrl,
+          serviceKey: emailServiceKey,
+          templateName: "seller-refund-issued",
+          recipientEmail: sellerEmail,
+          idempotencyKey: `seller-refund-issued-${order.id}`,
+          templateData: {
+            orderNumber,
+            itemTitle,
+            amount: `$${amount}`,
+            reason: sellerCancelled ? "Seller cancelled the order" : "Refund issued to buyer",
+          },
+        });
+      }
+    } catch (e) {
+      console.error("[stripe-connect-refund] refund email error:", e);
+    }
   } catch (error) {
     console.error("[stripe-connect-refund] notification insert failed:", error);
   }
