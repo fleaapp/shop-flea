@@ -121,6 +121,33 @@ const applyShift = (surface: HTMLElement, amount: number) => {
 };
 
 /**
+ * Temporary scroll room. When the focused field sits in the last screenful of
+ * a long scroll area, the container is already at its end and cannot scroll
+ * any further — there is simply nothing below the field to scroll into. We add
+ * exactly the missing distance as bottom padding on that container, so it can
+ * scroll the field (and the control under it) clear of the keys.
+ *
+ * The space lives behind the keyboard, is never visible, and is removed the
+ * moment the keyboard closes — no footer, no gap, no leftover padding.
+ */
+const clearPad = () => {
+  if (!paddedScroller) return;
+  paddedScroller.el.style.paddingBottom = paddedScroller.paddingBottom;
+  paddedScroller = null;
+};
+
+const applyPad = (el: HTMLElement, extra: number) => {
+  if (paddedScroller && paddedScroller.el !== el) clearPad();
+  if (!paddedScroller) {
+    paddedScroller = { el, paddingBottom: el.style.paddingBottom, extra: 0 };
+  }
+  const total = Math.round(paddedScroller.extra + extra);
+  paddedScroller.extra = total;
+  const base = paddedScroller.paddingBottom;
+  el.style.paddingBottom = base ? `calc(${base} + ${total}px)` : `${total}px`;
+};
+
+/**
  * The element that should end up visible along with the focused field: the
  * next input/button after it, so the user can tap straight through without
  * closing the keyboard. Falls back to the field itself.
