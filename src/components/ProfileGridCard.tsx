@@ -60,7 +60,7 @@ const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton, onDelete, i
 
 
           {/* Edit button - only for active listings */}
-          {activeTab === 'listings' && (
+          {activeTab === 'listings' && isOwner && (
             <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-10">
               <button
                 onClick={(e) => {
