@@ -319,6 +319,13 @@ const Settings = () => {
       onToggle: handleToggleNotifications
     }, {
       icon: <span className="text-base">📧</span>,
+      label: 'Order emails',
+      toggle: true,
+      checked: orderEmails,
+      disabled: orderEmailsSaving || isGuest,
+      onToggle: handleToggleOrderEmails
+    }, {
+      icon: <span className="text-base">📧</span>,
       label: 'Marketing emails',
       toggle: true,
       checked: marketingOptIn,
