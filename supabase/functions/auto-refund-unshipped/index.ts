@@ -374,7 +374,61 @@ Deno.serve(async (req) => {
         firePush(order.buyer_id, { type: "order_auto_refunded", title: "Order refunded", message: "Your order was automatically refunded because the seller didn't ship within 8 days." });
         firePush(order.seller_id, { type: "sale_auto_refunded", title: "Sale auto-refunded", message: "Your sale was auto-refunded because tracking wasn't added within 8 days." });
 
+        try {
+          const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+          const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+          const [buyerEmail, sellerEmail] = await Promise.all([
+            getUserEmail(supabaseUrl, serviceKey, order.buyer_id),
+            getUserEmail(supabaseUrl, serviceKey, order.seller_id),
+          ]);
+          const [buyerWants, sellerWants] = await Promise.all([
+            wantsOrderEmails(supabaseUrl, serviceKey, order.buyer_id),
+            wantsOrderEmails(supabaseUrl, serviceKey, order.seller_id),
+          ]);
+          const { data: listingRow } = await admin
+            .from("listings")
+            .select("title")
+            .eq("id", order.listing_id)
+            .maybeSingle();
+          const { data: orderRow } = await admin
+            .from("orders")
+            .select("order_number")
+            .eq("id", order.id)
+            .maybeSingle();
+          const total = (Number(order.price || 0) + Number(order.shipping_price || 0)).toFixed(2);
 
+          if (buyerEmail && buyerWants) {
+            await sendTransactionalEmail({
+              supabaseUrl,
+              serviceKey,
+              templateName: "buyer-refund-sent",
+              recipientEmail: buyerEmail,
+              idempotencyKey: `buyer-refund-sent-auto-${order.id}`,
+              templateData: {
+                orderNumber: orderRow?.order_number ?? "",
+                itemTitle: listingRow?.title ?? "",
+                amount: `$${total}`,
+              },
+            });
+          }
+          if (sellerEmail && sellerWants) {
+            await sendTransactionalEmail({
+              supabaseUrl,
+              serviceKey,
+              templateName: "seller-refund-issued",
+              recipientEmail: sellerEmail,
+              idempotencyKey: `seller-refund-issued-auto-${order.id}`,
+              templateData: {
+                orderNumber: orderRow?.order_number ?? "",
+                itemTitle: listingRow?.title ?? "",
+                amount: `$${total}`,
+                reason: "Order auto-refunded after 8 days with no valid tracking",
+              },
+            });
+          }
+        } catch (e) {
+          console.error("[auto-refund-unshipped] email error:", e);
+        }
 
         // Audit trail.
         try {
