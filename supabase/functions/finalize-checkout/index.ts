@@ -269,6 +269,86 @@ async function createCheckoutNotifications(
   );
 }
 
+async function sendCheckoutEmails(
+  serviceUrl: string,
+  serviceKey: string,
+  buyerId: string,
+  insertedOrders: Array<{ id: string; listing_id: string; seller_id: string }>,
+  listingMap: Map<string, ListingRow>,
+  paidAmountAud: number,
+  shipping: ShippingDetails,
+) {
+  try {
+    const orderIds = insertedOrders.map((o) => o.id);
+    const { data: fullOrders } = await createClient(serviceUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
+      .from("orders")
+      .select("id, order_number, listing_id, seller_id, buyer_id, price, shipping_price, transaction_fee")
+      .in("id", orderIds);
+
+    const buyerEmail = await getUserEmail(serviceUrl, serviceKey, buyerId);
+    if (buyerEmail && (await wantsOrderEmails(serviceUrl, serviceKey, buyerId))) {
+      const firstOrder = fullOrders?.[0];
+      const firstListing = firstOrder ? listingMap.get(firstOrder.listing_id) : undefined;
+      const itemCount = fullOrders?.length ?? 1;
+      const address = [shipping.shippingFirstName, shipping.shippingLastName, shipping.shippingAddress, shipping.shippingCity, shipping.shippingState, shipping.shippingPostcode]
+        .filter(Boolean)
+        .join("\n");
+
+      await sendTransactionalEmail({
+        supabaseUrl: serviceUrl,
+        serviceKey,
+        templateName: "buyer-order-confirmation",
+        recipientEmail: buyerEmail,
+        idempotencyKey: `buyer-order-confirm-${orderIds[0]}`,
+        templateData: {
+          orderNumber: firstOrder?.order_number ?? "",
+          itemTitle: firstListing?.title ?? "",
+          itemCount,
+          total: `$${paidAmountAud.toFixed(2)}`,
+          shippingAddress: address,
+          estimatedDelivery: "3-5 business days",
+        },
+      });
+    }
+
+    const ordersBySeller = new Map<string, typeof fullOrders>();
+    for (const order of fullOrders ?? []) {
+      const list = ordersBySeller.get(order.seller_id) ?? [];
+      list.push(order);
+      ordersBySeller.set(order.seller_id, list);
+    }
+
+    for (const [sellerId, sellerOrders] of ordersBySeller) {
+      const sellerEmail = await getUserEmail(serviceUrl, serviceKey, sellerId);
+      if (!sellerEmail || !(await wantsOrderEmails(serviceUrl, serviceKey, sellerId))) continue;
+
+      const first = sellerOrders[0];
+      const listing = listingMap.get(first.listing_id);
+      const itemCount = sellerOrders.length;
+      const saleTotal = sellerOrders.reduce((s, o) => s + Number(o.price || 0) + Number(o.shipping_price || 0), 0);
+      const fees = sellerOrders.reduce((s, o) => s + Number(o.transaction_fee || 0), 0);
+
+      await sendTransactionalEmail({
+        supabaseUrl: serviceUrl,
+        serviceKey,
+        templateName: "seller-item-sold",
+        recipientEmail: sellerEmail,
+        idempotencyKey: `seller-item-sold-${first.id}`,
+        templateData: {
+          orderNumber: first.order_number ?? "",
+          itemTitle: listing?.title ?? "",
+          itemCount,
+          saleAmount: `$${saleTotal.toFixed(2)}`,
+          yourEarnings: `$${(saleTotal - fees).toFixed(2)}`,
+          orderUrl: `https://app.finditonflea.com/order-chat/${first.id}`,
+        },
+      });
+    }
+  } catch (e) {
+    console.error("[finalize-checkout] checkout email error:", e);
+  }
+}
+
 
 // Signature-verified JWT extraction. Uses Supabase's auth client to validate
 // the token cryptographically (not just decode it) — protects against forged
