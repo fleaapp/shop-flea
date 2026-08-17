@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { logEdgeError } from "../_shared/logError.ts";
+import { sendTransactionalEmail, getUserEmail, wantsOrderEmails } from "../_shared/sendTransactionalEmail.ts";
 
 async function firePushNotification(userId: string, notification: Record<string, unknown>) {
   try {
