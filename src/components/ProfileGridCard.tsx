@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { formatTagLabel } from '@/components/ListingTag';
 import EngagementBadges from '@/components/EngagementBadges';
+import { getCardImageUrl } from '@/utils/optimizedImage';
+
 
 interface ProfileGridCardProps {
   listing: {
