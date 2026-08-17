@@ -1,132 +1,44 @@
-# Email Notification Strategy & Implementation Plan
+# Email Notifications - Essentials Only
 
-## Goal
-Add branded transactional email notifications for buyers and sellers at the moments that matter, without leaving the app. Emails complement in-app alerts and push notifications and respect user preferences.
+Start with the handful of emails people actually need in their inbox. Everything else stays as in-app alerts and push notifications.
 
-## Current State
-- Auth emails (signup, magic link, password reset, etc.) are live via `notify.finditonflea.com` and use the lime-green Flea brand.
-- In-app notifications and push notifications already fire for sales, shipping, refunds, offers, comments, reviews, etc.
-- Contact-form submissions already enqueue transactional emails directly to the `transactional_emails` queue.
-- There is no reusable `send-transactional-email` wrapper, no marketplace event templates, and no granular email preferences beyond a single `marketing_opt_in` toggle.
-- The `process-email-queue` Edge Function and `transactional_emails` queue are already in place.
+## The starting set (6 emails)
 
-## Recommended Email Touchpoints
+### Buyer
+1. **Order confirmation** - sent right after checkout. Order code, items, totals, delivery expectations. This doubles as their receipt.
+2. **Order shipped** - sent when the seller marks the item shipped, with the carrier and tracking number.
+3. **Refund sent** - sent when money is actually returned to their payment method.
 
-### Buyer emails
-1. **Welcome** - after first signup / email verification.
-2. **Order confirmation** - immediately after successful checkout, with item summary and order code.
-3. **Order shipped** - when seller marks item shipped (include tracking link if available).
-4. **Order delivered** - when carrier scan confirms delivery or buyer marks delivered.
-5. **Refund requested** - confirmation that buyer's refund request was submitted.
-6. **Refund approved / rejected** - outcome of refund request.
-7. **Refund sent** - when money is returned to buyer's payment method.
-8. **Offer accepted / declined / countered** - status of any offer the buyer made.
-9. **Item in cart/wishlist sold** - optional, low frequency.
-10. **Review received** - when the seller leaves a review on the buyer.
+### Seller
+4. **Item sold** - sent right after checkout. What sold, what they earn, and a clear "post it within 6 days" instruction.
+5. **Shipping reminder** - single reminder if the item still has no tracking after 6 days, warning that an unshipped order is auto-refunded at day 8.
+6. **Refund issued** - sent when an order they sold is refunded (buyer request approved, auto-refund, or seller cancellation), with the amount and reason.
 
-### Seller emails
-1. **Sale made** - immediately after checkout, with item, buyer, and earnings breakdown.
-2. **Shipping reminder** - at 3 days and 6 days if order still unshipped.
-3. **Order message from buyer** - when a new message is sent in an order thread.
-4. **Offer received / countered / accepted / declined** - any offer activity on their listings.
-5. **Refund requested** - buyer opened a refund request, with reason and required next steps.
-6. **Refund sent / order refunded** - the order was refunded (auto or manual).
-7. **Payout available** - funds are available and can be settled manually, or automatic payout summary.
-8. **Payout failed / action required** - when Stripe/payout method needs attention.
-9. **Review received** - when the buyer leaves a review on the seller.
-10. **Verification status** - seller onboarding / ID verification approved or action required.
+Everything else - offers, comments, reviews, messages, delivery confirmations, payout notices - stays push and in-app only for now. Easy to add later once these six are proven.
 
-### Account / trust & safety emails
-1. **Email changed** - already handled by auth email hook.
-2. **Password changed** - already handled by auth email hook.
-3. **Payout / bank details changed** - security notice.
-4. **Suspicious login / new device** - optional future hardening.
+## Why these six
+They are the moments where money moves or where someone has to act. Missing an in-app alert for a comment is harmless; missing "your item sold, post it in 6 days" costs the seller a refund and a bad review.
 
-## Implementation Plan
+## What gets built
 
-### 1. Scaffold transactional email infrastructure
-- Run `email_domain--scaffold_transactional_email` to create:
-  - `send-transactional-email` Edge Function.
-  - `handle-email-unsubscribe` Edge Function and in-app unsubscribe page.
-  - `handle-email-suppression` Edge Function.
-  - Sample template registry in `supabase/functions/_shared/transactional-email-templates/`.
-- This is safe because the domain is already verified and the queue already exists.
+**1. Transactional email plumbing**
+Scaffold the send function, the unsubscribe handler, and the suppression handler. The sender domain is already verified and the email queue is already live, so this is wiring, not new infrastructure.
 
-### 2. Build Flea-branded transactional templates
-Create React Email `.tsx` templates in `supabase/functions/_shared/transactional-email-templates/`:
-- `buyer-order-confirmation.tsx`
-- `buyer-order-shipped.tsx`
-- `buyer-order-delivered.tsx`
-- `buyer-refund-requested.tsx`
-- `buyer-refund-sent.tsx`
-- `buyer-offer-status.tsx`
-- `seller-sale-made.tsx`
-- `seller-shipping-reminder.tsx`
-- `seller-refund-requested.tsx`
-- `seller-refund-sent.tsx`
-- `seller-offer-status.tsx`
-- `seller-review-received.tsx`
-- `seller-payout-available.tsx`
-- `seller-payout-failed.tsx`
-- `seller-verification-status.tsx`
-- `welcome.tsx`
+**2. Six branded templates**
+All using the existing Flea lime email styling already used by the auth emails - same lime background, charcoal text, rounded buttons. Each email links straight back to the relevant order or sale screen in the app.
 
-All templates reuse the existing `supabase/functions/_shared/email-templates/styles.ts` tokens (lime card, charcoal text, rounded buttons) so the email background is the brand lime green as already requested.
+**3. One email preference toggle**
+A single "Order emails" toggle inside Settings - Notifications, next to the existing Push notifications and Marketing emails toggles. On by default. Turning it off stops all six.
 
-### 3. Add granular email preferences
-- Add columns to `public.profiles`:
-  - `email_buyer_notifications` boolean default true
-  - `email_seller_notifications` boolean default true
-  - `email_offers` boolean default true
-  - `email_shipping_reminders` boolean default true
-  - `email_refunds` boolean default true
-  - `email_reviews` boolean default true
-- Update `src/integrations/supabase/types.ts` if not auto-generated.
-- Add a new "Email notifications" sub-section inside Settings → Notifications with toggles for each category.
-- Continue to respect `marketing_opt_in` for any future marketing sends (not covered here).
+**4. Hooked into the existing events**
+Each email fires from the same place its push notification already fires from, so the two always agree. Sends are keyed to the order so a retry can never double-send.
 
-### 4. Create reusable send helper
-- Create or extend `supabase/functions/_shared/sendTransactionalEmail.ts` with a helper that:
-  - Looks up the recipient's email preferences.
-  - Returns early if the category is disabled.
-  - Generates an idempotency key from event + recipient + order/listing id.
-  - Fetches or creates an unsubscribe token.
-  - Enqueues to `transactional_emails` via `enqueue_email` RPC.
-  - Logs to `email_send_log`.
+**5. Unsubscribe page**
+A branded in-app page for the unsubscribe link required in the footer of every email.
 
-### 5. Wire emails into existing event triggers
-Update the following Edge Functions / flows to call the send helper after writing the in-app notification:
-- `finalize-checkout` → buyer order confirmation + seller sale made.
-- `order-messages` or message trigger → new order message email to recipient.
-- Shipping reminder cron → seller shipping reminder.
-- `offers` → offer received / countered / accepted / declined to both sides.
-- Refund request flow → buyer refund requested + seller refund requested.
-- `auto-refund-unshipped` / `auto-approve-refund-requests` / manual refund → buyer refund sent + seller refund sent.
-- Review creation trigger → seller/buyer review received.
-- Seller onboarding state change → verification status email.
-- Payout completion/failure → payout available / payout failed.
-- Welcome flow → welcome email (after first verified signup).
-
-### 6. Unsubscribe and compliance
-- Use the scaffolded unsubscribe footer on every transactional email.
-- Ensure the unsubscribe link points to the in-app unsubscribe page route.
-- Honor unsubscribe tokens in `email_unsubscribe_tokens` (already used by contact-form emails).
-- Only send app/transactional emails tied to a specific user action or event.
-
-### 7. Testing and monitoring
-- Add preview data for each template so they can be tested from the Lovable email preview UI.
-- Use idempotency keys to prevent duplicate sends on retries.
-- Monitor `email_send_log` and DLQ counts in Cloud → Emails.
-- Add a one-time backfill only if explicitly requested; otherwise new events trigger emails going forward.
-
-## Out of Scope (for this plan)
-- Marketing/promotional email campaigns (requires separate marketing email strategy).
-- SMS notifications.
-- Real-time delivery event webhooks from Mailgun (suppression already handled).
-
-## Success Criteria
-- Buyers receive order confirmation, shipping, delivery, refund, and offer emails.
-- Sellers receive sale-made, shipping reminder, offer, refund, review, and payout emails.
-- Every email uses Flea lime branding and includes a working unsubscribe link.
-- Users can toggle email categories in Settings → Notifications.
-- No duplicate emails on retries and no emails sent to users who have opted out.
+## Technical notes
+- Templates live in `supabase/functions/_shared/transactional-email-templates/` as React Email components, reusing the tokens in `_shared/email-templates/styles.ts`.
+- Sends go through the existing `transactional_emails` pgmq queue via `enqueue_email`, the same path `contact-form-submit` already uses.
+- New `profiles.email_order_notifications` boolean, default true, checked in a shared helper before enqueuing.
+- Trigger points: `finalize-checkout` (buyer confirmation + seller sale), the mark-as-shipped flow, the 6-day shipping reminder cron, and the refund paths (`auto-refund-unshipped`, refund approval, seller cancellation).
+- Idempotency key per event: event name + order id + recipient.
