@@ -187,6 +187,7 @@ const ensureVisible = () => {
   if (!el) {
     clearShift();
     clearFit();
+    clearPad();
     return;
   }
 
@@ -197,6 +198,7 @@ const ensureVisible = () => {
   if (kb <= 0) {
     clearShift();
     clearFit();
+    clearPad();
     return;
   }
 
@@ -378,6 +380,7 @@ export const installKeyboardAware = (): (() => void) => {
     removeNative?.();
     clearShift();
     clearFit();
+    clearPad();
     installed = false;
   };
 };
