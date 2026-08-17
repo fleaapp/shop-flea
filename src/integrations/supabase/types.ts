@@ -1138,6 +1138,7 @@ export type Database = {
           created_at: string
           device_ids: string[]
           email: string | null
+          email_order_notifications: boolean | null
           first_name: string | null
           gst_alert_60k_sent_at: string | null
           gst_alert_75k_sent_at: string | null
@@ -1196,6 +1197,7 @@ export type Database = {
           created_at?: string
           device_ids?: string[]
           email?: string | null
+          email_order_notifications?: boolean | null
           first_name?: string | null
           gst_alert_60k_sent_at?: string | null
           gst_alert_75k_sent_at?: string | null
@@ -1254,6 +1256,7 @@ export type Database = {
           created_at?: string
           device_ids?: string[]
           email?: string | null
+          email_order_notifications?: boolean | null
           first_name?: string | null
           gst_alert_60k_sent_at?: string | null
           gst_alert_75k_sent_at?: string | null
