@@ -18,6 +18,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { logEdgeError } from "../_shared/logError.ts";
+import { sendTransactionalEmail, getUserEmail, wantsOrderEmails } from "../_shared/sendTransactionalEmail.ts";
 import { calculateSecureCheckoutFee, calculateTransactionFee, round2 } from "../_shared/fees.ts";
 
 
