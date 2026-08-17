@@ -88,6 +88,7 @@ const ForgotPassword = lazy(loadForgotPassword);
 const ResetPassword = lazy(loadResetPassword);
 const VerifyEmail = lazy(loadVerifyEmail);
 const AuthCallback = lazy(loadAuthCallback);
+const Unsubscribe = lazy(loadUnsubscribe);
 const NotFound = lazy(loadNotFound);
 const Terms = lazy(loadTerms);
 const PrivacyPolicy = lazy(loadPrivacyPolicy);
