@@ -24,6 +24,7 @@ const FOCUSABLE_SKIP_TYPES = ['checkbox', 'radio', 'button', 'submit', 'reset', 
 let installed = false;
 let shiftedSurface: HTMLElement | null = null;
 let fittedSurface: { el: HTMLElement; maxHeight: string; overflowY: string } | null = null;
+let paddedScroller: { el: HTMLElement; paddingBottom: string; extra: number } | null = null;
 let lastFocused: HTMLElement | null = null;
 let nativeKeyboardHeight = 0;
 let rafId = 0;
@@ -121,6 +122,38 @@ const applyShift = (surface: HTMLElement, amount: number) => {
 };
 
 /**
+ * Temporary scroll room. When the focused field sits in the last screenful of
+ * a long scroll area, the container is already at its end and cannot scroll
+ * any further — there is simply nothing below the field to scroll into. We add
+ * exactly the missing distance as bottom padding on that container, so it can
+ * scroll the field (and the control under it) clear of the keys.
+ *
+ * The space lives behind the keyboard, is never visible, and is removed the
+ * moment the keyboard closes — no footer, no gap, no leftover padding.
+ */
+const clearPad = () => {
+  if (!paddedScroller) return;
+  paddedScroller.el.style.paddingBottom = paddedScroller.paddingBottom;
+  paddedScroller = null;
+};
+
+const applyPad = (el: HTMLElement, extra: number) => {
+  if (paddedScroller && paddedScroller.el !== el) clearPad();
+  if (!paddedScroller) {
+    paddedScroller = {
+      el,
+      // Inline value to restore, plus the effective padding coming from
+      // classes so we never shrink the container's existing bottom space.
+      paddingBottom: el.style.paddingBottom,
+      extra: parseFloat(window.getComputedStyle(el).paddingBottom) || 0,
+    };
+  }
+  const total = Math.round(paddedScroller.extra + extra);
+  paddedScroller.extra = total;
+  el.style.paddingBottom = `${total}px`;
+};
+
+/**
  * The element that should end up visible along with the focused field: the
  * next input/button after it, so the user can tap straight through without
  * closing the keyboard. Falls back to the field itself.
@@ -159,6 +192,7 @@ const ensureVisible = () => {
   if (!el) {
     clearShift();
     clearFit();
+    clearPad();
     return;
   }
 
@@ -169,6 +203,7 @@ const ensureVisible = () => {
   if (kb <= 0) {
     clearShift();
     clearFit();
+    clearPad();
     return;
   }
 
@@ -197,12 +232,31 @@ const ensureVisible = () => {
       before + overlap,
     );
     const moved = scrollParent.scrollTop - before;
-    const residual = overlap - moved;
+    let residual = overlap - moved;
     if (residual <= 1) {
       clearShift();
       return;
     }
-    // The container hit its limit — lift the owning surface by the remainder.
+
+    // The container is at the end of its content — there is nothing below the
+    // field to scroll into. Add exactly the missing distance behind the
+    // keyboard and scroll again. Invisible, and removed on keyboard close.
+    const atEnd = scrollParent.scrollTop >= scrollParent.scrollHeight - scrollParent.clientHeight - 1;
+    if (atEnd) {
+      applyPad(scrollParent, residual + MARGIN);
+      const beforePad = scrollParent.scrollTop;
+      scrollParent.scrollTop = Math.min(
+        scrollParent.scrollHeight - scrollParent.clientHeight,
+        beforePad + residual,
+      );
+      residual -= scrollParent.scrollTop - beforePad;
+      if (residual <= 1) {
+        clearShift();
+        return;
+      }
+    }
+
+    // Still short — lift the owning surface by whatever remains.
     if (surface) {
       const rect = surface.getBoundingClientRect();
       const headroomLeft = Math.max(0, rect.top + currentShift - MARGIN);
@@ -273,6 +327,7 @@ export const installKeyboardAware = (): (() => void) => {
       if (!activeField()) {
         clearShift();
         clearFit();
+        clearPad();
       }
     }, 60);
   };
@@ -310,6 +365,7 @@ export const installKeyboardAware = (): (() => void) => {
           document.documentElement.style.setProperty('--native-keyboard-height', '0px');
           clearShift();
           clearFit();
+          clearPad();
         };
         const willHide = await Keyboard.addListener('keyboardWillHide', reset);
         const didHide = await Keyboard.addListener('keyboardDidHide', reset);
@@ -331,6 +387,7 @@ export const installKeyboardAware = (): (() => void) => {
     removeNative?.();
     clearShift();
     clearFit();
+    clearPad();
     installed = false;
   };
 };
