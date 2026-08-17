@@ -430,6 +430,8 @@ const Profile = () => {
                     key={`${listing.id}-${index}`}
                     listing={listing}
                     activeTab={activeTab}
+                    isOwner
+                    index={index}
                     getOrderStatusButton={getOrderStatusButton}
                     onDelete={canDeleteSold(listing) ? () => setSoldDeleteTarget({
                       cardId: listing.id,
