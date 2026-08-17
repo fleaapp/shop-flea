@@ -190,6 +190,41 @@ Deno.serve(async (req) => {
       console.warn('[tracking-register] initial sync failed:', (e as Error).message);
     }
 
+    // Notify buyer by email that their order has shipped.
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+      const buyerEmail = await getUserEmail(supabaseUrl, serviceKey, order.buyer_id);
+      if (buyerEmail && (await wantsOrderEmails(supabaseUrl, serviceKey, order.buyer_id))) {
+        const { data: orderRow } = await admin
+          .from('orders')
+          .select('order_number, listing_id')
+          .eq('id', order.id)
+          .maybeSingle();
+        const { data: listingRow } = await admin
+          .from('listings')
+          .select('title')
+          .eq('id', orderRow?.listing_id ?? order.listing_id)
+          .maybeSingle();
+        await sendTransactionalEmail({
+          supabaseUrl,
+          serviceKey,
+          templateName: 'buyer-order-shipped',
+          recipientEmail: buyerEmail,
+          idempotencyKey: `buyer-order-shipped-${groupId}`,
+          templateData: {
+            orderNumber: orderRow?.order_number ?? '',
+            itemTitle: listingRow?.title ?? '',
+            trackingNumber: number,
+            carrier: order.tracking_provider ?? '',
+            orderUrl: `https://app.finditonflea.com/order-chat/${order.id}`,
+          },
+        });
+      }
+    } catch (e) {
+      console.error('[tracking-register] shipped email error:', e);
+    }
+
     return json({ success: true, shipment_id: shipment.id });
   } catch (e) {
     console.error('[tracking-register] error:', e);
