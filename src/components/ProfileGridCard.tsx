@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { formatTagLabel } from '@/components/ListingTag';
 import EngagementBadges from '@/components/EngagementBadges';
-import { getCardImageUrl } from '@/utils/optimizedImage';
+import { getGridFallbackUrl } from '@/utils/optimizedImage';
 
 
 interface ProfileGridCardProps {
@@ -28,7 +28,7 @@ interface ProfileGridCardProps {
 const ProfileGridCard = ({ listing, activeTab, getOrderStatusButton, onDelete, isOwner = false, index = 99 }: ProfileGridCardProps) => {
   const navigate = useNavigate();
   const stored = listing.thumbnails?.[0];
-  const thumb = stored || getCardImageUrl(listing.images[0]);
+  const thumb = stored || getGridFallbackUrl(listing.images[0]);
   const priority = index < 4;
 
   return (
