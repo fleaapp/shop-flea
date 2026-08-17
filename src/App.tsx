@@ -270,6 +270,7 @@ const AppContent = () => {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/listing/:id" element={<ProtectedRoute mode="public"><ListingDetails /></ProtectedRoute>} />
           <Route path="/favorites" element={<ProtectedRoute mode="public"><Favorites /></ProtectedRoute>} />
           <Route path="/cart" element={<ProtectedRoute mode="public"><Cart /></ProtectedRoute>} />
