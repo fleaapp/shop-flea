@@ -750,13 +750,26 @@ serve(async (req) => {
       }
     }
 
+    const serviceUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
     await createCheckoutNotifications(
       serviceClient,
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      serviceUrl,
+      serviceKey,
       userId,
       insertedOrders,
       listingMap,
+    );
+
+    await sendCheckoutEmails(
+      serviceUrl,
+      serviceKey,
+      userId,
+      insertedOrders,
+      listingMap,
+      expectedAmountAud,
+      shipping,
     );
 
     await serviceClient.from("cart_items").delete().eq("user_id", userId).in("listing_id", itemIds);
