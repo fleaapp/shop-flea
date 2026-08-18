@@ -15,10 +15,10 @@ Because every toggle in the app uses this one shared component, fixing this file
 
 ## The fix
 
-Flip it to what you asked for, using real design tokens:
+Keep the off state exactly as it is now, and only change the on state:
 
-- **On**: track uses the brand lime `primary` token, circle is `charcoal`
-- **Off**: track uses the muted `input` token, circle is white/`background` so it stays clearly visible
+- **Off**: track uses `bg-input`, circle uses `bg-muted-foreground` (the current light grey / medium grey look)
+- **On**: track uses the brand lime `primary` token, circle keeps the same `bg-muted-foreground` medium grey
 - Keep the existing size, slide animation and focus ring
 
 ## One more instance of the same bug
