@@ -992,7 +992,7 @@ const Checkout = () => {
                     className={cn(
                       "w-full h-12 rounded-full font-medium transition-colors",
                       saveConfirmed
-                        ? "bg-lime text-charcoal hover:bg-lime/90"
+                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
                         : "bg-charcoal text-white hover:bg-charcoal-light"
                     )}
                     disabled={!isShippingComplete}
