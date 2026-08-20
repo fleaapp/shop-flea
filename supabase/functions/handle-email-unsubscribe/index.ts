@@ -35,6 +35,7 @@ Deno.serve(async (req) => {
   // Extract token from query params (GET) or body (POST)
   const url = new URL(req.url)
   let token: string | null = url.searchParams.get('token')
+  let validateOnly = url.searchParams.get('validate_only') === 'true'
 
   if (req.method === 'POST') {
     // Detect RFC 8058 one-click unsubscribe: POST with form-encoded body
@@ -58,6 +59,9 @@ Deno.serve(async (req) => {
         const body = await req.json()
         if (body.token) {
           token = body.token
+        }
+        if (body.validate_only === true) {
+          validateOnly = true
         }
       } catch {
         // Fall through — token stays from query param
@@ -86,9 +90,10 @@ Deno.serve(async (req) => {
     return jsonResponse({ valid: false, reason: 'already_unsubscribed' })
   }
 
-  // GET: Validate token (the app's unsubscribe page calls this on load)
-  if (req.method === 'GET') {
-    return jsonResponse({ valid: true })
+  // Validation only — never mutates state. Used by the app's unsubscribe page
+  // on load (POST with validate_only) and by plain GET checks.
+  if (req.method === 'GET' || validateOnly) {
+    return jsonResponse({ valid: true, email: tokenRecord.email })
   }
 
   // POST: Process the unsubscribe
