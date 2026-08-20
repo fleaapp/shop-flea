@@ -60,6 +60,9 @@ Deno.serve(async (req) => {
         if (body.token) {
           token = body.token
         }
+        if (body.validate_only === true) {
+          validateOnly = true
+        }
       } catch {
         // Fall through — token stays from query param
       }
