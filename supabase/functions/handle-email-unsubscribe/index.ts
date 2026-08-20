@@ -90,9 +90,10 @@ Deno.serve(async (req) => {
     return jsonResponse({ valid: false, reason: 'already_unsubscribed' })
   }
 
-  // GET: Validate token (the app's unsubscribe page calls this on load)
-  if (req.method === 'GET') {
-    return jsonResponse({ valid: true })
+  // Validation only — never mutates state. Used by the app's unsubscribe page
+  // on load (POST with validate_only) and by plain GET checks.
+  if (req.method === 'GET' || validateOnly) {
+    return jsonResponse({ valid: true, email: tokenRecord.email })
   }
 
   // POST: Process the unsubscribe
