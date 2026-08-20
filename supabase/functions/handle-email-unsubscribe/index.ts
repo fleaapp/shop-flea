@@ -35,6 +35,7 @@ Deno.serve(async (req) => {
   // Extract token from query params (GET) or body (POST)
   const url = new URL(req.url)
   let token: string | null = url.searchParams.get('token')
+  let validateOnly = url.searchParams.get('validate_only') === 'true'
 
   if (req.method === 'POST') {
     // Detect RFC 8058 one-click unsubscribe: POST with form-encoded body
