@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { loadShippingPrefs } from '@/utils/shippingPrefs';
 import { supabase } from '@/lib/supabase';
-import { compressImage, createThumbnail } from '@/utils/imageCompression';
+import { compressImage, createThumbnail, extensionForMime } from '@/utils/imageCompression';
 import { useContentModeration } from '@/hooks/useContentModeration';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import {
@@ -243,7 +243,7 @@ const EditListing = () => {
   };
 
   const handleCropComplete = useCallback(async (croppedBlob: Blob) => {
-    const croppedFile = new File([croppedBlob], `cropped-${Date.now()}.webp`, { type: 'image/webp' });
+    const croppedFile = new File([croppedBlob], `cropped-${Date.now()}.png`, { type: croppedBlob.type || 'image/png' });
     try {
       const compressedFile = await compressImage(croppedFile);
       const thumbFile = await createThumbnail(compressedFile).catch(() => undefined);

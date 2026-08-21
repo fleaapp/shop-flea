@@ -17,7 +17,7 @@ interface CompressionOptions {
   force?: boolean;
 }
 
-const DEFAULT_OPTIONS: Required<Omit<CompressionOptions, 'mimeType'>> = {
+const DEFAULT_OPTIONS: Required<Pick<CompressionOptions, 'maxWidth' | 'maxHeight' | 'quality'>> = {
   maxWidth: 1080,
   maxHeight: 1080,
   quality: 0.78,
