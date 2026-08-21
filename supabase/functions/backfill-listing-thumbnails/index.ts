@@ -92,17 +92,31 @@ Deno.serve(async (req) => {
           continue;
         }
 
+        // Idempotency: a single ".opt.jpg" means this photo is already done.
+        if (/^[^.]+\.opt\.jpg$/.test(path.split('/').pop() ?? '')) {
+          newImages.push(url);
+          newThumbs.push(url.replace(/\.opt\.jpg$/, '.thumb.jpg'));
+          continue;
+        }
+
+        // Always re-encode from the ORIGINAL upload, never from a previous
+        // pass, so repeated runs cannot stack generation loss.
+        const baseStem = path.replace(/(\.opt)+\.jpg$/, '').replace(/\.[^./]+$/, '');
+        const sourceCandidates = [`${baseStem}.webp`, `${baseStem}.jpg`, `${baseStem}.png`, path];
+
         try {
-          const { data: blob, error: dlErr } = await supabase.storage
-            .from('listings')
-            .download(path);
-          if (dlErr || !blob) throw dlErr ?? new Error('download failed');
+          let blob: Blob | null = null;
+          for (const candidate of sourceCandidates) {
+            const { data } = await supabase.storage.from('listings').download(candidate);
+            if (data) { blob = data; break; }
+          }
+          if (!blob) throw new Error('download failed');
 
           const bytes = new Uint8Array(await blob.arrayBuffer());
           const decoded = await decode(bytes);
           if (!(decoded instanceof Image)) throw new Error('unsupported image');
 
-          const stem = path.replace(/\.[^./]+$/, '');
+          const stem = baseStem;
 
           // Main: cap the long edge at 1080 and re-encode as JPEG.
           const main = decoded.clone();
