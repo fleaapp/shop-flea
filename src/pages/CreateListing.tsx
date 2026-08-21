@@ -23,7 +23,7 @@ import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { compressImage, createThumbnail } from '@/utils/imageCompression';
+import { compressImage, createThumbnail, extensionForMime } from '@/utils/imageCompression';
 import { loadShippingPrefs } from '@/utils/shippingPrefs';
 import { useContentModeration } from '@/hooks/useContentModeration';
 import { useBlockedStatus } from '@/hooks/useBlockedStatus';
@@ -342,8 +342,8 @@ const CreateListing = () => {
   };
 
   const handleCropComplete = useCallback(async (croppedBlob: Blob) => {
-    // Compress cropped blob (main ~1200px) and derive a small thumbnail (~600px).
-    const croppedFile = new File([croppedBlob], `cropped-${Date.now()}.webp`, { type: 'image/webp' });
+    // Compress cropped blob (main ~1080px) and derive a small thumbnail (400px).
+    const croppedFile = new File([croppedBlob], `cropped-${Date.now()}.png`, { type: croppedBlob.type || 'image/png' });
     try {
       const compressedFile = await compressImage(croppedFile);
       const thumbFile = await createThumbnail(compressedFile).catch(() => undefined);
@@ -389,47 +389,48 @@ const CreateListing = () => {
   const uploadImages = async (): Promise<{ images: string[]; thumbnails: string[] }> => {
     if (!user) return { images: [], thumbnails: [] };
 
-    const images: string[] = [];
-    const thumbnails: string[] = [];
+    // Upload every photo (and its thumbnail) in parallel so posting is fast.
+    const results = await Promise.all(
+      imageFiles.map(async (imageFile) => {
+        const fileExt = extensionForMime(imageFile.file.type);
+        const stem = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}`;
+        const fileName = `${stem}.${fileExt}`;
 
-    for (const imageFile of imageFiles) {
-      const fileExt = 'webp';
-      const stem = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}`;
-      const fileName = `${stem}.${fileExt}`;
-
-      const { error } = await supabase.storage
-        .from('listings')
-        .upload(fileName, imageFile.file, {
-          contentType: 'image/webp',
+        const mainUpload = supabase.storage.from('listings').upload(fileName, imageFile.file, {
+          contentType: imageFile.file.type || 'image/jpeg',
           cacheControl: 'public, max-age=31536000, immutable',
         });
 
-      if (error) {
-        console.error('Upload error:', error);
-        throw new Error('Failed to upload image');
-      }
+        const thumbName = imageFile.thumb
+          ? `${stem}.thumb.${extensionForMime(imageFile.thumb.type)}`
+          : null;
+        // Thumbnail is best-effort: any failure falls back to the main URL.
+        const thumbUpload = imageFile.thumb && thumbName
+          ? supabase.storage.from('listings').upload(thumbName, imageFile.thumb, {
+              contentType: imageFile.thumb.type || 'image/jpeg',
+              cacheControl: 'public, max-age=31536000, immutable',
+            })
+          : Promise.resolve({ error: new Error('no thumb') } as { error: unknown });
 
-      const { data: { publicUrl } } = supabase.storage.from('listings').getPublicUrl(fileName);
-      images.push(publicUrl);
-
-      // Thumbnail is best-effort: any failure falls back to the main URL so cards still render.
-      let thumbUrl = publicUrl;
-      if (imageFile.thumb) {
-        const thumbName = `${stem}.thumb.webp`;
-        const { error: thumbErr } = await supabase.storage
-          .from('listings')
-          .upload(thumbName, imageFile.thumb, {
-            contentType: 'image/webp',
-            cacheControl: 'public, max-age=31536000, immutable',
-          });
-        if (!thumbErr) {
-          thumbUrl = supabase.storage.from('listings').getPublicUrl(thumbName).data.publicUrl;
+        const [{ error }, thumbResult] = await Promise.all([mainUpload, thumbUpload]);
+        if (error) {
+          console.error('Upload error:', error);
+          throw new Error('Failed to upload image');
         }
-      }
-      thumbnails.push(thumbUrl);
-    }
 
-    return { images, thumbnails };
+        const publicUrl = supabase.storage.from('listings').getPublicUrl(fileName).data.publicUrl;
+        const thumbUrl = !(thumbResult as { error: unknown }).error && thumbName
+          ? supabase.storage.from('listings').getPublicUrl(thumbName).data.publicUrl
+          : publicUrl;
+
+        return { publicUrl, thumbUrl };
+      })
+    );
+
+    return {
+      images: results.map((r) => r.publicUrl),
+      thumbnails: results.map((r) => r.thumbUrl),
+    };
   };
 
 
