@@ -43,19 +43,25 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get('Authorization') ?? '';
     const token = authHeader.replace('Bearer ', '');
     let callerId: string | null = null;
+    let callerRole: string | null = null;
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       callerId = payload.sub ?? null;
+      callerRole = payload.role ?? null;
     } catch {
       callerId = null;
     }
-    if (!callerId) return json({ error: 'Unauthorized' }, 401);
 
-    const { data: isAdmin } = await supabase.rpc('has_role', {
-      _user_id: callerId,
-      _role: 'admin',
-    });
-    if (!isAdmin) return json({ error: 'Forbidden' }, 403);
+    // Service-role callers (maintenance runs) are trusted; everyone else must be admin.
+    if (callerRole !== 'service_role') {
+      if (!callerId) return json({ error: 'Unauthorized' }, 401);
+
+      const { data: isAdmin } = await supabase.rpc('has_role', {
+        _user_id: callerId,
+        _role: 'admin',
+      });
+      if (!isAdmin) return json({ error: 'Forbidden' }, 403);
+    }
 
     const body = await req.json().catch(() => ({}));
     const limit = Math.min(Number(body.limit) || 50, 200);
