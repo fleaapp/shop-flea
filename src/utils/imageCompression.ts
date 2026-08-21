@@ -13,6 +13,8 @@ interface CompressionOptions {
   maxHeight?: number;
   quality?: number;
   mimeType?: 'image/jpeg' | 'image/webp';
+  /** Always re-encode, even if the source is already small (used for thumbnails). */
+  force?: boolean;
 }
 
 const DEFAULT_OPTIONS: Required<Omit<CompressionOptions, 'mimeType'>> = {
@@ -68,7 +70,7 @@ export const compressImage = (
 
   return new Promise((resolve, reject) => {
     // Small AND already in an efficient format: nothing to gain.
-    if (file.size < SKIP_COMPRESSION_BYTES && isAlreadyEfficient(file)) {
+    if (!options.force && file.size < SKIP_COMPRESSION_BYTES && isAlreadyEfficient(file)) {
       resolve(file);
       return;
     }
@@ -118,7 +120,7 @@ export const compressImage = (
         );
 
         // Keep the original only when it is already efficient and smaller.
-        if (compressedFile.size >= file.size && isAlreadyEfficient(file)) {
+        if (!options.force && compressedFile.size >= file.size && isAlreadyEfficient(file)) {
           resolve(file);
         } else {
           resolve(compressedFile);
@@ -171,7 +173,7 @@ export const compressImages = async (
  * thumbnails. Roughly 20-40 KB, which is plenty for a 4:5 card on a 3x screen.
  */
 export const createThumbnail = (file: File): Promise<File> =>
-  compressImage(file, { maxWidth: 400, maxHeight: 500, quality: 0.7 }).then((thumb) => {
+  compressImage(file, { maxWidth: 400, maxHeight: 500, quality: 0.7, force: true }).then((thumb) => {
     const ext = extensionForMime(thumb.type);
     return new File(
       [thumb],
