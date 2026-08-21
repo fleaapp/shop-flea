@@ -1,6 +1,11 @@
 /**
- * Image compression utility optimized for mobile
- * Compresses images to reduce file size while maintaining quality
+ * Image compression utility optimized for mobile.
+ *
+ * IMPORTANT: iOS Safari / the Capacitor WebView cannot encode WebP from a
+ * canvas. `canvas.toBlob(cb, 'image/webp')` silently falls back to PNG there,
+ * which produced 1.6 MB "webp" listing photos. We therefore probe for real
+ * WebP encoding support and fall back to JPEG, and we always trust the blob's
+ * actual `type` when naming the file.
  */
 
 interface CompressionOptions {
@@ -8,33 +13,64 @@ interface CompressionOptions {
   maxHeight?: number;
   quality?: number;
   mimeType?: 'image/jpeg' | 'image/webp';
+  /** Always re-encode, even if the source is already small (used for thumbnails). */
+  force?: boolean;
 }
 
-const DEFAULT_OPTIONS: CompressionOptions = {
-  maxWidth: 1200,
-  maxHeight: 1200,
-  quality: 0.80,
-  mimeType: 'image/webp',
+const DEFAULT_OPTIONS: Required<Pick<CompressionOptions, 'maxWidth' | 'maxHeight' | 'quality'>> = {
+  maxWidth: 1080,
+  maxHeight: 1080,
+  quality: 0.78,
 };
 
+/** Sizes at or below this are left alone, provided they are already jpeg/webp. */
+const SKIP_COMPRESSION_BYTES = 150 * 1024;
+
+let webpSupport: boolean | null = null;
+
+/** True only when the browser can genuinely encode WebP from a canvas. */
+export const supportsWebp = (): boolean => {
+  if (webpSupport !== null) return webpSupport;
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    webpSupport = canvas.toDataURL('image/webp').startsWith('data:image/webp');
+  } catch {
+    webpSupport = false;
+  }
+  return webpSupport;
+};
+
+export const preferredImageMime = (): 'image/webp' | 'image/jpeg' =>
+  supportsWebp() ? 'image/webp' : 'image/jpeg';
+
+export const extensionForMime = (mime: string): string =>
+  mime === 'image/webp' ? 'webp' : mime === 'image/png' ? 'png' : 'jpg';
+
+const isAlreadyEfficient = (file: File) =>
+  file.type === 'image/jpeg' || file.type === 'image/webp';
+
+const withExtension = (name: string, ext: string) =>
+  `${name.replace(/\.[^/.]+$/, '')}.${ext}`;
+
 /**
- * Compresses an image file for mobile optimization
- * @param file - The original image file
- * @param options - Compression options
- * @returns A promise that resolves to the compressed file
+ * Compresses an image file for mobile optimization.
+ * The returned file's name, extension and `type` always match the real
+ * encoded format.
  */
 export const compressImage = (
   file: File,
   options: CompressionOptions = {}
 ): Promise<File> => {
-  const { maxWidth, maxHeight, quality, mimeType } = {
-    ...DEFAULT_OPTIONS,
-    ...options,
-  };
+  const maxWidth = options.maxWidth ?? DEFAULT_OPTIONS.maxWidth;
+  const maxHeight = options.maxHeight ?? DEFAULT_OPTIONS.maxHeight;
+  const quality = options.quality ?? DEFAULT_OPTIONS.quality;
+  const mimeType = options.mimeType ?? preferredImageMime();
 
   return new Promise((resolve, reject) => {
-    // If file is already small enough (< 100KB), skip compression
-    if (file.size < 100 * 1024) {
+    // Small AND already in an efficient format: nothing to gain.
+    if (!options.force && file.size < SKIP_COMPRESSION_BYTES && isAlreadyEfficient(file)) {
       resolve(file);
       return;
     }
@@ -52,8 +88,8 @@ export const compressImage = (
       let { width, height } = img;
 
       // Calculate new dimensions while maintaining aspect ratio
-      if (width > maxWidth! || height > maxHeight!) {
-        const ratio = Math.min(maxWidth! / width, maxHeight! / height);
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
         width = Math.round(width * ratio);
         height = Math.round(height * ratio);
       }
@@ -61,35 +97,45 @@ export const compressImage = (
       canvas.width = width;
       canvas.height = height;
 
-      // Draw image with high quality settings
+      // Flatten onto white so JPEG output never gets black transparency.
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, width, height);
 
-      // Convert to blob
+      const finish = (blob: Blob | null) => {
+        if (!blob) {
+          reject(new Error('Failed to compress image'));
+          return;
+        }
+
+        const actualType =
+          blob.type === 'image/webp' || blob.type === 'image/jpeg' ? blob.type : 'image/jpeg';
+
+        const compressedFile = new File(
+          [blob],
+          withExtension(file.name, extensionForMime(actualType)),
+          { type: actualType, lastModified: Date.now() }
+        );
+
+        // Keep the original only when it is already efficient and smaller.
+        if (!options.force && compressedFile.size >= file.size && isAlreadyEfficient(file)) {
+          resolve(file);
+        } else {
+          resolve(compressedFile);
+        }
+      };
+
       canvas.toBlob(
         (blob) => {
-          if (!blob) {
-            reject(new Error('Failed to compress image'));
+          // Browser ignored the requested type (iOS + webp) and gave us PNG:
+          // re-encode as JPEG so we never ship a multi-MB PNG.
+          if (blob && blob.type !== mimeType && mimeType === 'image/webp') {
+            canvas.toBlob(finish, 'image/jpeg', quality);
             return;
           }
-
-          // Create a new file from the blob
-          const compressedFile = new File(
-            [blob],
-            file.name.replace(/\.[^/.]+$/, '.webp'),
-            {
-              type: mimeType,
-              lastModified: Date.now(),
-            }
-          );
-
-          // If compressed file is larger than original, use original
-          if (compressedFile.size >= file.size) {
-            resolve(file);
-          } else {
-            resolve(compressedFile);
-          }
+          finish(blob);
         },
         mimeType,
         quality
@@ -114,9 +160,6 @@ export const compressImage = (
 
 /**
  * Compresses multiple image files
- * @param files - Array of image files
- * @param options - Compression options
- * @returns Promise resolving to array of compressed files
  */
 export const compressImages = async (
   files: File[],
@@ -126,16 +169,15 @@ export const compressImages = async (
 };
 
 /**
- * Creates a small thumbnail variant (~600px max, JPEG q=0.72) for grid cards
- * and order thumbnails. Falls back to the original if compression fails or
- * doesn't reduce size.
+ * Creates a small thumbnail variant (400x500, q=0.7) for grid cards and order
+ * thumbnails. Roughly 20-40 KB, which is plenty for a 4:5 card on a 3x screen.
  */
 export const createThumbnail = (file: File): Promise<File> =>
-  compressImage(file, { maxWidth: 600, maxHeight: 750, quality: 0.72 }).then((thumb) => {
-    // Rename to make it obvious in storage.
-    return new File([thumb], file.name.replace(/(\.[^./\\]+)?$/, '.thumb.webp'), {
-      type: 'image/webp',
-      lastModified: Date.now(),
-    });
+  compressImage(file, { maxWidth: 400, maxHeight: 500, quality: 0.7, force: true }).then((thumb) => {
+    const ext = extensionForMime(thumb.type);
+    return new File(
+      [thumb],
+      `${file.name.replace(/\.[^/.]+$/, '')}.thumb.${ext}`,
+      { type: thumb.type, lastModified: Date.now() }
+    );
   });
-

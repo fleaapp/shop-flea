@@ -1,26 +1,8 @@
 /**
  * Utility for optimizing Supabase storage image URLs.
- * Uses Supabase CDN image transforms for thumbnails to drastically reduce payload.
+ * All URLs are direct storage object URLs - the render/image CDN is slower on this plan.
  * Avatars pass through as-is (already compressed on upload).
  */
-
-const SUPABASE_STORAGE_HOST = 'teaicrimlqdayqpmxasc.supabase.co/storage';
-
-const getTransformedUrl = (
-  url: string,
-  width: number,
-  quality: number
-): string => {
-  if (!url.includes(SUPABASE_STORAGE_HOST)) return url;
-
-  const transformed = url.replace(
-    '/storage/v1/object/public/',
-    '/storage/v1/render/image/public/'
-  );
-  const [base, queryString] = transformed.split('?');
-  const existingParams = queryString ? `&${queryString}` : '';
-  return `${base}?width=${width}&quality=${quality}${existingParams}`;
-};
 
 /**
  * Avatar URL — pass-through since avatars are already compressed to 400x400 on upload.
@@ -39,13 +21,15 @@ export const getCardImageUrl = (url: string | null | undefined): string => {
 };
 
 /**
- * Grid fallback — only for listings with no stored .thumb.jpg.
- * Requests a CDN-resized version (~5x smaller) instead of the full-size photo.
+ * Grid fallback — only for listings with no stored thumbnail.
+ * Pass-through: the Supabase render/image CDN is slower than the original
+ * object on this plan and distorts the 4:5 crop, so we never use it.
  */
 export const getGridFallbackUrl = (url: string | null | undefined): string => {
   if (!url) return '';
-  return getTransformedUrl(url, 400, 70);
+  return url;
 };
+
 
 
 
