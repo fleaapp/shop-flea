@@ -65,12 +65,13 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const limit = Math.min(Number(body.limit) || 50, 200);
+    const offset = Math.max(0, Number(body.offset) || 0);
 
     const { data: listings, error } = await supabase
       .from('listings')
       .select('id, images, thumbnails')
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .range(offset, offset + limit - 1);
 
     if (error) return json({ error: error.message }, 500);
 
@@ -182,7 +183,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return json({ success: true, processed: report.length, report });
+    return json({ success: true, scanned: listings?.length ?? 0, processed: report.length, report });
   } catch (e) {
     console.error('backfill error', e);
     return json({ error: e instanceof Error ? e.message : 'Unknown error' }, 500);
