@@ -1,64 +1,28 @@
-# Category and filter gap review
+# Fix slow images: photos are being saved as huge PNGs
 
-Reviewed the single source of truth (`src/config/sizeConfig.ts`) plus the filter sheet and category drawer. Here is what is missing compared to what AU resale shoppers expect.
+## What I found (measured, not guessed)
 
-## Missing clothing categories
+I pulled real listing images straight from storage and inspected them:
 
-**Tops** (currently 7 subcategories)
-- Polo
-- Crop top
-- Bodysuit
-- Long sleeve / Turtleneck
-- Cardigan (currently nowhere in the app - a notable gap)
+- The "compressed" main photo is **1.67 MB** and is actually a **PNG**, despite being named `.webp` and served as `image/webp`.
+- The "thumbnail" used on cards and profile grids is **717 KB** - also a PNG, 600x750.
+- The on-the-fly CDN resize added recently returns **740 KB** and a distorted 400x1200 image, so it makes things slower, not faster.
 
-**Outerwear** (currently only Jacket, Coat)
-- Blazer
-- Puffer
-- Raincoat
-- Trench
+Cause: the compressor writes with `canvas.toBlob(..., 'image/webp')`. On iOS Safari / the native WebView, WebP encoding from canvas is not supported, so the browser silently falls back to PNG. Photos come out roughly 20-30x larger than intended. That is why posting is slow (uploading ~2.4 MB per photo), why the swipe card is slow, and why profile grids crawl (6-8 x 717 KB at once).
 
-**Bottoms** (currently Jeans, Skirt, Shorts, Pants)
-- Leggings
-- Cargo pants
-- Trackpants / Joggers
-- Overalls
+## The fix
 
-**Dresses** (currently no subcategories)
-- Mini / Midi / Maxi
-- Formal / Gown
+1. **Never produce PNG again.** Detect what the device can actually encode: use WebP when supported, otherwise JPEG. The file extension, storage content type, and the real encoded format will always match.
+2. **Right-size the outputs.** Main image ~1200px at quality 0.8 (expected 120-250 KB); grid/card thumbnail 400px wide at quality 0.7 (expected 25-50 KB instead of 717 KB).
+3. **Faster posting.** Upload the photos in parallel instead of one after another, and upload each photo's thumbnail alongside it rather than after it.
+4. **Drop the CDN resize fallback.** It is slower than the original file on this plan and distorts the crop. Grids go back to direct storage URLs.
+5. **One-off backfill.** Re-encode the existing 32 listings (including the 6 with no stored thumbnail) into proper small thumbnails so old items load fast too, without touching the original photos.
 
-**Shoes** (currently 5)
-- Flats / Loafers
-- Slides / Thongs
-- Mules
+Everything else stays as is: the 4:5 crop, eager loading of the first four grid images, and the owner-only edit button.
 
-**Accessories** (currently Hats, Bags, Scarves / Gloves, Jewellery)
-- Belts
-- Sunglasses / Eyewear
-- Watches
-- Wallets / Purses
-- Hair accessories
+## Technical notes
 
-**New top-level categories worth adding**
-- Suits / Co-ords (matching sets are a common resale listing with no home today)
-- Maternity
-
-## Missing filters
-
-Current filters: Fit, Category, Size, Brand, Condition, Colour, Style, Price, Hide sold.
-
-Gaps:
-- Sort order (Newest, Price low to high, Price high to low) - there is no sort control at all
-- Free or low shipping
-- Accepts offers (we already store `offers_enabled`)
-- Recently listed (last 24h / 7 days)
-
-## Notes
-
-- Everything flows from `CATEGORY_OPTIONS`, so adding subcategories automatically updates the listing drawer, filter sheet, and search.
-- Size bucketing is resolved by helper functions matching category values. New bottoms subcategories (leggings, cargo, trackpants, overalls) must be added to `isBottomsCategory`, and new accessory subcategories to `isAccessoryCategory`, or they will get the wrong size set.
-- Existing listings keep their current category values; nothing needs backfilling.
-
-## Suggested next step
-
-Confirm which of the above you want and I will add them in one pass, including the size-bucket helper updates.
+- `src/utils/imageCompression.ts`: add a memoised `supportsWebp()` probe (`canvas.toDataURL('image/webp')` prefix check); resolve the target mime from it; verify the returned blob's `type` and fall back to JPEG if the browser handed back something else. Return the correct extension from the helper so callers stop hardcoding `.webp`. `createThumbnail` moves to `maxWidth: 400, maxHeight: 500, quality: 0.7`.
+- `src/pages/CreateListing.tsx` (and `EditListing.tsx` where it does the same upload): derive `fileExt`/`contentType` from the produced file's mime instead of the literal `'webp'`; run the per-image work with `Promise.all`.
+- `src/utils/optimizedImage.ts`: `getGridFallbackUrl` returns the URL unchanged (matches the existing "avoid Supabase CDN transforms" rule); keep the function so callers do not change.
+- Backfill: an edge function reads each listing's `images[0]`, re-encodes to a small JPEG/WebP, writes `<stem>.thumb.jpg`, and updates `thumbnails`. Originals are left untouched.
