@@ -39,13 +39,15 @@ export const getCardImageUrl = (url: string | null | undefined): string => {
 };
 
 /**
- * Grid fallback — only for listings with no stored .thumb.jpg.
- * Requests a CDN-resized version (~5x smaller) instead of the full-size photo.
+ * Grid fallback — only for listings with no stored thumbnail.
+ * Pass-through: the Supabase render/image CDN is slower than the original
+ * object on this plan and distorts the 4:5 crop, so we never use it.
  */
 export const getGridFallbackUrl = (url: string | null | undefined): string => {
   if (!url) return '';
-  return getTransformedUrl(url, 400, 70);
+  return url;
 };
+
 
 
 
