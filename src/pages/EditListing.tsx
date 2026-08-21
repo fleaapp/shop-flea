@@ -292,42 +292,50 @@ const EditListing = () => {
 
   const uploadImages = async (): Promise<{ images: string[]; thumbnails: string[] }> => {
     if (!user) return { images: [], thumbnails: [] };
-    const images: string[] = [];
-    const thumbnails: string[] = [];
 
-    for (const imageFile of newImageFiles) {
-      const fileExt = 'webp';
-      const stem = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}`;
-      const fileName = `${stem}.${fileExt}`;
+    // Upload every photo (and its thumbnail) in parallel so posting is fast.
+    const results = await Promise.all(
+      newImageFiles.map(async (imageFile) => {
+        const fileExt = extensionForMime(imageFile.file.type);
+        const stem = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}`;
+        const fileName = `${stem}.${fileExt}`;
 
-      const { error } = await supabase.storage.from('listings').upload(fileName, imageFile.file, {
-        contentType: 'image/webp',
-        cacheControl: 'public, max-age=31536000, immutable',
-      });
-      if (error) {
-        console.error('Upload error:', error);
-        throw new Error('Failed to upload image');
-      }
+        const mainUpload = supabase.storage.from('listings').upload(fileName, imageFile.file, {
+          contentType: imageFile.file.type || 'image/jpeg',
+          cacheControl: 'public, max-age=31536000, immutable',
+        });
 
-      const publicUrl = supabase.storage.from('listings').getPublicUrl(fileName).data.publicUrl;
-      images.push(publicUrl);
+        const thumbName = imageFile.thumb
+          ? `${stem}.thumb.${extensionForMime(imageFile.thumb.type)}`
+          : null;
+        const thumbUpload = imageFile.thumb && thumbName
+          ? supabase.storage.from('listings').upload(thumbName, imageFile.thumb, {
+              contentType: imageFile.thumb.type || 'image/jpeg',
+              cacheControl: 'public, max-age=31536000, immutable',
+            })
+          : Promise.resolve({ error: new Error('no thumb') } as { error: unknown });
 
-      let thumbUrl = publicUrl;
-      if (imageFile.thumb) {
-        const thumbName = `${stem}.thumb.webp`;
-        const { error: thumbErr } = await supabase.storage
-          .from('listings')
-          .upload(thumbName, imageFile.thumb, {
-            contentType: 'image/webp',
-            cacheControl: 'public, max-age=31536000, immutable',
-          });
-        if (!thumbErr) thumbUrl = supabase.storage.from('listings').getPublicUrl(thumbName).data.publicUrl;
-      }
-      thumbnails.push(thumbUrl);
-    }
+        const [{ error }, thumbResult] = await Promise.all([mainUpload, thumbUpload]);
+        if (error) {
+          console.error('Upload error:', error);
+          throw new Error('Failed to upload image');
+        }
 
-    return { images, thumbnails };
+        const publicUrl = supabase.storage.from('listings').getPublicUrl(fileName).data.publicUrl;
+        const thumbUrl = !(thumbResult as { error: unknown }).error && thumbName
+          ? supabase.storage.from('listings').getPublicUrl(thumbName).data.publicUrl
+          : publicUrl;
+
+        return { publicUrl, thumbUrl };
+      })
+    );
+
+    return {
+      images: results.map((r) => r.publicUrl),
+      thumbnails: results.map((r) => r.thumbUrl),
+    };
   };
+
 
 
   const handleSubmit = async (e: React.FormEvent) => {
