@@ -22,7 +22,7 @@ Everything else stays as is: the 4:5 crop, eager loading of the first four grid 
 
 ## Technical notes
 
-- `src/utils/imageCompression.ts`: add a memoised `supportsWebp()` probe (`canvas.toDataURL('image/webp')` prefix check); resolve the target mime from it; verify the returned blob's `type` and fall back to JPEG if the browser handed back something else. Return the correct extension from the helper so callers stop hardcoding `.webp`. `createThumbnail` moves to `maxWidth: 400, maxHeight: 500, quality: 0.7`.
+- `src/utils/imageCompression.ts`: add a memoised `supportsWebp()` probe (`canvas.toDataURL('image/webp')` prefix check); resolve the target mime from it; verify the returned blob's `type` and fall back to JPEG if the browser handed back something else. Return the correct extension from the helper so callers stop hardcoding `.webp`. Defaults become `maxWidth/maxHeight: 1080, quality: 0.78`; `createThumbnail` becomes `maxWidth: 400, maxHeight: 500, quality: 0.7`. Raise the "already small, skip compression" bar from 100 KB to 150 KB but still re-encode anything that is not JPEG/WebP.
 - `src/pages/CreateListing.tsx` (and `EditListing.tsx` where it does the same upload): derive `fileExt`/`contentType` from the produced file's mime instead of the literal `'webp'`; run the per-image work with `Promise.all`.
 - `src/utils/optimizedImage.ts`: `getGridFallbackUrl` returns the URL unchanged (matches the existing "avoid Supabase CDN transforms" rule); keep the function so callers do not change.
 - Backfill: an edge function reads each listing's `images[0]`, re-encodes to a small JPEG/WebP, writes `<stem>.thumb.jpg`, and updates `thumbnails`. Originals are left untouched.
