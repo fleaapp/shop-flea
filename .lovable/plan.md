@@ -13,7 +13,7 @@ Cause: the compressor writes with `canvas.toBlob(..., 'image/webp')`. On iOS Saf
 ## The fix
 
 1. **Never produce PNG again.** Detect what the device can actually encode: use WebP when supported, otherwise JPEG. The file extension, storage content type, and the real encoded format will always match.
-2. **Right-size the outputs.** Main image ~1200px at quality 0.8 (expected 120-250 KB); grid/card thumbnail 400px wide at quality 0.7 (expected 25-50 KB instead of 717 KB).
+2. **Right-size the outputs for speed, not bulk.** Grid/card thumbnail: 400x500 at quality 0.7 (roughly 20-40 KB, down from 717 KB). Swipe-card / detail image: 1080px on the long edge at quality 0.78 (roughly 90-160 KB, down from 1.67 MB). At 4:5 on a 3x phone screen those still render pin-sharp - the current files are large purely because they are accidental PNGs, not because they carry more visible detail.
 3. **Faster posting.** Upload the photos in parallel instead of one after another, and upload each photo's thumbnail alongside it rather than after it.
 4. **Drop the CDN resize fallback.** It is slower than the original file on this plan and distorts the crop. Grids go back to direct storage URLs.
 5. **One-off backfill.** Re-encode the existing 32 listings (including the 6 with no stored thumbnail) into proper small thumbnails so old items load fast too, without touching the original photos.
