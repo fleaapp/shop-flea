@@ -1,39 +1,46 @@
-# Fix "no current job" when running the build command
+# Why running credits come out of top-up, and how to cut them
 
-## Diagnosis
+## What the billing data shows
 
-The app code and build scripts are fine. The command failed because of how it was typed into the Mac terminal.
+Workspace: Pro, period Aug 11 - Sep 11.
 
-The user's terminal was given:
+- Daily grant: 5.00 credits, still fully unused today.
+- Monthly billing grant: 0.00 left of 100.
+- Rollover: 0.00 left of 100.
+- Top-up: 8.54 left (this is what running costs are now eating).
+- Period usage so far: 253.46 credits.
 
-```text
-% git pull && npm run ios:archive-ready
-```
-
-The leading `%` is the zsh prompt symbol, not part of the command. In zsh, a command starting with `%` is a job-control reference (`%` = "the current job"). Since no background job exists, zsh replies:
-
-```text
-zsh: no current job
-```
-
-and nothing runs. No git pull, no build. This matches exactly what the user saw, and it explains why "it's how I've always done it" - previous runbooks included `%` as the prompt marker and it happened to be pasted in this time.
-
-## Fix for the user (no code change needed)
-
-Run the command **without** the leading `%`:
+Breakdown for the period:
 
 ```text
-git pull && npm run ios:archive-ready
+Build mode messages     106.60
+Plan mode messages       79.20
+Cloud compute small      50.44
+Project Monitoring       15.10
+Cloud compute pico        2.02
+Everything else (fn/egress/storage) ~0.10
 ```
 
-## Small repo hardening (optional, included)
+## Why daily credits are not paying for it
 
-1. Add a short note to `TESTFLIGHT.md` troubleshooting section:
-   "If the terminal replies `zsh: no current job`, you copied the `%` prompt symbol. Re-run the command without it."
-2. Same one-liner in `README-IOS.md` next to the cheatsheet block, since that file also shows commands.
+Daily credits are build-time credits. They cover chat: build mode, plan mode, visual edits. They do **not** apply to run-time usage (Cloud compute, storage, egress, functions, monitoring), and they expire at the end of each day rather than banking.
 
-No app, script, or config changes are required - the build pipeline itself is working.
+Run-time usage draws in this order: free monthly Cloud allowance (20 credits) -> monthly billing credits -> rollover -> top-up. Your billing and rollover buckets are already at zero for this period, so every hour of Cloud compute now comes straight out of top-up. That is why it drains while the app sits idle - the database instance bills 24/7 whether or not you open the project.
 
-## Verification
+## Where the ~2.95/day actually goes
 
-- Running `git pull && npm run ios:archive-ready` (no `%`) completes with the `SAFE TO ARCHIVE` message.
+Almost all of it is `Cloud compute small` (50.44 credits over the period, roughly 1.7-2.5/day) plus `Project Monitoring` (15.10). Functions, storage and egress are effectively free at your traffic level.
+
+## Options to reduce it
+
+1. **Resize the database compute down.** The project is on the `small` instance. Your real data is a few MB; the workload is tiny. Dropping to `micro` or `nano` roughly halves to quarters the largest line item. Requires a short restart.
+2. **Reclaim the disk bloat.** The earlier audit found ~3.4 GB of `cron.job_run_details` log rows on a database with a handful of orders. Purging those and adding a nightly 7-day retention job removes the pressure that justified a bigger instance/disk in the first place. Do this before or alongside the resize.
+3. **Trim cron frequency.** Several jobs run every 10-15 minutes and keep compute awake. Consolidating the ones that touch the same tables into fewer, less frequent runs lowers sustained CPU.
+4. **Turn off Project Monitoring** if you are not actively using its findings - that is 15.10 credits this period on its own.
+5. **Top up or wait.** Billing and rollover credits refresh at the start of the next billing period (Sep 11); until then run-time usage keeps drawing from the 8.54 top-up credits remaining.
+
+## Suggested action
+
+Do 2 then 1, in that order: purge the cron log table and add nightly retention, then resize compute down a tier and watch the daily run-time figure for a couple of days. Combined, that should take running cost from ~2.95/day to well under 1/day without touching app behaviour.
+
+Nothing here changes app code or user-facing behaviour.
