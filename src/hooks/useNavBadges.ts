@@ -161,5 +161,25 @@ export const useNavBadges = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
+  // Keep the iOS/Android Home Screen icon badge equal to all unread items.
+  const badgeTotal = user?.id && data
+    ? data.activity_unread + data.unread_buyer_msgs + data.unread_seller_msgs + data.unread_support
+    : 0;
+  useEffect(() => {
+    void syncAppIconBadge(badgeTotal);
+  }, [badgeTotal]);
+
   return data || EMPTY;
+};
+
+const syncAppIconBadge = async (count: number) => {
+  try {
+    const { Capacitor } = await import('@capacitor/core');
+    if (!Capacitor.isNativePlatform()) return;
+    const { Badge } = await import('@capawesome/capacitor-badge');
+    if (count > 0) await Badge.set({ count });
+    else await Badge.clear();
+  } catch {
+    // Plugin unavailable in this build - ignore.
+  }
 };
