@@ -1,3 +1,4 @@
+import { invalidatePausedSeller } from '@/hooks/usePausedSellers';
 import React, { useState, useEffect } from 'react';
 import useSellerGate from '@/hooks/useSellerGate';
 import {
@@ -197,6 +198,7 @@ const Settings = () => {
         .maybeSingle();
       if (error) throw error;
       if (!data) throw new Error('No profile row updated (session mismatch)');
+      invalidatePausedSeller(user.id);
       await refreshProfile();
       toast.success(checked ? 'Selling paused' : 'Selling resumed');
     } catch (error: any) {

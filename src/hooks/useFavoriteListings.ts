@@ -297,6 +297,14 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
     fetchFavoriteListings();
   }, [fetchFavoriteListings]);
 
+  // Re-check seller status when the app returns to the foreground, same as
+  // Home and Cart, so a seller who paused while you were away updates here too.
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchFavoriteListings(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [fetchFavoriteListings]);
+
   // Guests: refresh when the session wishlist changes.
   useEffect(() => {
     if (user) return;

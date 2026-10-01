@@ -159,6 +159,22 @@ serve(async (req) => {
     if (sellerId === user.id) {
       return jsonError(400, "own_item", "You can't purchase your own items.");
     }
+    // Seller must be available (not blocked, paused or inactive 10+ days) -
+    // the same rule the home feed, cart and offers use. Apple reviewers are
+    // exempt so the review demo seller always works.
+    {
+      const { data: buyerFlag } = await serviceClient
+        .from("profiles").select("is_apple_reviewer").eq("user_id", user.id).maybeSingle();
+      if (buyerFlag?.is_apple_reviewer !== true) {
+        const { data: available, error: availErr } = await serviceClient
+          .rpc("seller_is_available", { _user_id: sellerId });
+        if (availErr) {
+          console.error("seller_is_available failed", availErr);
+        } else if (available !== true) {
+          return jsonError(409, "seller_unavailable", "This seller isn't available right now, so these items can't be bought.");
+        }
+      }
+    }
 
 
     const listingById = new Map(listingRows.map((l: any) => [l.id, l]));

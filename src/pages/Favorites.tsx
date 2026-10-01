@@ -1,3 +1,4 @@
+import { isSellerInactive } from '@/utils/fetchSellerProfiles';
 import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SlidersHorizontal, LayoutGrid, Rows3 } from 'lucide-react';
@@ -24,7 +25,6 @@ interface DisplayListing extends Listing {
   isRemoved: boolean;
 }
 
-const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
 
 const toDisplayListing = (dbListing: DbListingWithPause): DisplayListing => {
   const conditionMap: Record<string, 'new' | 'like-new' | 'good' | 'fair'> = {
@@ -35,9 +35,6 @@ const toDisplayListing = (dbListing: DbListingWithPause): DisplayListing => {
     'fair': 'fair',
   };
   
-  const lastSignIn = dbListing.profiles?.last_sign_in_at 
-    ? new Date(dbListing.profiles.last_sign_in_at).getTime() 
-    : Date.now();
   
   const isRemovedStatus = dbListing.status !== 'active' && dbListing.status !== 'sold';
   
@@ -61,7 +58,7 @@ const toDisplayListing = (dbListing: DbListingWithPause): DisplayListing => {
     createdAt: new Date(dbListing.created_at),
     isSold: dbListing.status === 'sold',
     isPaused: isRemovedStatus ? false : (dbListing.profiles?.pause_selling || false),
-    isInactive: isRemovedStatus ? false : ((Date.now() - lastSignIn) >= TEN_DAYS_MS),
+    isInactive: isRemovedStatus ? false : isSellerInactive(dbListing.profiles?.last_sign_in_at),
     isRemoved: isRemovedStatus,
   };
 };

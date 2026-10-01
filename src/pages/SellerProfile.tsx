@@ -1,3 +1,4 @@
+import { isSellerInactive } from '@/utils/fetchSellerProfiles';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import BottomNav from '@/components/BottomNav';
@@ -418,9 +419,7 @@ const SellerProfile = () => {
             <span className="text-5xl">⏳</span>
           </div>
         ) : (() => {
-          const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
-          const lastSignIn = sellerProfile.last_sign_in_at ? new Date(sellerProfile.last_sign_in_at).getTime() : Date.now();
-          const isInactive = (Date.now() - lastSignIn) >= TEN_DAYS_MS;
+          const isInactive = isSellerInactive(sellerProfile.last_sign_in_at);
           // Only the active Listings tab is gated - sold history stays visible.
           if (activeTab === 'sold') return null;
           if (isInactive) {

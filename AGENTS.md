@@ -1,0 +1,1 @@
+- Seller availability (not blocked/paused/10-day inactive) is enforced server-side via SQL `seller_is_available()` in checkout, finalize and offers; clients use `isSellerInactive` from fetchSellerProfiles only - why: per-screen copies drifted and let unavailable sellers through.
