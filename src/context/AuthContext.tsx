@@ -523,6 +523,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .forEach((k) => localStorage.removeItem(k));
     } catch {}
     setSigningOut(false);
+    signingOutRef.current = false;
   };
 
 
