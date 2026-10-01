@@ -457,7 +457,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
+  const signingOutRef = useRef(false);
   const signOut = async () => {
+    // Ignore a second tap while a sign-out is already running.
+    if (signingOutRef.current) return;
+    signingOutRef.current = true;
     setSigningOut(true);
     clearConsumedListings();
     clearAllActionedIds(user?.id ?? null);

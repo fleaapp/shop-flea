@@ -5,7 +5,7 @@ import { Listing } from '@/types/listing';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { getAvatarUrl } from '@/utils/optimizedImage';
 import { preloadImages } from '@/utils/preloadAssets';
-import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
+import { fetchSellerProfiles, isSellerInactive } from '@/utils/fetchSellerProfiles';
 import {
   createSavedListingSnapshotFromListing,
   loadSavedListingSnapshots,
@@ -105,7 +105,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return canTrustMissing && !profile;
     };
 
-    const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
     const now = Date.now();
 
     // Detect listing IDs that exist in cart but not in fetched listings (fully deleted rows or RLS-hidden rows)
@@ -114,7 +113,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     const transformedListings: CartListing[] = listingsData.map(listing => {
       const seller = profileMap.get(listing.user_id);
-      const lastSignIn = seller?.last_sign_in_at ? new Date(seller.last_sign_in_at).getTime() : now;
       const removedByStatus = listing.status !== 'active' && listing.status !== 'sold';
       const removedBySeller = isInvalidSeller(listing);
       const isRemovedStatus = removedByStatus || removedBySeller;
@@ -139,7 +137,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         createdAt: new Date(listing.created_at),
         status: isRemovedStatus ? 'removed' : listing.status,
         isPaused: isRemovedStatus ? false : (seller?.pause_selling || false),
-        isInactive: isRemovedStatus ? false : ((now - lastSignIn) >= TEN_DAYS_MS),
+        isInactive: isRemovedStatus ? false : isSellerInactive(seller?.last_sign_in_at),
         isRemoved: isRemovedStatus,
       };
     });
