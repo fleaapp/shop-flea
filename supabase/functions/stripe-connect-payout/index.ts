@@ -186,13 +186,16 @@ Deno.serve(async (req) => {
     const nowIso = new Date().toISOString();
     const { data: heldRows } = await supabase
       .from("orders")
-      .select("price, shipping_price, status, dispute_window_ends_at, refund_requested_at, refund_declined_at, refunded_at, completed_at")
+      .select("price, shipping_price, status, dispute_window_ends_at, refund_requested_at, refund_declined_at, refunded_at, completed_at, disputed_at")
       .eq("seller_id", userId)
       .is("refunded_at", null)
-      .is("completed_at", null);
+      .or("completed_at.is.null,disputed_at.not.is.null");
 
     const isHeld = (o: any): boolean => {
-      if (o.refunded_at || o.completed_at) return false;
+      if (o.refunded_at) return false;
+      // Open bank dispute (chargeback) -> always hold, even if completed.
+      if (o.disputed_at) return true;
+      if (o.completed_at) return false;
       // Pending refund request awaiting seller response → hold
       if (o.refund_requested_at && !o.refund_declined_at) return true;
       if (o.status === "awaiting" || o.status === "shipped") return true;
