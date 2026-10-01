@@ -265,13 +265,31 @@ serve(async (req) => {
       return apnsJwt;
     };
 
+    // Home Screen badge = all unread (alerts + order chats + support).
+    let badgeCount: number | null = null;
+    const getBadgeCount = async () => {
+      if (badgeCount !== null) return badgeCount;
+      try {
+        const { data } = await supabase.rpc("get_nav_badges", { _user_id: user_id });
+        const d = (data ?? {}) as Record<string, unknown>;
+        badgeCount =
+          (Number(d.activity_unread) || 0) +
+          (Number(d.unread_buyer_msgs) || 0) +
+          (Number(d.unread_seller_msgs) || 0) +
+          (Number(d.unread_support) || 0);
+      } catch {
+        badgeCount = 1;
+      }
+      return badgeCount;
+    };
+
     const sendApnsToHost = async (deviceToken: string, host: string) => {
       const jwt = await buildApnsJwt();
       const apsPayload = JSON.stringify({
         aps: {
           alert: { title, body },
           sound: "default",
-          badge: 1,
+          badge: await getBadgeCount(),
         },
         type: notification.type,
         related_listing_id: notification.related_listing_id,
