@@ -22,6 +22,31 @@ function getStripeSecretKey() {
   return key;
 }
 
+
+async function notifyPayoutSent(supabase: any, userId: string, amountCents: number, instant: boolean) {
+  try {
+    const amount = `$${(amountCents / 100).toFixed(2)}`;
+    const notification = {
+      user_id: userId,
+      type: "payout_sent",
+      title: "Payout on its way",
+      message: instant
+        ? `💸 Your ${amount} instant payout is on its way to your bank.`
+        : `💸 Your ${amount} payout is on its way to your bank.`,
+    };
+    await supabase.from("notifications").insert(notification);
+    const url = Deno.env.get("SUPABASE_URL") ?? "";
+    const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    await fetch(`${url}/functions/v1/send-push-notification`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ user_id: userId, notification }),
+    });
+  } catch (e) {
+    console.error("[stripe-connect-payout] payout notification failed", e);
+  }
+}
+
 Deno.serve(async (req) => {
   console.log(`[stripe-connect-payout] ${req.method} request received`);
   if (req.method === "OPTIONS") {
@@ -315,6 +340,7 @@ Deno.serve(async (req) => {
         console.error("[stripe-connect-payout] payout email error:", e);
       }
 
+      await notifyPayoutSent(supabase, userId, payout.amount, true);
       return json({ ok: true, payout: { id: payout.id, amount: payout.amount, method: "instant" } });
     }
 
@@ -357,6 +383,7 @@ Deno.serve(async (req) => {
       console.error("[stripe-connect-payout] payout email error:", e);
     }
 
+    await notifyPayoutSent(supabase, userId, payout.amount, false);
     return json({ ok: true, payout: { id: payout.id, amount: payout.amount, method: "standard" } });
   } catch (e: any) {
     await logEdgeError({
