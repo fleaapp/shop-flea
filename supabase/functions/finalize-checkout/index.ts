@@ -655,6 +655,29 @@ serve(async (req) => {
     // based on DB prices (prevents client-supplied price tampering).
     await verifyPayment({ reference: checkoutReference, expectedAmountAud });
 
+    // Re-check availability now - the item or seller may have changed while
+    // the buyer was paying. A retry of an already-processed checkout is fine.
+    {
+      const listingGone = authoritativeItems.some((i) => i.status !== "active");
+      let sellerGone = false;
+      if (!isReviewer) {
+        for (const sid of sellerIds) {
+          const { data: ok, error: okErr } = await serviceClient.rpc("seller_is_available", { _user_id: sid });
+          if (!okErr && ok !== true) { sellerGone = true; break; }
+        }
+      }
+      if (listingGone || sellerGone) {
+        const existing = await fetchOrdersForBuyer(serviceClient, userId, authoritativeItems.map((i) => i.id), checkoutReference);
+        if (!existing.error && (existing.data?.length ?? 0) === authoritativeItems.length) {
+          return new Response(JSON.stringify({ ok: true, alreadyProcessed: true }), {
+            status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        await refundUnavailableCheckout(checkoutReference);
+        throw new Error("One or more items are no longer available. Your payment was automatically refunded.");
+      }
+    }
+
     const orderGroupId = crypto.randomUUID();
     // shippingMap already initialized above for amount verification.
     const itemsBySeller = new Map<string, ListingRow[]>();
