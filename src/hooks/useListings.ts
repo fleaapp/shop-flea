@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { preloadImages } from '@/utils/preloadAssets';
 import { getQuerySizesFromKeys, listingSizeKey, normalizeSizeKeys } from '@/utils/sizeKeys';
 import { filterBySearch } from '@/utils/searchUtils';
-import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
+import { fetchSellerProfiles, isSellerInactive } from '@/utils/fetchSellerProfiles';
 import { getInvalidListingIds } from '@/utils/listingAccess';
 import { subscribeListingInvalidated } from '@/utils/listingInvalidation';
 
@@ -201,6 +201,7 @@ export const useListings = (filters?: ListingFilters, options?: { enabled?: bool
         const profile = profilesMap.get(listing.user_id);
         if (profile?.status === 'blocked') return true;
         if (canTrustMissing && !profile) return true;
+        if (isSellerInactive(profile?.last_sign_in_at)) return true;
         return !!profile?.pause_selling;
       };
 
