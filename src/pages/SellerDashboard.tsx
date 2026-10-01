@@ -171,7 +171,7 @@ const activityMeta = (type: string, amount = 0): { emoji: string; label: string 
     case 'application_fee_refund':
       return { emoji: '🧾', label: 'Seller fee refunded' };
     case 'stripe_fee':
-      return { emoji: '🧾', label: 'Processing fee' };
+      return { emoji: '🧾', label: 'Transaction fee' };
     case 'adjustment':
       // A positive adjustment on a seller balance is the seller transaction fee
       // coming back after a refund - show that in plain English.

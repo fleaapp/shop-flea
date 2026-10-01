@@ -377,8 +377,8 @@ const SellerOnboardingSheet = ({
                     Get verified, set up payouts and start listing in minutes.
                   </p>
                   <div className="space-y-2 text-foreground">
-                    <p className="text-base font-semibold">Selling on Flea is free.</p>
-                    <p className="font-semibold">You only pay a 2% + $0.50 transaction fee to cover payment processing.</p>
+                    <p className="text-base font-semibold">Free to list. Free to sell.</p>
+                    <p className="font-semibold">You only pay a 2% + $0.50 transaction fee per sale.</p>
                   </div>
                   <div className="space-y-1">
                     <p>By continuing you agree to our</p>

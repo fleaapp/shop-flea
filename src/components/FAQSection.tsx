@@ -57,7 +57,7 @@ const faqItems = [
       },
       {
         q: 'What fees do I pay as a seller?',
-        a: 'There are no selling fees on Flea. Listing and selling is free - no selling fees, no monthly fees, no hidden fees. The only charge is a 2% + $0.50 transaction fee per sale, deducted from your payout, which covers payment processing.',
+        a: 'Free to list. Free to sell. There are no listing fees, selling fees or monthly fees on Flea. The only charge is a 2% + $0.50 transaction fee per completed sale, deducted from your payout.',
       },
       {
         q: 'How do I get paid?',

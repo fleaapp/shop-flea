@@ -159,7 +159,7 @@ const MakeOfferDrawer = ({
                 <span className="font-semibold text-foreground">${sellerNet.toFixed(2)}</span>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                After the 2% + $0.50 transaction fee. No selling fees.
+                After the 2% + $0.50 transaction fee.
               </p>
             </div>
           )}
