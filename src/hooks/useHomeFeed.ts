@@ -180,6 +180,39 @@ export const useHomeFeed = () => {
     fetchPage('reset');
   }, [user, fetchPage]);
 
+  // Re-check seller status (paused / inactive / blocked) for the cards already
+  // in the deck whenever the screen opens or the app returns to the
+  // foreground, so a seller pausing their shop drops out of cached decks.
+  useEffect(() => {
+    let cancelled = false;
+    const recheck = () => {
+      const current = feedCache?.listings ?? [];
+      const ids = [...new Set(current.map((l) => l.user_id))];
+      if (ids.length === 0) return;
+      void fetchSellerProfiles(ids).then(({ profiles, canTrustMissing }) => {
+        if (cancelled) return;
+        const map = new Map((profiles || []).map((p) => [p.user_id, p]));
+        setListings((prev) =>
+          prev.filter((l) => {
+            const p = map.get(l.user_id);
+            if (canTrustMissing && !p) return false;
+            if (!p) return true;
+            return p.status !== 'blocked' && !p.pause_selling && !isSellerInactive(p.last_sign_in_at);
+          }),
+        );
+      }).catch(() => {});
+    };
+    recheck();
+    const onVis = () => { if (document.visibilityState === 'visible') recheck(); };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', recheck);
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('focus', recheck);
+    };
+  }, [user?.id]);
+
 
   // Drop any listing that the global realtime channel reports as deleted /
   // removed / archived / blocked / sold so the swipe stack updates instantly

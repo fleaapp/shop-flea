@@ -1,3 +1,5 @@
+import { supabase } from '@/lib/supabase';
+import { isSellerInactive } from '@/utils/fetchSellerProfiles';
 import { useEffect, useMemo, useState } from 'react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
@@ -58,6 +60,24 @@ const MakeOfferDrawer = ({
     if (!valid || submitting) return;
     setSubmitting(true);
     try {
+      // Re-check the item is still for sale right before sending.
+      const { data: fresh } = await supabase
+        .from('listings')
+        .select('status, user_id')
+        .eq('id', listing.id)
+        .maybeSingle();
+      if (!fresh || fresh.status !== 'active') {
+        throw new Error('This item is no longer available.');
+      }
+      if (mode === 'buyer') {
+        const { data: sp } = await supabase
+          .from('profiles_public')
+          .select('pause_selling, last_sign_in_at')
+          .eq('user_id', fresh.user_id)
+          .maybeSingle();
+        if (sp?.pause_selling) throw new Error('This seller has paused their shop for now.');
+        if (isSellerInactive(sp?.last_sign_in_at)) throw new Error('This seller has been inactive, so offers are closed right now.');
+      }
       await onSubmit(Math.round(amount * 100) / 100, parentOfferId);
       onOpenChange(false);
     } catch (error: any) {

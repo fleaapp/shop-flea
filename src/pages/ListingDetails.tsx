@@ -1,3 +1,4 @@
+import { isSellerInactive } from '@/utils/fetchSellerProfiles';
 import { safeNavigateBack } from '@/utils/safeBack';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
@@ -84,6 +85,7 @@ interface SellerProfile {
   rating?: number | null;
   total_reviews?: number | null;
   last_sign_in_at?: string | null;
+  pause_selling?: boolean | null;
 }
 
 const TERMINAL_LISTING_STATUSES = new Set(['sold', 'refunded', 'delivered', 'completed']);
@@ -163,6 +165,14 @@ const ListingDetails = () => {
     listing && sellerOrders.some((order) => order.listing_id === listing.id)
   );
   const isSold = isSoldFromRouteOrStatus || hasSellerOrderForListing;
+  // Same availability rule as the cart: paused or 10+ days inactive sellers can't be bought from.
+  const sellerUnavailableReason: 'paused' | 'inactive' | null = !isOwner && seller
+    ? (seller.pause_selling ? 'paused' : isSellerInactive(seller.last_sign_in_at) ? 'inactive' : null)
+    : null;
+  const notifySellerUnavailable = () =>
+    toast.info(sellerUnavailableReason === 'paused'
+      ? 'This seller has paused their shop for now.'
+      : 'This seller has been inactive, so this item can\'t be bought right now.');
   const hasAcceptedOffer = Boolean(listing && acceptedOffers[listing.id]);
   const hasLiveOffer = Boolean(
     listing &&
@@ -295,7 +305,7 @@ const ListingDetails = () => {
       // Fetch profile in parallel (non-blocking) — use public view (excludes sensitive fields)
       supabase
         .from('profiles_public')
-        .select('username, avatar_url, location, country_code, offers_enabled, rating, total_reviews, last_sign_in_at')
+        .select('username, avatar_url, location, country_code, offers_enabled, rating, total_reviews, last_sign_in_at, pause_selling')
         .eq('user_id', listingData.user_id)
         .maybeSingle()
         .then(({ data: profileData, error: profileError }) => {
@@ -480,6 +490,10 @@ const ListingDetails = () => {
     // Prevent adding sold items to cart
     if (isSold) {
       toast.error('This item has already been sold');
+      return;
+    }
+    if (sellerUnavailableReason) {
+      notifySellerUnavailable();
       return;
     }
     // Convert DB listing to Listing type for cart
@@ -929,7 +943,7 @@ const ListingDetails = () => {
                   className={`h-14 w-14 rounded-2xl border-2 text-2xl transition-colors ${
                     isInCart(listing.id) 
                       ? 'bg-tint border-tint' 
-                      : isSold 
+                      : (isSold || sellerUnavailableReason) 
                         ? 'bg-muted/50 border-muted opacity-50' 
                         : 'bg-transparent active:bg-tint active:border-tint'
                   }`}
@@ -937,7 +951,7 @@ const ListingDetails = () => {
                   🛒
                 </Button>
 
-                {seller?.offers_enabled && !isSold && !isRemoved && (
+                {seller?.offers_enabled && !isSold && !isRemoved && !sellerUnavailableReason && (
                   hasAcceptedOffer ? (
                     <Button
                       onClick={() => {

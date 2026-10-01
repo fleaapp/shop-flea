@@ -421,6 +421,8 @@ const SellerProfile = () => {
           const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
           const lastSignIn = sellerProfile.last_sign_in_at ? new Date(sellerProfile.last_sign_in_at).getTime() : Date.now();
           const isInactive = (Date.now() - lastSignIn) >= TEN_DAYS_MS;
+          // Only the active Listings tab is gated - sold history stays visible.
+          if (activeTab === 'sold') return null;
           if (isInactive) {
             return (
               <div className="flex flex-col items-center justify-center px-4 py-12">
