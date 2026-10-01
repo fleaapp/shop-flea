@@ -11,6 +11,15 @@ export interface SellerProfileLookup {
   status: string | null;
 }
 
+export const SELLER_INACTIVE_MS = 10 * 24 * 60 * 60 * 1000;
+
+/** Same rule the cart uses: seller not seen for 10+ days is inactive. */
+export const isSellerInactive = (lastSignInAt?: string | null): boolean => {
+  if (!lastSignInAt) return false;
+  const t = new Date(lastSignInAt).getTime();
+  return Number.isFinite(t) && Date.now() - t > SELLER_INACTIVE_MS;
+};
+
 export interface FetchSellerProfilesResult {
   profiles: SellerProfileLookup[];
   canTrustMissing: boolean;

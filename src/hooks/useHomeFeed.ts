@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { preloadImages } from '@/utils/preloadAssets';
-import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
+import { fetchSellerProfiles, isSellerInactive } from '@/utils/fetchSellerProfiles';
 import { subscribeListingInvalidated } from '@/utils/listingInvalidation';
 import type { DbListing } from '@/hooks/useListings';
 import { LISTING_CARD_COLUMNS } from '@/lib/listingColumns';
@@ -156,6 +156,7 @@ export const useHomeFeed = () => {
               if (p?.status === 'blocked') return false;
               if (canTrustMissing && !p) return false;
               if (p?.pause_selling) return false;
+              if (isSellerInactive(p?.last_sign_in_at)) return false;
               return true;
             })
             .map((l) => ({ ...l, profiles: profileMap.get(l.user_id) || l.profiles || null })),
