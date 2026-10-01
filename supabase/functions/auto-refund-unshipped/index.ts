@@ -89,6 +89,7 @@ async function fetchAwaitingRefundOrders(admin: ReturnType<typeof createClient>,
       .eq("status", "awaiting")
       .is("refunded_at", null)
       .is("shipped_at", null)
+      .is("disputed_at", null)
       .lte("created_at", cutoff);
 
     const missing = OPTIONAL_ORDER_COLUMNS.find((column) => !omitted.has(column) && isMissingColumnError(error, column));
