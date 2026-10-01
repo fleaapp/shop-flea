@@ -2908,6 +2908,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      touch_last_active: { Args: never; Returns: undefined }
       withdraw_offer: {
         Args: { p_offer_id: string }
         Returns: {
