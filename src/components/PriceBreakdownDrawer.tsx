@@ -53,7 +53,7 @@ const PriceBreakdownDrawer = ({ open, onOpenChange, price, shipping }: PriceBrea
           </div>
 
           <p className="mt-2 text-center text-xs text-muted-foreground">
-            Sellers pay no selling fees on Flea.
+            Free to list. Free to sell on Flea.
           </p>
         </div>
       </DrawerContent>

@@ -16,7 +16,7 @@ const SellerTransactionFeeInfoPopover = () => (
     <PopoverContent className="w-72 p-4 rounded-2xl z-[100]" side="top" align="center" onOpenAutoFocus={(e) => e.preventDefault()}>
       <p className="text-sm font-semibold mb-2">Transaction Fee</p>
       <p className="text-xs text-muted-foreground leading-relaxed">
-        There are no selling fees on Flea. The only charge is a small 2% + $0.50 transaction fee per completed sale that covers payment processing, deducted from your payout.
+        Free to list. Free to sell. The only charge is a 2% + $0.50 transaction fee per completed sale, deducted from your payout.
       </p>
     </PopoverContent>
   </Popover>
