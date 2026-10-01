@@ -52,9 +52,11 @@ export const formatLastActive = (value?: string | null): string | null => {
 
 /** e.g. "2 hours", "3 days", "Inactive" — no "ago" / "Active" prefix */
 export const formatLastActiveShort = (value?: string | null, inactiveAfterDays = 10): string => {
-  if (!value) return 'Inactive';
+  // Missing timestamps are treated as active everywhere else (feed, cart),
+  // so don't label them Inactive here either.
+  if (!value) return 'Recently';
   const then = new Date(value).getTime();
-  if (Number.isNaN(then)) return 'Inactive';
+  if (Number.isNaN(then)) return 'Recently';
 
   const diff = Math.max(0, Date.now() - then);
   if (diff >= inactiveAfterDays * DAY) return 'Inactive';
