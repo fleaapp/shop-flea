@@ -2836,6 +2836,7 @@ export type Database = {
         Args: { p_listing_id: string }
         Returns: undefined
       }
+      seller_is_available: { Args: { _user_id: string }; Returns: boolean }
       seller_relist_cancelled_listing: {
         Args: { p_order_id: string }
         Returns: boolean
