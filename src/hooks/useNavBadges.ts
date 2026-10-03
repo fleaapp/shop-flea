@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { onAppResume } from '@/lib/appResume';
 
 export interface NavBadgesData {
   buyer_orders: number;
@@ -127,14 +128,28 @@ export const useNavBadges = () => {
     placeholderData: (prev) => prev,
     refetchOnWindowFocus: true,
     refetchOnMount: 'always',
+    // Chat messages have no per-user realtime feed, so poll while the app is open.
+    refetchInterval: 45_000,
+    refetchIntervalInBackground: false,
     retry: false,
-
   });
 
-  // Live updates via realtime + focus/visibility events.
+  return data || EMPTY;
+};
+
+/**
+ * Mounted ONCE at the app root (every screen, not just ones with the bottom
+ * nav). Owns realtime + resume listeners and keeps the Home Screen app icon
+ * badge equal to all unread items.
+ */
+export const useNavBadgesSync = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const data = useNavBadges();
+
   useEffect(() => {
     if (!user?.id) return;
-
+    const queryKey = ['nav-badges', user.id];
     const invalidate = () => queryClient.invalidateQueries({ queryKey });
 
     const channel = supabase
@@ -142,44 +157,59 @@ export const useNavBadges = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, invalidate)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `buyer_id=eq.${user.id}` }, invalidate)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `seller_id=eq.${user.id}` }, invalidate)
-      // Skip global order_messages/chat_messages subs — they fanout to every user in the system.
-      // Focus refetch + 30s stale time is sufficient for message-badge freshness.
-
-
       .subscribe();
 
-    const onFocus = () => invalidate();
-    const onVisibility = () => { if (document.visibilityState === 'visible') invalidate(); };
-    window.addEventListener('focus', onFocus);
-    document.addEventListener('visibilitychange', onVisibility);
+    const stopResume = onAppResume(invalidate);
+
+    // A push arriving while the app is open means a count changed.
+    let pushHandle: { remove: () => Promise<void> } | null = null;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { Capacitor } = await import('@capacitor/core');
+        if (!Capacitor.isNativePlatform()) return;
+        const { PushNotifications } = await import('@capacitor/push-notifications');
+        const h = await PushNotifications.addListener('pushNotificationReceived', invalidate);
+        if (cancelled) void h.remove(); else pushHandle = h;
+      } catch { /* plugin unavailable */ }
+    })();
 
     return () => {
+      cancelled = true;
       supabase.removeChannel(channel);
-      window.removeEventListener('focus', onFocus);
-      document.removeEventListener('visibilitychange', onVisibility);
+      stopResume();
+      if (pushHandle) void pushHandle.remove();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, queryClient]);
 
-  // Keep the iOS/Android Home Screen icon badge equal to all unread items.
-  const badgeTotal = user?.id && data
+  const badgeTotal = user?.id
     ? data.activity_unread + data.unread_buyer_msgs + data.unread_seller_msgs + data.unread_support
     : 0;
+
   useEffect(() => {
     void syncAppIconBadge(badgeTotal);
   }, [badgeTotal]);
 
-  return data || EMPTY;
+  // Re-apply on resume too: iOS can leave a stale count from the last push.
+  useEffect(() => onAppResume(() => void syncAppIconBadge(badgeTotal)), [badgeTotal]);
 };
 
+let badgePermissionChecked = false;
 const syncAppIconBadge = async (count: number) => {
   try {
     const { Capacitor } = await import('@capacitor/core');
     if (!Capacitor.isNativePlatform()) return;
     const { Badge } = await import('@capawesome/capacitor-badge');
+    if (!badgePermissionChecked) {
+      badgePermissionChecked = true;
+      try {
+        const perm = await Badge.checkPermissions();
+        if (perm.display !== 'granted') await Badge.requestPermissions();
+      } catch { /* older plugin versions */ }
+    }
     if (count > 0) await Badge.set({ count });
     else await Badge.clear();
-  } catch {
-    // Plugin unavailable in this build - ignore.
+  } catch (err) {
+    console.warn('[badge] sync failed:', err);
   }
 };
