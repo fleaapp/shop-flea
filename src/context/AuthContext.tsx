@@ -6,6 +6,7 @@ import { clearStripeConnectionState, getStripeConnectedStorageKey } from '@/util
 import { getSignupRedirectUrl } from '@/lib/authRedirects';
 import { clearConsumedListings } from '@/utils/consumedListings';
 import { clearAllActionedIds } from '@/utils/actionedListingCache';
+import { onAppResume } from '@/lib/appResume';
 
 interface Profile {
   id: string;

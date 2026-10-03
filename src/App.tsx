@@ -324,6 +324,12 @@ const AppContent = () => {
   );
 };
 
+// Keeps unread counts + Home Screen icon badge live on every screen.
+const NavBadgesSync = () => {
+  useNavBadgesSync();
+  return null;
+};
+
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
@@ -333,6 +339,7 @@ const App = () => (
         <AuthProvider>
           <TooltipProvider>
             <PushNotificationSubscriber />
+            <NavBadgesSync />
             <AppContent />
           </TooltipProvider>
         </AuthProvider>
