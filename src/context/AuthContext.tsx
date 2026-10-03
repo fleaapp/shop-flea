@@ -332,25 +332,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Keep "last active" accurate: stamp it whenever a signed-in user opens or
   // returns to the app (server throttles to once per 5 min; we throttle too).
+  // Uses native app-resume events too - web focus/visibility events don't
+  // reliably fire in the iOS WebView, which left sellers marked Inactive.
   const lastTouchRef = useRef<{ id: string; at: number } | null>(null);
   useEffect(() => {
     const uid = user?.id;
     if (!uid) return;
     const touch = () => {
-      if (document.visibilityState === 'hidden') return;
       const prev = lastTouchRef.current;
       if (prev && prev.id === uid && Date.now() - prev.at < 5 * 60 * 1000) return;
       lastTouchRef.current = { id: uid, at: Date.now() };
       void (supabase.rpc as any)('touch_last_active').then(({ error }: any) => {
-        if (error) console.warn('[auth] touch_last_active failed:', error);
+        if (error) {
+          console.warn('[auth] touch_last_active failed:', error);
+          lastTouchRef.current = null; // allow retry on next resume
+        }
       });
     };
     touch();
-    document.addEventListener('visibilitychange', touch);
-    window.addEventListener('focus', touch);
+    const stopResume = onAppResume(touch);
+    // Long sessions without backgrounding still count as active.
+    const interval = window.setInterval(() => {
+      if (document.visibilityState !== 'hidden') touch();
+    }, 10 * 60 * 1000);
     return () => {
-      document.removeEventListener('visibilitychange', touch);
-      window.removeEventListener('focus', touch);
+      stopResume();
+      window.clearInterval(interval);
     };
   }, [user?.id]);
 
