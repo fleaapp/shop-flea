@@ -1,1 +1,4 @@
 - Seller availability (not blocked/paused/10-day inactive) is enforced server-side via SQL `seller_is_available()` in checkout, finalize and offers; clients use `isSellerInactive` from fetchSellerProfiles only - why: per-screen copies drifted and let unavailable sellers through.
+- Use `onAppResume()` (src/lib/appResume.ts) for "user returned to app" logic - why: web focus/visibility events don't fire reliably in the native iOS WebView.
+- Nav badge realtime/listeners and the app icon badge live in `useNavBadgesSync()`, mounted once at the App root - why: BottomNav-only mounting left the icon badge stale on other screens.
+- Feed RPCs that filter on other users' profile fields must be SECURITY DEFINER - why: profile RLS returns NULLs to callers, letting inactive/paused sellers through LEFT JOIN filters.
