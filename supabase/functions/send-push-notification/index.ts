@@ -277,19 +277,21 @@ serve(async (req) => {
           (Number(d.unread_buyer_msgs) || 0) +
           (Number(d.unread_seller_msgs) || 0) +
           (Number(d.unread_support) || 0);
-      } catch {
-        badgeCount = 1;
+      } catch (e) {
+        console.warn("[Push] badge count failed:", e);
+        badgeCount = -1; // unknown: omit badge rather than fake a number
       }
       return badgeCount;
     };
 
     const sendApnsToHost = async (deviceToken: string, host: string) => {
       const jwt = await buildApnsJwt();
+      const count = await getBadgeCount();
       const apsPayload = JSON.stringify({
         aps: {
           alert: { title, body },
           sound: "default",
-          badge: await getBadgeCount(),
+          ...(count >= 0 ? { badge: count } : {}),
         },
         type: notification.type,
         related_listing_id: notification.related_listing_id,
