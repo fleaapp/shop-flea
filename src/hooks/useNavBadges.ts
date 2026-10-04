@@ -208,8 +208,21 @@ const syncAppIconBadge = async (count: number) => {
       } catch { /* older plugin versions */ }
     }
     if (count > 0) await Badge.set({ count });
-    else await Badge.clear();
+    else {
+      try { await Badge.set({ count: 0 }); } catch { /* fall through */ }
+      await Badge.clear();
+    }
   } catch (err) {
     console.warn('[badge] sync failed:', err);
+  }
+  // Backup clear that doesn't depend on the badge plugin: removing delivered
+  // notifications also resets the iOS icon badge.
+  if (count <= 0) {
+    try {
+      const { Capacitor } = await import('@capacitor/core');
+      if (!Capacitor.isNativePlatform()) return;
+      const { PushNotifications } = await import('@capacitor/push-notifications');
+      await PushNotifications.removeAllDeliveredNotifications();
+    } catch { /* plugin unavailable */ }
   }
 };
