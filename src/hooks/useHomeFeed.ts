@@ -7,6 +7,7 @@ import { subscribeListingInvalidated } from '@/utils/listingInvalidation';
 import type { DbListing } from '@/hooks/useListings';
 import { LISTING_CARD_COLUMNS } from '@/lib/listingColumns';
 import { unmarkListingConsumed } from '@/utils/consumedListings';
+import { onAppResume } from '@/lib/appResume';
 
 const PAGE_SIZE = 50;
 
@@ -41,7 +42,7 @@ export const restoreListingToFeed = (listingId: string) => {
   if (!listingId) return;
   unmarkListingConsumed(listingId);
   pendingRestore.add(listingId);
-  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(RESTORE_EVENT));
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(RESTORE_EVENT, { detail: { id: listingId } }));
 };
 
 export const useHomeFeed = () => {
@@ -251,13 +252,10 @@ export const useHomeFeed = () => {
       }).catch(() => {});
     };
     recheck();
-    const onVis = () => { if (document.visibilityState === 'visible') recheck(); };
-    document.addEventListener('visibilitychange', onVis);
-    window.addEventListener('focus', recheck);
+    const off = onAppResume(recheck);
     return () => {
       cancelled = true;
-      document.removeEventListener('visibilitychange', onVis);
-      window.removeEventListener('focus', recheck);
+      off();
     };
   }, [user?.id]);
 
