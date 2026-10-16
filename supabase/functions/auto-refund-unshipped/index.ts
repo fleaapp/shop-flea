@@ -67,6 +67,8 @@ async function fetchAwaitingRefundOrders(admin: ReturnType<typeof createClient>,
         WHERE status = 'awaiting'
           AND refunded_at IS NULL
           AND shipped_at IS NULL
+          AND disputed_at IS NULL
+          AND refund_requested_at IS NULL
           AND created_at <= ${cutoff}
       `;
 
