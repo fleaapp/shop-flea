@@ -210,6 +210,21 @@ const Index = () => {
   const [maybeIds, setMaybeIds] = useState<Set<string>>(new Set());
   // Passed stack: session-tracked IDs that were passed (swipe left). Discarded is persistent; this lets us revisit them this session.
   const [passedIds, setPassedIds] = useState<Set<string>>(new Set());
+  // Listings restored from Wishlist / Cart must not stay hidden as "passed".
+  useEffect(() => {
+    const onRestore = (e: Event) => {
+      const id = (e as CustomEvent<{ id?: string }>).detail?.id;
+      if (!id) return;
+      setPassedIds((prev) => {
+        if (!prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    };
+    window.addEventListener('flea:restore-to-feed', onRestore);
+    return () => window.removeEventListener('flea:restore-to-feed', onRestore);
+  }, []);
   // Which queue are we currently viewing
   const [viewMode, setViewMode] = useState<'new' | 'maybe' | 'passed' | 'all'>('new');
   
