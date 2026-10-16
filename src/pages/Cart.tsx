@@ -9,6 +9,7 @@ import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 import { useOrders, Order, OrderGroup } from '@/hooks/useOrders';
+import { restoreListingToFeed } from '@/hooks/useHomeFeed';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import CartItemRow from '@/components/CartItemRow';
@@ -218,6 +219,7 @@ const Cart = () => {
   const handleSwipeLeft = async (itemId: string) => {
     await removeFromCart(itemId);
     await removeDiscarded(itemId);
+    restoreListingToFeed(itemId);
     toast.success('Removed from cart');
   };
 

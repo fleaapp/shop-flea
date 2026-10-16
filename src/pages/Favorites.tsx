@@ -15,6 +15,7 @@ import { useCart } from '@/context/CartContext';
 import { Listing } from '@/types/listing';
 import { ListingFilters } from '@/hooks/useListings';
 import { toast } from 'sonner';
+import { restoreListingToFeed } from '@/hooks/useHomeFeed';
 import EmptyState from '@/components/EmptyState';
 
 // Convert DbListing to Listing display type
@@ -83,6 +84,7 @@ const Favorites = () => {
   const handleRemoveFavorite = useCallback(async (listingId: string) => {
     await removeFavorite(listingId);
     await removeDiscarded(listingId);
+    restoreListingToFeed(listingId);
     toast('💔 Removed from wishlist', {
       description: "Item has been removed from your wishlist",
     });

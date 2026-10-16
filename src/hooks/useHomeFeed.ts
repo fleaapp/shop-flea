@@ -6,6 +6,7 @@ import { fetchSellerProfiles, isSellerInactive } from '@/utils/fetchSellerProfil
 import { subscribeListingInvalidated } from '@/utils/listingInvalidation';
 import type { DbListing } from '@/hooks/useListings';
 import { LISTING_CARD_COLUMNS } from '@/lib/listingColumns';
+import { unmarkListingConsumed } from '@/utils/consumedListings';
 
 const PAGE_SIZE = 50;
 
@@ -30,6 +31,18 @@ const PAGE_SIZE = 50;
 // filtered out by Index, so the next card shows immediately.
 type FeedCache = { userId: string | null; listings: DbListing[]; offset: number; hasMore: boolean };
 let feedCache: FeedCache | null = null;
+
+// Listings removed from Wishlist / Cart that should go back on top of the
+// Home deck the next time it renders.
+const pendingRestore = new Set<string>();
+const RESTORE_EVENT = 'flea:restore-to-feed';
+
+export const restoreListingToFeed = (listingId: string) => {
+  if (!listingId) return;
+  unmarkListingConsumed(listingId);
+  pendingRestore.add(listingId);
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(RESTORE_EVENT));
+};
 
 export const useHomeFeed = () => {
   const { user, profile } = useAuth();
@@ -179,6 +192,41 @@ export const useHomeFeed = () => {
     setHasMore(true);
     fetchPage('reset');
   }, [user, fetchPage]);
+
+  // Put listings removed from Wishlist / Cart back on top of the deck.
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      if (pendingRestore.size === 0) return;
+      const ids = [...pendingRestore];
+      pendingRestore.clear();
+      const { data } = await supabase
+        .from('listings')
+        .select(LISTING_CARD_COLUMNS)
+        .in('id', ids)
+        .eq('status', 'active');
+      const rows = ((data || []) as unknown as DbListing[]).filter((l) => l.user_id !== user?.id);
+      if (cancelled || rows.length === 0) return;
+      const { profiles } = await fetchSellerProfiles([...new Set(rows.map((l) => l.user_id))]);
+      const map = new Map((profiles || []).map((p) => [p.user_id, p]));
+      const ok = rows
+        .filter((l) => {
+          const p = map.get(l.user_id);
+          if (!p) return true;
+          return p.status !== 'blocked' && !p.pause_selling && !isSellerInactive(p.last_sign_in_at);
+        })
+        .map((l) => ({ ...l, profiles: map.get(l.user_id) || null }));
+      if (cancelled || ok.length === 0) return;
+      const okIds = new Set(ok.map((l) => l.id));
+      setListings((prev) => [...ok, ...prev.filter((l) => !okIds.has(l.id))]);
+    };
+    void run();
+    window.addEventListener(RESTORE_EVENT, run);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(RESTORE_EVENT, run);
+    };
+  }, [user?.id]);
 
   // Re-check seller status (paused / inactive / blocked) for the cards already
   // in the deck whenever the screen opens or the app returns to the
