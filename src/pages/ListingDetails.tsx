@@ -1,3 +1,4 @@
+import { restoreListingToFeed } from '@/hooks/useHomeFeed';
 import { isSellerInactive } from '@/utils/fetchSellerProfiles';
 import { safeNavigateBack } from '@/utils/safeBack';
 import { useEffect, useRef, useState } from 'react';
@@ -476,6 +477,7 @@ const ListingDetails = () => {
     if (success) {
       // Un-consume so it can reappear in the home deck.
       unmarkListingConsumed(listing.id);
+      restoreListingToFeed(listing.id);
       toast('Removed from wishlist', { id: 'listing-footer-action', icon: '❌' });
     }
     setShowRemoveFromWishlistDialog(false);
@@ -525,6 +527,7 @@ const ListingDetails = () => {
     const success = await removeFromCart(listing.id);
     if (success) {
       unmarkListingConsumed(listing.id);
+      restoreListingToFeed(listing.id);
       toast('Removed from cart', { id: 'listing-footer-action', icon: '❌' });
     }
     setShowRemoveFromCartDialog(false);
@@ -536,6 +539,7 @@ const ListingDetails = () => {
       const success = await removeFavorite(listing.id);
       if (success) {
         unmarkListingConsumed(listing.id);
+        restoreListingToFeed(listing.id);
         toast('Removed from wishlist', { id: 'listing-footer-action', icon: '❌' });
       }
     } else {
