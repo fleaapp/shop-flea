@@ -543,6 +543,27 @@ async function uploadRefundImages(
   const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif']);
   const ALLOWED_VIDEO_TYPES = new Set(['video/mp4', 'video/quicktime', 'video/webm', 'video/mov']);
   const MAX_VIDEO_BYTES = 30 * 1024 * 1024;
+  const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+  const MAX_ITEMS = 10;
+
+  if (!Array.isArray(imageUploads) || imageUploads.length > MAX_ITEMS) {
+    throw new Error(`Too many attachments (max ${MAX_ITEMS})`);
+  }
+  for (const item of imageUploads) {
+    const isVid = item?.kind === 'video' || String(item?.contentType || '').toLowerCase().startsWith('video/');
+    const t = String(item?.contentType || '').toLowerCase();
+    if (typeof item?.base64 !== 'string' || typeof item?.fileName !== 'string') {
+      throw new Error('Invalid attachment');
+    }
+    if (isVid ? !ALLOWED_VIDEO_TYPES.has(t) : !ALLOWED_IMAGE_TYPES.has(t)) {
+      throw new Error('Unsupported file type');
+    }
+    // Cheap pre-decode size estimate (base64 is ~4/3 of the raw size).
+    const approx = Math.floor((item.base64.length * 3) / 4);
+    if (approx > (isVid ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES) + 1024) {
+      throw new Error(isVid ? 'Video exceeds size limit (30 MB)' : 'Photo exceeds size limit (8 MB)');
+    }
+  }
 
   for (const [index, item] of imageUploads.entries()) {
     const isVideo = item.kind === 'video' || (item.contentType || '').toLowerCase().startsWith('video/');
@@ -560,6 +581,9 @@ async function uploadRefundImages(
     const bytes = decodeBase64(item.base64);
     if (isVideo && bytes.length > MAX_VIDEO_BYTES) {
       throw new Error('Video exceeds size limit (30 MB)');
+    }
+    if (!isVideo && bytes.length > MAX_IMAGE_BYTES) {
+      throw new Error('Photo exceeds size limit (8 MB)');
     }
 
     const { error: uploadError } = await extClient.storage
