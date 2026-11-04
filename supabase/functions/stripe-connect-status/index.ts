@@ -137,7 +137,11 @@ serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({} as any));
-    const { stripeAccountId, sellerUserId } = body;
+    // Security: never trust a caller-supplied Stripe account id. The account is
+    // always read from the stored profile. Checking another seller is read-only.
+    const sellerUserId = typeof body?.sellerUserId === 'string' ? body.sellerUserId : undefined;
+    const stripeAccountId: string | undefined = undefined;
+    const isOtherSeller = !!(sellerUserId && sellerUserId !== userId);
 
     const stripe = new Stripe(getStripeSecretKey(), {
       apiVersion: "2025-08-27.basil",
@@ -181,6 +185,20 @@ serve(async (req) => {
     // -------- DEMO BYPASS (Apple App Review) --------
     // Demo accounts use synthetic IDs like `acct_demo_*`. Never call Stripe
     // for these — return a fully-verified state so the reviewer can list/buy.
+    if (isOtherSeller && !accountId) {
+      return new Response(
+        JSON.stringify({ chargesEnabled: false, detailsSubmitted: false, payoutsEnabled: false, accountExists: false, ready: false }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+    if (isOtherSeller && accountId.startsWith('acct_demo_')) {
+      const ok = isAppleReviewProfile(lookupProfile);
+      return new Response(
+        JSON.stringify({ chargesEnabled: ok, detailsSubmitted: ok, payoutsEnabled: ok, accountExists: ok, ready: ok }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
     if (accountId && accountId.startsWith('acct_demo_')) {
       if (!isAppleReviewProfile(lookupProfile)) {
         console.warn(`[stripe-connect-status] Clearing non-review synthetic account ${accountId} for user ${lookupUserId}`);
@@ -265,6 +283,12 @@ serve(async (req) => {
         e?.code === "account_invalid" ||
         e?.code === "resource_missing" ||
         /no such account/i.test(msg);
+      if (missing && isOtherSeller) {
+        return new Response(
+          JSON.stringify({ chargesEnabled: false, detailsSubmitted: false, payoutsEnabled: false, accountExists: false, ready: false }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
       if (missing) {
         console.warn(`[stripe-connect-status] Stale stripe_account_id ${accountId} for user ${lookupUserId}; clearing.`);
         await clearStripeStatus(lookupUserId);
@@ -284,6 +308,21 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Stripe unavailable", retryable: true, accountId, accountExists: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 503 }
+      );
+    }
+
+    // Checking another seller (checkout): read-only answer, no writes of any kind.
+    if (isOtherSeller) {
+      const otherNeg = Number(lookupProfile?.negative_balance_cents ?? 0);
+      return new Response(
+        JSON.stringify({
+          chargesEnabled: account.charges_enabled,
+          detailsSubmitted: account.details_submitted,
+          payoutsEnabled: account.payouts_enabled,
+          accountExists: true,
+          ready: !!(account.charges_enabled && otherNeg === 0),
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
 
