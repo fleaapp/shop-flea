@@ -138,58 +138,28 @@ const Auth = () => {
     
     let email = loginIdentifier.trim();
     
-    // If it doesn't look like an email, treat as username and look up email
+    // Username login runs fully on the server so emails are never exposed.
     if (!email.includes('@') || !email.includes('.')) {
-      // Normalize: ensure @ prefix, and also try without
-      const withAt = email.startsWith('@') ? email.toLowerCase() : `@${email.toLowerCase()}`;
-      const withoutAt = email.startsWith('@') ? email.slice(1).toLowerCase() : email.toLowerCase();
-      
-      // Try RPC first (SECURITY DEFINER bypasses RLS)
-      let resolvedEmail: string | null = null;
-      
-      const { data: rpcData1, error: rpcErr1 } = await supabase.rpc('get_email_by_username', { p_username: withAt });
-      console.log('[Login] RPC with @:', { data: rpcData1, error: rpcErr1 });
-      
-      if (rpcData1) {
-        resolvedEmail = rpcData1;
-      } else {
-        const { data: rpcData2, error: rpcErr2 } = await supabase.rpc('get_email_by_username', { p_username: withoutAt });
-        console.log('[Login] RPC without @:', { data: rpcData2, error: rpcErr2 });
-        if (rpcData2) {
-          resolvedEmail = rpcData2;
-        }
+      const { data, error: fnErr } = await supabase.functions.invoke('username-login', {
+        body: { username: email, password: loginPassword },
+      });
+      const code = (data as any)?.error || (fnErr ? await (fnErr as any)?.context?.json?.().then((j: any) => j?.error).catch(() => 'invalid_credentials') : null);
+      if (code || !(data as any)?.access_token) {
+        if (code === 'rate_limited') toast.error('Too many attempts. Please wait a few minutes and try again');
+        else if (code === 'email_not_confirmed') toast.error('Please verify your email before logging in');
+        else toast.error('Incorrect email/username or password');
+        setIsLoading(false);
+        return;
       }
-      
-      // If RPC failed (e.g. permissions), try direct profile lookup + RPC combo
-      if (!resolvedEmail) {
-        // Direct query to check if profile exists at all
-        const { data: profileCheck, error: profileErr } = await supabase
-          .from('profiles_public')
-          .select('username')
-          .or(`username.eq.${withAt},username.eq.${withoutAt}`)
-          .limit(1);
-        console.log('[Login] Direct profile check:', { data: profileCheck, error: profileErr });
-        
-        if (!profileCheck || profileCheck.length === 0) {
-          toast.error('No account found with that username');
-          setIsLoading(false);
-          return;
-        }
-        
-        // Profile exists but RPC failed - try RPC with the exact stored username
-        const storedUsername = profileCheck[0].username;
-        const { data: rpcData3 } = await supabase.rpc('get_email_by_username', { p_username: storedUsername });
-        console.log('[Login] RPC with exact stored username:', { stored: storedUsername, data: rpcData3 });
-        
-        if (!rpcData3) {
-          toast.error('Unable to look up account. Please try logging in with your email.');
-          setIsLoading(false);
-          return;
-        }
-        resolvedEmail = rpcData3;
+      const { error: sessErr } = await supabase.auth.setSession({
+        access_token: (data as any).access_token,
+        refresh_token: (data as any).refresh_token,
+      });
+      if (sessErr) {
+        toast.error('Failed to sign in');
+        setIsLoading(false);
       }
-      
-      email = resolvedEmail;
+      return;
     }
     
     const { error } = await signIn(email, loginPassword);

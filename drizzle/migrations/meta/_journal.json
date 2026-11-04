@@ -15,6 +15,13 @@
       "when": 1793801215592,
       "tag": "0001_harden_comments_waitlist",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793802103999,
+      "tag": "0002_lock_orders_insert_and_username_email",
+      "breakpoints": true
     }
   ]
 }

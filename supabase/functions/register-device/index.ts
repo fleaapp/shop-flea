@@ -45,7 +45,7 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const deviceId: string | undefined = body.deviceId;
-    if (!deviceId || typeof deviceId !== "string" || deviceId.length < 4) {
+    if (!deviceId || typeof deviceId !== "string" || deviceId.length < 4 || deviceId.length > 200 || !/^[A-Za-z0-9._:-]+$/.test(deviceId)) {
       return new Response(JSON.stringify({ ok: true, skipped: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -68,7 +68,27 @@ serve(async (req) => {
     }
 
     // If this user currently owes money, lock this device too.
+    // Security: only lock a device that no other account has ever used, so a
+    // debtor can't submit someone else's device id to lock them out.
+    let usedByOthers = false;
     if ((prof?.negative_balance_cents ?? 0) > 0) {
+      const { data: others } = await svc
+        .from("profiles")
+        .select("user_id")
+        .contains("device_ids", [deviceId])
+        .neq("user_id", userId)
+        .limit(1);
+      usedByOthers = !!(others && others.length);
+      const { data: existingBlock } = await svc
+        .from("blocked_devices")
+        .select("associated_user_id")
+        .eq("device_id", deviceId)
+        .maybeSingle();
+      if (existingBlock && existingBlock.associated_user_id && existingBlock.associated_user_id !== userId) {
+        usedByOthers = true;
+      }
+    }
+    if ((prof?.negative_balance_cents ?? 0) > 0 && !usedByOthers) {
       await svc.from("blocked_devices").upsert(
         {
           device_id: deviceId,
