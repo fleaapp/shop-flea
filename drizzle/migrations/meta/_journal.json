@@ -8,6 +8,13 @@
       "when": 1791030237776,
       "tag": "0000_home_feed_security_definer",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793801215592,
+      "tag": "0001_harden_comments_waitlist",
+      "breakpoints": true
     }
   ]
 }
