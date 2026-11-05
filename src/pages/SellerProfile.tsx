@@ -83,6 +83,8 @@ const SellerProfile = () => {
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'single' | 'grid'>('single');
   const [hasOutstandingOrder, setHasOutstandingOrder] = useState(false);
+  const [userBlocked, setUserBlocked] = useState(false);
+  const [blocking, setBlocking] = useState(false);
   
   const { addToCart, isInCart } = useCart();
   const { addFavorite, isFavorite } = useFavorites();
@@ -245,12 +247,27 @@ const SellerProfile = () => {
     openReport('user', sellerProfile.user_id, sellerProfile.user_id);
   };
 
-  const handleBlockUser = () => {
-    if (hasOutstandingOrder) {
-      toast.error('Cannot block user with outstanding orders');
-      return;
-    }
-    toast.success('User blocked');
+  useEffect(() => {
+    if (!user || !sellerProfile) return;
+    supabase.from('user_blocks').select('blocked_id').eq('blocker_id', user.id).eq('blocked_id', sellerProfile.user_id)
+      .then(({ data }) => setUserBlocked(Boolean(data?.length)));
+  }, [user?.id, sellerProfile?.user_id]);
+
+  const handleBlockUser = async () => {
+    if (!user || !sellerProfile || blocking || user.id === sellerProfile.user_id) return;
+    setBlocking(true);
+    try {
+      const result = userBlocked
+        ? await supabase.from('user_blocks').delete().eq('blocker_id', user.id).eq('blocked_id', sellerProfile.user_id)
+        : await supabase.from('user_blocks').upsert({ blocker_id: user.id, blocked_id: sellerProfile.user_id }, { ignoreDuplicates: true });
+      if (result.error) throw result.error;
+      setUserBlocked(!userBlocked);
+      setActiveListings([]);
+      window.dispatchEvent(new Event('flea:blocks-changed'));
+      toast.success(userBlocked ? 'User unblocked.' : 'User blocked. Existing orders remain accessible.');
+      if (userBlocked) await fetchSellerData();
+    } catch { toast.error('Could not update the block. Please try again.'); }
+    finally { setBlocking(false); }
   };
 
   const displayListings = activeTab === 'listings' ? activeListings : soldListings;
@@ -340,10 +357,10 @@ const SellerProfile = () => {
             </DropdownMenuItem>
             <DropdownMenuItem 
               onClick={handleBlockUser}
-              disabled={hasOutstandingOrder}
-              className={hasOutstandingOrder ? 'opacity-50 cursor-not-allowed' : ''}
+              disabled={blocking || !user || user.id === sellerProfile.user_id}
+              className={blocking ? 'opacity-50 cursor-not-allowed' : ''}
             >
-              Block user
+              {userBlocked ? 'Unblock user' : 'Block user'}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -1,3 +1,4 @@
+import { refundOrderIds } from "../_shared/refundSafety.ts";
 // Stripe webhook handler for payment failures, refunds, disputes.
 // Intentionally configured with verify_jwt = false in supabase/config.toml
 // because Stripe calls this endpoint directly without a Supabase JWT.
@@ -106,6 +107,10 @@ async function findOrdersByCheckoutSession(sessionId: string) {
 }
 
 async function findOrdersByPaymentIntent(piId: string) {
+  const { data: directOrders, error } = await serviceClient.from("orders")
+    .select("id,buyer_id,seller_id,listing_id").eq("checkout_reference", piId);
+  if (error) throw error;
+  if (directOrders?.length) return directOrders;
   // Resolve PI -> checkout session
   try {
     const sessions = await stripe.checkout.sessions.list({ payment_intent: piId, limit: 1 });
@@ -150,7 +155,7 @@ async function syncSellerBalance(sellerId: string) {
       .eq("user_id", sellerId);
 
     if (owedCents > 0) {
-      const deviceIds: string[] = Array.isArray(profile?.device_ids) ? profile!.device_ids : [];
+      const deviceIds: string[] = Array.isArray(profile?.device_ids) ? profile.device_ids : [];
       if (deviceIds.length > 0) {
         await serviceClient.from("blocked_devices").upsert(
           deviceIds.map((d) => ({
@@ -288,18 +293,22 @@ serve(async (req) => {
       }
 
       case "charge.refunded":
-      case "refund.created": {
+      case "refund.created":
+      case "refund.updated": {
         const charge = event.data.object as Stripe.Charge | Stripe.Refund;
         const piId = (charge as Stripe.Charge).payment_intent as string ??
                      (charge as Stripe.Refund).payment_intent as string;
         let orders: Array<{ id: string; buyer_id: string; seller_id: string }> = [];
         if (piId) orders = await findOrdersByPaymentIntent(piId) as any;
 
-        for (const o of orders) {
-          await serviceClient
+        const ids = new Set(refundOrderIds(event.type, charge, orders));
+        for (const o of orders.filter(o => ids.has(o.id))) {
+          const { data: marked, error: markError } = await serviceClient
             .from("orders")
             .update({ status: "refunded", refunded_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-            .eq("id", o.id);
+            .eq("id", o.id).is("refunded_at", null).select("id");
+          if (markError) throw markError;
+          if (!marked?.length) continue;
           await notify(o.buyer_id, "refund_processed", "Refund processed",
             "💸 Your refund has been processed and will appear in your account shortly.", o.id);
           await notify(o.seller_id, "refund_processed_seller", "Refund issued",

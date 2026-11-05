@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 
-export type ApprovalKind = 'tracking' | 'delivery' | 'untracked' | 'dispute';
+export type ApprovalKind = 'tracking' | 'delivery' | 'untracked' | 'dispute' | 'return';
 
 export type AdminApprovalOrder = {
   id: string;
@@ -96,6 +96,8 @@ export function useAdminApprovals(kind: ApprovalKind) {
       } else if (kind === 'untracked') {
         // Buyer marked an untracked order as delivered — held pending admin review.
         q = q.eq('pending_admin_delivery_review', true);
+      } else if (kind === 'return') {
+        q = q.not('return_required_at', 'is', null).is('return_closed_at', null).is('refunded_at', null);
       } else {
         // Dispute queue: refund requests the seller declined, plus requests
         // that lapsed the 14 day window and were escalated to Flea.
@@ -165,6 +167,12 @@ export function useAdminApprovals(kind: ApprovalKind) {
     load();
   };
 
+  const verifyReturn = async (orderId: string) => {
+    const { error } = await supabase.rpc('admin_verify_return', { p_order_id: orderId });
+    if (error) return toast.error(error.message);
+    await forceRefund(orderId);
+  };
+
   const dismissDispute = async (orderId: string) => {
     const { error } = await (supabase as any).rpc('admin_dismiss_refund_dispute', { p_order_id: orderId });
     if (error) return toast.error(error.message);
@@ -209,6 +217,7 @@ export function useAdminApprovals(kind: ApprovalKind) {
     markDelivered,
     completeOrder,
     forceRefund,
+    verifyReturn,
     dismissDispute,
     requireReturn,
     approveUntrackedDelivery,

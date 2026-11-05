@@ -1,3 +1,4 @@
+import { sellerCanRefund } from "../_shared/refundSafety.ts";
 // stripe-connect-refund
 // Refund execution for Flea. Supports two modes:
 //  - "cascade" (default): full order-group refund. Used by the "Refund sale"
@@ -57,6 +58,8 @@ const OPTIONAL_ORDER_COLUMNS = [
   "coupon_type",
   "cancelled_by_seller",
   "refund_reason",
+  "refund_requested_at",
+  "refund_request_deadline_at",
 ] as const;
 
 const ORDER_UPDATE_FALLBACK_COLUMNS = [
@@ -458,32 +461,17 @@ function computeRefundBreakdown(
   bundleMode: BundleMode,
   discountPercent: number | null,
 ): RefundBreakdown {
-  const items = groupRows.map((o) => ({
-    orderId: o.id,
-    price: Number(o.price) || 0,
-    rawShipping: Number(listings.get(o.listing_id)?.shipping_price) || 0,
-  }));
-
-  const targetIndex = Math.max(
-    0,
-    items.findIndex((i) => i.orderId === targetOrder.id),
-  );
-
-  const rawShippingTotal = round2(items.reduce((sum, i) => sum + i.rawShipping, 0));
-  const bundleShippingTotal = calculateBundleShippingTotal(
-    items.map((i) => i.rawShipping),
-    bundleMode,
-    discountPercent,
-  );
-
-  const itemSubtotals = items.map((i) => {
-    const share = rawShippingTotal > 0
-      ? round2(bundleShippingTotal * (i.rawShipping / rawShippingTotal))
-      : 0;
-    return round2(i.price + share);
-  });
-
-  const groupSubtotal = round2(itemSubtotals.reduce((sum, s) => sum + s, 0));
+  const items = groupRows.map(o => ({ orderId: o.id, price: Number(o.price) || 0 }));
+  const targetIndex = items.findIndex(i => i.orderId === targetOrder.id);
+  if (targetIndex < 0) throw new Error("Refund item is not part of this payment.");
+  const savedShipping = round2(groupRows.reduce((sum, o) => sum + Number(o.shipping_price || 0), 0));
+  const priceTotal = round2(items.reduce((sum, i) => sum + i.price, 0));
+  // Allocate only the shipping actually paid, never today's listing/settings.
+  const itemSubtotals = items.map((i, index) => round2(i.price +
+    (index === items.length - 1
+      ? savedShipping - items.slice(0, index).reduce((sum, prev) => sum + (priceTotal > 0 ? round2(savedShipping * prev.price / priceTotal) : 0), 0)
+      : priceTotal > 0 ? round2(savedShipping * i.price / priceTotal) : 0)));
+  const groupSubtotal = round2(priceTotal + savedShipping);
   const itemSubtotal = itemSubtotals[targetIndex];
 
   // Use the fees ACTUALLY charged (snapshotted on the order rows at checkout).
@@ -520,9 +508,10 @@ async function fetchGroupRows(externalUrl: string, serviceKey: string, order: an
     `${externalUrl}/rest/v1/orders?order_group_id=eq.${order.order_group_id}&select=id,listing_id,price,shipping_price,secure_checkout_fee,transaction_fee,coupon_code,coupon_type,buyer_id,seller_id,status,refunded_at,created_at,order_group_id`,
     { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
   );
-  if (!res.ok) return [order];
+  if (!res.ok) throw new Error("Could not verify all items in this payment.");
   const body = await safeJson(res);
-  return Array.isArray(body) && body.length ? body : [order];
+  if (!Array.isArray(body) || !body.length) throw new Error("Payment items could not be loaded.");
+  return body;
 }
 
 async function fetchListings(externalUrl: string, serviceKey: string, listingIds: string[]) {
@@ -942,7 +931,8 @@ serve(async (req) => {
     }
     if (order.refunded_at) throw new Error("Order already refunded");
 
-    const refundMode = mode === "single" ? "single" : "cascade";
+    if (mode !== undefined && mode !== "single" && mode !== "cascade") return jsonResponse({ error: "Invalid refund mode." }, 400);
+    const refundMode = mode === "cascade" ? "cascade" : "single";
     // Seller cancellations are stamped on the order by seller_cancel_order_begin
     // before this runs, so trust the row rather than the request body alone.
     const sellerCancelled = sellerCancelledRaw === true || order.cancelled_by_seller === true;
@@ -967,25 +957,8 @@ serve(async (req) => {
       throw new Error("Refund only supported for payment processor orders here");
     }
 
-    // Refund window — server-side enforcement for seller-initiated refunds.
-    // Buyers must request within 48h of delivery (enforced in request_refund),
-    // and the seller then has 72h to respond. The outer guard therefore allows
-    // delivery + 48h + 72h = 5 days. Admin dispute overrides and system 72h
-    // auto-approvals bypass this.
-    if (!isSystemCaller && !isAdminCaller && refundMode !== "cascade") {
-      const now = Date.now();
-      if (order.delivered_at) {
-        const deliveredMs = new Date(order.delivered_at).getTime();
-        if (now - deliveredMs > 5 * 86400_000) {
-          throw new Error("Refund window has closed (48 hours after delivery, plus the seller's 72 hour response window).");
-        }
-      } else if (order.created_at) {
-
-        const createdMs = new Date(order.created_at).getTime();
-        if (now - createdMs > 30 * 86400_000) {
-          throw new Error("Refund window has closed (30 days after order).");
-        }
-      }
+    if (!isSystemCaller && !isAdminCaller && !sellerCanRefund(order)) {
+      throw new Error("Refund window has closed. Please contact Flea for review.");
     }
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -1004,6 +977,7 @@ serve(async (req) => {
       const breakdown = computeRefundBreakdown(order, groupRows, listings, sellerSettings.mode, sellerSettings.discountPercent);
 
       const { refund, transferReversal, shortfallCents } = await createSingleItemRefund(stripe, order, breakdown, actor);
+      if (refund.status !== "succeeded") return jsonResponse({ success: false, pending: refund.status === "pending", error: "The refund is not yet confirmed. Flea will review it.", refundId: refund.id }, 409);
       await recordSellerShortfall(externalUrl, serviceKey, order.seller_id, shortfallCents);
 
       await markOrderRefunded(externalUrl, serviceKey, order.id);
@@ -1048,6 +1022,7 @@ serve(async (req) => {
       for (const row of remainingRows) {
         const breakdown = computeRefundBreakdown(row, cascadeRows, listings, sellerSettings.mode, sellerSettings.discountPercent);
         const result = await createSingleItemRefund(stripe, { ...row, seller_id: order.seller_id, buyer_id: order.buyer_id }, breakdown, actor);
+        if (result.refund.status !== "succeeded") throw new Error("Refund is awaiting payment-provider confirmation.");
         refundIds.push(result.refund.id);
         totalShortfall += result.shortfallCents;
         await markOrderRefunded(externalUrl, serviceKey, row.id);
@@ -1082,6 +1057,7 @@ serve(async (req) => {
     }, { idempotencyKey: `flea-refund-${orderId}` });
 
 
+    if (refund.status !== "succeeded") throw new Error("Refund is awaiting payment-provider confirmation.");
     await markRelatedOrdersRefunded(externalUrl, serviceKey, order);
     const relatedListingIds = await fetchRelatedListingIds(externalUrl, serviceKey, order);
     await markListingsRefunded(externalUrl, serviceKey, relatedListingIds);

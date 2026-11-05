@@ -1,0 +1,16 @@
+CREATE TABLE public.checkout_quotes(payment_intent_id text PRIMARY KEY,buyer_id uuid NOT NULL,seller_id uuid NOT NULL,seller_account_id text,amount_cents integer NOT NULL CHECK(amount_cents>0),items jsonb NOT NULL,shipping_amount numeric NOT NULL,secure_checkout_fee numeric NOT NULL,transaction_fee numeric NOT NULL,coupon jsonb,is_reviewer boolean NOT NULL DEFAULT false,state text NOT NULL DEFAULT 'quoted' CHECK(state IN('quoted','finalizing','completed','refunding','refunded')),updated_at timestamptz NOT NULL DEFAULT now(),created_at timestamptz NOT NULL DEFAULT now());
+GRANT ALL ON public.checkout_quotes TO service_role;
+ALTER TABLE public.checkout_quotes ENABLE ROW LEVEL SECURITY;
+CREATE OR REPLACE FUNCTION public.claim_checkout(p_reference text,p_action text) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ BEGIN
+IF p_action NOT IN('finalizing','refunding') THEN RAISE EXCEPTION 'Invalid settlement action'; END IF;
+UPDATE public.checkout_quotes SET state=p_action,updated_at=now() WHERE payment_intent_id=p_reference AND (state='quoted' OR (state IN('finalizing','refunding') AND updated_at<now()-interval '15 minutes'));RETURN FOUND;END $$;
+REVOKE ALL ON FUNCTION public.claim_checkout(text,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.claim_checkout(text,text) TO service_role;
+CREATE OR REPLACE FUNCTION public.settle_checkout_orders(p_reference text,p_rows jsonb) RETURNS SETOF public.orders LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE v_state text; BEGIN
+SELECT state INTO v_state FROM public.checkout_quotes WHERE payment_intent_id=p_reference FOR UPDATE;
+IF v_state IS DISTINCT FROM 'finalizing' THEN RAISE EXCEPTION 'Checkout settlement is already being handled'; END IF;
+RETURN QUERY INSERT INTO public.orders(order_group_id,listing_id,buyer_id,seller_id,price,shipping_price,transaction_fee,secure_checkout_fee,coupon_id,coupon_code,coupon_type,status,payment_method,shipping_first_name,shipping_last_name,shipping_address,shipping_city,shipping_state,shipping_postcode,checkout_reference)
+SELECT x.order_group_id,x.listing_id,x.buyer_id,x.seller_id,x.price,x.shipping_price,x.transaction_fee,x.secure_checkout_fee,x.coupon_id,x.coupon_code,x.coupon_type,x.status,x.payment_method,x.shipping_first_name,x.shipping_last_name,x.shipping_address,x.shipping_city,x.shipping_state,x.shipping_postcode,p_reference FROM jsonb_to_recordset(p_rows) AS x(order_group_id uuid,listing_id uuid,buyer_id uuid,seller_id uuid,price numeric,shipping_price numeric,transaction_fee numeric,secure_checkout_fee numeric,coupon_id uuid,coupon_code text,coupon_type text,status text,payment_method text,shipping_first_name text,shipping_last_name text,shipping_address text,shipping_city text,shipping_state text,shipping_postcode text);
+UPDATE public.checkout_quotes SET state='completed',updated_at=now() WHERE payment_intent_id=p_reference;END $$;
+REVOKE ALL ON FUNCTION public.settle_checkout_orders(text,jsonb) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.settle_checkout_orders(text,jsonb) TO service_role;

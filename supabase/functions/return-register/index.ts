@@ -6,7 +6,7 @@
 // as delivered (see _shared/applyTracking.ts).
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { buildCorsHeaders, rejectUntrustedOrigin } from '../_shared/cors.ts';
-import { carrierCode, registerNumbers, getTrackInfo } from '../_shared/tracking.ts';
+import { carrierCode, registerNumbers, getTrackInfo, normaliseTrackInfo } from '../_shared/tracking.ts';
 import { applyTracking } from '../_shared/applyTracking.ts';
 
 Deno.serve(async (req) => {
@@ -47,37 +47,34 @@ Deno.serve(async (req) => {
     const code = carrierCode(carrier);
     if (!code) return json({ error: 'Please choose a carrier from the list' }, 400);
 
-    // Validate the number with the carrier before we commit it.
+    const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+    const { data: order, error: orderError } = await admin.from('orders').select('*').eq('id', orderId).eq('buyer_id', userId).single();
+    if (orderError || !order || !order.return_required_at || order.refunded_at || order.return_closed_at || order.return_delivered_at) return json({ error: 'No return is open for this order.' }, 400);
+    if (Date.parse(order.return_deadline_at ?? '') <= Date.now()) return json({ error: 'The return posting deadline has passed. Please contact Flea.' }, 400);
+    if (!/^[A-Z0-9]{6,40}$/.test(number)) return json({ error: 'Please check the tracking number.' }, 400);
+    const { data: used, error: usedError } = await admin.from('tracking_shipments').select('order_group_id,kind,buyer_id,seller_id').eq('tracking_number', number);
+    if (usedError) throw usedError;
+    if ((used ?? []).some(s => s.kind !== 'return' || s.order_group_id !== order.order_group_id || s.buyer_id !== userId || s.seller_id !== order.seller_id)) return json({ error: 'That tracking number is already used for another parcel.' }, 400);
+    if (number === String(order.tracking_number ?? '').replace(/[\s-]+/g, '').toUpperCase()) return json({ error: 'Return tracking must be different from the original delivery.' }, 400);
     try {
-      const res = await registerNumbers([{ number, carrier: code }]);
-      const rejected = res?.data?.rejected?.[0];
-      const errCode = Number(rejected?.error?.code ?? 0);
-      const invalidCodes = [-18010012, -18010013, -18010014, -18010015];
-      if (rejected && invalidCodes.includes(errCode)) {
-        return json(
-          { error: `That tracking number wasn't recognised by ${carrier}. Check it and try again.` },
-          400,
-        );
-      }
+      const registered = await registerNumbers([{ number, carrier: code }]);
+      const rejection = registered?.data?.rejected?.[0];
+      // -18010010 denotes a previously registered parcel; all other errors fail closed.
+      if (rejection && Number(rejection.error?.code) !== -18010010) return json({ error: 'The carrier could not verify that number. Please check it.' }, 400);
+      const info = await getTrackInfo([{ number, carrier: code }]);
+      const payload = info?.data?.accepted?.[0]?.track_info;
+      const track = payload ? normaliseTrackInfo(number, payload) : null;
+      if (!track || track.notFound || track.exception || !track.firstScanAt) return json({ error: 'The carrier has not scanned this parcel yet. Try again after it is scanned.' }, 409);
+      if (Date.parse(track.firstScanAt) < Date.parse(order.return_required_at)) return json({ error: 'That parcel was posted before this return was approved.' }, 400);
     } catch (e) {
       console.warn('[return-register] validation unavailable:', (e as Error).message);
+      return json({ error: 'We could not check the carrier. Please try again shortly.' }, 503);
     }
-
-    // Store on the order via the buyer-scoped RPC (enforces ownership and
-    // that a return is actually required).
-    const { data: updated, error: rpcError } = await anon.rpc('submit_return_tracking', {
-      p_order_id: orderId,
-      p_provider: carrier,
-      p_number: number,
-    });
-    if (rpcError) return json({ error: rpcError.message }, 400);
-    const order = (updated as any[])?.[0];
-    if (!order) return json({ error: 'No return is open for this order.' }, 400);
-
-    const admin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    );
+    const { error: saveError } = await admin.from('orders').update({
+      return_tracking_provider: carrier, return_tracking_number: number,
+      return_posted_at: order.return_posted_at ?? new Date().toISOString(), updated_at: new Date().toISOString(),
+    }).eq('id', order.id).eq('buyer_id', userId).is('return_closed_at', null).is('refunded_at', null);
+    if (saveError) throw saveError;
 
     const { data: shipment, error: shipError } = await admin
       .from('tracking_shipments')
@@ -116,14 +113,14 @@ Deno.serve(async (req) => {
         user_id: order.seller_id,
         type: 'return_posted',
         title: '📦 A return is on its way back to you.',
-        message: `Tracking ${number} with ${carrier}. The buyer is refunded once it is delivered.`,
+        message: `Tracking ${number} with ${carrier}. Flea reviews the return before issuing the refund.`,
         related_order_id: order.id,
       },
       {
         user_id: order.buyer_id,
         type: 'return_posted',
         title: '✈️ Return tracking added.',
-        message: 'Your refund is issued automatically once the seller receives the item.',
+        message: 'Flea reviews the return delivery before issuing your refund.',
         related_order_id: order.id,
       },
     ]);

@@ -1,3 +1,4 @@
+import { saveCheckoutQuote } from "../_shared/checkoutSafety.ts";
 // stripe-connect-payment-intent
 // Creates a PaymentIntent + Customer + Ephemeral Key for native wallet/card
 // confirmation and web payment flows. Mirrors stripe-connect-checkout fee math,
@@ -170,6 +171,7 @@ serve(async (req) => {
           .rpc("seller_is_available", { _user_id: sellerId });
         if (availErr) {
           console.error("seller_is_available failed", availErr);
+          return jsonError(503, "availability_check_failed", "Could not check seller availability. Please try again.");
         } else if (available !== true) {
           return jsonError(409, "seller_unavailable", "This seller isn't available right now, so these items can't be bought.");
         }
@@ -177,16 +179,21 @@ serve(async (req) => {
     }
 
 
+    const { data: pairBlocked, error: blockError } = await serviceClient.rpc('users_blocked', { p_first: user.id, p_second: sellerId });
+    if (blockError) return jsonError(503, 'block_check_failed', 'Could not check this purchase. Please try again.');
+    if (pairBlocked) return jsonError(403, 'user_blocked', 'This purchase is unavailable because one user blocked the other.');
+
     const listingById = new Map(listingRows.map((l: any) => [l.id, l]));
 
     // Accepted offers are looked up server-side; the client never supplies the
     // discounted price. Only live (unexpired) accepted offers for this buyer count.
     const acceptedOfferByListing = new Map<string, { id: string; amount: number }>();
     {
-      const { data: offerRows } = await serviceClient.rpc("get_accepted_offer_prices", {
+      const { data: offerRows, error: offerError } = await serviceClient.rpc("get_accepted_offer_prices", {
         _buyer_id: user.id,
         _listing_ids: itemIds,
       });
+      if (offerError) return jsonError(503, "offer_check_failed", "Could not check offer prices. Please try again.");
       (offerRows ?? []).forEach((row: any) => {
         acceptedOfferByListing.set(row.listing_id, { id: row.offer_id, amount: Number(row.amount) });
       });
@@ -289,6 +296,13 @@ serve(async (req) => {
           buyer_total_aud: (reviewerSubtotal + reviewerSecureFee).toFixed(2),
           secure_checkout_fee_aud: reviewerSecureFee.toFixed(2),
         },
+      });
+
+      await saveCheckoutQuote(serviceClient, reviewerPi, {
+        buyer_id: user.id, seller_id: sellerId, seller_account_id: null,
+        amount_cents: reviewerAmountCents, items: authoritativeItems,
+        shipping_amount: reviewerShipping, secure_checkout_fee: reviewerSecureFee,
+        transaction_fee: 0, coupon: null, is_reviewer: true,
       });
 
       const reviewerEphemeralKey = await stripe.ephemeralKeys.create(
@@ -451,7 +465,7 @@ serve(async (req) => {
     // and never collide with a stale one Stripe cached for 24h.
     // PI_REQUEST_VERSION: bump whenever the paymentIntents.create body shape
     // changes so old cached keys can't collide with new params.
-    const PI_REQUEST_VERSION = "v9-2026-07-23-direct-native-wallet";
+    const PI_REQUEST_VERSION = "v10-2026-11-05-saved-quote";
     const idemBasis = [
       PI_REQUEST_VERSION,
       user.id,
@@ -462,6 +476,7 @@ serve(async (req) => {
       applicationFeeAmount,
       appliedCoupon?.code ?? "",
       saveCard ? "s" : "n",
+      JSON.stringify(authoritativeItems),
     ].join("|");
     const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(idemBasis));
     const idemHash = Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
@@ -521,15 +536,12 @@ serve(async (req) => {
       { apiVersion: "2025-08-27.basil" }
     );
 
-    if (appliedCoupon) {
-      try {
-        await serviceClient.from("coupon_redemptions").insert({
-          coupon_id: appliedCoupon.id, user_id: user.id, checkout_reference: pi.id,
-        });
-      } catch (e) {
-        console.warn("[stripe-connect-payment-intent] coupon redemption record failed:", (e as any)?.message);
-      }
-    }
+    await saveCheckoutQuote(serviceClient, pi, {
+      buyer_id: user.id, seller_id: sellerId, seller_account_id: sellerStripeAccountId,
+      amount_cents: amountCents, items: authoritativeItems, shipping_amount: shippingAmount,
+      secure_checkout_fee: secureCheckoutFee, transaction_fee: transactionFee,
+      coupon: appliedCoupon, is_reviewer: false,
+    });
 
     return new Response(JSON.stringify({
       clientSecret: pi.client_secret,

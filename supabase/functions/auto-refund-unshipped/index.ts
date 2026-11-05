@@ -92,6 +92,7 @@ async function fetchAwaitingRefundOrders(admin: ReturnType<typeof createClient>,
       .is("refunded_at", null)
       .is("shipped_at", null)
       .is("disputed_at", null)
+      .is("refund_requested_at", null)
       .lte("created_at", cutoff);
 
     const missing = OPTIONAL_ORDER_COLUMNS.find((column) => !omitted.has(column) && isMissingColumnError(error, column));
@@ -311,34 +312,21 @@ Deno.serve(async (req) => {
 
     for (const order of orders ?? []) {
       try {
-        // Demo (Apple Review) orders bypass the payment provider.
-        if (!isDemoOrder(order)) {
-          const paymentIntentId = await resolvePaymentIntentId(stripe, order);
-          try {
-            await stripe.refunds.create({
-              payment_intent: paymentIntentId,
-              reverse_transfer: true,
-              refund_application_fee: true,
-              reason: "requested_by_customer",
-              metadata: {
-                flea_order_id: order.id,
-                flea_seller_id: order.seller_id,
-                flea_buyer_id: order.buyer_id,
-                flea_auto_refund: "unshipped_8d",
-              },
-            }, { idempotencyKey: `flea-auto-refund-${order.id}` });
-          } catch (refundErr: any) {
-            // Bundles share one payment. Once the charge is fully refunded the
-            // sibling rows must still be marked refunded, not treated as failures.
-            const msg = String(refundErr?.message ?? "");
-            if (!/already been refunded|has already been refunded|already refunded/i.test(msg)) {
-              throw refundErr;
-            }
-            console.log(`[auto-refund-unshipped] charge already refunded for order ${order.id}, marking row refunded`);
-          }
-        }
-
-        await markOrderRefunded(order.id, "auto_unshipped_8d");
+        // Use the same item-specific execution as manual refunds. A shared
+        // payment never authorizes refunding shipped sibling items.
+        const { data: current, error: currentError } = await admin.from("orders")
+          .select("status,shipped_at,refunded_at,disputed_at,refund_requested_at")
+          .eq("id", order.id).single();
+        if (currentError) throw currentError;
+        if (current.status !== "awaiting" || current.shipped_at || current.refunded_at || current.disputed_at || current.refund_requested_at) continue;
+        const result = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/stripe-connect-refund`, {
+          method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${expectedKey}` },
+          body: JSON.stringify({ orderId: order.id, mode: "single", reason: "requested_by_customer" }),
+        });
+        const refundBody = await result.json();
+        if (!result.ok || refundBody.success !== true) throw new Error(refundBody.error ?? "Item refund failed.");
+        const { error: reasonError } = await admin.from("orders").update({ refund_reason: "auto_unshipped_8d" }).eq("id", order.id);
+        if (reasonError) throw reasonError;
 
         // Refunded items must never go back on sale — mark the listing refunded
         // (same as the manual refund path in stripe-connect-refund).

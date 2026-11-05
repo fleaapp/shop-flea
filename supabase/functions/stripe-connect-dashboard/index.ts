@@ -1,3 +1,4 @@
+import { fetchHeldOrders, heldState, heldNetCents } from "../_shared/heldFunds.ts";
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
@@ -122,55 +123,15 @@ serve(async (req) => {
       netCents: number;
       state: string;
     }> = [];
-    try {
-      const svc = createClient(EXTERNAL_URL, SERVICE);
-      const now = Date.now();
-      const nowIso = new Date().toISOString();
-      const { data: heldRows } = await svc
-        .from("orders")
-        .select("id, order_group_id, price, shipping_price, transaction_fee, status, delivered_at, dispute_window_ends_at, refund_requested_at, refund_declined_at, refunded_at, completed_at, listing:listings(title)")
-        .eq("seller_id", userId)
-        .is("refunded_at", null)
-        .is("completed_at", null);
-      // A delivered order whose dispute window was never stamped must not hold
-      // funds forever — fall back to 48h after delivery.
-      const windowEnd = (o: any): string | null => {
-        if (o.dispute_window_ends_at) return o.dispute_window_ends_at;
-        if (o.delivered_at) return new Date(new Date(o.delivered_at).getTime() + 48 * 3600 * 1000).toISOString();
-        return null;
-      };
-      const heldState = (o: any): string | null => {
-        if (o.refunded_at || o.completed_at) return null;
-        if (o.refund_requested_at && !o.refund_declined_at) return "refund_requested";
-        if (o.status === "awaiting") return "awaiting";
-        if (o.status === "shipped") return "shipped";
-        if (o.status === "delivered") {
-          const end = windowEnd(o);
-          if (!end) return "delivered";
-          return new Date(end).getTime() > now ? "delivered" : null;
-        }
-        return null;
-      };
-      for (const o of heldRows || []) {
-        const state = heldState(o);
-        if (!state) continue;
-        const gross = Math.round(((Number(o.price) || 0) + (Number(o.shipping_price) || 0)) * 100);
-        const fee = Math.round((Number(o.transaction_fee) || 0) * 100);
-        const net = Math.max(gross - fee, 0);
-        unshippedCents += net;
-        heldBreakdown.push({
-          orderId: o.id,
-          orderGroupId: o.order_group_id ?? null,
-          title: (o as any).listing?.title ?? null,
-          grossCents: gross,
-          feeCents: fee,
-          netCents: net,
-          state,
-        });
-      }
-      void nowIso;
-    } catch (e) {
-      console.warn("[stripe-connect-dashboard] held calc failed", e);
+    const heldRows = await fetchHeldOrders(svc, userId, ',listing:listings(title)');
+    for (const o of heldRows) {
+      const gross = Math.round((Number(o.price) + Number(o.shipping_price ?? 0)) * 100);
+      const net = heldNetCents(o);
+      unshippedCents += net;
+      heldBreakdown.push({ orderId: o.id, orderGroupId: o.order_group_id ?? null,
+        title: o.listing?.title ?? null, grossCents: gross,
+        feeCents: Math.round(Number(o.transaction_fee ?? 0) * 100), netCents: net,
+        state: heldState(o) ?? 'protected' });
     }
 
 

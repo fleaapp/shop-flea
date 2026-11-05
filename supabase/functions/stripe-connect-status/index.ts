@@ -1,3 +1,4 @@
+import { fetchHeldOrders, heldNetCents } from "../_shared/heldFunds.ts";
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
@@ -334,6 +335,7 @@ serve(async (req) => {
     let balancePendingCents = 0;
     let negativeBalanceCents = 0;
     let unshippedCents = 0;
+    let balanceVerified = false;
     try {
       const balance = await stripe.balance.retrieve({ stripeAccount: accountId });
       const sumAud = (arr?: Array<{ amount: number; currency: string }>) =>
@@ -347,32 +349,9 @@ serve(async (req) => {
       // dashboard "available to withdraw" mirrors what the payout endpoint
       // will actually allow. Held = awaiting/shipped, delivered within
       // dispute window, or pending refund request.
-      try {
-        const svc = createClient(externalUrl, serviceKey);
-        const nowIso = new Date().toISOString();
-        const { data: heldRows } = await svc
-          .from("orders")
-          .select("price, shipping_price, status, dispute_window_ends_at, refund_requested_at, refund_declined_at, refunded_at, completed_at")
-          .eq("seller_id", lookupUserId)
-          .is("refunded_at", null)
-          .is("completed_at", null);
-        const isHeld = (o: any): boolean => {
-          if (o.refunded_at || o.completed_at) return false;
-          if (o.refund_requested_at && !o.refund_declined_at) return true;
-          if (o.status === "awaiting" || o.status === "shipped") return true;
-          if (o.status === "delivered") {
-            if (!o.dispute_window_ends_at) return true;
-            return o.dispute_window_ends_at > nowIso;
-          }
-          return false;
-        };
-        unshippedCents = (heldRows || []).filter(isHeld).reduce((s: number, o: any) => {
-          const t = (Number(o.price) || 0) + (Number(o.shipping_price) || 0);
-          return s + Math.round(t * 100);
-        }, 0);
-      } catch (e) {
-        console.warn("[stripe-connect-status] held calc failed", e);
-      }
+      const heldRows = await fetchHeldOrders(createClient(externalUrl, serviceKey), lookupUserId);
+      unshippedCents = heldRows.reduce((sum, order) => sum + heldNetCents(order), 0);
+      balanceVerified = true;
 
 
       // Mirror to profile so hot paths (checkout, listing) can gate without a Stripe call.
@@ -566,7 +545,8 @@ serve(async (req) => {
         balancePendingCents,
         negativeBalanceCents,
         unshippedCents,
-        availableToWithdrawCents: Math.max(balanceAvailableCents - unshippedCents, 0),
+        availableToWithdrawCents: balanceVerified ? Math.max(balanceAvailableCents - unshippedCents, 0) : 0,
+        balanceVerified,
         isNegative: negativeBalanceCents > 0,
         verificationError: docError
           ? {
