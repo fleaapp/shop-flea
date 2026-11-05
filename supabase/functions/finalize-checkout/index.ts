@@ -1,3 +1,4 @@
+import { paymentMatchesBuyerCart, paymentMatchesQuote } from "../_shared/checkoutSafety.ts";
 // finalize-checkout
 // Server-authoritative order finalization. NEVER creates orders without first
 // confirming the actual payment status with Stripe.
@@ -78,7 +79,7 @@ type NotificationRow = {
   related_order_id?: string | null;
 };
 
-const ORDER_INSERT_FALLBACK_COLUMNS = ["checkout_reference", "payment_method", "secure_checkout_fee", "coupon_type", "coupon_code", "coupon_id"] as const;
+const ORDER_INSERT_FALLBACK_COLUMNS = ["payment_method", "secure_checkout_fee", "coupon_type", "coupon_code", "coupon_id"] as const;
 function isMissingColumnError(error: unknown, columnName: string) {
   if (!error || typeof error !== "object" || !("code" in error) || !("message" in error)) return false;
   const code = typeof (error as any).code === "string" ? (error as any).code : "";
@@ -435,12 +436,17 @@ async function refundUnavailableCheckout(reference: string): Promise<void> {
     paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : "";
   }
   if (!paymentIntentId) throw new Error("Paid checkout could not be refunded automatically");
+  const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+  if (pi.status === "requires_capture") {
+    await stripe.paymentIntents.cancel(paymentIntentId);
+    return;
+  }
   await stripe.refunds.create({
     payment_intent: paymentIntentId,
     reverse_transfer: true,
     refund_application_fee: true,
     reason: "requested_by_customer",
-  }, { idempotencyKey: `flea-unavailable-${paymentIntentId}` });
+  }, { idempotencyKey: `flea-settlement-refund-${paymentIntentId}` });
 }
 
 serve(async (req) => {
@@ -450,6 +456,10 @@ serve(async (req) => {
 
 
 
+  let recoveryReference: string | null = null;
+  let recoveryBuyer: string | null = null;
+  let claimed = false;
+  let orderCommitted = false;
   try {
     const userId = await getUserId(req);
     if (!userId) {
@@ -514,6 +524,28 @@ serve(async (req) => {
       });
     }
 
+    const provider = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', { apiVersion: '2025-08-27.basil' });
+    let canonicalReference = checkoutReference;
+    if (checkoutReference.startsWith('cs_')) {
+      const session = await provider.checkout.sessions.retrieve(checkoutReference);
+      canonicalReference = typeof session.payment_intent === 'string' ? session.payment_intent : '';
+    }
+    if (!canonicalReference.startsWith('pi_')) throw new Error('Invalid payment reference.');
+    const paidIntent = await provider.paymentIntents.retrieve(canonicalReference);
+    if (!paymentMatchesBuyerCart(paidIntent, userId, items.map(i => i.id))) throw new Error('Payment does not belong to this buyer and cart.');
+    if (paidIntent.status !== 'succeeded' && paidIntent.status !== 'requires_capture') throw new Error('Payment has not completed.');
+    const { data: savedQuote, error: quoteError } = await serviceClient.from('checkout_quotes').select('*').eq('payment_intent_id', canonicalReference).maybeSingle();
+    if (quoteError) throw quoteError;
+    if (savedQuote && !paymentMatchesQuote(paidIntent, savedQuote)) throw new Error('Payment does not match the saved checkout.');
+    if (savedQuote?.state === 'refunded' || savedQuote?.state === 'refunding') throw new Error('This payment is being refunded.');
+    if (savedQuote) {
+      const { data: acquired, error: claimError } = await serviceClient.rpc('claim_checkout', { p_reference: canonicalReference, p_action: 'finalizing' });
+      if (claimError || acquired !== true) throw new Error('This checkout is already being handled. Please try again shortly.');
+      claimed = true;
+    }
+    recoveryReference = canonicalReference;
+    recoveryBuyer = userId;
+
     // Apple reviewer path: the reviewer completes the REAL Apple Pay sheet on
     // a platform-account authorize-only PaymentIntent. We still verify the
     // payment with Stripe (requires_capture counts as paid), then create the
@@ -545,7 +577,7 @@ serve(async (req) => {
     const offerPriceByListing = new Map<string, number>();
     (offerRows ?? []).forEach((row: any) => offerPriceByListing.set(row.listing_id, Number(row.amount)));
 
-    const authoritativeItems = itemIds
+    let authoritativeItems = itemIds
       .map((id) => {
         const row = listingMap.get(id);
         if (!row) return undefined;
@@ -554,6 +586,27 @@ serve(async (req) => {
       })
       .filter((x): x is ListingRow => !!x);
 
+    const sellerIds = Array.from(new Set(authoritativeItems.map(item => item.user_id)));
+    const shippingMap = new Map<string, number>();
+    const transactionFeeBySeller = new Map<string, number>();
+    let secureCheckoutFee = 0;
+    let appliedCoupon: { id: string; code: string; type: string } | null = null;
+    let expectedAmountAud = 0;
+    if (savedQuote) {
+      if (savedQuote.is_reviewer && !isReviewer) throw new Error('Invalid reviewer payment.');
+      if (!savedQuote.is_reviewer && paidIntent.status !== 'succeeded') throw new Error('Payment has not been captured.');
+      const quoteItems = savedQuote.items as Array<{ id: string; price: number }>;
+      authoritativeItems = quoteItems.map(item => {
+        const listing = listingMap.get(item.id);
+        if (!listing || listing.user_id !== savedQuote.seller_id) throw new Error('Purchased item is no longer available.');
+        return { ...listing, price: item.price };
+      });
+      shippingMap.set(savedQuote.seller_id, Number(savedQuote.shipping_amount));
+      transactionFeeBySeller.set(savedQuote.seller_id, Number(savedQuote.transaction_fee));
+      secureCheckoutFee = Number(savedQuote.secure_checkout_fee);
+      appliedCoupon = savedQuote.coupon as typeof appliedCoupon;
+      expectedAmountAud = savedQuote.amount_cents / 100;
+    } else {
     // Bundle offer: % off item prices on 2+ items from the same seller. Mirrors
     // stripe-connect-payment-intent exactly so the verified total reconciles.
     const applyBundleItemDiscount = (
@@ -577,7 +630,7 @@ serve(async (req) => {
     // bundle-shipping settings. This must match stripe-connect-payment-intent
     // exactly; do not trust client-supplied shipping totals for verification.
     const round2 = (n: number) => Math.round(n * 100) / 100;
-    const sellerIds = Array.from(new Set(authoritativeItems.map((item) => item.user_id)));
+
     const { data: sellerProfiles, error: sellerProfilesError } = await serviceClient
       .from("profiles")
       .select("user_id, bundle_shipping_mode, bundle_shipping_discount_percent, bundle_item_discount_percent")
@@ -601,7 +654,7 @@ serve(async (req) => {
     authoritativeItems.length = 0;
     authoritativeItems.push(...discountedItems);
     const dbItemsTotal = authoritativeItems.reduce((sum, i) => sum + Number(i.price), 0);
-    const shippingMap = new Map<string, number>();
+
     for (const [sellerId, sellerItems] of itemsBySellerForShipping.entries()) {
       const settings: any = sellerSettings.get(sellerId) ?? {};
       const rawShipping = sellerItems.reduce((sum, item) => sum + Number(item.shipping_price || 0), 0);
@@ -615,11 +668,11 @@ serve(async (req) => {
     }
     const dbShippingTotal = Array.from(shippingMap.values()).reduce((s, v) => s + Number(v || 0), 0);
     const subtotalForFee = dbItemsTotal + dbShippingTotal;
-    let secureCheckoutFee = calculateSecureCheckoutFee(subtotalForFee);
+    secureCheckoutFee = calculateSecureCheckoutFee(subtotalForFee);
     // The Transaction Fee is charged per seller on that seller's own subtotal.
     // Allocating the whole checkout's fee to each seller would over-charge every
     // seller after the first in a multi-seller cart.
-    const transactionFeeBySeller = new Map<string, number>();
+
     for (const [sellerId, sellerItems] of itemsBySellerForShipping.entries()) {
       const sellerSubtotal = round2(
         sellerItems.reduce((s, i) => s + Number(i.price), 0) + Number(shippingMap.get(sellerId) || 0),
@@ -629,7 +682,7 @@ serve(async (req) => {
 
 
     // Re-validate coupon server-side (same logic as stripe-connect-payment-intent).
-    let appliedCoupon: { id: string; code: string; type: string } | null = null;
+    appliedCoupon = null;
     const normalizedCode = String(couponCode || "").trim().toUpperCase();
     if (normalizedCode) {
       const { data: c } = await serviceClient
@@ -648,12 +701,14 @@ serve(async (req) => {
         appliedCoupon = { id: c.id as string, code: c.code as string, type: c.type as string };
       }
     }
-    const expectedAmountAud = Math.round((subtotalForFee + secureCheckoutFee) * 100) / 100;
+    expectedAmountAud = Math.round((subtotalForFee + secureCheckoutFee) * 100) / 100;
 
     // VERIFY PAYMENT WITH STRIPE — fail closed. Enforces both that payment
     // succeeded AND that the amount paid matches what we should have charged
     // based on DB prices (prevents client-supplied price tampering).
     await verifyPayment({ reference: checkoutReference, expectedAmountAud });
+
+    }
 
     // Re-check availability now - the item or seller may have changed while
     // the buyer was paying. A retry of an already-processed checkout is fine.
@@ -663,7 +718,7 @@ serve(async (req) => {
       if (!isReviewer) {
         for (const sid of sellerIds) {
           const { data: ok, error: okErr } = await serviceClient.rpc("seller_is_available", { _user_id: sid });
-          if (!okErr && ok !== true) { sellerGone = true; break; }
+          if (okErr || ok !== true) { sellerGone = true; break; }
         }
       }
       if (listingGone || sellerGone) {
@@ -719,12 +774,14 @@ serve(async (req) => {
           shipping_city: shipping.shippingCity,
           shipping_state: shipping.shippingState,
           shipping_postcode: shipping.shippingPostcode,
-          checkout_reference: checkoutReference,
+          checkout_reference: canonicalReference,
         });
       });
     }
 
-    const insertResult = await insertOrdersWithFallback(serviceClient, inserts);
+    const insertResult = savedQuote
+      ? await serviceClient.rpc("settle_checkout_orders", { p_reference: canonicalReference, p_rows: inserts })
+      : await insertOrdersWithFallback(serviceClient, inserts);
     if (insertResult.error) {
       if ((insertResult.error as any)?.code === "23505") {
         const existing = await fetchOrdersForBuyer(serviceClient, userId, authoritativeItems.map((i) => i.id), checkoutReference);
@@ -738,6 +795,7 @@ serve(async (req) => {
       }
       throw insertResult.error;
     }
+    orderCommitted = true;
     let insertedOrders = insertResult.data ?? [];
 
     if (insertedOrders.length !== authoritativeItems.length) {
@@ -746,17 +804,9 @@ serve(async (req) => {
       insertedOrders = verify.data ?? [];
     }
 
-    // Order rows are protected by a unique listing id, so this update can only
-    // happen for the checkout that won the purchase race.
-    await serviceClient
-      .from("listings")
-      .update({ status: "sold", updated_at: new Date().toISOString() })
-      .in("id", authoritativeItems.map((item) => item.id));
-    if (insertedOrders.length !== authoritativeItems.length) {
-      // Orders did NOT all create — DO NOT mark listings sold. Surface error
-      // so support can reconcile manually rather than silently hiding listings.
-      throw new Error("Order finalization did not create the expected order records.");
-    }
+    if (insertedOrders.length !== authoritativeItems.length) throw new Error('Order finalization did not create the expected order records.');
+    const { error: soldError } = await serviceClient.from('listings').update({ status: 'sold', updated_at: new Date().toISOString() }).in('id', authoritativeItems.map(item => item.id));
+    if (soldError) throw soldError;
 
     // Record the coupon redemption so usage limits actually count down.
     if (appliedCoupon) {
@@ -765,7 +815,7 @@ serve(async (req) => {
           coupon_id: appliedCoupon.id,
           user_id: userId,
           order_group_id: orderGroupId,
-          checkout_reference: checkoutReference,
+          checkout_reference: canonicalReference,
         });
         await serviceClient.rpc("increment_coupon_redemption", { _coupon_id: appliedCoupon.id });
       } catch (error) {
@@ -814,6 +864,22 @@ serve(async (req) => {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
+    if (recoveryReference && recoveryBuyer && !orderCommitted) {
+      try {
+        const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+        const { data: existing, error: lookupError } = await admin.from('orders').select('id').eq('checkout_reference', recoveryReference);
+        if (lookupError) throw lookupError;
+        if (!existing?.length) {
+          if (claimed) await admin.from('checkout_quotes').update({ state: 'refunding', updated_at: new Date().toISOString() }).eq('payment_intent_id', recoveryReference).eq('state', 'finalizing');
+          await refundUnavailableCheckout(recoveryReference);
+          await admin.from('checkout_quotes').update({ state: 'refunded', updated_at: new Date().toISOString() }).eq('payment_intent_id', recoveryReference);
+          error = new Error('Your order could not complete. Your payment was automatically refunded.');
+        }
+      } catch (refundError) {
+        console.error('Checkout recovery pending', refundError);
+        error = new Error('Your order could not complete. Flea is checking the payment and will retry the refund.');
+      }
+    }
     await logEdgeError({ functionName: "finalize-checkout", error: error, title: "Order could not be finalised after payment", severity: "error", source: "payment" });
     console.error("[finalize-checkout] Error:", error);
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {

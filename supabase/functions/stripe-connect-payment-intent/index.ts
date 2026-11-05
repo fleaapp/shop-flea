@@ -1,3 +1,4 @@
+import { saveCheckoutQuote } from "../_shared/checkoutSafety.ts";
 // stripe-connect-payment-intent
 // Creates a PaymentIntent + Customer + Ephemeral Key for native wallet/card
 // confirmation and web payment flows. Mirrors stripe-connect-checkout fee math,
@@ -297,6 +298,13 @@ serve(async (req) => {
         },
       });
 
+      await saveCheckoutQuote(serviceClient, reviewerPi, {
+        buyer_id: user.id, seller_id: sellerId, seller_account_id: null,
+        amount_cents: reviewerAmountCents, items: authoritativeItems,
+        shipping_amount: reviewerShipping, secure_checkout_fee: reviewerSecureFee,
+        transaction_fee: 0, coupon: null, is_reviewer: true,
+      });
+
       const reviewerEphemeralKey = await stripe.ephemeralKeys.create(
         { customer: reviewerCustomerId },
         { apiVersion: "2025-08-27.basil" },
@@ -457,7 +465,7 @@ serve(async (req) => {
     // and never collide with a stale one Stripe cached for 24h.
     // PI_REQUEST_VERSION: bump whenever the paymentIntents.create body shape
     // changes so old cached keys can't collide with new params.
-    const PI_REQUEST_VERSION = "v9-2026-07-23-direct-native-wallet";
+    const PI_REQUEST_VERSION = "v10-2026-11-05-saved-quote";
     const idemBasis = [
       PI_REQUEST_VERSION,
       user.id,
@@ -468,6 +476,7 @@ serve(async (req) => {
       applicationFeeAmount,
       appliedCoupon?.code ?? "",
       saveCard ? "s" : "n",
+      JSON.stringify(authoritativeItems),
     ].join("|");
     const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(idemBasis));
     const idemHash = Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
@@ -527,15 +536,12 @@ serve(async (req) => {
       { apiVersion: "2025-08-27.basil" }
     );
 
-    if (appliedCoupon) {
-      try {
-        await serviceClient.from("coupon_redemptions").insert({
-          coupon_id: appliedCoupon.id, user_id: user.id, checkout_reference: pi.id,
-        });
-      } catch (e) {
-        console.warn("[stripe-connect-payment-intent] coupon redemption record failed:", (e as any)?.message);
-      }
-    }
+    await saveCheckoutQuote(serviceClient, pi, {
+      buyer_id: user.id, seller_id: sellerId, seller_account_id: sellerStripeAccountId,
+      amount_cents: amountCents, items: authoritativeItems, shipping_amount: shippingAmount,
+      secure_checkout_fee: secureCheckoutFee, transaction_fee: transactionFee,
+      coupon: appliedCoupon, is_reviewer: false,
+    });
 
     return new Response(JSON.stringify({
       clientSecret: pi.client_secret,
