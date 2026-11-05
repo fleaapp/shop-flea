@@ -58,6 +58,9 @@ const OrderChat = () => {
           // order-messages edge functions key on the actual order row.
           primary_order_id: order?.id ?? null,
           related_order_ids: group.orders.map((o) => o.id),
+          refundable_order_ids: group.orders
+            .filter((o) => o.status !== 'refunded' && !o.refunded_at)
+            .map((o) => o.id),
           buyer_id: group.buyer_id,
           seller_id: group.seller_id,
           delivered_at: group.delivered_at ?? order?.delivered_at ?? null,
@@ -67,7 +70,7 @@ const OrderChat = () => {
           buyer_avatar: group.buyer_profile?.avatar_url || null,
           seller_avatar: group.seller_profile?.avatar_url || null,
           is_refunded: group.status === 'refunded'
-            || group.orders.some((o) => o.status === 'refunded' || !!o.refunded_at),
+            || (group.orders.length > 0 && group.orders.every((o) => o.status === 'refunded' || !!o.refunded_at)),
         };
       }
 
@@ -402,11 +405,26 @@ const OrderChat = () => {
                     if (!resolvedOrderId) {
                       throw new Error('Order not found. Please refresh and try again.');
                     }
-                    const { data, error } = await invokeCloudFunction('stripe-connect-refund', {
-                      orderId: resolvedOrderId,
-                    });
-                    if (error || !(data as any)?.success) {
-                      throw new Error((error as any)?.message || (data as any)?.error || 'Refund failed');
+                    // Refund every not-yet-refunded item in the order, one at a time
+                    // (sellers may only refund items individually).
+                    const toRefund = orderInfo?.refundable_order_ids?.length
+                      ? orderInfo.refundable_order_ids
+                      : [resolvedOrderId];
+                    let refundedCount = 0;
+                    for (const id of toRefund) {
+                      const { data, error } = await invokeCloudFunction('stripe-connect-refund', {
+                        orderId: id,
+                        mode: 'single',
+                      });
+                      if (error || !(data as any)?.success) {
+                        queryClient.invalidateQueries({ queryKey: ['orders'] });
+                        queryClient.invalidateQueries({ queryKey: ['order-groups'] });
+                        const msg = (error as any)?.message || (data as any)?.error || 'Refund failed';
+                        throw new Error(refundedCount > 0
+                          ? `${refundedCount} of ${toRefund.length} items refunded. ${msg} Please try again.`
+                          : msg);
+                      }
+                      refundedCount++;
                     }
                     await invokeCloudFunction('order-messages', {
                       method: 'POST',
