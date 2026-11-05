@@ -43,6 +43,13 @@
       "when": 1793875879530,
       "tag": "0005_immutable_checkout_quotes",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793875899678,
+      "tag": "0006_completion_and_feed_block_rules",
+      "breakpoints": true
     }
   ]
 }
