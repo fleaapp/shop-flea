@@ -118,6 +118,10 @@ serve(async (req) => {
       parentAuthorId = parent.user_id;
     }
 
+    const { data: pairBlocked, error: blockError } = await svc.rpc("users_blocked", { p_first: userId, p_second: listing.user_id });
+    if (blockError) throw blockError;
+    if (pairBlocked) return json({ error: "You cannot comment on this listing." }, 403);
+
     if (!comment) {
       const { data: inserted, error: commentError } = await svc
         .from("listing_comments")

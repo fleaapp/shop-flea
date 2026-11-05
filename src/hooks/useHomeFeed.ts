@@ -269,6 +269,12 @@ export const useHomeFeed = () => {
     });
   }, []);
 
+  useEffect(() => {
+    const resetBlocked = () => { feedCache = null; setListings([]); void fetchPage('reset'); };
+    window.addEventListener('flea:blocks-changed', resetBlocked);
+    return () => window.removeEventListener('flea:blocks-changed', resetBlocked);
+  }, [fetchPage]);
+
   const loadMore = useCallback(() => {
     if (loading || loadingMore || !hasMore) return;
     fetchPage('append', offset);

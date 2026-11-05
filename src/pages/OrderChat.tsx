@@ -267,7 +267,7 @@ const OrderChat = () => {
       }
       setNewMessage(variables.message);
       console.error('Failed to send message:', err);
-      toast.error('Failed to send message');
+      toast.error(err instanceof Error ? err.message : 'Failed to send message.');
     },
   });
 

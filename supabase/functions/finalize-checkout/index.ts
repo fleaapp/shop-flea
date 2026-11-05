@@ -105,7 +105,7 @@ function stripCols(rows: Record<string, unknown>[], cols: Set<string>) {
   return rows.map((r) => Object.fromEntries(Object.entries(r).filter(([k]) => !cols.has(k))));
 }
 
-async function insertOrdersWithFallback(client: ReturnType<typeof createClient>, rows: Record<string, unknown>[]) {
+async function insertOrdersWithFallback(client: any, rows: Record<string, unknown>[]) {
   const stripped = new Set<string>();
   let reloaded = false;
   while (true) {
@@ -117,7 +117,7 @@ async function insertOrdersWithFallback(client: ReturnType<typeof createClient>,
   }
 }
 
-async function fetchOrdersForBuyer(client: ReturnType<typeof createClient>, userId: string, itemIds: string[], ref?: string) {
+async function fetchOrdersForBuyer(client: any, userId: string, itemIds: string[], ref?: string) {
   let q = client.from("orders").select("id, listing_id, seller_id, created_at, checkout_reference")
     .eq("buyer_id", userId).in("listing_id", itemIds).order("created_at", { ascending: false });
   if (ref) q = q.eq("checkout_reference", ref);
@@ -147,7 +147,7 @@ async function sendPush(serviceUrl: string, serviceKey: string, userId: string, 
 }
 
 async function createCheckoutNotifications(
-  client: ReturnType<typeof createClient>,
+  client: any,
   serviceUrl: string,
   serviceKey: string,
   buyerId: string,
@@ -312,7 +312,7 @@ async function sendCheckoutEmails(
       });
     }
 
-    const ordersBySeller = new Map<string, typeof fullOrders>();
+    const ordersBySeller = new Map<string, NonNullable<typeof fullOrders>>();
     for (const order of fullOrders ?? []) {
       const list = ordersBySeller.get(order.seller_id) ?? [];
       list.push(order);
@@ -728,8 +728,7 @@ serve(async (req) => {
             status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        await refundUnavailableCheckout(checkoutReference);
-        throw new Error("One or more items are no longer available. Your payment was automatically refunded.");
+        throw new Error("One or more items are no longer available.");
       }
     }
 
@@ -790,8 +789,7 @@ serve(async (req) => {
             status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        await refundUnavailableCheckout(checkoutReference);
-        throw new Error("One or more items were purchased by someone else. Your payment was automatically refunded.");
+        throw new Error("One or more items were purchased by someone else.");
       }
       throw insertResult.error;
     }
