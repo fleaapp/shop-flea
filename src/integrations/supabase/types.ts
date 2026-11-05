@@ -1780,6 +1780,24 @@ export type Database = {
         }
         Relationships: []
       }
+      user_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -2972,6 +2990,10 @@ export type Database = {
         }
       }
       touch_last_active: { Args: never; Returns: undefined }
+      users_blocked: {
+        Args: { p_first: string; p_second: string }
+        Returns: boolean
+      }
       withdraw_offer: {
         Args: { p_offer_id: string }
         Returns: {

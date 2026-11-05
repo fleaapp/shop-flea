@@ -1,0 +1,26 @@
+CREATE TABLE public.user_blocks(blocker_id uuid NOT NULL,blocked_id uuid NOT NULL,created_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(blocker_id,blocked_id),CHECK(blocker_id<>blocked_id));
+GRANT SELECT,INSERT,DELETE ON public.user_blocks TO authenticated;
+GRANT ALL ON public.user_blocks TO service_role;
+ALTER TABLE public.user_blocks ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users read own blocks" ON public.user_blocks FOR SELECT TO authenticated USING(blocker_id=auth.uid());
+CREATE POLICY "Users create own blocks" ON public.user_blocks FOR INSERT TO authenticated WITH CHECK(blocker_id=auth.uid());
+CREATE POLICY "Users remove own blocks" ON public.user_blocks FOR DELETE TO authenticated USING(blocker_id=auth.uid());
+CREATE INDEX user_blocks_reverse_idx ON public.user_blocks(blocked_id,blocker_id);
+CREATE OR REPLACE FUNCTION public.users_blocked(p_first uuid,p_second uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS $$ SELECT EXISTS(SELECT 1 FROM public.user_blocks WHERE(blocker_id=p_first AND blocked_id=p_second)OR(blocker_id=p_second AND blocked_id=p_first)) $$;
+REVOKE ALL ON FUNCTION public.users_blocked(uuid,uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.users_blocked(uuid,uuid) TO authenticated,service_role;
+CREATE POLICY "Blocked discovery excluded except order history" ON public.listings AS RESTRICTIVE FOR SELECT TO authenticated USING(NOT public.users_blocked(auth.uid(),user_id) OR public.has_role(auth.uid(),'admin') OR EXISTS(SELECT 1 FROM public.orders o WHERE o.listing_id=listings.id AND auth.uid() IN(o.buyer_id,o.seller_id)));
+CREATE POLICY "Blocked comments excluded" ON public.listing_comments AS RESTRICTIVE FOR SELECT TO authenticated USING(NOT public.users_blocked(auth.uid(),user_id));
+CREATE OR REPLACE FUNCTION public.reject_blocked_purchase() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ BEGIN IF public.users_blocked(NEW.buyer_id,NEW.seller_id) THEN RAISE EXCEPTION 'This transaction is unavailable because one user blocked the other.'; END IF; RETURN NEW; END $$;
+CREATE TRIGGER orders_blocked_pair BEFORE INSERT ON public.orders FOR EACH ROW EXECUTE FUNCTION public.reject_blocked_purchase();
+CREATE TRIGGER offers_blocked_pair BEFORE INSERT ON public.offers FOR EACH ROW EXECUTE FUNCTION public.reject_blocked_purchase();
+CREATE OR REPLACE FUNCTION public.reject_unsafe_user_text() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE v_text text;v_owner uuid;v_parent uuid; BEGIN
+IF TG_TABLE_NAME='listing_comments' THEN v_text:=NEW.content; SELECT user_id INTO v_owner FROM public.listings WHERE id=NEW.listing_id; IF public.users_blocked(NEW.user_id,v_owner) THEN RAISE EXCEPTION 'You cannot comment on this listing.'; END IF; IF NEW.parent_id IS NOT NULL THEN SELECT user_id INTO v_parent FROM public.listing_comments WHERE id=NEW.parent_id; IF public.users_blocked(NEW.user_id,v_parent) THEN RAISE EXCEPTION 'You cannot reply to this user.'; END IF; END IF;
+ELSE IF auth.role()='authenticated' AND COALESCE(NEW.message_type,'user')<>'user' THEN RAISE EXCEPTION 'Only Flea can send system messages.'; END IF; IF COALESCE(NEW.message_type,'user')<>'user' THEN RETURN NEW; END IF;v_text:=NEW.message; END IF;
+IF length(COALESCE(v_text,''))>5000 THEN RAISE EXCEPTION 'Message is too long.'; END IF;
+v_text:=lower(regexp_replace(COALESCE(v_text,''),'[^[:alnum:]]','','g'));
+IF v_text ~ '(pay|send|transfer|deposit).*(payid|banktransfer|bsb|giftcard|crypto|bitcoin|paypal|outsideflea|offapp)' OR v_text ~ '(payid|banktransfer|bsb|giftcard|crypto|bitcoin).*(payme|sendme|transferme|deposit)' OR v_text ~ '(paypalme|cashapp|paymenow|avoidfleafees)' THEN RAISE EXCEPTION 'Requests to pay outside Flea are not allowed. Keep payments in the app.'; END IF;
+IF TG_TABLE_NAME='listing_comments' AND (NEW.content ~* '(https?://|www\.|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,})' OR v_text ~ '(fuck|bitch|asshole|kill yourself|instagram|whatsapp|telegram|snapchat|discord)') THEN RAISE EXCEPTION 'Please keep comments respectful and communication inside Flea.'; END IF;RETURN NEW;END $$;
+CREATE TRIGGER listing_comments_safety_insert BEFORE INSERT ON public.listing_comments FOR EACH ROW EXECUTE FUNCTION public.reject_unsafe_user_text();
+CREATE TRIGGER listing_comments_safety_update BEFORE UPDATE OF content ON public.listing_comments FOR EACH ROW EXECUTE FUNCTION public.reject_unsafe_user_text();
+CREATE TRIGGER order_messages_safety_insert BEFORE INSERT ON public.order_messages FOR EACH ROW EXECUTE FUNCTION public.reject_unsafe_user_text();
