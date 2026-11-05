@@ -158,7 +158,7 @@ serve(async (req) => {
       console.warn("[stripe-connect-dashboard] mirror failed", e);
     }
 
-    const nextPayout = payouts.data.find((p) => p.status === "pending" || p.status === "in_transit") ?? null;
+    const nextPayout = payouts.data.find((p: Stripe.Payout) => p.status === "pending" || p.status === "in_transit") ?? null;
 
     const chargesEnabled = !!account.charges_enabled;
     const payoutsEnabled = !!account.payouts_enabled;
@@ -218,7 +218,7 @@ serve(async (req) => {
               status: nextPayout.status,
             }
           : null,
-        payouts: payouts.data.map((p) => ({
+        payouts: payouts.data.map((p: Stripe.Payout) => ({
           id: p.id,
           amount: p.amount,
           status: p.status,

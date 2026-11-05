@@ -455,7 +455,7 @@ async function insertOrderMessage(
     attachment_url: input.attachmentUrl || null,
   };
 
-  const recordWithoutType = orderMessageKey === "order_id"
+  const recordWithoutType: Record<string, unknown> = orderMessageKey === "order_id"
     ? { ...baseInsert, order_id: orderId }
     : { ...baseInsert, order_group_id: orderId };
 

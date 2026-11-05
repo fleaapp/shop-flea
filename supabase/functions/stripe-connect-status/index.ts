@@ -151,7 +151,7 @@ serve(async (req) => {
     const externalUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-    let accountId = stripeAccountId;
+    let accountId: string | undefined = stripeAccountId;
     let lookupUserId = userId;
     let lookupProfile: any = null;
 
@@ -192,7 +192,7 @@ serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
-    if (isOtherSeller && accountId.startsWith('acct_demo_')) {
+    if (isOtherSeller && accountId?.startsWith('acct_demo_')) {
       const ok = isAppleReviewProfile(lookupProfile);
       return new Response(
         JSON.stringify({ chargesEnabled: ok, detailsSubmitted: ok, payoutsEnabled: ok, accountExists: ok, ready: ok }),
@@ -239,7 +239,7 @@ serve(async (req) => {
             limit: 100,
             ...(starting_after ? { starting_after } : {}),
           });
-          const match = page.data.find((a) => a.metadata?.flea_user_id === lookupUserId);
+          const match = page.data.find((a: Stripe.Account) => a.metadata?.flea_user_id === lookupUserId);
           if (match) recovered = match.id;
           if (!page.has_more) break;
           starting_after = page.data[page.data.length - 1]?.id;
@@ -431,7 +431,7 @@ serve(async (req) => {
           console.log(`[stripe-connect-status] Set statement descriptors for account ${accountId}`);
         }
       } catch (descErr) {
-        console.warn(`[stripe-connect-status] Failed to set descriptors: ${descErr.message}`);
+        console.warn(`[stripe-connect-status] Failed to set descriptors: ${descErr instanceof Error ? descErr.message : "Unknown error"}`);
       }
     }
 
@@ -566,7 +566,7 @@ serve(async (req) => {
     await logEdgeError({ functionName: "stripe-connect-status", error: error, title: "Seller verification status check failed", severity: "error", source: "payment" });
     console.error("Stripe Connect status error:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : "Status check failed." }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,

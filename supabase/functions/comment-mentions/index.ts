@@ -83,7 +83,7 @@ serve(async (req) => {
     const mentionHandles = Array.from(
       new Set(
         (trimmedContent.match(/@[\w]+/g) ?? [])
-          .map((mention) => mention.replace(/^@/, "").trim().toLowerCase())
+          .map((mention: string) => mention.replace(/^@/, "").trim().toLowerCase())
           .filter(Boolean),
       ),
     ).slice(0, 10);

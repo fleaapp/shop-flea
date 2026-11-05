@@ -45,7 +45,7 @@ function buildOrderSelect(omitted: Set<string>) {
   ].join(",");
 }
 
-async function fetchAwaitingRefundOrders(admin: ReturnType<typeof createClient>, cutoff: string) {
+async function fetchAwaitingRefundOrders(admin: any, cutoff: string) {
   const dbUrl = Deno.env.get("SUPABASE_DB_URL") ?? Deno.env.get("SUPABASE_DB_URL") ?? "";
   if (dbUrl) {
     const sql = postgres(dbUrl, { max: 1 });
@@ -198,7 +198,7 @@ async function resolvePaymentIntentId(stripe: Stripe, order: any) {
 
   try {
     const sessions = await stripe.checkout.sessions.list({ created: { gte: earliestCreated }, limit: 100 });
-    const sessionMatch = sessions.data.find((session) => {
+    const sessionMatch = sessions.data.find((session: Stripe.Checkout.Session) => {
       const metadata = session.metadata ?? {};
       const itemIds = String(metadata.item_ids ?? "").split(",").map((id) => id.trim()).filter(Boolean);
       return metadata.flea_buyer_id === order.buyer_id
@@ -223,7 +223,7 @@ async function resolvePaymentIntentId(stripe: Stripe, order: any) {
 // Rows are written one at a time: a deleted counterparty used to break a
 // foreign key on the batch and silently wipe out BOTH alerts.
 async function insertNotificationsWithRetry(
-  admin: ReturnType<typeof createClient>,
+  admin: any,
   rows: Record<string, unknown>[],
   orderId: string,
 ) {
