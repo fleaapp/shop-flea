@@ -1,9 +1,10 @@
 # Launch safeguards
 
-- [ ] Make refunds item-specific and protect shipped bundle items.
-- [ ] Validate return tracking, prevent unrelated-parcel refunds, and retry failed refunds.
-- [ ] Keep disputed refund funds held and align seller response deadlines.
-- [ ] Recover paid checkouts when order creation fails.
-- [ ] Match seller dashboard availability to payout eligibility.
-- [ ] Implement real blocking and server-side scam-payment filtering.
-- [ ] Run focused tests and verify deployed safeguards and app screens.
+- [x] Make refunds item-specific and protect shipped bundle items.
+- [x] Validate return tracking, require Flea delivery review, and retry approved failed refunds.
+- [x] Keep disputed refund funds held and align seller response deadlines.
+- [x] Recover paid checkouts when order creation fails using private quotes and settlement claims.
+- [x] Match seller dashboard protected-balance calculations to payout calculations.
+- [x] Implement real block/unblock management and server-side scam-payment filtering.
+- [x] Run 12 focused tests; check changed functions; deploy safeguards; verify signed-in block/unblock readback and desktop/mobile screens.
+- [ ] Verify real checkout, return refunds, payout eligibility and iPhone behavior end-to-end. Blocker: no safe payment/carrier test transaction or iPhone in this sandbox; no real money was moved for testing.
