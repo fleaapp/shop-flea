@@ -36,6 +36,13 @@
       "when": 1793875802619,
       "tag": "0004_real_user_blocking",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793875879530,
+      "tag": "0005_immutable_checkout_quotes",
+      "breakpoints": true
     }
   ]
 }
