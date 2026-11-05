@@ -2,3 +2,8 @@
 - Use `onAppResume()` (src/lib/appResume.ts) for "user returned to app" logic - why: web focus/visibility events don't fire reliably in the native iOS WebView.
 - Nav badge realtime/listeners and the app icon badge live in `useNavBadgesSync()`, mounted once at the App root - why: BottomNav-only mounting left the icon badge stale on other screens.
 - Feed RPCs that filter on other users' profile fields must be SECURITY DEFINER - why: profile RLS returns NULLs to callers, letting inactive/paused sellers through LEFT JOIN filters.
+- Checkout quotes are service-only snapshots, and settlement uses claim_checkout plus atomic settle_checkout_orders - why: payment-time prices stay binding and order creation cannot race orphan refunds.
+- Seller holds use _shared/heldFunds.ts in status, dashboard and payout - why: unresolved claims and bank disputes must produce the same withdrawable balance everywhere.
+- Return carrier delivery requires admin_verify_return before automated refund retries - why: a delivery scan alone cannot prove parcel contents or recipient.
+- User blocks are directional private records enforced symmetrically in discovery and new transactions; existing orders remain accessible - why: blocking must protect users without preventing fulfillment or dispute resolution.
+- User-authored comments and order messages have database write-validation triggers - why: direct client writes and service endpoints must not bypass scam-payment restrictions.
