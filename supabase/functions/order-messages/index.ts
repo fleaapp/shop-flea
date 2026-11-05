@@ -1,3 +1,4 @@
+import { unsafePaymentRequest } from "../_shared/paymentModeration.ts";
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { logEdgeError } from "../_shared/logError.ts";
@@ -454,7 +455,7 @@ async function insertOrderMessage(
     attachment_url: input.attachmentUrl || null,
   };
 
-  const recordWithoutType = orderMessageKey === "order_id"
+  const recordWithoutType: Record<string, unknown> = orderMessageKey === "order_id"
     ? { ...baseInsert, order_id: orderId }
     : { ...baseInsert, order_group_id: orderId };
 
@@ -907,6 +908,7 @@ Deno.serve(async (req) => {
 
       const body = await req.json();
       const { message, attachment_url } = body;
+      if (typeof message !== "string" || message.length > 5000 || unsafePaymentRequest(message)) return new Response(JSON.stringify({ error: "Requests to pay outside Flea are not allowed. Keep payments in the app." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
       const data = await insertOrderMessage(external, orderMessageKey, threadOrderId, {
         senderId: userId,

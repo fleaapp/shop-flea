@@ -1,3 +1,4 @@
+import BlockedUsersDialog from '@/components/BlockedUsersDialog';
 import { invalidatePausedSeller } from '@/hooks/usePausedSellers';
 import React, { useState, useEffect } from 'react';
 import useSellerGate from '@/hooks/useSellerGate';
@@ -64,6 +65,7 @@ const Settings = () => {
   const {
     clearDiscarded
   } = useDiscardedListings();
+  const [blockedUsersOpen, setBlockedUsersOpen] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [shippingOpen, setShippingOpen] = useState(false);
   const { sellerReady, gate: sellerGate, setGateOpen: setSellerGateOpen } = useSellerGate();
@@ -306,6 +308,7 @@ const Settings = () => {
       label: 'Edit Profile',
       action: () => navigate('/settings/profile')
     });
+    generalItems.push({ icon: <span className="text-base">🚫</span>, label: 'Blocked users', action: () => setBlockedUsersOpen(true) });
   }
   generalItems.push({
     icon: <span className="text-base">🔔</span>,
@@ -590,6 +593,7 @@ const Settings = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      <BlockedUsersDialog open={blockedUsersOpen} onOpenChange={setBlockedUsersOpen} />
       {sellerGate}
 
       <BottomNav adminSettingsBadge={!isGuest && isAdmin ? adminBadgeTotal : undefined} />

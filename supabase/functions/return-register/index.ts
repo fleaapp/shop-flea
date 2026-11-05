@@ -59,8 +59,8 @@ Deno.serve(async (req) => {
     try {
       const registered = await registerNumbers([{ number, carrier: code }]);
       const rejection = registered?.data?.rejected?.[0];
-      // -18010010 denotes a previously registered parcel; all other errors fail closed.
-      if (rejection && Number(rejection.error?.code) !== -18010010) return json({ error: 'The carrier could not verify that number. Please check it.' }, 400);
+      // The provider's already-registered code still requires real scan evidence.
+      if (rejection && ![-18019901, -18010010].includes(Number(rejection.error?.code))) return json({ error: 'The carrier could not verify that number. Please check it.' }, 400);
       const info = await getTrackInfo([{ number, carrier: code }]);
       const payload = info?.data?.accepted?.[0]?.track_info;
       const track = payload ? normaliseTrackInfo(number, payload) : null;

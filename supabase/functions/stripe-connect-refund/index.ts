@@ -60,6 +60,8 @@ const OPTIONAL_ORDER_COLUMNS = [
   "refund_reason",
   "refund_requested_at",
   "refund_request_deadline_at",
+  "return_required_at",
+  "return_verified_at",
 ] as const;
 
 const ORDER_UPDATE_FALLBACK_COLUMNS = [
@@ -382,7 +384,7 @@ async function resolvePaymentIntentId(stripe: Stripe, order: any) {
 
   try {
     const sessions = await stripe.checkout.sessions.list({ created: { gte: earliestCreated }, limit: 100 });
-    const sessionMatch = sessions.data.find((session) => {
+    const sessionMatch = sessions.data.find((session: Stripe.Checkout.Session) => {
       const metadata = session.metadata ?? {};
       const itemIds = String(metadata.item_ids ?? "").split(",").map((id) => id.trim()).filter(Boolean);
       return metadata.flea_buyer_id === order.buyer_id
@@ -930,8 +932,12 @@ serve(async (req) => {
       throw new Error("Only the seller can initiate this refund");
     }
     if (order.refunded_at) throw new Error("Order already refunded");
+    if (isSystemCaller && order.return_required_at && !order.return_verified_at) {
+      return jsonResponse({ error: 'Flea must verify this return before issuing a refund.' }, 409);
+    }
 
     if (mode !== undefined && mode !== "single" && mode !== "cascade") return jsonResponse({ error: "Invalid refund mode." }, 400);
+    if (mode === "cascade" && !isSystemCaller && !isAdminCaller) return jsonResponse({ error: "Refund items individually." }, 403);
     const refundMode = mode === "cascade" ? "cascade" : "single";
     // Seller cancellations are stamped on the order by seller_cancel_order_begin
     // before this runs, so trust the row rather than the request body alone.

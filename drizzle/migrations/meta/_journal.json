@@ -50,6 +50,13 @@
       "when": 1793875899678,
       "tag": "0006_completion_and_feed_block_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793876612160,
+      "tag": "0007_private_checkout_quote_grants",
+      "breakpoints": true
     }
   ]
 }

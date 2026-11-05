@@ -105,7 +105,7 @@ function stripCols(rows: Record<string, unknown>[], cols: Set<string>) {
   return rows.map((r) => Object.fromEntries(Object.entries(r).filter(([k]) => !cols.has(k))));
 }
 
-async function insertOrdersWithFallback(client: ReturnType<typeof createClient>, rows: Record<string, unknown>[]) {
+async function insertOrdersWithFallback(client: any, rows: Record<string, unknown>[]) {
   const stripped = new Set<string>();
   let reloaded = false;
   while (true) {
@@ -117,7 +117,7 @@ async function insertOrdersWithFallback(client: ReturnType<typeof createClient>,
   }
 }
 
-async function fetchOrdersForBuyer(client: ReturnType<typeof createClient>, userId: string, itemIds: string[], ref?: string) {
+async function fetchOrdersForBuyer(client: any, userId: string, itemIds: string[], ref?: string) {
   let q = client.from("orders").select("id, listing_id, seller_id, created_at, checkout_reference")
     .eq("buyer_id", userId).in("listing_id", itemIds).order("created_at", { ascending: false });
   if (ref) q = q.eq("checkout_reference", ref);
@@ -147,7 +147,7 @@ async function sendPush(serviceUrl: string, serviceKey: string, userId: string, 
 }
 
 async function createCheckoutNotifications(
-  client: ReturnType<typeof createClient>,
+  client: any,
   serviceUrl: string,
   serviceKey: string,
   buyerId: string,
@@ -312,7 +312,7 @@ async function sendCheckoutEmails(
       });
     }
 
-    const ordersBySeller = new Map<string, typeof fullOrders>();
+    const ordersBySeller = new Map<string, NonNullable<typeof fullOrders>>();
     for (const order of fullOrders ?? []) {
       const list = ordersBySeller.get(order.seller_id) ?? [];
       list.push(order);
@@ -441,12 +441,13 @@ async function refundUnavailableCheckout(reference: string): Promise<void> {
     await stripe.paymentIntents.cancel(paymentIntentId);
     return;
   }
-  await stripe.refunds.create({
+  const refund = await stripe.refunds.create({
     payment_intent: paymentIntentId,
     reverse_transfer: true,
     refund_application_fee: true,
     reason: "requested_by_customer",
   }, { idempotencyKey: `flea-settlement-refund-${paymentIntentId}` });
+  if (refund.status !== 'succeeded') throw new Error('Refund awaiting payment-provider confirmation.');
 }
 
 serve(async (req) => {
@@ -728,8 +729,7 @@ serve(async (req) => {
             status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        await refundUnavailableCheckout(checkoutReference);
-        throw new Error("One or more items are no longer available. Your payment was automatically refunded.");
+        throw new Error("One or more items are no longer available.");
       }
     }
 
@@ -790,8 +790,7 @@ serve(async (req) => {
             status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        await refundUnavailableCheckout(checkoutReference);
-        throw new Error("One or more items were purchased by someone else. Your payment was automatically refunded.");
+        throw new Error("One or more items were purchased by someone else.");
       }
       throw insertResult.error;
     }
@@ -870,7 +869,10 @@ serve(async (req) => {
         const { data: existing, error: lookupError } = await admin.from('orders').select('id').eq('checkout_reference', recoveryReference);
         if (lookupError) throw lookupError;
         if (!existing?.length) {
-          if (claimed) await admin.from('checkout_quotes').update({ state: 'refunding', updated_at: new Date().toISOString() }).eq('payment_intent_id', recoveryReference).eq('state', 'finalizing');
+          if (claimed) {
+            const { data: locked, error: lockError } = await admin.from('checkout_quotes').update({ state: 'refunding', updated_at: new Date().toISOString() }).eq('payment_intent_id', recoveryReference).eq('state', 'finalizing').select('payment_intent_id');
+            if (lockError || !locked?.length) throw new Error('Checkout recovery is already being handled.');
+          }
           await refundUnavailableCheckout(recoveryReference);
           await admin.from('checkout_quotes').update({ state: 'refunded', updated_at: new Date().toISOString() }).eq('payment_intent_id', recoveryReference);
           error = new Error('Your order could not complete. Your payment was automatically refunded.');

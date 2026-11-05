@@ -59,7 +59,7 @@ export default function AdminApprovals() {
                   ? 'No deliveries to review'
                   : tab === 'untracked'
                     ? 'No untracked deliveries'
-                    : 'No disputes open'
+                    : tab === 'return' ? 'No returns to review' : 'No disputes open'
             }
             description="Nothing pending right now."
           />

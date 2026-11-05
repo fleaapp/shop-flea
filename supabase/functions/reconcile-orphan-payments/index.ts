@@ -14,7 +14,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
-const GRACE_MS = 15 * 60 * 1000;
+const GRACE_MS = 30 * 60 * 1000;
 const LOOKBACK_MS = 24 * 60 * 60 * 1000;
 
 const admin = createClient(
@@ -45,12 +45,25 @@ Deno.serve(async (req) => {
   const errors: string[] = [];
 
   try {
-    const list = await stripe.paymentIntents.list({
-      created: { gte: Math.floor((now - LOOKBACK_MS) / 1000), lte: Math.floor((now - GRACE_MS) / 1000) },
-      limit: 100,
-    });
-
-    for (const pi of list.data) {
+    const { data: pendingQuotes, error: pendingError } = await admin.from('checkout_quotes').select('payment_intent_id')
+      .in('state', ['quoted','finalizing','refunding']).lt('updated_at', new Date(now - GRACE_MS).toISOString()).limit(200);
+    if (pendingError) throw pendingError;
+    const intents = new Map<string, Stripe.PaymentIntent>();
+    for (const quote of pendingQuotes ?? []) {
+      try { const pi = await stripe.paymentIntents.retrieve(quote.payment_intent_id); intents.set(pi.id, pi); }
+      catch (e) { errors.push('Could not retrieve a pending checkout.'); }
+    }
+    let startingAfter: string | undefined;
+    for (let page = 0; page < 20; page++) {
+      const list = await stripe.paymentIntents.list({
+        created: { gte: Math.floor((now - LOOKBACK_MS) / 1000), lte: Math.floor((now - GRACE_MS) / 1000) },
+        limit: 100, ...(startingAfter ? { starting_after: startingAfter } : {}),
+      });
+      for (const pi of list.data) intents.set(pi.id, pi);
+      if (!list.has_more || !list.data.length) break;
+      startingAfter = list.data[list.data.length - 1]?.id;
+    }
+    for (const pi of intents.values()) {
       if (pi.status !== "succeeded") continue;
       const buyerId = pi.metadata?.flea_buyer_id;
       if (!buyerId) continue; // not a Flea marketplace charge
@@ -67,14 +80,27 @@ Deno.serve(async (req) => {
       }
       if ((orders ?? []).length > 0) continue; // order exists, nothing to do
 
+      const { data: quote, error: quoteError } = await admin.from('checkout_quotes').select('state').eq('payment_intent_id', pi.id).maybeSingle();
+      if (quoteError) { errors.push(quoteError.message); continue; }
+      if (quote) {
+        if (quote.state === 'completed' || quote.state === 'refunded') continue;
+        const { data: claim, error: claimError } = await admin.rpc('claim_checkout', { p_reference: pi.id, p_action: 'refunding' });
+        if (claimError || !claim) continue;
+        const { data: recheck, error: recheckError } = await admin.from('orders').select('id').eq('checkout_reference', pi.id).limit(1);
+        if (recheckError) { errors.push(recheckError.message); continue; }
+        if (recheck?.length) continue;
+      }
+
       // No order was ever created for a successful charge -> refund it all.
       try {
-        await stripe.refunds.create({
+        const refund = await stripe.refunds.create({
           payment_intent: pi.id,
           reason: "requested_by_customer",
           refund_application_fee: true,
           reverse_transfer: true,
-        }, { idempotencyKey: `orphan-refund-${pi.id}` });
+        }, { idempotencyKey: `flea-settlement-refund-${pi.id}` });
+        if (refund.status !== "succeeded") throw new Error("Refund awaiting confirmation.");
+        if (quote) await admin.from("checkout_quotes").update({ state: "refunded", updated_at: new Date().toISOString() }).eq("payment_intent_id", pi.id);
         refunded++;
 
         await admin.from("notifications").insert({

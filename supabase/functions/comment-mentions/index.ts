@@ -74,11 +74,16 @@ serve(async (req) => {
       return json({ error: "content is required." }, 400);
     }
 
-    const trimmedContent = content.trim();
+    const checker = createClient(EXTERNAL_PUBLIC_URL, EXTERNAL_SERVICE_ROLE_KEY);
+    const { data: ownComment, error: commentError } = await checker.from('listing_comments')
+      .select('id,content').eq('listing_id', listingId).eq('user_id', user.id)
+      .eq('content', content.trim()).order('created_at', { ascending: false }).limit(1).maybeSingle();
+    if (commentError || !ownComment) return json({ error: 'A saved comment is required.' }, 400);
+    const trimmedContent = ownComment.content;
     const mentionHandles = Array.from(
       new Set(
         (trimmedContent.match(/@[\w]+/g) ?? [])
-          .map((mention) => mention.replace(/^@/, "").trim().toLowerCase())
+          .map((mention: string) => mention.replace(/^@/, "").trim().toLowerCase())
           .filter(Boolean),
       ),
     ).slice(0, 10);
@@ -106,9 +111,16 @@ serve(async (req) => {
       throw profileError;
     }
 
+    const allowedProfiles = [];
+    for (const profile of mentionedProfiles ?? []) {
+      const { data: blocked, error } = await serviceClient.rpc('users_blocked', { p_first: user.id, p_second: profile.user_id });
+      if (error) throw error;
+      if (!blocked) allowedProfiles.push(profile);
+    }
+
     const notificationsToInsert = Array.from(
       new Map(
-        (mentionedProfiles ?? [])
+        allowedProfiles
           .filter((profile) => {
             const normalizedUsername = profile.username?.replace(/^@/, "").toLowerCase();
             return !!normalizedUsername && mentionHandles.includes(normalizedUsername) && profile.user_id !== user.id;
@@ -119,7 +131,7 @@ serve(async (req) => {
               user_id: profile.user_id,
               type: "mention",
               title: "You were mentioned in a comment",
-              message: trimmedContent.slice(0, 100),
+              message: `You were mentioned: ${trimmedContent.slice(0, 100).replace(/[.!?]+$/, "")}.`,
               related_listing_id: listingId,
               related_user_id: user.id,
             },
