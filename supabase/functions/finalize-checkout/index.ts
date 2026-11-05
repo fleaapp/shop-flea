@@ -441,12 +441,13 @@ async function refundUnavailableCheckout(reference: string): Promise<void> {
     await stripe.paymentIntents.cancel(paymentIntentId);
     return;
   }
-  await stripe.refunds.create({
+  const refund = await stripe.refunds.create({
     payment_intent: paymentIntentId,
     reverse_transfer: true,
     refund_application_fee: true,
     reason: "requested_by_customer",
   }, { idempotencyKey: `flea-settlement-refund-${paymentIntentId}` });
+  if (refund.status !== 'succeeded') throw new Error('Refund awaiting payment-provider confirmation.');
 }
 
 serve(async (req) => {
@@ -868,7 +869,10 @@ serve(async (req) => {
         const { data: existing, error: lookupError } = await admin.from('orders').select('id').eq('checkout_reference', recoveryReference);
         if (lookupError) throw lookupError;
         if (!existing?.length) {
-          if (claimed) await admin.from('checkout_quotes').update({ state: 'refunding', updated_at: new Date().toISOString() }).eq('payment_intent_id', recoveryReference).eq('state', 'finalizing');
+          if (claimed) {
+            const { data: locked, error: lockError } = await admin.from('checkout_quotes').update({ state: 'refunding', updated_at: new Date().toISOString() }).eq('payment_intent_id', recoveryReference).eq('state', 'finalizing').select('payment_intent_id');
+            if (lockError || !locked?.length) throw new Error('Checkout recovery is already being handled.');
+          }
           await refundUnavailableCheckout(recoveryReference);
           await admin.from('checkout_quotes').update({ state: 'refunded', updated_at: new Date().toISOString() }).eq('payment_intent_id', recoveryReference);
           error = new Error('Your order could not complete. Your payment was automatically refunded.');

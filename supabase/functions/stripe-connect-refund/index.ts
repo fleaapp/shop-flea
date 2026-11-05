@@ -60,6 +60,8 @@ const OPTIONAL_ORDER_COLUMNS = [
   "refund_reason",
   "refund_requested_at",
   "refund_request_deadline_at",
+  "return_required_at",
+  "return_verified_at",
 ] as const;
 
 const ORDER_UPDATE_FALLBACK_COLUMNS = [
@@ -930,6 +932,9 @@ serve(async (req) => {
       throw new Error("Only the seller can initiate this refund");
     }
     if (order.refunded_at) throw new Error("Order already refunded");
+    if (isSystemCaller && order.return_required_at && !order.return_verified_at) {
+      return jsonResponse({ error: 'Flea must verify this return before issuing a refund.' }, 409);
+    }
 
     if (mode !== undefined && mode !== "single" && mode !== "cascade") return jsonResponse({ error: "Invalid refund mode." }, 400);
     if (mode === "cascade" && !isSystemCaller && !isAdminCaller) return jsonResponse({ error: "Refund items individually." }, 403);
