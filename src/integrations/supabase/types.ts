@@ -925,9 +925,13 @@ export type Database = {
           return_deadline_at: string | null
           return_delivered_at: string | null
           return_posted_at: string | null
+          return_refund_error: string | null
+          return_refund_failed_at: string | null
           return_required_at: string | null
           return_tracking_number: string | null
           return_tracking_provider: string | null
+          return_verified_at: string | null
+          return_verified_by: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -984,9 +988,13 @@ export type Database = {
           return_deadline_at?: string | null
           return_delivered_at?: string | null
           return_posted_at?: string | null
+          return_refund_error?: string | null
+          return_refund_failed_at?: string | null
           return_required_at?: string | null
           return_tracking_number?: string | null
           return_tracking_provider?: string | null
+          return_verified_at?: string | null
+          return_verified_by?: string | null
           secure_checkout_fee?: number
           seller_hidden_at?: string | null
           seller_id: string
@@ -1043,9 +1051,13 @@ export type Database = {
           return_deadline_at?: string | null
           return_delivered_at?: string | null
           return_posted_at?: string | null
+          return_refund_error?: string | null
+          return_refund_failed_at?: string | null
           return_required_at?: string | null
           return_tracking_number?: string | null
           return_tracking_provider?: string | null
+          return_verified_at?: string | null
+          return_verified_by?: string | null
           secure_checkout_fee?: number
           seller_hidden_at?: string | null
           seller_id?: string
@@ -1869,9 +1881,13 @@ export type Database = {
           return_deadline_at: string | null
           return_delivered_at: string | null
           return_posted_at: string | null
+          return_refund_error: string | null
+          return_refund_failed_at: string | null
           return_required_at: string | null
           return_tracking_number: string | null
           return_tracking_provider: string | null
+          return_verified_at: string | null
+          return_verified_by: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -1937,9 +1953,13 @@ export type Database = {
           return_deadline_at: string | null
           return_delivered_at: string | null
           return_posted_at: string | null
+          return_refund_error: string | null
+          return_refund_failed_at: string | null
           return_required_at: string | null
           return_tracking_number: string | null
           return_tracking_provider: string | null
+          return_verified_at: string | null
+          return_verified_by: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -2009,9 +2029,13 @@ export type Database = {
           return_deadline_at: string | null
           return_delivered_at: string | null
           return_posted_at: string | null
+          return_refund_error: string | null
+          return_refund_failed_at: string | null
           return_required_at: string | null
           return_tracking_number: string | null
           return_tracking_provider: string | null
+          return_verified_at: string | null
+          return_verified_by: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -2077,9 +2101,13 @@ export type Database = {
           return_deadline_at: string | null
           return_delivered_at: string | null
           return_posted_at: string | null
+          return_refund_error: string | null
+          return_refund_failed_at: string | null
           return_required_at: string | null
           return_tracking_number: string | null
           return_tracking_provider: string | null
+          return_verified_at: string | null
+          return_verified_by: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -2145,9 +2173,13 @@ export type Database = {
           return_deadline_at: string | null
           return_delivered_at: string | null
           return_posted_at: string | null
+          return_refund_error: string | null
+          return_refund_failed_at: string | null
           return_required_at: string | null
           return_tracking_number: string | null
           return_tracking_provider: string | null
+          return_verified_at: string | null
+          return_verified_by: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -2176,6 +2208,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      admin_verify_return: { Args: { p_order_id: string }; Returns: undefined }
       auto_complete_delivered_orders: { Args: never; Returns: number }
       auto_deliver_shipped_orders: { Args: never; Returns: number }
       check_and_record_rate_limit: {
@@ -2220,9 +2253,13 @@ export type Database = {
           return_deadline_at: string | null
           return_delivered_at: string | null
           return_posted_at: string | null
+          return_refund_error: string | null
+          return_refund_failed_at: string | null
           return_required_at: string | null
           return_tracking_number: string | null
           return_tracking_provider: string | null
+          return_verified_at: string | null
+          return_verified_by: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -2302,6 +2339,7 @@ export type Database = {
         Returns: number
       }
       escalate_lapsed_refund_requests: { Args: never; Returns: number }
+      escalate_stalled_returns: { Args: never; Returns: number }
       expire_stale_offers: { Args: never; Returns: number }
       get_accepted_offer_prices: {
         Args: { _buyer_id: string; _listing_ids: string[] }
@@ -2459,9 +2497,13 @@ export type Database = {
           return_deadline_at: string | null
           return_delivered_at: string | null
           return_posted_at: string | null
+          return_refund_error: string | null
+          return_refund_failed_at: string | null
           return_required_at: string | null
           return_tracking_number: string | null
           return_tracking_provider: string | null
+          return_verified_at: string | null
+          return_verified_by: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -2532,9 +2574,13 @@ export type Database = {
           return_deadline_at: string | null
           return_delivered_at: string | null
           return_posted_at: string | null
+          return_refund_error: string | null
+          return_refund_failed_at: string | null
           return_required_at: string | null
           return_tracking_number: string | null
           return_tracking_provider: string | null
+          return_verified_at: string | null
+          return_verified_by: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -2631,9 +2677,13 @@ export type Database = {
           return_deadline_at: string | null
           return_delivered_at: string | null
           return_posted_at: string | null
+          return_refund_error: string | null
+          return_refund_failed_at: string | null
           return_required_at: string | null
           return_tracking_number: string | null
           return_tracking_provider: string | null
+          return_verified_at: string | null
+          return_verified_by: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -2731,9 +2781,13 @@ export type Database = {
           return_deadline_at: string | null
           return_delivered_at: string | null
           return_posted_at: string | null
+          return_refund_error: string | null
+          return_refund_failed_at: string | null
           return_required_at: string | null
           return_tracking_number: string | null
           return_tracking_provider: string | null
+          return_verified_at: string | null
+          return_verified_by: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -2800,9 +2854,13 @@ export type Database = {
           return_deadline_at: string | null
           return_delivered_at: string | null
           return_posted_at: string | null
+          return_refund_error: string | null
+          return_refund_failed_at: string | null
           return_required_at: string | null
           return_tracking_number: string | null
           return_tracking_provider: string | null
+          return_verified_at: string | null
+          return_verified_by: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
@@ -2878,9 +2936,13 @@ export type Database = {
           return_deadline_at: string | null
           return_delivered_at: string | null
           return_posted_at: string | null
+          return_refund_error: string | null
+          return_refund_failed_at: string | null
           return_required_at: string | null
           return_tracking_number: string | null
           return_tracking_provider: string | null
+          return_verified_at: string | null
+          return_verified_by: string | null
           secure_checkout_fee: number
           seller_hidden_at: string | null
           seller_id: string
