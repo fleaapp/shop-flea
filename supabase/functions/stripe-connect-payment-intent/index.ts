@@ -170,6 +170,7 @@ serve(async (req) => {
           .rpc("seller_is_available", { _user_id: sellerId });
         if (availErr) {
           console.error("seller_is_available failed", availErr);
+          return jsonError(503, "availability_check_failed", "Could not check seller availability. Please try again.");
         } else if (available !== true) {
           return jsonError(409, "seller_unavailable", "This seller isn't available right now, so these items can't be bought.");
         }
@@ -177,16 +178,21 @@ serve(async (req) => {
     }
 
 
+    const { data: pairBlocked, error: blockError } = await serviceClient.rpc('users_blocked', { p_first: user.id, p_second: sellerId });
+    if (blockError) return jsonError(503, 'block_check_failed', 'Could not check this purchase. Please try again.');
+    if (pairBlocked) return jsonError(403, 'user_blocked', 'This purchase is unavailable because one user blocked the other.');
+
     const listingById = new Map(listingRows.map((l: any) => [l.id, l]));
 
     // Accepted offers are looked up server-side; the client never supplies the
     // discounted price. Only live (unexpired) accepted offers for this buyer count.
     const acceptedOfferByListing = new Map<string, { id: string; amount: number }>();
     {
-      const { data: offerRows } = await serviceClient.rpc("get_accepted_offer_prices", {
+      const { data: offerRows, error: offerError } = await serviceClient.rpc("get_accepted_offer_prices", {
         _buyer_id: user.id,
         _listing_ids: itemIds,
       });
+      if (offerError) return jsonError(503, "offer_check_failed", "Could not check offer prices. Please try again.");
       (offerRows ?? []).forEach((row: any) => {
         acceptedOfferByListing.set(row.listing_id, { id: row.offer_id, amount: Number(row.amount) });
       });

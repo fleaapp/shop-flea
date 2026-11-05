@@ -23,6 +23,7 @@ export default function AdminApprovals() {
     markDelivered,
     completeOrder,
     forceRefund,
+    verifyReturn,
     dismissDispute,
     requireReturn,
     approveUntrackedDelivery,
@@ -34,6 +35,7 @@ export default function AdminApprovals() {
     { key: 'delivery' as const, label: 'Delivery', emoji: '📬' },
     { key: 'untracked' as const, label: 'Untracked', emoji: '📦' },
     { key: 'dispute' as const, label: 'Dispute', emoji: '⚖️' },
+    { key: 'return' as const, label: 'Returns', emoji: '↩️' },
   ];
 
   return (
@@ -72,7 +74,7 @@ export default function AdminApprovals() {
                 onRejectTracking={(reason) => rejectTracking(o.id, reason)}
                 onMarkDelivered={() => markDelivered(o.id, o.order_group_id)}
                 onComplete={() => completeOrder(o.id, o.order_group_id)}
-                onForceRefund={() => forceRefund(o.id)}
+                onForceRefund={() => tab === 'return' ? verifyReturn(o.id) : forceRefund(o.id)}
                 onDismissDispute={() => dismissDispute(o.id)}
                 onRequireReturn={(atFault) => requireReturn(o.id, atFault)}
                 onApproveUntracked={() => approveUntrackedDelivery(o.id)}
@@ -167,7 +169,7 @@ function ApprovalRow({
               {order.tracking_number && (
                 <button
                   type="button"
-                  onClick={() => openTrackingUrl(order.tracking_provider, order.tracking_number!)}
+                  onClick={() => openTrackingUrl(order.tracking_provider, order.tracking_number ?? '')}
                   className="ml-auto text-[11px] font-medium text-primary underline"
                 >
                   Track
@@ -284,6 +286,17 @@ function ApprovalRow({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {kind === 'return' && (
+        <div className="mt-3 space-y-2">
+          <p className="text-xs text-muted-foreground">{order.return_delivered_at ? 'Carrier reports delivery. Confirm the destination and return evidence before refunding.' : 'Return awaiting delivery or review. Seller funds remain held.'}</p>
+          {order.return_tracking_number && <Button variant="outline" size="sm" onClick={() => openTrackingUrl(order.return_tracking_provider, order.return_tracking_number ?? '')}>Track return</Button>}
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={onDismissDispute}>Close after review</Button>
+            <Button size="sm" disabled={!order.return_delivered_at} onClick={onForceRefund}>Confirm return and refund</Button>
+          </div>
         </div>
       )}
 

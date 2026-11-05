@@ -41,7 +41,7 @@ export function RefundStatusRow({
       return {
         key: 'return_delivered' as const,
         title: '📦 Return delivered',
-        body: 'The return arrived back with the seller. The refund is being issued.',
+        body: 'The carrier reports delivery. Flea is checking the return before issuing the refund.',
       };
     }
     if (order.return_required_at && order.return_tracking_number) {
@@ -50,8 +50,8 @@ export function RefundStatusRow({
         title: '✈️ Return in transit',
         body:
           role === 'buyer'
-            ? 'Your refund is issued automatically once the seller receives the item.'
-            : 'The buyer is refunded automatically once this arrives back with you.',
+            ? 'Flea reviews the return delivery before issuing your refund.'
+            : 'Flea checks the return delivery before refunding the buyer.',
       };
     }
     if (order.return_required_at) {
@@ -106,7 +106,7 @@ export function RefundStatusRow({
         <button
           type="button"
           onClick={() =>
-            openTrackingUrl(order.return_tracking_provider, order.return_tracking_number!)
+            openTrackingUrl(order.return_tracking_provider, order.return_tracking_number ?? '')
           }
           className="text-xs underline text-foreground"
         >
@@ -186,7 +186,7 @@ function ReturnTrackingDialog({
         </DialogHeader>
         <p className="text-xs text-muted-foreground -mt-2">
           Post the item back with a tracked service, then add the tracking here. Your refund is
-          issued automatically when it is delivered to the seller.
+          issued after Flea reviews the return delivery.
         </p>
         <div className="relative">
           <select

@@ -117,7 +117,18 @@ serve(async (req) => {
     // ---- 3. Close returns the buyer never posted ----
     const closedReturns = await rpc("close_stale_returns");
 
+    const stalledReturns = await rpc("escalate_stalled_returns");
+    const retryRes = await fetch(`${supabaseUrl}/rest/v1/orders?select=id&return_verified_at=not.is.null&refunded_at=is.null&return_closed_at=is.null&limit=100`, { headers });
+    if (!retryRes.ok) throw new Error("Could not load approved return refunds.");
+    let retriedRefunds = 0;
+    for (const order of await retryRes.json()) {
+      const res = await fetch(`${supabaseUrl}/functions/v1/stripe-connect-refund`, { method: "POST", headers, body: JSON.stringify({ orderId: order.id, mode: "single" }) });
+      const result = await res.json();
+      if (res.ok && result.success) retriedRefunds++;
+      else console.error("Approved return refund still pending", order.id);
+    }
     return json({
+      stalledReturns, retriedRefunds,
       reminded,
       escalated,
       closedReturns,
