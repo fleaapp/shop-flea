@@ -2,7 +2,7 @@ import { sellerCanRefund } from "../_shared/refundSafety.ts";
 // stripe-connect-refund
 // Refund execution for Flea. Supports two modes:
 //  - "cascade": full order-group refund. System/admin callers only (single is the default).
-//    button and legacy callers. Reverses the seller transfer and unwinds the
+//    Reverses the seller transfer and
 //    buyer's Secure Checkout Fee in one Stripe refund.
 //  - "single": per-item partial refund. Used by per-item buyer requests, seller
 //    approvals of individual items, admin dispute force-refunds, and the 72h
