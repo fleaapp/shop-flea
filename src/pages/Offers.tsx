@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import useSellerGate from '@/hooks/useSellerGate';
 
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { calculateTransactionFee } from '@/utils/feeCalculator';
 
 interface ListingLite {

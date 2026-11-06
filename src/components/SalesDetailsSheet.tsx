@@ -40,7 +40,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchSellerShippingSettings, getBundleBreakdownText } from '@/utils/shippingCalculator';
 import { computeSellerNet } from '@/utils/feeCalculator';
 
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { Loader2, ChevronRight, ChevronDown, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { clearOrderChatBadges } from '@/utils/orderChatRead';

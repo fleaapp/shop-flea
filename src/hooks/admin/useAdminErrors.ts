@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { callAdminData } from './useAdminData';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 export type Severity = 'low' | 'medium' | 'high' | 'critical';
 

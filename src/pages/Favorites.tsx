@@ -14,9 +14,10 @@ import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { useCart } from '@/context/CartContext';
 import { Listing } from '@/types/listing';
 import { ListingFilters } from '@/hooks/useListings';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { restoreListingToFeed } from '@/hooks/useHomeFeed';
 import EmptyState from '@/components/EmptyState';
+import LoadError from '@/components/LoadError';
 
 // Convert DbListing to Listing display type
 interface DisplayListing extends Listing {
@@ -71,7 +72,7 @@ const Favorites = () => {
   const [hideSoldItems, setHideSoldItems] = useState(false);
   const [viewMode, setViewMode] = useState<'single' | 'grid'>('single');
   
-  const { listings, loading, refetch } = useFavoriteListings(appliedFilters);
+  const { listings, loading, loadError, refetch } = useFavoriteListings(appliedFilters);
   const { removeFavorite } = useFavorites();
   const { removeDiscarded } = useDiscardedListings();
   const { addToCart, isInCart } = useCart();
@@ -163,6 +164,8 @@ const Favorites = () => {
           <div className="flex items-center justify-center w-full">
             <span className="text-5xl">⏳</span>
           </div>
+        ) : loadError ? (
+          <LoadError message="Your wishlist could not be loaded." onRetry={() => void refetch()} />
         ) : displayListings.length > 0 ? (
           viewMode === 'single' ? (
             <div 

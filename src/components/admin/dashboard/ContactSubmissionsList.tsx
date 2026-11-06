@@ -95,7 +95,7 @@ export function ContactSubmissionsList({ submissions, loading, error, onRefresh 
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-foreground">{r.name || '—'}</p>
+                      <p className="truncate text-sm font-semibold text-foreground">{r.name || '-'}</p>
                       <a
                         href={`mailto:${r.email}`}
                         onClick={(e) => e.stopPropagation()}

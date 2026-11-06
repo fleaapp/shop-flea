@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { supabase } from '@/integrations/supabase/client';
 import fleaLogoAuth from '@/assets/flea-logo-auth.jpeg';
 

@@ -19,7 +19,7 @@ import { AdminEmptyState } from '@/components/admin/shell/AdminEmptyState';
 
 const fmtCurrency = (n: number) => `$${n.toFixed(2)}`;
 const initials = (s?: string | null) => (s ?? '?').replace('@', '').slice(0, 2).toUpperCase();
-const fmtDateTime = (s?: string | null) => s ? format(new Date(s), 'MMM d, yyyy h:mm a') : '—';
+const fmtDateTime = (s?: string | null) => s ? format(new Date(s), 'MMM d, yyyy h:mm a') : '-';
 
 function riskTone(score: number): 'success' | 'warning' | 'danger' {
   if (score >= 70) return 'danger';
@@ -205,7 +205,7 @@ export default function AdminUsers() {
                       <TabsContent value="reports" className="mt-3">
                         <ActivityList items={[...(detail.reportsAgainst || []).map((r: any) => ({ ...r, dir: 'against' })), ...(detail.reportsBy || []).map((r: any) => ({ ...r, dir: 'by' }))]}
                           renderTitle={(r: any) => `Report ${r.dir} · ${r.report_type}`}
-                          renderSub={(r: any) => `${r.reason ?? '—'} · ${format(new Date(r.created_at), 'MMM d, yyyy')}`} />
+                          renderSub={(r: any) => `${r.reason ?? '-'} · ${format(new Date(r.created_at), 'MMM d, yyyy')}`} />
                       </TabsContent>
                       <TabsContent value="reviews" className="mt-3">
                         <ActivityList items={detail.reviews}

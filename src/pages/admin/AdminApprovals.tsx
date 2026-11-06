@@ -341,7 +341,7 @@ function ApprovalRow({
               className="h-4 w-4 accent-primary"
             />
             <span className="text-muted-foreground">
-              Seller at fault - Flea covers the buyer's return postage
+              Seller at fault - return postage reimbursement needs separate review
             </span>
           </label>
           <Button

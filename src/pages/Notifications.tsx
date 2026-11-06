@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 
 import { formatDistanceToNow } from 'date-fns';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import SalesDetailsSheet from '@/components/SalesDetailsSheet';
 import OrderDetailsSheet from '@/components/OrderDetailsSheet';
 import EnablePushBanner from '@/components/EnablePushBanner';
@@ -19,6 +19,7 @@ import { OrderGroup } from '@/hooks/useOrders';
 import { useQueryClient } from '@tanstack/react-query';
 import { clearOrderChatBadges } from '@/utils/orderChatRead';
 import EmptyState from '@/components/EmptyState';
+import LoadError from '@/components/LoadError';
 
 
 const ProductThumbnail = ({
@@ -67,7 +68,7 @@ const Notifications = () => {
   const { user } = useAuth();
   const isUnauthed = !user;
   const { sellerOrderGroups, buyerOrderGroups, markAsShipped, markAsDelivered, completeOrder } = useOrders();
-  const { notifications, isLoading: loadingNotifications, unreadCount, badgeCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, isLoading: loadingNotifications, isError, refetch, unreadCount, badgeCount, markAsRead, markAllAsRead } = useNotifications();
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
   const [selectedBuyerGroup, setSelectedBuyerGroup] = useState<OrderGroup | null>(null);
@@ -221,7 +222,7 @@ const Notifications = () => {
       notification.type === 'order_delivered' ||
       notification.type === 'refund_initiated' ||
       notification.type === 'refund_rejected' ||
-      notification.type === 'order_auto_refunded'
+      notification.type === 'order_auto_refunded' || notification.type === 'dispute_opened_buyer'
     ) {
       const matchingGroup = findGroup(notification, buyerOrderGroups);
       if (matchingGroup) {
@@ -369,7 +370,7 @@ const Notifications = () => {
     const isMessageType = notification.type.startsWith('offer_') || ['order_message_seller', 'order_message_buyer', 'support_message', 'order_shipped', 'order_delivered', 'sale_delivered', 'refund_request', 'refund_rejected', 'refund_initiated', 'order_auto_refunded', 'sale_auto_refunded'].includes(notification.type);
     const isSoldType = isSoldOrLegacy || notification.type === 'item_sold';
     const messageArg = isSoldOrLegacy ? itemName : isCommentType ? notification.message : isShippingReminder ? null : itemName;
-    const message = getNotificationMessage(notification.type as any, username, messageArg, (isMessageType || isSoldType) ? notification.message : null);
+    const message = getNotificationMessage(notification.type as any, username, messageArg, notification.message);
 
 
     const renderMessage = () => {
@@ -449,6 +450,8 @@ const Notifications = () => {
           <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
             <span className="text-5xl mb-4">⏳</span>
           </div>
+        ) : isError ? (
+          <LoadError message="Your alerts could not be loaded." onRetry={() => void refetch()} />
         ) : notifications.length === 0 ? (
           <EmptyState
             emoji="🔔"

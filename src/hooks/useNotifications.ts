@@ -1,4 +1,5 @@
 import { useMemo, useCallback } from 'react';
+import { userMessage } from '@/lib/userMessage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -118,7 +119,7 @@ export const useNotifications = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: notifications = [], isLoading } = useQuery({
+  const { data: notifications = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['notifications', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
@@ -333,6 +334,8 @@ export const useNotifications = () => {
   return {
     notifications,
     isLoading,
+    isError,
+    refetch,
     unreadCount,
     badgeCount,
     markAsRead,
@@ -341,7 +344,7 @@ export const useNotifications = () => {
   };
 };
 
-export const getNotificationMessage = (type: string, username?: string, listingTitle?: string | null, rawMessage?: string | null): string => {
+const notificationMessage = (type: string, username?: string, listingTitle?: string | null, rawMessage?: string | null): string => {
   // For comment notifications, use the message from the database which includes context
   if ((type === 'new_comment' || type === 'comment_reply') && listingTitle) {
     return listingTitle;
@@ -457,11 +460,15 @@ export const getNotificationMessage = (type: string, username?: string, listingT
       return rawMessage || '🔔 A new item matches one of your saved searches. Tap to view.';
     case 'welcome':
       return rawMessage || "Welcome to Flea! 👉👚👟♻️ Use code 'FREEFLEA' for no fees on your first purchase!";
+    case 'dispute_opened_buyer':
+      return rawMessage || 'Your bank is reviewing this payment. Contact Flea support if you need help.';
     default:
-      return 'New notification';
+      return rawMessage || 'New notification';
   }
 
 };
+
+export const getNotificationMessage = (type: string, username?: string, listingTitle?: string | null, rawMessage?: string | null): string => String(userMessage(notificationMessage(type, username, listingTitle, rawMessage)));
 
 export const getNotificationEmoji = (type: string): string => {
   switch (type) {

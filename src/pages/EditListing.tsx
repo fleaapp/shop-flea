@@ -15,7 +15,7 @@ import CategorySelectionDrawer from '@/components/CategorySelectionDrawer';
 import BlockedUserBanner from '@/components/BlockedUserBanner';
 import ShippingSettingsSheet from '@/components/ShippingSettingsSheet';
 import { Switch } from '@/components/ui/switch';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { useAuth } from '@/context/AuthContext';
 import { loadShippingPrefs } from '@/utils/shippingPrefs';
 import { supabase } from '@/lib/supabase';

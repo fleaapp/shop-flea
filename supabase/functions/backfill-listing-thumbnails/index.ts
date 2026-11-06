@@ -7,6 +7,8 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 import { decode, Image } from 'https://deno.land/x/imagescript@1.2.17/mod.ts';
+import { requireAdmin } from '../_shared/auth.ts';
+import { matchesServiceCredential } from '../_shared/internalAuth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -39,28 +41,9 @@ Deno.serve(async (req) => {
   );
 
   try {
-    // Admin gate: parse the caller's JWT manually (cross-project safe).
-    const authHeader = req.headers.get('Authorization') ?? '';
-    const token = authHeader.replace('Bearer ', '');
-    let callerId: string | null = null;
-    let callerRole: string | null = null;
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      callerId = payload.sub ?? null;
-      callerRole = payload.role ?? null;
-    } catch {
-      callerId = null;
-    }
-
-    // Service-role callers (maintenance runs) are trusted; everyone else must be admin.
-    if (callerRole !== 'service_role') {
-      if (!callerId) return json({ error: 'Unauthorized' }, 401);
-
-      const { data: isAdmin } = await supabase.rpc('has_role', {
-        _user_id: callerId,
-        _role: 'admin',
-      });
-      if (!isAdmin) return json({ error: 'Forbidden' }, 403);
+    if (!matchesServiceCredential(req.headers.get('Authorization'), Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'))) {
+      const gate = await requireAdmin(req);
+      if (!gate.ok) return json({ error: gate.error }, gate.status);
     }
 
     const body = await req.json().catch(() => ({}));

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { completeAuthSessionFromUrl, NATIVE_APP_SCHEME } from '@/lib/authRedirects';
 import { OAUTH_COMPLETE_MESSAGE } from '@/lib/oauthPopup';
 import BrandedLoadingScreen from '@/components/BrandedLoadingScreen';

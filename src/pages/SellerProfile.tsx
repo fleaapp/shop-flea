@@ -11,7 +11,7 @@ import { useReporting } from '@/hooks/useReporting';
 import ReportDialog from '@/components/ReportDialog';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { getAvatarUrl } from '@/utils/optimizedImage';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { Listing } from '@/types/listing';
 import ReviewsDrawer from '@/components/ReviewsDrawer';
 import { ChevronLeft, MoreVertical, LayoutGrid, Rows3 } from 'lucide-react';
@@ -20,7 +20,7 @@ import ProfileGridCard from '@/components/ProfileGridCard';
 import EngagementBadges from '@/components/EngagementBadges';
 import { safeNavigateBack } from '@/utils/safeBack';
 import { LISTING_CARD_COLUMNS } from '@/lib/listingColumns';
-import { formatLastActiveShort } from '@/utils/timeAgo';
+import LoadError from '@/components/LoadError';
 import BundleOfferBadge from '@/components/BundleOfferBadge';
 import {
   DropdownMenu,
@@ -79,6 +79,7 @@ const SellerProfile = () => {
   const [activeListings, setActiveListings] = useState<DbListing[]>([]);
   const [soldListings, setSoldListings] = useState<DbListing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [listingsLoading, setListingsLoading] = useState(true);
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'single' | 'grid'>('single');
@@ -107,64 +108,23 @@ const SellerProfile = () => {
     if (!sellerId) return;
     
     setLoading(true);
+    setLoadError(false);
     setListingsLoading(true);
 
     // Support both user ids and @username routes
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sellerId);
     const bareUsername = (sellerId.startsWith('@') ? sellerId.slice(1) : sellerId).trim();
 
-    // Try profiles_public first (no RLS restrictions), fallback to profiles
-    let profileData: SellerProfile | null = null;
-    let profileError: any = null;
-
     const baseSelect = 'user_id, username, avatar_url, rating, pause_selling, last_sign_in_at, bundle_shipping_mode, bundle_shipping_discount_percent, bundle_item_discount_percent';
-    const publicQuery = supabase.from('profiles_public' as any).select(baseSelect);
-    // Usernames are stored with a leading "@" - match both forms
-    const { data: publicData, error: publicError } = isUuid
+    const publicQuery = supabase.from('seller_profiles').select(baseSelect);
+    const { data: profileData, error: profileError } = isUuid
       ? await publicQuery.eq('user_id', sellerId).maybeSingle()
-      : await publicQuery
-          .or(`username.ilike.${bareUsername},username.ilike.@${bareUsername}`)
-          .limit(1)
-          .maybeSingle();
-
-
-
-    if (!publicError && publicData) {
-      profileData = publicData as any;
-    } else if (!isUuid) {
-      profileError = publicError ?? new Error('Seller not found');
-    } else {
-      // Fallback to profiles_public view (cross-user reads of base profiles are restricted)
-
-      const { data: pData, error: pError } = await supabase
-        .from('profiles_public')
-        .select('user_id, username, avatar_url, rating, pause_selling, last_sign_in_at, bundle_shipping_mode, bundle_shipping_discount_percent, bundle_item_discount_percent')
-        .eq('user_id', sellerId)
-        .maybeSingle();
-
-      if (pError?.code === '42703') {
-        const fallbackResult = await supabase
-          .from('profiles_public')
-          .select('user_id, username, avatar_url, rating, pause_selling, created_at, updated_at')
-          .eq('user_id', sellerId)
-          .maybeSingle();
-
-        profileData = fallbackResult.data
-          ? {
-              ...fallbackResult.data,
-              last_sign_in_at: fallbackResult.data.updated_at || fallbackResult.data.created_at || null,
-            }
-          : null;
-        profileError = fallbackResult.error;
-      } else {
-        profileData = pData;
-        profileError = pError;
-      }
-    }
-
+      : await publicQuery.or(`username.ilike.${bareUsername},username.ilike.@${bareUsername}`).limit(1).maybeSingle();
     if (profileError || !profileData) {
-      console.error('Error fetching seller profile:', profileError);
+      setLoadError(Boolean(profileError));
+      setSellerProfile(null);
       setLoading(false);
+      setListingsLoading(false);
       return;
     }
 
@@ -316,6 +276,8 @@ const SellerProfile = () => {
     );
   }
 
+  if (loadError) return <div className="native-safe-top min-h-svh bg-background flex flex-col items-center justify-center"><LoadError message="This seller could not be loaded." onRetry={() => void fetchSellerData()} /><Button variant="ghost" onClick={() => safeNavigateBack(navigate, '/')}>Go Back</Button><BottomNav /></div>;
+
   if (!sellerProfile) {
     return (
       <div className="min-h-dvh bg-background pb-24 flex flex-col items-center justify-center px-4">
@@ -386,7 +348,7 @@ const SellerProfile = () => {
           <div className="flex items-center gap-1.5 rounded-full bg-card px-3 py-1 card-shadow">
             <span className="text-sm">⏱️</span>
             <span className="text-sm font-medium text-foreground">
-              {formatLastActiveShort(sellerProfile.last_sign_in_at)}
+              {isSellerInactive(sellerProfile.last_sign_in_at) ? 'Inactive' : 'Active recently'}
             </span>
           </div>
         </div>

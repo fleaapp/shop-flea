@@ -30,6 +30,7 @@ interface CartContextType {
   cartItems: CartListing[];
   cartIds: Set<string>;
   loading: boolean;
+  loadError: boolean;
   offerPricingError: string | null;
   addToCart: (listing: Listing) => Promise<boolean>;
   removeFromCart: (id: string) => Promise<boolean>;
@@ -44,13 +45,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const [cartItems, setCartItems] = useState<CartListing[]>([]);
   const [cartIds, setCartIds] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [offerPricingError, setOfferPricingError] = useState<string | null>(null);
 
   const fetchCart = useCallback(async () => {
+    setLoadError(false);
     if (!user) {
       setCartItems([]);
       setCartIds(new Set());
+      setLoading(false);
       return;
     }
 
@@ -66,7 +70,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (cartError || !cartData || cartData.length === 0) {
+    if (cartError) {
+      setLoadError(true);
+      setLoading(false);
+      return;
+    }
+    if (!cartData || cartData.length === 0) {
       setCartItems([]);
       setCartIds(new Set());
       setLoading(false);
@@ -82,8 +91,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       .in('id', listingIds);
 
     if (listingsError || !listingsData) {
-      setCartItems([]);
-      setCartIds(new Set());
+      setLoadError(true);
       setLoading(false);
       return;
     }
@@ -440,6 +448,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       cartItems,
       cartIds,
       loading,
+      loadError,
       offerPricingError,
       addToCart,
       removeFromCart,

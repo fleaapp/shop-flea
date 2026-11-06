@@ -40,15 +40,14 @@ async function sendPush(userId: string, notification: Record<string, unknown>) {
   }
 }
 
-async function notify(userId: string, type: string, title: string, message: string, orderId?: string) {
-  try {
-    await serviceClient.from("notifications").insert({
-      user_id: userId, type, title, message, related_order_id: orderId ?? null,
-    });
-    await sendPush(userId, { type, title, message, related_order_id: orderId });
-  } catch (e) {
-    console.error("[stripe-webhook] notify failed", e);
-  }
+async function notify(eventId: string, userId: string, type: string, title: string, message: string, orderId?: string) {
+  const { error } = await serviceClient.from("notifications").insert({
+    user_id: userId, type, title, message, related_order_id: orderId ?? null,
+    delivery_key: `${eventId}:${userId}:${type}:${orderId ?? ''}`,
+  });
+  if (error?.code === '23505') return;
+  if (error) throw error;
+  await sendPush(userId, { type, title, message, related_order_id: orderId });
 }
 
 // Returns true if a notification of `type` for `userId` was created within the
@@ -126,7 +125,7 @@ async function findOrdersByPaymentIntent(piId: string) {
 // mirror it onto the profile. Without this the figure only refreshes when the
 // seller happens to open a screen that calls stripe-connect-status, so a
 // refund landing after a payout leaves them trading on a stale balance.
-async function syncSellerBalance(sellerId: string) {
+async function syncSellerBalance(eventId: string, sellerId: string) {
   if (!sellerId) return;
   try {
     const { data: profile } = await serviceClient
@@ -170,7 +169,7 @@ async function syncSellerBalance(sellerId: string) {
       }
       if (previousOwed === 0 && !(await wasNotifiedRecently(sellerId, "payment_action_required", 24))) {
         const amountStr = `$${(owedCents / 100).toFixed(2)}`;
-        await notify(
+        await notify(eventId,
           sellerId,
           "payment_action_required",
           "Balance owed",
@@ -227,7 +226,12 @@ serve(async (req) => {
     return new Response(`Webhook Error: ${err?.message}`, { status: 400, headers: corsHeaders });
   }
 
+  const leaseId = crypto.randomUUID();
   try {
+    const { data: claim, error: claimError } = await serviceClient.rpc('claim_webhook', { p_event_id: event.id, p_lease_id: leaseId });
+    if (claimError) throw claimError;
+    if (claim === 'completed') return new Response(JSON.stringify({ received: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    if (claim !== 'claimed') return new Response('Event is processing', { status: 503, headers: corsHeaders });
     switch (event.type) {
       case "checkout.session.completed":
       case "checkout.session.async_payment_succeeded": {
@@ -242,7 +246,7 @@ serve(async (req) => {
         const session = event.data.object as Stripe.Checkout.Session;
         const orders = await findOrdersByCheckoutSession(session.id);
         for (const o of orders) {
-          await notify(
+          await notify(event.id,
             o.buyer_id,
             "payment_failed",
             "Payment failed",
@@ -276,7 +280,7 @@ serve(async (req) => {
         const pi = event.data.object as Stripe.PaymentIntent;
         const orders = await findOrdersByPaymentIntent(pi.id);
         for (const o of orders) {
-          await notify(
+          await notify(event.id,
             o.buyer_id,
             "payment_failed",
             "Payment failed",
@@ -309,13 +313,13 @@ serve(async (req) => {
             .eq("id", o.id).is("refunded_at", null).select("id");
           if (markError) throw markError;
           if (!marked?.length) continue;
-          await notify(o.buyer_id, "refund_processed", "Refund processed",
+          await notify(event.id, o.buyer_id, "refund_processed", "Refund processed",
             "💸 Your refund has been processed and will appear in your account shortly.", o.id);
-          await notify(o.seller_id, "refund_processed_seller", "Refund issued",
+          await notify(event.id, o.seller_id, "refund_processed_seller", "Refund issued",
             "A refund was issued for one of your sales. Tap for details.", o.id);
         }
         for (const sellerId of new Set(orders.map((o) => o.seller_id).filter(Boolean))) {
-          await syncSellerBalance(sellerId);
+          await syncSellerBalance(event.id, sellerId);
         }
         await logEvent(event, {
           order_id: orders[0]?.id ?? null,
@@ -349,7 +353,7 @@ serve(async (req) => {
                   bank_status: "validated",
                 })
                 .eq("user_id", profile.user_id);
-              await notify(
+              await notify(event.id,
                 profile.user_id,
                 "payout_paid",
                 "Payout sent",
@@ -380,7 +384,7 @@ serve(async (req) => {
               }
               await serviceClient.from("profiles").update(patch).eq("user_id", profile.user_id);
 
-              await notify(
+              await notify(event.id,
                 profile.user_id,
                 "payout_failed",
                 "Payout failed",
@@ -388,7 +392,7 @@ serve(async (req) => {
               );
             }
 
-            await syncSellerBalance(profile.user_id);
+            await syncSellerBalance(event.id, profile.user_id);
           }
         }
         await logEvent(event, { amount: (payout.amount ?? 0) / 100 });
@@ -401,15 +405,18 @@ serve(async (req) => {
         const piId = dispute.payment_intent as string;
         const orders = piId ? await findOrdersByPaymentIntent(piId) : [];
         for (const o of orders) {
-          await serviceClient
+          const { data: newlyDisputed, error: disputeError } = await serviceClient
             .from("orders")
             .update({ disputed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-            .eq("id", o.id);
-          await notify(o.seller_id, "dispute_opened", "⚠️ Payment disputed",
+            .eq("id", o.id).is('disputed_at', null).select('id');
+          if (disputeError) throw disputeError;
+          await notify(`dispute:${dispute.id}`, o.seller_id, "dispute_opened", "⚠️ Payment disputed",
             "A buyer has disputed a payment. Please contact support immediately.", o.id);
+          await notify(`dispute:${dispute.id}`, o.buyer_id, 'dispute_opened_buyer', 'Payment under review.',
+            'Your bank is reviewing this payment. Keep your order evidence and contact Flea support if you need help. A bank dispute does not confirm a refund.', o.id);
         }
         for (const sellerId of new Set(orders.map((o: any) => o.seller_id).filter(Boolean))) {
-          await syncSellerBalance(sellerId as string);
+          await syncSellerBalance(event.id, sellerId as string);
         }
         await logEvent(event, {
           order_id: orders[0]?.id ?? null,
@@ -431,7 +438,7 @@ serve(async (req) => {
             .eq("id", o.id);
         }
         for (const sellerId of new Set(orders.map((o: any) => o.seller_id).filter(Boolean))) {
-          await syncSellerBalance(sellerId as string);
+          await syncSellerBalance(event.id, sellerId as string);
         }
         await logEvent(event, { order_id: orders[0]?.id ?? null, amount: (dispute.amount ?? 0) / 100 });
         break;
@@ -456,7 +463,7 @@ serve(async (req) => {
               .eq("user_id", profile.user_id);
             if (fullyVerified && !wasVerified) {
               if (!(await wasNotifiedRecently(profile.user_id, "seller_verified", 24))) {
-                await notify(
+                await notify(event.id,
                   profile.user_id,
                   "seller_verified",
                   "You're verified.",
@@ -465,7 +472,7 @@ serve(async (req) => {
               }
             } else if (!fullyVerified && acct.requirements?.disabled_reason) {
               if (!(await wasNotifiedRecently(profile.user_id, "payment_action_required", 24))) {
-                await notify(
+                await notify(event.id,
                   profile.user_id,
                   "payment_action_required",
                   "Seller account needs attention.",
@@ -486,6 +493,8 @@ serve(async (req) => {
         await logEvent(event, {});
     }
 
+    const { error: completionError } = await serviceClient.from('webhook_claims').update({ completed_at: new Date().toISOString() }).eq('event_id', event.id).eq('lease_id', leaseId);
+    if (completionError) throw completionError;
     return new Response(JSON.stringify({ received: true }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -493,9 +502,9 @@ serve(async (req) => {
   } catch (error: any) {
     await logEdgeError({ functionName: "stripe-webhook", error: error, title: "Payment provider webhook failed", severity: "error", source: "payment" });
     console.error("[stripe-webhook] handler error:", error);
-    // Return 200 anyway so Stripe doesn't retry forever — we've already logged.
-    return new Response(JSON.stringify({ received: true, error: error?.message }), {
-      status: 200,
+    await serviceClient.from('webhook_claims').update({ lease_until: new Date(0).toISOString() }).eq('event_id', event.id).eq('lease_id', leaseId).is('completed_at', null);
+    return new Response(JSON.stringify({ received: false, error: 'Payment update could not be processed.' }), {
+      status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

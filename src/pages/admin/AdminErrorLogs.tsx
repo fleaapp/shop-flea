@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { useAdminErrorLogs, type ErrorLogRow, type ErrorLogFilters } from '@/hooks/admin/useAdminErrorLogs';
 import { markAdminTabSeen } from '@/lib/adminLastSeen';
 import { explainError, friendlyRoute, friendlyDevice, SEVERITY_LABEL, SOURCE_LABEL, type PlainError } from '@/lib/errorCatalog';

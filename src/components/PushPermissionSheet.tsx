@@ -4,7 +4,7 @@ import { PushNotifications } from '@capacitor/push-notifications';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useAuth } from '@/context/AuthContext';
 import {

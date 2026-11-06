@@ -1,7 +1,7 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useAuth } from '@/context/AuthContext';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 
 

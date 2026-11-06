@@ -57,6 +57,13 @@
       "when": 1793876612160,
       "tag": "0007_private_checkout_quote_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793965512481,
+      "tag": "0008_launch_event_tracking_and_activity_safety",
+      "breakpoints": true
     }
   ]
 }

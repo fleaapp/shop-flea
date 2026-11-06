@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { preloadImages } from '@/utils/preloadAssets';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { sendPushNotification } from '@/utils/pushNotify';
 
 export type OrderStatus = 'awaiting' | 'shipped' | 'delivered' | 'completed' | 'refunded';
@@ -446,7 +446,12 @@ export function useOrders() {
       if (!user?.id) throw new Error('Not authenticated');
       if (!orderId && !orderGroupId) throw new Error('orderId or orderGroupId is required');
 
-      // SECURITY DEFINER RPC — only updates status/tracking/shipped_at; verifies seller_id == auth.uid()
+      const { data: verification, error: verificationError } = await supabase.functions.invoke('tracking-register', {
+        body: { verify_for_shipping: true, order_id: orderId ?? null, order_group_id: orderGroupId ?? null, carrier: trackingProvider, tracking_number: trackingNumber },
+      });
+      if (verificationError || !verification?.success) throw new Error(verification?.error || 'Tracking could not be verified. Please try again.');
+
+      // The server requires a recent carrier-verified permit, even for direct RPC calls.
       const { error } = await (supabase as any).rpc('mark_order_shipped', {
         p_order_id: orderId ?? null,
         p_order_group_id: orderGroupId ?? null,

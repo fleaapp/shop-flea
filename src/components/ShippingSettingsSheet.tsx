@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { loadShippingPrefs, saveShippingPrefs, BundleShippingMode } from '@/utils/shippingPrefs';
 import PercentSlider from '@/components/PercentSlider';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
 interface ShippingSettingsSheetProps {

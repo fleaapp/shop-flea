@@ -9,6 +9,7 @@ import { ApplePayEventsEnum, GooglePayEventsEnum, Stripe } from '@capacitor-comm
 import type { CanMakePaymentResult, PaymentRequestPaymentMethodEvent } from '@stripe/stripe-js';
 
 import { Button } from '@/components/ui/button';
+import LoadError from '@/components/LoadError';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
@@ -18,7 +19,7 @@ import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { Pencil, Lock, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import BlockedUserBanner from '@/components/BlockedUserBanner';
@@ -65,6 +66,8 @@ const Checkout = () => {
   const isOnline = useOnlineStatus();
   const {
     cartItems,
+    loading: loadingCart,
+    loadError: cartLoadError,
     offerPricingError,
     refetch: refetchCart,
     removeFromCart,
@@ -337,6 +340,12 @@ const Checkout = () => {
 
 
 
+  if (loadingCart && items.length === 0) {
+    return <div role="status" aria-label="Loading checkout" className="native-safe-top min-h-svh bg-background flex items-center justify-center"><span className="text-5xl">⏳</span></div>;
+  }
+  if (cartLoadError) {
+    return <div className="native-safe-top min-h-svh bg-background flex flex-col items-center justify-center"><LoadError message="Your checkout items could not be checked. Your card has not been charged." onRetry={() => void refetchCart()} /><Button variant="ghost" onClick={() => navigate('/cart')}>Back to Cart</Button></div>;
+  }
   if (items.length === 0) {
     return <div className="native-safe-top min-h-dvh bg-background flex flex-col items-center justify-center p-4">
         <p className="text-muted-foreground">No items to checkout</p>
@@ -669,7 +678,7 @@ const Checkout = () => {
       const pi = await createPaymentIntent(saveCard);
       if (!pi) return;
       const stripe = await getStripe();
-      if (!stripe) throw new Error('Stripe failed to load');
+      if (!stripe) throw new Error('The payment service could not be loaded. Please try again.');
       const { error, paymentIntent } = await stripe.confirmCardPayment(pi.clientSecret, {
         payment_method: paymentMethodId,
       });
@@ -701,7 +710,7 @@ const Checkout = () => {
       const pi = await createPaymentIntent(false);
       if (!pi) return;
       const stripe = await getStripe();
-      if (!stripe) throw new Error('Stripe failed to load');
+      if (!stripe) throw new Error('The payment service could not be loaded. Please try again.');
       const { error, paymentIntent } = await stripe.confirmCardPayment(pi.clientSecret, {
         payment_method: paymentMethodId,
       });

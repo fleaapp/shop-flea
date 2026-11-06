@@ -193,7 +193,7 @@ export default function AdminListings() {
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">{selected.seller_profile.username}</p>
-                    <p className="truncate text-xs text-muted-foreground">{selected.seller_profile.email ?? '—'} · {selected.seller_profile.status ?? 'active'}</p>
+                    <p className="truncate text-xs text-muted-foreground">{selected.seller_profile.email ?? '-'} · {selected.seller_profile.status ?? 'active'}</p>
                   </div>
                   <ExternalLink className="h-4 w-4 text-muted-foreground" />
                 </button>

@@ -17,7 +17,7 @@ import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { getAvatarUrl } from '@/utils/optimizedImage';
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/utils/imageCompression';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import AvatarCropDialog from '@/components/AvatarCropDialog';
 import ProfileGridCard from '@/components/ProfileGridCard';
 import EngagementBadges from '@/components/EngagementBadges';

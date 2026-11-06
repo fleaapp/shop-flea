@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Camera as CapCamera, CameraSource, CameraResultType } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
 import { Loader2, Camera, ShieldCheck, AlertTriangle, HelpCircle, ChevronDown } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
 import { SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAuth } from '@/context/AuthContext';

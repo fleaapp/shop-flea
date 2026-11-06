@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { ChevronRight } from 'lucide-react';
 import { clearStripeConnectionState, getStripeConnectedStorageKey } from '@/utils/stripeConnectionState';
 import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
