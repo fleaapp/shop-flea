@@ -118,7 +118,7 @@ export const useNotifications = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: notifications = [], isLoading } = useQuery({
+  const { data: notifications = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['notifications', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
@@ -333,6 +333,8 @@ export const useNotifications = () => {
   return {
     notifications,
     isLoading,
+    isError,
+    refetch,
     unreadCount,
     badgeCount,
     markAsRead,

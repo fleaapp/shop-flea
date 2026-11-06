@@ -27,6 +27,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { clearOrderChatBadges } from '@/utils/orderChatRead';
 import { supabase } from '@/lib/supabase';
 import EmptyState from '@/components/EmptyState';
+import LoadError from '@/components/LoadError';
 
 
 const getOrderStatusBadge = (status: Order['status']) => {
@@ -69,7 +70,7 @@ const Cart = () => {
   const isUnauthed = !user;
   const routeState = location.state as { initialTab?: 'cart' | 'orders' } | null;
 
-  const { cartItems, offerPricingError, refetch, removeFromCart } = useCart();
+  const { cartItems, loading: loadingCart, loadError, offerPricingError, refetch, removeFromCart } = useCart();
   const { addFavorite } = useFavorites();
   const { removeDiscarded } = useDiscardedListings();
   const { buyerOrderGroups, loadingBuyerOrders, markAsDelivered, completeOrder } = useOrders();
@@ -412,7 +413,11 @@ const Cart = () => {
         </div>
       ) : activeTab === 'cart' ? (
         <div className="px-4 max-[375px]:px-3 space-y-4 max-[375px]:space-y-3" data-onboarding="cart-items-area">
-          {cartItems.length > 0 ? (
+          {loadingCart && cartItems.length === 0 ? (
+            <div role="status" aria-label="Loading cart" className="flex min-h-[60svh] items-center justify-center"><span className="text-5xl">⏳</span></div>
+          ) : loadError ? (
+            <LoadError message="Your cart could not be loaded." onRetry={() => void refetch()} />
+          ) : cartItems.length > 0 ? (
             <>
               {Object.entries(itemsBySeller).map(([groupKey, items]) => {
                 const sellerId = items[0].sellerId;

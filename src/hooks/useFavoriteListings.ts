@@ -31,8 +31,10 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
   const { user } = useAuth();
   const [listings, setListings] = useState<DbListingWithPause[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const fetchFavoriteListings = useCallback(async () => {
+    setLoadError(false);
     if (!user) {
       // Guest mode: hydrate from session-scoped wishlist snapshots.
       const guestItems = getGuestFavorites();
@@ -85,7 +87,8 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (favError || !favorites || favorites.length === 0) {
+    if (favError) { setLoadError(true); setLoading(false); return; }
+    if (!favorites || favorites.length === 0) {
       setListings([]);
       setLoading(false);
       return;
@@ -132,7 +135,7 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
     const data = (rawData || []) as unknown as DbListingWithPause[];
 
     if (error) {
-      setListings([]);
+      setLoadError(true);
     } else if (data.length > 0) {
       const normalizedSizeKeys = normalizeSizeKeys(filters?.sizes);
       const sizeKeySet = normalizedSizeKeys.length > 0 ? new Set(normalizedSizeKeys) : null;
@@ -322,7 +325,7 @@ export const useFavoriteListings = (filters?: ListingFilters) => {
     });
   }, []);
 
-  return { listings, loading, refetch: fetchFavoriteListings };
+  return { listings, loading, loadError, refetch: fetchFavoriteListings };
 };
 
 

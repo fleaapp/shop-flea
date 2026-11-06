@@ -19,6 +19,7 @@ import { OrderGroup } from '@/hooks/useOrders';
 import { useQueryClient } from '@tanstack/react-query';
 import { clearOrderChatBadges } from '@/utils/orderChatRead';
 import EmptyState from '@/components/EmptyState';
+import LoadError from '@/components/LoadError';
 
 
 const ProductThumbnail = ({
@@ -67,7 +68,7 @@ const Notifications = () => {
   const { user } = useAuth();
   const isUnauthed = !user;
   const { sellerOrderGroups, buyerOrderGroups, markAsShipped, markAsDelivered, completeOrder } = useOrders();
-  const { notifications, isLoading: loadingNotifications, unreadCount, badgeCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, isLoading: loadingNotifications, isError, refetch, unreadCount, badgeCount, markAsRead, markAllAsRead } = useNotifications();
   const [selectedGroup, setSelectedGroup] = useState<OrderGroup | null>(null);
   const [saleSheetOpen, setSaleSheetOpen] = useState(false);
   const [selectedBuyerGroup, setSelectedBuyerGroup] = useState<OrderGroup | null>(null);
@@ -221,7 +222,7 @@ const Notifications = () => {
       notification.type === 'order_delivered' ||
       notification.type === 'refund_initiated' ||
       notification.type === 'refund_rejected' ||
-      notification.type === 'order_auto_refunded'
+      notification.type === 'order_auto_refunded' || notification.type === 'dispute_opened_buyer'
     ) {
       const matchingGroup = findGroup(notification, buyerOrderGroups);
       if (matchingGroup) {
@@ -449,6 +450,8 @@ const Notifications = () => {
           <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
             <span className="text-5xl mb-4">⏳</span>
           </div>
+        ) : isError ? (
+          <LoadError message="Your alerts could not be loaded." onRetry={() => void refetch()} />
         ) : notifications.length === 0 ? (
           <EmptyState
             emoji="🔔"
