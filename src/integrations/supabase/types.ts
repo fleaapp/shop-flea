@@ -788,6 +788,7 @@ export type Database = {
       notifications: {
         Row: {
           created_at: string
+          delivery_key: string | null
           id: string
           is_read: boolean | null
           message: string | null
@@ -801,6 +802,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          delivery_key?: string | null
           id?: string
           is_read?: boolean | null
           message?: string | null
@@ -814,6 +816,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          delivery_key?: string | null
           id?: string
           is_read?: boolean | null
           message?: string | null
@@ -1673,6 +1676,30 @@ export type Database = {
         }
         Relationships: []
       }
+      shipping_validation: {
+        Row: {
+          carrier_name: string
+          order_group_id: string
+          seller_id: string
+          tracking_number: string
+          verified_at: string
+        }
+        Insert: {
+          carrier_name: string
+          order_group_id: string
+          seller_id: string
+          tracking_number: string
+          verified_at?: string
+        }
+        Update: {
+          carrier_name?: string
+          order_group_id?: string
+          seller_id?: string
+          tracking_number?: string
+          verified_at?: string
+        }
+        Relationships: []
+      }
       suggestions: {
         Row: {
           content: string
@@ -1908,9 +1935,113 @@ export type Database = {
           },
         ]
       }
+      webhook_claims: {
+        Row: {
+          completed_at: string | null
+          event_id: string
+          lease_id: string
+          lease_until: string
+        }
+        Insert: {
+          completed_at?: string | null
+          event_id: string
+          lease_id: string
+          lease_until: string
+        }
+        Update: {
+          completed_at?: string | null
+          event_id?: string
+          lease_id?: string
+          lease_until?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      seller_profiles: {
+        Row: {
+          avatar_url: string | null
+          bundle_item_discount_percent: number | null
+          bundle_shipping_discount_percent: number | null
+          bundle_shipping_mode: string | null
+          country_code: string | null
+          created_at: string | null
+          id: string | null
+          last_sign_in_at: string | null
+          location: string | null
+          offers_enabled: boolean | null
+          pause_selling: boolean | null
+          paypal_onboarding_complete: boolean | null
+          rating: number | null
+          region_id: string | null
+          shipping_preferences_set: boolean | null
+          shipping_tier_1: number | null
+          shipping_tier_2: number | null
+          shipping_tier_3: number | null
+          status: string | null
+          stripe_onboarding_complete: boolean | null
+          tiered_shipping_enabled: boolean | null
+          total_reviews: number | null
+          updated_at: string | null
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bundle_item_discount_percent?: number | null
+          bundle_shipping_discount_percent?: number | null
+          bundle_shipping_mode?: string | null
+          country_code?: string | null
+          created_at?: never
+          id?: string | null
+          last_sign_in_at?: never
+          location?: string | null
+          offers_enabled?: boolean | null
+          pause_selling?: boolean | null
+          paypal_onboarding_complete?: boolean | null
+          rating?: number | null
+          region_id?: string | null
+          shipping_preferences_set?: boolean | null
+          shipping_tier_1?: number | null
+          shipping_tier_2?: number | null
+          shipping_tier_3?: number | null
+          status?: string | null
+          stripe_onboarding_complete?: boolean | null
+          tiered_shipping_enabled?: boolean | null
+          total_reviews?: number | null
+          updated_at?: never
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bundle_item_discount_percent?: number | null
+          bundle_shipping_discount_percent?: number | null
+          bundle_shipping_mode?: string | null
+          country_code?: string | null
+          created_at?: never
+          id?: string | null
+          last_sign_in_at?: never
+          location?: string | null
+          offers_enabled?: boolean | null
+          pause_selling?: boolean | null
+          paypal_onboarding_complete?: boolean | null
+          rating?: number | null
+          region_id?: string | null
+          shipping_preferences_set?: boolean | null
+          shipping_tier_1?: number | null
+          shipping_tier_2?: number | null
+          shipping_tier_3?: number | null
+          status?: string | null
+          stripe_onboarding_complete?: boolean | null
+          tiered_shipping_enabled?: boolean | null
+          total_reviews?: number | null
+          updated_at?: never
+          user_id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_approve_tracking: {
@@ -2287,6 +2418,10 @@ export type Database = {
       claim_checkout: {
         Args: { p_action: string; p_reference: string }
         Returns: boolean
+      }
+      claim_webhook: {
+        Args: { p_event_id: string; p_lease_id: string }
+        Returns: string
       }
       close_stale_returns: { Args: never; Returns: number }
       complete_order: {
