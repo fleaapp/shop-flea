@@ -57,7 +57,7 @@ export const categoriseApplePayError = (err: unknown): ApplePayDiagnosis => {
       ok: false,
       code: 'certificate-missing',
       userMessage:
-        'Apple Pay certificate is missing or not active. Please complete the Apple Pay certificate setup in Stripe Dashboard and Apple Developer, or use Add new card.',
+        'Apple Pay is temporarily unavailable. Please use Add new card or contact Flea support.',
       raw,
     };
   }
