@@ -103,7 +103,7 @@ export function TransactionTable({ orders, loading, onSelectOrder, sortField, so
                 <TableCell className="text-center">
                   {order.message_count ? (
                     <span className="flex items-center justify-center gap-1 text-xs text-muted-foreground"><MessageCircle className="h-3 w-3" />{order.message_count}</span>
-                  ) : <span className="text-xs text-muted-foreground">—</span>}
+                  ) : <span className="text-xs text-muted-foreground">-</span>}
                 </TableCell>
                 <TableCell>
                   {overdue !== null && (

@@ -410,7 +410,6 @@ serve(async (req) => {
             .update({ disputed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
             .eq("id", o.id).is('disputed_at', null).select('id');
           if (disputeError) throw disputeError;
-          if (!newlyDisputed?.length) continue;
           await notify(`dispute:${dispute.id}`, o.seller_id, "dispute_opened", "⚠️ Payment disputed",
             "A buyer has disputed a payment. Please contact support immediately.", o.id);
           await notify(`dispute:${dispute.id}`, o.buyer_id, 'dispute_opened_buyer', 'Payment under review.',

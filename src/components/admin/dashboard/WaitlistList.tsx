@@ -92,7 +92,7 @@ export function WaitlistList({ entries, loading, error, onRefresh }: Props) {
               <div key={r.id} className="rounded-2xl bg-card p-3 card-shadow">
                 <div className="flex items-center justify-between gap-2">
                   <p className="truncate text-sm font-semibold text-foreground">
-                    {[r.first_name, r.last_name].filter(Boolean).join(' ') || '—'}
+                    {[r.first_name, r.last_name].filter(Boolean).join(' ') || '-'}
                   </p>
                   {r.country_code && <AdminBadge tone="neutral">{r.country_code}</AdminBadge>}
                 </div>

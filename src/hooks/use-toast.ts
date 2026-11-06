@@ -136,7 +136,7 @@ function dispatch(action: Action) {
 type Toast = Omit<ToasterToast, "id">;
 
 function toast({ ...props }: Toast) {
-  props.title = userMessage(props.title) as React.ReactNode;
+  if (typeof props.title === 'string') props.title = String(userMessage(props.title));
   props.description = userMessage(props.description) as React.ReactNode;
   const id = genId();
 
