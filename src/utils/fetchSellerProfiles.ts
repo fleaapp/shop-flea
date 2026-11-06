@@ -36,50 +36,14 @@ const normalizeProfile = (row: Record<string, unknown>): SellerProfileLookup => 
   status: (row.status as string | null) ?? null,
 });
 
-const ANON_COLUMNS = 'id,user_id,username,avatar_url,location,country_code,region_id,rating,total_reviews,pause_selling,created_at';
-
+/** Public lookup contains availability markers, not real activity timestamps. */
 export const fetchSellerProfiles = async (userIds: string[]): Promise<FetchSellerProfilesResult> => {
-  if (userIds.length === 0) {
-    return { profiles: [], canTrustMissing: true };
-  }
-
-  // Anonymous visitors only have access to basic display columns on profiles_public
-  const { data: sessionData } = await supabase.auth.getSession();
-  const columns = sessionData?.session ? '*' : ANON_COLUMNS;
-
-  // Try profiles_public view first, fall back to profiles table
-  const profilesPublicResponse = await supabase
-    .from('profiles_public')
-    .select(columns)
-    .in('user_id', userIds);
-
-  if (!profilesPublicResponse.error) {
-    const profiles = ((profilesPublicResponse.data as unknown as Record<string, unknown>[] | null) ?? [])
-      .map(normalizeProfile)
-      .filter((p) => p.user_id);
-
-    return { profiles, canTrustMissing: true };
-  }
-
-
-  // Always fall back to profiles table if profiles_public is unavailable for any reason
-  console.warn('profiles_public unavailable, falling back to profiles table:', profilesPublicResponse.error.message);
-
-  // Fallback to profiles table
-  const profilesFallbackResponse = await supabase
-    .from('profiles')
-    .select('*')
-    .in('user_id', userIds);
-
-  if (profilesFallbackResponse.error) {
-    console.error('Failed to fetch seller profiles from fallback source:', profilesFallbackResponse.error);
+  if (userIds.length === 0) return { profiles: [], canTrustMissing: true };
+  const { data, error } = await supabase.from('seller_profiles')
+    .select('user_id,username,avatar_url,location,rating,pause_selling,last_sign_in_at,status').in('user_id', userIds);
+  if (error) {
+    console.warn('Seller profiles unavailable:', error.message);
     return { profiles: [], canTrustMissing: false };
   }
-
-  const profiles = ((profilesFallbackResponse.data as Record<string, unknown>[] | null) ?? [])
-    .map(normalizeProfile)
-    .filter((p) => p.user_id);
-
-  // IMPORTANT: Do not trust missing rows from profiles fallback because table RLS can hide active users.
-  return { profiles, canTrustMissing: false };
+  return { profiles: (data ?? []).map(row => normalizeProfile(row as Record<string, unknown>)).filter(p => p.user_id), canTrustMissing: true };
 };

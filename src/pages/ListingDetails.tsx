@@ -1,4 +1,5 @@
 import { restoreListingToFeed } from '@/hooks/useHomeFeed';
+import LoadError from '@/components/LoadError';
 import { isSellerInactive } from '@/utils/fetchSellerProfiles';
 import { safeNavigateBack } from '@/utils/safeBack';
 import { useEffect, useRef, useState } from 'react';
@@ -108,6 +109,8 @@ const ListingDetails = () => {
   const [listing, setListing] = useState<DbListing | null>(null);
   const [seller, setSeller] = useState<SellerProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [listingStatus, setListingStatus] = useState<string>(location.state?.isRemoved ? 'removed' : 'active');
   const [showRemoveFromBothDialog, setShowRemoveFromBothDialog] = useState(false);
   const [priceBreakdownOpen, setPriceBreakdownOpen] = useState(false);
@@ -185,6 +188,8 @@ const ListingDetails = () => {
   useEffect(() => {
     const fetchListing = async () => {
       if (!id) return;
+      setLoadError(false);
+      setLoading(true);
 
       const stateListing = location.state?.listing as (Partial<DbListing> & {
         image?: string;
@@ -287,7 +292,12 @@ const ListingDetails = () => {
         .eq('id', id)
         .maybeSingle();
       
-      if (listingError || !listingData) {
+      if (listingError) {
+        setLoadError(true);
+        setLoading(false);
+        return;
+      }
+      if (!listingData) {
         if (hydrateFromState('removed') || hydrateFromSnapshot()) {
           return;
         }
@@ -305,14 +315,14 @@ const ListingDetails = () => {
 
       // Fetch profile in parallel (non-blocking) — use public view (excludes sensitive fields)
       supabase
-        .from('profiles_public')
+        .from('seller_profiles')
         .select('username, avatar_url, location, country_code, offers_enabled, rating, total_reviews, last_sign_in_at, pause_selling')
         .eq('user_id', listingData.user_id)
         .maybeSingle()
         .then(({ data: profileData, error: profileError }) => {
           if (profileError?.code === '42703') {
             supabase
-              .from('profiles_public')
+              .from('seller_profiles')
               .select('username, avatar_url, location')
               .eq('user_id', listingData.user_id)
               .maybeSingle()
@@ -337,7 +347,7 @@ const ListingDetails = () => {
     };
     
     fetchListing();
-  }, [id, location.state, user?.id]);
+  }, [id, location.state, user?.id, retryKey]);
 
   // Cart/wishlist counts now come from the shared EngagementBadges component,
   // which reads true public counts via the get_listing_engagement_counts RPC.
@@ -388,6 +398,8 @@ const ListingDetails = () => {
       </div>
     );
   }
+
+  if (loadError) return <div className="native-safe-top min-h-svh bg-background flex flex-col items-center justify-center"><LoadError message="This listing could not be loaded." onRetry={() => setRetryKey(key => key + 1)} /><Button variant="ghost" onClick={() => safeNavigateBack(navigate, "/")}>Go Back</Button></div>;
 
   if (!listing) {
     return (

@@ -71,7 +71,7 @@ const MakeOfferDrawer = ({
       }
       if (mode === 'buyer') {
         const { data: sp } = await supabase
-          .from('profiles_public')
+          .from('seller_profiles')
           .select('pause_selling, last_sign_in_at')
           .eq('user_id', fresh.user_id)
           .maybeSingle();
