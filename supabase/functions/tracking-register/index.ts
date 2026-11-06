@@ -3,7 +3,8 @@
 // marked as shipped.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { buildCorsHeaders, rejectUntrustedOrigin } from '../_shared/cors.ts';
-import { carrierCode, registerNumbers, getTrackInfo } from '../_shared/tracking.ts';
+import { carrierCode, registerNumbers, getTrackInfo, normaliseTrackInfo } from '../_shared/tracking.ts';
+import { normaliseTrackingNumber, hasShipmentEvidence } from '../_shared/trackingSafety.ts';
 import { applyTracking } from '../_shared/applyTracking.ts';
 import { sendTransactionalEmail, getUserEmail, wantsOrderEmails } from '../_shared/sendTransactionalEmail.ts';
 
@@ -43,7 +44,21 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    // ---- Validate-only: check a number with the carrier before shipping ----
+    const verifyParcel = async (candidate: string, carrierName: string, groupId: string, createdAt: string) => {
+      const code = carrierCode(carrierName);
+      if (!code || !/^[A-Z0-9]{6,50}$/.test(candidate)) throw new Error('Please enter valid tracking and choose a carrier from the list.');
+      const { data: used, error: usedError } = await admin.from('tracking_shipments').select('order_group_id').eq('tracking_number', candidate).neq('order_group_id', groupId).limit(1);
+      if (usedError) throw usedError;
+      if (used?.length) throw new Error('This tracking number belongs to another order.');
+      await registerNumbers([{ number: candidate, carrier: code }]);
+      const result = await getTrackInfo([{ number: candidate, carrier: code }]);
+      const accepted = result?.data?.accepted?.[0];
+      if (!accepted?.track_info || !hasShipmentEvidence(normaliseTrackInfo(candidate, accepted.track_info), createdAt)) {
+        throw new Error('The carrier has not confirmed a new shipment for this order. Wait for its first scan and try again.');
+      }
+    };
+
+    // ---- Validate-only: previews cannot authorize an order update ----
     if (body.validate_only === true) {
       const candidate = String(body.tracking_number ?? '').replace(/[\s-]+/g, '').toUpperCase();
       const carrierName = typeof body.carrier === 'string' ? body.carrier : null;
@@ -65,9 +80,12 @@ Deno.serve(async (req) => {
             message: `That tracking number wasn't recognised by ${carrierName}. Check it and try again.`,
           }, 200);
         }
+        const info = await getTrackInfo([{ number: candidate, carrier: code }]);
+        const trackInfo = info?.data?.accepted?.[0]?.track_info;
+        if (!trackInfo || normaliseTrackInfo(candidate, trackInfo).notFound) return json({ valid: false, message: 'Wait for the carrier to scan this parcel, then try again.' });
       } catch (e) {
-        // Provider outage: don't block the seller, daily sync reconciles later.
         console.warn('[tracking-register] validation unavailable:', (e as Error).message);
+        return json({ valid: false, message: 'Tracking could not be checked. Please try again.' });
       }
       return json({ valid: true }, 200);
     }
@@ -78,14 +96,26 @@ Deno.serve(async (req) => {
 
     let q = admin
       .from('orders')
-      .select('id, order_group_id, buyer_id, seller_id, tracking_provider, tracking_number')
+      .select('id, order_group_id, buyer_id, seller_id, listing_id, created_at, tracking_provider, tracking_number')
       .limit(1);
-    q = orderGroupId ? q.eq('order_group_id', orderGroupId) : q.eq('id', orderId!);
+    if (orderGroupId) q = q.eq('order_group_id', orderGroupId);
+    else if (orderId) q = q.eq('id', orderId);
     const { data: orders, error: orderError } = await q;
     if (orderError) return json({ error: orderError.message }, 500);
     const order = orders?.[0];
     if (!order) return json({ error: 'Order not found' }, 404);
     if (order.seller_id !== userId) return json({ error: 'Forbidden' }, 403);
+
+    if (body.verify_for_shipping === true) {
+      const candidate = normaliseTrackingNumber(String(body.tracking_number ?? ''));
+      const carrier = String(body.carrier ?? '');
+      const groupId = order.order_group_id ?? order.id;
+      try { await verifyParcel(candidate, carrier, groupId, order.created_at); }
+      catch (error) { return json({ error: error instanceof Error ? error.message : 'Tracking verification unavailable.' }, 400); }
+      const { error } = await admin.from('shipping_validation').upsert({ seller_id: userId, order_group_id: groupId, tracking_number: candidate, carrier_name: carrier, verified_at: new Date().toISOString() }, { onConflict: 'order_group_id,tracking_number' });
+      if (error) throw error;
+      return json({ success: true });
+    }
 
     // ---- Correct a mistyped tracking number on an already-shipped order ----
     const replacement = String(body.new_tracking_number ?? '').replace(/[\s-]+/g, '').toUpperCase();
@@ -93,6 +123,8 @@ Deno.serve(async (req) => {
       const newCarrier = typeof body.carrier === 'string' ? body.carrier : order.tracking_provider;
       const newCode = carrierCode(newCarrier);
       if (!newCode) return json({ error: 'Please choose a carrier from the list' }, 400);
+      try { await verifyParcel(replacement, newCarrier, order.order_group_id ?? order.id, order.created_at); }
+      catch (error) { return json({ error: error instanceof Error ? error.message : 'Tracking verification unavailable.' }, 400); }
 
       let uq = admin
         .from('orders')
@@ -101,6 +133,8 @@ Deno.serve(async (req) => {
           tracking_number: replacement,
           tracking_rejected_at: null,
           tracking_rejection_reason: null,
+          tracking_approved_at: null,
+          tracking_approved_by: null,
           updated_at: new Date().toISOString(),
         })
         .eq('seller_id', userId)
