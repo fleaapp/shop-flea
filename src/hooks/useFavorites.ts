@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { invalidateEngagementCounts } from '@/hooks/useListingEngagementCounts';
 import { useAuth } from '@/context/AuthContext';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { Listing } from '@/types/listing';
 import { fetchSellerProfiles } from '@/utils/fetchSellerProfiles';
 import {

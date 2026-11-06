@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
  import { ChevronLeft } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import fleaLogoAuth from '@/assets/flea-logo-auth.jpeg';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';

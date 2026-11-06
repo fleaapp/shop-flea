@@ -14,7 +14,7 @@ import {
 } from '@stripe/react-stripe-js';
 import type { StripeElementStyle } from '@stripe/stripe-js';
 import { getStripe } from '@/lib/stripe/loadStripe';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 // Non-sensitive cardholder-name persistence so backgrounding the app while
 // looking up card details doesn't wipe it. Card number / expiry / CVC are

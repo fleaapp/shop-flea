@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 export interface SavedSearch {
   id: string;

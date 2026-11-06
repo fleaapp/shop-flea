@@ -1,7 +1,7 @@
 import { Bookmark, BookmarkCheck } from 'lucide-react';
 import { useSavedSearches } from '@/hooks/useSavedSearches';
 import { useAuth } from '@/context/AuthContext';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 interface SaveSearchButtonProps {
   query: string;

@@ -8,7 +8,7 @@ import { AU_CARRIERS, normaliseTrackingNumber, validateTrackingFormat } from '@/
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import { openTrackingUrl } from '@/lib/tracking';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import type { Order } from '@/hooks/useOrders';
 
 /**

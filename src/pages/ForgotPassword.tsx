@@ -4,7 +4,7 @@ import { ChevronLeft, Mail } from 'lucide-react';
 import fleaLogoAuth from '@/assets/flea-logo-auth.jpeg';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { supabase } from '@/lib/supabase';
 import { getPasswordResetRedirectUrl } from '@/lib/authRedirects';
 

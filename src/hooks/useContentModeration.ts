@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { moderateContent, moderateFields, ModerationResult, ModerationOptions } from '@/utils/contentModeration';
 
 export const useContentModeration = () => {

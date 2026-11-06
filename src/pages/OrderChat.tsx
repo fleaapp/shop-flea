@@ -10,7 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { format, differenceInDays } from 'date-fns';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import ReportDialog from '@/components/ReportDialog';
 import { useReporting } from '@/hooks/useReporting';
 import { compressImage } from '@/utils/imageCompression';

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CreditCard, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
 import type { SavedCard } from '@/components/checkout/PaymentMethodPicker';
 import {

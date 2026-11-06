@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { MIN_LISTING_PRICE, calculateTransactionFee } from '@/utils/feeCalculator';
 import { OFFER_MIN_PERCENT } from '@/hooks/useOffers';
 

@@ -11,7 +11,7 @@ import {
 import type { StripeExpressCheckoutElementConfirmEvent } from '@stripe/stripe-js';
 import { getStripe } from '@/lib/stripe/loadStripe';
 import { fleaAppearance } from '@/lib/stripe/appearance';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 interface Props {
   open: boolean;

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { preloadImages } from '@/utils/preloadAssets';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { sendPushNotification } from '@/utils/pushNotify';
 
 export type OrderStatus = 'awaiting' | 'shipped' | 'delivered' | 'completed' | 'refunded';

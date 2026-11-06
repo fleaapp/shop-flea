@@ -4,7 +4,7 @@ import { ChevronLeft, Send } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/utils/imageCompression';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import ChatBubble from '@/components/ChatBubble';
 import { useQueryClient } from '@tanstack/react-query';
 

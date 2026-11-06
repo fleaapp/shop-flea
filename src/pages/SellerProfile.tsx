@@ -11,7 +11,7 @@ import { useReporting } from '@/hooks/useReporting';
 import ReportDialog from '@/components/ReportDialog';
 import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { getAvatarUrl } from '@/utils/optimizedImage';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { Listing } from '@/types/listing';
 import ReviewsDrawer from '@/components/ReviewsDrawer';
 import { ChevronLeft, MoreVertical, LayoutGrid, Rows3 } from 'lucide-react';

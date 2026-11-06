@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogDescription } from '@/compon
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { Eye, EyeOff } from 'lucide-react';
 
 

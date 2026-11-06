@@ -6,7 +6,7 @@ import { ChevronDown, X } from 'lucide-react';
 import { FILTER_SIZES, FIT_OPTIONS } from '@/config/sizeConfig';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { normalizeSizeKeys, FitKey } from '@/utils/sizeKeys';
 
 interface FilterPreferencesSheetProps {

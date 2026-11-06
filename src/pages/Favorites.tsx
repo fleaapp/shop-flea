@@ -14,7 +14,7 @@ import { getDefaultAvatar } from '@/utils/defaultAvatars';
 import { useCart } from '@/context/CartContext';
 import { Listing } from '@/types/listing';
 import { ListingFilters } from '@/hooks/useListings';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { restoreListingToFeed } from '@/hooks/useHomeFeed';
 import EmptyState from '@/components/EmptyState';
 import LoadError from '@/components/LoadError';

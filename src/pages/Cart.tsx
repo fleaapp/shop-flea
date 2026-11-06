@@ -10,7 +10,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 import { useOrders, Order, OrderGroup } from '@/hooks/useOrders';
 import { restoreListingToFeed } from '@/hooks/useHomeFeed';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import CartItemRow from '@/components/CartItemRow';
 import { offerTimeLeft } from '@/hooks/useOffers';

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { X, Loader2, Play } from 'lucide-react';
 import { compressImage } from '@/utils/imageCompression';
 import { forceRestoreRouteAppChrome } from '@/lib/appChrome';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 const REFUND_REASONS = [
   'Item not as described',

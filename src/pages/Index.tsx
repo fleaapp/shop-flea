@@ -20,7 +20,7 @@ import { useDiscardedListings } from '@/hooks/useDiscardedListings';
 import { useCart } from '@/context/CartContext';
 import { useOnboarding } from '@/context/OnboardingContext';
 import { useAuth } from '@/context/AuthContext';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { useGuestMode } from '@/context/GuestModeContext';
 import { Listing } from '@/types/listing';
 import { supabase } from '@/lib/supabase';

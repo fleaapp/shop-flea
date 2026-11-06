@@ -9,7 +9,7 @@ import { useOrders, isOrderRefunded } from '@/hooks/useOrders';
 import { useUnreadOrderMessages } from '@/hooks/useUnreadOrderMessages';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { SettleBalanceSheet } from '@/components/SettleBalanceSheet';
 import SellerOnboardingSheet from '@/components/SellerOnboardingSheet';
 import EnablePushBanner from '@/components/EnablePushBanner';

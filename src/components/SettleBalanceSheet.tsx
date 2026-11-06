@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { getStripe } from '@/lib/stripe/loadStripe';
 import { invokeCloudFunction } from '@/utils/cloudFunctions';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 interface BreakdownRow {
   id: string;
