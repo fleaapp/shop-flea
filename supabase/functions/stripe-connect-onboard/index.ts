@@ -257,7 +257,7 @@ serve(async (req) => {
     await logEdgeError({ functionName: "stripe-connect-onboard", error: error, title: "Seller verification failed to start", severity: "error", source: "payment" });
     console.error('Seller setup failed', { code: (error as { code?: string })?.code });
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Seller setup could not be started' }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
