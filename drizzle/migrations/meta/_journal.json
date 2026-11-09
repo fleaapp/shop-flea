@@ -71,6 +71,13 @@
       "when": 1794191985284,
       "tag": "0009_legacy_seller_profile_privacy_compatibility",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794191997503,
+      "tag": "0010_restore_legacy_seller_profile_reads",
+      "breakpoints": true
     }
   ]
 }
