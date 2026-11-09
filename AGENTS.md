@@ -8,6 +8,7 @@
 - User blocks are directional private records enforced symmetrically in discovery and new transactions; existing orders remain accessible - why: blocking must protect users without preventing fulfillment or dispute resolution.
 - User-authored comments and order messages have database write-validation triggers - why: direct client writes and service endpoints must not bypass scam-payment restrictions.
 - Public seller activity uses seller_profiles availability markers, never precise timestamps or base-profile fallback - why: privacy must not weaken the shared inactivity rule.
+- Keep profiles_public readable for installed clients with day-rounded dates; seller_profiles derives coarse availability from private profiles - why: revoking legacy reads breaks released apps, while rounded dates must not shift the current 10-day cutoff.
 - Payment webhooks use leased event claims and unique notification delivery keys - why: concurrent retries must not duplicate alerts and failed work must remain retryable.
 - Marking orders shipped requires a recent service-written carrier validation permit - why: direct client calls must not bypass carrier evidence and tracking reuse checks.
 - Frontend toast messages go through src/lib/toast and shared userMessage presentation - why: punctuation and provider wording must be consistent without modifying stored diagnostics.
