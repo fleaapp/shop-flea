@@ -1,5 +1,7 @@
 # Launch safeguards
 
+- [ ] Restore legacy seller-profile reads without exposing precise activity timestamps; verify live access and seller screens.
+
 - [x] Make refunds item-specific and protect shipped bundle items.
 - [x] Validate return tracking, require Flea delivery review, and retry approved failed refunds.
 - [x] Keep disputed refund funds held and align seller response deadlines.
