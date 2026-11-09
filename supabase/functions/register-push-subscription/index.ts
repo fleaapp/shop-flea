@@ -76,25 +76,17 @@ serve(async (req) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    // CRITICAL: take over this endpoint from any other user account that
-    // previously registered it on this device. Without this, pushes destined
-    // for the previous user still hit the current device's APNs/browser token.
-    const { error: takeoverError } = await svc
+    // Knowledge of someone else's endpoint is not proof of device ownership.
+    // Normal sign-out removes the old account's token before account switching.
+    const { data: otherOwners, error: ownershipError } = await svc
       .from("push_subscriptions")
-      .delete()
+      .select('id')
       .eq("endpoint", endpoint)
-      .neq("user_id", userId);
-
-    if (takeoverError) {
-      console.error("[register-push-subscription] endpoint takeover failed:", takeoverError);
-      await logEdgeError({
-        functionName: "register-push-subscription",
-        title: "Push endpoint takeover failed",
-        error: takeoverError,
-        severity: "warning",
-        userId,
-        context: { platform },
-      });
+      .neq("user_id", userId)
+      .limit(1);
+    if (ownershipError) return json({ error: 'Unable to verify push subscription' }, 503);
+    if (otherOwners?.length) {
+      return json({ error: 'Push subscription is already registered. Sign out of the previous account on this device first.' }, 409);
     }
 
     if (platform === "ios") {

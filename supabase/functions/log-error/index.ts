@@ -4,6 +4,8 @@
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
+import { getVerifiedUserId } from '../_shared/auth.ts';
+import { matchesServiceCredential } from '../_shared/internalAuth.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,18 +41,6 @@ async function ensureSchema(sql: ReturnType<typeof postgres>) {
   schemaReady = true;
 }
 
-// Parses a JWT without verification so we can attribute client errors to a user.
-function parseUserId(auth: string | null): string | null {
-  if (!auth) return null;
-  const token = auth.replace(/^Bearer\s+/i, "");
-  const parts = token.split(".");
-  if (parts.length !== 3) return null;
-  try {
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
-    return typeof payload?.sub === "string" ? payload.sub : null;
-  } catch { return null; }
-}
-
 const truncate = (v: unknown, max: number): string | null => {
   if (v == null) return null;
   const s = typeof v === "string" ? v : String(v);
@@ -79,7 +69,9 @@ serve(async (req) => {
     if (!DB_URL) throw new Error("DB URL not set");
     const body = await req.json().catch(() => ({} as any));
 
-    const source = ["client","edge_function","payment","auth"].includes(body.source) ? body.source : "client";
+    const isTrustedServer = matchesServiceCredential(req.headers.get('Authorization'), SERVICE_KEY);
+    const source = isTrustedServer && ["client","edge_function","payment","auth"].includes(body.source)
+      ? body.source : body.source === 'auth' ? 'auth' : 'client';
     const severity = ["warning","error","critical"].includes(body.severity) ? body.severity : "error";
     if (severity === "warning") {
       return new Response(JSON.stringify({ ok: true, skipped: "warning" }), {
@@ -95,20 +87,16 @@ serve(async (req) => {
     const dedupe = truncate(body.dedupe_key, 200);
 
     // Attribution rules:
-    //  - client/auth: only from the caller's own verified-shape JWT (never body).
+    //  - client/auth: only from the caller's verified login token (never body).
     //  - edge_function/payment: a body-supplied user_id is only trusted when the
     //    caller proves it is server-side by presenting the service-role key.
-    const authHeader = req.headers.get("Authorization");
-    const bearer = (authHeader ?? "").replace(/^Bearer\s+/i, "").trim();
-    const isTrustedServer = !!SERVICE_KEY && bearer === SERVICE_KEY;
-
     let userId: string | null = null;
     let username: string | null = null;
-    if (source === "client" || source === "auth") {
-      userId = parseUserId(authHeader);
-    } else if (isTrustedServer) {
+    if (isTrustedServer) {
       const candidate = typeof body.user_id === "string" ? body.user_id : null;
       if (candidate && /^[0-9a-f-]{36}$/i.test(candidate)) userId = candidate;
+    } else {
+      userId = await getVerifiedUserId(req);
     }
     if (isTrustedServer && typeof body.username === "string") username = truncate(body.username, 80);
 

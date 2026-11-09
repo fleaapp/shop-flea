@@ -1,6 +1,6 @@
 # Launch safeguards
 
-- [ ] Apply scanner fixes for admin authentication, safe CSV exports, private logging and caller-bound notification/error endpoints; preserve public seller reads and verify deployed protections.
+- [x] Apply scanner fixes for admin authentication, safe CSV exports, private logging and caller-bound notification/error endpoints; nine functions deployed, 13 regression checks passed, signed-in admin export and three seller profiles verified. Public seller permissions unchanged. Signup provider lookup retains necessary minimal disclosure and existing limits; device check now limits requests and omits financial details. Physical push/account-switch and real signup/email delivery remain unverified.
 
 - [x] Restore legacy seller-profile reads with day-rounded dates and preserve exact 10-day availability for current clients; 3 live regression tests passed and 3 signed-in seller screens verified at desktop/mobile widths. Physical iPhone not tested.
 

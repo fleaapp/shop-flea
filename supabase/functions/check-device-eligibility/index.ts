@@ -5,6 +5,7 @@
 import { rejectUntrustedOrigin } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { callerKey, checkRateLimit, tooManyRequests } from '../_shared/rateLimit.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,11 +17,14 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   const originBlock = rejectUntrustedOrigin(req);
   if (originBlock) return originBlock;
+  if (!(await checkRateLimit(callerKey(req, 'device_eligibility'), 30, 60))) {
+    return tooManyRequests(corsHeaders);
+  }
 
   try {
     const body = await req.json().catch(() => ({}));
     const deviceId: string | undefined = body.deviceId;
-    if (!deviceId || typeof deviceId !== "string" || deviceId.length < 4) {
+    if (!deviceId || typeof deviceId !== "string" || deviceId.length < 4 || deviceId.length > 200 || !/^[a-zA-Z0-9_-]+$/.test(deviceId)) {
       // No usable device fingerprint — allow (web fallback).
       return new Response(JSON.stringify({ eligible: true }), {
         status: 200,
@@ -34,7 +38,7 @@ serve(async (req) => {
 
     const { data: blocked } = await svc
       .from("blocked_devices")
-      .select("device_id, reason, amount_cents, associated_user_id")
+      .select("device_id")
       .eq("device_id", deviceId)
       .maybeSingle();
 
@@ -42,8 +46,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           eligible: false,
-          reason: blocked.reason,
-          amountCents: blocked.amount_cents ?? 0,
+          blocked: true,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
@@ -56,7 +59,7 @@ serve(async (req) => {
   } catch (err: any) {
     console.error("[check-device-eligibility] error:", err);
     // Fail-open so a bug doesn't block all signups.
-    return new Response(JSON.stringify({ eligible: true, error: err?.message }), {
+    return new Response(JSON.stringify({ eligible: true }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
