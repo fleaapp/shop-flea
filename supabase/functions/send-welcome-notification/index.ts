@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { getVerifiedUserId } from '../_shared/auth.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,16 +26,8 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Manual JWT parse — we only need the caller's own id.
-    const authHeader = req.headers.get("Authorization") || "";
-    const token = authHeader.replace(/^Bearer\s+/i, "");
-    let userId: string | null = null;
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      userId = payload?.sub ?? null;
-    } catch {
-      userId = null;
-    }
+    // Only a signature-verified caller can create their own welcome alert.
+    const userId = await getVerifiedUserId(req);
     if (!userId) return json({ error: "Unauthorized" }, 401);
 
     const supabase = createClient(supabaseUrl, serviceKey);

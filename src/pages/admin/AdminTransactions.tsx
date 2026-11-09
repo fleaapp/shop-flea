@@ -9,6 +9,7 @@ import { TransactionTable } from '@/components/admin/transactions/TransactionTab
 import { TransactionDetail } from '@/components/admin/transactions/TransactionDetail';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { AdminHeader } from '@/components/admin/shell/AdminHeader';
+import { toCsv } from '@/lib/csv';
 
 export default function AdminTransactions() {
   const [selected, setSelected] = useState<TransactionOrder | null>(null);
@@ -30,7 +31,7 @@ export default function AdminTransactions() {
       o.status,
       o.shipped_at ? (o.delivered_at ? 'delivered' : 'shipped') : 'pending',
     ]);
-    const csv = [headers, ...rows].map((r) => r.join(',')).join('\n');
+    const csv = toCsv([headers, ...rows]);
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

@@ -38,8 +38,7 @@ async function persistStripeAccount(userId: string, accountId: string) {
   });
 
   if (!response.ok) {
-    const text = await response.text();
-    console.error(`[stripe-connect-onboard] Failed to persist stripe_account_id: ${response.status} ${text}`);
+    console.error(`[stripe-connect-onboard] Failed to persist seller payment account: ${response.status}`);
   } else {
     console.log(`[stripe-connect-onboard] Persisted stripe_account_id=${accountId} for user ${userId}`);
   }
@@ -57,7 +56,7 @@ serve(async (req) => {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+      { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } }
     );
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     if (authError || !user) {
@@ -189,7 +188,7 @@ serve(async (req) => {
         if (/^\+\d{8,15}$/.test(e164)) {
           individual.phone = e164;
         } else {
-          console.warn(`[stripe-connect-onboard] Skipping invalid phone: ${raw}`);
+          console.warn('[stripe-connect-onboard] Skipping invalid phone format');
         }
       }
 
@@ -242,7 +241,7 @@ serve(async (req) => {
         },
       } as any);
     } catch (e) {
-      console.warn(`[stripe-connect-onboard] Account update failed for ${accountId}:`, (e as Error)?.message);
+      console.warn('[stripe-connect-onboard] Account update failed', { code: (e as { code?: string })?.code });
     }
 
     // Application-controlled Express: onboarding is rendered inside the app
@@ -256,7 +255,7 @@ serve(async (req) => {
     );
   } catch (error) {
     await logEdgeError({ functionName: "stripe-connect-onboard", error: error, title: "Seller verification failed to start", severity: "error", source: "payment" });
-    console.error("Stripe Connect onboard error:", error);
+    console.error('Seller setup failed', { code: (error as { code?: string })?.code });
     return new Response(
       JSON.stringify({ error: error.message }),
       {

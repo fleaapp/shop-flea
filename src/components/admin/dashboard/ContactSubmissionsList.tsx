@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { ContactSubmission } from '@/hooks/admin/useAdminContactSubmissions';
 import { AdminEmptyState } from '@/components/admin/shell/AdminEmptyState';
+import { toCsv } from '@/lib/csv';
 
 interface Props {
   submissions: ContactSubmission[];
@@ -13,19 +14,11 @@ interface Props {
   onRefresh: () => void;
 }
 
-function toCsv(rows: ContactSubmission[]) {
+function contactCsv(rows: ContactSubmission[]) {
   const header = ['Name', 'Email', 'Message', 'Submitted'];
-  const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
-  const lines = [header.join(',')];
-  rows.forEach((r) => {
-    lines.push([
-      escape(r.name ?? ''),
-      escape(r.email),
-      escape(r.message ?? ''),
-      escape(new Date(r.created_at).toISOString()),
-    ].join(','));
-  });
-  return lines.join('\n');
+  return toCsv([header, ...rows.map(r => [
+    r.name ?? '', r.email, r.message ?? '', new Date(r.created_at).toISOString(),
+  ])]);
 }
 
 export function ContactSubmissionsList({ submissions, loading, error, onRefresh }: Props) {
@@ -41,7 +34,7 @@ export function ContactSubmissionsList({ submissions, loading, error, onRefresh 
   }, [submissions, search]);
 
   const exportCsv = () => {
-    const blob = new Blob([toCsv(filtered)], { type: 'text/csv;charset=utf-8' });
+    const blob = new Blob([contactCsv(filtered)], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
