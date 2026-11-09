@@ -1999,7 +1999,7 @@ export type Database = {
           offers_enabled?: boolean | null
           pause_selling?: boolean | null
           paypal_onboarding_complete?: boolean | null
-          rating?: number | null
+          rating?: never
           region_id?: string | null
           shipping_preferences_set?: boolean | null
           shipping_tier_1?: number | null
@@ -2026,7 +2026,7 @@ export type Database = {
           offers_enabled?: boolean | null
           pause_selling?: boolean | null
           paypal_onboarding_complete?: boolean | null
-          rating?: number | null
+          rating?: never
           region_id?: string | null
           shipping_preferences_set?: boolean | null
           shipping_tier_1?: number | null
@@ -2040,7 +2040,15 @@ export type Database = {
           user_id?: string | null
           username?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
