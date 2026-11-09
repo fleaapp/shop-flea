@@ -64,6 +64,13 @@
       "when": 1793965512481,
       "tag": "0008_launch_event_tracking_and_activity_safety",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794191985284,
+      "tag": "0009_legacy_seller_profile_privacy_compatibility",
+      "breakpoints": true
     }
   ]
 }
