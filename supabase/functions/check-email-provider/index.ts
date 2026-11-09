@@ -40,8 +40,10 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({ _key: key, _max: max, _window_seconds: windowSeconds }),
       });
-      const allowed = await r.json().catch(() => true);
-      return allowed !== false;
+      if (!r.ok) throw new Error('Provider check temporarily unavailable');
+      const allowed = await r.json();
+      if (typeof allowed !== 'boolean') throw new Error('Provider check temporarily unavailable');
+      return allowed;
     };
 
     if (!(await callRl(`check_email_provider:ip:${ip}`, 5, 60))) {

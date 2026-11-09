@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { csvCell, toCsv } from './csv';
+import { csvCell, toCsv } from '../../../src/lib/csv';
 
 test('both admin exports neutralize spreadsheet formulas, including leading controls', () => {
   for (const value of ['=1+1', '+SUM(A1)', '-1+2', '@SUM(A1)', '  =1+1', '\t=1+1', '\r=1+1', '\u0000=1+1']) {

@@ -12,3 +12,7 @@
 - Payment webhooks use leased event claims and unique notification delivery keys - why: concurrent retries must not duplicate alerts and failed work must remain retryable.
 - Marking orders shipped requires a recent service-written carrier validation permit - why: direct client calls must not bypass carrier evidence and tracking reuse checks.
 - Frontend toast messages go through src/lib/toast and shared userMessage presentation - why: punctuation and provider wording must be consistent without modifying stored diagnostics.
+- Admin CSV exports use the shared csv encoder for every cell - why: quoting alone does not neutralize user-supplied spreadsheet formulas.
+- Welcome alerts and client error attribution use verified login identity; internal tools use matchesServiceCredential or requireAdmin - why: decoded JWT claims are attacker-controlled without verification.
+- Push registration never deletes subscriptions belonging to another user; account switching relies on sign-out cleanup - why: knowing an endpoint does not prove device ownership.
+- Pre-signup eligibility responses never include debt amounts or account-linked reasons - why: signup needs a generic eligibility decision, not private financial details.
