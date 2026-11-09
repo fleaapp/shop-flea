@@ -1,6 +1,6 @@
 # Launch safeguards
 
-- [ ] Restore legacy seller-profile reads without exposing precise activity timestamps; verify live access and seller screens.
+- [x] Restore legacy seller-profile reads with day-rounded dates and preserve exact 10-day availability for current clients; 3 live regression tests passed and 3 signed-in seller screens verified at desktop/mobile widths. Physical iPhone not tested.
 
 - [x] Make refunds item-specific and protect shipped bundle items.
 - [x] Validate return tracking, require Flea delivery review, and retry approved failed refunds.
